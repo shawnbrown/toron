@@ -266,11 +266,36 @@ class TestSqlDataModel(MkdtempTestCase):
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
 
-        with self.assertRaises(sqlite3.IntegrityError):
+        msg = 'Labels must be unique within their hierarchy level.'
+        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             cursor.executescript("""
                 INSERT INTO label VALUES (NULL, 1, 'Midwest');
                 INSERT INTO label VALUES (NULL, 1, 'Midwest');
             """)
+
+    def test_cell_label_foreign_key(self):
+        cursor = self.connection.cursor()
+        cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
+        cursor.execute("INSERT INTO cell VALUES (1, '', 0)")
+        cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
+        cursor.execute("INSERT INTO label VALUES (2, 2, 'Ohio')")
+
+        msg = 'Mismatched hierarchy_id/label_id pairs must fail.'
+        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+            cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 2)")
+
+    def test_cell_label_unique_constraint(self):
+        cursor = self.connection.cursor()
+        cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
+        cursor.execute("INSERT INTO cell VALUES (1, '', 0)")
+        cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
+        cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 1)")
+
+        msg = 'Cells must never have two labels from the same hierarchy level.'
+        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+            cursor.execute("INSERT INTO cell_label VALUES (2, 1, 1, 1)")
 
     def test_denormalize_trigger(self):
         cursor = self.connection.cursor()
