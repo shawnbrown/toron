@@ -37,59 +37,6 @@ class MkdtempTestCase(unittest.TestCase):
             os.remove(path)
 
 
-class TestSQLiteSharedMemory(unittest.TestCase):
-    """ """
-    def setUp(self):
-        self.memdb1_uri = 'file:memdb1?mode=memory&cache=shared'
-        self.memdb1_conn = sqlite3.connect(self.memdb1_uri, uri=True)
-        cursor = self.memdb1_conn.cursor()
-        cursor.executescript("""
-            CREATE TABLE testing (a, b);
-            INSERT INTO testing VALUES ('foo', 'bar');
-            INSERT INTO testing VALUES ('baz', 'qux');
-        """)
-
-        self.memdb2_uri = 'file:memdb2?mode=memory&cache=shared'
-        self.memdb2_conn = sqlite3.connect(self.memdb2_uri, uri=True)
-        cursor = self.memdb2_conn.cursor()
-        cursor.executescript("""
-            CREATE TABLE testing (a, b);
-            INSERT INTO testing VALUES ('fee', 'fi');
-            INSERT INTO testing VALUES ('fo', 'fum');
-        """)
-
-    def test_shared_memory(self):
-        """Must provide connections to shared, in-memory databases."""
-        def get_all_values(database):
-            # Make new connection, query, close connection, return values.
-            connection = sqlite3.connect(database, uri=True)
-            cursor = connection.cursor()
-            cursor.execute('SELECT * FROM testing')
-            values = list(cursor.fetchall())
-            connection.close()
-            return values
-
-        # Check memdb1.
-        expected = [('foo', 'bar'), ('baz', 'qux')]
-        self.assertEqual(expected, get_all_values(self.memdb1_uri))
-
-        # Check memdb2.
-        expected = [('fee', 'fi'), ('fo', 'fum')]
-        self.assertEqual(expected, get_all_values(self.memdb2_uri))
-
-        # Check memdb1, again.
-        expected = [('foo', 'bar'), ('baz', 'qux')]
-        self.assertEqual(expected, get_all_values(self.memdb1_uri))
-
-    def test_original_closed(self):
-        """Memory databases with zero open connections should be removed."""
-        self.memdb1_conn.close()  # <- Closing only connection to memdb1.
-        connection = sqlite3.connect(self.memdb1_uri, uri=True)
-        cursor = connection.cursor()
-        with self.assertRaises(sqlite3.OperationalError):
-            cursor.execute('SELECT * FROM testing')
-
-
 class TestConnector(MkdtempTestCase):
     def _get_tables(self, database):
         """Return tuple of expected tables and actual tables for given
