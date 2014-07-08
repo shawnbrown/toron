@@ -24,11 +24,10 @@ class MkdtempTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls._remove_tempfiles(cls)
         os.chdir(cls._orig_dir)
         os.rmdir(cls._temp_dir)
 
-    def setUp(self):
+    def tearDown(self):
         self._remove_tempfiles()
 
     def _remove_tempfiles(self):
