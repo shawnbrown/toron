@@ -3,14 +3,16 @@ import decimal
 import glob
 import os
 import sqlite3
+import sys
 import tempfile
 import unittest
 
 from gpn.partition import _create_partition
 from gpn.partition import _Connector
 from gpn.partition import Partition
+from gpn.partition import IN_MEMORY
+from gpn.partition import TEMP_FILE
 from gpn.partition import READ_ONLY
-from gpn.partition import OUT_OF_MEMORY
 
 
 class MkdtempTestCase(unittest.TestCase):
@@ -169,18 +171,17 @@ class TestConnector(MkdtempTestCase):
         """If named database does not exist, it should be created."""
         database = 'partition_database'
 
-        self.assertFalse(os.path.exists(database))  # File does not exist.
+        self.assertFalse(os.path.exists(database))  # File should not exist.
 
         connect = _Connector(database)
-        self.assertTrue(os.path.exists(database))  # Now, file does exist.
+        self.assertTrue(os.path.exists(database))  # Now, file should exist.
 
         # Check that file contains expected tables.
         expected_tables, actual_tables = self._get_tables(database)
         self.assertSetEqual(expected_tables, actual_tables)
 
-    def test_on_disk_temp_database(self):
-        """Temporary databases can be created by omitting the path arg."""
-        connect = _Connector()  # The `path` argument is omitted.
+    def test_temp_file_database(self):
+        connect = _Connector(mode=TEMP_FILE)
         filename = connect._temp_path
 
         # Check that database contains expected tables.
@@ -188,14 +189,14 @@ class TestConnector(MkdtempTestCase):
         self.assertSetEqual(expected_tables, actual_tables)
 
         # Make sure that temp file is removed up when object is deleted.
-        self.assertTrue(os.path.exists(filename))  # Exists.
+        self.assertTrue(os.path.exists(filename))  # Should exist.
         del connect
-        self.assertFalse(os.path.exists(filename))  # Does not exist.
+        self.assertFalse(os.path.exists(filename))  # Should not exist.
 
     def test_in_memory_temp_database(self):
         """In-memory database."""
-        connect = _Connector(mode='memory')
-        self.assertIn('cache=shared&mode=memory', connect._uri)
+        connect = _Connector(mode=IN_MEMORY)
+        #self.assertIn('cache=shared&mode=memory', connect._uri)
         self.assertIsNone(connect._temp_path)
         self.assertIsInstance(connect._memory_conn, sqlite3.Connection)
 
@@ -203,9 +204,9 @@ class TestConnector(MkdtempTestCase):
         expected_tables, actual_tables = self._get_tables(connect)
         self.assertSetEqual(expected_tables, actual_tables)
 
-        second_connect = _Connector(mode='memory')
-        msg = 'A Second anonymous connection must not share the same name.'
-        self.assertNotEqual(connect._uri, second_connect._uri, msg)
+        second_connect = _Connector(mode=IN_MEMORY)
+        msg = 'Multiple in-memory connections must be independent.'
+        self.assertIsNot(connect._memory_conn, second_connect._memory_conn, msg)
 
     def test_bad_sqlite_structure(self):
         """SQLite databases with unexpected table structure should fail."""
@@ -231,7 +232,8 @@ class TestConnector(MkdtempTestCase):
 
 class TestSqlDataModel(MkdtempTestCase):
     def setUp(self):
-        self.connection = Partition()._connect()
+        self._partition = Partition()
+        self.connection = self._partition._connect()
 
     def test_foreign_keys(self):
         cursor = self.connection.cursor()
@@ -347,6 +349,8 @@ class TestPartition(MkdtempTestCase):
 
         ptn = Partition(filename)  # Use existing file.
 
+    @unittest.skip('Temporarily while removing URI Filename requirement.')
+    @unittest.skipUnless(sys.version_info >= (3, 4), 'Only supported on 3.4.')
     def test_read_only_partition(self):
         """Existing partition should load without errors."""
         global _create_partition
@@ -358,7 +362,7 @@ class TestPartition(MkdtempTestCase):
         connection.close()
 
         with self.assertRaises(sqlite3.OperationalError):
-            ptn = Partition(filename, flags=READ_ONLY)
+            ptn = Partition(filename, mode=READ_ONLY)
             connection = ptn._connect()
             cursor = connection.cursor()
             cursor.execute('INSERT INTO cell DEFAULT VALUES')
@@ -378,7 +382,7 @@ class TestPartition(MkdtempTestCase):
         self.assertIsNotNone(ptn._connect._memory_conn)
 
         # On disk.
-        ptn = Partition(flags=OUT_OF_MEMORY)
+        ptn = Partition(mode=TEMP_FILE)
         self.assertIsNotNone(ptn._connect._temp_path)
         self.assertIsNone(ptn._connect._memory_conn)
 

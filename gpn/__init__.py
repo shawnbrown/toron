@@ -4,11 +4,13 @@
 __version__ = '0.01'
 
 from gpn.partition import Partition
+from gpn.partition import IN_MEMORY
+from gpn.partition import TEMP_FILE
 from gpn.partition import READ_ONLY
-from gpn.partition import OUT_OF_MEMORY
 
 __all__ = [
     'Partition',
+    'IN_MEMORY',
+    'TEMP_FILE',
     'READ_ONLY',
-    'OUT_OF_MEMORY',
 ]

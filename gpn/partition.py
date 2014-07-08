@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import itertools
 import os
 import re
 import sqlite3
@@ -159,52 +158,47 @@ sqlite3.register_adapter(Decimal, str)
 sqlite3.register_converter('TEXTNUM', lambda x: Decimal(x.decode('utf-8')))
 
 
-# Counter used to create unique names for in-memory partitions.
-_MEMORY_SEQUENCE = itertools.count(start=1)
+# Flags.
+IN_MEMORY = 1  #: Create a temporary partition in RAM.
+TEMP_FILE = 2  #: Write a temporary partition to disk instead of using RAM.
+READ_ONLY = 4  #: Connect to an existing Partition in read-only mode.
 
 
 class _Connector(object):
     """Opens a SQLite connection to a Partition database."""
 
-    def __init__(self, path=None, mode=None):
+    def __init__(self, database=None, mode=None):
         """Creates a callable `connect` object that can be used to
         establish connections to a Partition database.  Connecting to
         a Partition name that does not exist will create a new
-        Partition of the given name.  Omitting the `path` argument
-        will create an anonymous, temporary Partition.
+        Partition of the given name.
 
         """
         global _create_partition
-        assert mode in (None, 'ro', 'rw', 'rwc', 'memory')
-        assert path != ':memory:', ("Illegal path.  Use mode='memory' "
-                                    "to create an in-memory partition.")
         self._memory_conn = None
         self._temp_path = None
 
-        if path and os.path.exists(path):
-            # Existing partition.
-            assert mode != 'memory', ('Cannot create in-memory partition--'
-                                      'already exists on disk.')
-            self._uri = self._path_to_uri(path, mode=mode)
+        self._database = database
+
+        if database and os.path.exists(database):
+            self._database = database
             if not self._is_valid():
                 raise Exception('File - %s - is not a valid partition.' % path) from None
         else:
-            # New partition.
-            if mode == 'memory':
-                temp_path = 'memptn' + str(next(_MEMORY_SEQUENCE))
-                self._uri = self._path_to_uri(temp_path, mode=mode, cache='shared')
-                self._memory_conn = self._connect(self._uri)
-            else:
-                if path:
-                    self._uri = self._path_to_uri(path, mode=mode)
-                else:
-                    fh, temp_path = tempfile.mkstemp(suffix='.partition')
-                    os.close(fh)
-                    self._temp_path = temp_path
-                    self._uri = self._path_to_uri(temp_path, mode=mode)
+            if database and mode == None:
+                self._database = database
+            elif mode & TEMP_FILE:
+                fd, temp_path = tempfile.mkstemp(suffix='.partition')
+                os.close(fd)
+                self._database = temp_path
+                self._temp_path = temp_path
+            elif not database or mode & IN_MEMORY:
+                self._memory_conn =  sqlite3.connect(':memory:',
+                                                     detect_types=sqlite3.PARSE_DECLTYPES)
+                self._memory_conn.cursor().execute('PRAGMA foreign_keys=ON')
 
             # Populate new partition.
-            connection = self._connect(self._uri)
+            connection = self.__call__()
             cursor = connection.cursor()
             cursor.executescript(_create_partition)
             connection.close()
@@ -212,7 +206,26 @@ class _Connector(object):
     def __call__(self):
         """Opens a SQLite connection to a Partition database."""
         # Docstring (above) should be same as docstring for class.
-        return self._connect(self._uri)
+        if self._database:
+            connection =  sqlite3.connect(self._database,
+                                          detect_types=sqlite3.PARSE_DECLTYPES)
+            connection.cursor().execute('PRAGMA foreign_keys=ON')
+
+        elif self._memory_conn:
+
+            class InMemoryConnection(object):
+                def __init__(self, conn):
+                    self._conn = conn
+
+                def close(self):
+                    self._conn.rollback()  # Uncommitted changes will be lost!
+
+                def __getattr__(self, name):
+                    return getattr(self._conn, name)
+
+            connection = InMemoryConnection(self._memory_conn)
+
+        return connection
 
     def __del__(self):
         """Clean-up connection objects."""
@@ -224,7 +237,7 @@ class _Connector(object):
 
     def _is_valid(self):
         """Return True if database is a valid Partition, else False."""
-        connection = self._connect(self._uri)
+        connection = self.__call__()
         try:
             cursor = connection.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
@@ -238,16 +251,6 @@ class _Connector(object):
                            'partition', 'edge', 'edge_weight', 'relation',
                            'relation_weight', 'property', 'sqlite_sequence'}
         return tables_required == tables_contained
-
-    @staticmethod
-    def _connect(uri_filename):
-        """Connect to database specified by URI filename."""
-        connection =  sqlite3.connect(uri_filename,
-                                      uri=True,
-                                      detect_types=sqlite3.PARSE_DECLTYPES)
-        connection.cursor().execute('PRAGMA foreign_keys=ON')
-        return connection
-
 
     @staticmethod
     def _path_to_uri(path, **kwds):
@@ -269,16 +272,7 @@ class _Connector(object):
         return prefix + path + ('?' if query_params else '') + query_params
 
 
-# Partition flags.
-READ_ONLY = 1      #: Connect to an existing Partition in read-only mode.
-OUT_OF_MEMORY = 2  #: Write a temporary partition to disk instead of using RAM.
-
-
 class Partition(object):
-    def __init__(self, path=None, flags=0):
+    def __init__(self, path=None, mode=0):
         """Get existing Partition or create a new one."""
-        if path:
-            mode = 'ro' if flags & READ_ONLY else None
-        else:
-            mode = None if flags & OUT_OF_MEMORY else 'memory'
         self._connect = _Connector(path, mode=mode)
