@@ -5,7 +5,8 @@ import os
 import sqlite3
 import sys
 import tempfile
-import unittest
+
+from gpn.tests import _unittest as unittest
 
 from gpn.partition import _create_partition
 from gpn.partition import _Connector
@@ -62,13 +63,13 @@ class TestConnector(MkdtempTestCase):
             connection = sqlite3.connect(database)
         cursor = connection.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        actual_tables = {x[0] for x in cursor}
+        actual_tables = set(x[0] for x in cursor)
         connection.close()
-        expected_tables = {
+        expected_tables = set([
             'cell', 'hierarchy', 'label', 'cell_label', 'partition',
             'edge', 'edge_weight', 'relation', 'relation_weight', 'property',
             'sqlite_sequence'
-        }
+        ])
         return expected_tables, actual_tables
 
     def test_path_to_uri(self):
@@ -125,7 +126,7 @@ class TestConnector(MkdtempTestCase):
 
         connect = _Connector(database)  # Existing database.
         connection = connect()
-        self.assertTrue(isinstance(connection, sqlite3.Connection))
+        self.assertIsInstance(connection, sqlite3.Connection)
 
     def test_new_database(self):
         """If named database does not exist, it should be created."""
@@ -157,7 +158,7 @@ class TestConnector(MkdtempTestCase):
         """In-memory database."""
         connect = _Connector(mode=IN_MEMORY)
         self.assertIsNone(connect._temp_path)
-        self.assertTrue(isinstance(connect._memory_conn, sqlite3.Connection))
+        self.assertIsInstance(connect._memory_conn, sqlite3.Connection)
 
         # Check that database contains expected tables.
         expected_tables, actual_tables = self._get_tables(connect)
@@ -175,8 +176,10 @@ class TestConnector(MkdtempTestCase):
         cursor.execute('CREATE TABLE foo (bar, baz)')
         connection.close()
 
-        with self.assertRaises(Exception):
-            connect = _Connector(filename)  # Attempt to load other SQLite file.
+        # Attempt to load a non-Partition SQLite database.
+        def wrong_database():
+            connect = _Connector(filename)
+        self.assertRaises(Exception, wrong_database)
 
     def test_wrong_file_type(self):
         """Non-SQLite files should fail to load."""
@@ -185,8 +188,9 @@ class TestConnector(MkdtempTestCase):
         fh.write('This is a text file.')
         fh.close()
 
-        with self.assertRaises(Exception):
-            connect = _Connector(filename)  # Attempt to load non-SQLite file.
+        # Attempt to load non-SQLite file.
+        def wrong_file_type():
+            connect = _Connector(wrong_file_type)
 
 
 class TestSqlDataModel(MkdtempTestCase):
@@ -198,8 +202,10 @@ class TestSqlDataModel(MkdtempTestCase):
     def test_foreign_keys(self):
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
-        with self.assertRaises(sqlite3.IntegrityError):
+
+        def foreign_key_constraint():
             cursor.execute("INSERT INTO label VALUES (1, 2, 'Midwest')")
+        self.assertRaises(sqlite3.IntegrityError, foreign_key_constraint)
 
     def test_cell_defaults(self):
         cursor = self.connection.cursor()
@@ -224,17 +230,19 @@ class TestSqlDataModel(MkdtempTestCase):
         self.assertEqual(expected, cursor.fetchall())
 
     def test_label_unique_constraint(self):
+        """Labels must be unique within their hierarchy level."""
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
 
-        msg = 'Labels must be unique within their hierarchy level.'
-        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+        def unique_constraint():
             cursor.executescript("""
                 INSERT INTO label VALUES (NULL, 1, 'Midwest');
                 INSERT INTO label VALUES (NULL, 1, 'Midwest');
             """)
+        self.assertRaises(sqlite3.IntegrityError, unique_constraint)
 
     def test_cell_label_foreign_key(self):
+        """Mismatched hierarchy_id/label_id pairs must fail."""
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
         cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
@@ -242,11 +250,12 @@ class TestSqlDataModel(MkdtempTestCase):
         cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
         cursor.execute("INSERT INTO label VALUES (2, 2, 'Ohio')")
 
-        msg = 'Mismatched hierarchy_id/label_id pairs must fail.'
-        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+        def foreign_key_constraint():
             cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 2)")
+        self.assertRaises(sqlite3.IntegrityError, foreign_key_constraint)
 
     def test_cell_label_unique_constraint(self):
+        """Cells must never have two labels from the same hierarchy level."""
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
         cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
@@ -254,9 +263,9 @@ class TestSqlDataModel(MkdtempTestCase):
         cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
         cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 1)")
 
-        msg = 'Cells must never have two labels from the same hierarchy level.'
-        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+        def unique_constraint():
             cursor.execute("INSERT INTO cell_label VALUES (2, 1, 1, 1)")
+        self.assertRaises(sqlite3.IntegrityError, unique_constraint)
 
     def test_denormalize_trigger(self):
         cursor = self.connection.cursor()

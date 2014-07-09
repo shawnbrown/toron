@@ -244,15 +244,16 @@ class _Connector(object):
         try:
             cursor = connection.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables_contained = {x[0] for x in cursor}
+            tables_contained = set(x[0] for x in cursor)
             connection.close()
         except sqlite3.DatabaseError:
             tables_contained = set()
             connection.close()
 
-        tables_required = {'cell', 'hierarchy', 'label', 'cell_label',
-                           'partition', 'edge', 'edge_weight', 'relation',
-                           'relation_weight', 'property', 'sqlite_sequence'}
+        tables_required = set(['cell', 'hierarchy', 'label', 'cell_label',
+                               'partition', 'edge', 'edge_weight',
+                               'relation', 'relation_weight', 'property',
+                               'sqlite_sequence'])
         return tables_required == tables_contained
 
     @staticmethod
