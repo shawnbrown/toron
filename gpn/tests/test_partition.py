@@ -330,11 +330,12 @@ class TestPartition(MkdtempTestCase):
         cursor.executescript(_create_partition)  # Creating existing partition.
         connection.close()
 
-        with self.assertRaises(sqlite3.OperationalError):
+        def read_only():
             ptn = Partition(filename, mode=READ_ONLY)
             connection = ptn._connect()
             cursor = connection.cursor()
             cursor.execute('INSERT INTO cell DEFAULT VALUES')
+        self.assertRaises(sqlite3.OperationalError, read_only)
 
     def test_new_partition(self):
         filename = 'new_partition'
