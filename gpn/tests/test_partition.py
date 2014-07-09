@@ -193,7 +193,7 @@ class TestSqlDataModel(MkdtempTestCase):
     def setUp(self):
         self._partition = Partition()
         self.connection = self._partition._connect()
-        super().setUp()
+        super(self.__class__, self).setUp()
 
     def test_foreign_keys(self):
         cursor = self.connection.cursor()

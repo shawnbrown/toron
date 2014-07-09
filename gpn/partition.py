@@ -7,9 +7,12 @@ import tempfile
 from decimal import Decimal
 
 # For URI Filename handling.
-from urllib.parse import urlencode
-from urllib.request import pathname2url
-
+try:
+    from urllib.request import pathname2url  # New package structure in 3.0.
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import pathname2url
+    from urllib import urlencode
 
 #
 # Internal Partition structure:
@@ -183,7 +186,7 @@ class _Connector(object):
         if database and os.path.exists(database):
             self._database = database
             if not self._is_valid():
-                raise Exception('File - %s - is not a valid partition.' % path) from None
+                raise Exception('File - %s - is not a valid partition.' % path)
         else:
             if database and mode == None:
                 self._database = database
