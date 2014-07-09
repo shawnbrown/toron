@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #=======================================================================
-#        FILE: testall.sh
+#        FILE: run-tests.sh
 # DESCRIPTION: Runs test suite under all supported versions of Python
 #              and displays failures when encountered.
 #=======================================================================
@@ -30,6 +30,7 @@ run_command ()
 run_command "python3.4 -B -m unittest $*"
 run_command "python3.3 -B -m unittest $*"
 run_command "python3.2 -B -m unittest $*"
+run_command "python3.1 -B discover.py $*"
 
 echo "" >&2
 echo "All commands successful." >&2

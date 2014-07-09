@@ -15,6 +15,14 @@ from gpn.partition import TEMP_FILE
 from gpn.partition import READ_ONLY
 
 
+try:
+    callable  # Removed from 3.0 and 3.1, added back in 3.2.
+except NameError:
+    def callable(obj):
+        parent_types = type(obj).__mro__
+        return any('__call__' in typ.__dict__ for typ in parent_types)
+
+
 class MkdtempTestCase(unittest.TestCase):
     # TestCase changes cwd to temporary location.  After testing,
     # removes files and restores original cwd.
@@ -29,8 +37,15 @@ class MkdtempTestCase(unittest.TestCase):
         os.chdir(cls._orig_dir)
         os.rmdir(cls._temp_dir)
 
+    def setUp(self):
+        self._no_class_fixtures = not hasattr(self, '_temp_dir')
+        if self._no_class_fixtures:
+            self.setUpClass.__func__(self)
+
     def tearDown(self):
         self._remove_tempfiles()
+        if self._no_class_fixtures:
+            self.tearDownClass.__func__(self)
 
     def _remove_tempfiles(self):
         for path in glob.glob(os.path.join(self._temp_dir, '*')):
@@ -49,13 +64,11 @@ class TestConnector(MkdtempTestCase):
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         actual_tables = {x[0] for x in cursor}
         connection.close()
-
         expected_tables = {
             'cell', 'hierarchy', 'label', 'cell_label', 'partition',
             'edge', 'edge_weight', 'relation', 'relation_weight', 'property',
             'sqlite_sequence'
         }
-
         return expected_tables, actual_tables
 
     def test_path_to_uri(self):
@@ -112,7 +125,7 @@ class TestConnector(MkdtempTestCase):
 
         connect = _Connector(database)  # Existing database.
         connection = connect()
-        self.assertIsInstance(connection, sqlite3.Connection)
+        self.assertTrue(isinstance(connection, sqlite3.Connection))
 
     def test_new_database(self):
         """If named database does not exist, it should be created."""
@@ -143,9 +156,8 @@ class TestConnector(MkdtempTestCase):
     def test_in_memory_temp_database(self):
         """In-memory database."""
         connect = _Connector(mode=IN_MEMORY)
-        #self.assertIn('cache=shared&mode=memory', connect._uri)
         self.assertIsNone(connect._temp_path)
-        self.assertIsInstance(connect._memory_conn, sqlite3.Connection)
+        self.assertTrue(isinstance(connect._memory_conn, sqlite3.Connection))
 
         # Check that database contains expected tables.
         expected_tables, actual_tables = self._get_tables(connect)
@@ -181,6 +193,7 @@ class TestSqlDataModel(MkdtempTestCase):
     def setUp(self):
         self._partition = Partition()
         self.connection = self._partition._connect()
+        super().setUp()
 
     def test_foreign_keys(self):
         cursor = self.connection.cursor()
