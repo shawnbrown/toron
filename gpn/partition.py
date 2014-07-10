@@ -17,14 +17,14 @@ except ImportError:
 #
 # Internal Partition structure:
 #
-#     +===============+     +----------------+     +=================+
-#     | cell          |     | cell_label     |     | hierarchy       |
-#     +===============+     +----------------+     +=================+
-#  +--| cell_id       |--+  | cell_label_id  |     | hierarchy_id    |--+
-#  |  | cell_labels   |  +->| cell_id        |     | hierarchy_value |  |
-#  |  | partial       |     | hierarchy_id   |<-+  | hierarchy_level |  |
-#  |  +---------------+     | label_id       |<-+  +-----------------+  |
-#  |                        +----------------+  |                       |
+#                           +----------------+     +=================+
+#     +================+    | cell_label     |     | hierarchy       |
+#     | cell           |    +----------------+     +=================+
+#     +================+    | cell_label_id  |     | hierarchy_id    |--+
+#  +--| cell_id        |--->| cell_id        |     | hierarchy_value |  |
+#  |  | partial        |    | hierarchy_id   |<-+  | hierarchy_level |  |
+#  |  +----------------+    | label_id       |<-+  +-----------------+  |
+#  |                       +----------------+   |                       |
 #  |   +----------------+                       |  +-----------------+  |
 #  |   | property       |  +----------------+   |  | label           |  |
 #  |   +----------------+  | partition      |   |  +-----------------+  |
@@ -56,7 +56,6 @@ except ImportError:
 _create_partition = """
     CREATE TABLE cell (
         cell_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        cell_labels TEXT UNIQUE DEFAULT '',
         partial INTEGER DEFAULT 0 CHECK (partial IN (0, 1))
     );
 
@@ -91,20 +90,37 @@ _create_partition = """
         FOREIGN KEY (label_id, hierarchy_id) REFERENCES label(label_id, hierarchy_id)
         UNIQUE (cell_id, hierarchy_id)
     );
+    CREATE INDEX nonunique_celllabel_cellid ON cell_label (cell_id);
+    CREATE INDEX nonunique_celllabel_hierarchyid ON cell_label (hierarchy_id);
+    CREATE INDEX nonunique_celllabel_labelid ON cell_label (label_id);
 
-    CREATE TRIGGER DenormalizeLabelIds AFTER UPDATE ON cell_label
+    CREATE TRIGGER UniqueLabelCombination BEFORE INSERT ON cell_label
     BEGIN
-        UPDATE cell
-        SET cell_labels=(
-            SELECT GROUP_CONCAT(label_id)
-            FROM (
-                SELECT label_id
-                FROM cell_label
-                WHERE cell_id=NEW.cell_id
-                ORDER BY label_id
-            )
-        )
-        WHERE cell_id=NEW.cell_id;
+        SELECT RAISE(ROLLBACK, 'insert on table "cell_label" violates unique label-combination constraint')
+        FROM (
+                SELECT GROUP_CONCAT(label_id)
+                FROM (
+                    SELECT cell_id, label_id
+                    FROM cell_label
+                    ORDER BY cell_id, label_id
+                )
+                GROUP BY cell_id
+
+                INTERSECT
+
+                SELECT GROUP_CONCAT(label_id)
+                FROM (
+                    SELECT cell_id, label_id
+                    FROM cell_label
+                    WHERE cell_id=NEW.cell_id
+
+                    UNION
+
+                    SELECT NEW.cell_id, NEW.label_id
+                    ORDER BY cell_id, label_id
+                )
+                GROUP BY cell_id
+        );
     END;
 
     CREATE TABLE partition (

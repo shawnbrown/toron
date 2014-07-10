@@ -211,7 +211,7 @@ class TestSqlDataModel(MkdtempTestCase):
         cursor = self.connection.cursor()
         cursor.execute('INSERT INTO cell DEFAULT VALUES')
         cursor.execute('SELECT * FROM cell')
-        self.assertEqual([(1, '', 0)], cursor.fetchall())
+        self.assertEqual([(1, 0)], cursor.fetchall())
 
     def test_label_autoincrement(self):
         cursor = self.connection.cursor()
@@ -246,7 +246,7 @@ class TestSqlDataModel(MkdtempTestCase):
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
         cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
-        cursor.execute("INSERT INTO cell VALUES (1, '', 0)")
+        cursor.execute("INSERT INTO cell VALUES (1, 0)")
         cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
         cursor.execute("INSERT INTO label VALUES (2, 2, 'Ohio')")
 
@@ -259,7 +259,7 @@ class TestSqlDataModel(MkdtempTestCase):
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
         cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
-        cursor.execute("INSERT INTO cell VALUES (1, '', 0)")
+        cursor.execute("INSERT INTO cell VALUES (1, 0)")
         cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
         cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 1)")
 
@@ -267,26 +267,33 @@ class TestSqlDataModel(MkdtempTestCase):
             cursor.execute("INSERT INTO cell_label VALUES (2, 1, 1, 1)")
         self.assertRaises(sqlite3.IntegrityError, unique_constraint)
 
-    def test_denormalize_trigger(self):
+    def test_cell_label_trigger(self):
+        """Each cell_id must be associated with a unique combination of
+        label_ids.
+
+        """
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
-        cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
-        cursor.execute("INSERT INTO cell VALUES (1, '', 0)")
         cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
+
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
         cursor.execute("INSERT INTO label VALUES (2, 2, 'Ohio')")
+        cursor.execute("INSERT INTO label VALUES (3, 2, 'Indiana')")
+
+        cursor.execute("INSERT INTO cell VALUES (1, 0)")
         cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 1)")
         cursor.execute("INSERT INTO cell_label VALUES (2, 1, 2, 2)")
 
-        cursor.execute('SELECT * from cell')
-        self.assertEqual([(1, '', 0)], cursor.fetchall())
+        cursor.execute("INSERT INTO cell VALUES (2, 0)")
+        cursor.execute("INSERT INTO cell_label VALUES (3, 2, 1, 1)")
+        cursor.execute("INSERT INTO cell_label VALUES (4, 2, 2, 3)")
 
-        # Execute no-op UPDATE to activate trigger.
-        cursor.execute("""UPDATE cell_label
-                          SET cell_label_id=cell_label_id
-                          WHERE cell_label_id = last_insert_rowid()""")
-
-        cursor.execute('SELECT * from cell')
-        self.assertEqual([(1, '1,2', 0)], cursor.fetchall())
+        def duplicate_combination():
+            # Insert label_id combination that conflicts with cell_id 1.
+            cursor.execute("INSERT INTO cell VALUES (3, 0)")
+            cursor.execute("INSERT INTO cell_label VALUES (5, 3, 1, 1)")
+            cursor.execute("INSERT INTO cell_label VALUES (6, 3, 2, 2)")
+        self.assertRaises(sqlite3.IntegrityError, duplicate_combination)
 
     def test_textnum_decimal_type(self):
         """Decimal type values should be adapted as strings for TEXTNUM
