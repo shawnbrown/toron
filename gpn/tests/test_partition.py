@@ -293,7 +293,9 @@ class TestSqlDataModel(MkdtempTestCase):
             cursor.execute("INSERT INTO cell VALUES (3, 0)")
             cursor.execute("INSERT INTO cell_label VALUES (5, 3, 1, 1)")
             cursor.execute("INSERT INTO cell_label VALUES (6, 3, 2, 2)")
-        self.assertRaises(sqlite3.IntegrityError, duplicate_combination)
+        regex = 'violates unique label-combination constraint'
+        self.assertRaisesRegex(sqlite3.IntegrityError, regex,
+                               duplicate_combination)
 
     def test_textnum_decimal_type(self):
         """Decimal type values should be adapted as strings for TEXTNUM

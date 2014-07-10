@@ -105,6 +105,41 @@ except AttributeError:
 
 
 try:
+    TestCase.assertRaisesRegex  # Renamed in 3.2 (previously assertRaisesRegexp)
+except AttributeError:
+    try:
+        TestCase.assertRaisesRegex = TestCase.assertRaisesRegexp  # New in 2.7
+    except AttributeError:
+        import re
+        class _TestCase(TestCase):
+            # The following method was adapted from unittest2 source
+            # code <http://pypi.python.org/pypi/unittest2>.
+            # Copyright 2010 Michael Foord, released under the BSD License.
+            def assertRaisesRegex(self, expected_exception, expected_regexp,
+                                   callable_obj=None, *args, **kwargs):
+                """Asserts that the message in a raised exception matches a regexp."""
+                if callable_obj is None:
+                    return unittest._AssertRaisesContext(expected_exception, self, expected_regexp)
+                try:
+                    callable_obj(*args, **kwargs)
+                except expected_exception as exc_value:
+                    #if isinstance(expected_regexp, basestring):
+                    if isinstance(expected_regexp, str):
+                        expected_regexp = re.compile(expected_regexp)
+                    if not expected_regexp.search(str(exc_value)):
+                        raise self.failureException('"%s" does not match "%s"' %
+                                 (expected_regexp.pattern, str(exc_value)))
+                else:
+                    if hasattr(expected_exception, '__name__'):
+                        excName = expected_exception.__name__
+                    else:
+                        excName = str(expected_exception)
+                    raise self.failureException("%s not raised" % excName)
+
+        TestCase = _TestCase
+
+
+try:
     skip  # New in 3.1
     skipIf
     skipUnless
