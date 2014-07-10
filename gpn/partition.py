@@ -202,7 +202,7 @@ class _Connector(object):
         if database and os.path.exists(database):
             self._database = database
             if not self._is_valid():
-                raise Exception('File - %s - is not a valid partition.' % path)
+                raise Exception('File - %s - is not a valid partition.' % database)
         else:
             if database and mode == None:
                 self._database = database

@@ -179,7 +179,8 @@ class TestConnector(MkdtempTestCase):
         # Attempt to load a non-Partition SQLite database.
         def wrong_database():
             connect = _Connector(filename)
-        self.assertRaises(Exception, wrong_database)
+        regex = 'File - .* - is not a valid partition.'
+        self.assertRaisesRegex(Exception, regex, wrong_database)
 
     def test_wrong_file_type(self):
         """Non-SQLite files should fail to load."""
@@ -190,7 +191,9 @@ class TestConnector(MkdtempTestCase):
 
         # Attempt to load non-SQLite file.
         def wrong_file_type():
-            connect = _Connector(wrong_file_type)
+            connect = _Connector(filename)
+        regex = 'File - .* - is not a valid partition.'
+        self.assertRaisesRegex(Exception, regex, wrong_file_type)
 
 
 class TestSqlDataModel(MkdtempTestCase):
