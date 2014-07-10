@@ -112,7 +112,38 @@ _create_partition = """
                 FROM (
                     SELECT cell_id, label_id
                     FROM cell_label
-                    WHERE cell_id=NEW.cell_id
+                    WHERE cell_id = NEW.cell_id
+                        AND cell_label_id != NEW.cell_label_id
+
+                    UNION
+
+                    SELECT NEW.cell_id, NEW.label_id
+                    ORDER BY cell_id, label_id
+                )
+                GROUP BY cell_id
+        );
+    END;
+
+    CREATE TRIGGER UpdateUniqueLabels BEFORE UPDATE ON cell_label
+    BEGIN
+        SELECT RAISE(ROLLBACK, 'insert on table "cell_label" violates unique label-combination constraint')
+        FROM (
+                SELECT GROUP_CONCAT(label_id)
+                FROM (
+                    SELECT cell_id, label_id
+                    FROM cell_label
+                    ORDER BY cell_id, label_id
+                )
+                GROUP BY cell_id
+
+                INTERSECT
+
+                SELECT GROUP_CONCAT(label_id)
+                FROM (
+                    SELECT cell_id, label_id
+                    FROM cell_label
+                    WHERE cell_id = NEW.cell_id
+                        AND cell_label_id != NEW.cell_label_id
 
                     UNION
 
