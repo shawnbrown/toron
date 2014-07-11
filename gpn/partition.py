@@ -215,8 +215,10 @@ READ_ONLY = 4  #: Connect to an existing Partition in read-only mode.
 
 
 class _Connector(object):
-    """Opens a SQLite connection to a Partition database."""
+    """Opens a SQLite connection to a Partition database.  If a named
+    Partition does not exist, it is created.
 
+    """
     def __init__(self, database=None, mode=None):
         """Creates a callable `connect` object that can be used to
         establish connections to a Partition database.  Connecting to
@@ -254,7 +256,10 @@ class _Connector(object):
             connection.close()
 
     def __call__(self):
-        """Opens a SQLite connection to a Partition database."""
+        """Opens a SQLite connection to a Partition database.  If a
+        named Partition does not exist, it is created.
+
+        """
         # Docstring (above) should be same as docstring for class.
         if self._database:
             connection =  sqlite3.connect(self._database,
