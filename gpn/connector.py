@@ -399,6 +399,9 @@ class _Connector(object):
                 def close(self):
                     self._conn.rollback()  # Uncommitted changes will be lost!
 
+                def __del__(self):
+                    self.close()
+
                 def __getattr__(self, name):
                     return getattr(self._conn, name)
 
