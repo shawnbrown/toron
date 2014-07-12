@@ -30,8 +30,6 @@ class TestPartition(MkdtempTestCase):
 
         ptn = Partition(filename)  # Use existing file.
 
-    @unittest.skip('Temporarily while removing URI Filename requirement.')
-    @unittest.skipUnless(sys.version_info >= (3, 4), 'Only supported on 3.4.')
     def test_read_only_partition(self):
         """Existing partition should load without errors."""
         global _create_partition
@@ -39,7 +37,9 @@ class TestPartition(MkdtempTestCase):
         filename = 'existing_partition'
         connection = sqlite3.connect(filename)
         cursor = connection.cursor()
+        cursor.execute('PRAGMA synchronous=OFF')
         cursor.executescript(_create_partition)  # Creating existing partition.
+        cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
 
         def read_only():
