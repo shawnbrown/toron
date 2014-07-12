@@ -14,12 +14,10 @@ from gpn import READ_ONLY
 
 
 class TestPartition(MkdtempTestCase):
-    def setUp(self):
-        super(self.__class__, self).setUp()
-
+    def _make_partition(self, filename):
         global _create_partition
         self._existing_partition = 'existing_partition'
-        connection = sqlite3.connect(self._existing_partition)
+        connection = sqlite3.connect(filename)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
         cursor.executescript(_create_partition)
@@ -28,10 +26,12 @@ class TestPartition(MkdtempTestCase):
 
     def test_existing_partition(self):
         """Existing partition should load without errors."""
+        self._make_partition('existing_partition')
         ptn = Partition(self._existing_partition)  # Use existing file.
 
     def test_read_only_partition(self):
         """Existing partition should load without errors."""
+        self._make_partition('existing_partition')
         def read_only():
             ptn = Partition(self._existing_partition, mode=READ_ONLY)
             connection = ptn._connect()
