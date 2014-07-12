@@ -38,6 +38,7 @@ class TestTriggerFunctions(unittest.TestCase):
 
     """
     def test_normalize_args(self):
+        """Args should be normalized as a sequence of objects."""
         # Single key.
         args = _normalize_args_for_trigger('foo_id', 'id', True)
         self.assertEqual((['foo_id'], ['id'], [True]), args)
@@ -65,6 +66,7 @@ class TestTriggerFunctions(unittest.TestCase):
         self.assertEqual(expected, args)
 
     def test_null_clause(self):
+        """If foreign key is not "NOT NULL", must add additional clause."""
         # Single key, not_null=True.
         null_clause = _null_clause_for_trigger(['foo_id'], [True], 'NEW')
         self.assertEqual('', null_clause)
@@ -84,6 +86,10 @@ class TestTriggerFunctions(unittest.TestCase):
         self.assertEqual(expected, null_clause)
 
     def test_where_clause(self):
+        """Where clause must work for single and composite foreign key triggers.
+        Should be 'child_key=NEW.parent_key' or 'parent_key=OLD.child_key'.
+
+        """
         where_clause = _where_clause_for_trigger(['foo_id'], ['id'], 'NEW')
         self.assertEqual('foo_id=NEW.id', where_clause)
 
@@ -142,6 +148,7 @@ class TestTriggerFunctions(unittest.TestCase):
         self.assertEqual(expected, trigger_sql)
 
     def test_trigger_actions(self):
+        """Actions that violate foreign key constraints must fail."""
         connection = sqlite3.connect(':memory:')
         cursor = connection.cursor()
         create_table_sql = """
@@ -300,6 +307,7 @@ class TestConnector(MkdtempTestCase):
         self.assertSetEqual(expected_tables, actual_tables)
 
     def test_temp_file_database(self):
+        """Tempfile should be removed when object is garbage collected."""
         connect = _Connector(mode=TEMP_FILE)
         filename = connect._temp_path
 
@@ -361,6 +369,7 @@ class TestSqlDataModel(MkdtempTestCase):
         super(self.__class__, self).setUp()
 
     def test_foreign_keys(self):
+        """Foreign key constraints should be enforced."""
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
 
@@ -369,12 +378,14 @@ class TestSqlDataModel(MkdtempTestCase):
         self.assertRaises(sqlite3.IntegrityError, foreign_key_constraint)
 
     def test_cell_defaults(self):
+        """Should be possible to insert records in to cell using defaults vals."""
         cursor = self.connection.cursor()
         cursor.execute('INSERT INTO cell DEFAULT VALUES')
         cursor.execute('SELECT * FROM cell')
         self.assertEqual([(1, 0)], cursor.fetchall())
 
     def test_label_autoincrement(self):
+        """Label_id should auto-increment despite being in a composite key."""
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
         cursor.executescript("""
@@ -517,6 +528,7 @@ class TestPartition(MkdtempTestCase):
         self.assertRaises(sqlite3.OperationalError, read_only)
 
     def test_new_partition(self):
+        """Named Partitions that do not exist should be created."""
         filename = 'new_partition'
 
         self.assertFalse(os.path.exists(filename))
@@ -525,6 +537,7 @@ class TestPartition(MkdtempTestCase):
         self.assertTrue(os.path.exists(filename))
 
     def test_temporary_partition(self):
+        """Unnamed Partitions should be temporary (in memory or tempfile)."""
         # In memory.
         ptn = Partition()
         self.assertIsNone(ptn._connect._temp_path)

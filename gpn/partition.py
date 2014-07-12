@@ -278,9 +278,9 @@ def _delete_trigger(name, child, null_clause, parent, where_clause):
 def _foreign_key_triggers(name, table, column, f_table, f_column, not_null=True):
     args = _normalize_args_for_trigger(column, f_column, not_null)
     column, f_column, not_null = args  # Unpack args.
+
     null_clause = _null_clause_for_trigger(column, not_null, 'NEW')
     where_clause = _where_clause_for_trigger(f_column, column, prefix='NEW')
-
     before_insert = _insert_trigger('fki_'+name, table, null_clause, f_table, where_clause)
     before_update = _update_trigger('fku_'+name, table, null_clause, f_table, where_clause)
 
@@ -293,14 +293,14 @@ def _foreign_key_triggers(name, table, column, f_table, f_column, not_null=True)
 
 def _all_foreign_key_triggers():
     all_triggers = [
-        _foreign_key_triggers('labelhierarchy', 'label', 'hierarchy_id', 'hierarchy', 'hierarchy_id'),
-        _foreign_key_triggers('celllabel_label', 'cell_label', ['hierarchy_id', 'label_id'], 'label', ['hierarchy_id', 'label_id'], not_null=True),
-        _foreign_key_triggers('celllabel_cell', 'cell_label', 'cell_id', 'cell', 'cell_id', not_null=True),
-        _foreign_key_triggers('edgeweight_edge', 'edge_weight', 'edge_id', 'edge', 'edge_id', not_null=True),
-        _foreign_key_triggers('relation_edge', 'relation', 'edge_id', 'edge', 'edge_id', not_null=True),
-        _foreign_key_triggers('relation_cell', 'relation', 'cell_id', 'cell', 'cell_id', not_null=True),
-        _foreign_key_triggers('relationweight_relation', 'relation_weight', 'relation_id', 'relation', 'relation_id', not_null=True),
-        _foreign_key_triggers('relationweight_edgeweight', 'relation_weight', 'edge_weight_id', 'edge_weight', 'edge_weight_id', not_null=True),
+        _foreign_key_triggers('lbl_harchy', 'label', 'hierarchy_id', 'hierarchy', 'hierarchy_id'),
+        _foreign_key_triggers('cellbl_lbl', 'cell_label', ['hierarchy_id', 'label_id'], 'label', ['hierarchy_id', 'label_id']),
+        _foreign_key_triggers('cellbl_cel', 'cell_label', 'cell_id', 'cell', 'cell_id'),
+        _foreign_key_triggers('edgwt_edg', 'edge_weight', 'edge_id', 'edge', 'edge_id'),
+        _foreign_key_triggers('rel_edg', 'relation', 'edge_id', 'edge', 'edge_id'),
+        _foreign_key_triggers('rel_cel', 'relation', 'cell_id', 'cell', 'cell_id'),
+        _foreign_key_triggers('relwt_rel', 'relation_weight', 'relation_id', 'relation', 'relation_id'),
+        _foreign_key_triggers('relwt_edgwt', 'relation_weight', 'edge_weight_id', 'edge_weight', 'edge_weight_id'),
     ]
     return '\n\n\n'.join(all_triggers)
 
