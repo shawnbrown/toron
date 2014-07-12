@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import decimal
-import glob
 import os
 import sqlite3
-import sys
 
 from gpn.tests import _unittest as unittest
 from gpn.tests.common import MkdtempTestCase
@@ -204,48 +202,6 @@ class TestConnector(MkdtempTestCase):
             'sqlite_sequence'
         ])
         return expected_tables, actual_tables
-
-    def test_path_to_uri(self):
-        # Basic path translation.
-        uri = _Connector._path_to_uri('foo')
-        self.assertEqual('file:foo', uri)
-
-        uri = _Connector._path_to_uri('/foo')
-        self.assertEqual('file:/foo', uri)
-
-        uri = _Connector._path_to_uri('foo/../bar/')
-        self.assertEqual('file:bar', uri)
-
-        uri = _Connector._path_to_uri('/foo/../bar/')
-        self.assertEqual('file:/bar', uri)
-
-        # Query parameters.
-        uri = _Connector._path_to_uri('foo', mode='ro')
-        self.assertEqual('file:foo?mode=ro', uri)
-
-        uri = _Connector._path_to_uri('foo', mode=None)
-        self.assertEqual('file:foo', uri, 'None values must be removed.')
-
-        uri = _Connector._path_to_uri('foo', mode='ro', cache='shared')
-        self.assertEqual('file:foo?cache=shared&mode=ro', uri)
-
-        # Special characters.
-        uri = _Connector._path_to_uri('/foo?/bar#')
-        self.assertEqual('file:/foo%3F/bar%23', uri)
-
-        uri = _Connector._path_to_uri('foo', other='foo?bar#')
-        self.assertEqual('file:foo?other=foo%3Fbar%23', uri)
-
-    @unittest.skipUnless(os.name == 'nt', 'Windows-only path tests.')
-    def test_win_path_to_uri(self):
-        uri = _Connector._path_to_uri(r'foo\bar')
-        self.assertEqual('file:foo/bar', uri)
-
-        uri = _Connector._path_to_uri(r'C:\foo\bar')
-        self.assertEqual('file:///C:/foo/bar', uri)
-
-        uri = _Connector._path_to_uri(r'C:foo\bar')
-        self.assertEqual('file:///C:/foo/bar', uri)
 
     def test_existing_database(self):
         """Existing database should load without errors."""

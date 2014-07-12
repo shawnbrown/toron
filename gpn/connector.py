@@ -1,18 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-import re
 import sqlite3
 import tempfile
 
 from decimal import Decimal
 
-# For URI Filename handling.
-try:
-    from urllib.request import pathname2url  # New package structure in 3.0.
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import pathname2url
-    from urllib import urlencode
 
 #
 # Internal Partition structure:
@@ -443,22 +435,3 @@ class _Connector(object):
                                'relation', 'relation_weight', 'property',
                                'sqlite_sequence'])
         return tables_required == tables_contained
-
-    @staticmethod
-    def _path_to_uri(path, **kwds):
-        """Takes file path, returns URI filename. See documentation at
-        <http://www.sqlite.org/uri.html> for details.
-
-        """
-        path = os.path.normpath(path)
-        prefix = 'file:'
-        if os.name == 'nt':
-            match = re.match(r'/?([a-zA-Z]:)[/\\]?(.*)', path)
-            if match:
-                driveletter, drivepath = match.groups()
-                prefix = prefix + '///' + driveletter + '/'
-                path = drivepath
-        path = pathname2url(path)
-        query_params = [(k, v) for k, v in kwds.items() if v is not None]
-        query_params = urlencode(sorted(query_params))
-        return prefix + path + ('?' if query_params else '') + query_params
