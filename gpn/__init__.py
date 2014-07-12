@@ -4,9 +4,9 @@
 __version__ = '0.01'
 
 from gpn.partition import Partition
-from gpn.partition import IN_MEMORY
-from gpn.partition import TEMP_FILE
-from gpn.partition import READ_ONLY
+from gpn.connector import IN_MEMORY
+from gpn.connector import TEMP_FILE
+from gpn.connector import READ_ONLY
 
 __all__ = [
     'Partition',
