@@ -332,11 +332,10 @@ class TestConnector(MkdtempTestCase):
         self.assertRaisesRegex(Exception, regex, wrong_file_type)
 
 
-class TestSqlDataModel(MkdtempTestCase):
+class TestSqlDataModel(unittest.TestCase):
     def setUp(self):
         self._connect = _Connector(mode=IN_MEMORY)
         self.connection = self._connect()
-        super(self.__class__, self).setUp()
 
     def test_foreign_keys(self):
         """Foreign key constraints should be enforced."""
