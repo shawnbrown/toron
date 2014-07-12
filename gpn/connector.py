@@ -321,7 +321,7 @@ class _Connector(object):
     Partition does not exist, it is created.
 
     """
-    def __init__(self, database=None, mode=None):
+    def __init__(self, database=None, mode=0):
         """Creates a callable `connect` object that can be used to
         establish connections to a Partition database.  Connecting to
         a Partition name that does not exist will create a new
@@ -331,6 +331,7 @@ class _Connector(object):
         global _create_partition
         self._memory_conn = None
         self._temp_path = None
+        self._is_read_only = bool(mode & READ_ONLY)
 
         self._database = database
 
@@ -347,7 +348,7 @@ class _Connector(object):
                 raise Exception('File - %s - is not a valid partition.' % database)
 
         else:
-            if database and mode == None:
+            if database and (not mode or self._is_read_only):
                 self._database = database
             elif mode & TEMP_FILE:
                 fd, temp_path = tempfile.mkstemp(suffix='.partition')
@@ -380,12 +381,17 @@ class _Connector(object):
         elif self._memory_conn:
             connection = self._connect(self._memory_conn)
 
-        # Enable foreign key constraints (uses triggers for older versions).
+        # Enable foreign key constraints (uses triggers for older versions)
+        # and set read-only PRAGMA if appropriate.
+        cursor = connection.cursor()
         if sqlite3.sqlite_version_info >= (3, 6, 19):
-            connection.cursor().execute('PRAGMA foreign_keys=ON')
+            cursor.execute('PRAGMA foreign_keys=ON')
         else:
             sql_script = _all_foreign_key_triggers()
-            connection.cursor().executescript(sql_script)
+            cursor.executescript(sql_script)
+
+        if self._is_read_only:
+            cursor.execute('PRAGMA query_only=1')
 
         return connection
 

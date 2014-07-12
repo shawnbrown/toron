@@ -304,6 +304,42 @@ class TestConnector(MkdtempTestCase):
         msg = 'Multiple in-memory connections must be independent.'
         self.assertIsNot(connect._memory_conn, second_connect._memory_conn, msg)
 
+    def test_read_only_database(self):
+        """Read-only connections should fail on INSERT, UPDATE, etc."""
+        global _create_partition
+
+        database = 'partition_database'
+        connection = sqlite3.connect(database)
+        cursor = connection.cursor()
+        cursor.execute('PRAGMA synchronous=OFF')
+        cursor.executescript(_create_partition)  # Creating database.
+        cursor.executescript("""
+            INSERT INTO cell VALUES (1, 0);
+            INSERT INTO cell VALUES (2, 0);
+            INSERT INTO cell VALUES (3, 0);
+        """)
+        cursor.execute('PRAGMA synchronous=FULL')
+        connection.close()
+
+        connect = _Connector(database, mode=READ_ONLY)
+        connection = connect()
+        cursor = connection.cursor()
+        def insert_into():
+            cursor.execute('INSERT INTO cell VALUES (4, 0)')
+        self.assertRaises(sqlite3.OperationalError, insert_into)
+
+        def update():
+            cursor.execute('UPDATE cell SET partial=1 WHERE cell_id=3')
+        self.assertRaises(sqlite3.OperationalError, update)
+
+        def drop_table():
+            cursor.execute('DROP TABLE cell')
+        self.assertRaises(sqlite3.OperationalError, drop_table)
+
+        def alter_table():
+            cursor.execute('ALTER TABLE cell ADD COLUMN other TEXT')
+        self.assertRaises(sqlite3.OperationalError, alter_table)
+
     def test_bad_sqlite_structure(self):
         """SQLite databases with unexpected table structure should fail."""
         filename = 'unknown_database.db'
