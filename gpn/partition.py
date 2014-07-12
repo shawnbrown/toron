@@ -55,12 +55,12 @@ except ImportError:
 
 _create_partition = """
     CREATE TABLE cell (
-        cell_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cell_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         partial INTEGER DEFAULT 0 CHECK (partial IN (0, 1))
     );
 
     CREATE TABLE hierarchy (
-        hierarchy_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hierarchy_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         hierarchy_value TEXT UNIQUE NOT NULL,
         hierarchy_level INTEGER UNIQUE NOT NULL
     );
@@ -161,7 +161,7 @@ _create_partition = """
     );
 
     CREATE TABLE edge (
-        edge_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        edge_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         other_partition_hash TEXT NOT NULL UNIQUE,
         other_partition_file TEXT
     );
@@ -203,6 +203,108 @@ _create_partition = """
     );
 """
 
+
+def _normalize_args_for_trigger(child_key, parent_key, not_null):
+    if isinstance(child_key, str):
+        child_key = [child_key]
+    if isinstance(parent_key, str):
+        parent_key = [parent_key]
+    if isinstance(not_null, bool):
+        not_null = [not_null] * len(child_key)
+    assert len(child_key) == len(parent_key) == len(not_null)
+    return child_key, parent_key, not_null
+
+
+def _null_clause_for_trigger(column, not_null, prefix):
+    def fn(col, notnl):
+        return '' if notnl else '%s.%s IS NOT NULL' % (prefix, col)
+    null_clause = zip(column, not_null)
+    null_clause = [fn(x, y) for x, y in null_clause]
+    null_clause = [x for x in null_clause if x]
+    null_clause = ' AND '.join(null_clause)
+    null_clause += '\n             AND ' if null_clause else ''
+    return null_clause
+
+
+def _where_clause_for_trigger(left_cols, right_cols, prefix):
+    where_clause = zip(left_cols, right_cols)
+    where_clause = ['%s=%s.%s' % (x, prefix, y) for x, y in where_clause]
+    where_clause = ' AND '.join(where_clause)
+    return where_clause
+
+
+def _insert_trigger(name, child, null_clause, parent, where_clause):
+    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
+            'BEFORE INSERT ON {database}.{child_table} FOR EACH ROW\n'
+            'WHEN {child_null_clause}(SELECT 1 FROM {database}.{parent_table} WHERE {parent_where_clause}) IS NULL\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
+            'END;').format(database='main',
+                           name=name,
+                           child_table=child,
+                           child_null_clause=null_clause,
+                           parent_table=parent,
+                           parent_where_clause=where_clause)
+
+
+def _update_trigger(name, child, null_clause, parent, where_clause):
+    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
+            'BEFORE UPDATE ON {database}.{child_table} FOR EACH ROW\n'
+            'WHEN {child_null_clause}(SELECT 1 FROM {database}.{parent_table} WHERE {parent_where_clause}) IS NULL\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
+            'END;').format(database='main',
+                           name=name,
+                           child_table=child,
+                           child_null_clause=null_clause,
+                           parent_table=parent,
+                           parent_where_clause=where_clause)
+
+
+def _delete_trigger(name, child, null_clause, parent, where_clause):
+    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
+            'BEFORE DELETE ON {database}.{parent_table} FOR EACH ROW\n'
+            'WHEN {parent_null_clause}(SELECT 1 FROM {database}.{child_table} WHERE {child_where_clause}) IS NOT NULL\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
+            'END;').format(database='main',
+                           name=name,
+                           child_table=child,
+                           parent_null_clause=null_clause,
+                           parent_table=parent,
+                           child_where_clause=where_clause)
+
+
+def _foreign_key_triggers(name, table, column, f_table, f_column, not_null=True):
+    args = _normalize_args_for_trigger(column, f_column, not_null)
+    column, f_column, not_null = args  # Unpack args.
+    null_clause = _null_clause_for_trigger(column, not_null, 'NEW')
+    where_clause = _where_clause_for_trigger(f_column, column, prefix='NEW')
+
+    before_insert = _insert_trigger('fki_'+name, table, null_clause, f_table, where_clause)
+    before_update = _update_trigger('fku_'+name, table, null_clause, f_table, where_clause)
+
+    null_clause = _null_clause_for_trigger(column, not_null, 'OLD')
+    where_clause = _where_clause_for_trigger(column, f_column, prefix='OLD')
+    before_delete = _delete_trigger('fkd_'+name, table, null_clause, f_table, where_clause)
+
+    return '\n\n'.join([before_insert, before_update, before_delete])
+
+
+def _all_foreign_key_triggers():
+    all_triggers = [
+        _foreign_key_triggers('labelhierarchy', 'label', 'hierarchy_id', 'hierarchy', 'hierarchy_id'),
+        _foreign_key_triggers('celllabel_label', 'cell_label', ['hierarchy_id', 'label_id'], 'label', ['hierarchy_id', 'label_id'], not_null=True),
+        _foreign_key_triggers('celllabel_cell', 'cell_label', 'cell_id', 'cell', 'cell_id', not_null=True),
+        _foreign_key_triggers('edgeweight_edge', 'edge_weight', 'edge_id', 'edge', 'edge_id', not_null=True),
+        _foreign_key_triggers('relation_edge', 'relation', 'edge_id', 'edge', 'edge_id', not_null=True),
+        _foreign_key_triggers('relation_cell', 'relation', 'cell_id', 'cell', 'cell_id', not_null=True),
+        _foreign_key_triggers('relationweight_relation', 'relation_weight', 'relation_id', 'relation', 'relation_id', not_null=True),
+        _foreign_key_triggers('relationweight_edgeweight', 'relation_weight', 'edge_weight_id', 'edge_weight', 'edge_weight_id', not_null=True),
+    ]
+    return '\n\n\n'.join(all_triggers)
+
+
 # Register SQLite adapter/converter for Decimal type.
 sqlite3.register_adapter(Decimal, str)
 sqlite3.register_converter('TEXTNUM', lambda x: Decimal(x.decode('utf-8')))
@@ -234,8 +336,16 @@ class _Connector(object):
 
         if database and os.path.exists(database):
             self._database = database
-            if not self._is_valid():
+            try:
+                connection = sqlite3.connect(database)
+                is_valid = self._is_valid(connection)
+                connection.close()
+            except Exception:
+                is_valid = False
+
+            if not is_valid:
                 raise Exception('File - %s - is not a valid partition.' % database)
+
         else:
             if database and mode == None:
                 self._database = database
@@ -247,10 +357,12 @@ class _Connector(object):
             elif not database or mode & IN_MEMORY:
                 self._memory_conn =  sqlite3.connect(':memory:',
                                                      detect_types=sqlite3.PARSE_DECLTYPES)
-                self._memory_conn.cursor().execute('PRAGMA foreign_keys=ON')
 
             # Populate new partition.
-            connection = self.__call__()
+            if self._database:
+                connection = self._connect(self._database)
+            else:
+                connection = self._connect(self._memory_conn)
             cursor = connection.cursor()
             cursor.executescript(_create_partition)
             connection.close()
@@ -262,13 +374,23 @@ class _Connector(object):
         """
         # Docstring (above) should be same as docstring for class.
         if self._database:
-            connection =  sqlite3.connect(self._database,
-                                          detect_types=sqlite3.PARSE_DECLTYPES)
-            connection.cursor().execute('PRAGMA foreign_keys=ON')
-
+            connection = self._connect(self._database)
         elif self._memory_conn:
+            connection = self._connect(self._memory_conn)
 
-            class InMemoryConnection(object):
+        # Enable foreign key constraints (uses triggers for older versions).
+        if sqlite3.sqlite_version_info >= (3, 6, 19):
+            connection.cursor().execute('PRAGMA foreign_keys=ON')
+        else:
+            sql_script = _all_foreign_key_triggers()
+            connection.cursor().executescript(sql_script)
+
+        return connection
+
+    @staticmethod
+    def _connect(database):
+        if isinstance(database, sqlite3.Connection):
+            class ConnectionWrapper(object):
                 def __init__(self, conn):
                     self._conn = conn
 
@@ -278,8 +400,10 @@ class _Connector(object):
                 def __getattr__(self, name):
                     return getattr(self._conn, name)
 
-            connection = InMemoryConnection(self._memory_conn)
-
+            connection = ConnectionWrapper(database)
+        else:
+            connection = sqlite3.connect(database,
+                                         detect_types=sqlite3.PARSE_DECLTYPES)
         return connection
 
     def __del__(self):
@@ -290,17 +414,15 @@ class _Connector(object):
         if self._temp_path:
             os.remove(self._temp_path)
 
-    def _is_valid(self):
+    @staticmethod
+    def _is_valid(connection):
         """Return True if database is a valid Partition, else False."""
-        connection = self.__call__()
         try:
             cursor = connection.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
             tables_contained = set(x[0] for x in cursor)
-            connection.close()
         except sqlite3.DatabaseError:
             tables_contained = set()
-            connection.close()
 
         tables_required = set(['cell', 'hierarchy', 'label', 'cell_label',
                                'partition', 'edge', 'edge_weight',

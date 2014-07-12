@@ -9,6 +9,13 @@ import tempfile
 from gpn.tests import _unittest as unittest
 
 from gpn.partition import _create_partition
+from gpn.partition import _normalize_args_for_trigger
+from gpn.partition import _null_clause_for_trigger
+from gpn.partition import _where_clause_for_trigger
+from gpn.partition import _insert_trigger
+from gpn.partition import _update_trigger
+from gpn.partition import _delete_trigger
+from gpn.partition import _foreign_key_triggers
 from gpn.partition import _Connector
 from gpn.partition import Partition
 from gpn.partition import IN_MEMORY
@@ -22,6 +29,155 @@ except NameError:
     def callable(obj):
         parent_types = type(obj).__mro__
         return any('__call__' in typ.__dict__ for typ in parent_types)
+
+
+class TestTriggerFunctions(unittest.TestCase):
+    """Trigger functions are used to build 'foreign key constraint'
+    triggers for older versions of SQLite that don't enforce foreign
+    keys natively.
+
+    """
+    def test_normalize_args(self):
+        # Single key.
+        args = _normalize_args_for_trigger('foo_id', 'id', True)
+        self.assertEqual((['foo_id'], ['id'], [True]), args)
+
+        # Multiple keys.
+        args = _normalize_args_for_trigger(child_key=['foo_id1', 'foo_id2'],
+                                           parent_key=['id1', 'id2'],
+                                           not_null=[True, False])
+        expected = (
+            ['foo_id1', 'foo_id2'],
+            ['id1', 'id2'],
+            [True, False]
+        )
+        self.assertEqual(expected, args)
+
+        # Multiple keys with not_null expansion.
+        args = _normalize_args_for_trigger(child_key=['foo_id1', 'foo_id2'],
+                                           parent_key=['id1', 'id2'],
+                                           not_null=True)
+        expected = (
+            ['foo_id1', 'foo_id2'],
+            ['id1', 'id2'],
+            [True, True]  # not_null converted to list of equal size
+        )
+        self.assertEqual(expected, args)
+
+    def test_null_clause(self):
+        # Single key, not_null=True.
+        null_clause = _null_clause_for_trigger(['foo_id'], [True], 'NEW')
+        self.assertEqual('', null_clause)
+
+        # not_null=False
+        null_clause = _null_clause_for_trigger(['foo_id'], [False], 'NEW')
+        self.assertEqual('NEW.foo_id IS NOT NULL\n             AND ', null_clause)
+
+        # Multiple keys, nulls allowed for all.
+        null_clause = _null_clause_for_trigger(['foo_id1', 'foo_id2'], [False, False], 'NEW')
+        expected = 'NEW.foo_id1 IS NOT NULL AND NEW.foo_id2 IS NOT NULL\n             AND '
+        self.assertEqual(expected, null_clause)
+
+        # Multiple keys, nulls allowed for some but not others.
+        null_clause = _null_clause_for_trigger(['foo_id1', 'foo_id2'], [True, False], 'NEW')
+        expected = 'NEW.foo_id2 IS NOT NULL\n             AND '
+        self.assertEqual(expected, null_clause)
+
+    def test_where_clause(self):
+        where_clause = _where_clause_for_trigger(['foo_id'], ['id'], 'NEW')
+        self.assertEqual('foo_id=NEW.id', where_clause)
+
+        where_clause = _where_clause_for_trigger(['foo_id1', 'foo_id2'],
+                                                 ['id1', 'id2'],
+                                                 'NEW')
+        self.assertEqual('foo_id1=NEW.id1 AND foo_id2=NEW.id2', where_clause)
+
+    def test_insert_trigger(self):
+        kwds = {'name': 'fki_bar_foo_id',
+                'child': 'bar',
+                'null_clause': '',
+                'parent': 'foo',
+                'where_clause': 'id=NEW.foo_id'}
+        trigger_sql = _insert_trigger(**kwds)
+
+        expected = ("CREATE TEMPORARY TRIGGER IF NOT EXISTS fki_bar_foo_id\n"
+                    "BEFORE INSERT ON main.bar FOR EACH ROW\n"
+                    "WHEN (SELECT 1 FROM main.foo WHERE id=NEW.foo_id) IS NULL\n"
+                    "BEGIN\n"
+                    "    SELECT RAISE(ABORT, 'FOREIGN KEY constraint failed');\n"
+                    "END;")
+        self.assertEqual(expected, trigger_sql)
+
+    def test_update_trigger(self):
+        kwds = {'name': 'fku_bar_foo_id',
+                'child': 'bar',
+                'null_clause': '',
+                'parent': 'foo',
+                'where_clause': 'id=NEW.foo_id'}
+        trigger_sql = _update_trigger(**kwds)
+
+        expected = ("CREATE TEMPORARY TRIGGER IF NOT EXISTS fku_bar_foo_id\n"
+                    "BEFORE UPDATE ON main.bar FOR EACH ROW\n"
+                    "WHEN (SELECT 1 FROM main.foo WHERE id=NEW.foo_id) IS NULL\n"
+                    "BEGIN\n"
+                    "    SELECT RAISE(ABORT, 'FOREIGN KEY constraint failed');\n"
+                    "END;")
+        self.assertEqual(expected, trigger_sql)
+
+    def test_delete_trigger(self):
+        kwds = {'name': 'fkd_bar_foo_id',
+                'child': 'bar',
+                'null_clause': '',
+                'parent': 'foo',
+                'where_clause': 'foo_id=OLD.id'}
+        trigger_sql = _delete_trigger(**kwds)
+
+
+        expected = ("CREATE TEMPORARY TRIGGER IF NOT EXISTS fkd_bar_foo_id\n"
+                    "BEFORE DELETE ON main.foo FOR EACH ROW\n"
+                    "WHEN (SELECT 1 FROM main.bar WHERE foo_id=OLD.id) IS NOT NULL\n"
+                    "BEGIN\n"
+                    "    SELECT RAISE(ABORT, 'FOREIGN KEY constraint failed');\n"
+                    "END;")
+        self.assertEqual(expected, trigger_sql)
+
+    def test_trigger_actions(self):
+        connection = sqlite3.connect(':memory:')
+        cursor = connection.cursor()
+        create_table_sql = """
+            create table foo (
+                id INTEGER NOT NULL PRIMARY KEY
+            );
+            CREATE TABLE bar (
+                id INTEGER NOT NULL PRIMARY KEY,
+                foo_id INTEGER NOT NULL /* CONSTRAINT fk_foo_id REFERENCES foo(id) */
+            );
+        """
+        # Create tables, get sql, and create foreign key triggers.
+        cursor.executescript(create_table_sql)
+        create_triggers_sql = _foreign_key_triggers('foobar', 'bar', 'foo_id', 'foo', 'id')
+        cursor.executescript(create_triggers_sql)
+
+        # Insert test values.
+        cursor.execute('INSERT INTO foo VALUES (1)')
+        cursor.execute('INSERT INTO foo VALUES (2)')
+        cursor.execute('INSERT INTO bar VALUES (1, 1)')
+        cursor.execute('INSERT INTO bar VALUES (2, 2)')
+
+        def insert_failure():
+            cursor.execute('INSERT INTO bar VALUES (3, 3)')
+        regex = 'FOREIGN KEY constraint failed'
+        self.assertRaisesRegex(sqlite3.IntegrityError, regex, insert_failure)
+
+        def update_failure():
+            cursor.execute('UPDATE bar SET foo_id=3 WHERE id=2')
+        regex = 'FOREIGN KEY constraint failed'
+        self.assertRaisesRegex(sqlite3.IntegrityError, regex, update_failure)
+
+        def delete_failure():
+            cursor.execute('DELETE FROM foo WHERE id=1')
+        regex = 'FOREIGN KEY constraint failed'
+        self.assertRaisesRegex(sqlite3.IntegrityError, regex, delete_failure)
 
 
 class MkdtempTestCase(unittest.TestCase):
