@@ -397,7 +397,8 @@ class _Connector(object):
                     self._conn = conn
 
                 def close(self):
-                    self._conn.rollback()  # Uncommitted changes will be lost!
+                    if self._conn.in_transaction:
+                        self._conn.rollback()  # Uncommitted changes will be lost!
 
                 def __del__(self):
                     self.close()
