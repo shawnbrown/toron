@@ -397,8 +397,10 @@ class _Connector(object):
                     self._conn = conn
 
                 def close(self):
-                    if self._conn.in_transaction:
+                    try:
                         self._conn.rollback()  # Uncommitted changes will be lost!
+                    except sqlite3.ProgrammingError:
+                        pass  # Closing already closed connection should pass.
 
                 def __del__(self):
                     self.close()
