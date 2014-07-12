@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-#import decimal
-#import glob
 import os
 import sqlite3
 import sys
@@ -16,34 +14,26 @@ from gpn import READ_ONLY
 
 
 class TestPartition(MkdtempTestCase):
-    def test_existing_partition(self):
-        """Existing partition should load without errors."""
-        global _create_partition
+    def setUp(self):
+        super(self.__class__, self).setUp()
 
-        filename = 'existing_partition'
-        connection = sqlite3.connect(filename)
+        global _create_partition
+        self._existing_partition = 'existing_partition'
+        connection = sqlite3.connect(self._existing_partition)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        cursor.executescript(_create_partition)  # Creating existing partition.
+        cursor.executescript(_create_partition)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
 
-        ptn = Partition(filename)  # Use existing file.
+    def test_existing_partition(self):
+        """Existing partition should load without errors."""
+        ptn = Partition(self._existing_partition)  # Use existing file.
 
     def test_read_only_partition(self):
         """Existing partition should load without errors."""
-        global _create_partition
-
-        filename = 'existing_partition'
-        connection = sqlite3.connect(filename)
-        cursor = connection.cursor()
-        cursor.execute('PRAGMA synchronous=OFF')
-        cursor.executescript(_create_partition)  # Creating existing partition.
-        cursor.execute('PRAGMA synchronous=FULL')
-        connection.close()
-
         def read_only():
-            ptn = Partition(filename, mode=READ_ONLY)
+            ptn = Partition(self._existing_partition, mode=READ_ONLY)
             connection = ptn._connect()
             cursor = connection.cursor()
             cursor.execute('INSERT INTO cell DEFAULT VALUES')
