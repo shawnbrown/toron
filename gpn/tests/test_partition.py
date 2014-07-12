@@ -277,7 +277,9 @@ class TestConnector(MkdtempTestCase):
         database = 'partition_database'
         connection = sqlite3.connect(database)
         cursor = connection.cursor()
+        cursor.execute('PRAGMA synchronous=OFF')
         cursor.executescript(_create_partition)  # Creating database.
+        cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
 
         connect = _Connector(database)  # Existing database.
@@ -488,7 +490,9 @@ class TestPartition(MkdtempTestCase):
         filename = 'existing_partition'
         connection = sqlite3.connect(filename)
         cursor = connection.cursor()
+        cursor.execute('PRAGMA synchronous=OFF')
         cursor.executescript(_create_partition)  # Creating existing partition.
+        cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
 
         ptn = Partition(filename)  # Use existing file.
