@@ -364,7 +364,9 @@ class _Connector(object):
             else:
                 connection = self._connect(self._memory_conn)
             cursor = connection.cursor()
+            cursor.execute('PRAGMA synchronous=OFF')
             cursor.executescript(_create_partition)
+            cursor.execute('PRAGMA synchronous=FULL')
             connection.close()
 
     def __call__(self):
