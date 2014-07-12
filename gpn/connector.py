@@ -45,6 +45,12 @@ from decimal import Decimal
 #             +-----------------+     +--------------------+
 #
 
+
+# Register SQLite adapter/converter for Decimal type.
+sqlite3.register_adapter(Decimal, str)
+sqlite3.register_converter('TEXTNUM', lambda x: Decimal(x.decode('utf-8')))
+
+
 _create_partition = """
     CREATE TABLE cell (
         cell_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -196,113 +202,7 @@ _create_partition = """
 """
 
 
-def _normalize_args_for_trigger(child_key, parent_key, not_null):
-    if isinstance(child_key, str):
-        child_key = [child_key]
-    if isinstance(parent_key, str):
-        parent_key = [parent_key]
-    if isinstance(not_null, bool):
-        not_null = [not_null] * len(child_key)
-    assert len(child_key) == len(parent_key) == len(not_null)
-    return child_key, parent_key, not_null
-
-
-def _null_clause_for_trigger(column, not_null, prefix):
-    def fn(col, notnl):
-        return '' if notnl else '%s.%s IS NOT NULL' % (prefix, col)
-    null_clause = zip(column, not_null)
-    null_clause = [fn(x, y) for x, y in null_clause]
-    null_clause = [x for x in null_clause if x]
-    null_clause = ' AND '.join(null_clause)
-    null_clause += '\n             AND ' if null_clause else ''
-    return null_clause
-
-
-def _where_clause_for_trigger(left_cols, right_cols, prefix):
-    where_clause = zip(left_cols, right_cols)
-    where_clause = ['%s=%s.%s' % (x, prefix, y) for x, y in where_clause]
-    where_clause = ' AND '.join(where_clause)
-    return where_clause
-
-
-def _insert_trigger(name, child, null_clause, parent, where_clause):
-    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
-            'BEFORE INSERT ON {database}.{child_table} FOR EACH ROW\n'
-            'WHEN {child_null_clause}(SELECT 1 FROM {database}.{parent_table} WHERE {parent_where_clause}) IS NULL\n'
-            'BEGIN\n'
-            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
-            'END;').format(database='main',
-                           name=name,
-                           child_table=child,
-                           child_null_clause=null_clause,
-                           parent_table=parent,
-                           parent_where_clause=where_clause)
-
-
-def _update_trigger(name, child, null_clause, parent, where_clause):
-    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
-            'BEFORE UPDATE ON {database}.{child_table} FOR EACH ROW\n'
-            'WHEN {child_null_clause}(SELECT 1 FROM {database}.{parent_table} WHERE {parent_where_clause}) IS NULL\n'
-            'BEGIN\n'
-            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
-            'END;').format(database='main',
-                           name=name,
-                           child_table=child,
-                           child_null_clause=null_clause,
-                           parent_table=parent,
-                           parent_where_clause=where_clause)
-
-
-def _delete_trigger(name, child, null_clause, parent, where_clause):
-    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
-            'BEFORE DELETE ON {database}.{parent_table} FOR EACH ROW\n'
-            'WHEN {parent_null_clause}(SELECT 1 FROM {database}.{child_table} WHERE {child_where_clause}) IS NOT NULL\n'
-            'BEGIN\n'
-            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
-            'END;').format(database='main',
-                           name=name,
-                           child_table=child,
-                           parent_null_clause=null_clause,
-                           parent_table=parent,
-                           child_where_clause=where_clause)
-
-
-def _foreign_key_triggers(name, table, column, f_table, f_column, not_null=True):
-    args = _normalize_args_for_trigger(column, f_column, not_null)
-    column, f_column, not_null = args  # Unpack args.
-
-    null_clause = _null_clause_for_trigger(column, not_null, 'NEW')
-    where_clause = _where_clause_for_trigger(f_column, column, prefix='NEW')
-    before_insert = _insert_trigger('fki_'+name, table, null_clause, f_table, where_clause)
-    before_update = _update_trigger('fku_'+name, table, null_clause, f_table, where_clause)
-
-    null_clause = _null_clause_for_trigger(column, not_null, 'OLD')
-    where_clause = _where_clause_for_trigger(column, f_column, prefix='OLD')
-    before_delete = _delete_trigger('fkd_'+name, table, null_clause, f_table, where_clause)
-
-    return '\n\n'.join([before_insert, before_update, before_delete])
-
-
-def _all_foreign_key_triggers():
-    all_triggers = [
-        _foreign_key_triggers('lbl_harchy', 'label', 'hierarchy_id', 'hierarchy', 'hierarchy_id'),
-        _foreign_key_triggers('cellbl_lbl', 'cell_label', ['hierarchy_id', 'label_id'], 'label', ['hierarchy_id', 'label_id']),
-        _foreign_key_triggers('cellbl_cel', 'cell_label', 'cell_id', 'cell', 'cell_id'),
-        _foreign_key_triggers('edgwt_edg', 'edge_weight', 'edge_id', 'edge', 'edge_id'),
-        _foreign_key_triggers('rel_edg', 'relation', 'edge_id', 'edge', 'edge_id'),
-        _foreign_key_triggers('rel_cel', 'relation', 'cell_id', 'cell', 'cell_id'),
-        _foreign_key_triggers('relwt_rel', 'relation_weight', 'relation_id', 'relation', 'relation_id'),
-        _foreign_key_triggers('relwt_edgwt', 'relation_weight', 'edge_weight_id', 'edge_weight', 'edge_weight_id'),
-    ]
-    return '\n\n\n'.join(all_triggers)
-
-
-# Register SQLite adapter/converter for Decimal type.
-sqlite3.register_adapter(Decimal, str)
-sqlite3.register_converter('TEXTNUM', lambda x: Decimal(x.decode('utf-8')))
-
-
-# Flags.
+# Mode flags.
 IN_MEMORY = 1  #: Create a temporary partition in RAM.
 TEMP_FILE = 2  #: Write a temporary partition to disk instead of using RAM.
 READ_ONLY = 4  #: Connect to an existing Partition in read-only mode.
@@ -387,6 +287,14 @@ class _Connector(object):
 
         return connection
 
+    def __del__(self):
+        """Clean-up connection objects."""
+        if self._memory_conn:
+            self._memory_conn.close()
+
+        if self._temp_path:
+            os.remove(self._temp_path)
+
     @staticmethod
     def _connect(database):
         if isinstance(database, sqlite3.Connection):
@@ -412,14 +320,6 @@ class _Connector(object):
                                          detect_types=sqlite3.PARSE_DECLTYPES)
         return connection
 
-    def __del__(self):
-        """Clean-up connection objects."""
-        if self._memory_conn:
-            self._memory_conn.close()
-
-        if self._temp_path:
-            os.remove(self._temp_path)
-
     @staticmethod
     def _is_valid(connection):
         """Return True if database is a valid Partition, else False."""
@@ -435,3 +335,111 @@ class _Connector(object):
                                'relation', 'relation_weight', 'property',
                                'sqlite_sequence'])
         return tables_required == tables_contained
+
+
+# Foreign key constraints on older versions of SQLite can be enforced
+# with triggers.  The following functions construct appropriate,
+# temporary triggers for tables in a default/main database.
+#
+# See <http://www.sqlite.org/cvstrac/wiki?p=ForeignKeyTriggers> for
+# more information.
+#
+def _all_foreign_key_triggers():
+    all_triggers = [
+        _foreign_key_triggers('lbl_harchy', 'label', 'hierarchy_id', 'hierarchy', 'hierarchy_id'),
+        _foreign_key_triggers('cellbl_lbl', 'cell_label', ['hierarchy_id', 'label_id'], 'label', ['hierarchy_id', 'label_id']),
+        _foreign_key_triggers('cellbl_cel', 'cell_label', 'cell_id', 'cell', 'cell_id'),
+        _foreign_key_triggers('edgwt_edg', 'edge_weight', 'edge_id', 'edge', 'edge_id'),
+        _foreign_key_triggers('rel_edg', 'relation', 'edge_id', 'edge', 'edge_id'),
+        _foreign_key_triggers('rel_cel', 'relation', 'cell_id', 'cell', 'cell_id'),
+        _foreign_key_triggers('relwt_rel', 'relation_weight', 'relation_id', 'relation', 'relation_id'),
+        _foreign_key_triggers('relwt_edgwt', 'relation_weight', 'edge_weight_id', 'edge_weight', 'edge_weight_id'),
+    ]
+    return '\n\n\n'.join(all_triggers)
+
+
+def _foreign_key_triggers(name, table, column, f_table, f_column, not_null=True):
+    args = _normalize_args_for_trigger(column, f_column, not_null)
+    column, f_column, not_null = args  # Unpack args.
+
+    null_clause = _null_clause_for_trigger(column, not_null, 'NEW')
+    where_clause = _where_clause_for_trigger(f_column, column, prefix='NEW')
+    before_insert = _insert_trigger('fki_'+name, table, null_clause, f_table, where_clause)
+    before_update = _update_trigger('fku_'+name, table, null_clause, f_table, where_clause)
+
+    null_clause = _null_clause_for_trigger(column, not_null, 'OLD')
+    where_clause = _where_clause_for_trigger(column, f_column, prefix='OLD')
+    before_delete = _delete_trigger('fkd_'+name, table, null_clause, f_table, where_clause)
+
+    return '\n\n'.join([before_insert, before_update, before_delete])
+
+
+def _normalize_args_for_trigger(child_key, parent_key, not_null):
+    if isinstance(child_key, str):
+        child_key = [child_key]
+    if isinstance(parent_key, str):
+        parent_key = [parent_key]
+    if isinstance(not_null, bool):
+        not_null = [not_null] * len(child_key)
+    assert len(child_key) == len(parent_key) == len(not_null)
+    return child_key, parent_key, not_null
+
+
+def _null_clause_for_trigger(column, not_null, prefix):
+    def fn(col, notnl):
+        return '' if notnl else '%s.%s IS NOT NULL' % (prefix, col)
+    null_clause = zip(column, not_null)
+    null_clause = [fn(x, y) for x, y in null_clause]
+    null_clause = [x for x in null_clause if x]
+    null_clause = ' AND '.join(null_clause)
+    null_clause += '\n             AND ' if null_clause else ''
+    return null_clause
+
+
+def _where_clause_for_trigger(left_cols, right_cols, prefix):
+    where_clause = zip(left_cols, right_cols)
+    where_clause = ['%s=%s.%s' % (x, prefix, y) for x, y in where_clause]
+    where_clause = ' AND '.join(where_clause)
+    return where_clause
+
+
+def _insert_trigger(name, child, null_clause, parent, where_clause):
+    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
+            'BEFORE INSERT ON {database}.{child_table} FOR EACH ROW\n'
+            'WHEN {child_null_clause}(SELECT 1 FROM {database}.{parent_table} WHERE {parent_where_clause}) IS NULL\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
+            'END;').format(database='main',
+                           name=name,
+                           child_table=child,
+                           child_null_clause=null_clause,
+                           parent_table=parent,
+                           parent_where_clause=where_clause)
+
+
+def _update_trigger(name, child, null_clause, parent, where_clause):
+    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
+            'BEFORE UPDATE ON {database}.{child_table} FOR EACH ROW\n'
+            'WHEN {child_null_clause}(SELECT 1 FROM {database}.{parent_table} WHERE {parent_where_clause}) IS NULL\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
+            'END;').format(database='main',
+                           name=name,
+                           child_table=child,
+                           child_null_clause=null_clause,
+                           parent_table=parent,
+                           parent_where_clause=where_clause)
+
+
+def _delete_trigger(name, child, null_clause, parent, where_clause):
+    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS {name}\n'
+            'BEFORE DELETE ON {database}.{parent_table} FOR EACH ROW\n'
+            'WHEN {parent_null_clause}(SELECT 1 FROM {database}.{child_table} WHERE {child_where_clause}) IS NOT NULL\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'FOREIGN KEY constraint failed\');\n'
+            'END;').format(database='main',
+                           name=name,
+                           child_table=child,
+                           parent_null_clause=null_clause,
+                           parent_table=parent,
+                           child_where_clause=where_clause)
