@@ -92,9 +92,9 @@ _create_partition = """
     CREATE INDEX nonunique_celllabel_hierarchyid ON cell_label (hierarchy_id);
     CREATE INDEX nonunique_celllabel_labelid ON cell_label (label_id);
 
-    CREATE TRIGGER UniqueLabelCombination BEFORE INSERT ON cell_label
+    CREATE TRIGGER CheckUniqueLabels_ins BEFORE INSERT ON cell_label
     BEGIN
-        SELECT RAISE(ROLLBACK, 'insert on table "cell_label" violates unique label-combination constraint')
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (each cell must be associated with a unique set of labels)')
         FROM (
                 SELECT GROUP_CONCAT(label_id)
                 FROM (
@@ -122,9 +122,9 @@ _create_partition = """
         );
     END;
 
-    CREATE TRIGGER UpdateUniqueLabels BEFORE UPDATE ON cell_label
+    CREATE TRIGGER CheckUniqueLabels_upd BEFORE UPDATE ON cell_label
     BEGIN
-        SELECT RAISE(ROLLBACK, 'insert on table "cell_label" violates unique label-combination constraint')
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (each cell must be associated with a unique set of labels)')
         FROM (
                 SELECT GROUP_CONCAT(label_id)
                 FROM (
@@ -146,6 +146,36 @@ _create_partition = """
                     UNION
 
                     SELECT NEW.cell_id, NEW.label_id
+                    ORDER BY cell_id, label_id
+                )
+                GROUP BY cell_id
+        );
+    END;
+
+    CREATE TRIGGER CheckUniqueLabels_del BEFORE DELETE ON cell_label
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (each cell must be associated with a unique set of labels)')
+        FROM (
+                SELECT GROUP_CONCAT(label_id)
+                FROM (
+                    SELECT cell_id, label_id
+                    FROM cell_label
+                    ORDER BY cell_id, label_id
+                )
+                GROUP BY cell_id
+
+                INTERSECT
+
+                SELECT GROUP_CONCAT(label_id)
+                FROM (
+                    SELECT cell_id, label_id
+                    FROM cell_label
+                    WHERE cell_id = OLD.cell_id
+                        AND cell_label_id != OLD.cell_label_id
+
+                    UNION
+
+                    SELECT OLD.cell_id, OLD.label_id
                     ORDER BY cell_id, label_id
                 )
                 GROUP BY cell_id
