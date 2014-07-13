@@ -30,7 +30,7 @@ class TestPartition(MkdtempTestCase):
         ptn = Partition(self._existing_partition)  # Use existing file.
 
     def test_read_only_partition(self):
-        """Existing partition should load without errors."""
+        """The READ_ONLY flag should open a Partition in read-only mode."""
         self._make_partition('existing_partition')
         def read_only():
             ptn = Partition(self._existing_partition, mode=READ_ONLY)
