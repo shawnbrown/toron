@@ -367,39 +367,94 @@ class _Connector(object):
         return tables_required == tables_contained
 
 
-# Foreign key constraints on older versions of SQLite can be enforced
-# with triggers.  The following functions construct appropriate,
-# temporary triggers for tables in a default/main database.
+########################################################################
+# Since version 3.6.19, SQLite supports foreign key constraints.  Older
+# versions can emulate these constraints with triggers.  The following
+# functions construct appropriate, temporary triggers for use with these
+# older versions.
 #
-# See <http://www.sqlite.org/cvstrac/wiki?p=ForeignKeyTriggers> for
-# more information.
-#
+# See <http://www.sqlite.org/cvstrac/wiki?p=ForeignKeyTriggers> for more
+# information.
+########################################################################
 def _all_foreign_key_triggers():
     all_triggers = [
-        _foreign_key_triggers('lbl_harchy', 'label', 'hierarchy_id', 'hierarchy', 'hierarchy_id'),
-        _foreign_key_triggers('cellbl_lbl', 'cell_label', ['hierarchy_id', 'label_id'], 'label', ['hierarchy_id', 'label_id']),
-        _foreign_key_triggers('cellbl_cel', 'cell_label', 'cell_id', 'cell', 'cell_id'),
-        _foreign_key_triggers('edgwt_edg', 'edge_weight', 'edge_id', 'edge', 'edge_id'),
-        _foreign_key_triggers('rel_edg', 'relation', 'edge_id', 'edge', 'edge_id'),
-        _foreign_key_triggers('rel_cel', 'relation', 'cell_id', 'cell', 'cell_id'),
-        _foreign_key_triggers('relwt_rel', 'relation_weight', 'relation_id', 'relation', 'relation_id'),
-        _foreign_key_triggers('relwt_edgwt', 'relation_weight', 'edge_weight_id', 'edge_weight', 'edge_weight_id'),
+        # FOREIGN KEY (hierarchy_id) REFERENCES hierarchy(hierarchy_id)
+        _foreign_key_triggers(name='lbl_harchy',
+                              child_table='label',
+                              child_key='hierarchy_id',
+                              parent_table='hierarchy',
+                              parent_key='hierarchy_id'),
+
+        # FOREIGN KEY (label_id, hierarchy_id)
+        #     REFERENCES label(label_id, hierarchy_id)
+        _foreign_key_triggers(name='cellbl_lbl',
+                              child_table='cell_label',
+                              child_key=['hierarchy_id', 'label_id'],
+                              parent_table='label',
+                              parent_key=['hierarchy_id', 'label_id']),
+
+        # FOREIGN KEY (cell_id) REFERENCES cell(cell_id)
+        _foreign_key_triggers(name='cellbl_cel',
+                              child_table='cell_label',
+                              child_key='cell_id',
+                              parent_table='cell',
+                              parent_key='cell_id'),
+
+        # FOREIGN KEY (edge_id) REFERENCES edge(edge_id)
+        _foreign_key_triggers(name='edgwt_edg',
+                              child_table='edge_weight',
+                              child_key='edge_id',
+                              parent_table='edge',
+                              parent_key='edge_id'),
+
+        # FOREIGN KEY (edge_id) REFERENCES edge(edge_id)
+        _foreign_key_triggers(name='rel_edg',
+                              child_table='relation',
+                              child_key='edge_id',
+                              parent_table='edge',
+                              parent_key='edge_id'),
+
+        # FOREIGN KEY (cell_id) REFERENCES cell(cell_id)
+        _foreign_key_triggers(name='rel_cel',
+                              child_table='relation',
+                              child_key='cell_id',
+                              parent_table='cell',
+                              parent_key='cell_id'),
+
+        # FOREIGN KEY (relation_id) REFERENCES relation(relation_id)
+        _foreign_key_triggers(name='relwt_rel',
+                              child_table='relation_weight',
+                              child_key='relation_id',
+                              parent_table='relation',
+                              parent_key='relation_id'),
+
+        # FOREIGN KEY (edge_weight_id) REFERENCES edge_weight(edge_weight_id)
+        _foreign_key_triggers(name='relwt_edgwt',
+                              child_table='relation_weight',
+                              child_key='edge_weight_id',
+                              parent_table='edge_weight',
+                              parent_key='edge_weight_id'),
     ]
     return '\n\n\n'.join(all_triggers)
 
 
-def _foreign_key_triggers(name, table, column, f_table, f_column, not_null=True):
-    args = _normalize_args_for_trigger(column, f_column, not_null)
-    column, f_column, not_null = args  # Unpack args.
+def _foreign_key_triggers(name, child_table, child_key, parent_table,
+                          parent_key, not_null=True):
+    args = _normalize_args_for_trigger(child_key, parent_key, not_null)
+    child_key, parent_key, not_null = args  # Unpack args.
 
-    null_clause = _null_clause_for_trigger(column, not_null, 'NEW')
-    where_clause = _where_clause_for_trigger(f_column, column, prefix='NEW')
-    before_insert = _insert_trigger('fki_'+name, table, null_clause, f_table, where_clause)
-    before_update = _update_trigger('fku_'+name, table, null_clause, f_table, where_clause)
+    # Get INSERT and UPDATE triggers.
+    null_clause = _null_clause_for_trigger(child_key, not_null, prefix='NEW')
+    where_clause = _where_clause_for_trigger(parent_key, child_key, prefix='NEW')
+    args = (child_table, null_clause, parent_table, where_clause)
+    before_insert = _insert_trigger('fki_'+name, *args)
+    before_update = _update_trigger('fku_'+name, *args)
 
-    null_clause = _null_clause_for_trigger(column, not_null, 'OLD')
-    where_clause = _where_clause_for_trigger(column, f_column, prefix='OLD')
-    before_delete = _delete_trigger('fkd_'+name, table, null_clause, f_table, where_clause)
+    # Get DELETE trigger.
+    null_clause = _null_clause_for_trigger(child_key, not_null, prefix='OLD')
+    where_clause = _where_clause_for_trigger(child_key, parent_key, prefix='OLD')
+    args = (child_table, null_clause, parent_table, where_clause)
+    before_delete = _delete_trigger('fkd_'+name, *args)
 
     return '\n\n'.join([before_insert, before_update, before_delete])
 
