@@ -29,6 +29,8 @@ class TestPartition(MkdtempTestCase):
         self._make_partition('existing_partition')
         ptn = Partition(self._existing_partition)  # Use existing file.
 
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 8, 0),
+        'The query_only PRAGMA was added to SQLite in version 3.8.0')
     def test_read_only_partition(self):
         """The READ_ONLY flag should open a Partition in read-only mode."""
         self._make_partition('existing_partition')

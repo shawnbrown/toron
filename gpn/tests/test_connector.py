@@ -256,6 +256,8 @@ class TestConnector(MkdtempTestCase):
         msg = 'Multiple in-memory connections must be independent.'
         self.assertIsNot(connect._memory_conn, second_connect._memory_conn, msg)
 
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 8, 0),
+        'The query_only PRAGMA was added to SQLite in version 3.8.0')
     def test_read_only_database(self):
         """Read-only connections should fail on INSERT, UPDATE, etc."""
         global _create_partition
