@@ -32,12 +32,14 @@ class TestPartition(MkdtempTestCase):
     def test_read_only_partition(self):
         """The READ_ONLY flag should open a Partition in read-only mode."""
         self._make_partition('existing_partition')
-        def read_only():
-            ptn = Partition(self._existing_partition, mode=READ_ONLY)
-            connection = ptn._connect()
-            cursor = connection.cursor()
+
+        ptn = Partition(self._existing_partition, mode=READ_ONLY)
+        connection = ptn._connect()
+        cursor = connection.cursor()
+
+        with self.assertRaises(sqlite3.OperationalError):
             cursor.execute('INSERT INTO cell DEFAULT VALUES')
-        self.assertRaises(sqlite3.OperationalError, read_only)
+
 
     def test_new_partition(self):
         """Named Partitions that do not exist should be created."""

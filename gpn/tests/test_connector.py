@@ -168,20 +168,16 @@ class TestTriggerFunctions(unittest.TestCase):
         cursor.execute('INSERT INTO bar VALUES (1, 1)')
         cursor.execute('INSERT INTO bar VALUES (2, 2)')
 
-        def insert_failure():
+        regex = 'FOREIGN KEY constraint failed'
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             cursor.execute('INSERT INTO bar VALUES (3, 3)')
-        regex = 'FOREIGN KEY constraint failed'
-        self.assertRaisesRegex(sqlite3.IntegrityError, regex, insert_failure)
 
-        def update_failure():
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             cursor.execute('UPDATE bar SET foo_id=3 WHERE id=2')
-        regex = 'FOREIGN KEY constraint failed'
-        self.assertRaisesRegex(sqlite3.IntegrityError, regex, update_failure)
 
-        def delete_failure():
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             cursor.execute('DELETE FROM foo WHERE id=1')
-        regex = 'FOREIGN KEY constraint failed'
-        self.assertRaisesRegex(sqlite3.IntegrityError, regex, delete_failure)
 
 
 class TestConnector(MkdtempTestCase):
@@ -280,21 +276,18 @@ class TestConnector(MkdtempTestCase):
         connect = _Connector(database, mode=READ_ONLY)
         connection = connect()
         cursor = connection.cursor()
-        def insert_into():
+
+        with self.assertRaises(sqlite3.OperationalError):
             cursor.execute('INSERT INTO cell VALUES (4, 0)')
-        self.assertRaises(sqlite3.OperationalError, insert_into)
 
-        def update():
+        with self.assertRaises(sqlite3.OperationalError):
             cursor.execute('UPDATE cell SET partial=1 WHERE cell_id=3')
-        self.assertRaises(sqlite3.OperationalError, update)
 
-        def drop_table():
+        with self.assertRaises(sqlite3.OperationalError):
             cursor.execute('DROP TABLE cell')
-        self.assertRaises(sqlite3.OperationalError, drop_table)
 
-        def alter_table():
+        with self.assertRaises(sqlite3.OperationalError):
             cursor.execute('ALTER TABLE cell ADD COLUMN other TEXT')
-        self.assertRaises(sqlite3.OperationalError, alter_table)
 
     def test_bad_sqlite_structure(self):
         """SQLite databases with unexpected table structure should fail."""
@@ -305,10 +298,9 @@ class TestConnector(MkdtempTestCase):
         connection.close()
 
         # Attempt to load a non-Partition SQLite database.
-        def wrong_database():
-            connect = _Connector(filename)
         regex = 'File - .* - is not a valid partition.'
-        self.assertRaisesRegex(Exception, regex, wrong_database)
+        with self.assertRaisesRegex(Exception, regex):
+            connect = _Connector(filename)
 
     def test_wrong_file_type(self):
         """Non-SQLite files should fail to load."""
@@ -318,10 +310,9 @@ class TestConnector(MkdtempTestCase):
         fh.close()
 
         # Attempt to load non-SQLite file.
-        def wrong_file_type():
-            connect = _Connector(filename)
         regex = 'File - .* - is not a valid partition.'
-        self.assertRaisesRegex(Exception, regex, wrong_file_type)
+        with self.assertRaisesRegex(Exception, regex):
+            connect = _Connector(filename)
 
 
 class TestSqlDataModel(unittest.TestCase):
@@ -334,9 +325,8 @@ class TestSqlDataModel(unittest.TestCase):
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
 
-        def foreign_key_constraint():
+        with self.assertRaises(sqlite3.IntegrityError):
             cursor.execute("INSERT INTO label VALUES (1, 2, 'Midwest')")
-        self.assertRaises(sqlite3.IntegrityError, foreign_key_constraint)
 
     def test_cell_defaults(self):
         """Should be possible to insert records in to cell using defaults vals."""
@@ -367,12 +357,11 @@ class TestSqlDataModel(unittest.TestCase):
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
 
-        def unique_constraint():
+        with self.assertRaises(sqlite3.IntegrityError):
             cursor.executescript("""
                 INSERT INTO label VALUES (NULL, 1, 'Midwest');
                 INSERT INTO label VALUES (NULL, 1, 'Midwest');
             """)
-        self.assertRaises(sqlite3.IntegrityError, unique_constraint)
 
     def test_cell_label_foreign_key(self):
         """Mismatched hierarchy_id/label_id pairs must fail."""
@@ -383,9 +372,8 @@ class TestSqlDataModel(unittest.TestCase):
         cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
         cursor.execute("INSERT INTO label VALUES (2, 2, 'Ohio')")
 
-        def foreign_key_constraint():
+        with self.assertRaises(sqlite3.IntegrityError):
             cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 2)")
-        self.assertRaises(sqlite3.IntegrityError, foreign_key_constraint)
 
     def test_cell_label_unique_constraint(self):
         """Cells must never have two labels from the same hierarchy level."""
@@ -396,9 +384,8 @@ class TestSqlDataModel(unittest.TestCase):
         cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
         cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 1)")
 
-        def unique_constraint():
+        with self.assertRaises(sqlite3.IntegrityError):
             cursor.execute("INSERT INTO cell_label VALUES (2, 1, 1, 1)")
-        self.assertRaises(sqlite3.IntegrityError, unique_constraint)
 
     def test_cell_label_trigger(self):
         """Each cell_id must be associated with a unique combination of
@@ -425,24 +412,20 @@ class TestSqlDataModel(unittest.TestCase):
 
         regex = 'CHECK constraint failed: cell_label'
 
-        def insert_duplicate():
-            # Insert label_id combination that conflicts with cell_id 1.
+        # Insert label_id combination that conflicts with cell_id 1.
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             cursor.execute("INSERT INTO cell VALUES (3, 0)")
             cursor.execute("INSERT INTO cell_label VALUES (5, 3, 1, 1)")
             cursor.execute("INSERT INTO cell_label VALUES (6, 3, 2, 2)")
-        self.assertRaisesRegex(sqlite3.IntegrityError, regex, insert_duplicate)
 
-        def update_duplicate():
-            # Update label_id creating conflict with cell_id 1.
+        # Update label_id creating conflict with cell_id 1.
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             cursor.execute("UPDATE cell_label SET label_id=2 WHERE cell_label_id=4")
-        self.assertRaisesRegex(sqlite3.IntegrityError, regex, update_duplicate)
 
-        def delete_duplicate():
-            # Delete cell_label records to create a conflict between cell_id 1 and 2.
+        # Delete cell_label records to create a conflict between cell_id 1 and 2.
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             cursor.execute("DELETE FROM cell_label WHERE cell_label_id=3")
             cursor.execute("DELETE FROM cell_label WHERE cell_label_id=2")
-        self.assertRaisesRegex(sqlite3.IntegrityError, regex, delete_duplicate)
-
 
     def test_textnum_decimal_type(self):
         """Decimal type values should be adapted as strings for TEXTNUM
