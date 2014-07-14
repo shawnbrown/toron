@@ -16,8 +16,8 @@ from gpn import READ_ONLY
 class TestPartition(MkdtempTestCase):
     def _make_partition(self, filename):
         global _create_partition
-        self._existing_partition = 'existing_partition'
-        connection = sqlite3.connect(filename)
+        self._existing_partition = filename
+        connection = sqlite3.connect(self._existing_partition)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
         cursor.executescript(_create_partition)
