@@ -14,6 +14,7 @@ from gpn.connector import _insert_trigger
 from gpn.connector import _update_trigger
 from gpn.connector import _delete_trigger
 from gpn.connector import _foreign_key_triggers
+from gpn.connector import _read_only_triggers
 from gpn.connector import _Connector
 from gpn.connector import IN_MEMORY
 from gpn.connector import TEMP_FILE
@@ -28,7 +29,7 @@ except NameError:
         return any('__call__' in typ.__dict__ for typ in parent_types)
 
 
-class TestTriggerFunctions(unittest.TestCase):
+class TestForeignKeyTriggers(unittest.TestCase):
     """Trigger functions are used to build 'foreign key constraint'
     triggers for older versions of SQLite that don't enforce foreign
     keys natively.
@@ -180,7 +181,73 @@ class TestTriggerFunctions(unittest.TestCase):
             cursor.execute('DELETE FROM foo WHERE id=1')
 
 
+class TestReadOnlyTriggers(unittest.TestCase):
+    """Trigger functions are used provide partial read-only support for
+    older versions of SQLite that don't implement the query_only PRAGMA.
+
+    """
+    def test_read_only_syntax(self):
+        trigger_sql = _read_only_triggers('readonlyfoo', 'foo')
+        expected = (
+            "CREATE TEMPORARY TRIGGER IF NOT EXISTS roi_readonlyfoo\n"
+            "BEFORE INSERT ON main.foo FOR EACH ROW\n"
+            "BEGIN\n"
+            "    SELECT RAISE(ABORT, 'attempt to write a readonly database');\n"
+            "END;\n"
+            "\n"
+            "CREATE TEMPORARY TRIGGER IF NOT EXISTS rou_readonlyfoo\n"
+            "BEFORE UPDATE ON main.foo FOR EACH ROW\n"
+            "BEGIN\n"
+            "    SELECT RAISE(ABORT, 'attempt to write a readonly database');\n"
+            "END;\n"
+            "\n"
+            "CREATE TEMPORARY TRIGGER IF NOT EXISTS rod_readonlyfoo\n"
+            "BEFORE DELETE ON main.foo FOR EACH ROW\n"
+            "BEGIN\n"
+            "    SELECT RAISE(ABORT, 'attempt to write a readonly database');\n"
+            "END;"
+        )
+        self.assertEqual(expected, trigger_sql)
+
+    def test_trigger_actions(self):
+        """Actions that violate foreign key constraints must fail."""
+        connection = sqlite3.connect(':memory:')
+        cursor = connection.cursor()
+        create_table = 'CREATE TABLE foo (id INTEGER NOT NULL PRIMARY KEY);'
+        cursor.executescript(create_table)
+
+        # Test values.
+        cursor.execute('INSERT INTO foo VALUES (1)')
+        cursor.execute('INSERT INTO foo VALUES (2)')
+        cursor.execute('INSERT INTO foo VALUES (3)')
+
+        # Set read-only mode.
+        create_triggers_sql = _read_only_triggers('readonlyfoo', 'foo')
+        cursor.executescript(create_triggers_sql)
+
+        regex = 'attempt to write a readonly database'
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute('INSERT INTO foo VALUES (4)')
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute('UPDATE foo SET id=5 WHERE id=2')
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute('DELETE FROM foo WHERE id=1')
+
+
 class TestConnector(MkdtempTestCase):
+    def _make_database(self, filename):
+        global _create_partition
+        self._existing_partition = filename
+        connection = sqlite3.connect(self._existing_partition)
+        cursor = connection.cursor()
+        cursor.execute('PRAGMA synchronous=OFF')
+        cursor.executescript(_create_partition)
+        cursor.execute('PRAGMA synchronous=FULL')
+        connection.close()
+
     def _get_tables(self, database):
         """Return tuple of expected tables and actual tables for given
         SQLite database."""
@@ -201,15 +268,8 @@ class TestConnector(MkdtempTestCase):
 
     def test_existing_database(self):
         """Existing database should load without errors."""
-        global _create_partition
-
         database = 'partition_database'
-        connection = sqlite3.connect(database)
-        cursor = connection.cursor()
-        cursor.execute('PRAGMA synchronous=OFF')
-        cursor.executescript(_create_partition)  # Creating database.
-        cursor.execute('PRAGMA synchronous=FULL')
-        connection.close()
+        self._make_database(database)
 
         connect = _Connector(database)  # Existing database.
         connection = connect()
@@ -256,17 +316,13 @@ class TestConnector(MkdtempTestCase):
         msg = 'Multiple in-memory connections must be independent.'
         self.assertIsNot(connect._memory_conn, second_connect._memory_conn, msg)
 
-    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 8, 0),
-        'The query_only PRAGMA was added to SQLite in version 3.8.0')
-    def test_read_only_database(self):
-        """Read-only connections should fail on INSERT, UPDATE, etc."""
-        global _create_partition
-
+    def test_partial_read_only_support(self):
+        """Read-only connections should fail on INSERT, UPDATE, and DELETE."""
         database = 'partition_database'
+        self._make_database(database)
         connection = sqlite3.connect(database)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        cursor.executescript(_create_partition)  # Creating database.
         cursor.executescript("""
             INSERT INTO cell VALUES (1, 0);
             INSERT INTO cell VALUES (2, 0);
@@ -279,17 +335,41 @@ class TestConnector(MkdtempTestCase):
         connection = connect()
         cursor = connection.cursor()
 
-        with self.assertRaises(sqlite3.OperationalError):
+        regex = 'attempt to write a readonly database'
+
+        with self.assertRaisesRegex((sqlite3.OperationalError,
+                                     sqlite3.IntegrityError), regex):
             cursor.execute('INSERT INTO cell VALUES (4, 0)')
 
-        with self.assertRaises(sqlite3.OperationalError):
+        with self.assertRaisesRegex((sqlite3.OperationalError,
+                                     sqlite3.IntegrityError), regex):
             cursor.execute('UPDATE cell SET partial=1 WHERE cell_id=3')
 
-        with self.assertRaises(sqlite3.OperationalError):
-            cursor.execute('DROP TABLE cell')
+        with self.assertRaisesRegex((sqlite3.OperationalError,
+                                     sqlite3.IntegrityError), regex):
+            cursor.execute('DELETE FROM cell WHERE cell_id=1')
+
+    #@unittest.skipUnless(sqlite3.sqlite_version_info < (3, 8, 0),
+    #    'Should raise a warning if SQLite is older than version 3.8.0.')
+    #def test_partial_read_only_warning(self):
+    #    return NotImplemented
+
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 8, 0),
+        'The query_only PRAGMA was added to SQLite in version 3.8.0')
+    def test_full_read_only_support(self):
+        """Read-only connections should also fail on DROP, ALTER, etc."""
+        database = 'partition_database'
+        self._make_database(database)
+
+        connect = _Connector(database, mode=READ_ONLY)
+        connection = connect()
+        cursor = connection.cursor()
 
         with self.assertRaises(sqlite3.OperationalError):
             cursor.execute('ALTER TABLE cell ADD COLUMN other TEXT')
+
+        with self.assertRaises(sqlite3.OperationalError):
+            cursor.execute('DROP TABLE cell')
 
     def test_bad_sqlite_structure(self):
         """SQLite databases with unexpected table structure should fail."""

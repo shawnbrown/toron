@@ -39,7 +39,9 @@ class TestPartition(MkdtempTestCase):
         connection = ptn._connect()
         cursor = connection.cursor()
 
-        with self.assertRaises(sqlite3.OperationalError):
+        regex = 'attempt to write a readonly database'
+        with self.assertRaisesRegex((sqlite3.OperationalError,
+                                     sqlite3.IntegrityError), regex):
             cursor.execute('INSERT INTO cell DEFAULT VALUES')
 
 

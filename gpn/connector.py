@@ -313,7 +313,11 @@ class _Connector(object):
             cursor.executescript(sql_script)
 
         if self._is_read_only:
-            cursor.execute('PRAGMA query_only=1')
+            if sqlite3.sqlite_version_info >= (3, 8, 0):
+                cursor.execute('PRAGMA query_only=1')
+            else:
+                sql_script = _all_read_only_triggers()
+                cursor.executescript(sql_script)
 
         return connection
 
@@ -528,3 +532,50 @@ def _delete_trigger(name, child, null_clause, parent, where_clause):
                            parent_null_clause=null_clause,
                            parent_table=parent,
                            child_where_clause=where_clause)
+
+
+########################################################################
+# Since version 3.8.0, SQLite supports the query_only PRAGMA (which this
+# package uses to implement read-only connections).  Older versions can
+# partially enforce a read-only mode using triggers.  The following
+# functions construct appropriate, temporary triggers for use with these
+# older versions.
+#
+# While a read-only mechanism has been available since 3.7.7 (via the
+# URI Filename parameter `?mode=ro`), it is not supported in versions of
+# Python before 3.4.
+########################################################################
+def _all_read_only_triggers():
+    all_triggers = [
+        _read_only_triggers('cel', 'cell'),
+        _read_only_triggers('harchy', 'hierarchy'),
+        _read_only_triggers('lbl', 'label'),
+        _read_only_triggers('cellbl', 'cell_label'),
+        _read_only_triggers('edg', 'edge'),
+        _read_only_triggers('edgwt', 'edge_weight'),
+        _read_only_triggers('rel', 'relation'),
+        _read_only_triggers('relwt', 'relation_weight'),
+        _read_only_triggers('prop', 'property'),
+        _read_only_triggers('prtn', 'partition'),
+    ]
+    return '\n\n\n'.join(all_triggers)
+
+
+def _read_only_triggers(name, table):
+    return ('CREATE TEMPORARY TRIGGER IF NOT EXISTS roi_{name}\n'
+            'BEFORE INSERT ON main.{table} FOR EACH ROW\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'attempt to write a readonly database\');\n'
+            'END;\n'
+            '\n'
+            'CREATE TEMPORARY TRIGGER IF NOT EXISTS rou_{name}\n'
+            'BEFORE UPDATE ON main.{table} FOR EACH ROW\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'attempt to write a readonly database\');\n'
+            'END;\n'
+            '\n'
+            'CREATE TEMPORARY TRIGGER IF NOT EXISTS rod_{name}\n'
+            'BEFORE DELETE ON main.{table} FOR EACH ROW\n'
+            'BEGIN\n'
+            '    SELECT RAISE(ABORT, \'attempt to write a readonly database\');\n'
+            'END;').format(name=name, table=table)
