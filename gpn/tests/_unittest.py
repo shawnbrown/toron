@@ -1,5 +1,7 @@
 """unittest compatibility layer."""
+import sys
 from unittest import *
+
 
 try:
     TestCase.assertIs  # New in 3.1
@@ -105,38 +107,68 @@ except AttributeError:
 
 
 try:
-    TestCase.assertRaisesRegex  # Renamed in 3.2 (previously assertRaisesRegexp)
+    sys.modules['unittest'].case._AssertRaisesContext  # New in 2.7
 except AttributeError:
     try:
-        TestCase.assertRaisesRegex = TestCase.assertRaisesRegexp  # New in 2.7
+        sys.modules['unittest']._AssertRaisesContext  # Changed briefly (for 3.1 only)
     except AttributeError:
+        # The following code was adapted from the Python 2.7 Standard Library.
         import re
+        class _AssertRaisesContext(object):
+            """A context manager used to implement TestCase.assertRaises* methods."""
+            def __init__(self, expected, test_case, expected_regexp=None):
+                self.expected = expected
+                self.failureException = test_case.failureException
+                self.expected_regexp = expected_regexp
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, tb):
+                if exc_type is None:
+                    try:
+                        exc_name = self.expected.__name__
+                    except AttributeError:
+                        exc_name = str(self.expected)
+                    raise self.failureException(
+                        "{0} not raised".format(exc_name))
+                if not issubclass(exc_type, self.expected):
+                    # let unexpected exceptions pass through
+                    return False
+                self.exception = exc_value # store for later retrieval
+                if self.expected_regexp is None:
+                    return True
+                expected_regexp = self.expected_regexp
+                if isinstance(expected_regexp, basestring):
+                    expected_regexp = re.compile(expected_regexp)
+                if not expected_regexp.search(str(exc_value)):
+                    raise self.failureException('"%s" does not match "%s"' %
+                             (expected_regexp.pattern, str(exc_value)))
+                return True
+
         class _TestCase(TestCase):
-            # The following method was adapted from unittest2 source
-            # code <http://pypi.python.org/pypi/unittest2>.
-            # Copyright 2010 Michael Foord, released under the BSD License.
-            def assertRaisesRegex(self, expected_exception, expected_regexp,
+            def assertRaises(self, excClass, callableObj=None, *args, **kwargs):
+                context = _AssertRaisesContext(excClass, self)
+                if callableObj is None:
+                    return context
+                with context:
+                    callableObj(*args, **kwargs)
+
+            def assertRaisesRegexp(self, expected_exception, expected_regexp,
                                    callable_obj=None, *args, **kwargs):
-                """Asserts that the message in a raised exception matches a regexp."""
+                context = _AssertRaisesContext(expected_exception, self, expected_regexp)
                 if callable_obj is None:
-                    return unittest._AssertRaisesContext(expected_exception, self, expected_regexp)
-                try:
+                    return context
+                with context:
                     callable_obj(*args, **kwargs)
-                except expected_exception as exc_value:
-                    #if isinstance(expected_regexp, basestring):
-                    if isinstance(expected_regexp, str):
-                        expected_regexp = re.compile(expected_regexp)
-                    if not expected_regexp.search(str(exc_value)):
-                        raise self.failureException('"%s" does not match "%s"' %
-                                 (expected_regexp.pattern, str(exc_value)))
-                else:
-                    if hasattr(expected_exception, '__name__'):
-                        excName = expected_exception.__name__
-                    else:
-                        excName = str(expected_exception)
-                    raise self.failureException("%s not raised" % excName)
 
         TestCase = _TestCase
+
+
+try:
+    TestCase.assertRaisesRegex  # Renamed in 3.2 (previously assertRaisesRegexp)
+except AttributeError:
+    TestCase.assertRaisesRegex = TestCase.assertRaisesRegexp  # New in 2.7
 
 
 try:
