@@ -261,7 +261,7 @@ class TestConnector(MkdtempTestCase):
         connection.close()
         expected_tables = set([
             'cell', 'hierarchy', 'label', 'cell_label', 'partition',
-            'edge', 'edge_weight', 'relation', 'relation_weight', 'property',
+            'edge', 'weight', 'relation', 'relation_weight', 'property',
             'sqlite_sequence'
         ])
         return expected_tables, actual_tables

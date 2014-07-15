@@ -6,7 +6,6 @@ import tempfile
 from decimal import Decimal
 
 
-#
 # Internal Partition structure:
 #
 #                           +----------------+     +=================+
@@ -17,33 +16,32 @@ from decimal import Decimal
 #  |  | partial        |    | hierarchy_id   |<-+  | hierarchy_level |  |
 #  |  +----------------+    | label_id       |<-+  +-----------------+  |
 #  |                        +----------------+  |                       |
-#  |   +----------------+                       |  +-----------------+  |
-#  |   | property       |  +----------------+   |  | label           |  |
-#  |   +----------------+  | partition      |   |  +-----------------+  |
-#  |   | property_id    |  +----------------+   +--| label_id        |  |
-#  |   | property_key   |  | partition_id   |   +--| hierarchy_id    |<-+
-#  |   | property_value |  | partition_hash |      | label_value     |
-#  |   | created_date   |  | created_date   |      +-----------------+
-#  |   +----------------+  +----------------+
-#  |                                      +----------------+
-#  |          +======================+    | edge_weight    |
-#  |          | edge                 |    +----------------+
-#  |          +======================+    | edge_weight_id |--+
-#  |       +--| edge_id              |--->| edge_id        |  |
-#  |       |  | other_partition_hash |    | weight_type    |  |
-#  |       |  | other_partition_file |    | weight_note    |  |
-#  |       |  +----------------------+    | proportional   |  |
-#  |       |                              +----------------+  |
+#  |  +----------------+                        |  +-----------------+  |
+#  |  | property       |    +----------------+  |  | label           |  |
+#  |  +----------------+    | partition      |  |  +-----------------+  |
+#  |  | property_id    |    +----------------+  +--| label_id        |  |
+#  |  | property_key   |    | partition_id   |  +--| hierarchy_id    |<-+
+#  |  | property_value |    | partition_hash |     | label_value     |
+#  |  | created_date   |    | created_date   |     +-----------------+
+#  |  +----------------+    +----------------+
+#  |                                       +---------------+
+#  |          +=======================+    | weight        |
+#  |          | edge                  |    +---------------+
+#  |          +=======================+    | weight_id     |--+
+#  |       +--| edge_id               |--->| edge_id       |  |
+#  |       |  | other_partition_hash  |    | weight_type   |  |
+#  |       |  | other_partition_file  |    | weight_note   |  |
+#  |       |  +-----------------------+    | proportional  |  |
+#  |       |                               +---------------+  |
 #  |       |                                                  |
 #  |       |  +-----------------+     +--------------------+  |
 #  |       |  | relation        |     | relation_weight    |  |
 #  |       |  +-----------------+     +--------------------+  |
 #  |       |  | relation_id     |--+  | relation_weight_id |  |
-#  |       +->| edge_id         |  |  | edge_weight_id     |<-+
+#  |       +->| edge_id         |  |  | weight_id          |<-+
 #  |          | other_cell_id   |  +->| relation_id        |
 #  +--------->| cell_id         |     | weight_value       |
 #             +-----------------+     +--------------------+
-#
 
 
 # Register SQLite adapter/converter for Decimal type.
@@ -194,8 +192,8 @@ _create_partition = """
         other_partition_file TEXT
     );
 
-    CREATE TABLE edge_weight (
-        edge_weight_id INTEGER PRIMARY KEY,
+    CREATE TABLE weight (
+        weight_id INTEGER PRIMARY KEY,
         edge_id INTEGER,
         type TEXT,
         note TEXT,
@@ -216,10 +214,10 @@ _create_partition = """
 
     CREATE TABLE relation_weight (
         relation_weight_id INTEGER PRIMARY KEY,
-        edge_weight_id INTEGER,
+        weight_id INTEGER,
         relation_id INTEGER,
         weight TEXTNUM,  /* <- Custom type for Python Decimals. */
-        FOREIGN KEY (edge_weight_id) REFERENCES edge_weight(edge_weight_id),
+        FOREIGN KEY (weight_id) REFERENCES weight(weight_id),
         FOREIGN KEY (relation_id) REFERENCES relation(relation_id)
     );
 
@@ -365,7 +363,7 @@ class _Connector(object):
             tables_contained = set()
 
         tables_required = set(['cell', 'hierarchy', 'label', 'cell_label',
-                               'partition', 'edge', 'edge_weight',
+                               'partition', 'edge', 'weight',
                                'relation', 'relation_weight', 'property',
                                'sqlite_sequence'])
         return tables_required == tables_contained
@@ -405,8 +403,8 @@ def _all_foreign_key_triggers():
                               parent_key='cell_id'),
 
         # FOREIGN KEY (edge_id) REFERENCES edge(edge_id)
-        _foreign_key_triggers(name='edgwt_edg',
-                              child_table='edge_weight',
+        _foreign_key_triggers(name='wt_edg',
+                              child_table='weight',
                               child_key='edge_id',
                               parent_table='edge',
                               parent_key='edge_id'),
@@ -432,12 +430,12 @@ def _all_foreign_key_triggers():
                               parent_table='relation',
                               parent_key='relation_id'),
 
-        # FOREIGN KEY (edge_weight_id) REFERENCES edge_weight(edge_weight_id)
-        _foreign_key_triggers(name='relwt_edgwt',
+        # FOREIGN KEY (weight_id) REFERENCES weight(weight_id)
+        _foreign_key_triggers(name='relwt_wt',
                               child_table='relation_weight',
-                              child_key='edge_weight_id',
-                              parent_table='edge_weight',
-                              parent_key='edge_weight_id'),
+                              child_key='weight_id',
+                              parent_table='weight',
+                              parent_key='weight_id'),
     ]
     return '\n\n\n'.join(all_triggers)
 
@@ -552,7 +550,7 @@ def _all_read_only_triggers():
         _read_only_triggers('lbl', 'label'),
         _read_only_triggers('cellbl', 'cell_label'),
         _read_only_triggers('edg', 'edge'),
-        _read_only_triggers('edgwt', 'edge_weight'),
+        _read_only_triggers('wt', 'weight'),
         _read_only_triggers('rel', 'relation'),
         _read_only_triggers('relwt', 'relation_weight'),
         _read_only_triggers('prop', 'property'),
