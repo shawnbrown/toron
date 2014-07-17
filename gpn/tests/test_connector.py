@@ -420,18 +420,21 @@ class TestSqlDataModel(unittest.TestCase):
     def test_label_autoincrement(self):
         """Label_id should auto-increment despite being in a composite key."""
         cursor = self.connection.cursor()
-        cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
+        cursor.execute("INSERT INTO hierarchy VALUES (1, 'country', 0)")
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'region', 1)")
         cursor.executescript("""
-            INSERT INTO label VALUES (NULL, 1, 'Midwest');
-            INSERT INTO label VALUES (NULL, 1, 'Northeast');
-            INSERT INTO label VALUES (4,    1, 'South');  /* <- Explicit id. */
-            INSERT INTO label VALUES (NULL, 1, 'West');
+            INSERT INTO label VALUES (NULL, 1, 'United States');
+            INSERT INTO label VALUES (NULL, 2, 'Midwest');
+            INSERT INTO label VALUES (NULL, 2, 'Northeast');
+            INSERT INTO label VALUES (5,    2, 'South');  /* <- Explicit id. */
+            INSERT INTO label VALUES (NULL, 2, 'West');
         """)
         cursor.execute('SELECT * FROM label')
-        expected = [(1, 1, 'Midwest'),
-                    (2, 1, 'Northeast'),
-                    (4, 1, 'South'),
-                    (5, 1, 'West')]
+        expected = [(1, 1, 'United States'),
+                    (2, 2, 'Midwest'),
+                    (3, 2, 'Northeast'),
+                    (5, 2, 'South'),
+                    (6, 2, 'West')]
         self.assertEqual(expected, cursor.fetchall())
 
     def test_label_unique_constraint(self):
@@ -444,6 +447,35 @@ class TestSqlDataModel(unittest.TestCase):
                 INSERT INTO label VALUES (NULL, 1, 'Midwest');
                 INSERT INTO label VALUES (NULL, 1, 'Midwest');
             """)
+
+    def test_rootlabel_constraint(self):
+        cursor = self.connection.cursor()
+        cursor.execute("INSERT INTO hierarchy VALUES (1, 'country', 0)")
+        cursor.execute("INSERT INTO label VALUES (1, 1, 'UNMAPPED')")
+        cursor.execute("INSERT INTO label VALUES (2, 1, 'United States')")
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'region', 1)")
+        cursor.execute("INSERT INTO label VALUES (3, 2, 'UNMAPPED')")
+        cursor.execute("INSERT INTO label VALUES (4, 2, 'Northeast')")
+        cursor.execute("INSERT INTO label VALUES (5, 2, 'Midwest')")
+
+        regex = 'root hierarchy cannot have multiple values'
+
+        # Check insert trigger on `label` table.
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("INSERT INTO label VALUES (6, 1, 'Germany')")
+
+        # Check update trigger on `label` table.
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("UPDATE label SET label_value='Japan' WHERE label_id=1")
+
+        # Check update trigger on `hierarchy` table.
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("UPDATE hierarchy SET hierarchy_level=2 WHERE hierarchy_id=1")
+
+        # Check delete trigger on `hierarchy` table.
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("DELETE FROM label WHERE hierarchy_id=1")
+            cursor.execute("DELETE FROM hierarchy WHERE hierarchy_id=1")
 
     def test_cell_label_foreign_key(self):
         """Mismatched hierarchy_id/label_id pairs must fail."""

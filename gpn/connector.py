@@ -69,12 +69,43 @@ _create_partition = """
         PRIMARY KEY (label_id, hierarchy_id),
         UNIQUE (hierarchy_id, label_value)
     );
+    CREATE INDEX nonunique_label_hierarchyid ON label (hierarchy_id);
 
     CREATE TRIGGER AutoIncrementLabelId AFTER INSERT ON label
     BEGIN
         UPDATE label
         SET label_id = (SELECT MAX(COALESCE(label_id, 0))+1 FROM label)
         WHERE label_id IS NULL;
+    END;
+
+    CREATE TRIGGER MaximalCellLabel_ins BEFORE INSERT ON label
+    WHEN NEW.hierarchy_id=(SELECT hierarchy_id FROM hierarchy ORDER BY hierarchy_level LIMIT 1)
+         AND (SELECT 2 < COUNT(*) FROM (SELECT label_value FROM label WHERE NEW.hierarchy_id=hierarchy_id
+                                        UNION SELECT 'UNMAPPED' UNION SELECT NEW.label_value))
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
+    END;
+
+    CREATE TRIGGER MaximalCellLabel_upd BEFORE UPDATE ON label
+    WHEN NEW.hierarchy_id=(SELECT hierarchy_id FROM hierarchy ORDER BY hierarchy_level LIMIT 1)
+         AND (SELECT 2 < COUNT(*) FROM (SELECT label_value FROM label WHERE NEW.hierarchy_id=hierarchy_id
+                                        UNION SELECT 'UNMAPPED' UNION SELECT NEW.label_value))
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
+    END;
+
+    CREATE TRIGGER MaximalCellHierarchy_upd AFTER UPDATE ON hierarchy
+    WHEN (SELECT 2 < COUNT(*) FROM (SELECT label_value FROM label WHERE label.hierarchy_id IN (SELECT hierarchy_id FROM hierarchy ORDER BY hierarchy_level LIMIT 1)
+                                    UNION SELECT 'UNMAPPED'))
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
+    END;
+
+    CREATE TRIGGER MaximalCellHierarchy_del AFTER DELETE ON hierarchy
+    WHEN (SELECT 2 < COUNT(*) FROM (SELECT label_value FROM label WHERE label.hierarchy_id IN (SELECT hierarchy_id FROM hierarchy ORDER BY hierarchy_level LIMIT 1)
+                                    UNION SELECT 'UNMAPPED'))
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
     END;
 
     CREATE TABLE cell_label (
