@@ -110,7 +110,7 @@ class TestInsert(unittest.TestCase):
                       'OH,Hamilton,Cincinnati\n'
                       'OH,Montgomery,Dayton\n')
         partition = Partition(mode=IN_MEMORY)
-        partition.insert_cells(fh)  # <- Inserting here!
+        partition._insert_cells(fh)  # <- Inserting here!
 
         connection = partition._connect()
         cursor = connection.cursor()
