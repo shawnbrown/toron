@@ -361,23 +361,7 @@ class _Connector(object):
     @staticmethod
     def _connect(database):
         if isinstance(database, sqlite3.Connection):
-            class ConnectionWrapper(object):
-                def __init__(self, conn):
-                    self._conn = conn
-
-                def close(self):
-                    try:
-                        self._conn.rollback()  # Uncommitted changes will be lost!
-                    except sqlite3.ProgrammingError:
-                        pass  # Closing already closed connection should pass.
-
-                def __del__(self):
-                    self.close()
-
-                def __getattr__(self, name):
-                    return getattr(self._conn, name)
-
-            connection = ConnectionWrapper(database)
+            connection = _ConnectionWrapper(database)
         else:
             connection = sqlite3.connect(database,
                                          detect_types=sqlite3.PARSE_DECLTYPES)
@@ -398,6 +382,32 @@ class _Connector(object):
                                'relation', 'relation_weight', 'property',
                                'sqlite_sequence'])
         return tables_required == tables_contained
+
+
+class _ConnectionWrapper(object):
+    """Wrapper for shared, in-memory connections."""
+    def __init__(self, conn):
+        self._conn = conn
+
+    def close(self):
+        try:
+            self._conn.rollback()  # Uncommitted changes will be lost!
+        except sqlite3.ProgrammingError:
+            pass  # Closing already closed connection should pass.
+
+    def __del__(self):
+        self.close()
+
+    @property
+    def isolation_level(self):
+        return self._conn.isolation_level
+
+    @isolation_level.setter
+    def isolation_level(self, value):
+        self._conn.isolation_level = value
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
 
 
 ########################################################################
