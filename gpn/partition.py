@@ -20,36 +20,55 @@ class Partition(object):
         fieldnames = next(reader)  # Use header row as fieldnames.
 
         connection = self._connect()
+        connection.isolation_level = None
         cursor = connection.cursor()
+        cursor.execute('SAVEPOINT BeforeInsertCells')
 
+        is_complete = False
         try:
-            isolation_level = connection.isolation_level
-            connection.isolation_level = None
-            cursor.execute('SAVEPOINT BeforeInsertCells')
+            self._insert_hierarchies(cursor, fieldnames)
 
-            # Create hierarchies.
-            query = 'INSERT INTO hierarchy (hierarchy_level, hierarchy_value) VALUES (?, ?);'
-            cursor.executemany(query, enumerate(fieldnames))
+            if not self._get_unmapped_cell(cursor, fieldnames):
+                items = [(x, 'UNMAPPED') for x in fieldnames]
+                self._insert_one_cell(cursor, items)
 
-            # Insert global "UNMAPPED" cell.
-            items = [(x, 'UNMAPPED') for x in fieldnames]
-            self._insert_one_cell(cursor, items)
-
-            # Insert all other cells.
             for row in reader:
                 items = zip(fieldnames, row)
                 self._insert_one_cell(cursor, items)
 
             cursor.execute('RELEASE SAVEPOINT BeforeInsertCells')
+            connection.commit()
 
-        except Exception:
-            cursor.execute('ROLLBACK TO SAVEPOINT BeforeInsertCells')
-            raise Exception('Error inserting cell records.')
+            is_complete = True
 
         finally:
-            connection.isolation_level = isolation_level
-            connection.commit()
+            if not is_complete:
+                cursor.execute('ROLLBACK TO SAVEPOINT BeforeInsertCells')
             connection.close()
+
+    @staticmethod
+    def _insert_hierarchies(cursor, fieldnames):
+        cursor.execute('SELECT hierarchy_value FROM hierarchy ORDER BY hierarchy_level')
+        hierarchies = [x[0] for x in cursor.fetchall()]
+        if not hierarchies:
+            query = 'INSERT INTO hierarchy (hierarchy_level, hierarchy_value) VALUES (?, ?)'
+            cursor.executemany(query, enumerate(fieldnames))
+        else:
+            msg = ('Fieldnames must match hierarchy values.\n'
+                   ' Found: %s\n Required: %s') % (', '.join(fieldnames),
+                                                   ', '.join(hierarchies))
+            assert set(hierarchies) == set(fieldnames), msg
+
+    @staticmethod
+    def _get_unmapped_cell(cursor, fieldnames):
+        select_one = ("SELECT cell_id FROM cell_label "
+                      "NATURAL JOIN label NATURAL JOIN hierarchy "
+                      "WHERE label_value='UNMAPPED' AND hierarchy_value=?")
+        operation = [select_one] * len(fieldnames)
+        operation = '\nINTERSECT\n'.join(operation)
+        cursor.execute(operation, fieldnames)
+        result = cursor.fetchone()
+        return result[0] if result else None
 
     @staticmethod
     def _insert_one_cell(cursor, items):

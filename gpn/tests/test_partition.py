@@ -151,6 +151,81 @@ class TestInsert(unittest.TestCase):
                        'FROM partition ORDER BY partition_id')
         self.assertEqual([], cursor.fetchall())
 
+    def test_insert_cells_multiple_files(self):
+        """Insert should accept multiple files."""
+        partition = Partition(mode=IN_MEMORY)
+
+        fh = StringIO('state,county,town\n'
+                      'OH,Allen,Lima\n')
+        partition._insert_cells(fh)  # <- Inserting.
+
+        fh = StringIO('state,county,town\n'
+                      'OH,Cuyahoga,Cleveland\n')
+        partition._insert_cells(fh)  # <- Inserting second file.
+
+        connection = partition._connect()
+        cursor = connection.cursor()
+
+        # Hierarchy table.
+        cursor.execute('SELECT * FROM hierarchy ORDER BY hierarchy_level')
+        expected = [(1, 'state', 0), (2, 'county', 1), (3, 'town', 2)]
+        self.assertEqual(expected, cursor.fetchall())
+
+        # Cell table.
+        cursor.execute('SELECT * FROM cell ORDER BY cell_id')
+        expected = [(1, 0), (2, 0), (3, 0)]
+        self.assertEqual(expected, cursor.fetchall())
+
+        # Label table.
+        cursor.execute('SELECT * FROM label ORDER BY label_id')
+        expected = [(1,  1, 'UNMAPPED'),   (2,  2, 'UNMAPPED'),
+                    (3,  3, 'UNMAPPED'),   (4,  1, 'OH'),
+                    (5,  2, 'Allen'),      (6,  3, 'Lima'),
+                    (7,  2, 'Cuyahoga'),   (8,  3, 'Cleveland')]
+        self.assertEqual(expected, cursor.fetchall())
+
+    def test_insert_cells_bad_header(self):
+        """Files must have the same header"""
+        partition = Partition(mode=IN_MEMORY)
+        fh = StringIO('state,county,town\n'
+                      'OH,Hamilton,Cincinnati\n')
+        partition._insert_cells(fh)
+
+        regex = 'Fieldnames must match hierarchy values.'
+        with self.assertRaisesRegex(AssertionError, regex):
+            fh = StringIO('state,county\n'
+                          'OH,Montgomery\n')
+            partition._insert_cells(fh)
+
+    def test_insert_cells_duplicate(self):
+        """Duplicate rows should fail and rollback to previous state."""
+        fh = StringIO('state,county,town\n'
+                      'OH,Cuyahoga,Cleveland\n')
+        partition = Partition(mode=IN_MEMORY)
+        partition._insert_cells(fh)  # <- First insert!
+
+        regex = 'CHECK constraint failed: cell_label'
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            fh = StringIO('state,county,town\n'
+                          'OH,Franklin,Columbus\n'
+                          'OH,Hamilton,Cincinnati\n'
+                          'OH,Hamilton,Cincinnati\n')
+            partition._insert_cells(fh)  # <- Second insert!
+
+        connection = partition._connect()
+        cursor = connection.cursor()
+
+        # Cell table should include only values from first insert.
+        cursor.execute('SELECT * FROM cell ORDER BY cell_id')
+        expected = [(1, 0), (2, 0)]
+        self.assertEqual(expected, cursor.fetchall())
+
+        # Label table should include only values from first insert.
+        cursor.execute('SELECT * FROM label ORDER BY label_id')
+        expected = [(1, 1, 'UNMAPPED'), (2, 2, 'UNMAPPED'), (3, 3, 'UNMAPPED'),
+                    (4, 1, 'OH'), (5, 2, 'Cuyahoga'), (6, 3, 'Cleveland')]
+        self.assertEqual(expected, cursor.fetchall())
+
 
 if __name__ == '__main__':
     unittest.main()
