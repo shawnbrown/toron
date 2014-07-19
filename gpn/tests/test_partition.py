@@ -151,19 +151,6 @@ class TestInsert(unittest.TestCase):
                        'FROM partition ORDER BY partition_id')
         self.assertEqual([], cursor.fetchall())
 
-        # Other tables should be empty.
-        cursor.execute('SELECT * FROM edge')
-        self.assertEqual([], cursor.fetchall())
-
-        cursor.execute('SELECT * FROM weight')
-        self.assertEqual([], cursor.fetchall())
-
-        cursor.execute('SELECT * FROM relation')
-        self.assertEqual([], cursor.fetchall())
-
-        cursor.execute('SELECT * FROM relation_weight')
-        self.assertEqual([], cursor.fetchall())
-
 
 if __name__ == '__main__':
     unittest.main()
