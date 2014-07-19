@@ -72,7 +72,34 @@ class TestInstantiation(MkdtempTestCase):
 
 
 class TestInsert(unittest.TestCase):
-    @unittest.skip('Not yet implemented.')
+    def test_insert_one_cell(self):
+        partition = Partition(mode=IN_MEMORY)
+        connection = partition._connect()
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO hierarchy VALUES (1, 'state', 0)")
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'county', 1)")
+        cursor.execute("INSERT INTO hierarchy VALUES (3, 'town', 2)")
+
+        items = [('state', 'OH'), ('county', 'Franklin'), ('town', 'Columbus')]
+        partition._insert_one_cell(cursor, items)  # <- Inserting here!
+
+        # Cell table.
+        cursor.execute('SELECT * FROM cell ORDER BY cell_id')
+        expected = [(1, 0)]
+        self.assertEqual(expected, cursor.fetchall())
+
+        # Label table.
+        cursor.execute('SELECT * FROM label ORDER BY label_id')
+        expected = [(1,  1, 'OH'),
+                    (2,  2, 'Franklin'),
+                    (3,  3, 'Columbus')]
+        self.assertEqual(expected, cursor.fetchall())
+
+        # Cell_label table,
+        expected = [(1, 1, 1, 1), (2, 1, 2, 2),  (3, 1, 3, 3)]
+        cursor.execute('SELECT * FROM cell_label ORDER BY cell_label_id')
+        self.assertEqual(expected, cursor.fetchall())
+
     def test_insert_cells(self):
         self.maxDiff = None
 
@@ -110,13 +137,13 @@ class TestInsert(unittest.TestCase):
         self.assertEqual(expected, cursor.fetchall())
 
         # Cell_label table,
-        cursor.execute('SELECT * FROM cell_label ORDER BY cell_label_id')
         expected = [(1,  1, 1, 1), (2,  1, 2, 2),  (3,  1, 3, 3),
                     (4,  2, 1, 4), (5,  2, 2, 5),  (6,  2, 3, 6),
-                    (8,  3, 1, 4), (8,  3, 2, 7),  (9,  3, 3, 8),
+                    (7,  3, 1, 4), (8,  3, 2, 7),  (9,  3, 3, 8),
                     (10, 4, 1, 4), (11, 4, 2, 9),  (12, 4, 3, 10),
                     (13, 5, 1, 4), (14, 5, 2, 11), (15, 5, 3, 12),
                     (16, 6, 1, 4), (17, 6, 2, 13), (18, 6, 3, 14)]
+        cursor.execute('SELECT * FROM cell_label ORDER BY cell_label_id')
         self.assertEqual(expected, cursor.fetchall())
 
         # Partition table.
