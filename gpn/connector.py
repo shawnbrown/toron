@@ -121,94 +121,43 @@ _create_partition = """
     CREATE INDEX nonunique_celllabel_hierarchyid ON cell_label (hierarchy_id);
     CREATE INDEX nonunique_celllabel_labelid ON cell_label (label_id);
 
-    CREATE TRIGGER CheckUniqueLabels_ins BEFORE INSERT ON cell_label
+    CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
+    WHEN (SELECT 1
+          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                FROM (SELECT cell_id, label_id
+                      FROM cell_label
+                      ORDER BY cell_id, label_id)
+                GROUP BY cell_id)
+          GROUP BY label_combo
+          HAVING COUNT(*) > 1)
     BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (each cell must be associated with a unique set of labels)')
-        FROM (
-                SELECT GROUP_CONCAT(label_id)
-                FROM (
-                    SELECT cell_id, label_id
-                    FROM cell_label
-                    ORDER BY cell_id, label_id
-                )
-                GROUP BY cell_id
-
-                INTERSECT
-
-                SELECT GROUP_CONCAT(label_id)
-                FROM (
-                    SELECT cell_id, label_id
-                    FROM cell_label
-                    WHERE cell_id = NEW.cell_id
-                        AND cell_label_id != NEW.cell_label_id
-
-                    UNION
-
-                    SELECT NEW.cell_id, NEW.label_id
-                    ORDER BY cell_id, label_id
-                )
-                GROUP BY cell_id
-        );
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
     END;
 
-    CREATE TRIGGER CheckUniqueLabels_upd BEFORE UPDATE ON cell_label
+    CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
+    WHEN (SELECT 1
+          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                FROM (SELECT cell_id, label_id
+                      FROM cell_label
+                      ORDER BY cell_id, label_id)
+                GROUP BY cell_id)
+          GROUP BY label_combo
+          HAVING COUNT(*) > 1)
     BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (each cell must be associated with a unique set of labels)')
-        FROM (
-                SELECT GROUP_CONCAT(label_id)
-                FROM (
-                    SELECT cell_id, label_id
-                    FROM cell_label
-                    ORDER BY cell_id, label_id
-                )
-                GROUP BY cell_id
-
-                INTERSECT
-
-                SELECT GROUP_CONCAT(label_id)
-                FROM (
-                    SELECT cell_id, label_id
-                    FROM cell_label
-                    WHERE cell_id = NEW.cell_id
-                        AND cell_label_id != NEW.cell_label_id
-
-                    UNION
-
-                    SELECT NEW.cell_id, NEW.label_id
-                    ORDER BY cell_id, label_id
-                )
-                GROUP BY cell_id
-        );
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
     END;
 
-    CREATE TRIGGER CheckUniqueLabels_del BEFORE DELETE ON cell_label
+    CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
+    WHEN (SELECT 1
+          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                FROM (SELECT cell_id, label_id
+                      FROM cell_label
+                      ORDER BY cell_id, label_id)
+                GROUP BY cell_id)
+          GROUP BY label_combo
+          HAVING COUNT(*) > 1)
     BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (each cell must be associated with a unique set of labels)')
-        FROM (
-                SELECT GROUP_CONCAT(label_id)
-                FROM (
-                    SELECT cell_id, label_id
-                    FROM cell_label
-                    ORDER BY cell_id, label_id
-                )
-                GROUP BY cell_id
-
-                INTERSECT
-
-                SELECT GROUP_CONCAT(label_id)
-                FROM (
-                    SELECT cell_id, label_id
-                    FROM cell_label
-                    WHERE cell_id = OLD.cell_id
-                        AND cell_label_id != OLD.cell_label_id
-
-                    UNION
-
-                    SELECT OLD.cell_id, OLD.label_id
-                    ORDER BY cell_id, label_id
-                )
-                GROUP BY cell_id
-        );
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
     END;
 
     CREATE TABLE partition (
