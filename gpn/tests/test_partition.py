@@ -13,6 +13,7 @@ from gpn.tests.common import MkdtempTestCase
 
 from gpn.partition import Partition
 from gpn.connector import _create_partition
+from gpn.connector import _create_triggers
 from gpn import IN_MEMORY
 from gpn import TEMP_FILE
 from gpn import READ_ONLY
@@ -25,7 +26,7 @@ class TestInstantiation(MkdtempTestCase):
         connection = sqlite3.connect(self._existing_partition)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        for operation in _create_partition:
+        for operation in (_create_partition + _create_triggers):
             cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()

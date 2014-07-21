@@ -134,7 +134,7 @@ _create_partition = [
         hierarchy_id INTEGER,
         label_id INTEGER,
         FOREIGN KEY (cell_id) REFERENCES cell(cell_id),
-        FOREIGN KEY (label_id, hierarchy_id) REFERENCES label(label_id, hierarchy_id)
+        FOREIGN KEY (label_id, hierarchy_id) REFERENCES label(label_id, hierarchy_id),
         UNIQUE (cell_id, hierarchy_id)
     )
     """,
@@ -149,51 +149,6 @@ _create_partition = [
 
     """
     CREATE INDEX nonunique_celllabel_labelid ON cell_label (label_id)
-    """,
-
-    """
-    CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
-    WHEN (SELECT 1
-          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                FROM (SELECT cell_id, label_id
-                      FROM cell_label
-                      ORDER BY cell_id, label_id)
-                GROUP BY cell_id)
-          GROUP BY label_combo
-          HAVING COUNT(*) > 1)
-    BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-    END
-    """,
-
-    """
-    CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
-    WHEN (SELECT 1
-          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                FROM (SELECT cell_id, label_id
-                      FROM cell_label
-                      ORDER BY cell_id, label_id)
-                GROUP BY cell_id)
-          GROUP BY label_combo
-          HAVING COUNT(*) > 1)
-    BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-    END
-    """,
-
-    """
-    CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
-    WHEN (SELECT 1
-          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                FROM (SELECT cell_id, label_id
-                      FROM cell_label
-                      ORDER BY cell_id, label_id)
-                GROUP BY cell_id)
-          GROUP BY label_combo
-          HAVING COUNT(*) > 1)
-    BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-    END
     """,
 
     """
@@ -257,6 +212,53 @@ _create_partition = [
     """
 ]
 
+_create_triggers = [
+    """
+    CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
+    WHEN (SELECT 1
+          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                FROM (SELECT cell_id, label_id
+                      FROM cell_label
+                      ORDER BY cell_id, label_id)
+                GROUP BY cell_id)
+          GROUP BY label_combo
+          HAVING COUNT(*) > 1)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+    END
+    """,
+
+    """
+    CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
+    WHEN (SELECT 1
+          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                FROM (SELECT cell_id, label_id
+                      FROM cell_label
+                      ORDER BY cell_id, label_id)
+                GROUP BY cell_id)
+          GROUP BY label_combo
+          HAVING COUNT(*) > 1)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+    END
+    """,
+
+    """
+    CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
+    WHEN (SELECT 1
+          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                FROM (SELECT cell_id, label_id
+                      FROM cell_label
+                      ORDER BY cell_id, label_id)
+                GROUP BY cell_id)
+          GROUP BY label_combo
+          HAVING COUNT(*) > 1)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+    END
+    """
+]
+
 
 # Mode flags.
 IN_MEMORY = 1  #: Create a temporary partition in RAM.
@@ -277,6 +279,7 @@ class _Connector(object):
 
         """
         global _create_partition
+        global _create_triggers
         self._memory_conn = None
         self._temp_path = None
         self._is_read_only = bool(mode & READ_ONLY)
@@ -314,7 +317,7 @@ class _Connector(object):
                 connection = self._connect(self._memory_conn)
             cursor = connection.cursor()
             cursor.execute('PRAGMA synchronous=OFF')
-            for operation in _create_partition:
+            for operation in (_create_partition + _create_triggers):
                 cursor.execute(operation)
             cursor.execute('PRAGMA synchronous=FULL')
             connection.close()

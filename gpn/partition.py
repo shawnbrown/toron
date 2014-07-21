@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import csv
+import sqlite3
 
 from gpn.connector import _Connector
+from gpn.connector import _create_triggers
 
 
 class Partition(object):
@@ -24,25 +26,49 @@ class Partition(object):
         cursor = connection.cursor()
         cursor.execute('SAVEPOINT BeforeInsertCells')
 
-        is_complete = False
+        complete = False
         try:
+            # Temporarily drop triggers (too slow for bulk insert).
+            cursor.execute('DROP TRIGGER CheckUniqueLabels_ins')
+            cursor.execute('DROP TRIGGER CheckUniqueLabels_upd')
+            cursor.execute('DROP TRIGGER CheckUniqueLabels_del')
+
             self._insert_hierarchies(cursor, fieldnames)
 
             if not self._get_unmapped_cell(cursor, fieldnames):
                 items = [(x, 'UNMAPPED') for x in fieldnames]
                 self._insert_one_cell(cursor, items)
 
+            # Add all other cells.
             for row in reader:
                 items = zip(fieldnames, row)
                 self._insert_one_cell(cursor, items)
 
+            # Check for duplicate label combinations.
+            cursor.execute("""
+                SELECT 1
+                FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                      FROM (SELECT cell_id, label_id
+                            FROM cell_label
+                            ORDER BY cell_id, label_id)
+                      GROUP BY cell_id)
+                GROUP BY label_combo
+                HAVING COUNT(*) > 1
+            """)
+            if cursor.fetchone():
+                raise sqlite3.IntegrityError('CHECK constraint failed: cell_label')
+
+            # Re-create "CheckUniqueLabel" triggers.
+            for operation in _create_triggers:
+                cursor.execute(operation)
+
             cursor.execute('RELEASE SAVEPOINT BeforeInsertCells')
             connection.commit()
 
-            is_complete = True
+            complete = True
 
         finally:
-            if not is_complete:
+            if not complete:
                 cursor.execute('ROLLBACK TO SAVEPOINT BeforeInsertCells')
             connection.close()
 
