@@ -244,7 +244,8 @@ class TestConnector(MkdtempTestCase):
         connection = sqlite3.connect(self._existing_partition)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        cursor.executescript(_create_partition)
+        for operation in _create_partition:
+            cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
 
