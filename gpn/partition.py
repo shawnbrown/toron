@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import csv
+import itertools
 import sqlite3
 
 from gpn.connector import _Connector
@@ -10,6 +11,27 @@ class Partition(object):
     def __init__(self, path=None, mode=0):
         """Get existing Partition or create a new one."""
         self._connect = _Connector(path, mode=mode)
+
+    def _select_cell_id(self, **kwds):
+        query = """
+            SELECT cell_id
+            FROM cell_label
+            NATURAL JOIN hierarchy
+            NATURAL JOIN label
+            WHERE hierarchy_value=? AND label_value=?
+        """
+        operation = [query] * len(kwds)
+        operation = '\nINTERSECT\n'.join(operation)
+        params = itertools.chain.from_iterable(kwds.items())
+        params = list(params)
+
+        connection = self._connect()
+        cursor = connection.cursor()
+
+        cursor.execute(operation, params)
+        result = iter(x[0] for x in cursor.fetchall())
+        connection.close()
+        return result
 
     def insert_cells(self, filename):
         """Insert cells from given CSV filename."""

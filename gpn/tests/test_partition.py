@@ -229,5 +229,35 @@ class TestInsert(unittest.TestCase):
         self.assertEqual(expected, cursor.fetchall())
 
 
+class TestSelect(unittest.TestCase):
+    def test_select_cell_id(self):
+        """ """
+        fh = StringIO('country,region,state,city\n'      # cell_ids
+                      'USA,Midwest,IL,Chicago\n'         # 2 (1 is UNMAPPED)
+                      'USA,Northeast,NY,New York\n'      # 3
+                      'USA,Northeast,PA,Philadelphia\n'  # 4
+                      'USA,South,TX,Dallas\n'            # 5
+                      'USA,South,TX,Houston\n'           # 6
+                      'USA,South,TX,San Antonio\n'       # 7
+                      'USA,West,AZ,Phoenix\n'            # 8
+                      'USA,West,CA,Los Angeles\n'        # 9
+                      'USA,West,CA,San Diego\n'          # 10
+                      'USA,West,CA,San Jose\n')          # 11
+        partition = Partition(mode=IN_MEMORY)
+        partition._insert_cells(fh)
+
+        result = partition._select_cell_id(region='Northeast')
+        self.assertEqual([3, 4], list(result))
+
+        result = partition._select_cell_id(region='West', state='CA')
+        self.assertEqual([9, 10, 11], list(result))
+
+        result = partition._select_cell_id(state='XX')
+        self.assertEqual([], list(result))
+
+        #result = partition._select_cell_id()
+        #self.assertEqual([], list(result))
+
+
 if __name__ == '__main__':
     unittest.main()
