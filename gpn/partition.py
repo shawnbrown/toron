@@ -17,8 +17,8 @@ class Partition(object):
             SELECT cell_id, hierarchy_value, label_value
             FROM cell
             NATURAL JOIN cell_label
-            NATURAL JOIN hierarchy
             NATURAL JOIN label
+            NATURAL JOIN hierarchy
             WHERE cell_id IN (%s)
             ORDER BY cell_id, hierarchy_level
         """
@@ -43,8 +43,8 @@ class Partition(object):
         query = """
             SELECT cell_id
             FROM cell_label
-            NATURAL JOIN hierarchy
             NATURAL JOIN label
+            NATURAL JOIN hierarchy
             WHERE hierarchy_value=? AND label_value=?
         """
         operation = [query] * len(kwds)
