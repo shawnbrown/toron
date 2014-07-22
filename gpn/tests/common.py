@@ -26,10 +26,8 @@ class MkdtempTestCase(unittest.TestCase):
             self.setUpClass.__func__(self)
 
     def tearDown(self):
-        self._remove_tempfiles()
-        if self._no_class_fixtures:
-            self.tearDownClass.__func__(self)
-
-    def _remove_tempfiles(self):
         for path in glob.glob(os.path.join(self._temp_dir, '*')):
             os.remove(path)
+
+        if self._no_class_fixtures:
+            self.tearDownClass.__func__(self)
