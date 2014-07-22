@@ -14,31 +14,23 @@ class Partition(object):
 
     def select_cell(self, **kwds):
         connection = self._connect()
-        cursor = connection.cursor()
+        cursor1 = connection.cursor()
+        cursor2 = connection.cursor()
 
-        query = """
-            SELECT cell_id, hierarchy_value, label_value
-            FROM cell
-            NATURAL JOIN cell_label
-            NATURAL JOIN label
-            NATURAL JOIN hierarchy
-            WHERE cell_id IN (%s)
-            ORDER BY cell_id, hierarchy_level
-        """
-        cell_ids = self._select_cell_id(cursor, **kwds)
-        cell_ids = [str(x) for x in cell_ids]
-        query = query % ', '.join(cell_ids)
+        for cell_id in self._select_cell_id(cursor1, **kwds):
+            query = """
+                SELECT hierarchy_value, label_value
+                FROM cell
+                NATURAL JOIN cell_label
+                NATURAL JOIN label
+                NATURAL JOIN hierarchy
+                WHERE cell_id=?
+                ORDER BY hierarchy_level
+            """
+            cursor2.execute(query, (cell_id,))
+            yield dict(cursor2.fetchall())
 
-        cursor.execute(query)
-
-        def genfn(connection, cursor):
-            keyfn = lambda x: x[0]  # Index 0 is cell_id.
-            for key, group in itertools.groupby(cursor, keyfn):
-                cell = [(k, v) for (c, k, v) in group]
-                yield dict(cell)
-            connection.close()
-
-        return genfn(connection, cursor)
+        connection.close()
 
     @staticmethod
     def _select_cell_id(cursor, **kwds):
@@ -55,7 +47,7 @@ class Partition(object):
         params = list(params)
 
         cursor.execute(operation, params)
-        return (x[0] for x in cursor.fetchall())
+        return (x[0] for x in cursor)
 
     def insert_cells(self, filename):
         """Insert cells from given CSV filename."""
