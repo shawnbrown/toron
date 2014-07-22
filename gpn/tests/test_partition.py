@@ -246,17 +246,20 @@ class TestSelect(unittest.TestCase):
         partition = Partition(mode=IN_MEMORY)
         partition._insert_cells(fh)
 
-        result = partition._select_cell_id(region='Northeast')
+        connection = partition._connect()
+        cursor = connection.cursor()
+
+        result = partition._select_cell_id(cursor, region='Northeast')
         self.assertEqual([3, 4], list(result))
 
-        result = partition._select_cell_id(region='West', state='CA')
+        result = partition._select_cell_id(cursor, region='West', state='CA')
         self.assertEqual([9, 10, 11], list(result))
 
         kwds = {'region': 'West', 'state': 'CA'}
-        result = partition._select_cell_id(**kwds)
+        result = partition._select_cell_id(cursor, **kwds)
         self.assertEqual([9, 10, 11], list(result))
 
-        result = partition._select_cell_id(state='XX')
+        result = partition._select_cell_id(cursor, state='XX')
         self.assertEqual([], list(result))
 
         #result = partition._select_cell_id()

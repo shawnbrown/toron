@@ -13,6 +13,9 @@ class Partition(object):
         self._connect = _Connector(path, mode=mode)
 
     def select_cell(self, **kwds):
+        connection = self._connect()
+        cursor = connection.cursor()
+
         query = """
             SELECT cell_id, hierarchy_value, label_value
             FROM cell
@@ -22,12 +25,10 @@ class Partition(object):
             WHERE cell_id IN (%s)
             ORDER BY cell_id, hierarchy_level
         """
-        cell_ids = self._select_cell_id(**kwds)
+        cell_ids = self._select_cell_id(cursor, **kwds)
         cell_ids = [str(x) for x in cell_ids]
         query = query % ', '.join(cell_ids)
 
-        connection = self._connect()
-        cursor = connection.cursor()
         cursor.execute(query)
 
         def genfn(connection, cursor):
@@ -39,7 +40,8 @@ class Partition(object):
 
         return genfn(connection, cursor)
 
-    def _select_cell_id(self, **kwds):
+    @staticmethod
+    def _select_cell_id(cursor, **kwds):
         query = """
             SELECT cell_id
             FROM cell_label
@@ -52,13 +54,8 @@ class Partition(object):
         params = itertools.chain.from_iterable(kwds.items())
         params = list(params)
 
-        connection = self._connect()
-        cursor = connection.cursor()
-
         cursor.execute(operation, params)
-        result = iter(x[0] for x in cursor.fetchall())
-        connection.close()
-        return result
+        return (x[0] for x in cursor.fetchall())
 
     def insert_cells(self, filename):
         """Insert cells from given CSV filename."""
