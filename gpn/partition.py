@@ -73,7 +73,7 @@ class Partition(object):
         connection = self._connect()
         connection.isolation_level = None
         cursor = connection.cursor()
-        cursor.execute('SAVEPOINT BeforeInsertCells')
+        cursor.execute('BEGIN TRANSACTION')
 
         complete = False
         try:
@@ -111,14 +111,12 @@ class Partition(object):
             for operation in _create_triggers:
                 cursor.execute(operation)
 
-            cursor.execute('RELEASE SAVEPOINT BeforeInsertCells')
             connection.commit()
-
             complete = True
 
         finally:
             if not complete:
-                cursor.execute('ROLLBACK TO SAVEPOINT BeforeInsertCells')
+                connection.rollback()
             connection.close()
 
     @staticmethod
