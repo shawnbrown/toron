@@ -12,6 +12,33 @@ class Partition(object):
         """Get existing Partition or create a new one."""
         self._connect = _Connector(path, mode=mode)
 
+    def select_cell(self, **kwds):
+        query = """
+            SELECT cell_id, hierarchy_value, label_value
+            FROM cell
+            NATURAL JOIN cell_label
+            NATURAL JOIN hierarchy
+            NATURAL JOIN label
+            WHERE cell_id IN (%s)
+            ORDER BY cell_id, hierarchy_level
+        """
+        cell_ids = self._select_cell_id(**kwds)
+        cell_ids = [str(x) for x in cell_ids]
+        query = query % ', '.join(cell_ids)
+
+        connection = self._connect()
+        cursor = connection.cursor()
+        cursor.execute(query)
+
+        def genfn(connection, cursor):
+            keyfn = lambda x: x[0]  # Index 0 is cell_id.
+            for key, group in itertools.groupby(cursor, keyfn):
+                cell = [(k, v) for (c, k, v) in group]
+                yield dict(cell)
+            connection.close()
+
+        return genfn(connection, cursor)
+
     def _select_cell_id(self, **kwds):
         query = """
             SELECT cell_id

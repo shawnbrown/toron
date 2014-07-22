@@ -252,11 +252,38 @@ class TestSelect(unittest.TestCase):
         result = partition._select_cell_id(region='West', state='CA')
         self.assertEqual([9, 10, 11], list(result))
 
+        kwds = {'region': 'West', 'state': 'CA'}
+        result = partition._select_cell_id(**kwds)
+        self.assertEqual([9, 10, 11], list(result))
+
         result = partition._select_cell_id(state='XX')
         self.assertEqual([], list(result))
 
         #result = partition._select_cell_id()
         #self.assertEqual([], list(result))
+
+    def test_select_cell(self):
+        fh = StringIO('country,region,state,city\n'      # cell_ids
+                      'USA,Midwest,IL,Chicago\n'         # 2 (1 is UNMAPPED)
+                      'USA,Northeast,NY,New York\n'      # 3
+                      'USA,Northeast,PA,Philadelphia\n'  # 4
+                      'USA,South,TX,Dallas\n'            # 5
+                      'USA,South,TX,Houston\n'           # 6
+                      'USA,South,TX,San Antonio\n'       # 7
+                      'USA,West,AZ,Phoenix\n'            # 8
+                      'USA,West,CA,Los Angeles\n'        # 9
+                      'USA,West,CA,San Diego\n'          # 10
+                      'USA,West,CA,San Jose\n')          # 11
+        partition = Partition(mode=IN_MEMORY)
+        partition._insert_cells(fh)
+
+        result = partition.select_cell(region='West', state='CA')
+        expected = [
+            {'country': 'USA', 'region': 'West', 'state': 'CA', 'city': 'Los Angeles'},
+            {'country': 'USA', 'region': 'West', 'state': 'CA', 'city': 'San Diego'},
+            {'country': 'USA', 'region': 'West', 'state': 'CA', 'city': 'San Jose'},
+        ]
+        self.assertEqual(expected, list(result))
 
 
 if __name__ == '__main__':
