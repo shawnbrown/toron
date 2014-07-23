@@ -129,23 +129,23 @@ class TestInsert(unittest.TestCase):
 
         # Label table.
         cursor.execute('SELECT * FROM label ORDER BY label_id')
-        expected = [(1,  1, 'UNMAPPED'),   (2,  2, 'UNMAPPED'),
-                    (3,  3, 'UNMAPPED'),   (4,  1, 'OH'),
-                    (5,  2, 'Allen'),      (6,  3, 'Lima'),
-                    (7,  2, 'Cuyahoga'),   (8,  3, 'Cleveland'),
-                    (9,  2, 'Franklin'),   (10, 3, 'Columbus'),
-                    (11, 2, 'Hamilton'),   (12, 3, 'Cincinnati'),
-                    (13, 2, 'Montgomery'), (14, 3, 'Dayton')]
+        expected = [(1,  1, 'OH'),         (2,  2, 'Allen'),
+                    (3,  3, 'Lima'),       (4,  2, 'Cuyahoga'),
+                    (5,  3, 'Cleveland'),  (6,  2, 'Franklin'),
+                    (7,  3, 'Columbus'),   (8,  2, 'Hamilton'),
+                    (9,  3, 'Cincinnati'), (10, 2, 'Montgomery'),
+                    (11, 3, 'Dayton'),     (12, 1, 'UNMAPPED'),
+                    (13, 2, 'UNMAPPED'),   (14, 3, 'UNMAPPED')]
         self.assertEqual(expected, cursor.fetchall())
 
         # Cell_label table,
-        expected = [(1,  1, 1, 1), (2,  1, 2, 2),  (3,  1, 3, 3),
-                    (4,  2, 1, 4), (5,  2, 2, 5),  (6,  2, 3, 6),
-                    (7,  3, 1, 4), (8,  3, 2, 7),  (9,  3, 3, 8),
-                    (10, 4, 1, 4), (11, 4, 2, 9),  (12, 4, 3, 10),
-                    (13, 5, 1, 4), (14, 5, 2, 11), (15, 5, 3, 12),
-                    (16, 6, 1, 4), (17, 6, 2, 13), (18, 6, 3, 14)]
         cursor.execute('SELECT * FROM cell_label ORDER BY cell_label_id')
+        expected = [(1,  1, 1, 1),  (2,  1, 2, 2),  (3,  1, 3, 3),
+                    (4,  2, 1, 1),  (5,  2, 2, 4),  (6,  2, 3, 5),
+                    (7,  3, 1, 1),  (8,  3, 2, 6),  (9,  3, 3, 7),
+                    (10, 4, 1, 1),  (11, 4, 2, 8),  (12, 4, 3, 9),
+                    (13, 5, 1, 1),  (14, 5, 2, 10), (15, 5, 3, 11),
+                    (16, 6, 1, 12), (17, 6, 2, 13), (18, 6, 3, 14)]
         self.assertEqual(expected, cursor.fetchall())
 
         # Partition table.
@@ -180,10 +180,10 @@ class TestInsert(unittest.TestCase):
 
         # Label table.
         cursor.execute('SELECT * FROM label ORDER BY label_id')
-        expected = [(1,  1, 'UNMAPPED'),   (2,  2, 'UNMAPPED'),
-                    (3,  3, 'UNMAPPED'),   (4,  1, 'OH'),
-                    (5,  2, 'Allen'),      (6,  3, 'Lima'),
-                    (7,  2, 'Cuyahoga'),   (8,  3, 'Cleveland')]
+        expected = [(1, 1, 'OH'), (2, 2, 'Allen'),
+                    (3, 3, 'Lima'), (4, 1, 'UNMAPPED'),
+                    (5, 2, 'UNMAPPED'), (6, 3, 'UNMAPPED'),
+                    (7, 2, 'Cuyahoga'), (8, 3, 'Cleveland')]
         self.assertEqual(expected, cursor.fetchall())
 
     def test_insert_cells_bad_header(self):
@@ -224,8 +224,8 @@ class TestInsert(unittest.TestCase):
 
         # Label table should include only values from first insert.
         cursor.execute('SELECT * FROM label ORDER BY label_id')
-        expected = [(1, 1, 'UNMAPPED'), (2, 2, 'UNMAPPED'), (3, 3, 'UNMAPPED'),
-                    (4, 1, 'OH'), (5, 2, 'Cuyahoga'), (6, 3, 'Cleveland')]
+        expected = [(1, 1, 'OH'),       (2, 2, 'Cuyahoga'), (3, 3, 'Cleveland'),
+                    (4, 1, 'UNMAPPED'), (5, 2, 'UNMAPPED'), (6, 3, 'UNMAPPED')]
         self.assertEqual(expected, cursor.fetchall())
 
 
@@ -233,16 +233,16 @@ class TestSelect(unittest.TestCase):
     def test_select_cell_id(self):
         """ """
         fh = StringIO('country,region,state,city\n'      # cell_ids
-                      'USA,Midwest,IL,Chicago\n'         # 2 (1 is UNMAPPED)
-                      'USA,Northeast,NY,New York\n'      # 3
-                      'USA,Northeast,PA,Philadelphia\n'  # 4
-                      'USA,South,TX,Dallas\n'            # 5
-                      'USA,South,TX,Houston\n'           # 6
-                      'USA,South,TX,San Antonio\n'       # 7
-                      'USA,West,AZ,Phoenix\n'            # 8
-                      'USA,West,CA,Los Angeles\n'        # 9
-                      'USA,West,CA,San Diego\n'          # 10
-                      'USA,West,CA,San Jose\n')          # 11
+                      'USA,Midwest,IL,Chicago\n'         # 1
+                      'USA,Northeast,NY,New York\n'      # 2
+                      'USA,Northeast,PA,Philadelphia\n'  # 3
+                      'USA,South,TX,Dallas\n'            # 4
+                      'USA,South,TX,Houston\n'           # 5
+                      'USA,South,TX,San Antonio\n'       # 6
+                      'USA,West,AZ,Phoenix\n'            # 7
+                      'USA,West,CA,Los Angeles\n'        # 8
+                      'USA,West,CA,San Diego\n'          # 9
+                      'USA,West,CA,San Jose\n')          # 10
         partition = Partition(mode=IN_MEMORY)
         partition._insert_cells(fh)
 
@@ -250,14 +250,14 @@ class TestSelect(unittest.TestCase):
         cursor = connection.cursor()
 
         result = partition._select_cell_id(cursor, region='Northeast')
-        self.assertEqual([3, 4], list(result))
+        self.assertEqual([2, 3], list(result))
 
         result = partition._select_cell_id(cursor, region='West', state='CA')
-        self.assertEqual([9, 10, 11], list(result))
+        self.assertEqual([8, 9, 10], list(result))
 
         kwds = {'region': 'West', 'state': 'CA'}
         result = partition._select_cell_id(cursor, **kwds)
-        self.assertEqual([9, 10, 11], list(result))
+        self.assertEqual([8, 9, 10], list(result))
 
         result = partition._select_cell_id(cursor, state='XX')
         self.assertEqual([], list(result))

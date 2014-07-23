@@ -73,17 +73,17 @@ class Partition(object):
 
             self._insert_hierarchies(cursor, fieldnames)
 
+            # Add cells from file.
+            for row in reader:
+                items = zip(fieldnames, row)
+                self._insert_one_cell(cursor, items)
+
             # Add "UNMAPPED" cell if not present.
             unmapped_items = [(x, 'UNMAPPED') for x in fieldnames]
             unmapped_dict = dict(unmapped_items)
             resultgen = self._select_cell_id(cursor, **unmapped_dict)
             if not list(resultgen):
                 self._insert_one_cell(cursor, unmapped_items)
-
-            # Add all other cells.
-            for row in reader:
-                items = zip(fieldnames, row)
-                self._insert_one_cell(cursor, items)
 
             # Check for duplicate label combinations.
             cursor.execute("""
