@@ -420,6 +420,26 @@ class TestSqlDataModel(unittest.TestCase):
         cursor.execute('SELECT * FROM cell')
         self.assertEqual([(1, 0)], cursor.fetchall())
 
+    def test_hierarchy_check(self):
+        cursor = self.connection.cursor()
+        cursor.execute("INSERT INTO hierarchy VALUES (1, 'country', 0)")
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'region', 1)")
+
+        regex = 'CHECK constraint failed: hierarchy'
+
+        # Attempt insert with "cell_id" as hierarchy_value.
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("INSERT INTO hierarchy VALUES (3, 'cell_id', 2)")
+
+        # Attempt insert with hierarchy_value containing a dot (".").
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("INSERT INTO hierarchy VALUES (3, 'sta.te', 2)")
+
+        cursor.execute('SELECT * FROM hierarchy')
+        expected = [(1, 'country', 0), (2, 'region', 1)]
+        self.assertEqual(expected, cursor.fetchall())
+
+
     def test_label_autoincrement(self):
         """Label_id should auto-increment despite being in a composite key."""
         cursor = self.connection.cursor()

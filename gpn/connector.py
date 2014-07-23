@@ -60,7 +60,8 @@ _create_partition = [
     """
     CREATE TABLE hierarchy (
         hierarchy_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-        hierarchy_value TEXT UNIQUE NOT NULL,
+        hierarchy_value TEXT UNIQUE NOT NULL CHECK(hierarchy_value!='cell_id'
+                                                   AND NOT INSTR(hierarchy_value, '.')),
         hierarchy_level INTEGER UNIQUE NOT NULL
     )
     """,
