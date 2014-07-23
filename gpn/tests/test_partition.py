@@ -289,5 +289,39 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(expected, list(result))
 
 
+class TestFileImportExport(MkdtempTestCase):
+    def setUp(self):
+        super(self.__class__, self).setUp()
+        fh = StringIO('country,region,state,city\n'
+                      'USA,Midwest,IL,Chicago\n'
+                      'USA,Northeast,NY,New York\n'
+                      'USA,Northeast,PA,Philadelphia\n')
+        partition = Partition(mode=IN_MEMORY)
+        partition._insert_cells(fh)
+        self.partition = partition
+
+    def test_export(self):
+        filename = 'tempexport.csv'
+        self.partition.export_cells(filename)
+
+        with open(filename) as fh:
+            file_contents = fh.read()
+            expected_contents = ('cell_id,country,region,state,city\n'
+                                 '1,USA,Midwest,IL,Chicago\n'
+                                 '2,USA,Northeast,NY,New York\n'
+                                 '3,USA,Northeast,PA,Philadelphia\n'
+                                 '4,UNMAPPED,UNMAPPED,UNMAPPED,UNMAPPED\n')
+            self.assertEqual(expected_contents, file_contents)
+
+    def test_already_exists(self):
+        filename = 'tempexport.csv'
+        with open(filename, 'w') as fh:
+            fh.write('foo\n1\n2\n3')
+
+        regex = filename + ' already exists'
+        with self.assertRaisesRegex(AssertionError, regex):
+            self.partition.export_cells(filename)
+
+
 if __name__ == '__main__':
     unittest.main()

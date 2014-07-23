@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-import csv
 import itertools
+import os
 import sqlite3
 
+from gpn import _csv as csv
 from gpn.connector import _Connector
 from gpn.connector import _create_triggers
 
@@ -11,6 +12,31 @@ class Partition(object):
     def __init__(self, path=None, mode=0):
         """Get existing Partition or create a new one."""
         self._connect = _Connector(path, mode=mode)
+
+    def export_cells(self, filename):
+        assert not os.path.exists(filename), '%s already exists' % filename
+
+        with open(filename, 'w') as fh:
+            connection = self._connect()
+            cursor1 = connection.cursor()
+
+            # Get field names.
+            cursor1.execute('SELECT hierarchy_value FROM hierarchy '
+                            'ORDER BY hierarchy_level')
+            fieldnames = [x[0] for x in cursor1]
+            fieldnames.insert(0, 'cell_id')
+
+            # Write output file.
+            writer = csv.DictWriter(fh, fieldnames, lineterminator='\n')
+            writer.writeheader()
+            cursor1.execute('SELECT cell_id from cell ORDER BY cell_id')
+            cursor2 = connection.cursor()
+            for cell_id in (x[0] for x in cursor1):
+                row = self._select_cell(cursor2, cell_id)
+                row['cell_id'] = cell_id
+                writer.writerow(row)
+
+            connection.close()
 
     def select_cell(self, **kwds):
         connection = self._connect()
