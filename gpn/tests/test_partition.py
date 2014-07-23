@@ -267,16 +267,16 @@ class TestSelect(unittest.TestCase):
 
     def test_select_cell(self):
         fh = StringIO('country,region,state,city\n'      # cell_ids
-                      'USA,Midwest,IL,Chicago\n'         # 2 (1 is UNMAPPED)
-                      'USA,Northeast,NY,New York\n'      # 3
-                      'USA,Northeast,PA,Philadelphia\n'  # 4
-                      'USA,South,TX,Dallas\n'            # 5
-                      'USA,South,TX,Houston\n'           # 6
-                      'USA,South,TX,San Antonio\n'       # 7
-                      'USA,West,AZ,Phoenix\n'            # 8
-                      'USA,West,CA,Los Angeles\n'        # 9
-                      'USA,West,CA,San Diego\n'          # 10
-                      'USA,West,CA,San Jose\n')          # 11
+                      'USA,Midwest,IL,Chicago\n'         # 1
+                      'USA,Northeast,NY,New York\n'      # 2
+                      'USA,Northeast,PA,Philadelphia\n'  # 3
+                      'USA,South,TX,Dallas\n'            # 4
+                      'USA,South,TX,Houston\n'           # 5
+                      'USA,South,TX,San Antonio\n'       # 6
+                      'USA,West,AZ,Phoenix\n'            # 7
+                      'USA,West,CA,Los Angeles\n'        # 8
+                      'USA,West,CA,San Diego\n'          # 9
+                      'USA,West,CA,San Jose\n')          # 10
         partition = Partition(mode=IN_MEMORY)
         partition._insert_cells(fh)
 
