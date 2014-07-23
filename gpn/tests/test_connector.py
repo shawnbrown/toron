@@ -425,7 +425,7 @@ class TestSqlDataModel(unittest.TestCase):
         cursor.execute("INSERT INTO hierarchy VALUES (1, 'country', 0)")
         cursor.execute("INSERT INTO hierarchy VALUES (2, 'region', 1)")
 
-        regex = 'CHECK constraint failed: hierarchy'
+        regex = '(CHECK )?constraint failed(: hierarchy)?'
 
         # Attempt insert with "cell_id" as hierarchy_value.
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
