@@ -16,21 +16,23 @@ class Partition(object):
         connection = self._connect()
         cursor1 = connection.cursor()
         cursor2 = connection.cursor()
-
         for cell_id in self._select_cell_id(cursor1, **kwds):
-            query = """
-                SELECT hierarchy_value, label_value
-                FROM cell
-                NATURAL JOIN cell_label
-                NATURAL JOIN label
-                NATURAL JOIN hierarchy
-                WHERE cell_id=?
-                ORDER BY hierarchy_level
-            """
-            cursor2.execute(query, (cell_id,))
-            yield dict(cursor2.fetchall())
-
+            yield self._select_cell(cursor2, cell_id)
         connection.close()
+
+    @staticmethod
+    def _select_cell(cursor, cell_id):
+        query = """
+            SELECT hierarchy_value, label_value
+            FROM cell
+            NATURAL JOIN cell_label
+            NATURAL JOIN label
+            NATURAL JOIN hierarchy
+            WHERE cell_id=?
+            ORDER BY hierarchy_level
+        """
+        cursor.execute(query, (cell_id,))
+        return dict(cursor.fetchall())
 
     @staticmethod
     def _select_cell_id(cursor, **kwds):
