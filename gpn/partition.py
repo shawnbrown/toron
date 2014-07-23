@@ -73,9 +73,12 @@ class Partition(object):
 
             self._insert_hierarchies(cursor, fieldnames)
 
-            if not self._get_unmapped_cell(cursor, fieldnames):
-                items = [(x, 'UNMAPPED') for x in fieldnames]
-                self._insert_one_cell(cursor, items)
+            # Add "UNMAPPED" cell if not present.
+            unmapped_items = [(x, 'UNMAPPED') for x in fieldnames]
+            unmapped_dict = dict(unmapped_items)
+            resultgen = self._select_cell_id(cursor, **unmapped_dict)
+            if not list(resultgen):
+                self._insert_one_cell(cursor, unmapped_items)
 
             # Add all other cells.
             for row in reader:
@@ -120,17 +123,6 @@ class Partition(object):
                    ' Found: %s\n Required: %s') % (', '.join(fieldnames),
                                                    ', '.join(hierarchies))
             assert set(hierarchies) == set(fieldnames), msg
-
-    @staticmethod
-    def _get_unmapped_cell(cursor, fieldnames):
-        select_one = ("SELECT cell_id FROM cell_label "
-                      "NATURAL JOIN label NATURAL JOIN hierarchy "
-                      "WHERE label_value='UNMAPPED' AND hierarchy_value=?")
-        operation = [select_one] * len(fieldnames)
-        operation = '\nINTERSECT\n'.join(operation)
-        cursor.execute(operation, fieldnames)
-        result = cursor.fetchone()
-        return result[0] if result else None
 
     @staticmethod
     def _insert_one_cell(cursor, items):
