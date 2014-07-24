@@ -73,6 +73,31 @@ class TestInstantiation(MkdtempTestCase):
         self.assertIsNone(ptn._connect._memory_conn)
 
 
+class TestHash(unittest.TestCase):
+    def test_get_hash(self):
+        partition = Partition(mode=IN_MEMORY)
+        connection = partition._connect()
+        cursor = connection.cursor()
+
+        # Hash of empty partition should be None.
+        result = partition._get_hash(cursor)
+        self.assertIsNone(result)
+
+        # Build partition.
+        cursor.execute("INSERT INTO hierarchy VALUES (1, 'state', 0)")
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'county', 1)")
+        cursor.execute("INSERT INTO cell VALUES (1, 0)")
+        cursor.execute("INSERT INTO label VALUES (1, 1, 'Indiana')")
+        cursor.execute("INSERT INTO label VALUES (2, 2, 'LaPorte')")
+        cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 1)")
+        cursor.execute("INSERT INTO cell_label VALUES (2, 1, 2, 2)")
+
+        # Expected hash of "11Indiana12LaPorte" (independently verified).
+        expected = 'a0eadc7b0547b9405dae9e3c50e038a550d9a718af10b53e567995a9378c22d7'
+        result = partition._get_hash(cursor)
+        self.assertEqual(expected, result)
+
+
 class TestInsert(unittest.TestCase):
     def test_insert_one_cell(self):
         partition = Partition(mode=IN_MEMORY)
@@ -148,10 +173,10 @@ class TestInsert(unittest.TestCase):
                     (16, 6, 1, 12), (17, 6, 2, 13), (18, 6, 3, 14)]
         self.assertEqual(expected, cursor.fetchall())
 
-        # Partition table.
-        cursor.execute('SELECT partition_id, partition_hash '
-                       'FROM partition ORDER BY partition_id')
-        self.assertEqual([], cursor.fetchall())
+        # Partition table (hash should be set).
+        cursor.execute('SELECT partition_id, partition_hash FROM partition')
+        hashval = '71eeab7a5b4609a1978bd5c19e7d490556c5e42c503b39480c504bbaf99efe30'
+        self.assertEqual([(1, hashval)], cursor.fetchall())
 
     def test_insert_cells_multiple_files(self):
         """Insert should accept multiple files."""
@@ -184,6 +209,14 @@ class TestInsert(unittest.TestCase):
                     (3, 3, 'Lima'), (4, 1, 'UNMAPPED'),
                     (5, 2, 'UNMAPPED'), (6, 3, 'UNMAPPED'),
                     (7, 2, 'Cuyahoga'), (8, 3, 'Cleveland')]
+        self.assertEqual(expected, cursor.fetchall())
+
+        # Partition table should have two hashes.
+        cursor.execute('SELECT partition_id, partition_hash FROM partition')
+        expected =  [(1, '5011d6c33da25f6a98422461595f275f'
+                           '289a7a745a9e89ab6b4d36675efd944b'),
+                     (2, '9184abbd5461828e01fe82209463221a'
+                           '65d4c21b40287d633cf7e324a27475f5')]
         self.assertEqual(expected, cursor.fetchall())
 
     def test_insert_cells_bad_header(self):

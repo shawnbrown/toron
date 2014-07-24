@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import itertools
+import hashlib
 import os
 import sqlite3
 
@@ -131,6 +132,10 @@ class Partition(object):
             for operation in _create_triggers:
                 cursor.execute(operation)
 
+            partition_hash = self._get_hash(cursor)
+            cursor.execute('INSERT INTO partition (partition_hash) VALUES (?)',
+                           (partition_hash,))
+
             connection.commit()
             complete = True
 
@@ -183,3 +188,32 @@ class Partition(object):
         """
         params = [(cell_id, hrchy, lbl) for hrchy, lbl in items]
         cursor.executemany(operation, params)
+
+    @staticmethod
+    def _get_hash(cursor):
+        """Return a hash to uniquely identify the Partition's cells.
+
+        The hash value should not be affected by changes in
+        hierarchy_value or hierarchy_level.
+
+        """
+        cursor.execute("""
+            SELECT cell_id, hierarchy_id, label_value
+            FROM cell_label
+            NATURAL JOIN label
+            NATURAL JOIN hierarchy
+            ORDER BY cell_id, hierarchy_id, label_value
+        """)
+        sha256 = hashlib.sha256()
+        for row in cursor:
+            for cell in row:
+                cell = str(cell).encode('utf-8')
+                sha256.update(cell)
+
+        hexdigest = sha256.hexdigest()
+
+        # If hash of NULL set, set digest to None.
+        nullhash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        if hexdigest == nullhash:
+            hexdigest = None
+        return hexdigest
