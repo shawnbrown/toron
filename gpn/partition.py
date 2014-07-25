@@ -201,7 +201,6 @@ class Partition(object):
             SELECT cell_id, hierarchy_id, label_value
             FROM cell_label
             NATURAL JOIN label
-            NATURAL JOIN hierarchy
             ORDER BY cell_id, hierarchy_id, label_value
         """)
         sha256 = hashlib.sha256()
