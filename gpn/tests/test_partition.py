@@ -98,6 +98,62 @@ class TestHash(unittest.TestCase):
         self.assertEqual(expected, result)
 
 
+class TestTransactionHandling(unittest.TestCase):
+    def setUp(self):
+        self._partition = Partition(mode=IN_MEMORY)
+        connection = self._partition._connect()
+        cursor = connection.cursor()
+        cursor.executescript("""
+            INSERT INTO hierarchy VALUES (1, 'country', 0);
+            INSERT INTO hierarchy VALUES (2, 'region', 1);
+            INSERT INTO cell VALUES (1, 0);
+            INSERT INTO label VALUES (1, 1, 'USA');
+            INSERT INTO label VALUES (2, 2, 'Northeast');
+            INSERT INTO cell_label VALUES (1, 1, 1, 1);
+            INSERT INTO cell_label VALUES (2, 1, 2, 2);
+            INSERT INTO cell VALUES (2, 0);
+            INSERT INTO label VALUES (3, 2, 'Midwest');
+            INSERT INTO cell_label VALUES (3, 2, 1, 1);
+            INSERT INTO cell_label VALUES (4, 2, 2, 3);
+        """)
+
+    def test_commit(self):
+        with self._partition._connect() as connection:
+            connection.isolation_level = None
+            cursor = connection.cursor()
+            cursor.execute('BEGIN TRANSACTION')
+
+            cursor.execute('INSERT INTO cell VALUES (3, 0)')  # <- Change.
+
+        cursor.execute('SELECT COUNT(*) FROM cell')
+        msg = 'Changes should be committed.'
+        self.assertEqual([(3,)], cursor.fetchall(), msg)
+
+    def test_rollback(self):
+        try:
+            with self._partition._connect() as connection:
+                connection.isolation_level = None    # <- REQUIRED!
+                cursor = connection.cursor()         # <- REQUIRED!
+                cursor.execute('BEGIN TRANSACTION')  # <- REQUIRED!
+
+                cursor.execute('DROP TABLE cell_label')           # <- Change.
+                cursor.execute('INSERT INTO cell VALUES (3, 0)')  # <- Change.
+                cursor.execute('This is not valid SQL -- operational error!')  # <- Error!
+        except sqlite3.OperationalError:
+            pass
+
+        connection = self._partition._connect()
+        cursor = connection.cursor()
+
+        msg = 'Changes should be rolled back.'
+
+        cursor.execute('SELECT COUNT(*) FROM cell')
+        self.assertEqual([(2,)], cursor.fetchall(), msg)
+
+        cursor.execute('SELECT COUNT(*) FROM cell_label')
+        self.assertEqual([(4,)], cursor.fetchall(), msg)
+
+
 class TestInsert(unittest.TestCase):
     def test_insert_one_cell(self):
         partition = Partition(mode=IN_MEMORY)

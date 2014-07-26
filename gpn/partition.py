@@ -18,34 +18,31 @@ class Partition(object):
         assert not os.path.exists(filename), '%s already exists' % filename
 
         with open(filename, 'w') as fh:
-            connection = self._connect()
-            cursor1 = connection.cursor()
+            with self._connect() as connection:
+                cursor = connection.cursor()
 
-            # Get field names.
-            cursor1.execute('SELECT hierarchy_value FROM hierarchy '
-                            'ORDER BY hierarchy_level')
-            fieldnames = [x[0] for x in cursor1]
-            fieldnames.insert(0, 'cell_id')
+                # Get field names.
+                cursor.execute('SELECT hierarchy_value FROM hierarchy '
+                               'ORDER BY hierarchy_level')
+                fieldnames = [x[0] for x in cursor]
+                fieldnames.insert(0, 'cell_id')
 
-            # Write output file.
-            writer = csv.DictWriter(fh, fieldnames, lineterminator='\n')
-            writer.writeheader()
-            cursor1.execute('SELECT cell_id from cell ORDER BY cell_id')
-            cursor2 = connection.cursor()
-            for cell_id in (x[0] for x in cursor1):
-                row = self._select_cell(cursor2, cell_id)
-                row['cell_id'] = cell_id
-                writer.writerow(row)
-
-            connection.close()
+                # Write output file.
+                writer = csv.DictWriter(fh, fieldnames, lineterminator='\n')
+                writer.writeheader()
+                cursor.execute('SELECT cell_id from cell ORDER BY cell_id')
+                cursor2 = connection.cursor()
+                for cell_id in (x[0] for x in cursor):
+                    row = self._select_cell(cursor2, cell_id)
+                    row['cell_id'] = cell_id
+                    writer.writerow(row)
 
     def select_cell(self, **kwds):
-        connection = self._connect()
-        cursor1 = connection.cursor()
-        cursor2 = connection.cursor()
-        for cell_id in self._select_cell_id(cursor1, **kwds):
-            yield self._select_cell(cursor2, cell_id)
-        connection.close()
+        with self._connect() as connection:
+            cursor = connection.cursor()
+            cursor2 = connection.cursor()
+            for cell_id in self._select_cell_id(cursor, **kwds):
+                yield self._select_cell(cursor2, cell_id)
 
     @staticmethod
     def _select_cell(cursor, cell_id):
@@ -88,13 +85,11 @@ class Partition(object):
         reader = csv.reader(fh)
         fieldnames = next(reader)  # Use header row as fieldnames.
 
-        connection = self._connect()
-        connection.isolation_level = None
-        cursor = connection.cursor()
-        cursor.execute('BEGIN TRANSACTION')
+        with self._connect() as connection:
+            connection.isolation_level = None
+            cursor = connection.cursor()
+            cursor.execute('BEGIN TRANSACTION')
 
-        complete = False
-        try:
             # Temporarily drop triggers (too slow for bulk insert).
             cursor.execute('DROP TRIGGER CheckUniqueLabels_ins')
             cursor.execute('DROP TRIGGER CheckUniqueLabels_upd')
@@ -132,17 +127,10 @@ class Partition(object):
             for operation in _create_triggers:
                 cursor.execute(operation)
 
+            # Insert partition hash.
             partition_hash = self._get_hash(cursor)
             cursor.execute('INSERT INTO partition (partition_hash) VALUES (?)',
                            (partition_hash,))
-
-            connection.commit()
-            complete = True
-
-        finally:
-            if not complete:
-                connection.rollback()
-            connection.close()
 
     @staticmethod
     def _insert_hierarchies(cursor, fieldnames):

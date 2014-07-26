@@ -440,6 +440,12 @@ class _ConnectionWrapper(object):
     def isolation_level(self, value):
         self._conn.isolation_level = value
 
+    def __enter__(self):
+        return self._conn.__enter__()
+
+    def __exit__(self, *args):
+        return self._conn.__exit__(*args)
+
     def __getattr__(self, name):
         return getattr(self._conn, name)
 
