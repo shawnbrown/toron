@@ -33,8 +33,10 @@ class TestInstantiation(MkdtempTestCase):
 
     def test_existing_partition(self):
         """Existing partition should load without errors."""
-        self._make_partition('existing_partition')
+        filename = 'temppartition.node'
+        self._make_partition(filename)
         ptn = Partition(self._existing_partition)  # Use existing file.
+        self.assertEqual(ptn.name, 'temppartition')
 
     @unittest.skipIf(sqlite3.sqlite_version_info < (3, 8, 0),
         'The query_only PRAGMA was added to SQLite in version 3.8.0')
@@ -53,12 +55,30 @@ class TestInstantiation(MkdtempTestCase):
 
     def test_new_partition(self):
         """Named Partitions that do not exist should be created."""
-        filename = 'new_partition'
-
-        self.assertFalse(os.path.exists(filename))
-        ptn = Partition(filename)  # Create new file.
+        filepath = 'new_partition.node'
+        self.assertFalse(os.path.exists(filepath))
+        ptn = Partition(filepath)  # Create new file.
         del ptn
-        self.assertTrue(os.path.exists(filename))
+        self.assertTrue(os.path.exists(filepath))
+
+    def test_subdirectory(self):
+        """Subdirectory reference should also be supported."""
+        os.mkdir('subdir')
+        filepath = 'subdir/new_partition.node'
+        self.assertFalse(os.path.exists(filepath))
+        ptn = Partition(filepath)  # Create new file.
+        self.assertEqual(ptn.name, 'subdir/new_partition')
+        del ptn
+        self.assertTrue(os.path.exists(filepath))
+
+    def test_path_name_error(self):
+        """If a path is specified, it should be used to set the partition name.
+        If a `name` attribute is also provided, it must not be accepted.
+
+        """
+        regex = 'Cannot specify both path and name.'
+        with self.assertRaisesRegex(AssertionError, regex):
+            Partition('some_path.node', name='some_name')
 
     def test_temporary_partition(self):
         """Unnamed Partitions should be temporary (in memory or tempfile)."""
@@ -66,11 +86,27 @@ class TestInstantiation(MkdtempTestCase):
         ptn = Partition()
         self.assertIsNone(ptn._connect._temp_path)
         self.assertIsNotNone(ptn._connect._memory_conn)
+        self.assertEqual(ptn.name, '<unspecified>')
 
         # On disk.
         ptn = Partition(mode=TEMP_FILE)
         self.assertIsNotNone(ptn._connect._temp_path)
         self.assertIsNone(ptn._connect._memory_conn)
+        self.assertEqual(ptn.name, '<unspecified>')
+
+    def test_named_temporary_partitions(self):
+        # In memory.
+        partition_name = 'temp_with_name'
+        ptn = Partition(name=partition_name)
+        self.assertIsNone(ptn._connect._temp_path)
+        self.assertIsNotNone(ptn._connect._memory_conn)
+        self.assertEqual(ptn.name, partition_name)
+
+        # On disk.
+        ptn = Partition(name=partition_name, mode=TEMP_FILE)
+        self.assertIsNotNone(ptn._connect._temp_path)
+        self.assertIsNone(ptn._connect._memory_conn)
+        self.assertEqual(ptn.name, partition_name)
 
 
 class TestHash(unittest.TestCase):

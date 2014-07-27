@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import glob
 import os
+import shutil
 import tempfile
 
 from gpn.tests import _unittest as unittest
@@ -27,7 +28,10 @@ class MkdtempTestCase(unittest.TestCase):
 
     def tearDown(self):
         for path in glob.glob(os.path.join(self._temp_dir, '*')):
-            os.remove(path)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
 
         if self._no_class_fixtures:
             self.tearDownClass.__func__(self)

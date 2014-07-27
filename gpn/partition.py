@@ -10,9 +10,14 @@ from gpn.connector import _create_triggers
 
 
 class Partition(object):
-    def __init__(self, path=None, mode=0):
+    def __init__(self, path=None, mode=0, **kwds):
         """Get existing Partition or create a new one."""
         self._connect = _Connector(path, mode=mode)
+        if path:
+            assert 'name' not in kwds, 'Cannot specify both path and name.'
+            self.name = path.rsplit('.', 1)[0]
+        else:
+            self.name = kwds.get('name', '<unspecified>')
 
     def export_cells(self, filename):
         assert not os.path.exists(filename), '%s already exists' % filename

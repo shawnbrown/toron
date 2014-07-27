@@ -278,6 +278,15 @@ class TestConnector(MkdtempTestCase):
         connection = connect()
         self.assertIsInstance(connection, sqlite3.Connection)
 
+    def test_existing_database_subdirectory(self):
+        os.mkdir('subdir')
+        database = 'subdir/partition_database'
+        self._make_database(database)
+
+        connect = _Connector(database)  # Existing database.
+        connection = connect()
+        self.assertIsInstance(connection, sqlite3.Connection)
+
     def test_new_database(self):
         """If named database does not exist, it should be created."""
         database = 'partition_database'
