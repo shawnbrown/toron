@@ -107,6 +107,26 @@ except AttributeError:
 
 
 try:
+    TestCase.assertRegex  # New in 3.2
+except AttributeError:
+    try:
+        TestCase.assertRegex = TestCase.assertRegexpMatches  # New in 3.1
+    except AttributeError:
+        class _TestCase(TestCase):
+            def assertRegex(self, text, expected_regex, msg=None):
+                """Fail the test unless the text matches the regular expression."""
+                if isinstance(expected_regex, (str, bytes)):
+                    assert expected_regex, "expected_regex must not be empty."
+                    expected_regex = re.compile(expected_regex)
+                if not expected_regex.search(text):
+                    msg = msg or "Regex didn't match"
+                    msg = '%s: %r not found in %r' % (msg, expected_regex.pattern, text)
+                    raise self.failureException(msg)
+
+        TestCase = _TestCase
+
+
+try:
     sys.modules['unittest'].case._AssertRaisesContext  # New in 2.7
 except AttributeError:
     try:

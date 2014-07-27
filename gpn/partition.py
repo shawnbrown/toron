@@ -19,6 +19,35 @@ class Partition(object):
         else:
             self.name = kwds.get('name', '<unspecified>')
 
+    def __repr__(self):
+        with self._connect() as connection:
+            cursor = connection.cursor()
+            cursor.execute('SELECT COUNT(*) FROM cell WHERE partial=0')
+            cellcount = cursor.fetchone()[0]
+
+            cursor.execute('SELECT hierarchy_value FROM hierarchy ORDER BY hierarchy_level')
+            hierarchy = [x[0] for x in cursor.fetchall()]
+
+            cursor.execute("""
+                SELECT label_value
+                FROM label
+                NATURAL JOIN hierarchy
+                WHERE hierarchy_value=? AND label_value!='UNMAPPED'
+            """, (hierarchy[0],))
+            root_label = cursor.fetchone()[0]
+
+            # Append label to root hierarchy.
+            hierarchy[0] = '%s (%s)' % (hierarchy[0], root_label)
+
+        info = ('{classname!r}\n'
+                'Name: {name}\n'
+                'Cells: {cellcount}\n'
+                'Hierarchy:\n  {hierarchy}').format(classname=self.__class__,
+                                                    name=self.name,
+                                                    cellcount=cellcount,
+                                                    hierarchy='\n  '.join(hierarchy))
+        return str(info)
+
     def export_cells(self, filename):
         assert not os.path.exists(filename), '%s already exists' % filename
 
