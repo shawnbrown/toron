@@ -3,6 +3,7 @@ import itertools
 import hashlib
 import os
 import sqlite3
+import textwrap
 
 from gpn import _csv as csv
 from gpn.connector import _Connector
@@ -20,33 +21,67 @@ class Partition(object):
             self.name = kwds.get('name', '<unspecified>')
 
     def __repr__(self):
+        info = []
+        info.append(repr(self.__class__))
+
         with self._connect() as connection:
             cursor = connection.cursor()
-            cursor.execute('SELECT COUNT(*) FROM cell WHERE partial=0')
-            cellcount = cursor.fetchone()[0]
 
-            cursor.execute('SELECT hierarchy_value FROM hierarchy ORDER BY hierarchy_level')
-            hierarchy = [x[0] for x in cursor.fetchall()]
-
+            # Get partition hash.
             cursor.execute("""
-                SELECT label_value
-                FROM label
-                NATURAL JOIN hierarchy
-                WHERE hierarchy_value=? AND label_value!='UNMAPPED'
-            """, (hierarchy[0],))
-            root_label = cursor.fetchone()[0]
+                SELECT partition_hash
+                FROM partition
+                ORDER BY partition_id DESC
+                LIMIT 1
+            """)
+            shorthash = cursor.fetchone()
+            if shorthash:
+                shorthash = shorthash[0]   # Unwrap tuple.
+                shorthash = shorthash[:7]  # Truncate to short hash.
+                info.append('Name: %s (%s)' % (self.name, shorthash))
 
-            # Append label to root hierarchy.
-            hierarchy[0] = '%s (%s)' % (hierarchy[0], root_label)
+                # Get cell count.
+                cursor.execute('SELECT COUNT(*) FROM cell WHERE partial=0')
+                info.append('Cells: %s' % cursor.fetchone()[0])
 
-        info = ('{classname!r}\n'
-                'Name: {name}\n'
-                'Cells: {cellcount}\n'
-                'Hierarchy:\n  {hierarchy}').format(classname=self.__class__,
-                                                    name=self.name,
-                                                    cellcount=cellcount,
-                                                    hierarchy='\n  '.join(hierarchy))
-        return str(info)
+                # Get hierarchy list.
+                cursor.execute('SELECT hierarchy_value FROM hierarchy '
+                               'ORDER BY hierarchy_level')
+                hierarchy = [x[0] for x in cursor.fetchall()]
+
+                # Get root label (maximal cell).
+                cursor.execute("""
+                    SELECT label_value
+                    FROM label
+                    NATURAL JOIN hierarchy
+                    WHERE hierarchy_id IN (SELECT hierarchy_id
+                                           FROM hierarchy
+                                           ORDER BY hierarchy_level
+                                           LIMIT 1)
+                          AND label_value!='UNMAPPED'
+                """)
+                root_label = cursor.fetchone()[0]
+
+                # Append root label to root hierarchy.
+                hierarchy[0] = hierarchy[0] + ' (%s)' % root_label
+                info.append('Hierarchy: %s' % ', '.join(hierarchy))
+
+                # Get edges ("None" for now).
+                info.append('Edges: None')
+
+            else:
+                info.append('Name: ' + self.name)
+                info.append('Cells: None')
+                info.append('Hierarchy: None')
+                info.append('Edges: None')
+
+        # Format `info` list.
+        def wrap(x):
+            x = textwrap.wrap(x, width=70, subsequent_indent='  ')
+            return '\n'.join(x)
+        info = [wrap(line) for line in info]
+        return '\n'.join(info)
+
 
     def export_cells(self, filename):
         assert not os.path.exists(filename), '%s already exists' % filename

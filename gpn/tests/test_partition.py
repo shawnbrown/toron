@@ -436,6 +436,15 @@ class TestFileImportExport(MkdtempTestCase):
 
 
 class TestRepr(unittest.TestCase):
+    def test_empty(self):
+        partition = Partition()
+        expected = ("<class 'gpn.partition.Partition'>\n"
+                    "Name: <unspecified>\n"
+                    "Cells: None\n"
+                    "Hierarchy: None\n"
+                    "Edges: None")
+        self.assertEqual(expected, repr(partition))
+
     def test_basic(self):
         fh = StringIO('country,region,state,city\n'
                       'USA,Midwest,IL,Chicago\n'
@@ -445,13 +454,10 @@ class TestRepr(unittest.TestCase):
         partition._insert_cells(fh)
 
         expected = ("<class 'gpn.partition.Partition'>\n"
-                    "Name: newptn\n"
+                    "Name: newptn (a1c5c6a)\n"
                     "Cells: 4\n"
-                    "Hierarchy:\n"
-                    "  country (USA)\n"
-                    "  region\n"
-                    "  state\n"
-                    "  city")
+                    "Hierarchy: country (USA), region, state, city\n"
+                    "Edges: None")
         self.assertEqual(expected, repr(partition))
 
 
