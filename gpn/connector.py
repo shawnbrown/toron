@@ -30,7 +30,7 @@ from decimal import Decimal
 #  |          +=======================+    | weight_id     |--+
 #  |       +--| edge_id               |--->| edge_id       |  |
 #  |       |  | other_partition_hash  |    | weight_type   |  |
-#  |       |  | other_partition_file  |    | weight_note   |  |
+#  |       |  | other_partition_name  |    | weight_note   |  |
 #  |       |  +-----------------------+    | proportional  |  |
 #  |       |                               +---------------+  |
 #  |       |                                                  |
@@ -196,7 +196,7 @@ _create_partition = [
     CREATE TABLE edge (
         edge_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         other_partition_hash TEXT NOT NULL UNIQUE,
-        other_partition_file TEXT
+        other_partition_name TEXT
     )
     """,
 
