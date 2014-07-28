@@ -86,13 +86,13 @@ class TestInstantiation(MkdtempTestCase):
         ptn = Partition()
         self.assertIsNone(ptn._connect._temp_path)
         self.assertIsNotNone(ptn._connect._memory_conn)
-        self.assertEqual(ptn.name, '<unspecified>')
+        self.assertIsNone(ptn.name)
 
         # On disk.
         ptn = Partition(mode=TEMP_FILE)
         self.assertIsNotNone(ptn._connect._temp_path)
         self.assertIsNone(ptn._connect._memory_conn)
-        self.assertEqual(ptn.name, '<unspecified>')
+        self.assertIsNone(ptn.name)
 
     def test_named_temporary_partitions(self):
         # In memory.
@@ -439,7 +439,7 @@ class TestRepr(unittest.TestCase):
     def test_empty(self):
         partition = Partition()
         expected = ("<class 'gpn.partition.Partition'>\n"
-                    "Name: <unspecified>\n"
+                    "Name: None\n"
                     "Cells: None\n"
                     "Hierarchy: None\n"
                     "Edges: None")
@@ -454,7 +454,7 @@ class TestRepr(unittest.TestCase):
         partition._insert_cells(fh)
 
         expected = ("<class 'gpn.partition.Partition'>\n"
-                    "Name: newptn (a1c5c6a)\n"
+                    "Name: newptn\n"
                     "Cells: 4\n"
                     "Hierarchy: country (USA), region, state, city\n"
                     "Edges: None")

@@ -18,31 +18,21 @@ class Partition(object):
             assert 'name' not in kwds, 'Cannot specify both path and name.'
             self.name = path.rsplit('.', 1)[0]
         else:
-            self.name = kwds.get('name', '<unspecified>')
+            self.name = kwds.get('name')
 
     def __repr__(self):
         info = []
         info.append(repr(self.__class__))
+        info.append('Name: ' + str(self.name))
 
         with self._connect() as connection:
             cursor = connection.cursor()
 
-            # Get partition hash.
-            cursor.execute("""
-                SELECT partition_hash
-                FROM partition
-                ORDER BY partition_id DESC
-                LIMIT 1
-            """)
-            shorthash = cursor.fetchone()
-            if shorthash:
-                shorthash = shorthash[0]   # Unwrap tuple.
-                shorthash = shorthash[:7]  # Truncate to short hash.
-                info.append('Name: %s (%s)' % (self.name, shorthash))
-
-                # Get cell count.
-                cursor.execute('SELECT COUNT(*) FROM cell WHERE partial=0')
-                info.append('Cells: %s' % cursor.fetchone()[0])
+            # Get cell count.
+            cursor.execute('SELECT COUNT(*) FROM cell WHERE partial=0')
+            cellcount = cursor.fetchone()[0]
+            if cellcount > 0:
+                info.append('Cells: %s' % cellcount)
 
                 # Get hierarchy list.
                 cursor.execute('SELECT hierarchy_value FROM hierarchy '
@@ -70,7 +60,6 @@ class Partition(object):
                 info.append('Edges: None')
 
             else:
-                info.append('Name: ' + self.name)
                 info.append('Cells: None')
                 info.append('Hierarchy: None')
                 info.append('Edges: None')
