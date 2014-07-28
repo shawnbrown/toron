@@ -422,6 +422,7 @@ class _ConnectionWrapper(object):
     """Wrapper for shared, in-memory connections."""
     def __init__(self, conn):
         self._conn = conn
+        self._isolation_level = self._conn.isolation_level
 
     def close(self):
         try:
@@ -430,6 +431,7 @@ class _ConnectionWrapper(object):
             pass  # Closing already closed connection should pass.
 
     def __del__(self):
+        self._conn.isolation_level = self._isolation_level
         self.close()
 
     @property

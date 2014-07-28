@@ -409,6 +409,19 @@ class TestConnector(MkdtempTestCase):
             connect = _Connector(filename)
 
 
+class TestConnectionWrapper(unittest.TestCase):
+    def test_isolation_level(self):
+        connect = _Connector(mode=IN_MEMORY)
+
+        with connect() as connection:
+            connection.isolation_level = None
+
+        with connect() as connection:
+            msg = ('Isolation level should reset to original value (empty '
+                   'string) when connection is "closed".')
+            self.assertEqual(connection.isolation_level, '', msg)
+
+
 class TestSqlDataModel(unittest.TestCase):
     def setUp(self):
         self._connect = _Connector(mode=IN_MEMORY)
