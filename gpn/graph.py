@@ -3,26 +3,26 @@ import os
 import pprint
 import warnings
 
-from gpn.partition import Partition
+from gpn.node import Node
 
 suffix = '.node'
 suffix_default = '.node-default'
 
 
 class Graph(object):
-    def __init__(self, path=None, partitions=None):
+    def __init__(self, path=None, nodes=None):
         global suffix
         global suffix_default
-        assert not path or not partitions, ('Cannot specify both path '
-                                            'and partitions.')
-        # Get partitions.
-        if not partitions:
+        assert not path or not nodes, ('Cannot specify both path '
+                                            'and nodes.')
+        # Get nodes.
+        if not nodes:
             if not path:
                 path = os.getcwd()  # Defaule to cwd.
 
             def is_node(x):
                 return x.endswith(suffix) or x.endswith(suffix_default)
-            partitions = [Partition(x) for x in os.listdir(path) if is_node(x)]
+            nodes = [Node(x) for x in os.listdir(path) if is_node(x)]
 
             self.path = path
 
@@ -31,15 +31,15 @@ class Graph(object):
 
         # Set nodes.
         def node_item(p):
-            assert isinstance(p, Partition), '%r is not a Partition.' % p
+            assert isinstance(p, Node), '%r is not a Node.' % p
             if p.name:
                 key = p.name
             else:
                 key = p.get_hash()[:12]  # <- TODO!!!: Implement get_hash().
-                warnings.warn("Partition is unnamed--using "
+                warnings.warn("Node is unnamed--using "
                               "short hash '%s'." % key)
             return (key, p)
-        self.nodes = dict(node_item(p) for p in partitions)
+        self.nodes = dict(node_item(p) for p in nodes)
 
         # Set edges.
         self.edges = [None]

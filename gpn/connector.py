@@ -6,7 +6,7 @@ import tempfile
 from decimal import Decimal
 
 
-# Internal Partition structure:
+# Internal node structure:
 #
 #                           +----------------+     +=================+
 #     +================+    | cell_label     |     | hierarchy       |
@@ -16,32 +16,32 @@ from decimal import Decimal
 #  |  | partial        |    | hierarchy_id   |<-+  | hierarchy_level |  |
 #  |  +----------------+    | label_id       |<-+  +-----------------+  |
 #  |                        +----------------+  |                       |
-#  |  +----------------+                        |  +-----------------+  |
-#  |  | property       |    +----------------+  |  | label           |  |
-#  |  +----------------+    | partition      |  |  +-----------------+  |
-#  |  | property_id    |    +----------------+  +--| label_id        |  |
-#  |  | property_key   |    | partition_id   |  +--| hierarchy_id    |<-+
-#  |  | property_value |    | partition_hash |     | label_value     |
-#  |  | created_date   |    | created_date   |     +-----------------+
-#  |  +----------------+    +----------------+
-#  |                                       +---------------+
-#  |          +=======================+    | weight        |
-#  |          | edge                  |    +---------------+
-#  |          +=======================+    | weight_id     |--+
-#  |       +--| edge_id               |--->| edge_id       |  |
-#  |       |  | other_partition_hash  |    | weight_type   |  |
-#  |       |  | other_partition_name  |    | weight_note   |  |
-#  |       |  +-----------------------+    | proportional  |  |
-#  |       |                               +---------------+  |
-#  |       |                                                  |
-#  |       |  +-----------------+     +--------------------+  |
-#  |       |  | relation        |     | relation_weight    |  |
-#  |       |  +-----------------+     +--------------------+  |
-#  |       |  | relation_id     |--+  | relation_weight_id |  |
-#  |       +->| edge_id         |  |  | weight_id          |<-+
-#  |          | other_cell_id   |  +->| relation_id        |
-#  +--------->| cell_id         |     | weight_value       |
-#             +-----------------+     +--------------------+
+#  |   +----------------+                       |  +-----------------+  |
+#  |   | property       |    +--------------+   |  | label           |  |
+#  |   +----------------+    | node         |   |  +-----------------+  |
+#  |   | property_id    |    +--------------+   +--| label_id        |  |
+#  |   | property_key   |    | node_id      |   +--| hierarchy_id    |<-+
+#  |   | property_value |    | node_hash    |      | label_value     |
+#  |   | created_date   |    | created_date |      +-----------------+
+#  |   +----------------+    +--------------+
+#  |                                   +---------------+
+#  |            +=================+    | weight        |
+#  |            | edge            |    +---------------+
+#  |            +=================+    | weight_id     |----+
+#  |       +----| edge_id         |--->| edge_id       |    |
+#  |       |    | other_node_hash |    | weight_type   |    |
+#  |       |    | other_node_name |    | weight_note   |    |
+#  |       |    +-----------------+    | proportional  |    |
+#  |       |                           +---------------+    |
+#  |       |                                                |
+#  |       |  +---------------+     +--------------------+  |
+#  |       |  | relation      |     | relation_weight    |  |
+#  |       |  +---------------+     +--------------------+  |
+#  |       |  | relation_id   |--+  | relation_weight_id |  |
+#  |       +->| edge_id       |  |  | weight_id          |<-+
+#  |          | other_cell_id |  +->| relation_id        |
+#  +--------->| cell_id       |     | weight_value       |
+#             +---------------+     +--------------------+
 
 
 # Register SQLite adapter/converter for Decimal type.
@@ -49,7 +49,7 @@ sqlite3.register_adapter(Decimal, str)
 sqlite3.register_converter('TEXTNUM', lambda x: Decimal(x.decode('utf-8')))
 
 
-_create_partition = [
+_create_node = [
     """
     CREATE TABLE cell (
         cell_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -185,9 +185,9 @@ _create_partition = [
     """,
 
     """
-    CREATE TABLE partition (
-        partition_id INTEGER PRIMARY KEY,
-        partition_hash TEXT UNIQUE ON CONFLICT REPLACE NOT NULL,
+    CREATE TABLE node (
+        node_id INTEGER PRIMARY KEY,
+        node_hash TEXT UNIQUE ON CONFLICT REPLACE NOT NULL,
         created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
     )
     """,
@@ -195,8 +195,8 @@ _create_partition = [
     """
     CREATE TABLE edge (
         edge_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-        other_partition_hash TEXT NOT NULL UNIQUE,
-        other_partition_name TEXT
+        other_node_hash TEXT NOT NULL UNIQUE,
+        other_node_name TEXT
     )
     """,
 
@@ -294,24 +294,24 @@ _create_triggers = [
 
 
 # Mode flags.
-IN_MEMORY = 1  #: Create a temporary partition in RAM.
-TEMP_FILE = 2  #: Write a temporary partition to disk instead of using RAM.
-READ_ONLY = 4  #: Connect to an existing Partition in read-only mode.
+IN_MEMORY = 1  #: Create a temporary node in RAM.
+TEMP_FILE = 2  #: Write a temporary node to disk instead of using RAM.
+READ_ONLY = 4  #: Connect to an existing node in read-only mode.
 
 
 class _Connector(object):
-    """Opens a SQLite connection to a Partition database.  If a named
-    Partition does not exist, it is created.
+    """Opens a SQLite connection to a Node database.  If a named
+    Node does not exist, it is created.
 
     """
     def __init__(self, database=None, mode=0):
         """Creates a callable `connect` object that can be used to
-        establish connections to a Partition database.  Connecting to
-        a Partition name that does not exist will create a new
-        Partition of the given name.
+        establish connections to a Node database.  Connecting to a Node
+        name that does not exist will create a new Node of the given
+        name.
 
         """
-        global _create_partition
+        global _create_node
         global _create_triggers
         self._memory_conn = None
         self._temp_path = None
@@ -329,13 +329,13 @@ class _Connector(object):
                 is_valid = False
 
             if not is_valid:
-                raise Exception('File - %s - is not a valid partition.' % database)
+                raise Exception('File - %s - is not a valid node.' % database)
 
         else:
             if database and (not mode or self._is_read_only):
                 self._database = database
             elif mode & TEMP_FILE:
-                fd, temp_path = tempfile.mkstemp(suffix='.partition')
+                fd, temp_path = tempfile.mkstemp(suffix='.node')
                 os.close(fd)
                 self._database = temp_path
                 self._temp_path = temp_path
@@ -343,21 +343,21 @@ class _Connector(object):
                 self._memory_conn =  sqlite3.connect(':memory:',
                                                      detect_types=sqlite3.PARSE_DECLTYPES)
 
-            # Populate new partition.
+            # Populate new node.
             if self._database:
                 connection = self._connect(self._database)
             else:
                 connection = self._connect(self._memory_conn)
             cursor = connection.cursor()
             cursor.execute('PRAGMA synchronous=OFF')
-            for operation in (_create_partition + _create_triggers):
+            for operation in (_create_node + _create_triggers):
                 cursor.execute(operation)
             cursor.execute('PRAGMA synchronous=FULL')
             connection.close()
 
     def __call__(self):
-        """Opens a SQLite connection to a Partition database.  If a
-        named Partition does not exist, it is created.
+        """Opens a SQLite connection to a Node database.  If a
+        named Node does not exist, it is created.
 
         """
         # Docstring (above) should be same as docstring for class.
@@ -403,7 +403,7 @@ class _Connector(object):
 
     @staticmethod
     def _is_valid(connection):
-        """Return True if database is a valid Partition, else False."""
+        """Return True if database is a valid Node, else False."""
         try:
             cursor = connection.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
@@ -412,7 +412,7 @@ class _Connector(object):
             tables_contained = set()
 
         tables_required = set(['cell', 'hierarchy', 'label', 'cell_label',
-                               'partition', 'edge', 'weight',
+                               'node', 'edge', 'weight',
                                'relation', 'relation_weight', 'property',
                                'sqlite_sequence'])
         return tables_required == tables_contained
@@ -637,7 +637,7 @@ def _all_read_only_triggers():
         _read_only_triggers('rel', 'relation'),
         _read_only_triggers('relwt', 'relation_weight'),
         _read_only_triggers('prop', 'property'),
-        _read_only_triggers('prtn', 'partition'),
+        _read_only_triggers('nde', 'node'),
     ]
     return '\n\n\n'.join(all_triggers)
 

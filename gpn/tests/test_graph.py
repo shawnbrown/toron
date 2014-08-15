@@ -8,23 +8,23 @@ from gpn.tests import _unittest as unittest
 from gpn.tests.common import MkdtempTestCase
 
 from gpn.graph import Graph
-from gpn.partition import Partition
+from gpn.node import Node
 from gpn import IN_MEMORY
 
 
 class TestInstantiation(MkdtempTestCase):
     def test_from_collection(self):
-        old_boundary = Partition(mode=IN_MEMORY, name='old_boundary')
-        new_boundary = Partition(mode=IN_MEMORY, name='new_boundary')
+        old_boundary = Node(mode=IN_MEMORY, name='old_boundary')
+        new_boundary = Node(mode=IN_MEMORY, name='new_boundary')
         collection = [old_boundary, new_boundary]
-        graph = Graph(partitions=collection)  # Load nodes from list.
+        graph = Graph(nodes=collection)  # Load nodes from list.
 
         node_names = set(graph.nodes.keys())
         self.assertSetEqual(set(['old_boundary', 'new_boundary']), node_names)
 
     def test_from_cwd(self):
-        old_boundary = Partition('old_boundary.node')
-        new_boundary = Partition('new_boundary.node')
+        old_boundary = Node('old_boundary.node')
+        new_boundary = Node('new_boundary.node')
         graph = Graph(path='.')  # Load node files in current directory.
 
         node_names = set(graph.nodes.keys())

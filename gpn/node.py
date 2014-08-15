@@ -10,9 +10,9 @@ from gpn.connector import _Connector
 from gpn.connector import _create_triggers
 
 
-class Partition(object):
+class Node(object):
     def __init__(self, path=None, mode=0, **kwds):
-        """Get existing Partition or create a new one."""
+        """Get existing node or create a new one."""
         self._connect = _Connector(path, mode=mode)
         if path:
             assert 'name' not in kwds, 'Cannot specify both path and name.'
@@ -185,10 +185,10 @@ class Partition(object):
             for operation in _create_triggers:
                 cursor.execute(operation)
 
-            # Insert partition hash.
-            partition_hash = self._get_hash(cursor)
-            cursor.execute('INSERT INTO partition (partition_hash) VALUES (?)',
-                           (partition_hash,))
+            # Insert node hash.
+            node_hash = self._get_hash(cursor)
+            cursor.execute('INSERT INTO node (node_hash) VALUES (?)',
+                           (node_hash,))
 
     @staticmethod
     def _insert_hierarchies(cursor, fieldnames):
@@ -237,7 +237,7 @@ class Partition(object):
 
     @staticmethod
     def _get_hash(cursor):
-        """Return a hash to uniquely identify the Partition's cells.
+        """Return a hash to uniquely identify the nodes's cells.
 
         The hash value should not be affected by changes in
         hierarchy_value or hierarchy_level.

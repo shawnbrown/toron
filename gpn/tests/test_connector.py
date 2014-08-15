@@ -6,7 +6,7 @@ import sqlite3
 from gpn.tests import _unittest as unittest
 from gpn.tests.common import MkdtempTestCase
 
-from gpn.connector import _create_partition
+from gpn.connector import _create_node
 from gpn.connector import _create_triggers
 from gpn.connector import _normalize_args_for_trigger
 from gpn.connector import _null_clause_for_trigger
@@ -240,13 +240,13 @@ class TestReadOnlyTriggers(unittest.TestCase):
 
 class TestConnector(MkdtempTestCase):
     def _make_database(self, filename):
-        global _create_partition
+        global _create_node
         global _create_triggers
-        self._existing_partition = filename
-        connection = sqlite3.connect(self._existing_partition)
+        self._existing_node = filename
+        connection = sqlite3.connect(self._existing_node)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        for operation in (_create_partition + _create_triggers):
+        for operation in (_create_node + _create_triggers):
             cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
@@ -263,15 +263,15 @@ class TestConnector(MkdtempTestCase):
         actual_tables = set(x[0] for x in cursor)
         connection.close()
         expected_tables = set([
-            'cell', 'hierarchy', 'label', 'cell_label', 'partition',
-            'edge', 'weight', 'relation', 'relation_weight', 'property',
+            'cell', 'hierarchy', 'label', 'cell_label', 'node', 'edge',
+            'weight', 'relation', 'relation_weight', 'property',
             'sqlite_sequence'
         ])
         return expected_tables, actual_tables
 
     def test_existing_database(self):
         """Existing database should load without errors."""
-        database = 'partition_database'
+        database = 'node_database'
         self._make_database(database)
 
         connect = _Connector(database)  # Existing database.
@@ -280,7 +280,7 @@ class TestConnector(MkdtempTestCase):
 
     def test_existing_database_subdirectory(self):
         os.mkdir('subdir')
-        database = 'subdir/partition_database'
+        database = 'subdir/node_database'
         self._make_database(database)
 
         connect = _Connector(database)  # Existing database.
@@ -289,7 +289,7 @@ class TestConnector(MkdtempTestCase):
 
     def test_new_database(self):
         """If named database does not exist, it should be created."""
-        database = 'partition_database'
+        database = 'node_database'
 
         self.assertFalse(os.path.exists(database))  # File should not exist.
 
@@ -330,7 +330,7 @@ class TestConnector(MkdtempTestCase):
 
     def test_partial_read_only_support(self):
         """Read-only connections should fail on INSERT, UPDATE, and DELETE."""
-        database = 'partition_database'
+        database = 'node_database'
         self._make_database(database)
         connection = sqlite3.connect(database)
         cursor = connection.cursor()
@@ -370,7 +370,7 @@ class TestConnector(MkdtempTestCase):
         'The query_only PRAGMA was added to SQLite in version 3.8.0')
     def test_full_read_only_support(self):
         """Read-only connections should also fail on DROP, ALTER, etc."""
-        database = 'partition_database'
+        database = 'node_database'
         self._make_database(database)
 
         connect = _Connector(database, mode=READ_ONLY)
@@ -391,8 +391,8 @@ class TestConnector(MkdtempTestCase):
         cursor.execute('CREATE TABLE foo (bar, baz)')
         connection.close()
 
-        # Attempt to load a non-Partition SQLite database.
-        regex = 'File - .* - is not a valid partition.'
+        # Attempt to load a non-Node SQLite database.
+        regex = 'File - .* - is not a valid node.'
         with self.assertRaisesRegex(Exception, regex):
             connect = _Connector(filename)
 
@@ -404,7 +404,7 @@ class TestConnector(MkdtempTestCase):
         fh.close()
 
         # Attempt to load non-SQLite file.
-        regex = 'File - .* - is not a valid partition.'
+        regex = 'File - .* - is not a valid node.'
         with self.assertRaisesRegex(Exception, regex):
             connect = _Connector(filename)
 
