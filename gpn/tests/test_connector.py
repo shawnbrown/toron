@@ -17,6 +17,7 @@ from gpn.connector import _delete_trigger
 from gpn.connector import _foreign_key_triggers
 from gpn.connector import _read_only_triggers
 from gpn.connector import _Connector
+from gpn.connector import _SharedConnection
 from gpn.connector import IN_MEMORY
 from gpn.connector import TEMP_FILE
 from gpn.connector import READ_ONLY
@@ -409,17 +410,69 @@ class TestConnector(MkdtempTestCase):
             connect = _Connector(filename)
 
 
-class TestConnectionWrapper(unittest.TestCase):
-    def test_isolation_level(self):
-        connect = _Connector(mode=IN_MEMORY)
+class TestSharedConnection(unittest.TestCase):
+    def setUp(self):
+        conn = sqlite3.connect(':memory:', factory=_SharedConnection)
+        conn.execute('CREATE TABLE mytable (col1 INTEGER PRIMARY KEY)')
+        conn.execute('INSERT INTO mytable VALUES (1)')
+        conn.execute('INSERT INTO mytable VALUES (2)')
+        conn.commit()
+        self.connection = conn
 
-        with connect() as connection:
-            connection.isolation_level = None
+    def test_commit_and_remains_usable(self):
+        """Test commit behavior, should remain usable after 'false' close."""
+        with self.connection as conn:
+            conn.execute('INSERT INTO mytable VALUES (3)')
+        self.connection.rollback()  # Rollback uncomitted changes!
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM mytable')
+        msg = 'Must commit changes when exiting context manager.'
+        self.assertEqual([(1,), (2,), (3,)], cursor.fetchall(), msg)
 
-        with connect() as connection:
-            msg = ('Isolation level should reset to original value (empty '
-                   'string) when connection is "closed".')
-            self.assertEqual(connection.isolation_level, '', msg)
+        # Test usability.
+        self.connection.close()  # Must remain usable afterwards.
+        self.connection.execute('INSERT INTO mytable VALUES (4)')
+
+    def test_connection_close(self):
+        conn = self.connection
+        conn.isolation_level = None
+        cursor = self.connection.cursor()
+        cursor.execute('BEGIN TRANSACTION')
+        cursor.execute('INSERT INTO mytable VALUES (3)')
+        conn.close()  # <- Call close on connection!
+
+        # Check isolation_level.
+        msg = ("Connection's isolation level should be reset to original "
+               "value (empty string).")
+        self.assertEqual('', conn.isolation_level, msg)
+
+        # Check rollback.
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM mytable')
+        self.assertEqual([(1,), (2,)], cursor.fetchall())
+
+    def test_cursor_close(self):
+        """Returned cursor should also use 'false' close."""
+        conn = self.connection
+        conn.isolation_level = None
+        cursor = self.connection.cursor()
+        cursor.execute('BEGIN TRANSACTION')
+        cursor.execute('INSERT INTO mytable VALUES (3)')
+        cursor.close()  # <- Call close on cursor!
+
+        # Check rollback.
+        cursor = self.connection.cursor()
+        cursor.execute('SELECT * FROM mytable')
+        self.assertEqual([(1,), (2,)], cursor.fetchall())
+
+    def test_close_parent(self):
+        """Calling close_parent should close the connection permanently."""
+        conn = self.connection
+        conn.execute('INSERT INTO mytable VALUES (3)')
+
+        conn.close_parent()
+        with self.assertRaises(sqlite3.ProgrammingError):
+            conn.execute('INSERT INTO mytable VALUES (4)')
 
 
 class TestSqlDataModel(unittest.TestCase):

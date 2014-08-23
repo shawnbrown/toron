@@ -341,7 +341,8 @@ class _Connector(object):
                 self._temp_path = temp_path
             elif not database or mode & IN_MEMORY:
                 self._memory_conn =  sqlite3.connect(':memory:',
-                                                     detect_types=sqlite3.PARSE_DECLTYPES)
+                                                     detect_types=sqlite3.PARSE_DECLTYPES,
+                                                     factory=_SharedConnection)
 
             # Populate new node.
             if self._database:
@@ -387,7 +388,7 @@ class _Connector(object):
     def __del__(self):
         """Clean-up connection objects."""
         if self._memory_conn:
-            self._memory_conn.close()
+            self._memory_conn.close_parent()  # Permanently close!
 
         if self._temp_path:
             os.remove(self._temp_path)
@@ -395,11 +396,8 @@ class _Connector(object):
     @staticmethod
     def _connect(database):
         if isinstance(database, sqlite3.Connection):
-            connection = _ConnectionWrapper(database)
-        else:
-            connection = sqlite3.connect(database,
-                                         detect_types=sqlite3.PARSE_DECLTYPES)
-        return connection
+            return database
+        return sqlite3.connect(database, detect_types=sqlite3.PARSE_DECLTYPES)
 
     @staticmethod
     def _is_valid(connection):
@@ -418,38 +416,38 @@ class _Connector(object):
         return tables_required == tables_contained
 
 
-class _ConnectionWrapper(object):
-    """Wrapper for shared, in-memory connections."""
-    def __init__(self, conn):
-        self._conn = conn
-        self._isolation_level = self._conn.isolation_level
+class _SharedConnection(sqlite3.Connection):
+    """Subclass for in-memory, shared connection."""
+    def __init__(self, *args, **kwds):
+        sqlite3.Connection.__init__(self, *args, **kwds)
+        self._isolation_level = self.isolation_level
 
     def close(self):
+        """Close child connection object (remains usable)."""
         try:
-            self._conn.rollback()  # Uncommitted changes will be lost!
+            self.rollback()  # Uncommitted changes will be lost!
         except sqlite3.ProgrammingError:
             pass  # Closing already closed connection should pass.
 
-    def __del__(self):
-        self._conn.isolation_level = self._isolation_level
-        self.close()
+        self.isolation_level = self._isolation_level  # Reset isolation level.
 
-    @property
-    def isolation_level(self):
-        return self._conn.isolation_level
+    def close_parent(self):
+        """Close parent object (unusable from this point forward)."""
+        return super(self.__class__, self).close()
 
-    @isolation_level.setter
-    def isolation_level(self, value):
-        self._conn.isolation_level = value
+    def cursor(self):
+        return super(self.__class__, self).cursor(_ChildCursor)
 
-    def __enter__(self):
-        return self._conn.__enter__()
 
-    def __exit__(self, *args):
-        return self._conn.__exit__(*args)
-
-    def __getattr__(self, name):
-        return getattr(self._conn, name)
+class _ChildCursor(sqlite3.Cursor):
+    """Child cursor for shared, in-memory connection object."""
+    def close(self):
+        """Close child cursor object (remains usable)."""
+        conn = self.connection
+        try:
+            conn.rollback()  # Uncommitted changes will be lost!
+        except sqlite3.ProgrammingError:
+            pass  # Closing already closed connection should pass.
 
 
 ########################################################################
