@@ -24,24 +24,25 @@ from decimal import Decimal
 #  |   | property_value |    | node_hash    |      | label_value     |
 #  |   | created_date   |    | created_date |      +-----------------+
 #  |   +----------------+    +--------------+
-#  |                                   +---------------+
-#  |            +=================+    | weight        |
-#  |            | edge            |    +---------------+
-#  |            +=================+    | weight_id     |----+
-#  |       +----| edge_id         |--->| edge_id       |    |
-#  |       |    | other_node_hash |    | weight_type   |    |
-#  |       |    | other_node_name |    | weight_note   |    |
-#  |       |    +-----------------+    | proportional  |    |
-#  |       |                           +---------------+    |
-#  |       |                                                |
-#  |       |  +---------------+     +--------------------+  |
-#  |       |  | relation      |     | relation_weight    |  |
-#  |       |  +---------------+     +--------------------+  |
-#  |       |  | relation_id   |--+  | relation_weight_id |  |
-#  |       +->| edge_id       |  |  | weight_id          |<-+
-#  |          | other_cell_id |  +->| relation_id        |
-#  +--------->| cell_id       |     | weight_value       |
-#             +---------------+     +--------------------+
+#  |                                  +--------------------+
+#  |          +==================+    | weight             |
+#  |          | edge             |    +--------------------+
+#  |          +==================+    | weight_id          |--+
+#  |       +--| edge_id          |--->| edge_id            |  |
+#  |       |  | edge_name        |    | weight_name        |  |
+#  |       |  | edge_description |    | weight_description |  |
+#  |       |  | other_node_hash  |    | weight_order       |  |
+#  |       |  | other_node_name  |    | proportional       |  |
+#  |       |  +------------------+    +--------------------+  |
+#  |       |                                                  |
+#  |       |   +---------------+     +--------------------+   |
+#  |       |   | relation      |     | relation_weight    |   |
+#  |       |   +---------------+     +--------------------+   |
+#  |       |   | relation_id   |--+  | relation_weight_id |   |
+#  |       +-->| edge_id       |  |  | weight_id          |<--+
+#  |           | other_cell_id |  +->| relation_id        |
+#  +---------->| cell_id       |     | weight_value       |
+#              +---------------+     +--------------------+
 
 
 # Register SQLite adapter/converter for Decimal type.
@@ -195,21 +196,50 @@ _create_node = [
     """
     CREATE TABLE edge (
         edge_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-        other_node_hash TEXT NOT NULL UNIQUE,
-        other_node_name TEXT
+        edge_name TEXT DEFAULT 'unnamed' NOT NULL,
+        edge_description TEXT,
+        edge_order INTEGER DEFAULT NULL,
+        other_node_hash TEXT NOT NULL,
+        other_node_name TEXT,
+        UNIQUE (other_node_hash, edge_name),
+        UNIQUE (other_node_hash, edge_order)
     )
+    """,
+
+    """
+    CREATE TRIGGER AutoIncrementEdgeOrder AFTER INSERT ON edge
+    BEGIN
+        UPDATE edge
+        SET edge_order = (SELECT MAX(COALESCE(edge_order, 0))+1
+                          FROM edge
+                          WHERE other_node_hash=NEW.other_node_hash)
+        WHERE edge_order IS NULL;
+    END
     """,
 
     """
     CREATE TABLE weight (
         weight_id INTEGER PRIMARY KEY,
         edge_id INTEGER,
-        type TEXT,
-        note TEXT,
+        weight_name TEXT DEFAULT 'unnamed' NOT NULL,
+        weight_description TEXT,
+        weight_order INTEGER DEFAULT NULL,
         proportional INTEGER DEFAULT 0 CHECK (proportional IN (0, 1)),
         FOREIGN KEY (edge_id) REFERENCES edge(edge_id),
-        UNIQUE (edge_id, type)
+        UNIQUE (edge_id, weight_name),
+        UNIQUE (edge_id, weight_order)
     )
+    """,
+
+    """
+    CREATE TRIGGER AutoIncrementWeightOrder AFTER INSERT ON edge
+    BEGIN
+        UPDATE weight
+        SET weight_order = (SELECT MAX(COALESCE(weight_order, 0))+1
+                            FROM weight
+                            WHERE edge_id=NEW.edge_id)
+        WHERE weight_order IS NULL;
+    END
     """,
 
     """
