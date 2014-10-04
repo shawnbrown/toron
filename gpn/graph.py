@@ -13,12 +13,12 @@ class Graph(object):
     def __init__(self, path=None, nodes=None):
         global suffix
         global suffix_default
-        assert not path or not nodes, ('Cannot specify both path '
-                                            'and nodes.')
+        assert not path or not nodes, ('Cannot specify both path and nodes.')
+
         # Get nodes.
         if not nodes:
             if not path:
-                path = os.getcwd()  # Defaule to cwd.
+                path = os.getcwd()  # Default to cwd.
 
             def is_node(x):
                 return x.endswith(suffix) or x.endswith(suffix_default)
