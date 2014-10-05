@@ -331,12 +331,40 @@ class TestInsert(unittest.TestCase):
         node = Node(mode=IN_MEMORY)
         node._insert_cells(fh)  # <- First insert!
 
-        regex = 'CHECK constraint failed: cell_label'
+        regex = 'duplicate label set'
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             fh = StringIO('state,county,town\n'
                           'OH,Franklin,Columbus\n'
                           'OH,Hamilton,Cincinnati\n'
                           'OH,Hamilton,Cincinnati\n')
+            node._insert_cells(fh)  # <- Second insert!
+
+        connection = node._connect()
+        cursor = connection.cursor()
+
+        # Cell table should include only values from first insert.
+        cursor.execute('SELECT * FROM cell ORDER BY cell_id')
+        expected = [(1, 0), (2, 0)]
+        self.assertEqual(expected, cursor.fetchall())
+
+        # Label table should include only values from first insert.
+        cursor.execute('SELECT * FROM label ORDER BY label_id')
+        expected = [(1, 1, 'OH'),       (2, 2, 'Cuyahoga'), (3, 3, 'Cleveland'),
+                    (4, 1, 'UNMAPPED'), (5, 2, 'UNMAPPED'), (6, 3, 'UNMAPPED')]
+        self.assertEqual(expected, cursor.fetchall())
+
+    def test_unmapped_levels(self):
+        """Unmapped cells must have valid hierarchy levels."""
+        fh = StringIO('state,county,town\n'
+                      'OH,Cuyahoga,Cleveland\n')
+        node = Node(mode=IN_MEMORY)
+        node._insert_cells(fh)  # <- First insert!
+
+        regex = 'invalid unmapped level'
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            fh = StringIO('state,county,town\n'
+                          'OH,Franklin,Columbus\n'
+                          'OH,UNMAPPED,Cincinnati\n')
             node._insert_cells(fh)  # <- Second insert!
 
         connection = node._connect()

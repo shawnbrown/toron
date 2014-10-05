@@ -7,6 +7,8 @@ import textwrap
 
 from gpn import _csv as csv
 from gpn.connector import _Connector
+from gpn.connector import _duplicate_label_sets
+from gpn.connector import _invalid_unmapped_levels
 from gpn.connector import _expensive_constraints
 
 
@@ -140,6 +142,9 @@ class Node(object):
 
     def _insert_cells(self, fh):
         """Insert cells from given CSV file object."""
+        global _duplicate_label_sets
+        global _invalid_unmapped_levels
+
         reader = csv.reader(fh)
         fieldnames = next(reader)  # Use header row as fieldnames.
 
@@ -167,18 +172,16 @@ class Node(object):
                 self._insert_one_cell(cursor, unmapped_items)
 
             # Check for duplicate label combinations.
-            cursor.execute("""
-                SELECT 1
-                FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                      FROM (SELECT cell_id, label_id
-                            FROM cell_label
-                            ORDER BY cell_id, label_id)
-                      GROUP BY cell_id)
-                GROUP BY label_combo
-                HAVING COUNT(*) > 1
-            """)
+            cursor.execute(_duplicate_label_sets)
             if cursor.fetchone():
-                raise sqlite3.IntegrityError('CHECK constraint failed: cell_label')
+                raise sqlite3.IntegrityError(
+                    'CHECK constraint failed: cell_label (duplicate label set)')
+
+            # Check for invalid unmapped levels.
+            cursor.execute(_invalid_unmapped_levels)
+            if cursor.fetchone():
+                raise sqlite3.IntegrityError(
+                    'CHECK constraint failed: cell_label (invalid unmapped level)')
 
             # Re-create cell constraint triggers.
             for operation in _expensive_constraints.values():

@@ -514,7 +514,6 @@ class TestSqlDataModel(unittest.TestCase):
         expected = [(1, 'country', 0), (2, 'region', 1)]
         self.assertEqual(expected, cursor.fetchall())
 
-
     def test_label_autoincrement(self):
         """Label_id should auto-increment despite being in a composite key."""
         cursor = self.connection.cursor()
@@ -638,6 +637,46 @@ class TestSqlDataModel(unittest.TestCase):
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             cursor.execute("DELETE FROM cell_label WHERE cell_label_id=3")
             cursor.execute("DELETE FROM cell_label WHERE cell_label_id=2")
+
+    def test_unmapped_level_constraint(self):
+        """Cells with "UNMAPPED" labels must
+
+        """
+        cursor = self.connection.cursor()
+        cursor.execute("INSERT INTO hierarchy VALUES (1, 'region', 0)")
+        cursor.execute("INSERT INTO label VALUES (1, 1, 'Midwest')")
+
+        cursor.execute("INSERT INTO hierarchy VALUES (2, 'state',  1)")
+        cursor.execute("INSERT INTO label VALUES (2, 2, 'Ohio')")
+
+        cursor.execute("INSERT INTO cell VALUES (1, 0)")
+        cursor.execute("INSERT INTO cell_label VALUES (1, 1, 1, 1)")
+        cursor.execute("INSERT INTO cell_label VALUES (2, 1, 2, 2)")
+
+        cursor.execute("INSERT INTO label VALUES (4, 1, 'UNMAPPED')")
+        cursor.execute("INSERT INTO label VALUES (5, 2, 'UNMAPPED')")
+
+        # Insert valid cell: ('Midwest', 'UNMAPPED').
+        cursor.execute("INSERT INTO cell VALUES (3, 0)")
+        cursor.execute("INSERT INTO cell_label VALUES (5, 3, 1, 1)")
+        cursor.execute("INSERT INTO cell_label VALUES (6, 3, 2, 5)")
+        self.connection.commit()
+
+        # Insert invalid cell: ('UNMAPPED', 'Ohio').
+        regex = 'invalid unmapped level'
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("INSERT INTO cell VALUES (5, 0)")
+            cursor.execute("INSERT INTO cell_label VALUES (9,  5, 1, 4)")
+            cursor.execute("INSERT INTO cell_label VALUES (10, 5, 2, 2)")
+        cursor.connection.rollback()
+
+        # Update to invalid cell: ('UNMAPPED', 'Ohio').
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("UPDATE cell_label SET label_id=4 WHERE cell_label_id=1")
+
+        # Update to invalid hierarchy order: (1, 'region', 2).
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            cursor.execute("UPDATE hierarchy SET hierarchy_level=2 WHERE hierarchy_id=1")
 
     def test_textnum_decimal_type(self):
         """Decimal type values should be adapted as strings for TEXTNUM

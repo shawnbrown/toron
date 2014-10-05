@@ -275,49 +275,96 @@ _create_node = [
     """
 ]
 
+
+_duplicate_label_sets = """
+    SELECT *
+    FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+          FROM (SELECT cell_id, label_id
+                FROM cell_label
+                ORDER BY cell_id, label_id)
+          GROUP BY cell_id)
+    GROUP BY label_combo
+    HAVING COUNT(*) > 1
+"""
+
+
+_invalid_unmapped_levels = """
+    SELECT GROUP_CONCAT(hierarchy_level)
+    FROM (SELECT cell_id,
+                 CASE
+                     WHEN label_id IN (SELECT label_id
+                                       FROM label
+                                       WHERE label_value='UNMAPPED')
+                     THEN 1
+                     ELSE 0
+                 END AS unmapped_code,
+                 hierarchy_level
+          FROM cell_label
+          NATURAL JOIN label
+          NATURAL JOIN hierarchy
+          WHERE cell_id IN (SELECT DISTINCT cell_id
+                            FROM cell_label
+                            WHERE label_id IN (SELECT label_id
+                                               FROM label
+                                               WHERE label_value='UNMAPPED'))
+          ORDER BY cell_id, unmapped_code, hierarchy_level)
+    GROUP BY cell_id
+
+    EXCEPT
+
+    SELECT GROUP_CONCAT(hierarchy_level)
+    FROM (SELECT hierarchy_level
+          FROM hierarchy
+          ORDER BY hierarchy_level)
+"""
+
+
 _expensive_constraints = {
+    # Unique cell label constraints:
     'CheckUniqueLabels_ins': """
         CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
-        WHEN (SELECT 1
-              FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                    FROM (SELECT cell_id, label_id
-                          FROM cell_label
-                          ORDER BY cell_id, label_id)
-                    GROUP BY cell_id)
-              GROUP BY label_combo
-              HAVING COUNT(*) > 1)
+        WHEN (%s)
         BEGIN
             SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
         END
-        """,
+        """ % _duplicate_label_sets,
     'CheckUniqueLabels_upd': """
         CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
-        WHEN (SELECT 1
-              FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                    FROM (SELECT cell_id, label_id
-                          FROM cell_label
-                          ORDER BY cell_id, label_id)
-                    GROUP BY cell_id)
-              GROUP BY label_combo
-              HAVING COUNT(*) > 1)
+        WHEN (%s)
         BEGIN
             SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
         END
-        """,
+        """ % _duplicate_label_sets,
     'CheckUniqueLabels_del': """
         CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
-        WHEN (SELECT 1
-              FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                    FROM (SELECT cell_id, label_id
-                          FROM cell_label
-                          ORDER BY cell_id, label_id)
-                    GROUP BY cell_id)
-              GROUP BY label_combo
-              HAVING COUNT(*) > 1)
+        WHEN (%s)
         BEGIN
             SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
         END
-        """,
+        """ % _duplicate_label_sets,
+
+    # Unmapped level constraints:
+    'CheckUnmappedLevels_cellbl_ins': """
+        CREATE TRIGGER CheckUnmappedLevels_cellbl_ins AFTER INSERT ON cell_label
+        WHEN (%s)
+        BEGIN
+            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+        END
+        """ % _invalid_unmapped_levels,
+    'CheckUnmappedLevels_cellbl_upd': """
+        CREATE TRIGGER CheckUnmappedLevels_cellbl_upd AFTER UPDATE ON cell_label
+        WHEN (%s)
+        BEGIN
+            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+        END
+        """ % _invalid_unmapped_levels,
+    'CheckUnmappedLevels_hier_upd': """
+        CREATE TRIGGER CheckUnmappedLevels_hier_upd AFTER UPDATE ON hierarchy
+        WHEN (%s)
+        BEGIN
+            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+        END
+        """ % _invalid_unmapped_levels,
 }
 
 
