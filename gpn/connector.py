@@ -275,52 +275,50 @@ _create_node = [
     """
 ]
 
-_create_triggers = [
-    """
-    CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
-    WHEN (SELECT 1
-          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                FROM (SELECT cell_id, label_id
-                      FROM cell_label
-                      ORDER BY cell_id, label_id)
-                GROUP BY cell_id)
-          GROUP BY label_combo
-          HAVING COUNT(*) > 1)
-    BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-    END
-    """,
-
-    """
-    CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
-    WHEN (SELECT 1
-          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                FROM (SELECT cell_id, label_id
-                      FROM cell_label
-                      ORDER BY cell_id, label_id)
-                GROUP BY cell_id)
-          GROUP BY label_combo
-          HAVING COUNT(*) > 1)
-    BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-    END
-    """,
-
-    """
-    CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
-    WHEN (SELECT 1
-          FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-                FROM (SELECT cell_id, label_id
-                      FROM cell_label
-                      ORDER BY cell_id, label_id)
-                GROUP BY cell_id)
-          GROUP BY label_combo
-          HAVING COUNT(*) > 1)
-    BEGIN
-        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-    END
-    """
-]
+_expensive_constraints = {
+    'CheckUniqueLabels_ins': """
+        CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
+        WHEN (SELECT 1
+              FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                    FROM (SELECT cell_id, label_id
+                          FROM cell_label
+                          ORDER BY cell_id, label_id)
+                    GROUP BY cell_id)
+              GROUP BY label_combo
+              HAVING COUNT(*) > 1)
+        BEGIN
+            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+        END
+        """,
+    'CheckUniqueLabels_upd': """
+        CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
+        WHEN (SELECT 1
+              FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                    FROM (SELECT cell_id, label_id
+                          FROM cell_label
+                          ORDER BY cell_id, label_id)
+                    GROUP BY cell_id)
+              GROUP BY label_combo
+              HAVING COUNT(*) > 1)
+        BEGIN
+            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+        END
+        """,
+    'CheckUniqueLabels_del': """
+        CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
+        WHEN (SELECT 1
+              FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+                    FROM (SELECT cell_id, label_id
+                          FROM cell_label
+                          ORDER BY cell_id, label_id)
+                    GROUP BY cell_id)
+              GROUP BY label_combo
+              HAVING COUNT(*) > 1)
+        BEGIN
+            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+        END
+        """,
+}
 
 
 # Mode flags.
@@ -342,7 +340,7 @@ class _Connector(object):
 
         """
         global _create_node
-        global _create_triggers
+        global _expensive_constraints
         self._memory_conn = None
         self._temp_path = None
         self._is_read_only = bool(mode & READ_ONLY)
@@ -381,7 +379,7 @@ class _Connector(object):
                 connection = self._connect(self._memory_conn)
             cursor = connection.cursor()
             cursor.execute('PRAGMA synchronous=OFF')
-            for operation in (_create_node + _create_triggers):
+            for operation in (_create_node + list(_expensive_constraints.values())):
                 cursor.execute(operation)
             cursor.execute('PRAGMA synchronous=FULL')
             connection.close()

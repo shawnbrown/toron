@@ -7,7 +7,7 @@ from gpn.tests import _unittest as unittest
 from gpn.tests.common import MkdtempTestCase
 
 from gpn.connector import _create_node
-from gpn.connector import _create_triggers
+from gpn.connector import _expensive_constraints
 from gpn.connector import _normalize_args_for_trigger
 from gpn.connector import _null_clause_for_trigger
 from gpn.connector import _where_clause_for_trigger
@@ -242,12 +242,12 @@ class TestReadOnlyTriggers(unittest.TestCase):
 class TestConnector(MkdtempTestCase):
     def _make_database(self, filename):
         global _create_node
-        global _create_triggers
+        global _expensive_constraints
         self._existing_node = filename
         connection = sqlite3.connect(self._existing_node)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        for operation in (_create_node + _create_triggers):
+        for operation in (_create_node + list(_expensive_constraints.values())):
             cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()

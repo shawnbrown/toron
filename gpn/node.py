@@ -7,7 +7,7 @@ import textwrap
 
 from gpn import _csv as csv
 from gpn.connector import _Connector
-from gpn.connector import _create_triggers
+from gpn.connector import _expensive_constraints
 
 
 class Node(object):
@@ -149,9 +149,8 @@ class Node(object):
             cursor.execute('BEGIN TRANSACTION')
 
             # Temporarily drop triggers (too slow for bulk insert).
-            cursor.execute('DROP TRIGGER CheckUniqueLabels_ins')
-            cursor.execute('DROP TRIGGER CheckUniqueLabels_upd')
-            cursor.execute('DROP TRIGGER CheckUniqueLabels_del')
+            for name in _expensive_constraints.keys():
+                cursor.execute('DROP TRIGGER %s' % name)
 
             self._insert_hierarchies(cursor, fieldnames)
 
@@ -181,8 +180,8 @@ class Node(object):
             if cursor.fetchone():
                 raise sqlite3.IntegrityError('CHECK constraint failed: cell_label')
 
-            # Re-create "CheckUniqueLabel" triggers.
-            for operation in _create_triggers:
+            # Re-create cell constraint triggers.
+            for operation in _expensive_constraints.values():
                 cursor.execute(operation)
 
             # Insert node hash.

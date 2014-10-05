@@ -13,7 +13,7 @@ from gpn.tests.common import MkdtempTestCase
 
 from gpn.node import Node
 from gpn.connector import _create_node
-from gpn.connector import _create_triggers
+from gpn.connector import _expensive_constraints
 from gpn import IN_MEMORY
 from gpn import TEMP_FILE
 from gpn import READ_ONLY
@@ -26,7 +26,7 @@ class TestInstantiation(MkdtempTestCase):
         connection = sqlite3.connect(self._existing_node)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        for operation in (_create_node + _create_triggers):
+        for operation in (_create_node + list(_expensive_constraints.values())):
             cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
