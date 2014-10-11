@@ -48,6 +48,47 @@ from decimal import Decimal
 sqlite3.register_adapter(Decimal, str)
 sqlite3.register_converter('TEXTNUM', lambda x: Decimal(x.decode('utf-8')))
 
+_duplicate_label_sets = """
+    SELECT *
+    FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+          FROM (SELECT cell_id, label_id
+                FROM cell_label
+                ORDER BY cell_id, label_id)
+          GROUP BY cell_id)
+    GROUP BY label_combo
+    HAVING COUNT(*) > 1
+"""
+
+_invalid_unmapped_levels = """
+    SELECT GROUP_CONCAT(hierarchy_level)
+    FROM (SELECT cell_id,
+                 CASE
+                     WHEN label_id IN (SELECT label_id
+                                       FROM label
+                                       WHERE label_value='UNMAPPED')
+                     THEN 1
+                     ELSE 0
+                 END AS unmapped_code,
+                 hierarchy_level
+          FROM cell_label
+          NATURAL JOIN label
+          NATURAL JOIN hierarchy
+          WHERE cell_id IN (SELECT DISTINCT cell_id
+                            FROM cell_label
+                            WHERE label_id IN (SELECT label_id
+                                               FROM label
+                                               WHERE label_value='UNMAPPED'))
+          ORDER BY cell_id, unmapped_code, hierarchy_level)
+    GROUP BY cell_id
+
+    EXCEPT
+
+    SELECT GROUP_CONCAT(hierarchy_level)
+    FROM (SELECT hierarchy_level
+          FROM hierarchy
+          ORDER BY hierarchy_level)
+"""
+
 _schema_items = [
     ('cell',
      """
@@ -183,6 +224,54 @@ _schema_items = [
      """
      CREATE INDEX nonunique_celllabel_labelid ON cell_label (label_id)
      """),
+    ('CheckUniqueLabels_ins',
+     """
+     CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
+     WHEN (%s)
+     BEGIN
+         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+     END
+     """ % _duplicate_label_sets),
+    ('CheckUniqueLabels_upd',
+     """
+     CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
+     WHEN (%s)
+     BEGIN
+         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+     END
+     """ % _duplicate_label_sets),
+    ('CheckUniqueLabels_del',
+     """
+     CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
+     WHEN (%s)
+     BEGIN
+         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+     END
+     """ % _duplicate_label_sets),
+    ('CheckUnmappedLevels_cellbl_ins',
+     """
+     CREATE TRIGGER CheckUnmappedLevels_cellbl_ins AFTER INSERT ON cell_label
+     WHEN (%s)
+     BEGIN
+         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+     END
+     """ % _invalid_unmapped_levels),
+    ('CheckUnmappedLevels_cellbl_upd',
+     """
+     CREATE TRIGGER CheckUnmappedLevels_cellbl_upd AFTER UPDATE ON cell_label
+     WHEN (%s)
+     BEGIN
+         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+     END
+     """ % _invalid_unmapped_levels),
+    ('CheckUnmappedLevels_hier_upd',
+     """
+     CREATE TRIGGER CheckUnmappedLevels_hier_upd AFTER UPDATE ON hierarchy
+     WHEN (%s)
+     BEGIN
+         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+     END
+     """ % _invalid_unmapped_levels),
     ('node',
      """
      CREATE TABLE node (
@@ -271,100 +360,15 @@ _schema_items = [
          property_val TEXT,
          created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
      )
-     """)
+     """),
 ]
 
-
-_duplicate_label_sets = """
-    SELECT *
-    FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
-          FROM (SELECT cell_id, label_id
-                FROM cell_label
-                ORDER BY cell_id, label_id)
-          GROUP BY cell_id)
-    GROUP BY label_combo
-    HAVING COUNT(*) > 1
-"""
-
-
-_invalid_unmapped_levels = """
-    SELECT GROUP_CONCAT(hierarchy_level)
-    FROM (SELECT cell_id,
-                 CASE
-                     WHEN label_id IN (SELECT label_id
-                                       FROM label
-                                       WHERE label_value='UNMAPPED')
-                     THEN 1
-                     ELSE 0
-                 END AS unmapped_code,
-                 hierarchy_level
-          FROM cell_label
-          NATURAL JOIN label
-          NATURAL JOIN hierarchy
-          WHERE cell_id IN (SELECT DISTINCT cell_id
-                            FROM cell_label
-                            WHERE label_id IN (SELECT label_id
-                                               FROM label
-                                               WHERE label_value='UNMAPPED'))
-          ORDER BY cell_id, unmapped_code, hierarchy_level)
-    GROUP BY cell_id
-
-    EXCEPT
-
-    SELECT GROUP_CONCAT(hierarchy_level)
-    FROM (SELECT hierarchy_level
-          FROM hierarchy
-          ORDER BY hierarchy_level)
-"""
-
-
-_expensive_constraints = {
-    # Unique cell label constraints:
-    'CheckUniqueLabels_ins': """
-        CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
-        WHEN (%s)
-        BEGIN
-            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-        END
-        """ % _duplicate_label_sets,
-    'CheckUniqueLabels_upd': """
-        CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
-        WHEN (%s)
-        BEGIN
-            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-        END
-        """ % _duplicate_label_sets,
-    'CheckUniqueLabels_del': """
-        CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
-        WHEN (%s)
-        BEGIN
-            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-        END
-        """ % _duplicate_label_sets,
-
-    # Unmapped level constraints:
-    'CheckUnmappedLevels_cellbl_ins': """
-        CREATE TRIGGER CheckUnmappedLevels_cellbl_ins AFTER INSERT ON cell_label
-        WHEN (%s)
-        BEGIN
-            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
-        END
-        """ % _invalid_unmapped_levels,
-    'CheckUnmappedLevels_cellbl_upd': """
-        CREATE TRIGGER CheckUnmappedLevels_cellbl_upd AFTER UPDATE ON cell_label
-        WHEN (%s)
-        BEGIN
-            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
-        END
-        """ % _invalid_unmapped_levels,
-    'CheckUnmappedLevels_hier_upd': """
-        CREATE TRIGGER CheckUnmappedLevels_hier_upd AFTER UPDATE ON hierarchy
-        WHEN (%s)
-        BEGIN
-            SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
-        END
-        """ % _invalid_unmapped_levels,
-}
+_expensive_constraints = ['CheckUniqueLabels_ins',
+                          'CheckUniqueLabels_upd',
+                          'CheckUniqueLabels_del',
+                          'CheckUnmappedLevels_cellbl_ins',
+                          'CheckUnmappedLevels_cellbl_upd',
+                          'CheckUnmappedLevels_hier_upd']
 
 
 # Mode flags.
@@ -386,7 +390,6 @@ class _Connector(object):
 
         """
         global _schema_items
-        global _expensive_constraints
         self._memory_conn = None
         self._temp_path = None
         self._is_read_only = bool(mode & READ_ONLY)
@@ -425,10 +428,7 @@ class _Connector(object):
                 connection = self._connect(self._memory_conn)
             cursor = connection.cursor()
             cursor.execute('PRAGMA synchronous=OFF')
-            #for operation in (_create_node + list(_expensive_constraints.values())):
-            #    cursor.execute(operation)
-            ops = [x[1] for x in _schema_items]
-            for operation in (ops + list(_expensive_constraints.values())):
+            for _, operation in _schema_items:
                 cursor.execute(operation)
             cursor.execute('PRAGMA synchronous=FULL')
             connection.close()

@@ -8,7 +8,6 @@ from gpn.tests import _unittest as unittest
 from gpn.tests.common import MkdtempTestCase
 
 from gpn.connector import _schema_items
-from gpn.connector import _expensive_constraints
 from gpn.connector import _normalize_args_for_trigger
 from gpn.connector import _null_clause_for_trigger
 from gpn.connector import _where_clause_for_trigger
@@ -255,15 +254,11 @@ class TestSchemaItems(unittest.TestCase):
 class TestConnector(MkdtempTestCase):
     def _make_database(self, filename):
         global _schema_items
-        global _expensive_constraints
         self._existing_node = filename
         connection = sqlite3.connect(self._existing_node)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        #for operation in (_create_node + list(_expensive_constraints.values())):
-        #    cursor.execute(operation)
-        ops = [x[1] for x in _schema_items]
-        for operation in (ops + list(_expensive_constraints.values())):
+        for _, operation in _schema_items:
             cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
