@@ -2,11 +2,12 @@
 import decimal
 import os
 import sqlite3
+import re
 
 from gpn.tests import _unittest as unittest
 from gpn.tests.common import MkdtempTestCase
 
-from gpn.connector import _create_node
+from gpn.connector import _schema_items
 from gpn.connector import _expensive_constraints
 from gpn.connector import _normalize_args_for_trigger
 from gpn.connector import _null_clause_for_trigger
@@ -239,15 +240,30 @@ class TestReadOnlyTriggers(unittest.TestCase):
             cursor.execute('DELETE FROM foo WHERE id=1')
 
 
+class TestSchemaItems(unittest.TestCase):
+    def test_names(self):
+        """_schema_items name must match CREATE statement."""
+        for name, operation in _schema_items:
+            pat = 'CREATE (?:TABLE|INDEX|TRIGGER) (\w+)'
+            match = re.search(pat, operation)
+            statement, found = match.group(0, 1)
+
+            msg = 'Names must match - uses "%s" but operation contains "%s".'
+            self.assertEqual(name, found, msg % (name, statement))
+
+
 class TestConnector(MkdtempTestCase):
     def _make_database(self, filename):
-        global _create_node
+        global _schema_items
         global _expensive_constraints
         self._existing_node = filename
         connection = sqlite3.connect(self._existing_node)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        for operation in (_create_node + list(_expensive_constraints.values())):
+        #for operation in (_create_node + list(_expensive_constraints.values())):
+        #    cursor.execute(operation)
+        ops = [x[1] for x in _schema_items]
+        for operation in (ops + list(_expensive_constraints.values())):
             cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
