@@ -249,8 +249,8 @@ class TestGetSchemaDict_ConstraintNames(unittest.TestCase):
 
         keys = list(schema_dict.keys())
         self.assertIn('cell', keys)  # Table
-        self.assertIn('nonunique_label_hierarchyid', keys)  # Index
-        self.assertIn('AutoIncrementLabelId', keys)  # Trigger
+        self.assertIn('idx_Label_HierarchyId', keys)  # Index
+        self.assertIn('trg_AutoIncrementLabelId_InsertLabel', keys)  # Trigger
 
     def test_expensive_constraints(self):
         global _expensive_constraints

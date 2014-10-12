@@ -60,7 +60,7 @@ _duplicate_label_sets = """
     HAVING COUNT(*) > 1
 """
 
-_invalid_unmapped_levels = """
+_invalid_unmapped_hierarchy = """
     SELECT GROUP_CONCAT(hierarchy_level)
     FROM (SELECT cell_id,
                  CASE
@@ -117,10 +117,10 @@ _schema = [
     )
     """,
     """
-    CREATE INDEX nonunique_label_hierarchyid ON label (hierarchy_id)
+    CREATE INDEX idx_Label_HierarchyId ON label (hierarchy_id);
     """,
     """
-    CREATE TRIGGER AutoIncrementLabelId AFTER INSERT ON label
+    CREATE TRIGGER trg_AutoIncrementLabelId_InsertLabel AFTER INSERT ON label
     BEGIN
         UPDATE label
         SET label_id = (SELECT MAX(COALESCE(label_id, 0))+1 FROM label)
@@ -128,7 +128,7 @@ _schema = [
     END
     """,
     """
-    CREATE TRIGGER MaximalCellLabel_ins BEFORE INSERT ON label
+    CREATE TRIGGER trg_CheckRootHierarchy_InsertLabel BEFORE INSERT ON label
     WHEN (NEW.hierarchy_id=(SELECT hierarchy_id
                             FROM hierarchy
                             ORDER BY hierarchy_level
@@ -146,7 +146,7 @@ _schema = [
     END
     """,
     """
-    CREATE TRIGGER MaximalCellLabel_upd BEFORE UPDATE ON label
+    CREATE TRIGGER trg_CheckRootHierarchy_UpdateLabel BEFORE UPDATE ON label
     WHEN (NEW.hierarchy_id=(SELECT hierarchy_id
                             FROM hierarchy
                             ORDER BY hierarchy_level
@@ -164,7 +164,7 @@ _schema = [
     END
     """,
     """
-    CREATE TRIGGER MaximalCellHierarchy_upd AFTER UPDATE ON hierarchy
+    CREATE TRIGGER trg_CheckRootHierarchy_UpdateHierarchy AFTER UPDATE ON hierarchy
     WHEN (SELECT 2 < COUNT(*)
           FROM (SELECT label_value
                 FROM label
@@ -179,7 +179,7 @@ _schema = [
     END
     """,
     """
-    CREATE TRIGGER MaximalCellHierarchy_del AFTER DELETE ON hierarchy
+    CREATE TRIGGER trg_CheckRootHierarchy_DeleteHierarchy AFTER DELETE ON hierarchy
     WHEN (SELECT 2 < COUNT(*)
           FROM (SELECT label_value
                 FROM label
@@ -205,56 +205,56 @@ _schema = [
     )
     """,
     """
-    CREATE INDEX nonunique_celllabel_cellid ON cell_label (cell_id)
+    CREATE INDEX idx_CellLabel_CellId ON cell_label (cell_id)
     """,
     """
-    CREATE INDEX nonunique_celllabel_hierarchyid ON cell_label (hierarchy_id)
+    CREATE INDEX idx_CellLabel_HierarchyId ON cell_label (hierarchy_id)
     """,
     """
-    CREATE INDEX nonunique_celllabel_labelid ON cell_label (label_id)
+    CREATE INDEX idx_CellLabel_LabelId ON cell_label (label_id)
     """,
     """
-    CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
+    CREATE TRIGGER trg_CheckUniqueLabels_InsertCellLabel AFTER INSERT ON cell_label
     WHEN (%s)
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
     END
     """ % _duplicate_label_sets,
     """
-    CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
+    CREATE TRIGGER trg_CheckUniqueLabels_UpdateCellLabel AFTER UPDATE ON cell_label
     WHEN (%s)
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
     END
     """ % _duplicate_label_sets,
     """
-    CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
+    CREATE TRIGGER trg_CheckUniqueLabels_DeleteCellLabel AFTER DELETE ON cell_label
     WHEN (%s)
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
     END
     """ % _duplicate_label_sets,
     """
-    CREATE TRIGGER CheckUnmappedLevels_cellbl_ins AFTER INSERT ON cell_label
+    CREATE TRIGGER trg_CheckUnmappedHierarchy_InsertCellLabel AFTER INSERT ON cell_label
     WHEN (%s)
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
     END
-    """ % _invalid_unmapped_levels,
+    """ % _invalid_unmapped_hierarchy,
     """
-    CREATE TRIGGER CheckUnmappedLevels_cellbl_upd AFTER UPDATE ON cell_label
+    CREATE TRIGGER trg_CheckUnmappedHierarchy_UpdateCellLabel AFTER UPDATE ON cell_label
     WHEN (%s)
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
     END
-    """ % _invalid_unmapped_levels,
+    """ % _invalid_unmapped_hierarchy,
     """
-    CREATE TRIGGER CheckUnmappedLevels_hier_upd AFTER UPDATE ON hierarchy
+    CREATE TRIGGER trg_CheckUnmappedHierarchy_UpdateHierarchy AFTER UPDATE ON hierarchy
     WHEN (%s)
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
     END
-    """ % _invalid_unmapped_levels,
+    """ % _invalid_unmapped_hierarchy,
     """
     CREATE TABLE node (
         node_id INTEGER PRIMARY KEY,
@@ -275,7 +275,7 @@ _schema = [
     )
     """,
     """
-    CREATE TRIGGER AutoIncrementEdgeOrder AFTER INSERT ON edge
+    CREATE TRIGGER trg_AutoIncrementEdgeOrder_InsertEdge AFTER INSERT ON edge
     BEGIN
         UPDATE edge
         SET edge_order = (SELECT MAX(COALESCE(edge_order, 0))+1
@@ -298,7 +298,7 @@ _schema = [
     )
     """,
     """
-    CREATE TRIGGER AutoIncrementWeightOrder AFTER INSERT ON edge
+    CREATE TRIGGER trg_AutoIncrementWeightOrder_InsertEdge AFTER INSERT ON edge
     BEGIN
         UPDATE weight
         SET weight_order = (SELECT MAX(COALESCE(weight_order, 0))+1
@@ -346,12 +346,12 @@ def _get_schema_dict():
     get_name = lambda s: regex.search(s).group(1)
     return dict((get_name(op), op) for op in _schema)
 
-_expensive_constraints = ['CheckUniqueLabels_ins',
-                          'CheckUniqueLabels_upd',
-                          'CheckUniqueLabels_del',
-                          'CheckUnmappedLevels_cellbl_ins',
-                          'CheckUnmappedLevels_cellbl_upd',
-                          'CheckUnmappedLevels_hier_upd']
+_expensive_constraints = ['trg_CheckUniqueLabels_InsertCellLabel',
+                          'trg_CheckUniqueLabels_UpdateCellLabel',
+                          'trg_CheckUniqueLabels_DeleteCellLabel',
+                          'trg_CheckUnmappedHierarchy_InsertCellLabel',
+                          'trg_CheckUnmappedHierarchy_UpdateCellLabel',
+                          'trg_CheckUnmappedHierarchy_UpdateHierarchy']
 
 
 # Mode flags.
