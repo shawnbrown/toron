@@ -8,7 +8,7 @@ import textwrap
 from gpn import _csv as csv
 from gpn.connector import _Connector
 from gpn.connector import _duplicate_label_sets
-from gpn.connector import _invalid_unmapped_hierarchy
+from gpn.connector import _invalid_unmapped_levels
 from gpn.connector import _get_schema_dict
 from gpn.connector import _expensive_constraints
 
@@ -144,7 +144,7 @@ class Node(object):
     def _insert_cells(self, fh):
         """Insert cells from given CSV file object."""
         global _duplicate_label_sets
-        global _invalid_unmapped_hierarchy
+        global _invalid_unmapped_levels
 
         reader = csv.reader(fh)
         fieldnames = next(reader)  # Use header row as fieldnames.
@@ -179,7 +179,7 @@ class Node(object):
                     'CHECK constraint failed: cell_label (duplicate label set)')
 
             # Check for invalid unmapped levels.
-            cursor.execute(_invalid_unmapped_hierarchy)
+            cursor.execute(_invalid_unmapped_levels)
             if cursor.fetchone():
                 raise sqlite3.IntegrityError(
                     'CHECK constraint failed: cell_label (invalid unmapped level)')

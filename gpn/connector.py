@@ -49,18 +49,30 @@ from decimal import Decimal
 sqlite3.register_adapter(Decimal, str)
 sqlite3.register_converter('TEXTNUM', lambda x: Decimal(x.decode('utf-8')))
 
+_invalid_root_hierarchy = """
+    SELECT hierarchy_value AS invalid_root
+    FROM label
+    NATURAL JOIN (SELECT hierarchy_id, hierarchy_value
+                  FROM hierarchy
+                  ORDER BY hierarchy_level
+                  LIMIT 1)
+    WHERE label_value != 'UNMAPPED'
+    GROUP BY hierarchy_value
+    HAVING COUNT(*) != 1
+"""
+
 _duplicate_label_sets = """
     SELECT *
-    FROM (SELECT GROUP_CONCAT(label_id) AS label_combo
+    FROM (SELECT GROUP_CONCAT(label_id) AS label_set
           FROM (SELECT cell_id, label_id
                 FROM cell_label
                 ORDER BY cell_id, label_id)
           GROUP BY cell_id)
-    GROUP BY label_combo
+    GROUP BY label_set
     HAVING COUNT(*) > 1
 """
 
-_invalid_unmapped_hierarchy = """
+_invalid_unmapped_levels = """
     SELECT GROUP_CONCAT(hierarchy_level)
     FROM (SELECT cell_id,
                  CASE
@@ -128,71 +140,41 @@ _schema = [
     END
     """,
     """
-    CREATE TRIGGER trg_CheckRootHierarchy_InsertLabel BEFORE INSERT ON label
-    WHEN (NEW.hierarchy_id=(SELECT hierarchy_id
-                            FROM hierarchy
-                            ORDER BY hierarchy_level
-                            LIMIT 1)
-          AND (SELECT 2 < COUNT(*)
-               FROM (SELECT label_value
-                     FROM label
-                     WHERE NEW.hierarchy_id=hierarchy_id
-                     UNION
-                     SELECT 'UNMAPPED'
-                     UNION
-                     SELECT NEW.label_value)))
+    CREATE TRIGGER trg_CheckRootHierarchy_InsertLabel AFTER INSERT ON label
+    WHEN NEW.hierarchy_id=(SELECT hierarchy_id
+                           FROM hierarchy
+                           ORDER BY hierarchy_level
+                           LIMIT 1)
+         AND (%s) IS NOT NULL
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
     END
-    """,
+    """ % _invalid_root_hierarchy,
     """
-    CREATE TRIGGER trg_CheckRootHierarchy_UpdateLabel BEFORE UPDATE ON label
-    WHEN (NEW.hierarchy_id=(SELECT hierarchy_id
-                            FROM hierarchy
-                            ORDER BY hierarchy_level
-                            LIMIT 1)
-          AND (SELECT 2 < COUNT(*)
-               FROM (SELECT label_value
-                     FROM label
-                     WHERE NEW.hierarchy_id=hierarchy_id
-                     UNION
-                     SELECT 'UNMAPPED'
-                     UNION
-                     SELECT NEW.label_value)))
+    CREATE TRIGGER trg_CheckRootHierarchy_UpdateLabel AFTER UPDATE ON label
+    WHEN NEW.hierarchy_id=(SELECT hierarchy_id
+                           FROM hierarchy
+                           ORDER BY hierarchy_level
+                           LIMIT 1)
+         AND (%s) IS NOT NULL
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
     END
-    """,
+    """ % _invalid_root_hierarchy,
     """
     CREATE TRIGGER trg_CheckRootHierarchy_UpdateHierarchy AFTER UPDATE ON hierarchy
-    WHEN (SELECT 2 < COUNT(*)
-          FROM (SELECT label_value
-                FROM label
-                WHERE label.hierarchy_id IN (SELECT hierarchy_id
-                                             FROM hierarchy
-                                             ORDER BY hierarchy_level
-                                             LIMIT 1)
-                UNION
-                SELECT 'UNMAPPED'))
+    WHEN (%s) IS NOT NULL
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
     END
-    """,
+    """ % _invalid_root_hierarchy,
     """
     CREATE TRIGGER trg_CheckRootHierarchy_DeleteHierarchy AFTER DELETE ON hierarchy
-    WHEN (SELECT 2 < COUNT(*)
-          FROM (SELECT label_value
-                FROM label
-                WHERE label.hierarchy_id IN (SELECT hierarchy_id
-                                             FROM hierarchy
-                                             ORDER BY hierarchy_level
-                                             LIMIT 1)
-                UNION
-                SELECT 'UNMAPPED'))
+    WHEN (%s) IS NOT NULL
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
     END
-    """,
+    """ % _invalid_root_hierarchy,
     """
     CREATE TABLE cell_label (
         cell_label_id INTEGER PRIMARY KEY,
@@ -240,21 +222,21 @@ _schema = [
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
     END
-    """ % _invalid_unmapped_hierarchy,
+    """ % _invalid_unmapped_levels,
     """
     CREATE TRIGGER trg_CheckUnmappedHierarchy_UpdateCellLabel AFTER UPDATE ON cell_label
     WHEN (%s)
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
     END
-    """ % _invalid_unmapped_hierarchy,
+    """ % _invalid_unmapped_levels,
     """
     CREATE TRIGGER trg_CheckUnmappedHierarchy_UpdateHierarchy AFTER UPDATE ON hierarchy
     WHEN (%s)
     BEGIN
         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
     END
-    """ % _invalid_unmapped_hierarchy,
+    """ % _invalid_unmapped_levels,
     """
     CREATE TABLE node (
         node_id INTEGER PRIMARY KEY,
