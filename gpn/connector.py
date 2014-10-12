@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 import sqlite3
 import tempfile
 
@@ -89,279 +90,261 @@ _invalid_unmapped_levels = """
           ORDER BY hierarchy_level)
 """
 
-_schema_items = [
-    ('cell',
-     """
-     CREATE TABLE cell (
-         cell_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-         partial INTEGER DEFAULT 0 CHECK (partial IN (0, 1))
-     )
-     """),
-    ('hierarchy',
-     """
-     CREATE TABLE hierarchy (
-         hierarchy_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-         hierarchy_value TEXT UNIQUE NOT NULL CHECK(hierarchy_value!='cell_id'
-                                                    AND hierarchy_value NOT LIKE '%.%'),
-         hierarchy_level INTEGER UNIQUE NOT NULL
-     )
-     """),
-    ('label',
-     """
-     CREATE TABLE label (
-         label_id INTEGER DEFAULT NULL UNIQUE,
-         hierarchy_id INTEGER NOT NULL,
-         label_value TEXT,
-         FOREIGN KEY (hierarchy_id) REFERENCES hierarchy(hierarchy_id),
-         PRIMARY KEY (label_id, hierarchy_id),
-         UNIQUE (hierarchy_id, label_value)
-     )
-     """),
-    ('nonunique_label_hierarchyid',
-     """
-     CREATE INDEX nonunique_label_hierarchyid ON label (hierarchy_id)
-     """),
-    ('AutoIncrementLabelId',
-     """
-     CREATE TRIGGER AutoIncrementLabelId AFTER INSERT ON label
-     BEGIN
-         UPDATE label
-         SET label_id = (SELECT MAX(COALESCE(label_id, 0))+1 FROM label)
-         WHERE label_id IS NULL;
-     END
-     """),
-    ('MaximalCellLabel_ins',
-     """
-     CREATE TRIGGER MaximalCellLabel_ins BEFORE INSERT ON label
-     WHEN (NEW.hierarchy_id=(SELECT hierarchy_id
-                             FROM hierarchy
-                             ORDER BY hierarchy_level
-                             LIMIT 1)
-           AND (SELECT 2 < COUNT(*)
-                FROM (SELECT label_value
-                      FROM label
-                      WHERE NEW.hierarchy_id=hierarchy_id
-                      UNION
-                      SELECT 'UNMAPPED'
-                      UNION
-                      SELECT NEW.label_value)))
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
-     END
-     """),
-    ('MaximalCellLabel_upd',
-     """
-     CREATE TRIGGER MaximalCellLabel_upd BEFORE UPDATE ON label
-     WHEN (NEW.hierarchy_id=(SELECT hierarchy_id
-                             FROM hierarchy
-                             ORDER BY hierarchy_level
-                             LIMIT 1)
-           AND (SELECT 2 < COUNT(*)
-                FROM (SELECT label_value
-                      FROM label
-                      WHERE NEW.hierarchy_id=hierarchy_id
-                      UNION
-                      SELECT 'UNMAPPED'
-                      UNION
-                      SELECT NEW.label_value)))
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
-     END
-     """),
-    ('MaximalCellHierarchy_upd',
-     """
-     CREATE TRIGGER MaximalCellHierarchy_upd AFTER UPDATE ON hierarchy
-     WHEN (SELECT 2 < COUNT(*)
-           FROM (SELECT label_value
-                 FROM label
-                 WHERE label.hierarchy_id IN (SELECT hierarchy_id
-                                              FROM hierarchy
-                                              ORDER BY hierarchy_level
-                                              LIMIT 1)
-                 UNION
-                 SELECT 'UNMAPPED'))
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
-     END
-     """),
-    ('MaximalCellHierarchy_del',
-     """
-     CREATE TRIGGER MaximalCellHierarchy_del AFTER DELETE ON hierarchy
-     WHEN (SELECT 2 < COUNT(*)
-           FROM (SELECT label_value
-                 FROM label
-                 WHERE label.hierarchy_id IN (SELECT hierarchy_id
-                                              FROM hierarchy
-                                              ORDER BY hierarchy_level
-                                              LIMIT 1)
-                 UNION
-                 SELECT 'UNMAPPED'))
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
-     END
-     """),
-    ('cell_label',
-     """
-     CREATE TABLE cell_label (
-         cell_label_id INTEGER PRIMARY KEY,
-         cell_id INTEGER,
-         hierarchy_id INTEGER,
-         label_id INTEGER,
-         FOREIGN KEY (cell_id) REFERENCES cell(cell_id),
-         FOREIGN KEY (label_id, hierarchy_id) REFERENCES label(label_id, hierarchy_id),
-         UNIQUE (cell_id, hierarchy_id)
-     )
-     """),
-    ('nonunique_celllabel_cellid',
-     """
-     CREATE INDEX nonunique_celllabel_cellid ON cell_label (cell_id)
-     """),
-    ('nonunique_celllabel_hierarchyid',
-     """
-     CREATE INDEX nonunique_celllabel_hierarchyid ON cell_label (hierarchy_id)
-     """),
-    ('nonunique_celllabel_labelid',
-     """
-     CREATE INDEX nonunique_celllabel_labelid ON cell_label (label_id)
-     """),
-    ('CheckUniqueLabels_ins',
-     """
-     CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
-     WHEN (%s)
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-     END
-     """ % _duplicate_label_sets),
-    ('CheckUniqueLabels_upd',
-     """
-     CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
-     WHEN (%s)
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-     END
-     """ % _duplicate_label_sets),
-    ('CheckUniqueLabels_del',
-     """
-     CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
-     WHEN (%s)
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
-     END
-     """ % _duplicate_label_sets),
-    ('CheckUnmappedLevels_cellbl_ins',
-     """
-     CREATE TRIGGER CheckUnmappedLevels_cellbl_ins AFTER INSERT ON cell_label
-     WHEN (%s)
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
-     END
-     """ % _invalid_unmapped_levels),
-    ('CheckUnmappedLevels_cellbl_upd',
-     """
-     CREATE TRIGGER CheckUnmappedLevels_cellbl_upd AFTER UPDATE ON cell_label
-     WHEN (%s)
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
-     END
-     """ % _invalid_unmapped_levels),
-    ('CheckUnmappedLevels_hier_upd',
-     """
-     CREATE TRIGGER CheckUnmappedLevels_hier_upd AFTER UPDATE ON hierarchy
-     WHEN (%s)
-     BEGIN
-         SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
-     END
-     """ % _invalid_unmapped_levels),
-    ('node',
-     """
-     CREATE TABLE node (
-         node_id INTEGER PRIMARY KEY,
-         node_hash TEXT UNIQUE ON CONFLICT REPLACE NOT NULL,
-         created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-     )
-     """),
-    ('edge',
-     """
-     CREATE TABLE edge (
-         edge_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-         edge_name TEXT DEFAULT 'unnamed' NOT NULL,
-         edge_description TEXT,
-         edge_order INTEGER DEFAULT NULL,
-         other_node_hash TEXT NOT NULL,
-         other_node_name TEXT,
-         UNIQUE (other_node_hash, edge_name),
-         UNIQUE (other_node_hash, edge_order)
-     )
-     """),
-    ('AutoIncrementEdgeOrder',
-     """
-     CREATE TRIGGER AutoIncrementEdgeOrder AFTER INSERT ON edge
-     BEGIN
-         UPDATE edge
-         SET edge_order = (SELECT MAX(COALESCE(edge_order, 0))+1
-                           FROM edge
-                           WHERE other_node_hash=NEW.other_node_hash)
-         WHERE edge_order IS NULL;
-     END
-     """),
-    ('weight',
-     """
-     CREATE TABLE weight (
-         weight_id INTEGER PRIMARY KEY,
-         edge_id INTEGER,
-         weight_name TEXT DEFAULT 'unnamed' NOT NULL,
-         weight_description TEXT,
-         weight_order INTEGER DEFAULT NULL,
-         proportional INTEGER DEFAULT 0 CHECK (proportional IN (0, 1)),
-         FOREIGN KEY (edge_id) REFERENCES edge(edge_id),
-         UNIQUE (edge_id, weight_name),
-         UNIQUE (edge_id, weight_order)
-     )
-     """),
-    ('AutoIncrementWeightOrder',
-     """
-     CREATE TRIGGER AutoIncrementWeightOrder AFTER INSERT ON edge
-     BEGIN
-         UPDATE weight
-         SET weight_order = (SELECT MAX(COALESCE(weight_order, 0))+1
-                             FROM weight
-                             WHERE edge_id=NEW.edge_id)
-         WHERE weight_order IS NULL;
-     END
-     """),
-    ('relation',
-     """
-     CREATE TABLE relation (
-         relation_id INTEGER PRIMARY KEY,
-         edge_id INTEGER,
-         other_cell_id INTEGER NOT NULL,
-         cell_id INTEGER,
-         FOREIGN KEY (edge_id) REFERENCES edge(edge_id),
-         FOREIGN KEY (cell_id) REFERENCES cell(cell_id),
-         UNIQUE (edge_id, other_cell_id, cell_id)
-     )
-     """),
-    ('relation_weight',
-     """
-     CREATE TABLE relation_weight (
-         relation_weight_id INTEGER PRIMARY KEY,
-         weight_id INTEGER,
-         relation_id INTEGER,
-         weight TEXTNUM,  /* <- Custom type for Python Decimals. */
-         FOREIGN KEY (weight_id) REFERENCES weight(weight_id),
-         FOREIGN KEY (relation_id) REFERENCES relation(relation_id)
-     )
-     """),
-    ('property',
-     """
-     CREATE TABLE property (
-         property_id INTEGER PRIMARY KEY,
-         property_key TEXT,
-         property_val TEXT,
-         created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-     )
-     """),
+
+_schema = [
+    """
+    CREATE TABLE cell (
+       cell_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        partial INTEGER DEFAULT 0 CHECK (partial IN (0, 1))
+    )
+    """,
+    """
+    CREATE TABLE hierarchy (
+        hierarchy_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        hierarchy_value TEXT UNIQUE NOT NULL CHECK(hierarchy_value!='cell_id'
+                                                   AND hierarchy_value NOT LIKE '%.%'),
+        hierarchy_level INTEGER UNIQUE NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE label (
+        label_id INTEGER DEFAULT NULL UNIQUE,
+        hierarchy_id INTEGER NOT NULL,
+        label_value TEXT,
+        FOREIGN KEY (hierarchy_id) REFERENCES hierarchy(hierarchy_id),
+        PRIMARY KEY (label_id, hierarchy_id),
+        UNIQUE (hierarchy_id, label_value)
+    )
+    """,
+    """
+    CREATE INDEX nonunique_label_hierarchyid ON label (hierarchy_id)
+    """,
+    """
+    CREATE TRIGGER AutoIncrementLabelId AFTER INSERT ON label
+    BEGIN
+        UPDATE label
+        SET label_id = (SELECT MAX(COALESCE(label_id, 0))+1 FROM label)
+        WHERE label_id IS NULL;
+    END
+    """,
+    """
+    CREATE TRIGGER MaximalCellLabel_ins BEFORE INSERT ON label
+    WHEN (NEW.hierarchy_id=(SELECT hierarchy_id
+                            FROM hierarchy
+                            ORDER BY hierarchy_level
+                            LIMIT 1)
+          AND (SELECT 2 < COUNT(*)
+               FROM (SELECT label_value
+                     FROM label
+                     WHERE NEW.hierarchy_id=hierarchy_id
+                     UNION
+                     SELECT 'UNMAPPED'
+                     UNION
+                     SELECT NEW.label_value)))
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
+    END
+    """,
+    """
+    CREATE TRIGGER MaximalCellLabel_upd BEFORE UPDATE ON label
+    WHEN (NEW.hierarchy_id=(SELECT hierarchy_id
+                            FROM hierarchy
+                            ORDER BY hierarchy_level
+                            LIMIT 1)
+          AND (SELECT 2 < COUNT(*)
+               FROM (SELECT label_value
+                     FROM label
+                     WHERE NEW.hierarchy_id=hierarchy_id
+                     UNION
+                     SELECT 'UNMAPPED'
+                     UNION
+                     SELECT NEW.label_value)))
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
+    END
+    """,
+    """
+    CREATE TRIGGER MaximalCellHierarchy_upd AFTER UPDATE ON hierarchy
+    WHEN (SELECT 2 < COUNT(*)
+          FROM (SELECT label_value
+                FROM label
+                WHERE label.hierarchy_id IN (SELECT hierarchy_id
+                                             FROM hierarchy
+                                             ORDER BY hierarchy_level
+                                             LIMIT 1)
+                UNION
+                SELECT 'UNMAPPED'))
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
+    END
+    """,
+    """
+    CREATE TRIGGER MaximalCellHierarchy_del AFTER DELETE ON hierarchy
+    WHEN (SELECT 2 < COUNT(*)
+          FROM (SELECT label_value
+                FROM label
+                WHERE label.hierarchy_id IN (SELECT hierarchy_id
+                                             FROM hierarchy
+                                             ORDER BY hierarchy_level
+                                             LIMIT 1)
+                UNION
+                SELECT 'UNMAPPED'))
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: label (root hierarchy cannot have multiple values)');
+    END
+    """,
+    """
+    CREATE TABLE cell_label (
+        cell_label_id INTEGER PRIMARY KEY,
+        cell_id INTEGER,
+        hierarchy_id INTEGER,
+        label_id INTEGER,
+        FOREIGN KEY (cell_id) REFERENCES cell(cell_id),
+        FOREIGN KEY (label_id, hierarchy_id) REFERENCES label(label_id, hierarchy_id),
+        UNIQUE (cell_id, hierarchy_id)
+    )
+    """,
+    """
+    CREATE INDEX nonunique_celllabel_cellid ON cell_label (cell_id)
+    """,
+    """
+    CREATE INDEX nonunique_celllabel_hierarchyid ON cell_label (hierarchy_id)
+    """,
+    """
+    CREATE INDEX nonunique_celllabel_labelid ON cell_label (label_id)
+    """,
+    """
+    CREATE TRIGGER CheckUniqueLabels_ins AFTER INSERT ON cell_label
+    WHEN (%s)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+    END
+    """ % _duplicate_label_sets,
+    """
+    CREATE TRIGGER CheckUniqueLabels_upd AFTER UPDATE ON cell_label
+    WHEN (%s)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+    END
+    """ % _duplicate_label_sets,
+    """
+    CREATE TRIGGER CheckUniqueLabels_del AFTER DELETE ON cell_label
+    WHEN (%s)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (duplicate label set)');
+    END
+    """ % _duplicate_label_sets,
+    """
+    CREATE TRIGGER CheckUnmappedLevels_cellbl_ins AFTER INSERT ON cell_label
+    WHEN (%s)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+    END
+    """ % _invalid_unmapped_levels,
+    """
+    CREATE TRIGGER CheckUnmappedLevels_cellbl_upd AFTER UPDATE ON cell_label
+    WHEN (%s)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+    END
+    """ % _invalid_unmapped_levels,
+    """
+    CREATE TRIGGER CheckUnmappedLevels_hier_upd AFTER UPDATE ON hierarchy
+    WHEN (%s)
+    BEGIN
+        SELECT RAISE(ABORT, 'CHECK constraint failed: cell_label (invalid unmapped level)');
+    END
+    """ % _invalid_unmapped_levels,
+    """
+    CREATE TABLE node (
+        node_id INTEGER PRIMARY KEY,
+        node_hash TEXT UNIQUE ON CONFLICT REPLACE NOT NULL,
+        created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE edge (
+        edge_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        edge_name TEXT DEFAULT 'unnamed' NOT NULL,
+        edge_description TEXT,
+        edge_order INTEGER DEFAULT NULL,
+        other_node_hash TEXT NOT NULL,
+        other_node_name TEXT,
+        UNIQUE (other_node_hash, edge_name),
+        UNIQUE (other_node_hash, edge_order)
+    )
+    """,
+    """
+    CREATE TRIGGER AutoIncrementEdgeOrder AFTER INSERT ON edge
+    BEGIN
+        UPDATE edge
+        SET edge_order = (SELECT MAX(COALESCE(edge_order, 0))+1
+                          FROM edge
+                          WHERE other_node_hash=NEW.other_node_hash)
+        WHERE edge_order IS NULL;
+    END
+    """,
+    """
+    CREATE TABLE weight (
+        weight_id INTEGER PRIMARY KEY,
+        edge_id INTEGER,
+        weight_name TEXT DEFAULT 'unnamed' NOT NULL,
+        weight_description TEXT,
+        weight_order INTEGER DEFAULT NULL,
+        proportional INTEGER DEFAULT 0 CHECK (proportional IN (0, 1)),
+        FOREIGN KEY (edge_id) REFERENCES edge(edge_id),
+        UNIQUE (edge_id, weight_name),
+        UNIQUE (edge_id, weight_order)
+    )
+    """,
+    """
+    CREATE TRIGGER AutoIncrementWeightOrder AFTER INSERT ON edge
+    BEGIN
+        UPDATE weight
+        SET weight_order = (SELECT MAX(COALESCE(weight_order, 0))+1
+                            FROM weight
+                            WHERE edge_id=NEW.edge_id)
+        WHERE weight_order IS NULL;
+    END
+    """,
+    """
+    CREATE TABLE relation (
+        relation_id INTEGER PRIMARY KEY,
+        edge_id INTEGER,
+        other_cell_id INTEGER NOT NULL,
+        cell_id INTEGER,
+        FOREIGN KEY (edge_id) REFERENCES edge(edge_id),
+        FOREIGN KEY (cell_id) REFERENCES cell(cell_id),
+        UNIQUE (edge_id, other_cell_id, cell_id)
+    )
+    """,
+    """
+    CREATE TABLE relation_weight (
+        relation_weight_id INTEGER PRIMARY KEY,
+        weight_id INTEGER,
+        relation_id INTEGER,
+        weight TEXTNUM,  /* <- Custom type for Python Decimals. */
+        FOREIGN KEY (weight_id) REFERENCES weight(weight_id),
+        FOREIGN KEY (relation_id) REFERENCES relation(relation_id)
+    )
+    """,
+    """
+    CREATE TABLE property (
+        property_id INTEGER PRIMARY KEY,
+        property_key TEXT,
+        property_val TEXT,
+        created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    )
+    """,
 ]
+
+
+def _get_schema_dict():
+    """Return schema dictionary with table/index/trigger name as key."""
+    global _schema
+    regex = re.compile('CREATE (?:TABLE|INDEX|TRIGGER) (\w+)')
+    get_name = lambda s: regex.search(s).group(1)
+    return dict((get_name(op), op) for op in _schema)
 
 _expensive_constraints = ['CheckUniqueLabels_ins',
                           'CheckUniqueLabels_upd',
@@ -389,7 +372,7 @@ class _Connector(object):
         name.
 
         """
-        global _schema_items
+        global _schema
         self._memory_conn = None
         self._temp_path = None
         self._is_read_only = bool(mode & READ_ONLY)
@@ -428,7 +411,7 @@ class _Connector(object):
                 connection = self._connect(self._memory_conn)
             cursor = connection.cursor()
             cursor.execute('PRAGMA synchronous=OFF')
-            for _, operation in _schema_items:
+            for operation in _schema:
                 cursor.execute(operation)
             cursor.execute('PRAGMA synchronous=FULL')
             connection.close()

@@ -2,12 +2,13 @@
 import decimal
 import os
 import sqlite3
-import re
 
 from gpn.tests import _unittest as unittest
 from gpn.tests.common import MkdtempTestCase
 
-from gpn.connector import _schema_items
+from gpn.connector import _schema
+from gpn.connector import _get_schema_dict
+from gpn.connector import _expensive_constraints
 from gpn.connector import _normalize_args_for_trigger
 from gpn.connector import _null_clause_for_trigger
 from gpn.connector import _where_clause_for_trigger
@@ -239,26 +240,35 @@ class TestReadOnlyTriggers(unittest.TestCase):
             cursor.execute('DELETE FROM foo WHERE id=1')
 
 
-class TestSchemaItems(unittest.TestCase):
-    def test_names(self):
-        """_schema_items name must match CREATE statement."""
-        for name, operation in _schema_items:
-            pat = 'CREATE (?:TABLE|INDEX|TRIGGER) (\w+)'
-            match = re.search(pat, operation)
-            statement, found = match.group(0, 1)
+class TestGetSchemaDict_ConstraintNames(unittest.TestCase):
+    def test_schema_dict(self):
+        schema_dict = _get_schema_dict()
 
-            msg = 'Names must match - uses "%s" but operation contains "%s".'
-            self.assertEqual(name, found, msg % (name, statement))
+        self.assertIsInstance(schema_dict, dict)
+        self.assertSetEqual(set(_schema), set(schema_dict.values()))
+
+        keys = list(schema_dict.keys())
+        self.assertIn('cell', keys)  # Table
+        self.assertIn('nonunique_label_hierarchyid', keys)  # Index
+        self.assertIn('AutoIncrementLabelId', keys)  # Trigger
+
+    def test_expensive_constraints(self):
+        global _expensive_constraints
+        schema_dict = _get_schema_dict()
+
+        for name in _expensive_constraints:
+            msg = "Constraint '%s' missing from schema_dict keys." % name
+            self.assertIn(name, schema_dict.keys(), msg)
 
 
 class TestConnector(MkdtempTestCase):
     def _make_database(self, filename):
-        global _schema_items
+        global _schema
         self._existing_node = filename
         connection = sqlite3.connect(self._existing_node)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        for _, operation in _schema_items:
+        for operation in _schema:
             cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()

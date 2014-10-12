@@ -9,7 +9,7 @@ from gpn import _csv as csv
 from gpn.connector import _Connector
 from gpn.connector import _duplicate_label_sets
 from gpn.connector import _invalid_unmapped_levels
-from gpn.connector import _schema_items
+from gpn.connector import _get_schema_dict
 from gpn.connector import _expensive_constraints
 
 
@@ -145,7 +145,6 @@ class Node(object):
         """Insert cells from given CSV file object."""
         global _duplicate_label_sets
         global _invalid_unmapped_levels
-        global _schema_items
 
         reader = csv.reader(fh)
         fieldnames = next(reader)  # Use header row as fieldnames.
@@ -186,9 +185,9 @@ class Node(object):
                     'CHECK constraint failed: cell_label (invalid unmapped level)')
 
             # Re-create cell constraint triggers.
-            operation = dict(_schema_items)
+            schema_dict = _get_schema_dict()
             for name in _expensive_constraints:
-                cursor.execute(operation[name])
+                cursor.execute(schema_dict[name])
 
             # Insert node hash.
             node_hash = self._get_hash(cursor)

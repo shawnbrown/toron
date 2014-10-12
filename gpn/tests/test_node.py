@@ -12,7 +12,7 @@ from gpn.tests import _unittest as unittest
 from gpn.tests.common import MkdtempTestCase
 
 from gpn.node import Node
-from gpn.connector import _schema_items
+from gpn.connector import _schema
 from gpn import IN_MEMORY
 from gpn import TEMP_FILE
 from gpn import READ_ONLY
@@ -20,12 +20,12 @@ from gpn import READ_ONLY
 
 class TestInstantiation(MkdtempTestCase):
     def _make_node(self, filename):
-        global _schema_items
+        global _schema
         self._existing_node = filename
         connection = sqlite3.connect(self._existing_node)
         cursor = connection.cursor()
         cursor.execute('PRAGMA synchronous=OFF')
-        for _, operation in _schema_items:
+        for operation in _schema:
             cursor.execute(operation)
         cursor.execute('PRAGMA synchronous=FULL')
         connection.close()
