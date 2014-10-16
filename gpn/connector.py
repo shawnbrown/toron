@@ -24,25 +24,26 @@ from decimal import Decimal
 #  |   | property_value |    | node_hash    |      | label_value     |
 #  |   | created_date   |    | created_date |      +-----------------+
 #  |   +----------------+    +--------------+
-#  |                                  +--------------------+
-#  |          +==================+    | weight             |
-#  |          | edge             |    +--------------------+
-#  |          +==================+    | weight_id          |--+
-#  |       +--| edge_id          |--->| edge_id            |  |
-#  |       |  | edge_name        |    | weight_name        |  |
-#  |       |  | edge_description |    | weight_description |  |
-#  |       |  | other_node_hash  |    | weight_order       |  |
-#  |       |  | other_node_name  |    | proportional       |  |
-#  |       |  +------------------+    +--------------------+  |
-#  |       |                                                  |
-#  |       |   +---------------+     +--------------------+   |
-#  |       |   | relation      |     | relation_weight    |   |
-#  |       |   +---------------+     +--------------------+   |
-#  |       |   | relation_id   |--+  | relation_weight_id |   |
-#  |       +-->| edge_id       |  |  | weight_id          |<--+
-#  |           | other_cell_id |  +->| relation_id        |
-#  +---------->| cell_id       |     | weight_value       |
-#              +---------------+     +--------------------+
+#  |
+#  |         +==================+     +--------------------+
+#  |         | edge             |     | weight             |
+#  |         +==================+     +--------------------+
+#  |      +--| edge_id          |--+  | weight_id          |--+
+#  |      |  | edge_name        |  +->| edge_id            |  |
+#  |      |  | edge_description |     | weight_name        |  |
+#  |      |  | edge_order       |     | weight_description |  |
+#  |      |  | other_node_hash  |     | weight_order       |  |
+#  |      |  | other_node_name  |     | proportional       |  |
+#  |      |  +------------------+     +--------------------+  |
+#  |      |                                                   |
+#  |      |     +---------------+     +--------------------+  |
+#  |      |     | relation      |     | relation_weight    |  |
+#  |      |     +---------------+     +--------------------+  |
+#  |      |     | relation_id   |--+  | relation_weight_id |  |
+#  |      +---->| edge_id       |  |  | weight_id          |<-+
+#  |            | other_cell_id |  +->| relation_id        |
+#  +----------> | cell_id       |     | weight_value       |
+#               +---------------+     +--------------------+
 
 
 # Register SQLite adapter/converter for Decimal type.
