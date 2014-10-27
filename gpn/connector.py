@@ -366,12 +366,9 @@ class _Connector(object):
             self._database = database
             try:
                 connection = sqlite3.connect(database)
-                is_valid = self._is_valid(connection)
+                assert self._is_valid(connection)
                 connection.close()
             except Exception:
-                is_valid = False
-
-            if not is_valid:
                 raise Exception('File - %s - is not a valid node.' % database)
 
         else:
