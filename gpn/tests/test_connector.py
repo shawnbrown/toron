@@ -241,7 +241,7 @@ class TestReadOnlyTriggers(unittest.TestCase):
 
 
 class TestGetSchemaDict_ConstraintNames(unittest.TestCase):
-    def test_schema_dict(self):
+    def test_all_types(self):
         schema_dict = _get_schema_dict()
 
         self.assertIsInstance(schema_dict, dict)
@@ -251,6 +251,18 @@ class TestGetSchemaDict_ConstraintNames(unittest.TestCase):
         self.assertIn('cell', keys)  # Table
         self.assertIn('idx_Label_HierarchyId', keys)  # Index
         self.assertIn('trg_AutoIncrementLabelId_InsertLabel', keys)  # Trigger
+
+    def test_specified_type(self):
+        schema_dict = _get_schema_dict('TABLE')
+        keys = list(schema_dict.keys())
+        self.assertIn('cell', keys)  # Table
+        self.assertNotIn('idx_Label_HierarchyId', keys)  # Index
+        self.assertNotIn('trg_AutoIncrementLabelId_InsertLabel', keys)  # Trigger
+
+    def test_bad_type(self):
+        regex = "sql_type must be 'TABLE', 'INDEX', 'TRIGGER', or None."
+        with self.assertRaisesRegex(AssertionError, regex):
+            schema_dict = _get_schema_dict('BADTYPE')
 
     def test_expensive_constraints(self):
         global _expensive_constraints

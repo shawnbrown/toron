@@ -322,12 +322,29 @@ _schema = [
 ]
 
 
-def _get_schema_dict():
-    """Return schema dictionary with table/index/trigger name as key."""
+def _get_schema_dict(sql_type=None):
+    """Return schema dictionary with table/index/trigger name as key.
+
+    Value of `sql_type` can be TABLE, INDEX, or TRIGGER.  If ommitted,
+    all types are returned.
+    """
     global _schema
-    regex = re.compile('CREATE (?:TABLE|INDEX|TRIGGER) (\w+)')
-    get_name = lambda s: regex.search(s).group(1)
-    return dict((get_name(op), op) for op in _schema)
+
+    if sql_type:
+        msg = "sql_type must be 'TABLE', 'INDEX', 'TRIGGER', or None."
+        assert sql_type in ('TABLE', 'INDEX', 'TRIGGER'), msg
+    else:
+        sql_type = '(?:TABLE|INDEX|TRIGGER)'
+    regex = re.compile('CREATE %s (\w+)' % sql_type)
+
+    sql_objects = {}
+    for operation in _schema:
+        match = regex.search(operation)
+        if match:
+            sql_objects[match.group(1)] = operation
+
+    return sql_objects
+
 
 _expensive_constraints = ['trg_CheckUniqueLabels_InsertCellLabel',
                           'trg_CheckUniqueLabels_UpdateCellLabel',
