@@ -325,7 +325,7 @@ class TestConnector(MkdtempTestCase):
     def test_temp_file_database(self):
         """Tempfile should be removed when object is garbage collected."""
         connect = _Connector(mode=TEMP_FILE)
-        filename = connect._temp_path
+        filename = connect._dbsrc
 
         # Check that database contains expected tables.
         expected_tables, actual_tables = self._get_tables(filename)
@@ -339,8 +339,7 @@ class TestConnector(MkdtempTestCase):
     def test_in_memory_temp_database(self):
         """In-memory database."""
         connect = _Connector(mode=IN_MEMORY)
-        self.assertIsNone(connect._temp_path)
-        self.assertIsInstance(connect._memory_conn, sqlite3.Connection)
+        self.assertIsInstance(connect._dbsrc, sqlite3.Connection)
 
         # Check that database contains expected tables.
         expected_tables, actual_tables = self._get_tables(connect)
@@ -348,7 +347,7 @@ class TestConnector(MkdtempTestCase):
 
         second_connect = _Connector(mode=IN_MEMORY)
         msg = 'Multiple in-memory connections must be independent.'
-        self.assertIsNot(connect._memory_conn, second_connect._memory_conn, msg)
+        self.assertIsNot(connect._dbsrc, second_connect._dbsrc, msg)
 
     def test_partial_read_only_support(self):
         """Read-only connections should fail on INSERT, UPDATE, and DELETE."""

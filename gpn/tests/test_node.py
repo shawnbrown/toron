@@ -13,6 +13,7 @@ from gpn.tests.common import MkdtempTestCase
 
 from gpn.node import Node
 from gpn.connector import _schema
+from gpn.connector import _SharedConnection
 from gpn import IN_MEMORY
 from gpn import TEMP_FILE
 from gpn import READ_ONLY
@@ -83,28 +84,28 @@ class TestInstantiation(MkdtempTestCase):
         """Unnamed nodes should be temporary (in memory or tempfile)."""
         # In memory.
         ptn = Node()
-        self.assertIsNone(ptn._connect._temp_path)
-        self.assertIsNotNone(ptn._connect._memory_conn)
+        self.assertFalse(ptn._connect._init_as_temp)
+        self.assertIsInstance(ptn._connect._dbsrc, _SharedConnection)
         self.assertIsNone(ptn.name)
 
         # On disk.
         ptn = Node(mode=TEMP_FILE)
-        self.assertIsNotNone(ptn._connect._temp_path)
-        self.assertIsNone(ptn._connect._memory_conn)
+        self.assertTrue(ptn._connect._init_as_temp)
+        self.assertTrue(os.path.isfile(ptn._connect._dbsrc))
         self.assertIsNone(ptn.name)
 
     def test_named_temporary_nodes(self):
         # In memory.
         node_name = 'temp_with_name'
         ptn = Node(name=node_name)
-        self.assertIsNone(ptn._connect._temp_path)
-        self.assertIsNotNone(ptn._connect._memory_conn)
+        self.assertFalse(ptn._connect._init_as_temp)
+        self.assertIsInstance(ptn._connect._dbsrc, _SharedConnection)
         self.assertEqual(ptn.name, node_name)
 
         # On disk.
         ptn = Node(name=node_name, mode=TEMP_FILE)
-        self.assertIsNotNone(ptn._connect._temp_path)
-        self.assertIsNone(ptn._connect._memory_conn)
+        self.assertTrue(ptn._connect._init_as_temp)
+        self.assertTrue(os.path.isfile(ptn._connect._dbsrc))
         self.assertEqual(ptn.name, node_name)
 
 

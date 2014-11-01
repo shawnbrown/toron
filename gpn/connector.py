@@ -348,75 +348,69 @@ class _Connector(object):
     Node does not exist, it is created.
 
     """
-    def __init__(self, database=None, mode=0):
+    def __init__(self, filepath=None, mode=0):
         """Creates a callable `connect` object that can be used to
         establish connections to a Node database.  Connecting to a Node
-        name that does not exist will create a new Node of the given
-        name.
+        that does not exist will create a new Node using the given name.
+
+        When using IN_MEMORY or TEMP_FILE modes, `filepath` is ignored.
 
         """
         global _schema
-        self._memory_conn = None
-        self._temp_path = None
-        self._is_read_only = bool(mode & READ_ONLY)
+        self._mode = mode
+        self._init_as_temp = bool(TEMP_FILE & mode)
 
-        self._database = database
-
-        if database and os.path.exists(database):
-            self._database = database
+        if filepath and os.path.isfile(filepath):
+            # Connect to existing database and assert validity.
             try:
-                connection = sqlite3.connect(database)
-                assert self._is_valid(connection)
-                connection.close()
+                with sqlite3.connect(filepath) as connection:
+                    assert self._is_valid(connection)
             except Exception:
-                raise Exception('File - %s - is not a valid node.' % database)
-
+                raise Exception('File - %s - is not a valid node.' % filepath)
+            self._dbsrc = filepath
         else:
-            if database and (not mode or self._is_read_only):
-                self._database = database
-            elif mode & TEMP_FILE:
+            # Prepare new _dbsrc (either filepath or in-memory connection).
+            if filepath and (not mode):
+                self._dbsrc = filepath
+            elif TEMP_FILE & mode:
                 fd, temp_path = tempfile.mkstemp(suffix='.node')
                 os.close(fd)
-                self._database = temp_path
-                self._temp_path = temp_path
-            elif not database or mode & IN_MEMORY:
-                self._memory_conn =  sqlite3.connect(':memory:',
-                                                     detect_types=sqlite3.PARSE_DECLTYPES,
-                                                     factory=_SharedConnection)
-
-            # Populate new node.
-            if self._database:
-                connection = self._connect(self._database)
+                self._dbsrc = temp_path
+            elif (IN_MEMORY & mode) or (not filepath):
+                self._dbsrc =  sqlite3.connect(':memory:',
+                                               detect_types=sqlite3.PARSE_DECLTYPES,
+                                               factory=_SharedConnection)
             else:
-                connection = self._connect(self._memory_conn)
-            cursor = connection.cursor()
-            cursor.execute('PRAGMA synchronous=OFF')
-            for operation in _schema:
-                cursor.execute(operation)
-            cursor.execute('PRAGMA synchronous=FULL')
-            connection.close()
+                msg = 'Unexpected parameter values: filepath=%r, mode=%r'
+                raise ValueError(msg % (filepath, mode))
+
+            # Establish connection and populate new database.
+            with self._connect(self._dbsrc) as connection:
+                cursor = connection.cursor()
+                cursor.execute('PRAGMA synchronous=OFF')
+                for operation in _schema:
+                    cursor.execute(operation)
+                cursor.execute('PRAGMA synchronous=FULL')
 
     def __call__(self):
-        """Opens a SQLite connection to a Node database.  If a
-        named Node does not exist, it is created.
+        """Opens a SQLite connection to a Node database.  If a named Node
+        does not exist, it is created.
 
         """
         # Docstring (above) should be same as docstring for class.
-        if self._database:
-            connection = self._connect(self._database)
-        elif self._memory_conn:
-            connection = self._connect(self._memory_conn)
 
-        # Enable foreign key constraints (uses triggers for older versions)
-        # and set read-only PRAGMA if appropriate.
+        connection = self._connect(self._dbsrc)
         cursor = connection.cursor()
+
+        # Enable foreign keys (use triggers with older SQLite).
         if sqlite3.sqlite_version_info >= (3, 6, 19):
             cursor.execute('PRAGMA foreign_keys=ON')
         else:
             sql_script = _all_foreign_key_triggers()
             cursor.executescript(sql_script)
 
-        if self._is_read_only:
+        # Set to read-only if appropriate.
+        if READ_ONLY & self._mode:
             if sqlite3.sqlite_version_info >= (3, 8, 0):
                 cursor.execute('PRAGMA query_only=1')
             else:
@@ -427,17 +421,19 @@ class _Connector(object):
 
     def __del__(self):
         """Clean-up connection objects."""
-        if self._memory_conn:
-            self._memory_conn.close_parent()  # Permanently close!
+        try:
+            self._dbsrc.close_parent()  # Permanently close in-memory db!
+        except AttributeError:
+            pass
 
-        if self._temp_path:
-            os.remove(self._temp_path)
+        if (TEMP_FILE & self._mode) and self._init_as_temp:
+            os.remove(self._dbsrc)
 
     @staticmethod
-    def _connect(database):
-        if isinstance(database, sqlite3.Connection):
-            return database
-        return sqlite3.connect(database, detect_types=sqlite3.PARSE_DECLTYPES)
+    def _connect(database_source):
+        if isinstance(database_source, sqlite3.Connection):
+            return database_source
+        return sqlite3.connect(database_source, detect_types=sqlite3.PARSE_DECLTYPES)
 
     @staticmethod
     def _is_valid(connection):
