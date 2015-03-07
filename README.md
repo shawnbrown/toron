@@ -1,3 +1,7 @@
+!!! IMPORTANT: GPN is currently pre-alpha software.  It is under 
+development and cannot be installed or used at this time.
+
+
 # `gpn`: Granular Partition Network #
 
 `gpn` is a Python package, and command-line utility, for managing the
