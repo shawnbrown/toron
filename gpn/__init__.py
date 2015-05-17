@@ -9,7 +9,7 @@ from gpn.connector import TEMP_FILE
 from gpn.connector import READ_ONLY
 
 __all__ = [
-    'Partition',
+    'Node',
     'IN_MEMORY',
     'TEMP_FILE',
     'READ_ONLY',
