@@ -1,4 +1,4 @@
-!!! IMPORTANT: GPN is currently pre-alpha software.  It is under 
+!!! IMPORTANT: GPN is currently pre-alpha software.  It is under
 development and cannot be installed or used at this time.
 
 
@@ -9,12 +9,12 @@ joinability problem in data science.  It implements a specialized graph
 database to handle relationships between labeled data sets from multiple
 sources.
 
-While it's preferable to work with data sources that conform to a shared
-standard, or are otherwise directly relatable, this is not always an
-option.  Independently designed sources may use labels (i.e., 
-categories) that cannot be precisely, completely, or consistently 
-related to one another.  `gpn` helps integrate such sources into single, 
-coherent systems to inform real-world decision-making.
+While it's preferable to work with data sources that conform to a
+shared standard, or are otherwise directly relatable, this is not always
+an option.  Independently designed sources may use labels (i.e., classes
+or categories) that cannot be precisely, completely, or consistently
+related to one another.  `gpn` helps integrate such sources into a
+single, coherent system to inform real-world decision-making.
 
 Using `gpn` effectively requires a general understanding of graph
 theory, familiarity with command-line operations (or the Python
@@ -57,7 +57,7 @@ Install GPN with one of the following methods:
    terminal and typing the following command:
 
            pip install gpn
-           
+
  * Install GPN "from source" by downloading it from
    https://pypi.python.org/pypi/gpn and running the standard setup
    script:
@@ -71,31 +71,16 @@ terminal output when available.
 
 ## Design Philosophy ##
 
-The design of `gpn` was influenced and inspired by *Soft Systems 
-Methodology* and the *Theory of Granular Partitions*.  Both of these 
-frameworks favor a self-aware, epistemic approach to problem 
-solving--that is to say, the theories account for their own limits as 
-mere cognitive tools and are clearly differentiated from the real-world 
-observations they describe.
+Classical intuition appeals to decision makers because it suggests that
+certainty is attainable.  But complex situations that continually evolve
+have a way of confounding or invalidating strict, formal definitions.
+In `gpn`, nodes are *islands of classical certainty* connected by edges
+that allow for *varying degrees* of precision and completeness (when
+necessary).
 
-Decision makers crave certainty and classical intuition suggest that 
-certainty, however elusive, is ultimately possible.  But complex 
-situations that continually evolve have a way of confounding or 
-invalidating strict, formal definition.  In `gpn`, nodes are *islands of 
-classical certainty* connected by edges that allow for *varying degrees* 
-of precision and completeness when necessary.
-
-
-### Soft Systems Methodology ###
-
-Soft Systems Methodology is a structured approach for learning about 
-situations for which formal descriptions are elusive or incomplete.
-
-> Systems thinking is only an epistemology, a particular way of
-> describing the world.  It does not tell us what the world is.
-> Hence, strictly speaking, *we should never say of something in the
-> world: "It is a system", only: "It may be described as a system"*.
-> (Peter Checkland, 1983)
+The design of `gpn` was influenced and inspired by the *Theory of Granular Partitions*, *Soft Systems Methodology*, and a conviction that complex
+systems need to explicitly address uncertainty if they are going to be
+used for long periods of time.
 
 
 ### Granular Partitions ###
@@ -123,6 +108,22 @@ Theory of Granular Partitions", describes the concept simply:
 > world.  Partitions are the cognitive devices designed and built by
 > human beings to fulfill these various listing, mapping and classifying
 > purposes.
+
+
+### Soft Systems Methodology ###
+
+Soft Systems Methodology is a structured approach for learning about
+situations for which formal descriptions are elusive or incomplete.
+It acknowledges, especially with regard to systems of human activity,
+that...
+
+> ...real-world entities may well not fit easily into one class; in
+> particular it may not be easy to obtain descriptions upon which all
+> observers agree.  Nevertheless the gradual development of tested
+> conceptual models .... with the logical, structural, and reglatory
+> entailments worked out, should make simpler the interpretation and
+> holistic analysis of complex reality.
+> (Peter Checkland, *Systems Thinking, Systems Practice*, p. 122)
 
 
 ## Reference Material ##
