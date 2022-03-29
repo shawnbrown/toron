@@ -3,25 +3,25 @@ import decimal
 import os
 import sqlite3
 
-from gpn.tests import _unittest as unittest
-from gpn.tests.common import MkdtempTestCase
+from toron.tests import _unittest as unittest
+from toron.tests.common import MkdtempTestCase
 
-from gpn.connector import _schema
-from gpn.connector import _get_schema_dict
-from gpn.connector import _expensive_constraints
-from gpn.connector import _normalize_args_for_trigger
-from gpn.connector import _null_clause_for_trigger
-from gpn.connector import _where_clause_for_trigger
-from gpn.connector import _insert_trigger
-from gpn.connector import _update_trigger
-from gpn.connector import _delete_trigger
-from gpn.connector import _foreign_key_triggers
-from gpn.connector import _read_only_triggers
-from gpn.connector import _Connector
-from gpn.connector import _SharedConnection
-from gpn.connector import IN_MEMORY
-from gpn.connector import TEMP_FILE
-from gpn.connector import READ_ONLY
+from toron.connector import _schema
+from toron.connector import _get_schema_dict
+from toron.connector import _expensive_constraints
+from toron.connector import _normalize_args_for_trigger
+from toron.connector import _null_clause_for_trigger
+from toron.connector import _where_clause_for_trigger
+from toron.connector import _insert_trigger
+from toron.connector import _update_trigger
+from toron.connector import _delete_trigger
+from toron.connector import _foreign_key_triggers
+from toron.connector import _read_only_triggers
+from toron.connector import _Connector
+from toron.connector import _SharedConnection
+from toron.connector import IN_MEMORY
+from toron.connector import TEMP_FILE
+from toron.connector import READ_ONLY
 
 
 try:

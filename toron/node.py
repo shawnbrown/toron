@@ -5,12 +5,12 @@ import os
 import sqlite3
 import textwrap
 
-from gpn import _csv as csv
-from gpn.connector import _Connector
-from gpn.connector import _duplicate_label_sets
-from gpn.connector import _invalid_unmapped_levels
-from gpn.connector import _get_schema_dict
-from gpn.connector import _expensive_constraints
+from toron import _csv as csv
+from toron.connector import _Connector
+from toron.connector import _duplicate_label_sets
+from toron.connector import _invalid_unmapped_levels
+from toron.connector import _get_schema_dict
+from toron.connector import _expensive_constraints
 
 
 class Node(object):

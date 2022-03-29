@@ -4,12 +4,12 @@ try:
 except ImportError:
     from io import StringIO  # New stdlib location in 3.0
 
-from gpn.tests import _unittest as unittest
-from gpn.tests.common import MkdtempTestCase
+from toron.tests import _unittest as unittest
+from toron.tests.common import MkdtempTestCase
 
-from gpn.graph import Graph
-from gpn.node import Node
-from gpn import IN_MEMORY
+from toron.graph import Graph
+from toron.node import Node
+from toron import IN_MEMORY
 
 
 class TestInstantiation(MkdtempTestCase):

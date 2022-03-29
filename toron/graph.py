@@ -3,7 +3,7 @@ import os
 import pprint
 import warnings
 
-from gpn.node import Node
+from toron.node import Node
 
 suffix = '.node'
 suffix_default = '.node-default'

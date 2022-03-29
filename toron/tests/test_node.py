@@ -8,15 +8,15 @@ except ImportError:
     from io import StringIO  # New stdlib location in 3.0
 
 
-from gpn.tests import _unittest as unittest
-from gpn.tests.common import MkdtempTestCase
+from toron.tests import _unittest as unittest
+from toron.tests.common import MkdtempTestCase
 
-from gpn.node import Node
-from gpn.connector import _schema
-from gpn.connector import _SharedConnection
-from gpn import IN_MEMORY
-from gpn import TEMP_FILE
-from gpn import READ_ONLY
+from toron.node import Node
+from toron.connector import _schema
+from toron.connector import _SharedConnection
+from toron import IN_MEMORY
+from toron import TEMP_FILE
+from toron import READ_ONLY
 
 
 class TestInstantiation(MkdtempTestCase):
@@ -466,7 +466,7 @@ class TestFileImportExport(MkdtempTestCase):
 class TestRepr(unittest.TestCase):
     def test_empty(self):
         node = Node()
-        expected = ("<class 'gpn.node.Node'>\n"
+        expected = ("<class 'toron.node.Node'>\n"
                     "Name: None\n"
                     "Cells: None\n"
                     "Hierarchy: None\n"
@@ -481,7 +481,7 @@ class TestRepr(unittest.TestCase):
         node = Node(mode=IN_MEMORY, name='newptn')
         node._insert_cells(fh)
 
-        expected = ("<class 'gpn.node.Node'>\n"
+        expected = ("<class 'toron.node.Node'>\n"
                     "Name: newptn\n"
                     "Cells: 4\n"
                     "Hierarchy: country (USA), region, state, city\n"
