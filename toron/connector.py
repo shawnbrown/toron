@@ -335,7 +335,7 @@ def _get_schema_dict(sql_type=None):
         assert sql_type in ('TABLE', 'INDEX', 'TRIGGER'), msg
     else:
         sql_type = '(?:TABLE|INDEX|TRIGGER)'
-    regex = re.compile('CREATE %s (\w+)' % sql_type)
+    regex = re.compile('CREATE %s (\\w+)' % sql_type)
 
     sql_objects = {}
     for operation in _schema:
