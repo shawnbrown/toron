@@ -7,6 +7,7 @@ import sys
 args = [
     sys.executable or 'python',  # Python interpreter to call for testing.
     '-B',  # Don't write .pyc files on import.
+    '-W', 'default',  # Enable default handling for all warnings.
     '-m', 'unittest', # Run the unittest module as a script.
     'discover',  # Use test discovery.
     '-s', 'tests',  # Start discovery in 'tests' directory.
