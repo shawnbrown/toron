@@ -8,8 +8,8 @@ except ImportError:
     from io import StringIO  # New stdlib location in 3.0
 
 
-from toron.tests import _unittest as unittest
-from toron.tests.common import MkdtempTestCase
+from . import _unittest as unittest
+from .common import MkdtempTestCase
 
 from toron.node import Node
 from toron.connector import _schema

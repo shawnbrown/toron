@@ -3,8 +3,8 @@ import decimal
 import os
 import sqlite3
 
-from toron.tests import _unittest as unittest
-from toron.tests.common import MkdtempTestCase
+from . import _unittest as unittest
+from .common import MkdtempTestCase
 
 from toron.connector import _schema
 from toron.connector import _get_schema_dict
