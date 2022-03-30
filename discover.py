@@ -271,7 +271,7 @@ class DiscoveringTestLoader(unittest.TestLoader):
     def _match_path(self, path, full_path, pattern):
         # override this method to use alternative matching strategy
         return fnmatch(path, pattern)
-    
+
     def _find_tests(self, start_dir, pattern):
         """Used by discovery. Yields test suites it loads."""
         paths = os.listdir(start_dir)
@@ -341,7 +341,7 @@ if not hasattr(os.path, 'relpath'):
     if os.path is sys.modules.get('ntpath'):
         def relpath(path, start=os.path.curdir):
             """Return a relative version of a path"""
-        
+
             if not path:
                 raise ValueError("no path specified")
             start_list = os.path.abspath(start).split(os.path.sep)
@@ -361,26 +361,26 @@ if not hasattr(os.path, 'relpath'):
                     break
             else:
                 i += 1
-        
+
             rel_list = [os.path.pardir] * (len(start_list)-i) + path_list[i:]
             if not rel_list:
                 return os.path.curdir
             return os.path.join(*rel_list)
-    
+
     else:
         # default to posixpath definition
         def relpath(path, start=os.path.curdir):
             """Return a relative version of a path"""
-        
+
             if not path:
                 raise ValueError("no path specified")
-        
+
             start_list = os.path.abspath(start).split(os.path.sep)
             path_list = os.path.abspath(path).split(os.path.sep)
-        
+
             # Work out how much of the filepath is shared by start and path.
             i = len(os.path.commonprefix([start_list, path_list]))
-        
+
             rel_list = [os.path.pardir] * (len(start_list)-i) + path_list[i:]
             if not rel_list:
                 return os.path.curdir
