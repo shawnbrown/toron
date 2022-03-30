@@ -13,7 +13,8 @@ class Graph(object):
     def __init__(self, path=None, nodes=None):
         global suffix
         global suffix_default
-        assert not path or not nodes, ('Cannot specify both path and nodes.')
+        if path and nodes:
+            raise AssertionError('Cannot specify both path and nodes.')
 
         # Get nodes.
         if not nodes:
@@ -31,7 +32,9 @@ class Graph(object):
 
         # Set nodes.
         def node_item(p):
-            assert isinstance(p, Node), '%r is not a Node.' % p
+            if not isinstance(p, Node):
+                raise AssertionError('%r is not a Node.' % p)
+
             if p.name:
                 key = p.name
             else:

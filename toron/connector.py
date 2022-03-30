@@ -332,7 +332,8 @@ def _get_schema_dict(sql_type=None):
 
     if sql_type:
         msg = "sql_type must be 'TABLE', 'INDEX', 'TRIGGER', or None."
-        assert sql_type in ('TABLE', 'INDEX', 'TRIGGER'), msg
+        if sql_type not in ('TABLE', 'INDEX', 'TRIGGER'):
+            raise AssertionError(msg)
     else:
         sql_type = '(?:TABLE|INDEX|TRIGGER)'
     regex = re.compile('CREATE %s (\\w+)' % sql_type)
@@ -381,7 +382,8 @@ class _Connector(object):
             # Connect to existing database and assert validity.
             try:
                 with sqlite3.connect(filepath) as connection:
-                    assert self._is_valid(connection)
+                    if not self._is_valid(connection):
+                        raise AssertionError
             except Exception:
                 raise Exception('File - %s - is not a valid node.' % filepath)
             self._dbsrc = filepath
@@ -602,7 +604,8 @@ def _normalize_args_for_trigger(child_key, parent_key, not_null):
         parent_key = [parent_key]
     if isinstance(not_null, bool):
         not_null = [not_null] * len(child_key)
-    assert len(child_key) == len(parent_key) == len(not_null)
+    if not (len(child_key) == len(parent_key) == len(not_null)):
+        raise AssertionError
     return child_key, parent_key, not_null
 
 

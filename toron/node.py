@@ -18,7 +18,8 @@ class Node(object):
         """Get existing node or create a new one."""
         self._connect = _Connector(path, mode=mode)
         if path:
-            assert 'name' not in kwds, 'Cannot specify both path and name.'
+            if 'name' in kwds:
+                raise AssertionError('Cannot specify both path and name.')
             self.name = path.rsplit('.', 1)[0]
         else:
             self.name = kwds.get('name')
@@ -76,7 +77,8 @@ class Node(object):
 
 
     def export_cells(self, filename):
-        assert not os.path.exists(filename), '%s already exists' % filename
+        if os.path.exists(filename):
+            raise AssertionError('%s already exists' % filename)
 
         with open(filename, 'w') as fh:
             with self._connect() as connection:
@@ -205,7 +207,8 @@ class Node(object):
             msg = ('Fieldnames must match hierarchy values.\n'
                    ' Found: %s\n Required: %s') % (', '.join(fieldnames),
                                                    ', '.join(hierarchies))
-            assert set(hierarchies) == set(fieldnames), msg
+            if set(hierarchies) != set(fieldnames):
+                raise AssertionError(msg)
 
     @staticmethod
     def _insert_one_cell(cursor, items):
