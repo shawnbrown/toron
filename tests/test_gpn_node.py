@@ -11,7 +11,7 @@ except ImportError:
 from . import _unittest as unittest
 from .common import MkdtempTestCase
 
-from toron.node import Node
+from toron._gpn_node import Node
 from toron.connector import _schema
 from toron.connector import _SharedConnection
 from toron import IN_MEMORY
@@ -466,7 +466,7 @@ class TestFileImportExport(MkdtempTestCase):
 class TestRepr(unittest.TestCase):
     def test_empty(self):
         node = Node()
-        expected = ("<class 'toron.node.Node'>\n"
+        expected = ("<class 'toron._gpn_node.Node'>\n"
                     "Name: None\n"
                     "Cells: None\n"
                     "Hierarchy: None\n"
@@ -481,7 +481,7 @@ class TestRepr(unittest.TestCase):
         node = Node(mode=IN_MEMORY, name='newptn')
         node._insert_cells(fh)
 
-        expected = ("<class 'toron.node.Node'>\n"
+        expected = ("<class 'toron._gpn_node.Node'>\n"
                     "Name: newptn\n"
                     "Cells: 4\n"
                     "Hierarchy: country (USA), region, state, city\n"
