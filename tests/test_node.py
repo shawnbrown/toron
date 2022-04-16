@@ -17,6 +17,7 @@ class TestNode(MkdtempTestCase):
         cur = con.cursor()
         cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = {row[0] for row in cur}
+        tables.discard('sqlite_sequence')  # <- Table added by SQLite.
 
         expected = {
             'edge',
@@ -28,7 +29,6 @@ class TestNode(MkdtempTestCase):
             'structure',
             'weight',
             'weight_info',
-            'sqlite_sequence',  # <- Automatically added by SQLite.
         }
         self.assertSetEqual(tables, expected)
 
