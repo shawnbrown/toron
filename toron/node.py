@@ -96,7 +96,7 @@ _schema_script = """
         quantity_id INTEGER PRIMARY KEY,
         location_id INTEGER,
         attributes JSON NOT NULL,
-        value NUMBER NOT NULL,
+        value NUMERIC NOT NULL,
         FOREIGN KEY(location_id) REFERENCES location(location_id)
     );
 
