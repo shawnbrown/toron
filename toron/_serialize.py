@@ -77,6 +77,19 @@ def serialize_dict(obj):
     return f'{{{", ".join(sorted(item_reprs))}}}'
 
 
+class InvalidSerialization(object):
+    """Wrapper class for strings that cannot be deserialized."""
+    def __init__(self, invalid_s):
+        self.data = invalid_s
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.data == other.data
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return f'{cls_name}({self.data!r})'
+
+
 def dumps(obj):
     """Return a string representing the serialized content of *obj*."""
     obj_repr = get_primitive_repr(obj)

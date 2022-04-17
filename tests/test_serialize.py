@@ -4,6 +4,7 @@ import unittest
 from collections import namedtuple, OrderedDict, UserString
 from toron._serialize import get_primitive_repr
 from toron._serialize import dumps, loads
+from toron._serialize import InvalidSerialization
 
 
 class TestGetPrimitiveRepr(unittest.TestCase):
@@ -42,6 +43,28 @@ class TestGetPrimitiveRepr(unittest.TestCase):
         """
         self.assertIsNone(get_primitive_repr(float('nan')))
         self.assertIsNone(get_primitive_repr(float('inf')))
+
+
+class TestInvalidSerialization(unittest.TestCase):
+    def test_initialization(self):
+        bad_string = '[1, 2,'
+        invalid = InvalidSerialization(bad_string)
+
+        self.assertIsInstance(invalid, InvalidSerialization)
+        self.assertEqual(invalid.data, bad_string)
+
+    def test_representation(self):
+        invalid = InvalidSerialization('[1, 2,')
+        self.assertEqual(repr(invalid), "InvalidSerialization('[1, 2,')")
+
+    def test_equality(self):
+        bad_string = '[1, 2,'
+        invalid_a = InvalidSerialization(bad_string)
+        invalid_b = InvalidSerialization(bad_string)
+
+        self.assertEqual(invalid_a, invalid_b)
+        self.assertNotEqual(bad_string, invalid_a)
+        self.assertNotEqual(invalid_a, InvalidSerialization("'foo"))
 
 
 class TestDumpS(unittest.TestCase):
