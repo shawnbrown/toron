@@ -1,4 +1,14 @@
-"""Simplified, Python-native object serialization using strings."""
+"""Simplified, Python-native object serialization using strings.
+
+Differences from JSON:
+
+* Supports ``tuple`` and ``set`` object (JSON does not support these types).
+* Restricts serialization to instances of exact type matches to prevent
+  data loss. E.g., OrderedDict would raise an exception because they cannot
+  be serialized using literal object notation.
+* Collections cannot be nested--containers can only contain non-container
+  types (JSON allows nested containers).
+"""
 
 from ast import literal_eval as _literal_eval
 
