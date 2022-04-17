@@ -62,6 +62,21 @@ class TestDumpS(unittest.TestCase):
             coord = namedtuple('coord', ['x', 'y'])
             dumps(coord(1, 2))
 
+    def test_set(self):
+        msg = 'serialized form should always be in sorted order'
+        self.assertEqual(dumps({4, 8, 2}), "{2, 4, 8}", msg=msg)
+
+        msg = 'mixed types should sort without problems'
+        self.assertEqual(dumps({None, 2, 'a', 1.25}), "{'a', 1.25, 2, None}", msg=msg)
+
+        msg = 'should not serialize nested containers'
+        with self.assertRaises(TypeError, msg=msg):
+            dumps({4, (8, 2)})
+
+        msg = 'should not serialize instances of subclasses'
+        with self.assertRaises(TypeError, msg=msg):
+            dumps(frozenset([1, 2, 3]))
+
     def test_unsupported_types(self):
         with self.assertRaises(TypeError):
             dumps(frozenset([1, 2, 3]))

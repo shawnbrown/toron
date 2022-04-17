@@ -27,6 +27,17 @@ def _serialize_list_or_tuple(obj):
     return repr(obj)
 
 
+def _serialize_set(obj):
+    member_reprs = []
+    for item in obj:
+        if not _is_primitive(item):
+            msg = f'cannot serialize member of type {item.__class__}'
+            raise TypeError(msg)
+        member_reprs.append(repr(item))
+
+    return f'{{{", ".join(sorted(member_reprs))}}}'
+
+
 def dumps(obj):
     """Return a string representing the serialized content of *obj*."""
     if _is_primitive(obj):
@@ -34,6 +45,9 @@ def dumps(obj):
 
     if (obj.__class__ is list) or (obj.__class__ is tuple):
         return _serialize_list_or_tuple(obj)
+
+    if obj.__class__ is set:
+        return _serialize_set(obj)
 
     msg = f'cannot serialize object of type {obj.__class__}'
     raise TypeError(msg)
