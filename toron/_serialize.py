@@ -38,6 +38,29 @@ def _serialize_set(obj):
     return f'{{{", ".join(sorted(member_reprs))}}}'
 
 
+def _serialize_dict(obj):
+    """Serialize a dictionary of basic types to a Python-literal
+    formatted string. Keys and values must be instances of one of
+    the supported types. Dictionary items do not preserve their
+    original order but are serialized in alphabetical order by key.
+
+    Supported types: str, bytes, int, float, bool, complex, NoneType
+    """
+    item_reprs = []
+    for key, value in obj.items():
+        if not _is_primitive(key):
+            msg = f'cannot serialize key of type {key.__class__}'
+            raise TypeError(msg)
+
+        if not _is_primitive(value):
+            msg = f'cannot serialize value of type {value.__class__}'
+            raise TypeError(msg)
+
+        item_reprs.append(f'{key!r}: {value!r}')
+
+    return f'{{{", ".join(sorted(item_reprs))}}}'
+
+
 def dumps(obj):
     """Return a string representing the serialized content of *obj*."""
     if _is_primitive(obj):
@@ -48,6 +71,9 @@ def dumps(obj):
 
     if obj.__class__ is set:
         return _serialize_set(obj)
+
+    if obj.__class__ is dict:
+        return _serialize_dict(obj)
 
     msg = f'cannot serialize object of type {obj.__class__}'
     raise TypeError(msg)
