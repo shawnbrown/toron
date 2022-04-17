@@ -10,7 +10,7 @@ Differences from JSON:
   types (JSON allows nested containers).
 """
 
-from ast import literal_eval as _literal_eval
+from ast import literal_eval
 
 
 _primitive_types = (str, int, float, bool, type(None), bytes, complex)
@@ -22,14 +22,14 @@ def get_primitive_repr(obj):
         if obj.__class__ is type_:
             obj_repr = repr(obj)
             try:
-                if obj == _literal_eval(obj_repr):
+                if obj == literal_eval(obj_repr):
                     return obj_repr
             except Exception:
                 return None
     return None
 
 
-def _serialize_list_or_tuple(obj):
+def serialize_list_or_tuple(obj):
     """Serialize a list or tuple of primitive items as a string."""
     for item in obj:
         if get_primitive_repr(item) is None:
@@ -39,7 +39,7 @@ def _serialize_list_or_tuple(obj):
     return repr(obj)
 
 
-def _serialize_set(obj):
+def serialize_set(obj):
     """Serialize a set of primitive items as a string."""
     member_reprs = []
     for item in obj:
@@ -52,7 +52,7 @@ def _serialize_set(obj):
     return f'{{{", ".join(sorted(member_reprs))}}}'
 
 
-def _serialize_dict(obj):
+def serialize_dict(obj):
     """Serialize a dictionary of basic types to a Python-literal
     formatted string. Keys and values must be instances of one of
     the supported types. Dictionary items do not preserve their
@@ -84,13 +84,13 @@ def dumps(obj):
         return obj_repr
 
     if (obj.__class__ is list) or (obj.__class__ is tuple):
-        return _serialize_list_or_tuple(obj)
+        return serialize_list_or_tuple(obj)
 
     if obj.__class__ is set:
-        return _serialize_set(obj)
+        return serialize_set(obj)
 
     if obj.__class__ is dict:
-        return _serialize_dict(obj)
+        return serialize_dict(obj)
 
     msg = f'cannot serialize object of type {obj.__class__}'
     raise TypeError(msg)
