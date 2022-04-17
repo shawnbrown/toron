@@ -95,3 +95,8 @@ def dumps(obj):
     msg = f'cannot serialize object of type {obj.__class__}'
     raise TypeError(msg)
 
+
+def loads(s):
+    """Return an object deserialized from a string of literals."""
+    return literal_eval(s)
+

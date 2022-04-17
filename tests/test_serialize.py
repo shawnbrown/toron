@@ -3,7 +3,7 @@
 import unittest
 from collections import namedtuple, OrderedDict, UserString
 from toron._serialize import get_primitive_repr
-from toron._serialize import dumps
+from toron._serialize import dumps, loads
 
 
 class TestGetPrimitiveRepr(unittest.TestCase):
@@ -102,4 +102,11 @@ class TestDumpS(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             dumps(Ellipsis)
+
+
+class TestLoadS(unittest.TestCase):
+    def test_valid_strings(self):
+        self.assertEqual(loads('1.125'), 1.125)
+        self.assertEqual(loads("('a', 1, 2.25)"), ('a', 1, 2.25))
+        self.assertEqual(loads("{'a': 1, 'b': 2}"), {'a': 1, 'b': 2})
 
