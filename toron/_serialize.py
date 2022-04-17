@@ -109,7 +109,21 @@ def dumps(obj):
     raise TypeError(msg)
 
 
-def loads(s):
+def loads(s, errors='strict'):
     """Return an object deserialized from a string of literals."""
-    return literal_eval(s)
+    try:
+        return literal_eval(s)
+    except Exception as e:
+        if errors == 'strict':
+            raise  # Reraise original error.
+        elif errors == 'warn':
+            import warnings
+            msg = f'cannot deserialize string: {s!r}'
+            warnings.warn(msg, category=RuntimeWarning)
+            return InvalidSerialization(s)
+        elif errors == 'ignore':
+            return None
+
+        msg = "*errors* must be 'strict', 'warn', or 'ignore'"
+        raise ValueError(msg)
 

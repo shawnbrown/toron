@@ -133,3 +133,29 @@ class TestLoadS(unittest.TestCase):
         self.assertEqual(loads("('a', 1, 2.25)"), ('a', 1, 2.25))
         self.assertEqual(loads("{'a': 1, 'b': 2}"), {'a': 1, 'b': 2})
 
+    def test_syntax_error(self):
+        bad_value = "['a', 'b',"  # <- No closing bracket.
+
+        with self.assertRaises(SyntaxError):
+            loads(bad_value)  # Default handling is "strict".
+
+        with self.assertWarns(RuntimeWarning):
+            returned_value = loads(bad_value, errors='warn')
+        self.assertEqual(returned_value, InvalidSerialization(bad_value))
+
+        returned_value = loads(bad_value, errors='ignore')
+        self.assertIsNone(returned_value)
+
+    def test_value_error(self):
+        bad_value = "float('inf')"  # <- Not a literal representation.
+
+        with self.assertRaises(ValueError):
+            loads(bad_value)  # Default handling is "strict".
+
+        with self.assertWarns(RuntimeWarning):
+            returned_value = loads(bad_value, errors='warn')
+        self.assertEqual(returned_value, InvalidSerialization(bad_value))
+
+        returned_value = loads(bad_value, errors='ignore')
+        self.assertIsNone(returned_value)
+
