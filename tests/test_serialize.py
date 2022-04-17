@@ -34,3 +34,10 @@ class TestIsPrimitive(unittest.TestCase):
         instance_of_str_subclass = StrSubclass('abc')
         self.assertFalse(_is_primitive(instance_of_str_subclass))
 
+    def test_no_valid_literal_repr(self):
+        """Values that don't have a literal representation must test
+        as False even if the instance is of a supported type.
+        """
+        self.assertFalse(_is_primitive(float('nan')))
+        self.assertFalse(_is_primitive(float('inf')))
+
