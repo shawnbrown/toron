@@ -1,7 +1,7 @@
 """Tests for toron._serialize module."""
 
 import unittest
-from collections import namedtuple, OrderedDict
+from collections import namedtuple, OrderedDict, UserString
 from toron._serialize import get_primitive_repr
 from toron._serialize import dumps
 
@@ -30,7 +30,7 @@ class TestGetPrimitiveRepr(unittest.TestCase):
 
     def test_exact_type_matching(self):
         """Values that are a subclass of supported types should get None."""
-        class StrSubclass(str):
+        class StrSubclass(UserString):
             pass
 
         instance_of_str_subclass = StrSubclass('abc')
