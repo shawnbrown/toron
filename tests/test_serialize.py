@@ -2,46 +2,46 @@
 
 import unittest
 from collections import namedtuple, OrderedDict
-from toron._serialize import _is_primitive
+from toron._serialize import get_primitive_repr
 from toron._serialize import dumps
 
 
-class TestIsPrimitive(unittest.TestCase):
+class TestGetPrimitiveRepr(unittest.TestCase):
     def test_supported_types(self):
-        """Check that all supported instance types test as True."""
+        """Check that all supported instance types get expected reprs."""
         supported_instances = [
-            'abc',   # str
-            b'xyz',  # bytes
-            123,     # int
-            1.125,   # float
-            True,    # bool
-            None,    # NoneType
-            (3+0j),  # complex
+            ('abc',  "'abc'"),   # str
+            (b'xyz', "b'xyz'"),  # bytes
+            (123,    '123'),     # int
+            (1.125,  '1.125'),   # float
+            (True,   'True'),    # bool
+            (None,   'None'),    # NoneType
+            ((3+0j), '(3+0j)'),  # complex
         ]
-        for obj in supported_instances:
+        for obj, obj_repr in supported_instances:
             with self.subTest(obj=obj):
-                self.assertTrue(_is_primitive(obj))
+                self.assertEqual(get_primitive_repr(obj), obj_repr)
 
     def test_unsupported_types(self):
-        """Should return False for non-supported types (containers, etc.)"""
-        self.assertFalse(_is_primitive(Ellipsis))
-        self.assertFalse(_is_primitive([1, 2]))
-        self.assertFalse(_is_primitive({'a': 1}))
+        """Should return None for unsupported types (containers, etc.)"""
+        self.assertIsNone(get_primitive_repr(Ellipsis))
+        self.assertIsNone(get_primitive_repr([1, 2]))
+        self.assertIsNone(get_primitive_repr({'a': 1}))
 
     def test_exact_type_matching(self):
-        """Should not match instances of supported type subclasses."""
+        """Values that are a subclass of supported types should get None."""
         class StrSubclass(str):
             pass
 
         instance_of_str_subclass = StrSubclass('abc')
-        self.assertFalse(_is_primitive(instance_of_str_subclass))
+        self.assertIsNone(get_primitive_repr(instance_of_str_subclass))
 
     def test_no_valid_literal_repr(self):
-        """Values that don't have a literal representation must test
-        as False even if the instance is of a supported type.
+        """Values that don't have a literal representation must return
+        a None value even if the instance is of a supported type.
         """
-        self.assertFalse(_is_primitive(float('nan')))
-        self.assertFalse(_is_primitive(float('inf')))
+        self.assertIsNone(get_primitive_repr(float('nan')))
+        self.assertIsNone(get_primitive_repr(float('inf')))
 
 
 class TestDumpS(unittest.TestCase):

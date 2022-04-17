@@ -6,21 +6,23 @@ from ast import literal_eval as _literal_eval
 _primitive_types = (str, int, float, bool, type(None), bytes, complex)
 
 
-def _is_primitive(obj):
-    """Return True if *obj* is a supported, non-container value."""
+def get_primitive_repr(obj):
+    """Return repr string for supported, non-container values."""
     for type_ in _primitive_types:
         if obj.__class__ is type_:
+            obj_repr = repr(obj)
             try:
-                return obj == _literal_eval(repr(obj))
+                if obj == _literal_eval(obj_repr):
+                    return obj_repr
             except Exception:
-                return False
-    return False
+                return None
+    return None
 
 
 def _serialize_list_or_tuple(obj):
     """Serialize a list or tuple of primitive items as a string."""
     for item in obj:
-        if not _is_primitive(item):
+        if get_primitive_repr(item) is None:
             msg = f'cannot serialize item of type {item.__class__}'
             raise TypeError(msg)
 
@@ -28,12 +30,14 @@ def _serialize_list_or_tuple(obj):
 
 
 def _serialize_set(obj):
+    """Serialize a set of primitive items as a string."""
     member_reprs = []
     for item in obj:
-        if not _is_primitive(item):
+        item_repr = get_primitive_repr(item)
+        if item_repr is None:
             msg = f'cannot serialize member of type {item.__class__}'
             raise TypeError(msg)
-        member_reprs.append(repr(item))
+        member_reprs.append(item_repr)
 
     return f'{{{", ".join(sorted(member_reprs))}}}'
 
@@ -48,23 +52,26 @@ def _serialize_dict(obj):
     """
     item_reprs = []
     for key, value in obj.items():
-        if not _is_primitive(key):
+        key_repr = get_primitive_repr(key)
+        if key_repr is None:
             msg = f'cannot serialize key of type {key.__class__}'
             raise TypeError(msg)
 
-        if not _is_primitive(value):
+        value_repr = get_primitive_repr(value)
+        if value_repr is None:
             msg = f'cannot serialize value of type {value.__class__}'
             raise TypeError(msg)
 
-        item_reprs.append(f'{key!r}: {value!r}')
+        item_reprs.append(f'{key_repr}: {value_repr}')
 
     return f'{{{", ".join(sorted(item_reprs))}}}'
 
 
 def dumps(obj):
     """Return a string representing the serialized content of *obj*."""
-    if _is_primitive(obj):
-        return repr(obj)
+    obj_repr = get_primitive_repr(obj)
+    if obj_repr:
+        return obj_repr
 
     if (obj.__class__ is list) or (obj.__class__ is tuple):
         return _serialize_list_or_tuple(obj)
