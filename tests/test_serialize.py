@@ -1,6 +1,7 @@
 """Tests for toron._serialize module."""
 
 import unittest
+from collections import namedtuple
 from toron._serialize import _is_primitive
 from toron._serialize import dumps
 
@@ -47,6 +48,19 @@ class TestDumpS(unittest.TestCase):
     def test_primitive_types(self):
         self.assertEqual(dumps(1.125), '1.125')
         self.assertEqual(dumps(b'abc'), "b'abc'")
+
+    def test_list_or_tuple(self):
+        self.assertEqual(dumps([4, 8, 2]), "[4, 8, 2]")
+        self.assertEqual(dumps((1, 'a', 2.25)), "(1, 'a', 2.25)")
+
+        msg = 'should not serialize nested containers'
+        with self.assertRaises(TypeError, msg=msg):
+            dumps([1, [2, 3]])
+
+        msg = 'should not serialize instances of subclasses'
+        with self.assertRaises(TypeError, msg=msg):
+            coord = namedtuple('coord', ['x', 'y'])
+            dumps(coord(1, 2))
 
     def test_unsupported_types(self):
         with self.assertRaises(TypeError):

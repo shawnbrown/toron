@@ -17,10 +17,23 @@ def _is_primitive(obj):
     return False
 
 
+def _serialize_list_or_tuple(obj):
+    """Serialize a list or tuple of primitive items as a string."""
+    for item in obj:
+        if not _is_primitive(item):
+            msg = f'cannot serialize item of type {item.__class__}'
+            raise TypeError(msg)
+
+    return repr(obj)
+
+
 def dumps(obj):
     """Return a string representing the serialized content of *obj*."""
     if _is_primitive(obj):
         return repr(obj)
+
+    if (obj.__class__ is list) or (obj.__class__ is tuple):
+        return _serialize_list_or_tuple(obj)
 
     msg = f'cannot serialize object of type {obj.__class__}'
     raise TypeError(msg)
