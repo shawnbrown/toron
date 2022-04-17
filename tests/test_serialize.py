@@ -2,6 +2,7 @@
 
 import unittest
 from toron._serialize import _is_primitive
+from toron._serialize import dumps
 
 
 class TestIsPrimitive(unittest.TestCase):
@@ -40,4 +41,17 @@ class TestIsPrimitive(unittest.TestCase):
         """
         self.assertFalse(_is_primitive(float('nan')))
         self.assertFalse(_is_primitive(float('inf')))
+
+
+class TestDumpS(unittest.TestCase):
+    def test_primitive_types(self):
+        self.assertEqual(dumps(1.125), '1.125')
+        self.assertEqual(dumps(b'abc'), "b'abc'")
+
+    def test_unsupported_types(self):
+        with self.assertRaises(TypeError):
+            dumps(frozenset([1, 2, 3]))
+
+        with self.assertRaises(TypeError):
+            dumps(Ellipsis)
 

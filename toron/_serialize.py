@@ -16,3 +16,12 @@ def _is_primitive(obj):
                 return False
     return False
 
+
+def dumps(obj):
+    """Return a string representing the serialized content of *obj*."""
+    if _is_primitive(obj):
+        return repr(obj)
+
+    msg = f'cannot serialize object of type {obj.__class__}'
+    raise TypeError(msg)
+
