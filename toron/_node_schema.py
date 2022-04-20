@@ -45,6 +45,8 @@ the application layer:
                                         +----------------+
 """
 
+import os
+import sqlite3
 from ast import literal_eval
 
 
@@ -237,4 +239,22 @@ _schema_script = """
         value PYTEXT_LITERAL
     );
 """
+
+
+def connect(path):
+    """Returns a sqlite3 connection to a Toron node file. If *path*
+    doesn't exist, a new node is created at this location.
+    """
+    if os.path.exists(path):
+        try:
+            con = sqlite3.connect(path)
+        except sqlite3.OperationalError:
+            # If *path* is a directory or non-file resource, then
+            # calling `connect()` will raise an OperationalError.
+            raise Exception(f'path {path!r} is not a Toron Node')
+    else:
+        con = sqlite3.connect(path)
+        con.executescript(_schema_script)
+
+    return con
 

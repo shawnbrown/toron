@@ -1,10 +1,14 @@
 """Tests for toron._node_schema module."""
 
+import os
+import sqlite3
 import unittest
 from collections import namedtuple, OrderedDict, UserString
+from .common import MkdtempTestCase
 from toron._node_schema import get_primitive_repr
 from toron._node_schema import dumps, loads
 from toron._node_schema import InvalidSerialization
+from toron._node_schema import connect
 
 
 class TestGetPrimitiveRepr(unittest.TestCase):
@@ -158,4 +162,39 @@ class TestLoadS(unittest.TestCase):
 
         returned_value = loads(bad_value, errors='ignore')
         self.assertIsNone(returned_value)
+
+
+class TestConnect(MkdtempTestCase):
+    def test_new_file(self):
+        """If a node file doesn't exist it should be created."""
+        path = 'mynode.node'
+        node = connect(path)  # Creates node file if none exists.
+
+        con = sqlite3.connect(path)
+        cur = con.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = {row[0] for row in cur}
+        tables.discard('sqlite_sequence')  # <- Table added by SQLite.
+
+        expected = {
+            'edge',
+            'element',
+            'location',
+            'property',
+            'quantity',
+            'relation',
+            'structure',
+            'weight',
+            'weight_info',
+        }
+        self.assertSetEqual(tables, expected)
+
+    def test_nonfile_path(self):
+        """Non-file resources should fail immediately."""
+        path = 'mydirectory'
+        os.mkdir(path)  # <- Create a directory with the given `path` name.
+
+        msg = 'should fail if path is a directory instead of a file'
+        with self.assertRaisesRegex(Exception, 'not a Toron Node', msg=msg):
+            node = connect(path)
 
