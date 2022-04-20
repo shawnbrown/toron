@@ -1,10 +1,10 @@
-"""Tests for toron._serialize module."""
+"""Tests for toron._node_schema module."""
 
 import unittest
 from collections import namedtuple, OrderedDict, UserString
-from toron._serialize import get_primitive_repr
-from toron._serialize import dumps, loads
-from toron._serialize import InvalidSerialization
+from toron._node_schema import get_primitive_repr
+from toron._node_schema import dumps, loads
+from toron._node_schema import InvalidSerialization
 
 
 class TestGetPrimitiveRepr(unittest.TestCase):
