@@ -7,31 +7,44 @@ import tempfile
 from . import _unittest as unittest
 
 
-class MkdtempTestCase(unittest.TestCase):
-    # TestCase changes cwd to temporary location.  After testing,
-    # removes files and restores original cwd.
-    @classmethod
-    def setUpClass(cls):
-        cls._orig_dir = os.getcwd()
-        cls._temp_dir = tempfile.mkdtemp()  # Requires mkdtemp--cannot
-        os.chdir(cls._temp_dir)             # use TemporaryDirectory.
+class TempDirTestCase(unittest.TestCase):
+    # A TestCase to create a temporary directory, then chdir() into
+    # it for testing. After testing, the original working directory
+    # is restored and the temporary directory is removed.
 
-    @classmethod
-    def tearDownClass(cls):
-        os.chdir(cls._orig_dir)
-        os.rmdir(cls._temp_dir)
+    if hasattr(unittest.TestCase, 'addClassCleanup'):
+        # The addClassCleanup() method is new in Python 3.8.
+        @classmethod
+        def setUpClass(cls):
+            original_working_dir = os.getcwd()
 
-    def setUp(self):
-        self._no_class_fixtures = not hasattr(self, '_temp_dir')
-        if self._no_class_fixtures:
-            self.setUpClass.__func__(self)
+            cls._tempdir = tempfile.TemporaryDirectory()
+            os.chdir(cls._tempdir.name)
 
-    def tearDown(self):
-        for path in glob.glob(os.path.join(self._temp_dir, '*')):
+            def cleanup_func():
+                os.chdir(original_working_dir)
+                cls._tempdir.cleanup()
+
+            cls.addClassCleanup(cleanup_func)
+
+    else:
+        # Use tearDownClass() method on older versions.
+        @classmethod
+        def setUpClass(cls):
+            cls._original_working_dir = os.getcwd()
+            cls._tempdir = tempfile.TemporaryDirectory()
+            os.chdir(cls._tempdir.name)
+
+        @classmethod
+        def tearDownClass(cls):
+            os.chdir(cls._original_working_dir)
+            cls._tempdir.cleanup()
+
+    def cleanup_temp_files(self):
+        """Remove all files from the current temporary directory."""
+        for path in glob.glob(os.path.join(self._tempdir.name, '*')):
             if os.path.isdir(path):
                 shutil.rmtree(path)
             else:
                 os.remove(path)
 
-        if self._no_class_fixtures:
-            self.tearDownClass.__func__(self)

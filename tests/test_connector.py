@@ -4,7 +4,7 @@ import os
 import sqlite3
 
 from . import _unittest as unittest
-from .common import MkdtempTestCase
+from .common import TempDirTestCase
 
 from toron.connector import _schema
 from toron.connector import _get_schema_dict
@@ -273,7 +273,10 @@ class TestGetSchemaDict_ConstraintNames(unittest.TestCase):
             self.assertIn(name, schema_dict.keys(), msg)
 
 
-class TestConnector(MkdtempTestCase):
+class TestConnector(TempDirTestCase):
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
     def _make_database(self, filename):
         global _schema
         self._existing_node = filename

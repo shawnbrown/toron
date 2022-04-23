@@ -5,14 +5,17 @@ except ImportError:
     from io import StringIO  # New stdlib location in 3.0
 
 from . import _unittest as unittest
-from .common import MkdtempTestCase
+from .common import TempDirTestCase
 
 from toron.graph import Graph
 from toron._gpn_node import Node
 from toron import IN_MEMORY
 
 
-class TestInstantiation(MkdtempTestCase):
+class TestInstantiation(TempDirTestCase):
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
     def test_from_collection(self):
         old_boundary = Node(mode=IN_MEMORY, name='old_boundary')
         new_boundary = Node(mode=IN_MEMORY, name='new_boundary')

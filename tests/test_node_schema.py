@@ -4,7 +4,7 @@ import os
 import sqlite3
 import unittest
 from collections import namedtuple, OrderedDict, UserString
-from .common import MkdtempTestCase
+from .common import TempDirTestCase
 from toron._node_schema import get_primitive_repr
 from toron._node_schema import dumps, loads
 from toron._node_schema import InvalidSerialization
@@ -164,7 +164,7 @@ class TestLoadS(unittest.TestCase):
         self.assertIsNone(returned_value)
 
 
-class TestConnect(MkdtempTestCase):
+class TestConnect(TempDirTestCase):
     def test_new_file(self):
         """If a node file doesn't exist it should be created."""
         path = 'mynode.node'

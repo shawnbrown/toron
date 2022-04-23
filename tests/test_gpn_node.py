@@ -9,7 +9,7 @@ except ImportError:
 
 
 from . import _unittest as unittest
-from .common import MkdtempTestCase
+from .common import TempDirTestCase
 
 from toron._gpn_node import Node
 from toron.connector import _schema
@@ -19,7 +19,10 @@ from toron import TEMP_FILE
 from toron import READ_ONLY
 
 
-class TestInstantiation(MkdtempTestCase):
+class TestInstantiation(TempDirTestCase):
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
     def _make_node(self, filename):
         global _schema
         self._existing_node = filename
@@ -429,9 +432,10 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(expected, list(result))
 
 
-class TestFileImportExport(MkdtempTestCase):
+class TestFileImportExport(TempDirTestCase):
     def setUp(self):
         super(self.__class__, self).setUp()
+        self.addCleanup(self.cleanup_temp_files)
         fh = StringIO('country,region,state,city\n'
                       'USA,Midwest,IL,Chicago\n'
                       'USA,Northeast,NY,New York\n'
