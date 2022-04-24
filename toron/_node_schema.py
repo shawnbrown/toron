@@ -241,6 +241,33 @@ _schema_script = """
 """
 
 
+def _make_trigger_assert_flat_object(insert_or_update, table, column):
+    """Return SQL statement to create a trigger for asserting that
+    TEXT_JSONFLATOBJ type columns contain JSON objects that are flat
+    (i.e., that they do not contain other nested containers).
+    """
+    if insert_or_update.upper() not in {'INSERT', 'UPDATE'}:
+        msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
+        raise ValueError(msg)
+
+    return f'''
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS {table}_{column}_{insert_or_update.lower()}_assert_flat
+        AFTER {insert_or_update.upper()} ON main.{table} FOR EACH ROW
+        WHEN
+            NEW.{column} IS NOT NULL
+            AND (json_type(NEW.{column}) != 'object'
+                 OR (SELECT COUNT(*)
+                     FROM json_each(NEW.{column})
+                     WHERE json_each.type IN ('object', 'array')) != 0)
+        BEGIN
+            SELECT RAISE(
+                ABORT,
+                '{column} must be JSON object containing strings, numbers, true, false, or null'
+            );
+        END;
+    '''
+
+
 def connect(path):
     """Returns a sqlite3 connection to a Toron node file. If *path*
     doesn't exist, a new node is created at this location.
