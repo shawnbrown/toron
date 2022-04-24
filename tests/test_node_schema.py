@@ -246,3 +246,54 @@ class TestColumnTextJson(TempDirTestCase):
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key2', '[1,2,3'))
 
+
+class TestColumnTextJsonFlatObj(TempDirTestCase):
+    """Test the behavior of columns using the TEXT_JSONFLATOBJ type."""
+    def setUp(self):
+        self.con = connect('mynode.node')
+        self.cur = self.con.cursor()
+
+        def cleanup():
+            self.cur.close()
+            self.con.close()
+            self.cleanup_temp_files()
+
+        self.addCleanup(cleanup)
+
+    def test_column_type(self):
+        """Make sure that the `weight_info.type_info` column is
+        TEXT_JSONFLATOBJ.
+        """
+        self.cur.execute("""
+            SELECT type
+            FROM pragma_table_info('weight_info')
+            WHERE name='type_info'
+        """)
+        self.assertEqual(self.cur.fetchall(), [('TEXT_JSONFLATOBJ',)])
+
+    def test_insert_wellformed_flat_obj(self):
+        """Flat JSON objects should be inserted without errors."""
+        parameters = [
+            (None, 'name1', None, '{"a": 1, "b": 2}', 0),
+            (None, 'name2', None, '{"a": 1.1, "b": 2.2}', 0),
+            (None, 'name3', None, '{"a": "x", "b": "y"}', 0),
+            (None, 'name4', None, '{"a": true, "b": false, "c": null}', 0),
+        ]
+        self.cur.executemany("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
+
+    def test_insert_malformed_json(self):
+        """Invalid JSON strings should fail with CHECK constraint."""
+        regex = '^CHECK constraint failed'
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name1', None, '{"a": 1, "b": 2', 0),  # Invalid JSON, no closing "}".
+            )
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name3', None, '{"a": "x", "b": y}', 0),  # Invalid JSON, "y" must be quoted.
+            )
+
