@@ -232,6 +232,7 @@ class TestColumnTextJson(TempDirTestCase):
             ('key6', 'null'),
             ('key7', '[1, 2.0, "3"]'),
             ('key8', '{"a": 1, "b": [2, 3]}'),
+            ('key9', None),  # <- The property.value column allows NULLs.
         ]
         self.cur.executemany("INSERT INTO property VALUES (?, ?)", parameters)
 

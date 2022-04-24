@@ -236,7 +236,7 @@ _schema_script = """
 
     CREATE TABLE property(
         key TEXT PRIMARY KEY NOT NULL,
-        value TEXT_JSON CHECK (json_valid(value))
+        value TEXT_JSON CHECK (json_valid(value) OR value IS NULL)
     );
 """
 
