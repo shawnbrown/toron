@@ -251,7 +251,7 @@ def _make_trigger_assert_flat_object(insert_or_update, table, column):
         raise ValueError(msg)
 
     return f'''
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS {table}_{column}_{insert_or_update.lower()}_assert_flat
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_{table}_{column}_{insert_or_update.lower()}
         AFTER {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN
             NEW.{column} IS NOT NULL

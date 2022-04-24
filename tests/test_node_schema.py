@@ -169,10 +169,10 @@ class TestLoadS(unittest.TestCase):
 class TestMakeTriggerAssertFlatObject(unittest.TestCase):
     maxDiff = None
 
-    def test_make_trigger(self):
+    def test_trigger_sql(self):
         actual = _make_trigger_assert_flat_object('INSERT', 'mytbl', 'mycol')
         expected = '''
-            CREATE TEMPORARY TRIGGER IF NOT EXISTS mytbl_mycol_insert_assert_flat
+            CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
             AFTER INSERT ON main.mytbl FOR EACH ROW
             WHEN
                 NEW.mycol IS NOT NULL
