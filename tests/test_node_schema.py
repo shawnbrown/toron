@@ -198,3 +198,50 @@ class TestConnect(TempDirTestCase):
         with self.assertRaisesRegex(Exception, 'not a Toron Node', msg=msg):
             node = connect(path)
 
+
+class TestColumnTextJson(TempDirTestCase):
+    """Test the behavior of columns using the TEXT_JSON type."""
+    def setUp(self):
+        self.con = connect('mynode.node')
+        self.cur = self.con.cursor()
+
+        def cleanup():
+            self.cur.close()
+            self.con.close()
+            self.cleanup_temp_files()
+
+        self.addCleanup(cleanup)
+
+    def test_column_type(self):
+        """Make sure that the `property.value` column is TEXT_JSON."""
+        self.cur.execute("""
+            SELECT type
+            FROM pragma_table_info('property')
+            WHERE name='value'
+        """)
+        self.assertEqual(self.cur.fetchall(), [('TEXT_JSON',)])
+
+    def test_insert_wellformed_json(self):
+        """Valid JSON strings should be inserted without errors."""
+        parameters = [
+            ('key1', '123'),
+            ('key2', '1.23'),
+            ('key3', '"abc"'),
+            ('key4', 'true'),
+            ('key5', 'false'),
+            ('key6', 'null'),
+            ('key7', '[1, 2.0, "3"]'),
+            ('key8', '{"a": 1, "b": [2, 3]}'),
+        ]
+        self.cur.executemany("INSERT INTO property VALUES (?, ?)", parameters)
+
+    def test_insert_malformed_json(self):
+        """Invalid JSON strings should fail with CHECK constraint."""
+        regex = '^CHECK constraint failed'
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key1', 'abc'))
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key2', '[1,2,3'))
+
