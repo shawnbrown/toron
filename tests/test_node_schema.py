@@ -9,7 +9,9 @@ from .common import TempDirTestCase
 from toron._node_schema import get_primitive_repr
 from toron._node_schema import dumps, loads
 from toron._node_schema import InvalidSerialization
+from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_assert_flat_object
+from toron._node_schema import _execute_post_schema_triggers
 from toron._node_schema import connect
 
 
@@ -192,6 +194,79 @@ class TestMakeTriggerAssertFlatObject(unittest.TestCase):
     def test_bad_action(self):
         with self.assertRaises(ValueError):
             _make_trigger_assert_flat_object('DELETE', 'mytbl', 'mycol')
+
+
+class TestTriggerCoverage(unittest.TestCase):
+    """Check that TEXT_JSONFLATOBJ columns have needed triggers."""
+
+    # NOTE: I think it is important to address a bit of design
+    # philosophy that this test case touches on. This test dynamically
+    # builds a list of 'TEXT_JSONFLATOBJ' type columns and checks that
+    # the needed triggers exist for each column.
+    #
+    # One might ask, "Why not generate this list dynamically in the
+    # application itself and automatically apply the triggers using
+    # that list?"
+    #
+    # In this case, there is a tradeoff between the complexity of the
+    # application and the complexity of the tests. And since test code
+    # is relatively simple, I decided that it was better to push this
+    # small bit of complexity into the tests rather than into the
+    # application.
+
+    def setUp(self):
+        con = sqlite3.connect(':memory:')
+        self.cur = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cur.close)
+
+    def get_actual_trigger_names(self):
+        """Helper function to return list of actual temp trigger names."""
+        self.cur.execute("SELECT name FROM temp.sqlite_schema WHERE type='trigger'")
+        return [row[0] for row in self.cur]
+
+    def get_all_table_names(self):
+        """Helper function to return list of table names from main schema."""
+        self.cur.execute("SELECT name FROM main.sqlite_schema WHERE type='table'")
+        return [row[0] for row in self.cur]
+
+    def get_text_jsonflatobj_columns(self, table):
+        """Helper function to return list of TEXT_JSONFLATOBJ columns."""
+        self.cur.execute(f"""
+            SELECT name
+            FROM pragma_table_info('{table}')
+            WHERE type='TEXT_JSONFLATOBJ'
+        """)
+        return [row[0] for row in self.cur]
+
+    @staticmethod
+    def make_trigger_name(insert_or_update, table, column):
+        """Helper function to build expected trigger name."""
+        return f'trg_assert_flat_{table}_{column}_{insert_or_update}'
+
+    def get_expected_trigger_names(self):
+        """Helper function to return list of expected trigger names."""
+        table_names = self.get_all_table_names()
+
+        expected_triggers = []
+        for table in table_names:
+            column_names = self.get_text_jsonflatobj_columns(table)
+            for column in column_names:
+                expected_triggers.append(self.make_trigger_name('insert', table, column))
+                expected_triggers.append(self.make_trigger_name('update', table, column))
+
+        return expected_triggers
+
+    def test_execute_post_schema_triggers(self):
+        """Test that all TEXT_JSONFLATOBJ columns have proper INSERT and
+        UPDATE triggers.
+        """
+        self.cur.executescript(_schema_script)   # <- Create database tables.
+        _execute_post_schema_triggers(self.cur)  # <- Create triggers.
+
+        actual_triggers = self.get_actual_trigger_names()
+        expected_triggers = self.get_expected_trigger_names()
+        self.assertEqual(set(actual_triggers), set(expected_triggers))
 
 
 class TestConnect(TempDirTestCase):

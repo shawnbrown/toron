@@ -268,6 +268,23 @@ def _make_trigger_assert_flat_object(insert_or_update, table, column):
     '''
 
 
+def _execute_post_schema_triggers(cur):
+    """Create triggers for columns of declared type 'TEXT_JSONFLATOBJ'.
+
+    Note: This function must not be executed on an empty connection.
+    The table schema must exist before triggers can be created.
+    """
+    jsonflatobj_columns = [
+        ('edge', 'type_info'),
+        ('edge', 'optional_attributes'),
+        ('quantity', 'attributes'),
+        ('weight_info', 'type_info'),
+    ]
+    for table, column in jsonflatobj_columns:
+        cur.execute(_make_trigger_assert_flat_object('INSERT', table, column))
+        cur.execute(_make_trigger_assert_flat_object('UPDATE', table, column))
+
+
 def connect(path):
     """Returns a sqlite3 connection to a Toron node file. If *path*
     doesn't exist, a new node is created at this location.
