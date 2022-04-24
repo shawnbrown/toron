@@ -402,3 +402,31 @@ class TestColumnTextJsonFlatObj(TempDirTestCase):
                 (None, 'name3', None, '{"a": "x", "b": y}', 0),  # Invalid JSON, "y" must be quoted.
             )
 
+    def test_insert_wellformed_but_not_obj(self):
+        """Non-object types should fail."""
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name1', None, '[1, 2, 3]', 0),  # JSON is wellformed array.
+            )
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name3', None, '"xyz"', 0),  # JSON is wellformed text.
+            )
+
+    def test_insert_wellformed_obj_but_not_flat(self):
+        """Flat JSON objects must not contain nested object or array types."""
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name1', None, '{"a": 1, "b": {"c": 3}}', 0),
+            )
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name3', None, '{"a": "x", "b": ["y", "z"]}', 0),
+            )
+

@@ -300,5 +300,11 @@ def connect(path):
         con = sqlite3.connect(path)
         con.executescript(_schema_script)
 
+    cur = con.cursor()
+    try:
+        _execute_post_schema_triggers(cur)
+    finally:
+        cur.close()
+
     return con
 
