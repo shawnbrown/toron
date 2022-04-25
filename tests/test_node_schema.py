@@ -232,12 +232,15 @@ class TestTriggerCoverage(unittest.TestCase):
 
     def get_text_jsonflatobj_columns(self, table):
         """Helper function to return list of TEXT_JSONFLATOBJ columns."""
-        self.cur.execute(f"""
-            SELECT name
-            FROM pragma_table_info('{table}')
-            WHERE type='TEXT_JSONFLATOBJ'
-        """)
-        return [row[0] for row in self.cur]
+        orig_factory = self.cur.row_factory
+        try:
+            self.cur.row_factory = sqlite3.Row
+            self.cur.execute(f"PRAGMA main.table_info('{table}')")
+            filtered_rows = [row for row in self.cur if row['type'] == 'TEXT_JSONFLATOBJ']
+            column_names = [row['name'] for row in filtered_rows]
+        finally:
+            self.cur.row_factory = orig_factory
+        return column_names
 
     @staticmethod
     def make_trigger_name(insert_or_update, table, column):
@@ -319,12 +322,16 @@ class TestColumnTextJson(TempDirTestCase):
 
     def test_column_type(self):
         """Make sure that the `property.value` column is TEXT_JSON."""
-        self.cur.execute("""
-            SELECT type
-            FROM pragma_table_info('property')
-            WHERE name='value'
-        """)
-        self.assertEqual(self.cur.fetchall(), [('TEXT_JSON',)])
+        orig_factory = self.cur.row_factory
+        try:
+            self.cur.row_factory = sqlite3.Row
+            self.cur.execute("PRAGMA main.table_info('property')")
+            value_column = [row for row in self.cur if row['name'] == 'value'].pop()
+        finally:
+            self.cur.row_factory = orig_factory
+
+        declared_type = value_column['type']
+        self.assertEqual(declared_type, 'TEXT_JSON')
 
     def test_insert_wellformed_json(self):
         """Valid JSON strings should be inserted without errors."""
@@ -369,12 +376,16 @@ class TestColumnTextJsonFlatObj(TempDirTestCase):
         """Make sure that the `weight_info.type_info` column is
         TEXT_JSONFLATOBJ.
         """
-        self.cur.execute("""
-            SELECT type
-            FROM pragma_table_info('weight_info')
-            WHERE name='type_info'
-        """)
-        self.assertEqual(self.cur.fetchall(), [('TEXT_JSONFLATOBJ',)])
+        orig_factory = self.cur.row_factory
+        try:
+            self.cur.row_factory = sqlite3.Row
+            self.cur.execute("PRAGMA main.table_info('weight_info')")
+            type_info_column = [row for row in self.cur if row['name'] == 'type_info'].pop()
+            declared_type = type_info_column['type']
+        finally:
+            self.cur.row_factory = orig_factory
+
+        self.assertEqual(declared_type, 'TEXT_JSONFLATOBJ')
 
     def test_insert_wellformed_flat_obj(self):
         """Flat JSON objects should be inserted without errors."""
