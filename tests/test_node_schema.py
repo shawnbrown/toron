@@ -222,12 +222,12 @@ class TestTriggerCoverage(unittest.TestCase):
 
     def get_actual_trigger_names(self):
         """Helper function to return list of actual temp trigger names."""
-        self.cur.execute("SELECT name FROM temp.sqlite_schema WHERE type='trigger'")
+        self.cur.execute("SELECT name FROM sqlite_temp_master WHERE type='trigger'")
         return [row[0] for row in self.cur]
 
     def get_all_table_names(self):
         """Helper function to return list of table names from main schema."""
-        self.cur.execute("SELECT name FROM main.sqlite_schema WHERE type='table'")
+        self.cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
         return [row[0] for row in self.cur]
 
     def get_text_jsonflatobj_columns(self, table):
