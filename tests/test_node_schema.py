@@ -10,6 +10,7 @@ from toron._node_schema import get_primitive_repr
 from toron._node_schema import dumps, loads
 from toron._node_schema import InvalidSerialization
 from toron._node_schema import SQLITE_JSON1_ENABLED
+from toron._node_schema import _pre_execute_functions
 from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_assert_flat_object
 from toron._node_schema import _execute_post_schema_triggers
@@ -177,9 +178,11 @@ class TestMakeTriggerAssertFlatObject(unittest.TestCase):
 
         if SQLITE_JSON1_ENABLED:
             is_flat_clause = (
-                "(SELECT COUNT(*)\n"
-                "                         FROM json_each(NEW.mycol)\n"
-                "                         WHERE json_each.type IN ('object', 'array')) != 0"
+                "\n"
+                "                (SELECT COUNT(*)\n"
+                "                 FROM json_each(NEW.mycol)\n"
+                "                 WHERE json_each.type IN ('object', 'array')) != 0\n"
+                "            "
             )
         else:
             is_flat_clause = 'json_object_is_flat(NEW.mycol) = 0'
@@ -273,6 +276,7 @@ class TestTriggerCoverage(unittest.TestCase):
         """Test that all TEXT_JSONFLATOBJ columns have proper INSERT and
         UPDATE triggers.
         """
+        _pre_execute_functions(self.cur.connection)
         self.cur.executescript(_schema_script)   # <- Create database tables.
         _execute_post_schema_triggers(self.cur)  # <- Create triggers.
 

@@ -46,6 +46,7 @@ the application layer:
 """
 
 import os
+import json
 import sqlite3
 from ast import literal_eval
 
@@ -186,6 +187,91 @@ def _is_sqlite_json_supported():
 SQLITE_JSON1_ENABLED = _is_sqlite_json_supported()
 
 
+if not SQLITE_JSON1_ENABLED:
+    _loads = json.loads
+
+    def json_type(x):
+        """Returns the JSON type of the outermost element of
+        *x*. The type returned is one of the following text
+        values: 'null', 'true', 'false', 'integer', 'real',
+        'text', 'array', or 'object'. Raises a ValueError if
+        *x* is not well-formed.
+
+        For details, see:
+            https://www.sqlite.org/json1.html#jtype
+        """
+        if x is None:
+            return None  # <- EXIT!
+
+        obj = _loads(x)
+        if isinstance(obj, dict):
+            return 'object'
+        if isinstance(obj, list):
+            return 'array'
+        if isinstance(obj, str):
+            return 'text'
+        if isinstance(obj, int) and not isinstance(obj, bool):
+            return 'integer'
+        if isinstance(obj, float):
+            return 'real'
+        if obj == True:
+            return 'true'
+        if obj == False:
+            return 'false'
+        if obj is None:
+            return 'null'
+        raise ValueError
+
+    def json_valid(x):
+        """Return 1 if *x* is well-formed JSON or return 0 if *x*
+        is not well-formed.
+
+        For details, see:
+            https://www.sqlite.org/json1.html#jvalid
+        """
+        try:
+            _loads(x)
+        except (ValueError, TypeError):
+            return 0
+        except TypeError as err:
+            print(err)
+            raise
+        return 1
+
+    def json_object_is_flat(x):
+        """This function has no equivalent SQLite JSON function.
+        When SQLite includes JSON support, the built-in json_each()
+        function is used. But since json_each() is a table-valued
+        function, there is no built-in way to recreate it as an
+        application defined function.
+
+        For details, see:
+            https://www.sqlite.org/json1.html#jeach
+        """
+        try:
+            obj = _loads(x)
+        except (ValueError, TypeError):
+            return 0
+        for value in obj.values():
+            if isinstance(value, (dict, list)):
+                return 0
+        return 1
+
+    def _pre_execute_functions(con):
+        try:
+            con.create_function('json_type', 1, json_type, deterministic=True)
+            con.create_function('json_valid', 1, json_valid, deterministic=True)
+            con.create_function('json_object_is_flat', 1, json_object_is_flat, deterministic=True)
+        except TypeError:
+            # The `deterministic` param not supported until Python 3.8.
+            con.create_function('json_type', 1, json_type)
+            con.create_function('json_valid', 1, json_valid)
+            con.create_function('json_object_is_flat', 1, json_object_is_flat)
+else:
+    def _pre_execute_functions(con):
+        pass
+
+
 _schema_script = """
     PRAGMA foreign_keys = ON;
 
@@ -271,15 +357,22 @@ def _make_trigger_assert_flat_object(insert_or_update, table, column):
         msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
         raise ValueError(msg)
 
+    if SQLITE_JSON1_ENABLED:
+        is_flat_clause = f"""
+            (SELECT COUNT(*)
+             FROM json_each(NEW.{column})
+             WHERE json_each.type IN ('object', 'array')) != 0
+        """
+    else:
+        is_flat_clause = f'json_object_is_flat(NEW.{column}) = 0'
+
     return f'''
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_{table}_{column}_{insert_or_update.lower()}
         AFTER {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN
             NEW.{column} IS NOT NULL
             AND (json_type(NEW.{column}) != 'object'
-                 OR (SELECT COUNT(*)
-                     FROM json_each(NEW.{column})
-                     WHERE json_each.type IN ('object', 'array')) != 0)
+                 OR {is_flat_clause})
         BEGIN
             SELECT RAISE(
                 ABORT,
@@ -313,12 +406,14 @@ def connect(path):
     if os.path.exists(path):
         try:
             con = sqlite3.connect(path)
+            _pre_execute_functions(con)
         except sqlite3.OperationalError:
             # If *path* is a directory or non-file resource, then
             # calling `connect()` will raise an OperationalError.
             raise Exception(f'path {path!r} is not a Toron Node')
     else:
         con = sqlite3.connect(path)
+        _pre_execute_functions(con)
         con.executescript(_schema_script)
 
     cur = con.cursor()
