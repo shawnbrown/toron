@@ -9,6 +9,7 @@ from .common import TempDirTestCase
 from toron._node_schema import get_primitive_repr
 from toron._node_schema import dumps, loads
 from toron._node_schema import InvalidSerialization
+from toron._node_schema import SQLITE_JSON1_ENABLED
 from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_assert_flat_object
 from toron._node_schema import _execute_post_schema_triggers
@@ -173,15 +174,23 @@ class TestMakeTriggerAssertFlatObject(unittest.TestCase):
 
     def test_trigger_sql(self):
         actual = _make_trigger_assert_flat_object('INSERT', 'mytbl', 'mycol')
-        expected = '''
+
+        if SQLITE_JSON1_ENABLED:
+            is_flat_clause = (
+                "(SELECT COUNT(*)\n"
+                "                         FROM json_each(NEW.mycol)\n"
+                "                         WHERE json_each.type IN ('object', 'array')) != 0"
+            )
+        else:
+            is_flat_clause = 'json_object_is_flat(NEW.mycol) = 0'
+
+        expected = f'''
             CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
             AFTER INSERT ON main.mytbl FOR EACH ROW
             WHEN
                 NEW.mycol IS NOT NULL
                 AND (json_type(NEW.mycol) != 'object'
-                     OR (SELECT COUNT(*)
-                         FROM json_each(NEW.mycol)
-                         WHERE json_each.type IN ('object', 'array')) != 0)
+                     OR {is_flat_clause})
             BEGIN
                 SELECT RAISE(
                     ABORT,
