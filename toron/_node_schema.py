@@ -97,17 +97,6 @@ def _is_flat_json_object(x):
     return 1
 
 
-if not SQLITE_JSON1_ENABLED:
-    def _pre_execute_functions(con):
-        try:
-            con.create_function('is_flat_json_object', 1, _is_flat_json_object, deterministic=True)
-        except TypeError:
-            con.create_function('is_flat_json_object', 1, _is_flat_json_object)
-else:
-    def _pre_execute_functions(con):
-        pass
-
-
 _schema_script = """
     PRAGMA foreign_keys = ON;
 
@@ -229,12 +218,18 @@ def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
     '''
 
 
-def _execute_post_schema_triggers(cur):
+def _execute_post_schema_triggers(con):
     """Create triggers for columns of declared type 'TEXT_JSONFLATOBJ'.
 
     Note: This function must not be executed on an empty connection.
     The table schema must exist before triggers can be created.
     """
+    if not SQLITE_JSON1_ENABLED:
+        try:
+            con.create_function('is_flat_json_object', 1, _is_flat_json_object, deterministic=True)
+        except TypeError:
+            con.create_function('is_flat_json_object', 1, _is_flat_json_object)
+
     jsonflatobj_columns = [
         ('edge', 'type_info'),
         ('edge', 'optional_attributes'),
@@ -242,8 +237,8 @@ def _execute_post_schema_triggers(cur):
         ('weight_info', 'type_info'),
     ]
     for table, column in jsonflatobj_columns:
-        cur.execute(_make_trigger_for_jsonflatobj('INSERT', table, column))
-        cur.execute(_make_trigger_for_jsonflatobj('UPDATE', table, column))
+        con.execute(_make_trigger_for_jsonflatobj('INSERT', table, column))
+        con.execute(_make_trigger_for_jsonflatobj('UPDATE', table, column))
 
 
 def connect(path):
@@ -253,21 +248,14 @@ def connect(path):
     if os.path.exists(path):
         try:
             con = sqlite3.connect(path)
-            _pre_execute_functions(con)
         except sqlite3.OperationalError:
             # If *path* is a directory or non-file resource, then
             # calling `connect()` will raise an OperationalError.
             raise Exception(f'path {path!r} is not a Toron Node')
     else:
         con = sqlite3.connect(path)
-        _pre_execute_functions(con)
         con.executescript(_schema_script)
 
-    cur = con.cursor()
-    try:
-        _execute_post_schema_triggers(cur)
-    finally:
-        cur.close()
-
+    _execute_post_schema_triggers(con)
     return con
 
