@@ -304,8 +304,8 @@ _schema_script = """
         edge_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        type_info TEXT_JSONFLATOBJ CHECK (json_valid(type_info)) NOT NULL,
-        optional_attributes TEXT_JSONFLATOBJ CHECK (json_valid(optional_attributes)),
+        type_info TEXT_JSONFLATOBJ NOT NULL,
+        optional_attributes TEXT_JSONFLATOBJ,
         other_uuid TEXT CHECK (other_uuid LIKE '________-____-____-____-____________') NOT NULL,
         other_filename_hint TEXT NOT NULL,
         other_element_hash TEXT,
@@ -343,7 +343,7 @@ _schema_script = """
     CREATE TABLE quantity(
         quantity_id INTEGER PRIMARY KEY,
         location_id INTEGER,
-        attributes TEXT_JSONFLATOBJ CHECK (json_valid(attributes)) NOT NULL,
+        attributes TEXT_JSONFLATOBJ NOT NULL,
         value NUMERIC NOT NULL,
         FOREIGN KEY(location_id) REFERENCES location(location_id)
     );
@@ -352,7 +352,7 @@ _schema_script = """
         weight_info_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        type_info TEXT_JSONFLATOBJ CHECK (json_valid(type_info)) NOT NULL,
+        type_info TEXT_JSONFLATOBJ NOT NULL,
         is_complete INTEGER CHECK (is_complete IN (0, 1)),
         UNIQUE (name)
     );
@@ -368,7 +368,7 @@ _schema_script = """
 
     CREATE TABLE property(
         key TEXT PRIMARY KEY NOT NULL,
-        value TEXT_JSON CHECK (json_valid(value) OR value IS NULL)
+        value TEXT_JSON
     );
 """
 
@@ -396,10 +396,11 @@ def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
     if SQLITE_JSON1_ENABLED:
         when_clause = f"""
             NEW.{column} IS NOT NULL
-            AND (json_type(NEW.{column}) != 'object'
-                OR (SELECT COUNT(*)
-                    FROM json_each(NEW.{column})
-                    WHERE json_each.type IN ('object', 'array')) != 0)
+            AND (json_valid(NEW.{column}) = 0
+                 OR json_type(NEW.{column}) != 'object'
+                 OR (SELECT COUNT(*)
+                     FROM json_each(NEW.{column})
+                     WHERE json_each.type IN ('object', 'array')) != 0)
         """.rstrip()
     else:
         when_clause = f' is_flat_json_object(NEW.{column}) = 0'  # <- Keep leading space.
