@@ -213,84 +213,10 @@ def _is_flat_json_object(x):
 
 
 if not SQLITE_JSON1_ENABLED:
-    def json_type(x):
-        """Returns the JSON type of the outermost element of
-        *x*. The type returned is one of the following text
-        values: 'null', 'true', 'false', 'integer', 'real',
-        'text', 'array', or 'object'. Raises a ValueError if
-        *x* is not well-formed.
-
-        For details, see:
-            https://www.sqlite.org/json1.html#jtype
-        """
-        if x is None:
-            return None  # <- EXIT!
-
-        obj = _loads(x)
-        if isinstance(obj, dict):
-            return 'object'
-        if isinstance(obj, list):
-            return 'array'
-        if isinstance(obj, str):
-            return 'text'
-        if isinstance(obj, int) and not isinstance(obj, bool):
-            return 'integer'
-        if isinstance(obj, float):
-            return 'real'
-        if obj == True:
-            return 'true'
-        if obj == False:
-            return 'false'
-        if obj is None:
-            return 'null'
-        raise ValueError
-
-    def json_valid(x):
-        """Return 1 if *x* is well-formed JSON or return 0 if *x*
-        is not well-formed.
-
-        For details, see:
-            https://www.sqlite.org/json1.html#jvalid
-        """
-        try:
-            _loads(x)
-        except (ValueError, TypeError):
-            return 0
-        except TypeError as err:
-            print(err)
-            raise
-        return 1
-
-    def json_object_is_flat(x):
-        """This function has no equivalent SQLite JSON function.
-        When SQLite includes JSON support, the built-in json_each()
-        function is used. But since json_each() is a table-valued
-        function, there is no built-in way to recreate it as an
-        application defined function.
-
-        For details, see:
-            https://www.sqlite.org/json1.html#jeach
-        """
-        try:
-            obj = _loads(x)
-        except (ValueError, TypeError):
-            return 0
-        for value in obj.values():
-            if isinstance(value, (dict, list)):
-                return 0
-        return 1
-
     def _pre_execute_functions(con):
         try:
-            con.create_function('json_type', 1, json_type, deterministic=True)
-            con.create_function('json_valid', 1, json_valid, deterministic=True)
-            con.create_function('json_object_is_flat', 1, json_object_is_flat, deterministic=True)
             con.create_function('is_flat_json_object', 1, _is_flat_json_object, deterministic=True)
         except TypeError:
-            # The `deterministic` param not supported until Python 3.8.
-            con.create_function('json_type', 1, json_type)
-            con.create_function('json_valid', 1, json_valid)
-            con.create_function('json_object_is_flat', 1, json_object_is_flat)
             con.create_function('is_flat_json_object', 1, _is_flat_json_object)
 else:
     def _pre_execute_functions(con):
