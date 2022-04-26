@@ -373,10 +373,21 @@ _schema_script = """
 """
 
 
-def _make_trigger_assert_flat_object(insert_or_update, table, column):
-    """Return SQL statement to create a trigger for asserting that
-    TEXT_JSONFLATOBJ type columns contain JSON objects that are flat
-    (i.e., that they do not contain other nested containers).
+def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
+    """Return a SQL statement for creating a temporary trigger. The
+    trigger is used to validate the contents of TEXT_JSONFLATOBJ type
+    columns.
+
+    The trigger will pass without error if the JSON is a wellformed
+    "object" whose values are "text", "integer", "real", "true",
+    "false", or "null" types.
+
+    The trigger will raise an error if the value is:
+
+      * not wellformed JSON
+      * not an "object" type
+      * an "object" type that contains one or more "object" or "array"
+        types (i.e., a container of other nested containers)
     """
     if insert_or_update.upper() not in {'INSERT', 'UPDATE'}:
         msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
@@ -419,8 +430,8 @@ def _execute_post_schema_triggers(cur):
         ('weight_info', 'type_info'),
     ]
     for table, column in jsonflatobj_columns:
-        cur.execute(_make_trigger_assert_flat_object('INSERT', table, column))
-        cur.execute(_make_trigger_assert_flat_object('UPDATE', table, column))
+        cur.execute(_make_trigger_for_jsonflatobj('INSERT', table, column))
+        cur.execute(_make_trigger_for_jsonflatobj('UPDATE', table, column))
 
 
 def connect(path):

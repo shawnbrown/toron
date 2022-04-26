@@ -13,7 +13,7 @@ from toron._node_schema import SQLITE_JSON1_ENABLED
 from toron._node_schema import _is_flat_json_object
 from toron._node_schema import _pre_execute_functions
 from toron._node_schema import _schema_script
-from toron._node_schema import _make_trigger_assert_flat_object
+from toron._node_schema import _make_trigger_for_jsonflatobj
 from toron._node_schema import _execute_post_schema_triggers
 from toron._node_schema import connect
 
@@ -198,11 +198,11 @@ class TestIsFlatJsonObject(unittest.TestCase):
         self.assertFalse(_is_flat_json_object(None))
 
 
-class TestMakeTriggerAssertFlatObject(unittest.TestCase):
+class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
     maxDiff = None
 
     def test_trigger_sql(self):
-        actual = _make_trigger_assert_flat_object('INSERT', 'mytbl', 'mycol')
+        actual = _make_trigger_for_jsonflatobj('INSERT', 'mytbl', 'mycol')
 
         if SQLITE_JSON1_ENABLED:
             expected = """
@@ -237,7 +237,7 @@ class TestMakeTriggerAssertFlatObject(unittest.TestCase):
 
     def test_bad_action(self):
         with self.assertRaises(ValueError):
-            _make_trigger_assert_flat_object('DELETE', 'mytbl', 'mycol')
+            _make_trigger_for_jsonflatobj('DELETE', 'mytbl', 'mycol')
 
 
 class TestTriggerCoverage(unittest.TestCase):
