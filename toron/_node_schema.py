@@ -285,11 +285,13 @@ if not SQLITE_JSON1_ENABLED:
             con.create_function('json_type', 1, json_type, deterministic=True)
             con.create_function('json_valid', 1, json_valid, deterministic=True)
             con.create_function('json_object_is_flat', 1, json_object_is_flat, deterministic=True)
+            con.create_function('is_flat_json_object', 1, _is_flat_json_object, deterministic=True)
         except TypeError:
             # The `deterministic` param not supported until Python 3.8.
             con.create_function('json_type', 1, json_type)
             con.create_function('json_valid', 1, json_valid)
             con.create_function('json_object_is_flat', 1, json_object_is_flat)
+            con.create_function('is_flat_json_object', 1, _is_flat_json_object)
 else:
     def _pre_execute_functions(con):
         pass
@@ -381,21 +383,20 @@ def _make_trigger_assert_flat_object(insert_or_update, table, column):
         raise ValueError(msg)
 
     if SQLITE_JSON1_ENABLED:
-        is_flat_clause = f"""
-            (SELECT COUNT(*)
-             FROM json_each(NEW.{column})
-             WHERE json_each.type IN ('object', 'array')) != 0
-        """
+        when_clause = f"""
+            NEW.{column} IS NOT NULL
+            AND (json_type(NEW.{column}) != 'object'
+                OR (SELECT COUNT(*)
+                    FROM json_each(NEW.{column})
+                    WHERE json_each.type IN ('object', 'array')) != 0)
+        """.rstrip()
     else:
-        is_flat_clause = f'json_object_is_flat(NEW.{column}) = 0'
+        when_clause = f' is_flat_json_object(NEW.{column}) = 0'  # <- Keep leading space.
 
     return f'''
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_{table}_{column}_{insert_or_update.lower()}
         AFTER {insert_or_update.upper()} ON main.{table} FOR EACH ROW
-        WHEN
-            NEW.{column} IS NOT NULL
-            AND (json_type(NEW.{column}) != 'object'
-                 OR {is_flat_clause})
+        WHEN{when_clause}
         BEGIN
             SELECT RAISE(
                 ABORT,

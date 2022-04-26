@@ -205,30 +205,34 @@ class TestMakeTriggerAssertFlatObject(unittest.TestCase):
         actual = _make_trigger_assert_flat_object('INSERT', 'mytbl', 'mycol')
 
         if SQLITE_JSON1_ENABLED:
-            is_flat_clause = (
-                "\n"
-                "                (SELECT COUNT(*)\n"
-                "                 FROM json_each(NEW.mycol)\n"
-                "                 WHERE json_each.type IN ('object', 'array')) != 0\n"
-                "            "
-            )
+            expected = """
+                CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
+                AFTER INSERT ON main.mytbl FOR EACH ROW
+                WHEN
+                    NEW.mycol IS NOT NULL
+                    AND (json_type(NEW.mycol) != 'object'
+                        OR (SELECT COUNT(*)
+                            FROM json_each(NEW.mycol)
+                            WHERE json_each.type IN ('object', 'array')) != 0)
+                BEGIN
+                    SELECT RAISE(
+                        ABORT,
+                        'mycol must be JSON object containing strings, numbers, true, false, or null'
+                    );
+                END;
+            """
         else:
-            is_flat_clause = 'json_object_is_flat(NEW.mycol) = 0'
-
-        expected = f'''
-            CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
-            AFTER INSERT ON main.mytbl FOR EACH ROW
-            WHEN
-                NEW.mycol IS NOT NULL
-                AND (json_type(NEW.mycol) != 'object'
-                     OR {is_flat_clause})
-            BEGIN
-                SELECT RAISE(
-                    ABORT,
-                    'mycol must be JSON object containing strings, numbers, true, false, or null'
-                );
-            END;
-        '''
+            expected = """
+                CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
+                AFTER INSERT ON main.mytbl FOR EACH ROW
+                WHEN is_flat_json_object(NEW.mycol) = 0
+                BEGIN
+                    SELECT RAISE(
+                        ABORT,
+                        'mycol must be JSON object containing strings, numbers, true, false, or null'
+                    );
+                END;
+            """
         self.assertEqual(dedent(actual).strip(), dedent(expected).strip())
 
     def test_bad_action(self):
