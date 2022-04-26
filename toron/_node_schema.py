@@ -166,7 +166,7 @@ def loads(s, errors='strict'):
         raise ValueError(msg)
 
 
-def _is_sqlite_json_supported():
+def _is_sqlite_json1_supported():
     """Check if SQLite implementation includes JSON1 extension."""
     # The inclusion of JSON functions is optional when compiling SQLite.
     # In versions 3.38.0 and newer, JSON functions are included by
@@ -174,6 +174,10 @@ def _is_sqlite_json_supported():
     # of SQLite, JSON functions are available on an opt-in basis. It is
     # necessary to test for their presence rathern than referencing the
     # SQLite version number.
+    #
+    # For more information, see:
+    #     https://www.sqlite.org/json1.html#compiling_in_json_support
+
     con = sqlite3.connect(':memory:')
     try:
         con.execute("SELECT json_valid('123')")
@@ -184,7 +188,7 @@ def _is_sqlite_json_supported():
     return True
 
 
-SQLITE_JSON1_ENABLED = _is_sqlite_json_supported()
+SQLITE_JSON1_ENABLED = _is_sqlite_json1_supported()
 
 
 if not SQLITE_JSON1_ENABLED:
