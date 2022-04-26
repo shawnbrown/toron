@@ -10,6 +10,7 @@ from toron._node_schema import get_primitive_repr
 from toron._node_schema import dumps, loads
 from toron._node_schema import InvalidSerialization
 from toron._node_schema import SQLITE_JSON1_ENABLED
+from toron._node_schema import _is_flat_json_object
 from toron._node_schema import _pre_execute_functions
 from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_assert_flat_object
@@ -168,6 +169,33 @@ class TestLoadS(unittest.TestCase):
 
         returned_value = loads(bad_value, errors='ignore')
         self.assertIsNone(returned_value)
+
+
+class TestIsFlatJsonObject(unittest.TestCase):
+    def test_is_flat_object(self):
+        self.assertTrue(_is_flat_json_object('{"a": 1, "b": 2.2, "c": "three"}'))
+        self.assertTrue(_is_flat_json_object('{"a": true, "b": false, "c": null}'))
+
+    def test_not_flat(self):
+        self.assertFalse(_is_flat_json_object('{"a": 1, "b": {"c": 3}}'))
+        self.assertFalse(_is_flat_json_object('{"a": 1, "b": [2, [3, 4]]}'))
+
+    def test_not_an_object(self):
+        self.assertFalse(_is_flat_json_object('123'))
+        self.assertFalse(_is_flat_json_object('3.14'))
+        self.assertFalse(_is_flat_json_object('"abc"'))
+        self.assertFalse(_is_flat_json_object('[1, 2]'))
+        self.assertFalse(_is_flat_json_object('true'))
+
+    def test_malformed_json(self):
+        self.assertFalse(_is_flat_json_object('[1, 2'))  # No closing bracket.
+        self.assertFalse(_is_flat_json_object('{"a": 1'))  # No closing curly-brace.
+        self.assertFalse(_is_flat_json_object("{'a': 1}"))  # Requires double quotes.
+        self.assertFalse(_is_flat_json_object('abc'))  # Not quoted.
+        self.assertFalse(_is_flat_json_object(''))  # No contents.
+
+    def test_none(self):
+        self.assertFalse(_is_flat_json_object(None))
 
 
 class TestMakeTriggerAssertFlatObject(unittest.TestCase):

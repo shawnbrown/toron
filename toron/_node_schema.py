@@ -46,8 +46,8 @@ the application layer:
 """
 
 import os
-import json
 import sqlite3
+from json import loads as _loads
 from ast import literal_eval
 
 
@@ -191,9 +191,28 @@ def _is_sqlite_json1_supported():
 SQLITE_JSON1_ENABLED = _is_sqlite_json1_supported()
 
 
-if not SQLITE_JSON1_ENABLED:
-    _loads = json.loads
+def _is_flat_json_object(x):
+    """Returns 1 if *x* is a wellformed, flat, JSON object string,
+    else returns 0. This function should be registered with SQLite
+    (via the create_function() method) when the JSON1 extension is
+    not available.
+    """
+    try:
+        obj = _loads(x)
+    except (ValueError, TypeError):
+        return 0
 
+    if not isinstance(obj, dict):
+        return 0
+
+    for value in obj.values():
+        if isinstance(value, (dict, list)):
+            return 0
+
+    return 1
+
+
+if not SQLITE_JSON1_ENABLED:
     def json_type(x):
         """Returns the JSON type of the outermost element of
         *x*. The type returned is one of the following text
