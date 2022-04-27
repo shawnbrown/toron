@@ -203,13 +203,9 @@ class TestColumnTextJson(TempDirTestCase):
     def setUp(self):
         self.con = connect('mynode.node')
         self.cur = self.con.cursor()
-
-        def cleanup():
-            self.cur.close()
-            self.con.close()
-            self.cleanup_temp_files()
-
-        self.addCleanup(cleanup)
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
 
     def test_column_type(self):
         """Make sure that the `property.value` column is TEXT_JSON."""
@@ -256,13 +252,9 @@ class TestColumnTextJsonFlatObj(TempDirTestCase):
     def setUp(self):
         self.con = connect('mynode.node')
         self.cur = self.con.cursor()
-
-        def cleanup():
-            self.cur.close()
-            self.con.close()
-            self.cleanup_temp_files()
-
-        self.addCleanup(cleanup)
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
 
     def test_column_type(self):
         """Make sure that the `weight_info.type_info` column is
