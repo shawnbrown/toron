@@ -11,7 +11,7 @@ from toron._node_schema import SQLITE_JSON1_ENABLED
 from toron._node_schema import _is_flat_json_object
 from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_for_jsonflatobj
-from toron._node_schema import _execute_post_schema_triggers
+from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
 
 
@@ -148,12 +148,12 @@ class TestTriggerCoverage(unittest.TestCase):
 
         return expected_triggers
 
-    def test_execute_post_schema_triggers(self):
+    def test_add_functions_and_triggers(self):
         """Test that all TEXT_JSONFLATOBJ columns have proper INSERT and
         UPDATE triggers.
         """
-        self.cur.executescript(_schema_script)   # <- Create database tables.
-        _execute_post_schema_triggers(self.cur.connection)  # <- Create triggers.
+        self.cur.executescript(_schema_script)  # <- Create database tables.
+        _add_functions_and_triggers(self.cur.connection)  # <- Create triggers.
 
         actual_triggers = self.get_actual_trigger_names()
         expected_triggers = self.get_expected_trigger_names()

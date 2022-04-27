@@ -264,19 +264,21 @@ def _make_trigger_for_json(insert_or_update, table, column):
     '''
 
 
-def _execute_post_schema_triggers(con):
-    """Create triggers for columns of declared type 'TEXT_JSONFLATOBJ'.
+def _add_functions_and_triggers(connection):
+    """Create triggers and application-defined functions *connection*.
 
     Note: This function must not be executed on an empty connection.
     The table schema must exist before triggers can be created.
     """
     if not SQLITE_JSON1_ENABLED:
         try:
-            con.create_function('is_flat_json_object', 1, _is_flat_json_object, deterministic=True)
-            con.create_function('is_wellformed_json', 1, _is_wellformed_json, deterministic=True)
+            connection.create_function(
+                'is_flat_json_object', 1, _is_flat_json_object, deterministic=True)
+            connection.create_function(
+                'is_wellformed_json', 1, _is_wellformed_json, deterministic=True)
         except TypeError:
-            con.create_function('is_flat_json_object', 1, _is_flat_json_object)
-            con.create_function('is_wellformed_json', 1, _is_wellformed_json)
+            connection.create_function('is_flat_json_object', 1, _is_flat_json_object)
+            connection.create_function('is_wellformed_json', 1, _is_wellformed_json)
 
     jsonflatobj_columns = [
         ('edge', 'type_info'),
@@ -285,11 +287,11 @@ def _execute_post_schema_triggers(con):
         ('weight_info', 'type_info'),
     ]
     for table, column in jsonflatobj_columns:
-        con.execute(_make_trigger_for_jsonflatobj('INSERT', table, column))
-        con.execute(_make_trigger_for_jsonflatobj('UPDATE', table, column))
+        connection.execute(_make_trigger_for_jsonflatobj('INSERT', table, column))
+        connection.execute(_make_trigger_for_jsonflatobj('UPDATE', table, column))
 
-    con.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
-    con.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))
+    connection.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
+    connection.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))
 
 
 def connect(path):
@@ -307,6 +309,6 @@ def connect(path):
         con = sqlite3.connect(path)
         con.executescript(_schema_script)
 
-    _execute_post_schema_triggers(con)
+    _add_functions_and_triggers(con)
     return con
 
