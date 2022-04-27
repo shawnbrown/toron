@@ -51,6 +51,10 @@ from json import loads as _loads
 from ast import literal_eval
 
 
+sqlite3.register_converter('TEXT_JSON', _loads)
+sqlite3.register_converter('TEXT_JSONFLATOBJ', _loads)
+
+
 def _is_sqlite_json1_enabled():
     """Check if SQLite implementation includes JSON1 extension."""
     # The inclusion of JSON functions is optional when compiling SQLite.
@@ -300,13 +304,13 @@ def connect(path):
     """
     if os.path.exists(path):
         try:
-            con = sqlite3.connect(path)
+            con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
         except sqlite3.OperationalError:
             # If *path* is a directory or non-file resource, then
             # calling `connect()` will raise an OperationalError.
             raise Exception(f'path {path!r} is not a Toron Node')
     else:
-        con = sqlite3.connect(path)
+        con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
         con.executescript(_schema_script)
 
     _add_functions_and_triggers(con)

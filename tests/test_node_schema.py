@@ -321,3 +321,31 @@ class TestColumnTextJsonFlatObj(TempDirTestCase):
                 (None, 'name3', None, '{"a": "x", "b": ["y", "z"]}', 0),
             )
 
+
+class TestJsonConversion(TempDirTestCase):
+    """Registered converters should select JSON strings as objects."""
+    def setUp(self):
+        self.con = connect('mynode.node')
+        self.cur = self.con.cursor()
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def test_text_json(self):
+        """Selecting TEXT_JSON should convert strings into objects."""
+        self.cur.execute(
+            'INSERT INTO property VALUES (?, ?)',
+            ('key1', '[1, 2, 3]')
+        )
+        self.cur.execute("SELECT value FROM property WHERE key='key1'")
+        self.assertEqual(self.cur.fetchall(), [([1, 2, 3],)])
+
+    def test_text_jsonflatobj(self):
+        """Selecting TEXT_JSONFLATOBJ should convert strings into objects."""
+        self.cur.execute(
+            'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+            (None, 'foo', None, '{"bar": "baz"}', 0)
+        )
+        self.cur.execute("SELECT type_info FROM weight_info WHERE name='foo'")
+        self.assertEqual(self.cur.fetchall(), [({'bar': 'baz'},)])
+
