@@ -203,7 +203,10 @@ def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
                      WHERE json_each.type IN ('object', 'array')) != 0)
         """.rstrip()
     else:
-        when_clause = f' is_flat_json_object(NEW.{column}) = 0'  # <- Keep leading space.
+        when_clause = f"""
+            NEW.{column} IS NOT NULL
+            AND is_flat_json_object(NEW.{column}) = 0
+        """.rstrip()
 
     return f'''
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_{table}_{column}_{insert_or_update.lower()}

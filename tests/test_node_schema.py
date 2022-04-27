@@ -70,7 +70,9 @@ class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
             expected = """
                 CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
                 AFTER INSERT ON main.mytbl FOR EACH ROW
-                WHEN is_flat_json_object(NEW.mycol) = 0
+                WHEN
+                    NEW.mycol IS NOT NULL
+                    AND is_flat_json_object(NEW.mycol) = 0
                 BEGIN
                     SELECT RAISE(
                         ABORT,
