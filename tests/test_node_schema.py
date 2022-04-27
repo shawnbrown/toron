@@ -60,10 +60,7 @@ class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
                              FROM json_each(NEW.mycol)
                              WHERE json_each.type IN ('object', 'array')) != 0)
                 BEGIN
-                    SELECT RAISE(
-                        ABORT,
-                        'mycol must be JSON object containing strings, numbers, true, false, or null'
-                    );
+                    SELECT RAISE(ABORT, 'mytbl.mycol must be a flat JSON object');
                 END;
             """
         else:
@@ -74,10 +71,7 @@ class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
                     NEW.mycol IS NOT NULL
                     AND is_flat_json_object(NEW.mycol) = 0
                 BEGIN
-                    SELECT RAISE(
-                        ABORT,
-                        'mycol must be JSON object containing strings, numbers, true, false, or null'
-                    );
+                    SELECT RAISE(ABORT, 'mytbl.mycol must be a flat JSON object');
                 END;
             """
         self.assertEqual(dedent(actual).strip(), dedent(expected).strip())
@@ -281,10 +275,9 @@ class TestColumnTextJsonFlatObj(TempDirTestCase):
         ]
         self.cur.executemany("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
 
-    @unittest.expectedFailure
     def test_insert_malformed_json(self):
         """Invalid JSON strings should fail with CHECK constraint."""
-        regex = '^CHECK constraint failed'
+        regex = 'must be a flat JSON object'
 
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             self.cur.execute(

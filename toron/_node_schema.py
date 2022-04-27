@@ -213,10 +213,7 @@ def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
         AFTER {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN{when_clause}
         BEGIN
-            SELECT RAISE(
-                ABORT,
-                '{column} must be JSON object containing strings, numbers, true, false, or null'
-            );
+            SELECT RAISE(ABORT, '{table}.{column} must be a flat JSON object');
         END;
     '''
 
