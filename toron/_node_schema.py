@@ -97,6 +97,22 @@ def _is_flat_json_object(x):
     return 1
 
 
+def _is_wellformed_json(x):
+    """Return 1 if *x* is well-formed JSON or return 0 if *x* is not
+    well-formed. This function should be registered with SQLite (via
+    the create_function() method) when the JSON1 extension is not
+    available.
+
+    This function mimics the JSON1 json_valid() function, see:
+        https://www.sqlite.org/json1.html#jvalid
+    """
+    try:
+        _loads(x)
+    except (ValueError, TypeError):
+        return 0
+    return 1
+
+
 _schema_script = """
     PRAGMA foreign_keys = ON;
 
@@ -218,6 +234,36 @@ def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
     '''
 
 
+def _make_trigger_for_json(insert_or_update, table, column):
+    """Return a SQL statement for creating a temporary trigger. The
+    trigger is used to validate the contents of TEXT_JSON type columns.
+    The trigger will pass without error if the JSON is wellformed.
+    """
+    if insert_or_update.upper() not in {'INSERT', 'UPDATE'}:
+        msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
+        raise ValueError(msg)
+
+    if SQLITE_JSON1_ENABLED:
+        when_clause = f"""
+            NEW.{column} IS NOT NULL
+            AND json_valid(NEW.{column}) = 0
+        """.rstrip()
+    else:
+        when_clause = f"""
+            NEW.{column} IS NOT NULL
+            AND is_wellformed_json(NEW.{column}) = 0
+        """.rstrip()
+
+    return f'''
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_wellformed_{table}_{column}_{insert_or_update.lower()}
+        BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
+        WHEN{when_clause}
+        BEGIN
+            SELECT RAISE(ABORT, '{table}.{column} must be wellformed JSON');
+        END;
+    '''
+
+
 def _execute_post_schema_triggers(con):
     """Create triggers for columns of declared type 'TEXT_JSONFLATOBJ'.
 
@@ -227,8 +273,10 @@ def _execute_post_schema_triggers(con):
     if not SQLITE_JSON1_ENABLED:
         try:
             con.create_function('is_flat_json_object', 1, _is_flat_json_object, deterministic=True)
+            con.create_function('is_wellformed_json', 1, _is_wellformed_json, deterministic=True)
         except TypeError:
             con.create_function('is_flat_json_object', 1, _is_flat_json_object)
+            con.create_function('is_wellformed_json', 1, _is_wellformed_json)
 
     jsonflatobj_columns = [
         ('edge', 'type_info'),
@@ -239,6 +287,9 @@ def _execute_post_schema_triggers(con):
     for table, column in jsonflatobj_columns:
         con.execute(_make_trigger_for_jsonflatobj('INSERT', table, column))
         con.execute(_make_trigger_for_jsonflatobj('UPDATE', table, column))
+
+    con.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
+    con.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))
 
 
 def connect(path):

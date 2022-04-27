@@ -143,6 +143,9 @@ class TestTriggerCoverage(unittest.TestCase):
                 expected_triggers.append(self.make_trigger_name('insert', table, column))
                 expected_triggers.append(self.make_trigger_name('update', table, column))
 
+        expected_triggers.append('trg_assert_wellformed_property_value_update')
+        expected_triggers.append('trg_assert_wellformed_property_value_insert')
+
         return expected_triggers
 
     def test_execute_post_schema_triggers(self):
@@ -229,10 +232,9 @@ class TestColumnTextJson(TempDirTestCase):
         ]
         self.cur.executemany("INSERT INTO property VALUES (?, ?)", parameters)
 
-    @unittest.expectedFailure
     def test_insert_malformed_json(self):
-        """Invalid JSON strings should fail with CHECK constraint."""
-        regex = '^CHECK constraint failed'
+        """Invalid JSON strings should fail with an IntegrityError."""
+        regex = 'must be wellformed JSON'
 
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key1', 'abc'))
