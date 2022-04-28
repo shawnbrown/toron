@@ -164,7 +164,7 @@ class TestConnect(TempDirTestCase):
     def test_new_file(self):
         """If a node file doesn't exist it should be created."""
         path = 'mynode.node'
-        node = connect(path)  # Creates node file if none exists.
+        connect(path).close()  # Creates Toron database at given path.
 
         con = sqlite3.connect(path)
         cur = con.cursor()
@@ -192,7 +192,31 @@ class TestConnect(TempDirTestCase):
 
         msg = 'should fail if path is a directory instead of a file'
         with self.assertRaisesRegex(Exception, 'not a Toron Node', msg=msg):
-            node = connect(path)
+            con = connect(path)
+
+    def test_nondatabase_file(self):
+        """Non-database files should fail."""
+        # Build a non-database file.
+        path = 'not_a_database.txt'
+        with open(path, 'w') as f:
+            f.write('Hello World\n')
+
+        with self.assertRaises(sqlite3.DatabaseError):
+            con = connect(path)
+
+    def test_unknown_schema(self):
+        """Database files with unknown schemas should fail."""
+        # Build a non-Toron SQLite database file.
+        path = 'mydata.db'
+        con = sqlite3.connect(path)
+        con.executescript('''
+            CREATE TABLE mytable(col1, col2);
+            INSERT INTO mytable VALUES ('a', 1), ('b', 2), ('c', 3);
+        ''')
+        con.close()
+
+        with self.assertRaises(sqlite3.OperationalError):
+            con = connect(path)
 
 
 class TestColumnTextJson(TempDirTestCase):
