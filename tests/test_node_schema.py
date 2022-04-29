@@ -51,7 +51,7 @@ class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
         if SQLITE_JSON1_ENABLED:
             expected = """
                 CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
-                AFTER INSERT ON main.mytbl FOR EACH ROW
+                BEFORE INSERT ON main.mytbl FOR EACH ROW
                 WHEN
                     NEW.mycol IS NOT NULL
                     AND (json_valid(NEW.mycol) = 0
@@ -66,7 +66,7 @@ class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
         else:
             expected = """
                 CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
-                AFTER INSERT ON main.mytbl FOR EACH ROW
+                BEFORE INSERT ON main.mytbl FOR EACH ROW
                 WHEN
                     NEW.mycol IS NOT NULL
                     AND is_flat_json_object(NEW.mycol) = 0

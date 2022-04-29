@@ -230,7 +230,7 @@ def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
 
     return f'''
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_{table}_{column}_{insert_or_update.lower()}
-        AFTER {insert_or_update.upper()} ON main.{table} FOR EACH ROW
+        BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN{when_clause}
         BEGIN
             SELECT RAISE(ABORT, '{table}.{column} must be a flat JSON object');
