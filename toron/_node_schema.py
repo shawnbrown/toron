@@ -52,7 +52,7 @@ from ast import literal_eval
 
 
 sqlite3.register_converter('TEXT_JSON', _loads)
-sqlite3.register_converter('TEXT_JSONFLATOBJ', _loads)
+sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
 
 
 def _is_sqlite_json1_enabled():
@@ -80,11 +80,12 @@ def _is_sqlite_json1_enabled():
 SQLITE_JSON1_ENABLED = _is_sqlite_json1_enabled()
 
 
-def _is_flat_json_object(x):
-    """Returns 1 if *x* is a wellformed, flat, JSON object string,
-    else returns 0. This function should be registered with SQLite
-    (via the create_function() method) when the JSON1 extension is
-    not available.
+def _is_wellformed_attributes(x):
+    """Returns 1 if *x* is a wellformed TEXT_ATTRIBUTES column
+    value else returns 0. TEXT_ATTRIBUTES should be flat, JSON
+    object strings. This function should be registered with SQLite
+    (via the create_function() method) when the JSON1 extension
+    is not available.
     """
     try:
         obj = _loads(x)
@@ -124,8 +125,8 @@ _schema_script = """
         edge_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        type_info TEXT_JSONFLATOBJ NOT NULL,
-        optional_attributes TEXT_JSONFLATOBJ,
+        type_info TEXT_ATTRIBUTES NOT NULL,
+        optional_attributes TEXT_ATTRIBUTES,
         other_uuid TEXT CHECK (other_uuid LIKE '________-____-____-____-____________') NOT NULL,
         other_filename_hint TEXT NOT NULL,
         other_element_hash TEXT,
@@ -163,7 +164,7 @@ _schema_script = """
     CREATE TABLE quantity(
         quantity_id INTEGER PRIMARY KEY,
         location_id INTEGER,
-        attributes TEXT_JSONFLATOBJ NOT NULL,
+        attributes TEXT_ATTRIBUTES NOT NULL,
         value NUMERIC NOT NULL,
         FOREIGN KEY(location_id) REFERENCES location(location_id)
     );
@@ -172,7 +173,7 @@ _schema_script = """
         weight_info_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        type_info TEXT_JSONFLATOBJ NOT NULL,
+        type_info TEXT_ATTRIBUTES NOT NULL,
         is_complete INTEGER CHECK (is_complete IN (0, 1)),
         UNIQUE (name)
     );
@@ -193,10 +194,10 @@ _schema_script = """
 """
 
 
-def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
+def _make_trigger_for_attributes(insert_or_update, table, column):
     """Return a SQL statement for creating a temporary trigger. The
-    trigger is used to validate the contents of TEXT_JSONFLATOBJ type
-    columns.
+    trigger is used to validate the contents of TEXT_ATTRIBUTES
+    type columns.
 
     The trigger will pass without error if the JSON is a wellformed
     "object" whose values are "text", "integer", "real", "true",
@@ -225,11 +226,11 @@ def _make_trigger_for_jsonflatobj(insert_or_update, table, column):
     else:
         when_clause = f"""
             NEW.{column} IS NOT NULL
-            AND is_flat_json_object(NEW.{column}) = 0
+            AND is_valid_text_attributes(NEW.{column}) = 0
         """.rstrip()
 
     return f'''
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_{table}_{column}_{insert_or_update.lower()}
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_attributes_{table}_{column}_{insert_or_update.lower()}
         BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN{when_clause}
         BEGIN
@@ -277,11 +278,11 @@ def _add_functions_and_triggers(connection):
     if not SQLITE_JSON1_ENABLED:
         try:
             connection.create_function(
-                'is_flat_json_object', 1, _is_flat_json_object, deterministic=True)
+                'is_wellformed_attributes', 1, _is_wellformed_attributes, deterministic=True)
             connection.create_function(
                 'is_wellformed_json', 1, _is_wellformed_json, deterministic=True)
         except TypeError:
-            connection.create_function('is_flat_json_object', 1, _is_flat_json_object)
+            connection.create_function('is_wellformed_attributes', 1, _is_wellformed_attributes)
             connection.create_function('is_wellformed_json', 1, _is_wellformed_json)
 
     jsonflatobj_columns = [
@@ -291,8 +292,8 @@ def _add_functions_and_triggers(connection):
         ('weight_info', 'type_info'),
     ]
     for table, column in jsonflatobj_columns:
-        connection.execute(_make_trigger_for_jsonflatobj('INSERT', table, column))
-        connection.execute(_make_trigger_for_jsonflatobj('UPDATE', table, column))
+        connection.execute(_make_trigger_for_attributes('INSERT', table, column))
+        connection.execute(_make_trigger_for_attributes('UPDATE', table, column))
 
     connection.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
     connection.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))

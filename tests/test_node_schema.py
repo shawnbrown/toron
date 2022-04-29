@@ -8,49 +8,49 @@ from textwrap import dedent
 from .common import TempDirTestCase
 
 from toron._node_schema import SQLITE_JSON1_ENABLED
-from toron._node_schema import _is_flat_json_object
+from toron._node_schema import _is_wellformed_attributes
 from toron._node_schema import _schema_script
-from toron._node_schema import _make_trigger_for_jsonflatobj
+from toron._node_schema import _make_trigger_for_attributes
 from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
 
 
-class TestIsFlatJsonObject(unittest.TestCase):
+class TestIsWellformedAttributes(unittest.TestCase):
     def test_is_flat_object(self):
-        self.assertTrue(_is_flat_json_object('{"a": 1, "b": 2.2, "c": "three"}'))
-        self.assertTrue(_is_flat_json_object('{"a": true, "b": false, "c": null}'))
+        self.assertTrue(_is_wellformed_attributes('{"a": 1, "b": 2.2, "c": "three"}'))
+        self.assertTrue(_is_wellformed_attributes('{"a": true, "b": false, "c": null}'))
 
     def test_not_flat(self):
-        self.assertFalse(_is_flat_json_object('{"a": 1, "b": {"c": 3}}'))
-        self.assertFalse(_is_flat_json_object('{"a": 1, "b": [2, [3, 4]]}'))
+        self.assertFalse(_is_wellformed_attributes('{"a": 1, "b": {"c": 3}}'))
+        self.assertFalse(_is_wellformed_attributes('{"a": 1, "b": [2, [3, 4]]}'))
 
     def test_not_an_object(self):
-        self.assertFalse(_is_flat_json_object('123'))
-        self.assertFalse(_is_flat_json_object('3.14'))
-        self.assertFalse(_is_flat_json_object('"abc"'))
-        self.assertFalse(_is_flat_json_object('[1, 2]'))
-        self.assertFalse(_is_flat_json_object('true'))
+        self.assertFalse(_is_wellformed_attributes('123'))
+        self.assertFalse(_is_wellformed_attributes('3.14'))
+        self.assertFalse(_is_wellformed_attributes('"abc"'))
+        self.assertFalse(_is_wellformed_attributes('[1, 2]'))
+        self.assertFalse(_is_wellformed_attributes('true'))
 
     def test_malformed_json(self):
-        self.assertFalse(_is_flat_json_object('[1, 2'))  # No closing bracket.
-        self.assertFalse(_is_flat_json_object('{"a": 1'))  # No closing curly-brace.
-        self.assertFalse(_is_flat_json_object("{'a': 1}"))  # Requires double quotes.
-        self.assertFalse(_is_flat_json_object('abc'))  # Not quoted.
-        self.assertFalse(_is_flat_json_object(''))  # No contents.
+        self.assertFalse(_is_wellformed_attributes('[1, 2'))  # No closing bracket.
+        self.assertFalse(_is_wellformed_attributes('{"a": 1'))  # No closing curly-brace.
+        self.assertFalse(_is_wellformed_attributes("{'a': 1}"))  # Requires double quotes.
+        self.assertFalse(_is_wellformed_attributes('abc'))  # Not quoted.
+        self.assertFalse(_is_wellformed_attributes(''))  # No contents.
 
     def test_none(self):
-        self.assertFalse(_is_flat_json_object(None))
+        self.assertFalse(_is_wellformed_attributes(None))
 
 
-class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
+class TestMakeTriggerForTextAttributes(unittest.TestCase):
     maxDiff = None
 
     def test_trigger_sql(self):
-        actual = _make_trigger_for_jsonflatobj('INSERT', 'mytbl', 'mycol')
+        actual = _make_trigger_for_attributes('INSERT', 'mytbl', 'mycol')
 
         if SQLITE_JSON1_ENABLED:
             expected = """
-                CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
+                CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_attributes_mytbl_mycol_insert
                 BEFORE INSERT ON main.mytbl FOR EACH ROW
                 WHEN
                     NEW.mycol IS NOT NULL
@@ -65,11 +65,11 @@ class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
             """
         else:
             expected = """
-                CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_flat_mytbl_mycol_insert
+                CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_attributes_mytbl_mycol_insert
                 BEFORE INSERT ON main.mytbl FOR EACH ROW
                 WHEN
                     NEW.mycol IS NOT NULL
-                    AND is_flat_json_object(NEW.mycol) = 0
+                    AND is_valid_text_attributes(NEW.mycol) = 0
                 BEGIN
                     SELECT RAISE(ABORT, 'mytbl.mycol must be a flat JSON object');
                 END;
@@ -78,15 +78,15 @@ class TestMakeTriggerForJsonFlatObj(unittest.TestCase):
 
     def test_bad_action(self):
         with self.assertRaises(ValueError):
-            _make_trigger_for_jsonflatobj('DELETE', 'mytbl', 'mycol')
+            _make_trigger_for_attributes('DELETE', 'mytbl', 'mycol')
 
 
 class TestTriggerCoverage(unittest.TestCase):
-    """Check that TEXT_JSONFLATOBJ columns have needed triggers."""
+    """Check that TEXT_ATTRIBUTES columns have needed triggers."""
 
     # NOTE: I think it is important to address a bit of design
     # philosophy that this test case touches on. This test dynamically
-    # builds a list of 'TEXT_JSONFLATOBJ' type columns and checks that
+    # builds a list of 'TEXT_ATTRIBUTES' type columns and checks that
     # the needed triggers exist for each column.
     #
     # One might ask, "Why not generate this list dynamically in the
@@ -115,13 +115,13 @@ class TestTriggerCoverage(unittest.TestCase):
         self.cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
         return [row[0] for row in self.cur]
 
-    def get_text_jsonflatobj_columns(self, table):
-        """Helper function to return list of TEXT_JSONFLATOBJ columns."""
+    def get_text_attributes_columns(self, table):
+        """Helper function to return list of TEXT_ATTRIBUTES columns."""
         orig_factory = self.cur.row_factory
         try:
             self.cur.row_factory = sqlite3.Row
             self.cur.execute(f"PRAGMA main.table_info('{table}')")
-            filtered_rows = [row for row in self.cur if row['type'] == 'TEXT_JSONFLATOBJ']
+            filtered_rows = [row for row in self.cur if row['type'] == 'TEXT_ATTRIBUTES']
             column_names = [row['name'] for row in filtered_rows]
         finally:
             self.cur.row_factory = orig_factory
@@ -130,7 +130,7 @@ class TestTriggerCoverage(unittest.TestCase):
     @staticmethod
     def make_trigger_name(insert_or_update, table, column):
         """Helper function to build expected trigger name."""
-        return f'trg_assert_flat_{table}_{column}_{insert_or_update}'
+        return f'trg_assert_attributes_{table}_{column}_{insert_or_update}'
 
     def get_expected_trigger_names(self):
         """Helper function to return list of expected trigger names."""
@@ -138,7 +138,7 @@ class TestTriggerCoverage(unittest.TestCase):
 
         expected_triggers = []
         for table in table_names:
-            column_names = self.get_text_jsonflatobj_columns(table)
+            column_names = self.get_text_attributes_columns(table)
             for column in column_names:
                 expected_triggers.append(self.make_trigger_name('insert', table, column))
                 expected_triggers.append(self.make_trigger_name('update', table, column))
@@ -149,7 +149,7 @@ class TestTriggerCoverage(unittest.TestCase):
         return expected_triggers
 
     def test_add_functions_and_triggers(self):
-        """Test that all TEXT_JSONFLATOBJ columns have proper INSERT and
+        """Test that all TEXT_ATTRIBUTES columns have proper INSERT and
         UPDATE triggers.
         """
         self.cur.executescript(_schema_script)  # <- Create database tables.
@@ -267,8 +267,8 @@ class TestColumnTextJson(TempDirTestCase):
             self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key2', '[1,2,3'))
 
 
-class TestColumnTextJsonFlatObj(TempDirTestCase):
-    """Test the behavior of columns using the TEXT_JSONFLATOBJ type."""
+class TestColumnTextAttributes(TempDirTestCase):
+    """Test the behavior of columns using the TEXT_ATTRIBUTES type."""
     def setUp(self):
         self.con = connect('mynode.node')
         self.cur = self.con.cursor()
@@ -278,7 +278,7 @@ class TestColumnTextJsonFlatObj(TempDirTestCase):
 
     def test_column_type(self):
         """Make sure that the `weight_info.type_info` column is
-        TEXT_JSONFLATOBJ.
+        TEXT_ATTRIBUTES.
         """
         orig_factory = self.cur.row_factory
         try:
@@ -289,7 +289,7 @@ class TestColumnTextJsonFlatObj(TempDirTestCase):
         finally:
             self.cur.row_factory = orig_factory
 
-        self.assertEqual(declared_type, 'TEXT_JSONFLATOBJ')
+        self.assertEqual(declared_type, 'TEXT_ATTRIBUTES')
 
     def test_insert_wellformed_flat_obj(self):
         """Flat JSON objects should be inserted without errors."""
@@ -364,8 +364,8 @@ class TestJsonConversion(TempDirTestCase):
         self.cur.execute("SELECT value FROM property WHERE key='key1'")
         self.assertEqual(self.cur.fetchall(), [([1, 2, 3],)])
 
-    def test_text_jsonflatobj(self):
-        """Selecting TEXT_JSONFLATOBJ should convert strings into objects."""
+    def test_text_attributes(self):
+        """Selecting TEXT_ATTRIBUTES should convert strings into objects."""
         self.cur.execute(
             'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
             (None, 'foo', None, '{"bar": "baz"}', 0)
