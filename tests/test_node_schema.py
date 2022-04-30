@@ -61,6 +61,57 @@ class TestIsWellformedUserProperties(unittest.TestCase, CheckUserPropertiesMixin
         self.assertFalse(_is_wellformed_user_properties(None))
 
 
+class TestUserPropertiesTrigger(TempDirTestCase, CheckUserPropertiesMixin):
+    """Check TRIGGER behavior for edge.user_properties column."""
+
+    def setUp(self):
+        self.con = connect('mynode.toron')
+        self.cur = self.con.cursor()
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    @staticmethod
+    def make_parameters(index, value):
+        """Helper function to return formatted SQL query parameters."""
+        return (
+            None,                      # edge_id (INTEGER PRIMARY KEY)
+            f'name{index}',            # name
+            None,                      # description
+            '{"category": "census"}',  # type_info
+            value,                     # user_properties
+            '00000000-0000-0000-0000-000000000000',  # other_uuid
+            f'other{index}.toron',     # other_filename_hint
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',  # other_element_hash
+            0,                         # is_complete
+        )
+
+    def test_valid_values(self):
+        for index, value in enumerate(self.valid_values):
+            parameters = self.make_parameters(index, value)
+            with self.subTest(value=value):
+                self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
+
+    def test_invalid_values(self):
+        """Check all `not_an_object` and `malformed_json` values."""
+        invalid_values = self.not_an_object + self.malformed_json  # Make a single list.
+
+        regex = 'must be wellformed JSON object'
+
+        for index, value in enumerate(invalid_values):
+            parameters = self.make_parameters(index, value)
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+                    self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
+
+    def test_none(self):
+        """Currently, edge.user_properties allows NULL values (refer to
+        the associated CREATE TABLE statement).
+        """
+        parameters = self.make_parameters('x', None)
+        self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
+
+
 class TestIsWellformedAttributes(unittest.TestCase):
     """To be valid, must be JSON objects containing only text values."""
     def test_valid_text_attributes(self):
@@ -184,6 +235,9 @@ class TestTriggerCoverage(unittest.TestCase):
             for column in column_names:
                 expected_triggers.append(self.make_trigger_name('insert', table, column))
                 expected_triggers.append(self.make_trigger_name('update', table, column))
+
+        expected_triggers.append('trg_assert_user_properties_edge_user_properties_insert')
+        expected_triggers.append('trg_assert_user_properties_edge_user_properties_update')
 
         expected_triggers.append('trg_assert_wellformed_property_value_update')
         expected_triggers.append('trg_assert_wellformed_property_value_insert')
