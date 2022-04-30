@@ -16,34 +16,32 @@ from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
 
 
-class TextUserPropertiesBase(unittest.TestCase):
+class CheckUserPropertiesMixin(object):
     """To be valid, TEXT_USERPROPERTIES values must be JSON objects."""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.valid_values = [
-            '{"a": "one", "b": "two"}',          # <- object of text
-            '{"a": 1, "b": 2.0}',                # <- object of integer and real
-            '{"a": [1, 2], "b": {"three": 3}}',  # <- object of array and object
-        ]
-        cls.not_an_object = [
-            '["one", "two"]',  # <- array
-            '"one"',           # <- text
-            '123',             # <- integer
-            '3.14',            # <- real
-            'true',            # <- boolean
-        ]
-        cls.malformed_json = [
-            '{"a": "one", "b": "two"',   # <- No closing curly-brace.
-            '{"a": "one", "b": "two}',   # <- No closing quote.
-            '[1, 2',                     # <- No closing bracket.
-            "{'a': 'one', 'b': 'two'}",  # <- Requires double quotes.
-            'abc',                       # <- Not quoted.
-            '',                          # <- No contents.
-        ]
+    valid_values = [
+        '{"a": "one", "b": "two"}',          # <- object of text
+        '{"a": 1, "b": 2.0}',                # <- object of integer and real
+        '{"a": [1, 2], "b": {"three": 3}}',  # <- object of array and object
+    ]
+    not_an_object = [
+        '["one", "two"]',  # <- array
+        '"one"',           # <- text
+        '123',             # <- integer
+        '3.14',            # <- real
+        'true',            # <- boolean
+    ]
+    malformed_json = [
+        '{"a": "one", "b": "two"',   # <- No closing curly-brace.
+        '{"a": "one", "b": "two}',   # <- No closing quote.
+        '[1, 2',                     # <- No closing bracket.
+        "{'a': 'one', 'b': 'two'}",  # <- Requires double quotes.
+        'abc',                       # <- Not quoted.
+        '',                          # <- No contents.
+    ]
 
 
-class TestIsWellformedUserProperties(TextUserPropertiesBase):
+class TestIsWellformedUserProperties(unittest.TestCase, CheckUserPropertiesMixin):
     def test_valid_values(self):
         for value in self.valid_values:
             with self.subTest(value=value):
