@@ -16,7 +16,7 @@ the application layer:
   | name                |  ••••••| other_element_id |<•••••
   | description         |  •  •••| element_id       |<-+     +-------------+
   | type_info           |  •  •  | proportion       |  |     | quantity    |
-  | optional_attributes |  •  •  | mapping_level    |  |     +-------------+
+  | user_properties     |  •  •  | mapping_level    |  |     +-------------+
   | other_uuid          |  •  •  +------------------+  |     | quantity_id |
   | other_filename_hint |  •  •                        |  +->| location_id |
   | other_element_hash  |<••  •                        |  |  | attributes  |
@@ -126,7 +126,7 @@ _schema_script = """
         name TEXT NOT NULL,
         description TEXT,
         type_info TEXT_ATTRIBUTES NOT NULL,
-        optional_attributes TEXT_ATTRIBUTES,
+        user_properties TEXT_ATTRIBUTES,
         other_uuid TEXT CHECK (other_uuid LIKE '________-____-____-____-____________') NOT NULL,
         other_filename_hint TEXT NOT NULL,
         other_element_hash TEXT,
@@ -287,7 +287,7 @@ def _add_functions_and_triggers(connection):
 
     jsonflatobj_columns = [
         ('edge', 'type_info'),
-        ('edge', 'optional_attributes'),
+        ('edge', 'user_properties'),
         ('quantity', 'attributes'),
         ('weight_info', 'type_info'),
     ]
