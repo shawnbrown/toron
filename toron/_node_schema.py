@@ -194,6 +194,26 @@ _schema_script = """
 """
 
 
+def _is_wellformed_user_properties(x):
+    """Check if *x* is a wellformed TEXT_USERPROPERTIES value.
+    A wellformed TEXT_USERPROPERTIES value is a string containing
+    a JSON formatted object. Returns 1 if *x* is valid or 0 if
+    it's not.
+
+    This function should be registered as an application-defined
+    SQL function and used in queries when SQLite's JSON1 extension
+    is not enabled.
+    """
+    try:
+        obj = _loads(x)
+    except (ValueError, TypeError):
+        return 0
+
+    if isinstance(obj, dict):
+        return 1
+    return 0
+
+
 def _make_trigger_for_attributes(insert_or_update, table, column):
     """Return a SQL statement for creating a temporary trigger. The
     trigger is used to validate the contents of TEXT_ATTRIBUTES

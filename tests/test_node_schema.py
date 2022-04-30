@@ -8,11 +8,59 @@ from textwrap import dedent
 from .common import TempDirTestCase
 
 from toron._node_schema import SQLITE_JSON1_ENABLED
+from toron._node_schema import _is_wellformed_user_properties
 from toron._node_schema import _is_wellformed_attributes
 from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_for_attributes
 from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
+
+
+class TextUserPropertiesBase(unittest.TestCase):
+    """To be valid, TEXT_USERPROPERTIES values must be JSON objects."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.valid_values = [
+            '{"a": "one", "b": "two"}',          # <- object of text
+            '{"a": 1, "b": 2.0}',                # <- object of integer and real
+            '{"a": [1, 2], "b": {"three": 3}}',  # <- object of array and object
+        ]
+        cls.not_an_object = [
+            '["one", "two"]',  # <- array
+            '"one"',           # <- text
+            '123',             # <- integer
+            '3.14',            # <- real
+            'true',            # <- boolean
+        ]
+        cls.malformed_json = [
+            '{"a": "one", "b": "two"',   # <- No closing curly-brace.
+            '{"a": "one", "b": "two}',   # <- No closing quote.
+            '[1, 2',                     # <- No closing bracket.
+            "{'a': 'one', 'b': 'two'}",  # <- Requires double quotes.
+            'abc',                       # <- Not quoted.
+            '',                          # <- No contents.
+        ]
+
+
+class TestIsWellformedUserProperties(TextUserPropertiesBase):
+    def test_valid_values(self):
+        for value in self.valid_values:
+            with self.subTest(value=value):
+                self.assertTrue(_is_wellformed_user_properties(value))
+
+    def test_not_an_object(self):
+        for value in self.not_an_object:
+            with self.subTest(value=value):
+                self.assertFalse(_is_wellformed_user_properties(value))
+
+    def test_malformed_json(self):
+        for value in self.malformed_json:
+            with self.subTest(value=value):
+                self.assertFalse(_is_wellformed_user_properties(value))
+
+    def test_none(self):
+        self.assertFalse(_is_wellformed_user_properties(None))
 
 
 class TestIsWellformedAttributes(unittest.TestCase):
