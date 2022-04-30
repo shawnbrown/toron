@@ -16,25 +16,25 @@ from toron._node_schema import connect
 
 
 class TestIsWellformedAttributes(unittest.TestCase):
-    def test_is_flat_object(self):
-        self.assertTrue(_is_wellformed_attributes('{"a": 1, "b": 2.2, "c": "three"}'))
-        self.assertTrue(_is_wellformed_attributes('{"a": true, "b": false, "c": null}'))
+    """To be valid, must be JSON objects containing only text values."""
+    def test_valid_text_attributes(self):
+        self.assertTrue(_is_wellformed_attributes('{"a": "one", "b": "two"}'))
 
-    def test_not_flat(self):
-        self.assertFalse(_is_wellformed_attributes('{"a": 1, "b": {"c": 3}}'))
-        self.assertFalse(_is_wellformed_attributes('{"a": 1, "b": [2, [3, 4]]}'))
+    def test_non_string_value(self):
+        self.assertFalse(_is_wellformed_attributes('{"a": "one", "b": 2}'))
 
     def test_not_an_object(self):
+        self.assertFalse(_is_wellformed_attributes('["one", "two"]'))
+        self.assertFalse(_is_wellformed_attributes('"one"'))
         self.assertFalse(_is_wellformed_attributes('123'))
         self.assertFalse(_is_wellformed_attributes('3.14'))
-        self.assertFalse(_is_wellformed_attributes('"abc"'))
-        self.assertFalse(_is_wellformed_attributes('[1, 2]'))
         self.assertFalse(_is_wellformed_attributes('true'))
 
     def test_malformed_json(self):
+        self.assertFalse(_is_wellformed_attributes('{"a": "one", "b": "two"'))  # No closing curly-brace.
+        self.assertFalse(_is_wellformed_attributes('{"a": "one", "b": "two}'))  # No closing quote.
         self.assertFalse(_is_wellformed_attributes('[1, 2'))  # No closing bracket.
-        self.assertFalse(_is_wellformed_attributes('{"a": 1'))  # No closing curly-brace.
-        self.assertFalse(_is_wellformed_attributes("{'a': 1}"))  # Requires double quotes.
+        self.assertFalse(_is_wellformed_attributes("{'a': 'one', 'b': 'two'}"))  # Requires double quotes.
         self.assertFalse(_is_wellformed_attributes('abc'))  # Not quoted.
         self.assertFalse(_is_wellformed_attributes(''))  # No contents.
 
@@ -49,31 +49,27 @@ class TestMakeTriggerForTextAttributes(unittest.TestCase):
         actual = _make_trigger_for_attributes('INSERT', 'mytbl', 'mycol')
 
         if SQLITE_JSON1_ENABLED:
-            expected = """
-                CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_attributes_mytbl_mycol_insert
-                BEFORE INSERT ON main.mytbl FOR EACH ROW
-                WHEN
-                    NEW.mycol IS NOT NULL
-                    AND (json_valid(NEW.mycol) = 0
-                         OR json_type(NEW.mycol) != 'object'
-                         OR (SELECT COUNT(*)
-                             FROM json_each(NEW.mycol)
-                             WHERE json_each.type IN ('object', 'array')) != 0)
-                BEGIN
-                    SELECT RAISE(ABORT, 'mytbl.mycol must be a flat JSON object');
-                END;
-            """
+            text_attributes_check = """
+                    (json_valid(NEW.mycol) = 0
+                     OR json_type(NEW.mycol) != 'object'
+                     OR (SELECT COUNT(*)
+                         FROM json_each(NEW.mycol)
+                         WHERE json_each.type != 'text') != 0)
+            """.strip()
         else:
-            expected = """
-                CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_attributes_mytbl_mycol_insert
-                BEFORE INSERT ON main.mytbl FOR EACH ROW
-                WHEN
-                    NEW.mycol IS NOT NULL
-                    AND is_valid_text_attributes(NEW.mycol) = 0
-                BEGIN
-                    SELECT RAISE(ABORT, 'mytbl.mycol must be a flat JSON object');
-                END;
-            """
+            text_attributes_check = 'is_wellformed_attributes(NEW.mycol) = 0'
+
+        expected = f"""
+            CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_attributes_mytbl_mycol_insert
+            BEFORE INSERT ON main.mytbl FOR EACH ROW
+            WHEN
+                NEW.mycol IS NOT NULL
+                AND {text_attributes_check}
+            BEGIN
+                SELECT RAISE(ABORT, 'mytbl.mycol must be a JSON object with text values');
+            END;
+        """
+
         self.assertEqual(dedent(actual).strip(), dedent(expected).strip())
 
     def test_bad_action(self):
@@ -291,30 +287,47 @@ class TestColumnTextAttributes(TempDirTestCase):
 
         self.assertEqual(declared_type, 'TEXT_ATTRIBUTES')
 
-    def test_insert_wellformed_flat_obj(self):
-        """Flat JSON objects should be inserted without errors."""
+    def test_insert_wellformed_attributes(self):
+        """JSON objecs containing text should be inserted without errors."""
         parameters = [
-            (None, 'name1', None, '{"a": 1, "b": 2}', 0),
-            (None, 'name2', None, '{"a": 1.1, "b": 2.2}', 0),
-            (None, 'name3', None, '{"a": "x", "b": "y"}', 0),
-            (None, 'name4', None, '{"a": true, "b": false, "c": null}', 0),
+            (None, 'name1', None, '{"a": "one", "b": "two"}', 0),
+            (None, 'name2', None, '{"c": "three"}', 0),
+            (None, 'name3', None, '{"d": "four", "e": "five", "f": "six"}', 0),
         ]
         self.cur.executemany("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
 
-    def test_insert_malformed_json(self):
-        """Invalid JSON strings should fail with CHECK constraint."""
-        regex = 'must be a flat JSON object'
+    def test_insert_wellformed_json_but_not_attributes(self):
+        """Invalid TEXT_ATTRIBUTES should fail with CHECK constraint
+        even when they are valid JSON.
+        """
+        regex = 'must be a JSON object with text values'
 
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             self.cur.execute(
                 'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name1', None, '{"a": 1, "b": 2', 0),  # Invalid JSON, no closing "}".
+                (None, 'name1', None, '{"a": "one", "b": 2}', 0),  # "b" contains non-text.
             )
 
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
             self.cur.execute(
                 'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name3', None, '{"a": "x", "b": y}', 0),  # Invalid JSON, "y" must be quoted.
+                (None, 'name2', None, '["one", "two"]', 0),  # A JSON array, not an object.
+            )
+
+    def test_insert_malformed_json(self):
+        """Invalid JSON strings should fail with CHECK constraint."""
+        regex = 'must be a JSON object with text values'
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name1', None, '{"a": "one", "b": "two"', 0),  # Invalid JSON, no closing "}".
+            )
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name3', None, "{'a': 'x', 'b': 'y'}", 0),  # Invalid JSON, must use double-quotes.
             )
 
     def test_insert_wellformed_but_not_obj(self):

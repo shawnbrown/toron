@@ -96,7 +96,7 @@ def _is_wellformed_attributes(x):
         return 0
 
     for value in obj.values():
-        if isinstance(value, (dict, list)):
+        if not isinstance(value, str):
             return 0
 
     return 1
@@ -221,12 +221,12 @@ def _make_trigger_for_attributes(insert_or_update, table, column):
                  OR json_type(NEW.{column}) != 'object'
                  OR (SELECT COUNT(*)
                      FROM json_each(NEW.{column})
-                     WHERE json_each.type IN ('object', 'array')) != 0)
+                     WHERE json_each.type != 'text') != 0)
         """.rstrip()
     else:
         when_clause = f"""
             NEW.{column} IS NOT NULL
-            AND is_valid_text_attributes(NEW.{column}) = 0
+            AND is_wellformed_attributes(NEW.{column}) = 0
         """.rstrip()
 
     return f'''
@@ -234,7 +234,7 @@ def _make_trigger_for_attributes(insert_or_update, table, column):
         BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN{when_clause}
         BEGIN
-            SELECT RAISE(ABORT, '{table}.{column} must be a flat JSON object');
+            SELECT RAISE(ABORT, '{table}.{column} must be a JSON object with text values');
         END;
     '''
 
