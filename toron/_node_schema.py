@@ -230,7 +230,7 @@ def _make_trigger_for_user_properties(insert_or_update, table, column):
         user_properties_check = f'is_wellformed_user_properties(NEW.{column}) = 0'
 
     return f'''
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_user_properties_{table}_{column}_{insert_or_update.lower()}
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
         BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN
             NEW.{column} IS NOT NULL
@@ -277,7 +277,7 @@ def _make_trigger_for_attributes(insert_or_update, table, column):
         """.rstrip()
 
     return f'''
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_attributes_{table}_{column}_{insert_or_update.lower()}
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
         BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN{when_clause}
         BEGIN
@@ -307,7 +307,7 @@ def _make_trigger_for_json(insert_or_update, table, column):
         """.rstrip()
 
     return f'''
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_wellformed_{table}_{column}_{insert_or_update.lower()}
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
         BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN{when_clause}
         BEGIN

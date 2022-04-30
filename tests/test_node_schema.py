@@ -157,7 +157,7 @@ class TestMakeTriggerForTextAttributes(unittest.TestCase):
             text_attributes_check = 'is_wellformed_attributes(NEW.mycol) = 0'
 
         expected = f"""
-            CREATE TEMPORARY TRIGGER IF NOT EXISTS trg_assert_attributes_mytbl_mycol_insert
+            CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_insert_mytbl_mycol
             BEFORE INSERT ON main.mytbl FOR EACH ROW
             WHEN
                 NEW.mycol IS NOT NULL
@@ -223,7 +223,7 @@ class TestTriggerCoverage(unittest.TestCase):
     @staticmethod
     def make_trigger_name(insert_or_update, table, column):
         """Helper function to build expected trigger name."""
-        return f'trg_assert_attributes_{table}_{column}_{insert_or_update}'
+        return f'trigger_check_{insert_or_update}_{table}_{column}'
 
     def get_expected_trigger_names(self):
         """Helper function to return list of expected trigger names."""
@@ -236,11 +236,11 @@ class TestTriggerCoverage(unittest.TestCase):
                 expected_triggers.append(self.make_trigger_name('insert', table, column))
                 expected_triggers.append(self.make_trigger_name('update', table, column))
 
-        expected_triggers.append('trg_assert_user_properties_edge_user_properties_insert')
-        expected_triggers.append('trg_assert_user_properties_edge_user_properties_update')
+        expected_triggers.append('trigger_check_insert_edge_user_properties')
+        expected_triggers.append('trigger_check_update_edge_user_properties')
 
-        expected_triggers.append('trg_assert_wellformed_property_value_update')
-        expected_triggers.append('trg_assert_wellformed_property_value_insert')
+        expected_triggers.append('trigger_check_insert_property_value')
+        expected_triggers.append('trigger_check_update_property_value')
 
         return expected_triggers
 
