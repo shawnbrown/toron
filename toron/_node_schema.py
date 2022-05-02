@@ -80,7 +80,6 @@ def _is_sqlite_json1_enabled():
 SQLITE_JSON1_ENABLED = _is_sqlite_json1_enabled()
 
 
-
 _schema_script = """
     PRAGMA foreign_keys = ON;
 
@@ -248,6 +247,7 @@ def _make_trigger_for_user_properties(insert_or_update, table, column):
             SELECT RAISE(ABORT, '{table}.{column} must be wellformed JSON object');
         END;
     '''
+
 
 def _is_wellformed_attributes(x):
     """Returns 1 if *x* is a wellformed TEXT_ATTRIBUTES column
