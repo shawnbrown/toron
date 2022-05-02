@@ -16,6 +16,54 @@ from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
 
 
+class TestColumnTextJson(TempDirTestCase):
+    """Test the behavior of columns using the TEXT_JSON type."""
+    def setUp(self):
+        self.con = connect('mynode.node')
+        self.cur = self.con.cursor()
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def test_column_type(self):
+        """Make sure that the `property.value` column is TEXT_JSON."""
+        orig_factory = self.cur.row_factory
+        try:
+            self.cur.row_factory = sqlite3.Row
+            self.cur.execute("PRAGMA main.table_info('property')")
+            value_column = [row for row in self.cur if row['name'] == 'value'].pop()
+        finally:
+            self.cur.row_factory = orig_factory
+
+        declared_type = value_column['type']
+        self.assertEqual(declared_type, 'TEXT_JSON')
+
+    def test_insert_wellformed_json(self):
+        """Valid JSON strings should be inserted without errors."""
+        parameters = [
+            ('key1', '123'),
+            ('key2', '1.23'),
+            ('key3', '"abc"'),
+            ('key4', 'true'),
+            ('key5', 'false'),
+            ('key6', 'null'),
+            ('key7', '[1, 2.0, "3"]'),
+            ('key8', '{"a": 1, "b": [2, 3]}'),
+            ('key9', None),  # <- The property.value column allows NULLs.
+        ]
+        self.cur.executemany("INSERT INTO property VALUES (?, ?)", parameters)
+
+    def test_insert_malformed_json(self):
+        """Invalid JSON strings should fail with an IntegrityError."""
+        regex = 'must be wellformed JSON'
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key1', 'abc'))
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key2', '[1,2,3'))
+
+
 class CheckUserPropertiesMixin(object):
     """To be valid, TEXT_USERPROPERTIES values must be JSON objects."""
 
@@ -137,6 +185,102 @@ class TestIsWellformedAttributes(unittest.TestCase):
 
     def test_none(self):
         self.assertFalse(_is_wellformed_attributes(None))
+
+
+class TestColumnTextAttributes(TempDirTestCase):
+    """Test the behavior of columns using the TEXT_ATTRIBUTES type."""
+    def setUp(self):
+        self.con = connect('mynode.node')
+        self.cur = self.con.cursor()
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def test_column_type(self):
+        """Make sure that the `weight_info.type_info` column is
+        TEXT_ATTRIBUTES.
+        """
+        orig_factory = self.cur.row_factory
+        try:
+            self.cur.row_factory = sqlite3.Row
+            self.cur.execute("PRAGMA main.table_info('weight_info')")
+            type_info_column = [row for row in self.cur if row['name'] == 'type_info'].pop()
+            declared_type = type_info_column['type']
+        finally:
+            self.cur.row_factory = orig_factory
+
+        self.assertEqual(declared_type, 'TEXT_ATTRIBUTES')
+
+    def test_insert_wellformed_attributes(self):
+        """JSON objecs containing text should be inserted without errors."""
+        parameters = [
+            (None, 'name1', None, '{"a": "one", "b": "two"}', 0),
+            (None, 'name2', None, '{"c": "three"}', 0),
+            (None, 'name3', None, '{"d": "four", "e": "five", "f": "six"}', 0),
+        ]
+        self.cur.executemany("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
+
+    def test_insert_wellformed_json_but_not_attributes(self):
+        """Invalid TEXT_ATTRIBUTES should fail with CHECK constraint
+        even when they are valid JSON.
+        """
+        regex = 'must be a JSON object with text values'
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name1', None, '{"a": "one", "b": 2}', 0),  # "b" contains non-text.
+            )
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name2', None, '["one", "two"]', 0),  # A JSON array, not an object.
+            )
+
+    def test_insert_malformed_json(self):
+        """Invalid JSON strings should fail with CHECK constraint."""
+        regex = 'must be a JSON object with text values'
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name1', None, '{"a": "one", "b": "two"', 0),  # Invalid JSON, no closing "}".
+            )
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name3', None, "{'a': 'x', 'b': 'y'}", 0),  # Invalid JSON, must use double-quotes.
+            )
+
+    def test_insert_wellformed_but_not_obj(self):
+        """Non-object types should fail."""
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name1', None, '[1, 2, 3]', 0),  # JSON is wellformed array.
+            )
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name3', None, '"xyz"', 0),  # JSON is wellformed text.
+            )
+
+    def test_insert_wellformed_obj_but_not_flat(self):
+        """Flat JSON objects must not contain nested object or array types."""
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name1', None, '{"a": 1, "b": {"c": 3}}', 0),
+            )
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.cur.execute(
+                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+                (None, 'name3', None, '{"a": "x", "b": ["y", "z"]}', 0),
+            )
 
 
 class TestMakeTriggerForTextAttributes(unittest.TestCase):
@@ -313,150 +457,6 @@ class TestConnect(TempDirTestCase):
 
         with self.assertRaises(sqlite3.OperationalError):
             con = connect(path)
-
-
-class TestColumnTextJson(TempDirTestCase):
-    """Test the behavior of columns using the TEXT_JSON type."""
-    def setUp(self):
-        self.con = connect('mynode.node')
-        self.cur = self.con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
-        self.addCleanup(self.con.close)
-        self.addCleanup(self.cur.close)
-
-    def test_column_type(self):
-        """Make sure that the `property.value` column is TEXT_JSON."""
-        orig_factory = self.cur.row_factory
-        try:
-            self.cur.row_factory = sqlite3.Row
-            self.cur.execute("PRAGMA main.table_info('property')")
-            value_column = [row for row in self.cur if row['name'] == 'value'].pop()
-        finally:
-            self.cur.row_factory = orig_factory
-
-        declared_type = value_column['type']
-        self.assertEqual(declared_type, 'TEXT_JSON')
-
-    def test_insert_wellformed_json(self):
-        """Valid JSON strings should be inserted without errors."""
-        parameters = [
-            ('key1', '123'),
-            ('key2', '1.23'),
-            ('key3', '"abc"'),
-            ('key4', 'true'),
-            ('key5', 'false'),
-            ('key6', 'null'),
-            ('key7', '[1, 2.0, "3"]'),
-            ('key8', '{"a": 1, "b": [2, 3]}'),
-            ('key9', None),  # <- The property.value column allows NULLs.
-        ]
-        self.cur.executemany("INSERT INTO property VALUES (?, ?)", parameters)
-
-    def test_insert_malformed_json(self):
-        """Invalid JSON strings should fail with an IntegrityError."""
-        regex = 'must be wellformed JSON'
-
-        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key1', 'abc'))
-
-        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key2', '[1,2,3'))
-
-
-class TestColumnTextAttributes(TempDirTestCase):
-    """Test the behavior of columns using the TEXT_ATTRIBUTES type."""
-    def setUp(self):
-        self.con = connect('mynode.node')
-        self.cur = self.con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
-        self.addCleanup(self.con.close)
-        self.addCleanup(self.cur.close)
-
-    def test_column_type(self):
-        """Make sure that the `weight_info.type_info` column is
-        TEXT_ATTRIBUTES.
-        """
-        orig_factory = self.cur.row_factory
-        try:
-            self.cur.row_factory = sqlite3.Row
-            self.cur.execute("PRAGMA main.table_info('weight_info')")
-            type_info_column = [row for row in self.cur if row['name'] == 'type_info'].pop()
-            declared_type = type_info_column['type']
-        finally:
-            self.cur.row_factory = orig_factory
-
-        self.assertEqual(declared_type, 'TEXT_ATTRIBUTES')
-
-    def test_insert_wellformed_attributes(self):
-        """JSON objecs containing text should be inserted without errors."""
-        parameters = [
-            (None, 'name1', None, '{"a": "one", "b": "two"}', 0),
-            (None, 'name2', None, '{"c": "three"}', 0),
-            (None, 'name3', None, '{"d": "four", "e": "five", "f": "six"}', 0),
-        ]
-        self.cur.executemany("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
-
-    def test_insert_wellformed_json_but_not_attributes(self):
-        """Invalid TEXT_ATTRIBUTES should fail with CHECK constraint
-        even when they are valid JSON.
-        """
-        regex = 'must be a JSON object with text values'
-
-        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute(
-                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name1', None, '{"a": "one", "b": 2}', 0),  # "b" contains non-text.
-            )
-
-        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute(
-                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name2', None, '["one", "two"]', 0),  # A JSON array, not an object.
-            )
-
-    def test_insert_malformed_json(self):
-        """Invalid JSON strings should fail with CHECK constraint."""
-        regex = 'must be a JSON object with text values'
-
-        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute(
-                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name1', None, '{"a": "one", "b": "two"', 0),  # Invalid JSON, no closing "}".
-            )
-
-        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute(
-                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name3', None, "{'a': 'x', 'b': 'y'}", 0),  # Invalid JSON, must use double-quotes.
-            )
-
-    def test_insert_wellformed_but_not_obj(self):
-        """Non-object types should fail."""
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.cur.execute(
-                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name1', None, '[1, 2, 3]', 0),  # JSON is wellformed array.
-            )
-
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.cur.execute(
-                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name3', None, '"xyz"', 0),  # JSON is wellformed text.
-            )
-
-    def test_insert_wellformed_obj_but_not_flat(self):
-        """Flat JSON objects must not contain nested object or array types."""
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.cur.execute(
-                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name1', None, '{"a": 1, "b": {"c": 3}}', 0),
-            )
-
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.cur.execute(
-                'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
-                (None, 'name3', None, '{"a": "x", "b": ["y", "z"]}', 0),
-            )
 
 
 class TestJsonConversion(TempDirTestCase):

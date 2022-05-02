@@ -80,43 +80,6 @@ def _is_sqlite_json1_enabled():
 SQLITE_JSON1_ENABLED = _is_sqlite_json1_enabled()
 
 
-def _is_wellformed_attributes(x):
-    """Returns 1 if *x* is a wellformed TEXT_ATTRIBUTES column
-    value else returns 0. TEXT_ATTRIBUTES should be flat, JSON
-    object strings. This function should be registered with SQLite
-    (via the create_function() method) when the JSON1 extension
-    is not available.
-    """
-    try:
-        obj = _loads(x)
-    except (ValueError, TypeError):
-        return 0
-
-    if not isinstance(obj, dict):
-        return 0
-
-    for value in obj.values():
-        if not isinstance(value, str):
-            return 0
-
-    return 1
-
-
-def _is_wellformed_json(x):
-    """Return 1 if *x* is well-formed JSON or return 0 if *x* is not
-    well-formed. This function should be registered with SQLite (via
-    the create_function() method) when the JSON1 extension is not
-    available.
-
-    This function mimics the JSON1 json_valid() function, see:
-        https://www.sqlite.org/json1.html#jvalid
-    """
-    try:
-        _loads(x)
-    except (ValueError, TypeError):
-        return 0
-    return 1
-
 
 _schema_script = """
     PRAGMA foreign_keys = ON;
@@ -194,6 +157,52 @@ _schema_script = """
 """
 
 
+def _is_wellformed_json(x):
+    """Return 1 if *x* is well-formed JSON or return 0 if *x* is not
+    well-formed. This function should be registered with SQLite (via
+    the create_function() method) when the JSON1 extension is not
+    available.
+
+    This function mimics the JSON1 json_valid() function, see:
+        https://www.sqlite.org/json1.html#jvalid
+    """
+    try:
+        _loads(x)
+    except (ValueError, TypeError):
+        return 0
+    return 1
+
+
+def _make_trigger_for_json(insert_or_update, table, column):
+    """Return a SQL statement for creating a temporary trigger. The
+    trigger is used to validate the contents of TEXT_JSON type columns.
+    The trigger will pass without error if the JSON is wellformed.
+    """
+    if insert_or_update.upper() not in {'INSERT', 'UPDATE'}:
+        msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
+        raise ValueError(msg)
+
+    if SQLITE_JSON1_ENABLED:
+        when_clause = f"""
+            NEW.{column} IS NOT NULL
+            AND json_valid(NEW.{column}) = 0
+        """.rstrip()
+    else:
+        when_clause = f"""
+            NEW.{column} IS NOT NULL
+            AND is_wellformed_json(NEW.{column}) = 0
+        """.rstrip()
+
+    return f'''
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
+        BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
+        WHEN{when_clause}
+        BEGIN
+            SELECT RAISE(ABORT, '{table}.{column} must be wellformed JSON');
+        END;
+    '''
+
+
 def _is_wellformed_user_properties(x):
     """Check if *x* is a wellformed TEXT_USERPROPERTIES value.
     A wellformed TEXT_USERPROPERTIES value is a string containing
@@ -239,6 +248,27 @@ def _make_trigger_for_user_properties(insert_or_update, table, column):
             SELECT RAISE(ABORT, '{table}.{column} must be wellformed JSON object');
         END;
     '''
+
+def _is_wellformed_attributes(x):
+    """Returns 1 if *x* is a wellformed TEXT_ATTRIBUTES column
+    value else returns 0. TEXT_ATTRIBUTES should be flat, JSON
+    object strings. This function should be registered with SQLite
+    (via the create_function() method) when the JSON1 extension
+    is not available.
+    """
+    try:
+        obj = _loads(x)
+    except (ValueError, TypeError):
+        return 0
+
+    if not isinstance(obj, dict):
+        return 0
+
+    for value in obj.values():
+        if not isinstance(value, str):
+            return 0
+
+    return 1
 
 
 def _make_trigger_for_attributes(insert_or_update, table, column):
@@ -286,36 +316,6 @@ def _make_trigger_for_attributes(insert_or_update, table, column):
     '''
 
 
-def _make_trigger_for_json(insert_or_update, table, column):
-    """Return a SQL statement for creating a temporary trigger. The
-    trigger is used to validate the contents of TEXT_JSON type columns.
-    The trigger will pass without error if the JSON is wellformed.
-    """
-    if insert_or_update.upper() not in {'INSERT', 'UPDATE'}:
-        msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
-        raise ValueError(msg)
-
-    if SQLITE_JSON1_ENABLED:
-        when_clause = f"""
-            NEW.{column} IS NOT NULL
-            AND json_valid(NEW.{column}) = 0
-        """.rstrip()
-    else:
-        when_clause = f"""
-            NEW.{column} IS NOT NULL
-            AND is_wellformed_json(NEW.{column}) = 0
-        """.rstrip()
-
-    return f'''
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
-        BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
-        WHEN{when_clause}
-        BEGIN
-            SELECT RAISE(ABORT, '{table}.{column} must be wellformed JSON');
-        END;
-    '''
-
-
 def _add_functions_and_triggers(connection):
     """Create triggers and application-defined functions *connection*.
 
@@ -325,15 +325,21 @@ def _add_functions_and_triggers(connection):
     if not SQLITE_JSON1_ENABLED:
         try:
             connection.create_function(
+                'is_wellformed_json', 1, _is_wellformed_json, deterministic=True)
+            connection.create_function(
                 'is_wellformed_user_properties', 1, _is_wellformed_user_properties, deterministic=True)
             connection.create_function(
                 'is_wellformed_attributes', 1, _is_wellformed_attributes, deterministic=True)
-            connection.create_function(
-                'is_wellformed_json', 1, _is_wellformed_json, deterministic=True)
         except TypeError:
+            connection.create_function('is_wellformed_json', 1, _is_wellformed_json)
             connection.create_function('is_wellformed_user_properties', 1, _is_wellformed_user_properties)
             connection.create_function('is_wellformed_attributes', 1, _is_wellformed_attributes)
-            connection.create_function('is_wellformed_json', 1, _is_wellformed_json)
+
+    connection.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
+    connection.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))
+
+    connection.execute(_make_trigger_for_user_properties('INSERT', 'edge', 'user_properties'))
+    connection.execute(_make_trigger_for_user_properties('UPDATE', 'edge', 'user_properties'))
 
     jsonflatobj_columns = [
         ('edge', 'type_info'),
@@ -343,12 +349,6 @@ def _add_functions_and_triggers(connection):
     for table, column in jsonflatobj_columns:
         connection.execute(_make_trigger_for_attributes('INSERT', table, column))
         connection.execute(_make_trigger_for_attributes('UPDATE', table, column))
-
-    connection.execute(_make_trigger_for_user_properties('INSERT', 'edge', 'user_properties'))
-    connection.execute(_make_trigger_for_user_properties('UPDATE', 'edge', 'user_properties'))
-
-    connection.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
-    connection.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))
 
 
 def connect(path):
