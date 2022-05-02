@@ -8,6 +8,7 @@ from textwrap import dedent
 from .common import TempDirTestCase
 
 from toron._node_schema import SQLITE_JSON1_ENABLED
+from toron._node_schema import _is_wellformed_json
 from toron._node_schema import _is_wellformed_user_properties
 from toron._node_schema import _is_wellformed_attributes
 from toron._node_schema import _schema_script
@@ -16,52 +17,69 @@ from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
 
 
-class TestColumnTextJson(TempDirTestCase):
-    """Test the behavior of columns using the TEXT_JSON type."""
+class CheckJsonMixin(object):
+    """To be valid, TEXT_JSON values must be JSON objects."""
+    valid_values = [
+        '123',
+        '1.23',
+        '"abc"',
+        'true',
+        'false',
+        'null',
+        '[1, 2.0, "3"]',
+        '{"a": 1, "b": [2, 3]}',
+    ]
+    malformed_json = [
+        '{"a": "one", "b": "two"',   # <- No closing curly-brace.
+        '{"a": "one", "b": "two}',   # <- No closing quote.
+        '[1, 2',                     # <- No closing bracket.
+        "{'a': 'one', 'b': 'two'}",  # <- Requires double quotes.
+        'abc',                       # <- Not quoted.
+        '',                          # <- No contents.
+    ]
+
+
+class TestIsWellformedJson(unittest.TestCase, CheckJsonMixin):
+    def test_valid_values(self):
+        for value in self.valid_values:
+            with self.subTest(value=value):
+                self.assertTrue(_is_wellformed_json(value))
+
+    def test_malformed_json(self):
+        for value in self.malformed_json:
+            with self.subTest(value=value):
+                self.assertFalse(_is_wellformed_json(value))
+
+    def test_none(self):
+        self.assertFalse(_is_wellformed_json(None))
+
+
+class TestJsonTrigger(TempDirTestCase, CheckJsonMixin):
+    """Check TRIGGER behavior for property.value column."""
     def setUp(self):
-        self.con = connect('mynode.node')
+        self.con = connect('mynode.toron')
         self.cur = self.con.cursor()
         self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
-    def test_column_type(self):
-        """Make sure that the `property.value` column is TEXT_JSON."""
-        orig_factory = self.cur.row_factory
-        try:
-            self.cur.row_factory = sqlite3.Row
-            self.cur.execute("PRAGMA main.table_info('property')")
-            value_column = [row for row in self.cur if row['name'] == 'value'].pop()
-        finally:
-            self.cur.row_factory = orig_factory
+    def test_valid_values(self):
+        for index, value in enumerate(self.valid_values):
+            with self.subTest(value=value):
+                parameters = (f'key{index}', value)
+                self.cur.execute("INSERT INTO property VALUES (?, ?)", parameters)
 
-        declared_type = value_column['type']
-        self.assertEqual(declared_type, 'TEXT_JSON')
-
-    def test_insert_wellformed_json(self):
-        """Valid JSON strings should be inserted without errors."""
-        parameters = [
-            ('key1', '123'),
-            ('key2', '1.23'),
-            ('key3', '"abc"'),
-            ('key4', 'true'),
-            ('key5', 'false'),
-            ('key6', 'null'),
-            ('key7', '[1, 2.0, "3"]'),
-            ('key8', '{"a": 1, "b": [2, 3]}'),
-            ('key9', None),  # <- The property.value column allows NULLs.
-        ]
-        self.cur.executemany("INSERT INTO property VALUES (?, ?)", parameters)
-
-    def test_insert_malformed_json(self):
-        """Invalid JSON strings should fail with an IntegrityError."""
+    def test_malformed_json(self):
         regex = 'must be wellformed JSON'
+        for index, value in enumerate(self.malformed_json):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+                    parameters = (f'key{index}', value)
+                    self.cur.execute("INSERT INTO property VALUES (?, ?)", parameters)
 
-        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key1', 'abc'))
-
-        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute('INSERT INTO property VALUES (?, ?)', ('key2', '[1,2,3'))
+    def test_none(self):
+        """The property.value column should accept None/NULL values."""
+        self.cur.execute("INSERT INTO property VALUES (?, ?)", ('some_key', None))
 
 
 class CheckUserPropertiesMixin(object):
