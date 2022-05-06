@@ -431,6 +431,14 @@ class TestConnect(TempDirTestCase):
         with self.assertRaises(sqlite3.OperationalError):
             con = connect(path)
 
+    def test_read_write_mode(self):
+        regex = 'unable to open database file'
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            connect('path1.toron', mode='rw')  # Open nonexistent node (fails).
+
+        connect('path2.toron', mode='rwc').close()  # Create node.
+        connect('path2.toron', mode='rw')  # Open existing node.
+
 
 class TestJsonConversion(TempDirTestCase):
     """Registered converters should select JSON strings as objects."""

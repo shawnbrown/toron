@@ -380,6 +380,12 @@ def connect(path, mode='rwc'):
         else:
             return _connect_to_new(path)
 
+    if mode == 'rw':  # Read-write mode
+        if os.path.exists(path):
+            return _connect_to_existing(path)
+        msg = 'unable to open database file'
+        raise sqlite3.OperationalError(msg)
+
     msg = f'no such access mode: {mode}'
     raise sqlite3.OperationalError(msg)
 
