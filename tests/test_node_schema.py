@@ -451,6 +451,11 @@ class TestConnect(TempDirTestCase):
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             con.execute('INSERT INTO property VALUES (?, ?)', ('key1', '"value1"'))
 
+    def test_invalid_access_mode(self):
+        regex = 'no such access mode: badmode'
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            connect('path1.toron', mode='badmode')
+
 
 class TestJsonConversion(TempDirTestCase):
     """Registered converters should select JSON strings as objects."""
