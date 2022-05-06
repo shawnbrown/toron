@@ -18,7 +18,9 @@ from toron._node_schema import connect
 
 
 class CheckJsonMixin(object):
-    """To be valid, TEXT_JSON values must be JSON objects."""
+    """Valid TEXT_JSON values must be wellformed JSON strings (may be
+    of any data type).
+    """
     valid_values = [
         '123',
         '1.23',
@@ -40,6 +42,7 @@ class CheckJsonMixin(object):
 
 
 class TestIsWellformedJson(unittest.TestCase, CheckJsonMixin):
+    """Check application defined SQL function for TEXT_JSON."""
     def test_valid_values(self):
         for value in self.valid_values:
             with self.subTest(value=value):
@@ -55,7 +58,9 @@ class TestIsWellformedJson(unittest.TestCase, CheckJsonMixin):
 
 
 class TestJsonTrigger(TempDirTestCase, CheckJsonMixin):
-    """Check TRIGGER behavior for property.value column."""
+    """Check trigger behavior for `property.value` column (uses the
+    TEXT_JSON declared type).
+    """
     def setUp(self):
         self.con = connect('mynode.toron')
         self.cur = self.con.cursor()
@@ -83,8 +88,7 @@ class TestJsonTrigger(TempDirTestCase, CheckJsonMixin):
 
 
 class CheckUserPropertiesMixin(object):
-    """To be valid, TEXT_USERPROPERTIES values must be JSON objects."""
-
+    """Valid TEXT_USERPROPERTIES values must be JSON objects."""
     valid_values = [
         '{"a": "one", "b": "two"}',          # <- object of text
         '{"a": 1, "b": 2.0}',                # <- object of integer and real
@@ -108,6 +112,7 @@ class CheckUserPropertiesMixin(object):
 
 
 class TestIsWellformedUserProperties(unittest.TestCase, CheckUserPropertiesMixin):
+    """Check application defined SQL function for TEXT_USERPROPERTIES."""
     def test_valid_values(self):
         for value in self.valid_values:
             with self.subTest(value=value):
@@ -179,18 +184,15 @@ class TestUserPropertiesTrigger(TempDirTestCase, CheckUserPropertiesMixin):
 
 
 class CheckAttributesMixin(object):
-    """To be valid, TEXT_ATTRIBUTES values must be JSON objects with string values."""
-
+    """Valid TEXT_ATTRIBUTES values must be JSON objects with string values."""
     valid_values = [
         '{"a": "one", "b": "two"}',
         '{"c": "three"}',
     ]
-
     non_string_values = [
         '{"a": "one", "b": 2}',  # <- contains integer
-        '{"a": {"b": "two"}}',   # <- contains nexted object
+        '{"a": {"b": "two"}}',   # <- contains nested object
     ]
-
     not_an_object = [
         '["one", "two"]',  # <- array
         '"one"',           # <- text
@@ -209,6 +211,7 @@ class CheckAttributesMixin(object):
 
 
 class TestIsWellformedAttributes(unittest.TestCase, CheckAttributesMixin):
+    """Check application defined SQL function for TEXT_ATTRIBUTES."""
     def test_valid_values(self):
         for value in self.valid_values:
             with self.subTest(value=value):
