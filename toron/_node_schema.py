@@ -386,6 +386,14 @@ def connect(path, mode='rwc'):
         msg = 'unable to open database file'
         raise sqlite3.OperationalError(msg)
 
+    if mode == 'ro':  # Read-only mode
+        if os.path.exists(path):
+            con = _connect_to_existing(path)
+            con.execute('PRAGMA query_only = 1')
+            return con
+        msg = 'unable to open database file'
+        raise sqlite3.OperationalError(msg)
+
     msg = f'no such access mode: {mode}'
     raise sqlite3.OperationalError(msg)
 

@@ -439,6 +439,18 @@ class TestConnect(TempDirTestCase):
         connect('path2.toron', mode='rwc').close()  # Create node.
         connect('path2.toron', mode='rw')  # Open existing node.
 
+    def test_read_only_mode(self):
+        regex = 'unable to open database file'
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            connect('path1.toron', mode='ro')  # Open nonexistent node (fails).
+
+        connect('path2.toron', mode='rwc').close()  # Create node.
+        con = connect('path2.toron', mode='ro')  # Open existing node.
+
+        regex = 'attempt to write a readonly database'
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            con.execute('INSERT INTO property VALUES (?, ?)', ('key1', '"value1"'))
+
 
 class TestJsonConversion(TempDirTestCase):
     """Registered converters should select JSON strings as objects."""
