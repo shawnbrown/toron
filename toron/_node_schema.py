@@ -372,12 +372,14 @@ def _connect_to_new(path):
     return con
 
 
-def connect(path):
-    """Returns a sqlite3 connection to a Toron node file. If *path*
-    doesn't exist, a new node is created at this location.
-    """
-    if os.path.exists(path):
-        return _connect_to_existing(path)
-    else:
-        return _connect_to_new(path)
+def connect(path, mode='rwc'):
+    """Returns a sqlite3 connection to a Toron node file."""
+    if mode == 'rwc':  # Read-write-create mode
+        if os.path.exists(path):
+            return _connect_to_existing(path)
+        else:
+            return _connect_to_new(path)
+
+    msg = f'no such access mode: {mode}'
+    raise sqlite3.OperationalError(msg)
 
