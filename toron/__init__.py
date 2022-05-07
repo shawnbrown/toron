@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Granular Partition Network"""
+"""Toron is tool kit for managing data joinability and ecological
+inference problems.
+"""
 
 __version__ = '0.01'
 
