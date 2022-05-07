@@ -384,17 +384,17 @@ def connect(path, mode='rwc'):
     if mode == 'rw':  # Read-write mode
         if os.path.exists(path):
             return _connect_to_existing(path)
-        msg = 'unable to open database file'
-        raise ToronError(msg)
+        msg = f'No such file: {path!r}'
+        raise FileNotFoundError(msg)
 
     if mode == 'ro':  # Read-only mode
         if os.path.exists(path):
             con = _connect_to_existing(path)
             con.execute('PRAGMA query_only = 1')
             return con
-        msg = 'unable to open database file'
-        raise ToronError(msg)
+        msg = f'No such file: {path!r}'
+        raise FileNotFoundError(msg)
 
     msg = f'No such access mode: {mode!r}'
-    raise ToronError(msg)
+    raise ValueError(msg)
 

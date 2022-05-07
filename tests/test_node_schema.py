@@ -434,16 +434,16 @@ class TestConnect(TempDirTestCase):
             con = connect(path)
 
     def test_read_write_mode(self):
-        regex = 'unable to open database file'
-        with self.assertRaisesRegex(ToronError, regex):
+        regex = "No such file: 'path1.toron'"
+        with self.assertRaisesRegex(FileNotFoundError, regex):
             connect('path1.toron', mode='rw')  # Open nonexistent node (fails).
 
         connect('path2.toron', mode='rwc').close()  # Create node.
         connect('path2.toron', mode='rw')  # Open existing node.
 
     def test_read_only_mode(self):
-        regex = 'unable to open database file'
-        with self.assertRaisesRegex(ToronError, regex):
+        regex = "No such file: 'path1.toron'"
+        with self.assertRaisesRegex(FileNotFoundError, regex):
             connect('path1.toron', mode='ro')  # Open nonexistent node (fails).
 
         connect('path2.toron', mode='rwc').close()  # Create node.
@@ -455,7 +455,7 @@ class TestConnect(TempDirTestCase):
 
     def test_invalid_access_mode(self):
         regex = "No such access mode: 'badmode'"
-        with self.assertRaisesRegex(ToronError, regex):
+        with self.assertRaisesRegex(ValueError, regex):
             connect('path1.toron', mode='badmode')
 
     def test_read_only_via_filesystem(self):
