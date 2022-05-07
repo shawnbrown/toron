@@ -50,6 +50,8 @@ import sqlite3
 from json import loads as _loads
 from ast import literal_eval
 
+from ._exceptions import ToronError
+
 
 sqlite3.register_converter('TEXT_JSON', _loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
@@ -358,7 +360,7 @@ def _connect_to_existing(path):
     except sqlite3.OperationalError:
         # If *path* is a directory or non-file resource, then
         # calling `connect()` will raise an OperationalError.
-        raise Exception(f'path {path!r} is not a Toron Node')
+        raise ToronError(f'path {path!r} is not a Toron Node')
 
     _add_functions_and_triggers(con)
     return con
@@ -383,7 +385,7 @@ def connect(path, mode='rwc'):
         if os.path.exists(path):
             return _connect_to_existing(path)
         msg = 'unable to open database file'
-        raise sqlite3.OperationalError(msg)
+        raise ToronError(msg)
 
     if mode == 'ro':  # Read-only mode
         if os.path.exists(path):
@@ -391,8 +393,8 @@ def connect(path, mode='rwc'):
             con.execute('PRAGMA query_only = 1')
             return con
         msg = 'unable to open database file'
-        raise sqlite3.OperationalError(msg)
+        raise ToronError(msg)
 
     msg = f'no such access mode: {mode}'
-    raise sqlite3.OperationalError(msg)
+    raise ToronError(msg)
 

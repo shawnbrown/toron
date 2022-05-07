@@ -8,6 +8,7 @@ from stat import S_IRUSR, S_IWUSR
 from textwrap import dedent
 from .common import TempDirTestCase
 
+from toron._exceptions import ToronError
 from toron._node_schema import SQLITE_JSON1_ENABLED
 from toron._node_schema import _is_wellformed_json
 from toron._node_schema import _is_wellformed_user_properties
@@ -434,7 +435,7 @@ class TestConnect(TempDirTestCase):
 
     def test_read_write_mode(self):
         regex = 'unable to open database file'
-        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+        with self.assertRaisesRegex(ToronError, regex):
             connect('path1.toron', mode='rw')  # Open nonexistent node (fails).
 
         connect('path2.toron', mode='rwc').close()  # Create node.
@@ -442,7 +443,7 @@ class TestConnect(TempDirTestCase):
 
     def test_read_only_mode(self):
         regex = 'unable to open database file'
-        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+        with self.assertRaisesRegex(ToronError, regex):
             connect('path1.toron', mode='ro')  # Open nonexistent node (fails).
 
         connect('path2.toron', mode='rwc').close()  # Create node.
@@ -454,7 +455,7 @@ class TestConnect(TempDirTestCase):
 
     def test_invalid_access_mode(self):
         regex = 'no such access mode: badmode'
-        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+        with self.assertRaisesRegex(ToronError, regex):
             connect('path1.toron', mode='badmode')
 
     def test_read_only_via_filesystem(self):
