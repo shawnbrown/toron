@@ -395,6 +395,6 @@ def connect(path, mode='rwc'):
         msg = 'unable to open database file'
         raise ToronError(msg)
 
-    msg = f'no such access mode: {mode}'
+    msg = f'No such access mode: {mode!r}'
     raise ToronError(msg)
 

@@ -454,7 +454,7 @@ class TestConnect(TempDirTestCase):
             con.execute('INSERT INTO property VALUES (?, ?)', ('key1', '"value1"'))
 
     def test_invalid_access_mode(self):
-        regex = 'no such access mode: badmode'
+        regex = "No such access mode: 'badmode'"
         with self.assertRaisesRegex(ToronError, regex):
             connect('path1.toron', mode='badmode')
 
