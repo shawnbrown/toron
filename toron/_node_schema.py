@@ -377,8 +377,7 @@ def connect(path, mode='rwc'):
     if mode == 'rwc':  # Read-write-create mode
         if os.path.exists(path):
             return _connect_to_existing(path)
-        else:
-            return _connect_to_new(path)
+        return _connect_to_new(path)
 
     if mode == 'rw':  # Read-write mode
         if os.path.exists(path):
