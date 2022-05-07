@@ -4,6 +4,7 @@ import os
 import sqlite3
 import unittest
 from collections import namedtuple, OrderedDict, UserString
+from stat import S_IRUSR, S_IWUSR
 from textwrap import dedent
 from .common import TempDirTestCase
 
@@ -455,6 +456,30 @@ class TestConnect(TempDirTestCase):
         regex = 'no such access mode: badmode'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             connect('path1.toron', mode='badmode')
+
+    def test_read_only_via_filesystem(self):
+        """When the filesystem status of a database file is read-only,
+        the connection should behave as if it were accessed in 'ro'
+        mode regardless of what mode was actually used.
+        """
+        file_path = 'node42.toron'
+
+        # Create a new node and set its filesystem status to read-only.
+        connect(file_path, mode='rwc').close()
+        os.chmod(file_path, S_IRUSR)
+
+        # Open the existing node in read-write-create mode.
+        con = connect(file_path, mode='rwc')
+
+        # Try to insert records into the database.
+        regex = 'attempt to write a readonly database'
+        msg = "despite 'rwc' mode, database should be read-only via filesystem status"
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex, msg=msg):
+            con.execute('INSERT INTO property VALUES (?, ?)', ('key1', '123'))
+
+        # Close the connection and change the status back to read-write.
+        con.close()
+        os.chmod(file_path, S_IRUSR|S_IWUSR)
 
 
 class TestJsonConversion(TempDirTestCase):
