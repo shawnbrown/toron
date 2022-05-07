@@ -406,7 +406,7 @@ class TestConnect(TempDirTestCase):
         os.mkdir(path)  # <- Create a directory with the given `path` name.
 
         msg = 'should fail if path is a directory instead of a file'
-        with self.assertRaisesRegex(Exception, 'not a Toron Node', msg=msg):
+        with self.assertRaisesRegex(ToronError, 'Path is not a Toron node', msg=msg):
             con = connect(path)
 
     def test_nondatabase_file(self):
@@ -416,7 +416,7 @@ class TestConnect(TempDirTestCase):
         with open(path, 'w') as f:
             f.write('Hello World\n')
 
-        with self.assertRaises(sqlite3.DatabaseError):
+        with self.assertRaises(ToronError):
             con = connect(path)
 
     def test_unknown_schema(self):
@@ -430,7 +430,7 @@ class TestConnect(TempDirTestCase):
         ''')
         con.close()
 
-        with self.assertRaises(sqlite3.OperationalError):
+        with self.assertRaises(ToronError):
             con = connect(path)
 
     def test_read_write_mode(self):

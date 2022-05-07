@@ -357,12 +357,14 @@ def _connect_to_existing(path):
     """Return a connection to an existing Toron node database."""
     try:
         con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
-    except sqlite3.OperationalError:
-        # If *path* is a directory or non-file resource, then
-        # calling `connect()` will raise an OperationalError.
-        raise ToronError(f'path {path!r} is not a Toron Node')
+    except sqlite3.OperationalError:  # When *path* is directory or other non-file.
+        raise ToronError(f'Path is not a Toron node: {path!r}')
 
-    _add_functions_and_triggers(con)
+    try:
+        _add_functions_and_triggers(con)
+    except sqlite3.DatabaseError: # When *path* is non-database file.
+        raise ToronError(f'Path is not a Toron node: {path!r}')
+
     return con
 
 
