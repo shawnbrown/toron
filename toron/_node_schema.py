@@ -155,6 +155,8 @@ _schema_script = """
         key TEXT PRIMARY KEY NOT NULL,
         value TEXT_JSON
     );
+
+    INSERT INTO property VALUES ('schema_version', '1');
 """
 
 
@@ -362,8 +364,18 @@ def _connect_to_existing(path):
 
     try:
         _add_functions_and_triggers(con)
-    except sqlite3.DatabaseError: # When *path* is non-database file.
+    except sqlite3.OperationalError:  # When *path* is a database with an unknown schema.
         raise ToronError(f'Path is not a Toron node: {path!r}')
+    except sqlite3.DatabaseError:  # When *path* is a file but not a database.
+        raise ToronError(f'Path is not a Toron node: {path!r}')
+
+    cur = con.execute("SELECT value FROM property WHERE key='schema_version'")
+    schema_version, *_ = cur.fetchone() or (None,)
+    cur.close()
+
+    if schema_version != 1:  # When schema version is unsupported.
+        msg = f'Unsupported Toron node format: schema version {schema_version!r}'
+        raise ToronError(msg)
 
     return con
 

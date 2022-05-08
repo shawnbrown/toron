@@ -433,6 +433,19 @@ class TestConnect(TempDirTestCase):
         with self.assertRaises(ToronError):
             con = connect(path)
 
+    def test_unsupported_schema_version(self):
+        """Unsupported schema version should fail."""
+        path = 'mynode.toron'
+
+        con = connect(path)
+        con.execute("INSERT OR REPLACE INTO property VALUES ('schema_version', '999')")
+        con.commit()
+        con.close()
+
+        regex = 'Unsupported Toron node format: schema version 999'
+        with self.assertRaisesRegex(ToronError, regex):
+            con = connect(path)
+
     def test_read_write_mode(self):
         regex = "No such file: 'path1.toron'"
         with self.assertRaisesRegex(FileNotFoundError, regex):
