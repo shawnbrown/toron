@@ -33,16 +33,16 @@ the application layer:
               |       | ...        |••••>| ...         |<••••| ...          |
               |       +------------+     +-------------+     +--------------+
               |
-              |  +----------------+                            +----------+
-              |  | weight         |     +----------------+     | property |
-              |  +----------------+     | weight_info    |     +----------+
-              |  | weight_id      |     +----------------+     | key      |
-              |  | weight_info_id |<----| weight_info_id |     | value    |
-              +->| element_id     |•••  | name           |     +----------+
-                 | value          |  •  | description    |
-                 +----------------+  •  | type_info      |
-                                     ••>| is_complete    |
-                                        +----------------+
+              |  +-------------------+                         +----------+
+              |  | element_weight    |     +----------------+  | property |
+              |  +-------------------+     | weight_info    |  +----------+
+              |  | element_weight_id |     +----------------+  | key      |
+              |  | weight_info_id    |<----| weight_info_id |  | value    |
+              +->| element_id        |•••  | name           |  +----------+
+                 | value             |  •  | description    |
+                 +-------------------+  •  | type_info      |
+                                        ••>| is_complete    |
+                                           +----------------+
 """
 
 import os
@@ -142,8 +142,8 @@ _schema_script = """
         UNIQUE (name)
     );
 
-    CREATE TABLE weight(
-        weight_id INTEGER PRIMARY KEY,
+    CREATE TABLE element_weight(
+        element_weight_id INTEGER PRIMARY KEY,
         weight_info_id INTEGER,
         element_id INTEGER,
         value REAL NOT NULL,

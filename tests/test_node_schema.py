@@ -395,7 +395,7 @@ class TestConnect(TempDirTestCase):
             'quantity',
             'relation',
             'structure',
-            'weight',
+            'element_weight',
             'weight_info',
         }
         self.assertSetEqual(tables, expected)
