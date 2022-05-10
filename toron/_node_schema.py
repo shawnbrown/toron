@@ -34,15 +34,15 @@ the application layer:
               |       +------------+     +-------------+     +--------------+
               |
               |  +-------------------+                         +----------+
-              |  | element_weight    |     +----------------+  | property |
-              |  +-------------------+     | weight_info    |  +----------+
-              |  | element_weight_id |     +----------------+  | key      |
-              |  | weight_info_id    |<----| weight_info_id |  | value    |
-              +->| element_id        |•••  | name           |  +----------+
-                 | value             |  •  | description    |
-                 +-------------------+  •  | type_info      |
-                                        ••>| is_complete    |
-                                           +----------------+
+              |  | element_weight    |     +-------------+     | property |
+              |  +-------------------+     | weight      |     +----------+
+              |  | element_weight_id |     +-------------+     | key      |
+              |  | weight_id         |<----| weight_id   |     | value    |
+              +->| element_id        |•••  | name        |     +----------+
+                 | value             |  •  | description |
+                 +-------------------+  •  | type_info   |
+                                        ••>| is_complete |
+                                           +-------------+
 """
 
 import os
@@ -133,8 +133,8 @@ _schema_script = """
         FOREIGN KEY(location_id) REFERENCES location(location_id)
     );
 
-    CREATE TABLE weight_info(
-        weight_info_id INTEGER PRIMARY KEY,
+    CREATE TABLE weight(
+        weight_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
         type_info TEXT_ATTRIBUTES NOT NULL,
@@ -144,11 +144,11 @@ _schema_script = """
 
     CREATE TABLE element_weight(
         element_weight_id INTEGER PRIMARY KEY,
-        weight_info_id INTEGER,
+        weight_id INTEGER,
         element_id INTEGER,
         value REAL NOT NULL,
         FOREIGN KEY(element_id) REFERENCES element(element_id),
-        FOREIGN KEY(weight_info_id) REFERENCES weight_info(weight_info_id)
+        FOREIGN KEY(weight_id) REFERENCES weight(weight_id)
     );
 
     CREATE TABLE property(
@@ -348,7 +348,7 @@ def _add_functions_and_triggers(connection):
     jsonflatobj_columns = [
         ('edge', 'type_info'),
         ('quantity', 'attributes'),
-        ('weight_info', 'type_info'),
+        ('weight', 'type_info'),
     ]
     for table, column in jsonflatobj_columns:
         connection.execute(_make_trigger_for_attributes('INSERT', table, column))

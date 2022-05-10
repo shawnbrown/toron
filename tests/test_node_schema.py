@@ -245,7 +245,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
     There are three columns that use this type:
       * edge.type_info
       * quantity.attributes
-      * weight_info.type_info.
+      * weight.type_info.
     """
     def setUp(self):
         self.con = connect('mynode.toron')
@@ -258,7 +258,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
         for index, value in enumerate(self.valid_values):
             with self.subTest(value=value):
                 parameters = (None, f'name{index}', None, value, 0)
-                self.cur.execute("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
+                self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
     def test_non_string_values(self):
         regex = 'must be a JSON object with text values'
@@ -266,7 +266,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
                     parameters = (None, 'nonstring', None, value, 0)
-                    self.cur.execute("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
+                    self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
     def test_not_an_object(self):
         regex = 'must be a JSON object with text values'
@@ -274,7 +274,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
                     parameters = (None, 'nonobject', None, value, 0)
-                    self.cur.execute("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
+                    self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
     def test_malformed_json(self):
         regex = 'must be a JSON object with text values'
@@ -282,7 +282,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
                     parameters = (None, 'malformed', None, value, 0)
-                    self.cur.execute("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
+                    self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
     def test_none(self):
         """The property.value column should accept None/NULL values."""
@@ -290,7 +290,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
 
         with self.assertRaises(sqlite3.IntegrityError):
             parameters = (None, 'blerg', None, value, 0)
-            self.cur.execute("INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)", parameters)
+            self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
 
 class TestTriggerCoverage(unittest.TestCase):
@@ -396,7 +396,7 @@ class TestConnect(TempDirTestCase):
             'relation',
             'structure',
             'element_weight',
-            'weight_info',
+            'weight',
         }
         self.assertSetEqual(tables, expected)
 
@@ -517,9 +517,9 @@ class TestJsonConversion(TempDirTestCase):
     def test_text_attributes(self):
         """Selecting TEXT_ATTRIBUTES should convert strings into objects."""
         self.cur.execute(
-            'INSERT INTO weight_info VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO weight VALUES (?, ?, ?, ?, ?)',
             (None, 'foo', None, '{"bar": "baz"}', 0)
         )
-        self.cur.execute("SELECT type_info FROM weight_info WHERE name='foo'")
+        self.cur.execute("SELECT type_info FROM weight WHERE name='foo'")
         self.assertEqual(self.cur.fetchall(), [({'bar': 'baz'},)])
 
