@@ -17,6 +17,7 @@ from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_for_attributes
 from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
+from toron._node_schema import _quote_identifier
 
 
 class CheckJsonMixin(object):
@@ -522,4 +523,34 @@ class TestJsonConversion(TempDirTestCase):
         )
         self.cur.execute("SELECT type_info FROM weight WHERE name='foo'")
         self.assertEqual(self.cur.fetchall(), [({'bar': 'baz'},)])
+
+
+class TestQuoteIdentifier(unittest.TestCase):
+    def test_passing_behavior(self):
+        values = [
+            ('abc',        '"abc"'),
+            ('a b c',      '"a b c"'),      # whitepsace
+            ('   abc   ',  '"abc"'),        # leading/trailing whitespace
+            ('a   b\tc',   '"a b c"'),      # irregular whitepsace
+            ('a\n b\r\nc', '"a b c"'),      # linebreaks
+            ("a 'b' c",    '"a \'b\' c"'),  # single quotes
+            ('a "b" c',    '"a ""b"" c"'),  # double quotes
+        ]
+        for s_in, s_out in values:
+            with self.subTest(input_string=s_in, output_string=s_out):
+                self.assertEqual(_quote_identifier(s_in), s_out)
+
+    def test_surrogate_codes(self):
+        """Should only allow clean UTF-8 (no surrogate codes)."""
+        column_bytes = b'tama\xf1o'  # "tamaño" is Spanish for "size"
+        string_with_surrogate = column_bytes.decode('utf-8', 'surrogateescape')
+
+        with self.assertRaises(UnicodeEncodeError):
+            _quote_identifier(string_with_surrogate)
+
+    def test_nul_byte(self):
+        contains_nul = 'zip\x00 code'
+
+        with self.assertRaises(UnicodeEncodeError):
+            _quote_identifier(contains_nul)
 

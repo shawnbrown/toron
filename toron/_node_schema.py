@@ -412,3 +412,21 @@ def connect(path, mode='rwc'):
     msg = f'No such access mode: {mode!r}'
     raise ValueError(msg)
 
+
+def _quote_identifier(value):
+    """Return a quoted SQLite identifier suitable as a column name."""
+    value.encode('utf-8', errors='strict')  # Raises error on surrogate codes.
+
+    nul_pos = value.find('\x00')
+    if nul_pos != -1:
+        raise UnicodeEncodeError(
+            'utf-8',            # encoding
+            value,              # object
+            nul_pos,            # start position
+            nul_pos + 1,        # end position
+            'NUL not allowed',  # reason
+        )
+
+    value = ' '.join(value.split()).replace('"', '""')
+    return f'"{value}"'
+
