@@ -47,8 +47,9 @@ the application layer:
 
 import os
 import sqlite3
-from json import loads as _loads
 from ast import literal_eval
+from collections import Counter
+from json import loads as _loads
 
 from ._exceptions import ToronError
 
@@ -441,15 +442,24 @@ def _make_sql_new_labels(cursor, columns):
     """Return a list of SQL statements for adding new label columns."""
     if isinstance(columns, str):
         columns = [columns]
+    columns = [_quote_identifier(col) for col in columns]
+
+    not_allowed = {'"element_id"', '"location_id"', '"structure_id"'}.intersection(columns)
+    if not_allowed:
+        msg = f"label name not allowed: {', '.join(not_allowed)}"
+        raise ValueError(msg)
 
     current_cols = _get_column_names(cursor, 'element')
+    current_cols = [_quote_identifier(col) for col in current_cols]
     new_cols = [col for col in columns if col not in current_cols]
 
     if not new_cols:
         return []  # <- EXIT!
 
-    current_cols = [_quote_identifier(col) for col in current_cols]
-    new_cols = [_quote_identifier(col) for col in new_cols]
+    dupes = [obj for obj, count in Counter(new_cols).items() if count > 1]
+    if dupes:
+        msg = f"duplicate column name: {', '.join(dupes)}"
+        raise ValueError(msg)
 
     sql_stmnts = []
 

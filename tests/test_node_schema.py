@@ -617,3 +617,49 @@ class TestMakeSqlNewLabels(TempDirTestCase):
         statements = _make_sql_new_labels(self.cur, ['state', 'county'])  # <- Columns already exist.
         self.assertEqual(statements, [])
 
+    def test_duplicate_column_input(self):
+        regex = 'duplicate column name: "county"'
+        with self.assertRaisesRegex(ValueError, regex):
+            _make_sql_new_labels(self.cur, ['state', 'county', 'county'])
+
+    def test_normalization_duplicate_column_input(self):
+        regex = 'duplicate column name: "county"'
+        with self.assertRaisesRegex(ValueError, regex):
+            columns = [
+                'state',
+                'county    ',  # <- Normalized to "county", collides with duplicate.
+                'county',
+            ]
+            _make_sql_new_labels(self.cur, columns)
+
+    def test_normalization_collision_with_existing(self):
+        """Columns should be checked for collisions after normalizing."""
+        # Add initial label columns.
+        for stmnt in _make_sql_new_labels(self.cur, ['state', 'county']):
+            self.cur.execute(stmnt)
+
+        # Prepare attitional label columns.
+        columns = [
+            'state     ',  # <- Normalized to "state", which then gets skipped.
+            'county    ',  # <- Normalized to "county", which then gets skipped.
+            'tract     ',
+        ]
+        statements = _make_sql_new_labels(self.cur, columns)
+
+        expected = [
+            'DROP INDEX IF EXISTS unique_element_index',
+            'DROP INDEX IF EXISTS unique_structure_index',
+            'ALTER TABLE element ADD COLUMN "tract" TEXT DEFAULT \'-\' NOT NULL',
+            'ALTER TABLE location ADD COLUMN "tract" TEXT',
+            'ALTER TABLE structure ADD COLUMN "tract" INTEGER CHECK ("tract" IN (0, 1)) DEFAULT 0',
+            'CREATE UNIQUE INDEX unique_element_index ON element("state", "county", "tract")',
+            'CREATE UNIQUE INDEX unique_structure_index ON structure("state", "county", "tract")'
+        ]
+        msg = 'should only add "tract" because "state" and "county" already exist'
+        self.assertEqual(statements, expected, msg=msg)
+
+    def test_column_id_collision(self):
+        regex = 'label name not allowed: "location_id"'
+        with self.assertRaisesRegex(ValueError, regex):
+            _make_sql_new_labels(self.cur, ['state', 'location_id'])
+
