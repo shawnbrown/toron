@@ -18,6 +18,7 @@ from toron._node_schema import _make_trigger_for_attributes
 from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
 from toron._node_schema import _quote_identifier
+from toron._node_schema import _make_sql_new_labels
 
 
 class CheckJsonMixin(object):
@@ -553,4 +554,66 @@ class TestQuoteIdentifier(unittest.TestCase):
 
         with self.assertRaises(UnicodeEncodeError):
             _quote_identifier(contains_nul)
+
+
+class TestMakeSqlNewLabels(TempDirTestCase):
+    maxDiff = None
+
+    def setUp(self):
+        self.con = connect('mynode.toron')
+        self.cur = self.con.cursor()
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def test_add_columns_to_new(self):
+        """Add columns to new/empty node database."""
+        statements = _make_sql_new_labels(self.cur, ['state', 'county'])
+        expected = [
+            'DROP INDEX IF EXISTS unique_element_index',
+            'DROP INDEX IF EXISTS unique_structure_index',
+            'ALTER TABLE element ADD COLUMN "state" TEXT DEFAULT \'-\' NOT NULL',
+            'ALTER TABLE location ADD COLUMN "state" TEXT',
+            'ALTER TABLE structure ADD COLUMN "state" INTEGER CHECK ("state" IN (0, 1)) DEFAULT 0',
+            'ALTER TABLE element ADD COLUMN "county" TEXT DEFAULT \'-\' NOT NULL',
+            'ALTER TABLE location ADD COLUMN "county" TEXT',
+            'ALTER TABLE structure ADD COLUMN "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0',
+            'CREATE UNIQUE INDEX unique_element_index ON element("state", "county")',
+            'CREATE UNIQUE INDEX unique_structure_index ON structure("state", "county")'
+        ]
+        self.assertEqual(statements, expected)
+
+    def test_add_columns_to_exsting(self):
+        """Add columns to database with existing label columns."""
+        # Add initial label columns.
+        statements = _make_sql_new_labels(self.cur, ['state', 'county'])
+        for stmnt in statements:
+            self.cur.execute(stmnt)
+
+        # Add attitional label columns.
+        statements = _make_sql_new_labels(self.cur, ['tract', 'block'])
+        expected = [
+            'DROP INDEX IF EXISTS unique_element_index',
+            'DROP INDEX IF EXISTS unique_structure_index',
+            'ALTER TABLE element ADD COLUMN "tract" TEXT DEFAULT \'-\' NOT NULL',
+            'ALTER TABLE location ADD COLUMN "tract" TEXT',
+            'ALTER TABLE structure ADD COLUMN "tract" INTEGER CHECK ("tract" IN (0, 1)) DEFAULT 0',
+            'ALTER TABLE element ADD COLUMN "block" TEXT DEFAULT \'-\' NOT NULL',
+            'ALTER TABLE location ADD COLUMN "block" TEXT',
+            'ALTER TABLE structure ADD COLUMN "block" INTEGER CHECK ("block" IN (0, 1)) DEFAULT 0',
+            'CREATE UNIQUE INDEX unique_element_index ON element("state", "county", "tract", "block")',
+            'CREATE UNIQUE INDEX unique_structure_index ON structure("state", "county", "tract", "block")'
+        ]
+        self.assertEqual(statements, expected)
+
+    def test_no_columns_to_add(self):
+        """When there are no new columns to add, should return empty list."""
+        # Add initial label columns.
+        statements = _make_sql_new_labels(self.cur, ['state', 'county'])
+        for stmnt in statements:
+            self.cur.execute(stmnt)
+
+        # When there are no new columns to add, should return empty list.
+        statements = _make_sql_new_labels(self.cur, ['state', 'county'])  # <- Columns already exist.
+        self.assertEqual(statements, [])
 
