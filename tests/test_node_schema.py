@@ -19,6 +19,7 @@ from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
 from toron._node_schema import _quote_identifier
 from toron._node_schema import _make_sql_new_labels
+from toron._node_schema import _make_sql_insert_elements
 from toron._node_schema import savepoint
 
 
@@ -663,6 +664,49 @@ class TestMakeSqlNewLabels(TempDirTestCase):
         regex = 'label name not allowed: "location_id"'
         with self.assertRaisesRegex(ValueError, regex):
             _make_sql_new_labels(self.cur, ['state', 'location_id'])
+
+
+class TestMakeSqlInsertElements(TempDirTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.node_path = 'mynode.toron'
+        con = connect(cls.node_path)
+        cur = con.cursor()
+        for stmnt in _make_sql_new_labels(cur, ['state', 'county', 'town']):
+            cur.execute(stmnt)
+
+    def setUp(self):
+        self.con = connect(self.node_path)
+        self.cur = self.con.cursor()
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def test_simple_case(self):
+        """Insert columns that match element table."""
+        columns = ['state', 'county', 'town']
+        sql = _make_sql_insert_elements(self.cur, columns)
+        expected = 'INSERT INTO element ("state", "county", "town") VALUES (?, ?, ?)'
+        self.assertEqual(sql, expected)
+
+    def test_differently_ordered_columns(self):
+        """Order should reflect given *columns* not table order."""
+        columns = ['town', 'county', 'state']  # <- Reverse order from table cols.
+        sql = _make_sql_insert_elements(self.cur, columns)
+        expected = 'INSERT INTO element ("town", "county", "state") VALUES (?, ?, ?)'
+        self.assertEqual(sql, expected)
+
+    def test_subset_of_columns(self):
+        """Insert fewer column that exist in the element table."""
+        columns = ['state', 'county']  # <- Does not include "town", and that's OK.
+        sql = _make_sql_insert_elements(self.cur, columns)
+        expected = 'INSERT INTO element ("state", "county") VALUES (?, ?)'
+        self.assertEqual(sql, expected)
+
+    def test_bad_column_value(self):
+        regex = 'invalid column name: "region"'
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            _make_sql_insert_elements(self.cur, ['state', 'region'])
 
 
 class TestSavepoint(unittest.TestCase):
