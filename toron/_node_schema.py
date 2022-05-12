@@ -360,7 +360,7 @@ def _add_functions_and_triggers(connection):
 def _connect_to_existing(path):
     """Return a connection to an existing Toron node database."""
     try:
-        con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
+        con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES, isolation_level=None)
     except sqlite3.OperationalError:  # When *path* is directory or other non-file.
         raise ToronError(f'Path is not a Toron node: {path!r}')
 
@@ -384,7 +384,7 @@ def _connect_to_existing(path):
 
 def _connect_to_new(path):
     """Create a new Toron node database and return a connection to it."""
-    con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
+    con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES, isolation_level=None)
     con.executescript(_schema_script)  # Create database schema.
     _add_functions_and_triggers(con)
     return con
