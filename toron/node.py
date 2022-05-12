@@ -6,6 +6,7 @@ from contextlib import closing
 from ._node_schema import connect
 from ._node_schema import savepoint
 from ._node_schema import _make_sql_new_labels
+from ._node_schema import _make_sql_insert_elements
 
 
 class Node(object):
@@ -25,4 +26,15 @@ class Node(object):
                 with savepoint(cur):
                     for stmnt in _make_sql_new_labels(cur, columns):
                         cur.execute(stmnt)
+
+    def add_elements(self, iterable, columns=None):
+        iterator = iter(iterable)
+        if not columns:
+            columns = next(iterator)
+
+        with closing(connect(self.path, mode=self.mode)) as con:
+            with closing(con.cursor()) as cur:
+                with savepoint(cur):
+                    sql = _make_sql_insert_elements(cur, columns)
+                    cur.executemany(sql, iterator)
 

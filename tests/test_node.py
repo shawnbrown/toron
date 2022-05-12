@@ -38,3 +38,46 @@ class TestNode(TempDirTestCase):
         columns = self.get_column_names(con, 'structure')
         self.assertEqual(columns, ['structure_id', 'state', 'county'])
 
+    def test_add_elements(self):
+        path = 'mynode.toron'
+        node = Node(path)
+        node.add_columns(['state', 'county'])  # <- Add columns.
+
+        elements = [
+            ('IA', 'POLK'),
+            ('IN', 'LA PORTE'),
+            ('MN', 'HENNEPIN '),
+        ]
+        node.add_elements(elements, columns=['state', 'county'])
+
+        con = sqlite3.connect(path)
+        result = con.execute('SELECT * FROM element').fetchall()
+        expected = [
+            (1, 'IA', 'POLK'),
+            (2, 'IN', 'LA PORTE'),
+            (3, 'MN', 'HENNEPIN '),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_add_elements_no_column_arg(self):
+        path = 'mynode.toron'
+        node = Node(path)
+        node.add_columns(['state', 'county'])  # <- Add columns.
+
+        elements = [
+            ('state', 'county'),  # <- Header row.
+            ('IA', 'POLK'),
+            ('IN', 'LA PORTE'),
+            ('MN', 'HENNEPIN '),
+        ]
+        node.add_elements(elements) # <- No *columns* argument given.
+
+        con = sqlite3.connect(path)
+        result = con.execute('SELECT * FROM element').fetchall()
+        expected = [
+            (1, 'IA', 'POLK'),
+            (2, 'IN', 'LA PORTE'),
+            (3, 'MN', 'HENNEPIN '),
+        ]
+        self.assertEqual(result, expected)
+
