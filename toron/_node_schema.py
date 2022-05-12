@@ -45,6 +45,7 @@ the application layer:
                                            +-------------+
 """
 
+import itertools
 import os
 import sqlite3
 from ast import literal_eval
@@ -483,4 +484,42 @@ def _make_sql_new_labels(cursor, columns):
     ])
 
     return sql_stmnts
+
+
+_SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
+
+
+class savepoint(object):
+    """Context manager to wrap a block of code inside a SAVEPOINT.
+    If the block exists without errors, the SAVEPOINT is released
+    and the changes are committed. If an error occurs, all of the
+    changes are rolled back:
+
+        cur = con.cursor()
+        with savepoint(cur):
+            cur.execute(...)
+    """
+    def __init__(self, cursor):
+        if cursor.connection.isolation_level is not None:
+            isolation_level = cursor.connection.isolation_level
+            msg = (
+                f'isolation_level must be None, got: {isolation_level!r}\n'
+                '\n'
+                'For explicit transaction handling, the connection must '
+                'be operating in "autocommit" mode. Turn on autocommit '
+                'mode by setting "con.isolation_level = None".'
+            )
+            raise sqlite3.OperationalError(msg)
+
+        self.name = next(_SAVEPOINT_NAME_GENERATOR)
+        self.cursor = cursor
+
+    def __enter__(self):
+        self.cursor.execute(f'SAVEPOINT {self.name}')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            self.cursor.execute(f'RELEASE {self.name}')
+        else:
+            self.cursor.execute(f'ROLLBACK TO {self.name}')
 

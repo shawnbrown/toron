@@ -19,6 +19,7 @@ from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
 from toron._node_schema import _quote_identifier
 from toron._node_schema import _make_sql_new_labels
+from toron._node_schema import savepoint
 
 
 class CheckJsonMixin(object):
@@ -662,4 +663,92 @@ class TestMakeSqlNewLabels(TempDirTestCase):
         regex = 'label name not allowed: "location_id"'
         with self.assertRaisesRegex(ValueError, regex):
             _make_sql_new_labels(self.cur, ['state', 'location_id'])
+
+
+class TestSavepoint(unittest.TestCase):
+    def setUp(self):
+        con = sqlite3.connect(':memory:')
+        con.isolation_level = None
+        self.cursor = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_transaction_status(self):
+        con = self.cursor.connection
+
+        self.assertFalse(con.in_transaction)
+
+        with savepoint(self.cursor):
+            self.assertTrue(con.in_transaction)
+
+        self.assertFalse(con.in_transaction)
+
+    def test_release(self):
+        cur = self.cursor
+
+        with savepoint(cur):
+            cur.execute('CREATE TEMPORARY TABLE test_table ("A")')
+            cur.execute("INSERT INTO test_table VALUES ('one')")
+            cur.execute("INSERT INTO test_table VALUES ('two')")
+            cur.execute("INSERT INTO test_table VALUES ('three')")
+
+        cur.execute('SELECT * FROM test_table')
+        self.assertEqual(cur.fetchall(), [('one',), ('two',), ('three',)])
+
+    def test_nested_releases(self):
+        cur = self.cursor
+
+        with savepoint(cur):
+            cur.execute('CREATE TEMPORARY TABLE test_table ("A")')
+            cur.execute("INSERT INTO test_table VALUES ('one')")
+            with savepoint(cur):  # <- Nested!
+                cur.execute("INSERT INTO test_table VALUES ('two')")
+            cur.execute("INSERT INTO test_table VALUES ('three')")
+
+        cur.execute('SELECT * FROM test_table')
+        self.assertEqual(cur.fetchall(), [('one',), ('two',), ('three',)])
+
+    def test_rollback(self):
+        cur = self.cursor
+
+        with savepoint(cur):  # <- Released.
+            cur.execute('CREATE TEMPORARY TABLE test_table ("A")')
+
+        try:
+            with savepoint(cur):  # <- Rolled back!
+                cur.execute("INSERT INTO test_table VALUES ('one')")
+                cur.execute("INSERT INTO test_table VALUES ('two')")
+                cur.execute("INSERT INTO missing_table VALUES ('three')")  # <- Bad table.
+        except sqlite3.OperationalError:
+            pass
+
+        cur.execute('SELECT * FROM test_table')
+        self.assertEqual(cur.fetchall(), [], 'Table should exist but contain no records.')
+
+    def test_nested_rollback(self):
+        cur = self.cursor
+
+        with savepoint(cur):  # <- Released.
+            cur.execute('CREATE TEMPORARY TABLE test_table ("A")')
+            cur.execute("INSERT INTO test_table VALUES ('one')")
+            try:
+                with savepoint(cur):  # <- Nested rollback!
+                    cur.execute("INSERT INTO test_table VALUES ('two')")
+                    raise Exception()
+            except Exception:
+                pass
+            cur.execute("INSERT INTO test_table VALUES ('three')")
+
+        cur.execute('SELECT * FROM test_table')
+        self.assertEqual(cur.fetchall(), [('one',), ('three',)])
+
+    def test_bad_isolation_level(self):
+        connection = sqlite3.connect(':memory:')
+        connection.isolation_level = 'DEFERRED'  # <- Incompatible isolation level.
+        cur = connection.cursor()
+
+        regex = "isolation_level must be None, got: 'DEFERRED'"
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            with savepoint(cur):  # <- Should raise error.
+                pass
 
