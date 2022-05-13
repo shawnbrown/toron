@@ -81,3 +81,27 @@ class TestNode(TempDirTestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_add_elements_column_subset(self):
+        """Omitted columns should get default value ('-')."""
+        path = 'mynode.toron'
+        node = Node(path)
+        node.add_columns(['state', 'county'])  # <- Add columns.
+
+        # Element rows include "state" but not "county".
+        elements = [
+            ('state',),  # <- Header row.
+            ('IA',),
+            ('IN',),
+            ('MN',),
+        ]
+        node.add_elements(elements) # <- No *columns* argument given.
+
+        con = sqlite3.connect(path)
+        result = con.execute('SELECT * FROM element').fetchall()
+        expected = [
+            (1, 'IA', '-'),  # <- "county" gets default '-'
+            (2, 'IN', '-'),  # <- "county" gets default '-'
+            (3, 'MN', '-'),  # <- "county" gets default '-'
+        ]
+        self.assertEqual(result, expected)
+
