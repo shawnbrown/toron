@@ -20,6 +20,7 @@ from toron._node_schema import connect
 from toron._node_schema import _quote_identifier
 from toron._node_schema import _make_sql_new_labels
 from toron._node_schema import _make_sql_insert_elements
+from toron._node_schema import _insert_weight_get_id
 from toron._node_schema import savepoint
 
 
@@ -707,6 +708,29 @@ class TestMakeSqlInsertElements(TempDirTestCase):
         regex = 'invalid column name: "region"'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             _make_sql_insert_elements(self.cur, ['state', 'region'])
+
+
+class TestInsertWeightGetId(TempDirTestCase):
+    def setUp(self):
+        self.con = connect('mynode.toron')
+        self.cur = self.con.cursor()
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def test_simple_case(self):
+        name = 'myname'
+        type_info = {'category': 'stuff'}
+        description = 'My description.'
+        weight_id = _insert_weight_get_id(self.cur, name, type_info, description)
+
+        actual = self.cur.execute('SELECT * FROM weight').fetchall()
+        expected = [(1, 'myname', 'My description.', {'category': 'stuff'}, None)]
+        self.assertEqual(actual, expected)
+
+        msg = 'retrieved weight_id should be same as returned from function'
+        retrieved_weight_id = actual[0][0]
+        self.assertEqual(retrieved_weight_id, weight_id, msg=msg)
 
 
 class TestSavepoint(unittest.TestCase):

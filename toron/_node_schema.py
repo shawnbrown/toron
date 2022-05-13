@@ -51,6 +51,7 @@ import sqlite3
 from ast import literal_eval
 from collections import Counter
 from json import loads as _loads
+from json import dumps as _dumps
 
 from ._exceptions import ToronError
 
@@ -508,6 +509,30 @@ def _make_sql_insert_elements(cursor, columns):
     columns_clause = ', '.join(columns)
     values_clause = ', '.join('?' * len(columns))
     return f'INSERT INTO element ({columns_clause}) VALUES ({values_clause})'
+
+
+if sqlite3.sqlite_version_info >= (3, 35, 0):
+    # The RETURNING clause was added in SQLite 3.35.0 (released 2021-03-12).
+    def _insert_weight_get_id(cursor, name, type_info, description=None):
+        type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
+        sql = """
+            INSERT INTO weight(name, type_info, description)
+            VALUES(?, ?, ?)
+            RETURNING weight_id
+        """
+        cursor.execute(sql, (name, type_info, description))
+        return cursor.fetchone()[0]
+else:
+    # Older versions of SQLite will need to use last_insert_rowid() function.
+    def _insert_weight_get_id(cursor, name, type_info, description=None):
+        type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
+        sql = """
+            INSERT INTO weight(name, type_info, description)
+            VALUES(?, ?, ?)
+        """
+        cursor.execute(sql, (name, type_info, description))
+        cursor.execute('SELECT last_insert_rowid()')
+        return cursor.fetchone()[0]
 
 
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
