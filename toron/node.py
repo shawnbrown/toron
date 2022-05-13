@@ -2,9 +2,11 @@
 
 import os
 from contextlib import closing
+from itertools import compress
 
 from ._node_schema import connect
 from ._node_schema import savepoint
+from ._node_schema import _get_column_names
 from ._node_schema import _make_sql_new_labels
 from ._node_schema import _make_sql_insert_elements
 
@@ -35,6 +37,14 @@ class Node(object):
         with closing(connect(self.path, mode=self.mode)) as con:
             with closing(con.cursor()) as cur:
                 with savepoint(cur):
+                    # Get allowed columns and build selectors values.
+                    allowed_columns = _get_column_names(cur, 'element')
+                    selectors = tuple((col in allowed_columns) for col in columns)
+
+                    # Filter column names and iterator rows to allowed columns.
+                    columns = compress(columns, selectors)
+                    iterator = (tuple(compress(row, selectors)) for row in iterator)
+
                     sql = _make_sql_insert_elements(cur, columns)
                     cur.executemany(sql, iterator)
 

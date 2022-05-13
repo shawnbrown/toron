@@ -105,3 +105,27 @@ class TestNode(TempDirTestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_add_elements_column_superset(self):
+        """Surplus columns should be filtered-out before loading."""
+        path = 'mynode.toron'
+        node = Node(path)
+        node.add_columns(['state', 'county'])  # <- Add columns.
+
+        # Element rows include unknown columns "region" and "group".
+        elements = [
+            ('region', 'state', 'group',  'county'),  # <- Header row.
+            ('WNC',    'IA',    'GROUP2', 'POLK'),
+            ('ENC',    'IN',    'GROUP7', 'LA PORTE'),
+            ('WNC',    'MN',    'GROUP1', 'HENNEPIN '),
+        ]
+        node.add_elements(elements) # <- No *columns* argument given.
+
+        con = sqlite3.connect(path)
+        result = con.execute('SELECT * FROM element').fetchall()
+        expected = [
+            (1, 'IA', 'POLK'),
+            (2, 'IN', 'LA PORTE'),
+            (3, 'MN', 'HENNEPIN '),
+        ]
+        self.assertEqual(result, expected)
+
