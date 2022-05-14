@@ -21,6 +21,7 @@ from toron._node_schema import _quote_identifier
 from toron._node_schema import _make_sql_new_labels
 from toron._node_schema import _make_sql_insert_elements
 from toron._node_schema import _insert_weight_get_id
+from toron._node_schema import _make_sql_insert_element_weight
 from toron._node_schema import savepoint
 
 
@@ -731,6 +732,57 @@ class TestInsertWeightGetId(TempDirTestCase):
         msg = 'retrieved weight_id should be same as returned from function'
         retrieved_weight_id = actual[0][0]
         self.assertEqual(retrieved_weight_id, weight_id, msg=msg)
+
+
+class TestMakeSqlInsertElementWeight(TempDirTestCase):
+    def setUp(self):
+        self.con = connect('mynode.toron')
+        self.cur = self.con.cursor()
+
+        for stmnt in _make_sql_new_labels(self.cur, ['state', 'county', 'town']):
+            self.cur.execute(stmnt)
+
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def test_all_columns(self):
+        columns = ['state', 'county', 'town']
+        sql = _make_sql_insert_element_weight(self.cur, columns)
+        expected = """
+            INSERT INTO element_weight (weight_id, element_id, value)
+            SELECT ? AS weight_id, element_id, ? AS value
+            FROM element
+            WHERE "state"=? AND "county"=? AND "town"=?
+            GROUP BY "state", "county", "town"
+            HAVING COUNT(*)=1
+        """
+        self.assertEqual(
+            dedent(sql).strip(),
+            dedent(expected).strip(),
+        )
+
+    def test_subset_of_columns(self):
+        columns = ['state', 'county']
+        sql = _make_sql_insert_element_weight(self.cur, columns)
+        expected = """
+            INSERT INTO element_weight (weight_id, element_id, value)
+            SELECT ? AS weight_id, element_id, ? AS value
+            FROM element
+            WHERE "state"=? AND "county"=?
+            GROUP BY "state", "county"
+            HAVING COUNT(*)=1
+        """
+        self.assertEqual(
+            dedent(sql).strip(),
+            dedent(expected).strip(),
+        )
+
+    def test_invalid_column(self):
+        regex = 'invalid column name: "region"'
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            columns = ['state', 'county', 'region']
+            sql = _make_sql_insert_element_weight(self.cur, columns)
 
 
 class TestSavepoint(unittest.TestCase):

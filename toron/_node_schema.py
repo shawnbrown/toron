@@ -535,6 +535,31 @@ else:
         return cursor.fetchone()[0]
 
 
+def _make_sql_insert_element_weight(cursor, columns):
+    columns = [_quote_identifier(col) for col in columns]
+
+    existing_columns = _get_column_names(cursor, 'element')
+    existing_columns = [_quote_identifier(col) for col in existing_columns]
+
+    invalid_columns = set(columns).difference(existing_columns)
+    if invalid_columns:
+        msg = f'invalid column name: {", ".join(invalid_columns)}'
+        raise sqlite3.OperationalError(msg)
+
+    where_clause = ' AND '.join(f'{col}=?' for col in columns)
+    groupby_clause = ', '.join(columns)
+
+    sql = f"""
+        INSERT INTO element_weight (weight_id, element_id, value)
+        SELECT ? AS weight_id, element_id, ? AS value
+        FROM element
+        WHERE {where_clause}
+        GROUP BY {groupby_clause}
+        HAVING COUNT(*)=1
+    """
+    return sql
+
+
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
 
 
