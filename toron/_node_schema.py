@@ -151,7 +151,8 @@ _schema_script = """
         element_id INTEGER,
         value REAL NOT NULL,
         FOREIGN KEY(element_id) REFERENCES element(element_id),
-        FOREIGN KEY(weight_id) REFERENCES weight(weight_id)
+        FOREIGN KEY(weight_id) REFERENCES weight(weight_id),
+        UNIQUE (element_id, weight_id)
     );
 
     CREATE TABLE property(
