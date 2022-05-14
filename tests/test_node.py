@@ -129,3 +129,106 @@ class TestNode(TempDirTestCase):
         ]
         self.assertEqual(result, expected)
 
+
+class TestNodeAddWeights(TempDirTestCase):
+    """Tests for node.add_weights() method."""
+    def setUp(self):
+        self.path = 'mynode.toron'
+        self.node = Node(self.path)
+        self.node.add_columns(['state', 'county', 'tract'])
+        self.node.add_elements([
+            ('state', 'county', 'tract'),
+            ('12', '001', '000200'),
+            ('12', '003', '040101'),
+            ('12', '003', '040102'),
+            ('12', '005', '000300'),
+            ('12', '007', '000200'),
+            ('12', '011', '010401'),
+            ('12', '011', '010601'),
+            ('12', '017', '450302'),
+            ('12', '019', '030202'),
+        ])
+
+        con = sqlite3.connect(self.path)
+        self.cursor = con.cursor()
+        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_full_column_match(self):
+        columns = ('state', 'county', 'tract', 'pop10')
+        weights = [
+            ('12', '001', '000200', 110),
+            ('12', '003', '040101', 212),
+            ('12', '003', '040102', 17),
+            ('12', '005', '000300', 10),
+            ('12', '007', '000200', 414),
+            ('12', '011', '010401', 223),
+            ('12', '011', '010601', 141),
+            ('12', '017', '450302', 183),
+            ('12', '019', '030202', 62),
+        ]
+        self.node.add_weights(weights, columns, name='pop10', type_info={'category': 'census'})
+
+        self.cursor.execute('SELECT * FROM weight')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(1, 'pop10', None, '{"category": "census"}', 1)],  # <- is_complete is 1
+        )
+
+        self.cursor.execute("""
+            SELECT state, county, tract, value
+            FROM element
+            NATURAL JOIN element_weight
+            WHERE weight_id=1
+        """)
+        self.assertEqual(set(self.cursor.fetchall()), set(weights))
+
+    def test_skip_non_unique_matches(self):
+        """Should only insert weights that match to a single element."""
+        weights = [
+            ('state', 'county', 'pop10'),
+            ('12', '001', 110),
+            ('12', '003', 229),  # <- Matches multiple elements.
+            ('12', '005', 10),
+            ('12', '007', 414),
+            ('12', '011', 364),  # <- Matches multiple elements.
+            ('12', '017', 183),
+            ('12', '019', 62),
+        ]
+        self.node.add_weights(weights, name='pop10', type_info={'category': 'census'})
+
+        self.cursor.execute('SELECT * FROM weight')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(1, 'pop10', None, '{"category": "census"}', 0)],  # <- is_complete is 0
+        )
+
+        # Get loaded weights/
+        self.cursor.execute("""
+            SELECT state, county, value
+            FROM element
+            JOIN element_weight USING (element_id)
+            WHERE weight_id=1
+        """)
+        result = self.cursor.fetchall()
+
+        expected = [
+            ('12', '001', 110),
+            #('12', '003', 229),  <- Not included because no unique match.
+            ('12', '005', 10),
+            ('12', '007', 414),
+            #('12', '011', 364),  <- Not included because no unique match.
+            ('12', '017', 183),
+            ('12', '019', 62),
+        ]
+        self.assertEqual(set(result), set(expected))
+
+    @unittest.expectedFailure
+    def test_match_by_element_id(self):
+        raise NotImplementedError
+
+    @unittest.expectedFailure
+    def test_mismatched_labels_and_element_id(self):
+        raise NotImplementedError
+
