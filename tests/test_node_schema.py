@@ -22,6 +22,7 @@ from toron._node_schema import _make_sql_new_labels
 from toron._node_schema import _make_sql_insert_elements
 from toron._node_schema import _insert_weight_get_id
 from toron._node_schema import _make_sql_insert_element_weight
+from toron._node_schema import _update_weight_is_complete
 from toron._node_schema import savepoint
 
 
@@ -783,6 +784,65 @@ class TestMakeSqlInsertElementWeight(TempDirTestCase):
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             columns = ['state', 'county', 'region']
             sql = _make_sql_insert_element_weight(self.cur, columns)
+
+
+class TestUpdateWeightIsComplete(unittest.TestCase):
+    def setUp(self):
+        self.con = sqlite3.connect(':memory:', detect_types=sqlite3.PARSE_DECLTYPES, isolation_level=None)
+        self.con.executescript(_schema_script)  # Create database schema.
+        _add_functions_and_triggers(self.con)
+        self.cur = self.con.cursor()
+
+        self.columns = ['label_a', 'label_b']
+        for stmnt in _make_sql_new_labels(self.cur, self.columns):
+            self.cur.execute(stmnt)
+        sql = _make_sql_insert_elements(self.cur, self.columns)
+        iterator = [
+            ('X', '001'),
+            ('Y', '001'),
+            ('Z', '002'),
+        ]
+        self.cur.executemany(sql, iterator)
+
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def test_complete(self):
+        weight_id = _insert_weight_get_id(self.cur, 'tot10', {'category': 'census'})
+
+        # Insert element_weight records.
+        iterator = [
+            (weight_id, 12, 'X', '001'),
+            (weight_id, 35, 'Y', '001'),
+            (weight_id, 20, 'Z', '002'),
+        ]
+        sql = _make_sql_insert_element_weight(self.cur, self.columns)
+        self.cur.executemany(sql, iterator)
+
+        _update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
+
+        # Check is_complete flag.
+        self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
+        result = self.cur.fetchone()
+        self.assertEqual(result, (1,), msg='weight is complete, should be 1')
+
+    def test_incomplete(self):
+        weight_id = _insert_weight_get_id(self.cur, 'tot10', {'category': 'census'})
+
+        # Insert element_weight records.
+        iterator = [
+            (weight_id, 12, 'X', '001'),
+            (weight_id, 35, 'Y', '001'),
+        ]
+        sql = _make_sql_insert_element_weight(self.cur, self.columns)
+        self.cur.executemany(sql, iterator)
+
+        _update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
+
+        # Check is_complete flag.
+        self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
+        result = self.cur.fetchone()
+        self.assertEqual(result, (0,), msg='weight is incomplete, should be 0')
 
 
 class TestSavepoint(unittest.TestCase):

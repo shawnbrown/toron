@@ -561,6 +561,19 @@ def _make_sql_insert_element_weight(cursor, columns):
     return sql
 
 
+def _update_weight_is_complete(cursor, weight_id):
+    """Update the 'weight.is_complete' value (set to 1 or 0)."""
+    sql = """
+        UPDATE weight
+        SET is_complete=((SELECT COUNT(*)
+                          FROM element_weight
+                          WHERE weight_id=?) = (SELECT COUNT(*)
+                                                FROM element))
+        WHERE weight_id=?
+    """
+    cursor.execute(sql, (weight_id, weight_id))
+
+
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
 
 
