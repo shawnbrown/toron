@@ -14,24 +14,24 @@ the application layer:
   +---------------------+        | relation_id      |     •••• <Other Node>
   | edge_id             |------->| edge_id          |     •
   | name                |  ••••••| other_element_id |<•••••
-  | type_info           |  •  •••| element_id       |<-+     +-------------+
-  | description         |  •  •  | proportion       |  |     | quantity    |
-  | user_properties     |  •  •  | mapping_level    |  |     +-------------+
-  | other_uuid          |  •  •  +------------------+  |     | quantity_id |
-  | other_filename_hint |  •  •                        |  +->| location_id |
-  | other_element_hash  |<••  •                        |  |  | attributes  |
-  | is_complete         |<•••••       +----------------+  |  | value       |
-  +---------------------+             |                   |  +-------------+
-                                      |                   |
-                      +------------+  |  +-------------+  |  +--------------+
-                      | element    |  |  | location    |  |  | structure    |
-                      +------------+  |  +-------------+  |  +--------------+
-              +-------| element_id |--+  | location_id |--+  | structure_id |
-              |       | label_a    |••••>| label_a     |<••••| label_a      |
-              |       | label_b    |••••>| label_b     |<••••| label_b      |
-              |       | label_c    |••••>| label_c     |<••••| label_c      |
-              |       | ...        |••••>| ...         |<••••| ...          |
-              |       +------------+     +-------------+     +--------------+
+  | type_info           |  •  •••| element_id       |<-+     +--------------+
+  | description         |  •  •  | proportion       |  |     | quantity     |
+  | user_properties     |  •  •  | mapping_level    |  |     +--------------+
+  | other_uuid          |  •  •  +------------------+  |     | quantity_id  |
+  | other_filename_hint |  •  •                        |  +->| _location_id |
+  | other_element_hash  |<••  •                        |  |  | attributes   |
+  | is_complete         |<•••••      +-----------------+  |  | value        |
+  +---------------------+            |                    |  +--------------+
+                                     |                    |
+                     +------------+  |  +--------------+  |  +--------------+
+                     | element    |  |  | location     |  |  | structure    |
+                     +------------+  |  +--------------+  |  +--------------+
+              +------| element_id |--+  | _location_id |--+  | structure_id |
+              |      | label_a    |••••>| label_a      |<••••| label_a      |
+              |      | label_b    |••••>| label_b      |<••••| label_b      |
+              |      | label_c    |••••>| label_c      |<••••| label_c      |
+              |      | ...        |••••>| ...          |<••••| ...          |
+              |      +------------+     +--------------+     +--------------+
               |
               |  +-------------------+                         +----------+
               |  | element_weight    |     +-------------+     | property |
@@ -119,7 +119,7 @@ _schema_script = """
     );
 
     CREATE TABLE location(
-        location_id INTEGER PRIMARY KEY
+        _location_id INTEGER PRIMARY KEY
         /* label columns added programmatically */
     );
 
@@ -130,10 +130,10 @@ _schema_script = """
 
     CREATE TABLE quantity(
         quantity_id INTEGER PRIMARY KEY,
-        location_id INTEGER,
+        _location_id INTEGER,
         attributes TEXT_ATTRIBUTES NOT NULL,
         value NUMERIC NOT NULL,
-        FOREIGN KEY(location_id) REFERENCES location(location_id)
+        FOREIGN KEY(_location_id) REFERENCES location(_location_id)
     );
 
     CREATE TABLE weight(
@@ -447,7 +447,7 @@ def _make_sql_new_labels(cursor, columns):
         columns = [columns]
     columns = [_quote_identifier(col) for col in columns]
 
-    not_allowed = {'"element_id"', '"location_id"', '"structure_id"'}.intersection(columns)
+    not_allowed = {'"element_id"', '"_location_id"', '"structure_id"'}.intersection(columns)
     if not_allowed:
         msg = f"label name not allowed: {', '.join(not_allowed)}"
         raise ValueError(msg)

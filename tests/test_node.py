@@ -33,7 +33,7 @@ class TestNode(TempDirTestCase):
         self.assertEqual(columns, ['element_id', 'state', 'county'])
 
         columns = self.get_column_names(con, 'location')
-        self.assertEqual(columns, ['location_id', 'state', 'county'])
+        self.assertEqual(columns, ['_location_id', 'state', 'county'])
 
         columns = self.get_column_names(con, 'structure')
         self.assertEqual(columns, ['structure_id', 'state', 'county'])

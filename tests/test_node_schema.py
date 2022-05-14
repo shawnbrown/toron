@@ -664,9 +664,9 @@ class TestMakeSqlNewLabels(TempDirTestCase):
         self.assertEqual(statements, expected, msg=msg)
 
     def test_column_id_collision(self):
-        regex = 'label name not allowed: "location_id"'
+        regex = 'label name not allowed: "_location_id"'
         with self.assertRaisesRegex(ValueError, regex):
-            _make_sql_new_labels(self.cur, ['state', 'location_id'])
+            _make_sql_new_labels(self.cur, ['state', '_location_id'])
 
 
 class TestMakeSqlInsertElements(TempDirTestCase):
