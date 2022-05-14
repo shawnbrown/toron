@@ -23,15 +23,15 @@ the application layer:
   | is_complete         |<•••••      +-----------------+  |  | value        |
   +---------------------+            |                    |  +--------------+
                                      |                    |
-                     +------------+  |  +--------------+  |  +--------------+
-                     | element    |  |  | location     |  |  | structure    |
-                     +------------+  |  +--------------+  |  +--------------+
-              +------| element_id |--+  | _location_id |--+  | structure_id |
-              |      | label_a    |••••>| label_a      |<••••| label_a      |
-              |      | label_b    |••••>| label_b      |<••••| label_b      |
-              |      | label_c    |••••>| label_c      |<••••| label_c      |
-              |      | ...        |••••>| ...          |<••••| ...          |
-              |      +------------+     +--------------+     +--------------+
+                     +------------+  |  +--------------+  |  +---------------+
+                     | element    |  |  | location     |  |  | structure     |
+                     +------------+  |  +--------------+  |  +---------------+
+              +------| element_id |--+  | _location_id |--+  | _structure_id |
+              |      | label_a    |••••>| label_a      |<••••| label_a       |
+              |      | label_b    |••••>| label_b      |<••••| label_b       |
+              |      | label_c    |••••>| label_c      |<••••| label_c       |
+              |      | ...        |••••>| ...          |<••••| ...           |
+              |      +------------+     +--------------+     +---------------+
               |
               |  +-------------------+                         +----------+
               |  | element_weight    |     +-------------+     | property |
@@ -124,7 +124,7 @@ _schema_script = """
     );
 
     CREATE TABLE structure(
-        structure_id INTEGER PRIMARY KEY
+        _structure_id INTEGER PRIMARY KEY
         /* label columns added programmatically */
     );
 
@@ -447,7 +447,7 @@ def _make_sql_new_labels(cursor, columns):
         columns = [columns]
     columns = [_quote_identifier(col) for col in columns]
 
-    not_allowed = {'"element_id"', '"_location_id"', '"structure_id"'}.intersection(columns)
+    not_allowed = {'"element_id"', '"_location_id"', '"_structure_id"'}.intersection(columns)
     if not_allowed:
         msg = f"label name not allowed: {', '.join(not_allowed)}"
         raise ValueError(msg)

@@ -36,7 +36,7 @@ class TestNode(TempDirTestCase):
         self.assertEqual(columns, ['_location_id', 'state', 'county'])
 
         columns = self.get_column_names(con, 'structure')
-        self.assertEqual(columns, ['structure_id', 'state', 'county'])
+        self.assertEqual(columns, ['_structure_id', 'state', 'county'])
 
     def test_add_elements(self):
         path = 'mynode.toron'
