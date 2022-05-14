@@ -14,8 +14,8 @@ the application layer:
   +---------------------+        | relation_id      |     •••• <Other Node>
   | edge_id             |------->| edge_id          |     •
   | name                |  ••••••| other_element_id |<•••••
-  | description         |  •  •••| element_id       |<-+     +-------------+
-  | type_info           |  •  •  | proportion       |  |     | quantity    |
+  | type_info           |  •  •••| element_id       |<-+     +-------------+
+  | description         |  •  •  | proportion       |  |     | quantity    |
   | user_properties     |  •  •  | mapping_level    |  |     +-------------+
   | other_uuid          |  •  •  +------------------+  |     | quantity_id |
   | other_filename_hint |  •  •                        |  +->| location_id |
@@ -39,8 +39,8 @@ the application layer:
               |  | element_weight_id |     +-------------+     | key      |
               |  | weight_id         |<----| weight_id   |     | value    |
               +->| element_id        |•••  | name        |     +----------+
-                 | value             |  •  | description |
-                 +-------------------+  •  | type_info   |
+                 | value             |  •  | type_info   |
+                 +-------------------+  •  | description |
                                         ••>| is_complete |
                                            +-------------+
 """
@@ -91,8 +91,8 @@ _schema_script = """
     CREATE TABLE edge(
         edge_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
-        description TEXT,
         type_info TEXT_ATTRIBUTES NOT NULL,
+        description TEXT,
         user_properties TEXT_USERPROPERTIES,
         other_uuid TEXT CHECK (other_uuid LIKE '________-____-____-____-____________') NOT NULL,
         other_filename_hint TEXT NOT NULL,
@@ -139,8 +139,8 @@ _schema_script = """
     CREATE TABLE weight(
         weight_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
-        description TEXT,
         type_info TEXT_ATTRIBUTES NOT NULL,
+        description TEXT,
         is_complete INTEGER CHECK (is_complete IN (0, 1)),
         UNIQUE (name)
     );

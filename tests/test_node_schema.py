@@ -157,8 +157,8 @@ class TestUserPropertiesTrigger(TempDirTestCase, CheckUserPropertiesMixin):
         return (
             None,                      # edge_id (INTEGER PRIMARY KEY)
             f'name{index}',            # name
-            None,                      # description
             '{"category": "census"}',  # type_info
+            None,                      # description
             value,                     # user_properties
             '00000000-0000-0000-0000-000000000000',  # other_uuid
             f'other{index}.toron',     # other_filename_hint
@@ -264,7 +264,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
     def test_valid_values(self):
         for index, value in enumerate(self.valid_values):
             with self.subTest(value=value):
-                parameters = (None, f'name{index}', None, value, 0)
+                parameters = (None, f'name{index}', value, None, 0)
                 self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
     def test_non_string_values(self):
@@ -272,7 +272,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
         for value in self.non_string_values:
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (None, 'nonstring', None, value, 0)
+                    parameters = (None, 'nonstring', value, None, 0)
                     self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
     def test_not_an_object(self):
@@ -280,7 +280,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
         for value in self.not_an_object:
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (None, 'nonobject', None, value, 0)
+                    parameters = (None, 'nonobject', value, None, 0)
                     self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
     def test_malformed_json(self):
@@ -288,7 +288,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
         for index, value in enumerate(self.malformed_json):
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (None, 'malformed', None, value, 0)
+                    parameters = (None, 'malformed', value, None, 0)
                     self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
     def test_none(self):
@@ -296,7 +296,7 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
         value = None
 
         with self.assertRaises(sqlite3.IntegrityError):
-            parameters = (None, 'blerg', None, value, 0)
+            parameters = (None, 'blerg', value, None, 0)
             self.cur.execute("INSERT INTO weight VALUES (?, ?, ?, ?, ?)", parameters)
 
 
@@ -525,7 +525,7 @@ class TestJsonConversion(TempDirTestCase):
         """Selecting TEXT_ATTRIBUTES should convert strings into objects."""
         self.cur.execute(
             'INSERT INTO weight VALUES (?, ?, ?, ?, ?)',
-            (None, 'foo', None, '{"bar": "baz"}', 0)
+            (None, 'foo', '{"bar": "baz"}', None, 0)
         )
         self.cur.execute("SELECT type_info FROM weight WHERE name='foo'")
         self.assertEqual(self.cur.fetchall(), [({'bar': 'baz'},)])
@@ -727,7 +727,7 @@ class TestInsertWeightGetId(TempDirTestCase):
         weight_id = _insert_weight_get_id(self.cur, name, type_info, description)
 
         actual = self.cur.execute('SELECT * FROM weight').fetchall()
-        expected = [(1, 'myname', 'My description.', {'category': 'stuff'}, None)]
+        expected = [(1, 'myname', {'category': 'stuff'}, 'My description.', None)]
         self.assertEqual(actual, expected)
 
         msg = 'retrieved weight_id should be same as returned from function'

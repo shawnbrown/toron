@@ -173,7 +173,7 @@ class TestNodeAddWeights(TempDirTestCase):
         self.cursor.execute('SELECT * FROM weight')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(1, 'pop10', None, '{"category": "census"}', 1)],  # <- is_complete is 1
+            [(1, 'pop10', '{"category": "census"}', None, 1)],  # <- is_complete is 1
         )
 
         self.cursor.execute("""
@@ -201,7 +201,7 @@ class TestNodeAddWeights(TempDirTestCase):
         self.cursor.execute('SELECT * FROM weight')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(1, 'pop10', None, '{"category": "census"}', 0)],  # <- is_complete is 0
+            [(1, 'pop10', '{"category": "census"}', None, 0)],  # <- is_complete is 0
         )
 
         # Get loaded weights/
