@@ -17,6 +17,7 @@ from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_for_attributes
 from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import connect
+from toron._node_schema import transaction
 from toron._node_schema import _quote_identifier
 from toron._node_schema import _make_sql_new_labels
 from toron._node_schema import _make_sql_insert_elements
@@ -501,6 +502,83 @@ class TestConnect(TempDirTestCase):
         # Close the connection and change the status back to read-write.
         con.close()
         os.chmod(file_path, S_IRUSR|S_IWUSR)
+
+
+class TestTransaction(TempDirTestCase):
+    """Tests for the transaction() context manager."""
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
+    def test_path_and_mode(self):
+        """When given *path* and *mode* arguments, transaction()
+        should establish its own connection and then close this
+        connection once it is finished.
+        """
+        path = 'mynode.toron'
+        mode = 'rwc'
+        connect(path, mode=mode).close()  # Create file with Toron schema.
+
+        with transaction(path, mode) as cursor:
+            connection = cursor.connection
+            self.assertTrue(connection.in_transaction)
+
+        # Cursor should be closed after `with` block exits.
+        regex = 'closed cursor'
+        msg = 'Cursor should be closed after exiting context.'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
+            cursor.execute('SELECT 1')
+
+        # Connection should be closed after `with` block exits.
+        regex = 'closed database'
+        msg = 'Connection should be closed after exiting context.'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
+            connection.cursor()
+
+    def test_existing_connection(self):
+        """When given a existing Connection, transaction() should use
+        the connection as provided and leave it open when finished.
+        """
+        connection = connect(':memory:')  # Create in-memory database with Toron schema.
+
+        with transaction(connection) as cursor:
+            self.assertTrue(connection.in_transaction)
+
+        regex = 'closed cursor'
+        msg = 'Cursor should be closed after exiting context.'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
+            cursor.execute('SELECT 1')
+
+        try:
+            cursor = connection.cursor()  # <- Should pass without error.
+            cursor.close()
+            connection.close()
+        except sqlite3.ProgrammingError as err:
+            if 'closed database' not in str(err):
+                raise
+            msg = 'existing connections must remain open after exiting context'
+            self.fail(msg)
+
+    def test_transaction_commit(self):
+        connection = connect(':memory:')
+
+        with transaction(connection) as cursor:
+            cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")
+
+        result = connection.execute("SELECT * FROM property WHERE key='key1'").fetchone()
+        msg = 'successful transaction should commit changes to database'
+        self.assertEqual(result, ('key1', 'value1'), msg=msg)
+
+    def test_transaction_rollback(self):
+        connection = connect(':memory:')
+
+        with self.assertRaises(Exception):
+            with transaction(connection) as cursor:
+                cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")  # <- Success.
+                cursor.execute("""INSERT INTO property VALUES ('key2', 'bad json')""")  # <- Failure.
+
+        result = connection.execute("SELECT * FROM property WHERE key='key1'").fetchone()
+        msg = 'a failed transaction should rollback all changes to the database'
+        self.assertEqual(result, None, msg=msg)
 
 
 class TestJsonConversion(TempDirTestCase):
