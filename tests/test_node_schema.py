@@ -16,6 +16,7 @@ from toron._node_schema import _is_wellformed_attributes
 from toron._node_schema import _schema_script
 from toron._node_schema import _make_trigger_for_attributes
 from toron._node_schema import _add_functions_and_triggers
+from toron._node_schema import _path_to_sqlite_uri
 from toron._node_schema import connect
 from toron._node_schema import transaction
 from toron._node_schema import _quote_identifier
@@ -381,6 +382,22 @@ class TestTriggerCoverage(unittest.TestCase):
         actual_triggers = self.get_actual_trigger_names()
         expected_triggers = self.get_expected_trigger_names()
         self.assertEqual(set(actual_triggers), set(expected_triggers))
+
+
+class TestPathToSqliteUri(unittest.TestCase):
+    def test_common_cases(self):
+        self.assertEqual(
+            _path_to_sqlite_uri('mynode.toron'),
+            'file:mynode.toron',
+        )
+        self.assertEqual(
+            _path_to_sqlite_uri('my?node.toron'),
+            'file:my%3Fnode.toron',
+        )
+        self.assertEqual(
+            _path_to_sqlite_uri('path///to//mynode.toron'),
+            'file:path/to/mynode.toron',
+        )
 
 
 class TestConnect(TempDirTestCase):

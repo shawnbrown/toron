@@ -47,12 +47,14 @@ the application layer:
 
 import itertools
 import os
+import re
 import sqlite3
 from ast import literal_eval
 from collections import Counter
 from contextlib import contextmanager
 from json import loads as _loads
 from json import dumps as _dumps
+from urllib.parse import quote as urllib_parse_quote
 
 from ._exceptions import ToronError
 
@@ -391,6 +393,19 @@ def _connect_to_new(path):
     con.executescript(_schema_script)  # Create database schema.
     _add_functions_and_triggers(con)
     return con
+
+
+def _path_to_sqlite_uri(path):
+    """Convert a path into a SQLite compatible URI.
+
+    Unlike pathlib's URI handling, SQLite accepts relative URI paths.
+    For details, see:
+
+        https://www.sqlite.org/uri.html#the_uri_path
+    """
+    path = re.sub('/+', '/', path)
+    path = urllib_parse_quote(path)
+    return f'file:{path}'
 
 
 def connect(path, mode='rwc'):
