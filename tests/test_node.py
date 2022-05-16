@@ -1,5 +1,7 @@
 """Tests for toron/node.py module."""
 
+import gc
+import os
 import sqlite3
 import unittest
 
@@ -12,15 +14,37 @@ class TestNode(TempDirTestCase):
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
 
+    def test_on_disk(self):
+        path = 'mynode.toron'
+        self.assertFalse(os.path.isfile(path))
+        node = Node(path)
+
+        del node
+        gc.collect()  # Explicitly trigger full garbage collection.
+
+        msg = 'data should persist as a file on disk'
+        self.assertTrue(os.path.isfile(path), msg=msg)
+
+    def test_in_memory(self):
+        node = Node(':memory:')
+        connection = node._connection
+
+        cur = connection.execute('SELECT 42')  # Dummy query to test connection.
+        msg = 'in-memory connections should remain open after instantiation'
+        self.assertEqual(cur.fetchone(), (42,), msg=msg)
+
+        del node
+        gc.collect()  # Explicitly trigger full garbage collection.
+
+        regex = 'closed database'
+        msg = 'connection should be closed when Node is garbage collected'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
+            connection.execute('SELECT 42')  # Dummy query to test connection.
+
     @staticmethod
     def get_column_names(connection_or_cursor, table):
         cur = connection_or_cursor.execute(f'PRAGMA table_info({table})')
         return [row[1] for row in cur.fetchall()]
-
-    def test_initialize(self):
-        node = Node('mynode.toron')
-        self.assertEqual(node.path, 'mynode.toron')
-        self.assertEqual(node.mode, 'rwc')
 
     def test_add_columns(self):
         path = 'mynode.toron'

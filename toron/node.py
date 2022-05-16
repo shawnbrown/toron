@@ -16,11 +16,19 @@ from ._node_schema import _update_weight_is_complete
 
 class Node(object):
     def __init__(self, path, mode='rwc'):
-        path = os.fspath(path)
-        connect(path, mode=mode).close()  # Verify path to Toron node file.
+        if path == ':memory:':
+            self._connection = connect(path)  # Persistent in-memory connection.
+            self._transaction = lambda: transaction(self._connection)
+        else:
+            path = os.fspath(path)
+            connect(path, mode=mode).close()  # Verify path to Toron node file.
+            self._transaction = lambda: transaction(self.path, mode=self.mode)
         self._path = path
         self.mode = mode
-        self._transaction = lambda: transaction(self.path, mode=self.mode)
+
+    def __del__(self):
+        if hasattr(self, '_connection'):
+            self._connection.close()
 
     @property
     def path(self):
