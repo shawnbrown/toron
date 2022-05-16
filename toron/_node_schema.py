@@ -403,8 +403,20 @@ def _path_to_sqlite_uri(path):
 
         https://www.sqlite.org/uri.html#the_uri_path
     """
+    if os.name == 'nt':  # Windows
+        if re.match(r'^[a-zA-Z]:', path):
+            path = os.path.abspath(path)  # If drive-letter, must be absolute.
+            drive_prefix = f'/{path[:2]}'  # Must not url-quote colon after drive-letter.
+            path = path[2:]
+        else:
+            drive_prefix = ''
+        path = path.replace('\\', '/')
+        path = urllib_parse_quote(path)
+        path = f'{drive_prefix}{path}'
+    else:
+        path = urllib_parse_quote(path)
+
     path = re.sub('/+', '/', path)
-    path = urllib_parse_quote(path)
     return f'file:{path}'
 
 

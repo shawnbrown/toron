@@ -399,6 +399,30 @@ class TestPathToSqliteUri(unittest.TestCase):
             'file:path/to/mynode.toron',
         )
 
+    def test_windows_specifics(self):
+        if os.name != 'nt':
+            return
+
+        self.assertEqual(
+            _path_to_sqlite_uri(r'path\to\mynode.toron'),
+            'file:path/to/mynode.toron',
+        )
+
+        self.assertEqual(
+            _path_to_sqlite_uri(r'C:\path\to\my node.toron'),
+            'file:/C:/path/to/my%20node.toron',
+        )
+
+        self.assertEqual(
+            _path_to_sqlite_uri(r'C:\path\to\myno:de.toron'),  # <- Errant ":".
+            'file:/C:/path/to/myno%3Ade.toron',
+        )
+
+        self.assertEqual(
+            _path_to_sqlite_uri(r'C:mynode.toron'),  # <- Relative path with drive letter.
+            f'file:/{os.getcwd()}/mynode.toron'.replace("\\", "/"),
+        )
+
 
 class TestConnect(TempDirTestCase):
     def test_new_file(self):
