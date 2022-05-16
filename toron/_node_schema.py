@@ -422,27 +422,44 @@ def _path_to_sqlite_uri(path):
 
 def connect(path, mode='rwc'):
     """Returns a sqlite3 connection to a Toron node file."""
-    if mode == 'rwc':  # Read-write-create mode
-        if os.path.exists(path):
-            return _connect_to_existing(path)
-        return _connect_to_new(path)
+    uri_path = _path_to_sqlite_uri(path)
+    uri_path = f'{uri_path}?mode={mode}'
+    if mode == 'memory':
+        uri_path = f'{uri_path}&cache=shared'
 
-    if mode == 'rw':  # Read-write mode
-        if os.path.exists(path):
-            return _connect_to_existing(path)
-        msg = f'No such file: {path!r}'
-        raise FileNotFoundError(msg)
+    get_connection = lambda: sqlite3.connect(
+        database=uri_path,
+        detect_types=sqlite3.PARSE_DECLTYPES,
+        isolation_level=None,
+        uri=True,
+    )
 
-    if mode == 'ro':  # Read-only mode
+    try:
         if os.path.exists(path):
-            con = _connect_to_existing(path)
-            con.execute('PRAGMA query_only = 1')
-            return con
-        msg = f'No such file: {path!r}'
-        raise FileNotFoundError(msg)
+            con = get_connection()
+        else:
+            con = get_connection()
+            con.executescript(_schema_script)  # Create database schema.
+    except sqlite3.OperationalError as err:
+        msg = str(err).replace('database file', f'node file {path!r}')
+        raise ToronError(msg)
 
-    msg = f'No such access mode: {mode!r}'
-    raise ValueError(msg)
+    try:
+        _add_functions_and_triggers(con)
+    except sqlite3.OperationalError:  # When *path* is a database with an unknown schema.
+        raise ToronError(f'Path is not a Toron node: {path!r}')
+    except sqlite3.DatabaseError:  # When *path* is a file but not a database.
+        raise ToronError(f'Path is not a Toron node: {path!r}')
+
+    cur = con.execute("SELECT value FROM property WHERE key='schema_version'")
+    schema_version, *_ = cur.fetchone() or (None,)
+    cur.close()
+
+    if schema_version != 1:  # When schema version is unsupported.
+        msg = f'Unsupported Toron node format: schema version {schema_version!r}'
+        raise ToronError(msg)
+
+    return con
 
 
 @contextmanager

@@ -454,8 +454,9 @@ class TestConnect(TempDirTestCase):
         path = 'mydirectory'
         os.mkdir(path)  # <- Create a directory with the given `path` name.
 
+        regex = "unable to open node file 'mydirectory'"
         msg = 'should fail if path is a directory instead of a file'
-        with self.assertRaisesRegex(ToronError, 'Path is not a Toron node', msg=msg):
+        with self.assertRaisesRegex(ToronError, regex, msg=msg):
             con = connect(path)
 
     def test_nondatabase_file(self):
@@ -496,16 +497,16 @@ class TestConnect(TempDirTestCase):
             con = connect(path)
 
     def test_read_write_mode(self):
-        regex = "No such file: 'path1.toron'"
-        with self.assertRaisesRegex(FileNotFoundError, regex):
+        regex = "unable to open node file 'path1.toron'"
+        with self.assertRaisesRegex(ToronError, regex):
             connect('path1.toron', mode='rw')  # Open nonexistent node (fails).
 
         connect('path2.toron', mode='rwc').close()  # Create node.
         connect('path2.toron', mode='rw')  # Open existing node.
 
     def test_read_only_mode(self):
-        regex = "No such file: 'path1.toron'"
-        with self.assertRaisesRegex(FileNotFoundError, regex):
+        regex = "unable to open node file 'path1.toron'"
+        with self.assertRaisesRegex(ToronError, regex):
             connect('path1.toron', mode='ro')  # Open nonexistent node (fails).
 
         connect('path2.toron', mode='rwc').close()  # Create node.
@@ -516,8 +517,8 @@ class TestConnect(TempDirTestCase):
             con.execute('INSERT INTO property VALUES (?, ?)', ('key1', '"value1"'))
 
     def test_invalid_access_mode(self):
-        regex = "No such access mode: 'badmode'"
-        with self.assertRaisesRegex(ValueError, regex):
+        regex = 'no such access mode: badmode'
+        with self.assertRaisesRegex(ToronError, regex):
             connect('path1.toron', mode='badmode')
 
     def test_read_only_via_filesystem(self):
