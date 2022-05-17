@@ -362,39 +362,6 @@ def _add_functions_and_triggers(connection):
         connection.execute(_make_trigger_for_attributes('UPDATE', table, column))
 
 
-def _connect_to_existing(path):
-    """Return a connection to an existing Toron node database."""
-    try:
-        con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES, isolation_level=None)
-    except sqlite3.OperationalError:  # When *path* is directory or other non-file.
-        raise ToronError(f'Path is not a Toron node: {path!r}')
-
-    try:
-        _add_functions_and_triggers(con)
-    except sqlite3.OperationalError:  # When *path* is a database with an unknown schema.
-        raise ToronError(f'Path is not a Toron node: {path!r}')
-    except sqlite3.DatabaseError:  # When *path* is a file but not a database.
-        raise ToronError(f'Path is not a Toron node: {path!r}')
-
-    cur = con.execute("SELECT value FROM property WHERE key='schema_version'")
-    schema_version, *_ = cur.fetchone() or (None,)
-    cur.close()
-
-    if schema_version != 1:  # When schema version is unsupported.
-        msg = f'Unsupported Toron node format: schema version {schema_version!r}'
-        raise ToronError(msg)
-
-    return con
-
-
-def _connect_to_new(path):
-    """Create a new Toron node database and return a connection to it."""
-    con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES, isolation_level=None)
-    con.executescript(_schema_script)  # Create database schema.
-    _add_functions_and_triggers(con)
-    return con
-
-
 def _path_to_sqlite_uri(path):
     """Convert a path into a SQLite compatible URI.
 
