@@ -26,10 +26,17 @@ class TestNode(TempDirTestCase):
         self.assertTrue(os.path.isfile(path), msg=msg)
 
     def test_in_memory(self):
-        node = Node(':memory:')
+        path = 'mem1'
+        self.assertFalse(os.path.isfile(path), msg='file should not already exist')
+        node = Node(path, mode='memory')
+
+        msg = 'should not be saved as file, should by in-memory only'
+        self.assertFalse(os.path.isfile(path), msg=msg)
+
         connection = node._connection
 
-        cur = connection.execute('SELECT 42')  # Dummy query to test connection.
+        dummy_query = 'SELECT 42'  # To check connection status.
+        cur = connection.execute(dummy_query)
         msg = 'in-memory connections should remain open after instantiation'
         self.assertEqual(cur.fetchone(), (42,), msg=msg)
 
@@ -39,7 +46,7 @@ class TestNode(TempDirTestCase):
         regex = 'closed database'
         msg = 'connection should be closed when Node is garbage collected'
         with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
-            connection.execute('SELECT 42')  # Dummy query to test connection.
+            connection.execute(dummy_query)
 
     @staticmethod
     def get_column_names(connection_or_cursor, table):
