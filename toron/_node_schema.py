@@ -394,14 +394,13 @@ def connect(path, mode='rwc'):
     if mode == 'memory':
         uri_path = f'{uri_path}&cache=shared'
 
-    get_connection = lambda: sqlite3.connect(
-        database=uri_path,
-        detect_types=sqlite3.PARSE_DECLTYPES,
-        isolation_level=None,
-        uri=True,
-    )
-
     try:
+        get_connection = lambda: sqlite3.connect(
+            database=uri_path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+            uri=True,
+        )
         if os.path.exists(path):
             con = get_connection()
         else:
