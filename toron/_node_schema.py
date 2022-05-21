@@ -476,53 +476,6 @@ def _get_column_names(cursor, table):
     return [row[1] for row in cursor.fetchall()]
 
 
-def _make_sql_new_labels(cursor, columns):
-    """Return a list of SQL statements for adding new label columns."""
-    if isinstance(columns, str):
-        columns = [columns]
-    columns = [_quote_identifier(col) for col in columns]
-
-    not_allowed = {'"element_id"', '"_location_id"', '"_structure_id"'}.intersection(columns)
-    if not_allowed:
-        msg = f"label name not allowed: {', '.join(not_allowed)}"
-        raise ValueError(msg)
-
-    current_cols = _get_column_names(cursor, 'element')
-    current_cols = [_quote_identifier(col) for col in current_cols]
-    new_cols = [col for col in columns if col not in current_cols]
-
-    if not new_cols:
-        return []  # <- EXIT!
-
-    dupes = [obj for obj, count in Counter(new_cols).items() if count > 1]
-    if dupes:
-        msg = f"duplicate column name: {', '.join(dupes)}"
-        raise ValueError(msg)
-
-    sql_stmnts = []
-
-    sql_stmnts.extend([
-        'DROP INDEX IF EXISTS unique_element_index',
-        'DROP INDEX IF EXISTS unique_structure_index',
-    ])
-
-    for col in new_cols:
-        sql_stmnts.extend([
-            f"ALTER TABLE element ADD COLUMN {col} TEXT DEFAULT '-' NOT NULL",
-            f'ALTER TABLE location ADD COLUMN {col} TEXT',
-            f'ALTER TABLE structure ADD COLUMN {col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0',
-        ])
-
-    label_cols = current_cols[1:] + new_cols  # All columns except the id column.
-    label_cols = ', '.join(label_cols)
-    sql_stmnts.extend([
-        f'CREATE UNIQUE INDEX unique_element_index ON element({label_cols})',
-        f'CREATE UNIQUE INDEX unique_structure_index ON structure({label_cols})',
-    ])
-
-    return sql_stmnts
-
-
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
 
 
@@ -581,9 +534,56 @@ class DataAccessLayer(object):
     def path(self):
         return self._path
 
+    @classmethod
+    def _make_sql_new_labels(cls, cursor, columns):
+        """Return a list of SQL statements for adding new label columns."""
+        if isinstance(columns, str):
+            columns = [columns]
+        columns = [_quote_identifier(col) for col in columns]
+
+        not_allowed = {'"element_id"', '"_location_id"', '"_structure_id"'}.intersection(columns)
+        if not_allowed:
+            msg = f"label name not allowed: {', '.join(not_allowed)}"
+            raise ValueError(msg)
+
+        current_cols = _get_column_names(cursor, 'element')
+        current_cols = [_quote_identifier(col) for col in current_cols]
+        new_cols = [col for col in columns if col not in current_cols]
+
+        if not new_cols:
+            return []  # <- EXIT!
+
+        dupes = [obj for obj, count in Counter(new_cols).items() if count > 1]
+        if dupes:
+            msg = f"duplicate column name: {', '.join(dupes)}"
+            raise ValueError(msg)
+
+        sql_stmnts = []
+
+        sql_stmnts.extend([
+            'DROP INDEX IF EXISTS unique_element_index',
+            'DROP INDEX IF EXISTS unique_structure_index',
+        ])
+
+        for col in new_cols:
+            sql_stmnts.extend([
+                f"ALTER TABLE element ADD COLUMN {col} TEXT DEFAULT '-' NOT NULL",
+                f'ALTER TABLE location ADD COLUMN {col} TEXT',
+                f'ALTER TABLE structure ADD COLUMN {col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0',
+            ])
+
+        label_cols = current_cols[1:] + new_cols  # All columns except the id column.
+        label_cols = ', '.join(label_cols)
+        sql_stmnts.extend([
+            f'CREATE UNIQUE INDEX unique_element_index ON element({label_cols})',
+            f'CREATE UNIQUE INDEX unique_structure_index ON structure({label_cols})',
+        ])
+
+        return sql_stmnts
+
     def add_columns(self, columns):
         with self._transaction() as cur:
-            for stmnt in _make_sql_new_labels(cur, columns):
+            for stmnt in self._make_sql_new_labels(cur, columns):
                 cur.execute(stmnt)
 
     @classmethod
