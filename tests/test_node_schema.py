@@ -676,7 +676,7 @@ class TestQuoteIdentifier(unittest.TestCase):
             DataAccessLayer._quote_identifier(contains_nul)
 
 
-class TestMakeSqlNewLabels(TempDirTestCase):
+class TestAddColumnsMakeSql(TempDirTestCase):
     maxDiff = None
 
     def setUp(self):
@@ -688,7 +688,7 @@ class TestMakeSqlNewLabels(TempDirTestCase):
 
     def test_add_columns_to_new(self):
         """Add columns to new/empty node database."""
-        statements = DataAccessLayer._make_sql_new_labels(self.cur, ['state', 'county'])
+        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])
         expected = [
             'DROP INDEX IF EXISTS unique_element_index',
             'DROP INDEX IF EXISTS unique_structure_index',
@@ -706,12 +706,12 @@ class TestMakeSqlNewLabels(TempDirTestCase):
     def test_add_columns_to_exsting(self):
         """Add columns to database with existing label columns."""
         # Add initial label columns.
-        statements = DataAccessLayer._make_sql_new_labels(self.cur, ['state', 'county'])
+        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])
         for stmnt in statements:
             self.cur.execute(stmnt)
 
         # Add attitional label columns.
-        statements = DataAccessLayer._make_sql_new_labels(self.cur, ['tract', 'block'])
+        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['tract', 'block'])
         expected = [
             'DROP INDEX IF EXISTS unique_element_index',
             'DROP INDEX IF EXISTS unique_structure_index',
@@ -729,18 +729,18 @@ class TestMakeSqlNewLabels(TempDirTestCase):
     def test_no_columns_to_add(self):
         """When there are no new columns to add, should return empty list."""
         # Add initial label columns.
-        statements = DataAccessLayer._make_sql_new_labels(self.cur, ['state', 'county'])
+        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])
         for stmnt in statements:
             self.cur.execute(stmnt)
 
         # When there are no new columns to add, should return empty list.
-        statements = DataAccessLayer._make_sql_new_labels(self.cur, ['state', 'county'])  # <- Columns already exist.
+        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])  # <- Columns already exist.
         self.assertEqual(statements, [])
 
     def test_duplicate_column_input(self):
         regex = 'duplicate column name: "county"'
         with self.assertRaisesRegex(ValueError, regex):
-            DataAccessLayer._make_sql_new_labels(self.cur, ['state', 'county', 'county'])
+            DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'county'])
 
     def test_normalization_duplicate_column_input(self):
         regex = 'duplicate column name: "county"'
@@ -750,12 +750,12 @@ class TestMakeSqlNewLabels(TempDirTestCase):
                 'county    ',  # <- Normalized to "county", collides with duplicate.
                 'county',
             ]
-            DataAccessLayer._make_sql_new_labels(self.cur, columns)
+            DataAccessLayer._add_columns_make_sql(self.cur, columns)
 
     def test_normalization_collision_with_existing(self):
         """Columns should be checked for collisions after normalizing."""
         # Add initial label columns.
-        for stmnt in DataAccessLayer._make_sql_new_labels(self.cur, ['state', 'county']):
+        for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county']):
             self.cur.execute(stmnt)
 
         # Prepare attitional label columns.
@@ -764,7 +764,7 @@ class TestMakeSqlNewLabels(TempDirTestCase):
             'county    ',  # <- Normalized to "county", which then gets skipped.
             'tract     ',
         ]
-        statements = DataAccessLayer._make_sql_new_labels(self.cur, columns)
+        statements = DataAccessLayer._add_columns_make_sql(self.cur, columns)
 
         expected = [
             'DROP INDEX IF EXISTS unique_element_index',
@@ -781,7 +781,7 @@ class TestMakeSqlNewLabels(TempDirTestCase):
     def test_column_id_collision(self):
         regex = 'label name not allowed: "_location_id"'
         with self.assertRaisesRegex(ValueError, regex):
-            DataAccessLayer._make_sql_new_labels(self.cur, ['state', '_location_id'])
+            DataAccessLayer._add_columns_make_sql(self.cur, ['state', '_location_id'])
 
 
 class TestMakeSqlInsertElements(TempDirTestCase):
@@ -791,7 +791,7 @@ class TestMakeSqlInsertElements(TempDirTestCase):
         cls.node_path = 'mynode.toron'
         con = connect(cls.node_path)
         cur = con.cursor()
-        for stmnt in DataAccessLayer._make_sql_new_labels(cur, ['state', 'county', 'town']):
+        for stmnt in DataAccessLayer._add_columns_make_sql(cur, ['state', 'county', 'town']):
             cur.execute(stmnt)
 
     def setUp(self):
@@ -855,7 +855,7 @@ class TestMakeSqlInsertElementWeight(TempDirTestCase):
         self.con = connect('mynode.toron')
         self.cur = self.con.cursor()
 
-        for stmnt in DataAccessLayer._make_sql_new_labels(self.cur, ['state', 'county', 'town']):
+        for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'town']):
             self.cur.execute(stmnt)
 
         self.addCleanup(self.cleanup_temp_files)
@@ -909,7 +909,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.cur = self.con.cursor()
 
         self.columns = ['label_a', 'label_b']
-        for stmnt in DataAccessLayer._make_sql_new_labels(self.cur, self.columns):
+        for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, self.columns):
             self.cur.execute(stmnt)
         sql = DataAccessLayer._make_sql_insert_elements(self.cur, self.columns)
         iterator = [

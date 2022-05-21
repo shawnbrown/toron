@@ -535,7 +535,7 @@ class DataAccessLayer(object):
         return f'"{value}"'
 
     @classmethod
-    def _make_sql_new_labels(cls, cursor, columns):
+    def _add_columns_make_sql(cls, cursor, columns):
         """Return a list of SQL statements for adding new label columns."""
         if isinstance(columns, str):
             columns = [columns]
@@ -583,7 +583,7 @@ class DataAccessLayer(object):
 
     def add_columns(self, columns):
         with self._transaction() as cur:
-            for stmnt in self._make_sql_new_labels(cur, columns):
+            for stmnt in self._add_columns_make_sql(cur, columns):
                 cur.execute(stmnt)
 
     @classmethod
