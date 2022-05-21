@@ -452,12 +452,6 @@ def transaction(path_or_connection, mode=None):
         connection_close()
 
 
-def _get_column_names(cursor, table):
-    """Return a list of column names from the given table."""
-    cursor.execute(f"PRAGMA table_info('{table}')")
-    return [row[1] for row in cursor.fetchall()]
-
-
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
 
 
@@ -517,6 +511,12 @@ class DataAccessLayer(object):
         return self._path
 
     @staticmethod
+    def _get_column_names(cursor, table):
+        """Return a list of column names from the given table."""
+        cursor.execute(f"PRAGMA table_info('{table}')")
+        return [row[1] for row in cursor.fetchall()]
+
+    @staticmethod
     def _quote_identifier(value):
         """Return a quoted SQLite identifier suitable as a column name."""
         value.encode('utf-8', errors='strict')  # Raises error on surrogate codes.
@@ -546,7 +546,7 @@ class DataAccessLayer(object):
             msg = f"label name not allowed: {', '.join(not_allowed)}"
             raise ValueError(msg)
 
-        current_cols = _get_column_names(cursor, 'element')
+        current_cols = cls._get_column_names(cursor, 'element')
         current_cols = [cls._quote_identifier(col) for col in current_cols]
         new_cols = [col for col in columns if col not in current_cols]
 
@@ -597,7 +597,7 @@ class DataAccessLayer(object):
         """
         columns = [cls._quote_identifier(col) for col in columns]
 
-        existing_columns = _get_column_names(cursor, 'element')
+        existing_columns = cls._get_column_names(cursor, 'element')
         existing_columns = existing_columns[1:]  # Slice-off "element_id" column.
         existing_columns = [cls._quote_identifier(col) for col in existing_columns]
 
@@ -617,7 +617,7 @@ class DataAccessLayer(object):
 
         with self._transaction() as cur:
             # Get allowed columns and build selectors values.
-            allowed_columns = _get_column_names(cur, 'element')
+            allowed_columns = self._get_column_names(cur, 'element')
             selectors = tuple((col in allowed_columns) for col in columns)
 
             # Filter column names and iterator rows to allowed columns.
@@ -656,7 +656,7 @@ class DataAccessLayer(object):
     def _make_sql_insert_element_weight(cls, cursor, columns):
         columns = [cls._quote_identifier(col) for col in columns]
 
-        existing_columns = _get_column_names(cursor, 'element')
+        existing_columns = cls._get_column_names(cursor, 'element')
         existing_columns = [cls._quote_identifier(col) for col in existing_columns]
 
         invalid_columns = set(columns).difference(existing_columns)
@@ -706,7 +706,7 @@ class DataAccessLayer(object):
             weight_id = self._insert_weight_get_id(cur, name, type_info, description)
 
             # Get allowed columns and build selectors values.
-            allowed_columns = _get_column_names(cur, 'element')
+            allowed_columns = self._get_column_names(cur, 'element')
             selectors = tuple((col in allowed_columns) for col in columns)
 
             # Filter column names and iterator rows to allowed columns.
