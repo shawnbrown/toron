@@ -13,6 +13,7 @@ from toron._node_schema import _schema_script
 from toron._node_schema import _add_functions_and_triggers
 from toron._dal import DataAccessLayer
 from toron._dal import DataAccessLayerPre35
+from toron._dal import dal_class
 from toron._dal import _rename_columns_make_sql
 from toron._dal import _rename_columns
 from toron._dal import _legacy_rename_columns_make_sql
@@ -29,7 +30,7 @@ class TestDataAccessLayerOnDisk(TempDirTestCase):
     def test_init_on_disk(self):
         path = 'mynode.toron'
         self.assertFalse(os.path.isfile(path))
-        dal = DataAccessLayer(path)
+        dal = dal_class(path)
 
         del dal
         gc.collect()  # Explicitly trigger full garbage collection.
@@ -42,7 +43,7 @@ class TestDataAccessLayerInMemory(unittest.TestCase):
     def test_init_in_memory(self):
         path = 'mem1'
         self.assertFalse(os.path.isfile(path), msg='file should not already exist')
-        dal = DataAccessLayer(path, mode='memory')
+        dal = dal_class(path, mode='memory')
 
         msg = 'should not be saved as file, should by in-memory only'
         self.assertFalse(os.path.isfile(path), msg=msg)
@@ -579,9 +580,9 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.cur = self.con.cursor()
 
         self.columns = ['label_a', 'label_b']
-        for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, self.columns):
+        for stmnt in dal_class._add_columns_make_sql(self.cur, self.columns):
             self.cur.execute(stmnt)
-        sql = DataAccessLayer._add_elements_make_sql(self.cur, self.columns)
+        sql = dal_class._add_elements_make_sql(self.cur, self.columns)
         iterator = [
             ('X', '001'),
             ('Y', '001'),
@@ -593,7 +594,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def test_complete(self):
-        weight_id = DataAccessLayer._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
+        weight_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
 
         # Insert element_weight records.
         iterator = [
@@ -601,10 +602,10 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
             (weight_id, 35, 'Y', '001'),
             (weight_id, 20, 'Z', '002'),
         ]
-        sql = DataAccessLayer._add_weights_make_sql(self.cur, self.columns)
+        sql = dal_class._add_weights_make_sql(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
-        DataAccessLayer._add_weights_set_is_complete(self.cur, weight_id)  # <- Update is_complete!
+        dal_class._add_weights_set_is_complete(self.cur, weight_id)  # <- Update is_complete!
 
         # Check is_complete flag.
         self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
@@ -612,17 +613,17 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.assertEqual(result, (1,), msg='weight is complete, should be 1')
 
     def test_incomplete(self):
-        weight_id = DataAccessLayer._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
+        weight_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
 
         # Insert element_weight records.
         iterator = [
             (weight_id, 12, 'X', '001'),
             (weight_id, 35, 'Y', '001'),
         ]
-        sql = DataAccessLayer._add_weights_make_sql(self.cur, self.columns)
+        sql = dal_class._add_weights_make_sql(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
-        DataAccessLayer._add_weights_set_is_complete(self.cur, weight_id)  # <- Update is_complete!
+        dal_class._add_weights_set_is_complete(self.cur, weight_id)  # <- Update is_complete!
 
         # Check is_complete flag.
         self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
@@ -634,7 +635,7 @@ class TestAddWeights(unittest.TestCase):
     """Tests for dal.add_weights() method."""
     def setUp(self):
         self.path = 'mynode.toron'
-        self.dal = DataAccessLayer(self.path, mode='memory')
+        self.dal = dal_class(self.path, mode='memory')
         self.dal.add_columns(['state', 'county', 'tract'])
         self.dal.add_elements([
             ('state', 'county', 'tract'),

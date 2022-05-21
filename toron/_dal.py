@@ -384,3 +384,10 @@ class DataAccessLayerPre35(DataAccessLayer):
         cursor.execute('SELECT last_insert_rowid()')
         return cursor.fetchone()[0]
 
+
+# Set the DataAccessLayer class appropriate for the current version of SQLite.
+_sqlite_version_info = sqlite3.sqlite_version_info
+if _sqlite_version_info < (3, 35, 0):
+    dal_class = DataAccessLayerPre35
+else:
+    dal_class = DataAccessLayerPre

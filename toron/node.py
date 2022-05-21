@@ -1,13 +1,6 @@
 """Node implementation for the Toron project."""
 
-import sqlite3
-
-_sqlite_version_info = sqlite3.sqlite_version_info
-
-if _sqlite_version_info < (3, 35, 0):
-    from ._dal import DataAccessLayerPre35 as dal_class
-else:
-    from ._dal import DataAccessLayer as dal_class
+from ._dal import dal_class
 
 
 class Node(object):
