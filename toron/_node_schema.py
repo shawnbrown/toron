@@ -452,24 +452,6 @@ def transaction(path_or_connection, mode=None):
         connection_close()
 
 
-def _quote_identifier(value):
-    """Return a quoted SQLite identifier suitable as a column name."""
-    value.encode('utf-8', errors='strict')  # Raises error on surrogate codes.
-
-    nul_pos = value.find('\x00')
-    if nul_pos != -1:
-        raise UnicodeEncodeError(
-            'utf-8',            # encoding
-            value,              # object
-            nul_pos,            # start position
-            nul_pos + 1,        # end position
-            'NUL not allowed',  # reason
-        )
-
-    value = ' '.join(value.split()).replace('"', '""')
-    return f'"{value}"'
-
-
 def _get_column_names(cursor, table):
     """Return a list of column names from the given table."""
     cursor.execute(f"PRAGMA table_info('{table}')")
@@ -534,12 +516,30 @@ class DataAccessLayer(object):
     def path(self):
         return self._path
 
+    @staticmethod
+    def _quote_identifier(value):
+        """Return a quoted SQLite identifier suitable as a column name."""
+        value.encode('utf-8', errors='strict')  # Raises error on surrogate codes.
+
+        nul_pos = value.find('\x00')
+        if nul_pos != -1:
+            raise UnicodeEncodeError(
+                'utf-8',            # encoding
+                value,              # object
+                nul_pos,            # start position
+                nul_pos + 1,        # end position
+                'NUL not allowed',  # reason
+            )
+
+        value = ' '.join(value.split()).replace('"', '""')
+        return f'"{value}"'
+
     @classmethod
     def _make_sql_new_labels(cls, cursor, columns):
         """Return a list of SQL statements for adding new label columns."""
         if isinstance(columns, str):
             columns = [columns]
-        columns = [_quote_identifier(col) for col in columns]
+        columns = [cls._quote_identifier(col) for col in columns]
 
         not_allowed = {'"element_id"', '"_location_id"', '"_structure_id"'}.intersection(columns)
         if not_allowed:
@@ -547,7 +547,7 @@ class DataAccessLayer(object):
             raise ValueError(msg)
 
         current_cols = _get_column_names(cursor, 'element')
-        current_cols = [_quote_identifier(col) for col in current_cols]
+        current_cols = [cls._quote_identifier(col) for col in current_cols]
         new_cols = [col for col in columns if col not in current_cols]
 
         if not new_cols:
@@ -595,11 +595,11 @@ class DataAccessLayer(object):
             >>> _make_sql_new_elements(cursor, ['state', 'county'])
             'INSERT INTO element ("state", "county") VALUES (?, ?)'
         """
-        columns = [_quote_identifier(col) for col in columns]
+        columns = [cls._quote_identifier(col) for col in columns]
 
         existing_columns = _get_column_names(cursor, 'element')
         existing_columns = existing_columns[1:]  # Slice-off "element_id" column.
-        existing_columns = [_quote_identifier(col) for col in existing_columns]
+        existing_columns = [cls._quote_identifier(col) for col in existing_columns]
 
         invalid_columns = set(columns).difference(existing_columns)
         if invalid_columns:
@@ -654,10 +654,10 @@ class DataAccessLayer(object):
 
     @classmethod
     def _make_sql_insert_element_weight(cls, cursor, columns):
-        columns = [_quote_identifier(col) for col in columns]
+        columns = [cls._quote_identifier(col) for col in columns]
 
         existing_columns = _get_column_names(cursor, 'element')
-        existing_columns = [_quote_identifier(col) for col in existing_columns]
+        existing_columns = [cls._quote_identifier(col) for col in existing_columns]
 
         invalid_columns = set(columns).difference(existing_columns)
         if invalid_columns:

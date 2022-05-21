@@ -19,7 +19,6 @@ from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import _path_to_sqlite_uri
 from toron._node_schema import connect
 from toron._node_schema import transaction
-from toron._node_schema import _quote_identifier
 from toron._node_schema import savepoint
 from toron._node_schema import DataAccessLayer
 
@@ -660,7 +659,7 @@ class TestQuoteIdentifier(unittest.TestCase):
         ]
         for s_in, s_out in values:
             with self.subTest(input_string=s_in, output_string=s_out):
-                self.assertEqual(_quote_identifier(s_in), s_out)
+                self.assertEqual(DataAccessLayer._quote_identifier(s_in), s_out)
 
     def test_surrogate_codes(self):
         """Should only allow clean UTF-8 (no surrogate codes)."""
@@ -668,13 +667,13 @@ class TestQuoteIdentifier(unittest.TestCase):
         string_with_surrogate = column_bytes.decode('utf-8', 'surrogateescape')
 
         with self.assertRaises(UnicodeEncodeError):
-            _quote_identifier(string_with_surrogate)
+            DataAccessLayer._quote_identifier(string_with_surrogate)
 
     def test_nul_byte(self):
         contains_nul = 'zip\x00 code'
 
         with self.assertRaises(UnicodeEncodeError):
-            _quote_identifier(contains_nul)
+            DataAccessLayer._quote_identifier(contains_nul)
 
 
 class TestMakeSqlNewLabels(TempDirTestCase):
