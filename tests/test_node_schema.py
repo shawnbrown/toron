@@ -839,7 +839,7 @@ class TestInsertWeightGetId(TempDirTestCase):
         name = 'myname'
         type_info = {'category': 'stuff'}
         description = 'My description.'
-        weight_id = DataAccessLayer._insert_weight_get_id(self.cur, name, type_info, description)
+        weight_id = DataAccessLayer._add_weights_get_new_id(self.cur, name, type_info, description)
 
         actual = self.cur.execute('SELECT * FROM weight').fetchall()
         expected = [(1, 'myname', {'category': 'stuff'}, 'My description.', None)]
@@ -850,7 +850,7 @@ class TestInsertWeightGetId(TempDirTestCase):
         self.assertEqual(retrieved_weight_id, weight_id, msg=msg)
 
 
-class TestMakeSqlInsertElementWeight(TempDirTestCase):
+class TestAddWeightsMakeSql(TempDirTestCase):
     def setUp(self):
         self.con = connect('mynode.toron')
         self.cur = self.con.cursor()
@@ -864,7 +864,7 @@ class TestMakeSqlInsertElementWeight(TempDirTestCase):
 
     def test_all_columns(self):
         columns = ['state', 'county', 'town']
-        sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, columns)
+        sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
             INSERT INTO element_weight (weight_id, element_id, value)
             SELECT ? AS weight_id, element_id, ? AS value
@@ -880,7 +880,7 @@ class TestMakeSqlInsertElementWeight(TempDirTestCase):
 
     def test_subset_of_columns(self):
         columns = ['state', 'county']
-        sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, columns)
+        sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
             INSERT INTO element_weight (weight_id, element_id, value)
             SELECT ? AS weight_id, element_id, ? AS value
@@ -898,7 +898,7 @@ class TestMakeSqlInsertElementWeight(TempDirTestCase):
         regex = 'invalid column name: "region"'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             columns = ['state', 'county', 'region']
-            sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, columns)
+            sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
 
 
 class TestUpdateWeightIsComplete(unittest.TestCase):
@@ -923,7 +923,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def test_complete(self):
-        weight_id = DataAccessLayer._insert_weight_get_id(self.cur, 'tot10', {'category': 'census'})
+        weight_id = DataAccessLayer._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
 
         # Insert element_weight records.
         iterator = [
@@ -931,10 +931,10 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
             (weight_id, 35, 'Y', '001'),
             (weight_id, 20, 'Z', '002'),
         ]
-        sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, self.columns)
+        sql = DataAccessLayer._add_weights_make_sql(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
-        DataAccessLayer._update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
+        DataAccessLayer._add_weights_set_is_complete(self.cur, weight_id)  # <- Update is_complete!
 
         # Check is_complete flag.
         self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
@@ -942,17 +942,17 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.assertEqual(result, (1,), msg='weight is complete, should be 1')
 
     def test_incomplete(self):
-        weight_id = DataAccessLayer._insert_weight_get_id(self.cur, 'tot10', {'category': 'census'})
+        weight_id = DataAccessLayer._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
 
         # Insert element_weight records.
         iterator = [
             (weight_id, 12, 'X', '001'),
             (weight_id, 35, 'Y', '001'),
         ]
-        sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, self.columns)
+        sql = DataAccessLayer._add_weights_make_sql(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
-        DataAccessLayer._update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
+        DataAccessLayer._add_weights_set_is_complete(self.cur, weight_id)  # <- Update is_complete!
 
         # Check is_complete flag.
         self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))

@@ -632,7 +632,7 @@ class DataAccessLayer(object):
     if sqlite3.sqlite_version_info >= (3, 35, 0):
         # The RETURNING clause was added in SQLite 3.35.0 (released 2021-03-12).
         @staticmethod
-        def _insert_weight_get_id(cursor, name, type_info, description=None):
+        def _add_weights_get_new_id(cursor, name, type_info, description=None):
             type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
             sql = """
                 INSERT INTO weight(name, type_info, description)
@@ -644,7 +644,7 @@ class DataAccessLayer(object):
     else:
         # Older versions of SQLite must use last_insert_rowid() function.
         @staticmethod
-        def _insert_weight_get_id(cursor, name, type_info, description=None):
+        def _add_weights_get_new_id(cursor, name, type_info, description=None):
             type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
             sql = """
                 INSERT INTO weight(name, type_info, description)
@@ -655,7 +655,10 @@ class DataAccessLayer(object):
             return cursor.fetchone()[0]
 
     @classmethod
-    def _make_sql_insert_element_weight(cls, cursor, columns):
+    def _add_weights_make_sql(cls, cursor, columns):
+        """Return a SQL statement adding new element_weight value (for
+        use with an executemany() call.
+        """
         columns = [cls._quote_identifier(col) for col in columns]
 
         existing_columns = cls._get_column_names(cursor, 'element')
@@ -680,8 +683,8 @@ class DataAccessLayer(object):
         return sql
 
     @staticmethod
-    def _update_weight_is_complete(cursor, weight_id):
-        """Update the 'weight.is_complete' value (set to 1 or 0)."""
+    def _add_weights_set_is_complete(cursor, weight_id):
+        """Set the 'weight.is_complete' value to 1 or 0 (True/False)."""
         sql = """
             UPDATE weight
             SET is_complete=((SELECT COUNT(*)
@@ -705,7 +708,7 @@ class DataAccessLayer(object):
             raise ValueError(msg)
 
         with self._transaction() as cur:
-            weight_id = self._insert_weight_get_id(cur, name, type_info, description)
+            weight_id = self._add_weights_get_new_id(cur, name, type_info, description)
 
             # Get allowed columns and build selectors values.
             allowed_columns = self._get_column_names(cur, 'element')
@@ -720,9 +723,9 @@ class DataAccessLayer(object):
             iterator = (mkrow(row) for row in iterator)
 
             # Insert element_weight records.
-            sql = self._make_sql_insert_element_weight(cur, columns)
+            sql = self._add_weights_make_sql(cur, columns)
             cur.executemany(sql, iterator)
 
             # Update "weight.is_complete" value (set to 1 or 0).
-            self._update_weight_is_complete(cur, weight_id)
+            self._add_weights_set_is_complete(cur, weight_id)
 
