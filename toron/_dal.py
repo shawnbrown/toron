@@ -12,63 +12,6 @@ from toron._node_schema import savepoint
 from toron._node_schema import transaction
 
 
-def _rename_columns_make_sql(column_names, new_column_names):
-    """The RENAME COLUMN command was added in SQLite 3.25.0 (2018-09-15)."""
-    zipped = zip(column_names, new_column_names)
-    rename_pairs = [(a, b) for a, b in zipped if a != b]
-
-    sql_stmnts = []
-    for name, new_name in rename_pairs:
-        sql_stmnts.extend([
-            f'ALTER TABLE element RENAME COLUMN {name} TO {new_name}',
-            f'ALTER TABLE location RENAME COLUMN {name} TO {new_name}',
-            f'ALTER TABLE structure RENAME COLUMN {name} TO {new_name}',
-        ])
-    return sql_stmnts
-
-
-def _legacy_rename_columns_make_sql(column_names, new_column_names):
-    """In SQLite versions older than 3.25.0, there was no native
-    support for the RENAME COLUMN command. In these older versions
-    of SQLite the tables must be rebuilt.
-    """
-    # To support versions of SQLite before 3.25.0, this method
-    # prepares a sequence of operations to rebuild the table
-    # structures.
-    new_element_cols = [f"{col} TEXT DEFAULT '-' NOT NULL" for col in new_column_names]
-    new_location_cols = [f"{col} TEXT" for col in new_column_names]
-    new_structure_cols = [f"{col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0" for col in new_column_names]
-    statements = [
-        # Rebuild 'element' table.
-        f'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
-            f'{", ".join(new_element_cols)})',
-        f'INSERT INTO new_element SELECT element_id, {", ".join(column_names)} FROM element',
-        'DROP TABLE element',
-        'ALTER TABLE new_element RENAME TO element',
-
-        # Rebuild 'location' table.
-        f'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, ' \
-            f'{", ".join(new_location_cols)})',
-        f'INSERT INTO new_location '
-            f'SELECT _location_id, {", ".join(column_names)} FROM location',
-        'DROP TABLE location',
-        'ALTER TABLE new_location RENAME TO location',
-
-        # Rebuild 'structure' table.
-        f'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, ' \
-            f'{", ".join(new_structure_cols)})',
-        f'INSERT INTO new_structure ' \
-            f'SELECT _structure_id, {", ".join(column_names)} FROM structure',
-        'DROP TABLE structure',
-        'ALTER TABLE new_structure RENAME TO structure',
-
-        # Reconstruct associated indexes.
-        f'CREATE UNIQUE INDEX unique_element_index ON element({", ".join(new_column_names)})',
-        f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(new_column_names)})',
-    ]
-    return statements
-
-
 class DataAccessLayer(object):
     def __init__(self, path, mode='rwc'):
         if mode == 'memory':
@@ -192,14 +135,27 @@ class DataAccessLayer(object):
 
         return column_names, new_column_names
 
-    # For _rename_columns_make_sql(), see module-level function definitinos.
+    @staticmethod
+    def _rename_columns_make_sql(column_names, new_column_names):
+        # The RENAME COLUMN command was added in SQLite 3.25.0 (2018-09-15).
+        zipped = zip(column_names, new_column_names)
+        rename_pairs = [(a, b) for a, b in zipped if a != b]
+
+        sql_stmnts = []
+        for name, new_name in rename_pairs:
+            sql_stmnts.extend([
+                f'ALTER TABLE element RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE location RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE structure RENAME COLUMN {name} TO {new_name}',
+            ])
+        return sql_stmnts
 
     def rename_columns(self, mapper):
         # Rename columns using native RENAME COLUMN command (only for
         # SQLite 3.25.0 or newer).
         with self._transaction() as cur:
             names, new_names = self._rename_columns_apply_mapper(cur, mapper)
-            for stmnt in _rename_columns_make_sql(names, new_names):
+            for stmnt in self._rename_columns_make_sql(names, new_names):
                 cur.execute(stmnt)
 
     @classmethod
@@ -354,6 +310,45 @@ class DataAccessLayerPre35(DataAccessLayer):
 class DataAccessLayerPre25(DataAccessLayerPre35):
     """A patched DataAccessLayer for SQLite versions before 3.25.0."""
 
+    @staticmethod
+    def _rename_columns_make_sql(column_names, new_column_names):
+        # In SQLite versions before 3.25.0, there is no native support for the
+        # RENAME COLUMN command. In these older versions of SQLite the tables
+        # must be rebuilt. This method prepares a sequence of operations to
+        # rebuild the table structures.
+        new_element_cols = [f"{col} TEXT DEFAULT '-' NOT NULL" for col in new_column_names]
+        new_location_cols = [f"{col} TEXT" for col in new_column_names]
+        new_structure_cols = [f"{col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0" for col in new_column_names]
+        statements = [
+            # Rebuild 'element' table.
+            f'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+                f'{", ".join(new_element_cols)})',
+            f'INSERT INTO new_element SELECT element_id, {", ".join(column_names)} FROM element',
+            'DROP TABLE element',
+            'ALTER TABLE new_element RENAME TO element',
+
+            # Rebuild 'location' table.
+            f'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, ' \
+                f'{", ".join(new_location_cols)})',
+            f'INSERT INTO new_location '
+                f'SELECT _location_id, {", ".join(column_names)} FROM location',
+            'DROP TABLE location',
+            'ALTER TABLE new_location RENAME TO location',
+
+            # Rebuild 'structure' table.
+            f'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, ' \
+                f'{", ".join(new_structure_cols)})',
+            f'INSERT INTO new_structure ' \
+                f'SELECT _structure_id, {", ".join(column_names)} FROM structure',
+            'DROP TABLE structure',
+            'ALTER TABLE new_structure RENAME TO structure',
+
+            # Reconstruct associated indexes.
+            f'CREATE UNIQUE INDEX unique_element_index ON element({", ".join(new_column_names)})',
+            f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(new_column_names)})',
+        ]
+        return statements
+
     def rename_columns(self, mapper):
         # This code should follow the recommended, 12-step ALTER TABLE
         # procedure detailed in the SQLite documentation:
@@ -364,7 +359,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             cur = con.cursor()
             with savepoint(cur):
                 names, new_names = self._rename_columns_apply_mapper(cur, mapper)
-                for stmnt in _legacy_rename_columns_make_sql(names, new_names):
+                for stmnt in self._rename_columns_make_sql(names, new_names):
                     cur.execute(stmnt)
 
                 cur.execute('PRAGMA main.foreign_key_check')

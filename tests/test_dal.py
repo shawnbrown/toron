@@ -15,10 +15,6 @@ from toron._dal import DataAccessLayer
 from toron._dal import DataAccessLayerPre25
 from toron._dal import DataAccessLayerPre35
 from toron._dal import dal_class
-from toron._dal import _rename_columns_make_sql
-#from toron._dal import _rename_columns
-from toron._dal import _legacy_rename_columns_make_sql
-#from toron._dal import _legacy_rename_columns
 
 
 SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
@@ -267,9 +263,9 @@ class TestRenameColumnsApplyMapper(unittest.TestCase):
 
 class TestRenameColumnsMakeSql(unittest.TestCase):
     @unittest.skipIf(SQLITE_VERSION_INFO < (3, 25, 0), 'requires 3.25.0 or newer')
-    def test_rename_columns_make_sql(self):
+    def test_native_rename_column_support(self):
         """Test native RENAME COLUMN statements."""
-        sql = _rename_columns_make_sql(
+        sql = DataAccessLayer._rename_columns_make_sql(
             ['"state"', '"county"', '"town"'],
             ['"stusab"', '"county"', '"place"'],
         )
@@ -283,9 +279,9 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
         ]
         self.assertEqual(sql, expected)
 
-    def test_legacy_rename_columns_make_sql(self):
+    def test_pre25_without_native_rename(self):
         """Test legacy column-rename statements for workaround procedure."""
-        sql = _legacy_rename_columns_make_sql(
+        sql = DataAccessLayerPre25._rename_columns_make_sql(
             ['"state"', '"county"', '"town"'],
             ['"stusab"', '"county"', '"place"'],
         )
@@ -311,7 +307,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
 class TestRenameColumns(unittest.TestCase):
     def setUp(self):
         self.path = 'mynode.toron'
-        self.dal = DataAccessLayer(self.path, mode='memory')
+        self.dal = dal_class(self.path, mode='memory')
         self.dal.add_columns(['state', 'county', 'town'])
         self.dal.add_elements([
             ('state', 'county', 'town'),
