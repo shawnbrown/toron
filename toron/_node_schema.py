@@ -547,30 +547,6 @@ def _make_sql_insert_elements(cursor, columns):
     return f'INSERT INTO element ({columns_clause}) VALUES ({values_clause})'
 
 
-if sqlite3.sqlite_version_info >= (3, 35, 0):
-    # The RETURNING clause was added in SQLite 3.35.0 (released 2021-03-12).
-    def _insert_weight_get_id(cursor, name, type_info, description=None):
-        type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
-        sql = """
-            INSERT INTO weight(name, type_info, description)
-            VALUES(?, ?, ?)
-            RETURNING weight_id
-        """
-        cursor.execute(sql, (name, type_info, description))
-        return cursor.fetchone()[0]
-else:
-    # Older versions of SQLite will need to use last_insert_rowid() function.
-    def _insert_weight_get_id(cursor, name, type_info, description=None):
-        type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
-        sql = """
-            INSERT INTO weight(name, type_info, description)
-            VALUES(?, ?, ?)
-        """
-        cursor.execute(sql, (name, type_info, description))
-        cursor.execute('SELECT last_insert_rowid()')
-        return cursor.fetchone()[0]
-
-
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
 
 
@@ -651,6 +627,31 @@ class DataAccessLayer(object):
             sql = _make_sql_insert_elements(cur, columns)
             cur.executemany(sql, iterator)
 
+    if sqlite3.sqlite_version_info >= (3, 35, 0):
+        # The RETURNING clause was added in SQLite 3.35.0 (released 2021-03-12).
+        @staticmethod
+        def _insert_weight_get_id(cursor, name, type_info, description=None):
+            type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
+            sql = """
+                INSERT INTO weight(name, type_info, description)
+                VALUES(?, ?, ?)
+                RETURNING weight_id
+            """
+            cursor.execute(sql, (name, type_info, description))
+            return cursor.fetchone()[0]
+    else:
+        # Older versions of SQLite must use last_insert_rowid() function.
+        @staticmethod
+        def _insert_weight_get_id(cursor, name, type_info, description=None):
+            type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
+            sql = """
+                INSERT INTO weight(name, type_info, description)
+                VALUES(?, ?, ?)
+            """
+            cursor.execute(sql, (name, type_info, description))
+            cursor.execute('SELECT last_insert_rowid()')
+            return cursor.fetchone()[0]
+
     @classmethod
     def _make_sql_insert_element_weight(cls, cursor, columns):
         columns = [_quote_identifier(col) for col in columns]
@@ -702,7 +703,7 @@ class DataAccessLayer(object):
             raise ValueError(msg)
 
         with self._transaction() as cur:
-            weight_id = _insert_weight_get_id(cur, name, type_info, description)
+            weight_id = self._insert_weight_get_id(cur, name, type_info, description)
 
             # Get allowed columns and build selectors values.
             allowed_columns = _get_column_names(cur, 'element')

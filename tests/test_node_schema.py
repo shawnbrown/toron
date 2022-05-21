@@ -22,7 +22,6 @@ from toron._node_schema import transaction
 from toron._node_schema import _quote_identifier
 from toron._node_schema import _make_sql_new_labels
 from toron._node_schema import _make_sql_insert_elements
-from toron._node_schema import _insert_weight_get_id
 from toron._node_schema import savepoint
 from toron._node_schema import DataAccessLayer
 
@@ -843,7 +842,7 @@ class TestInsertWeightGetId(TempDirTestCase):
         name = 'myname'
         type_info = {'category': 'stuff'}
         description = 'My description.'
-        weight_id = _insert_weight_get_id(self.cur, name, type_info, description)
+        weight_id = DataAccessLayer._insert_weight_get_id(self.cur, name, type_info, description)
 
         actual = self.cur.execute('SELECT * FROM weight').fetchall()
         expected = [(1, 'myname', {'category': 'stuff'}, 'My description.', None)]
@@ -927,7 +926,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def test_complete(self):
-        weight_id = _insert_weight_get_id(self.cur, 'tot10', {'category': 'census'})
+        weight_id = DataAccessLayer._insert_weight_get_id(self.cur, 'tot10', {'category': 'census'})
 
         # Insert element_weight records.
         iterator = [
@@ -946,7 +945,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.assertEqual(result, (1,), msg='weight is complete, should be 1')
 
     def test_incomplete(self):
-        weight_id = _insert_weight_get_id(self.cur, 'tot10', {'category': 'census'})
+        weight_id = DataAccessLayer._insert_weight_get_id(self.cur, 'tot10', {'category': 'census'})
 
         # Insert element_weight records.
         iterator = [
