@@ -571,31 +571,6 @@ else:
         return cursor.fetchone()[0]
 
 
-def _make_sql_insert_element_weight(cursor, columns):
-    columns = [_quote_identifier(col) for col in columns]
-
-    existing_columns = _get_column_names(cursor, 'element')
-    existing_columns = [_quote_identifier(col) for col in existing_columns]
-
-    invalid_columns = set(columns).difference(existing_columns)
-    if invalid_columns:
-        msg = f'invalid column name: {", ".join(invalid_columns)}'
-        raise sqlite3.OperationalError(msg)
-
-    where_clause = ' AND '.join(f'{col}=?' for col in columns)
-    groupby_clause = ', '.join(columns)
-
-    sql = f"""
-        INSERT INTO element_weight (weight_id, element_id, value)
-        SELECT ? AS weight_id, element_id, ? AS value
-        FROM element
-        WHERE {where_clause}
-        GROUP BY {groupby_clause}
-        HAVING COUNT(*)=1
-    """
-    return sql
-
-
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
 
 
@@ -676,6 +651,31 @@ class DataAccessLayer(object):
             sql = _make_sql_insert_elements(cur, columns)
             cur.executemany(sql, iterator)
 
+    @classmethod
+    def _make_sql_insert_element_weight(cls, cursor, columns):
+        columns = [_quote_identifier(col) for col in columns]
+
+        existing_columns = _get_column_names(cursor, 'element')
+        existing_columns = [_quote_identifier(col) for col in existing_columns]
+
+        invalid_columns = set(columns).difference(existing_columns)
+        if invalid_columns:
+            msg = f'invalid column name: {", ".join(invalid_columns)}'
+            raise sqlite3.OperationalError(msg)
+
+        where_clause = ' AND '.join(f'{col}=?' for col in columns)
+        groupby_clause = ', '.join(columns)
+
+        sql = f"""
+            INSERT INTO element_weight (weight_id, element_id, value)
+            SELECT ? AS weight_id, element_id, ? AS value
+            FROM element
+            WHERE {where_clause}
+            GROUP BY {groupby_clause}
+            HAVING COUNT(*)=1
+        """
+        return sql
+
     @staticmethod
     def _update_weight_is_complete(cursor, weight_id):
         """Update the 'weight.is_complete' value (set to 1 or 0)."""
@@ -717,7 +717,7 @@ class DataAccessLayer(object):
             iterator = (mkrow(row) for row in iterator)
 
             # Insert element_weight records.
-            sql = _make_sql_insert_element_weight(cur, columns)
+            sql = self._make_sql_insert_element_weight(cur, columns)
             cur.executemany(sql, iterator)
 
             # Update "weight.is_complete" value (set to 1 or 0).

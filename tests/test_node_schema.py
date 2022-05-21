@@ -23,7 +23,6 @@ from toron._node_schema import _quote_identifier
 from toron._node_schema import _make_sql_new_labels
 from toron._node_schema import _make_sql_insert_elements
 from toron._node_schema import _insert_weight_get_id
-from toron._node_schema import _make_sql_insert_element_weight
 from toron._node_schema import savepoint
 from toron._node_schema import DataAccessLayer
 
@@ -869,7 +868,7 @@ class TestMakeSqlInsertElementWeight(TempDirTestCase):
 
     def test_all_columns(self):
         columns = ['state', 'county', 'town']
-        sql = _make_sql_insert_element_weight(self.cur, columns)
+        sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, columns)
         expected = """
             INSERT INTO element_weight (weight_id, element_id, value)
             SELECT ? AS weight_id, element_id, ? AS value
@@ -885,7 +884,7 @@ class TestMakeSqlInsertElementWeight(TempDirTestCase):
 
     def test_subset_of_columns(self):
         columns = ['state', 'county']
-        sql = _make_sql_insert_element_weight(self.cur, columns)
+        sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, columns)
         expected = """
             INSERT INTO element_weight (weight_id, element_id, value)
             SELECT ? AS weight_id, element_id, ? AS value
@@ -903,7 +902,7 @@ class TestMakeSqlInsertElementWeight(TempDirTestCase):
         regex = 'invalid column name: "region"'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             columns = ['state', 'county', 'region']
-            sql = _make_sql_insert_element_weight(self.cur, columns)
+            sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, columns)
 
 
 class TestUpdateWeightIsComplete(unittest.TestCase):
@@ -936,7 +935,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
             (weight_id, 35, 'Y', '001'),
             (weight_id, 20, 'Z', '002'),
         ]
-        sql = _make_sql_insert_element_weight(self.cur, self.columns)
+        sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
         DataAccessLayer._update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
@@ -954,7 +953,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
             (weight_id, 12, 'X', '001'),
             (weight_id, 35, 'Y', '001'),
         ]
-        sql = _make_sql_insert_element_weight(self.cur, self.columns)
+        sql = DataAccessLayer._make_sql_insert_element_weight(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
         DataAccessLayer._update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
