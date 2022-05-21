@@ -288,15 +288,14 @@ def _make_trigger_for_attributes(insert_or_update, table, column):
     type columns.
 
     The trigger will pass without error if the JSON is a wellformed
-    "object" whose values are "text", "integer", "real", "true",
-    "false", or "null" types.
+    "object" containing "text" values.
 
     The trigger will raise an error if the value is:
 
       * not wellformed JSON
       * not an "object" type
-      * an "object" type that contains one or more "object" or "array"
-        types (i.e., a container of other nested containers)
+      * an "object" type that contains one or more "integer", "real",
+        "true", "false", "null", "object" or "array" types
     """
     if insert_or_update.upper() not in {'INSERT', 'UPDATE'}:
         msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
