@@ -21,7 +21,6 @@ from toron._node_schema import connect
 from toron._node_schema import transaction
 from toron._node_schema import _quote_identifier
 from toron._node_schema import _make_sql_new_labels
-from toron._node_schema import _make_sql_insert_elements
 from toron._node_schema import savepoint
 from toron._node_schema import DataAccessLayer
 
@@ -806,28 +805,28 @@ class TestMakeSqlInsertElements(TempDirTestCase):
     def test_simple_case(self):
         """Insert columns that match element table."""
         columns = ['state', 'county', 'town']
-        sql = _make_sql_insert_elements(self.cur, columns)
+        sql = DataAccessLayer._make_sql_insert_elements(self.cur, columns)
         expected = 'INSERT INTO element ("state", "county", "town") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_differently_ordered_columns(self):
         """Order should reflect given *columns* not table order."""
         columns = ['town', 'county', 'state']  # <- Reverse order from table cols.
-        sql = _make_sql_insert_elements(self.cur, columns)
+        sql = DataAccessLayer._make_sql_insert_elements(self.cur, columns)
         expected = 'INSERT INTO element ("town", "county", "state") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_subset_of_columns(self):
         """Insert fewer column that exist in the element table."""
         columns = ['state', 'county']  # <- Does not include "town", and that's OK.
-        sql = _make_sql_insert_elements(self.cur, columns)
+        sql = DataAccessLayer._make_sql_insert_elements(self.cur, columns)
         expected = 'INSERT INTO element ("state", "county") VALUES (?, ?)'
         self.assertEqual(sql, expected)
 
     def test_bad_column_value(self):
         regex = 'invalid column name: "region"'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
-            _make_sql_insert_elements(self.cur, ['state', 'region'])
+            DataAccessLayer._make_sql_insert_elements(self.cur, ['state', 'region'])
 
 
 class TestInsertWeightGetId(TempDirTestCase):
@@ -914,7 +913,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.columns = ['label_a', 'label_b']
         for stmnt in _make_sql_new_labels(self.cur, self.columns):
             self.cur.execute(stmnt)
-        sql = _make_sql_insert_elements(self.cur, self.columns)
+        sql = DataAccessLayer._make_sql_insert_elements(self.cur, self.columns)
         iterator = [
             ('X', '001'),
             ('Y', '001'),

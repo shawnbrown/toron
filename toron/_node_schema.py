@@ -523,30 +523,6 @@ def _make_sql_new_labels(cursor, columns):
     return sql_stmnts
 
 
-def _make_sql_insert_elements(cursor, columns):
-    """Return a SQL query for use with an executemany() call.
-
-    Example:
-
-        >>> _make_sql_new_elements(cursor, ['state', 'county'])
-        'INSERT INTO element ("state", "county") VALUES (?, ?)'
-    """
-    columns = [_quote_identifier(col) for col in columns]
-
-    existing_columns = _get_column_names(cursor, 'element')
-    existing_columns = existing_columns[1:]  # Slice-off "element_id" column.
-    existing_columns = [_quote_identifier(col) for col in existing_columns]
-
-    invalid_columns = set(columns).difference(existing_columns)
-    if invalid_columns:
-        msg = f'invalid column name: {", ".join(invalid_columns)}'
-        raise sqlite3.OperationalError(msg)
-
-    columns_clause = ', '.join(columns)
-    values_clause = ', '.join('?' * len(columns))
-    return f'INSERT INTO element ({columns_clause}) VALUES ({values_clause})'
-
-
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
 
 
@@ -610,6 +586,30 @@ class DataAccessLayer(object):
             for stmnt in _make_sql_new_labels(cur, columns):
                 cur.execute(stmnt)
 
+    @classmethod
+    def _make_sql_insert_elements(cls, cursor, columns):
+        """Return a SQL query for use with an executemany() call.
+
+        Example:
+
+            >>> _make_sql_new_elements(cursor, ['state', 'county'])
+            'INSERT INTO element ("state", "county") VALUES (?, ?)'
+        """
+        columns = [_quote_identifier(col) for col in columns]
+
+        existing_columns = _get_column_names(cursor, 'element')
+        existing_columns = existing_columns[1:]  # Slice-off "element_id" column.
+        existing_columns = [_quote_identifier(col) for col in existing_columns]
+
+        invalid_columns = set(columns).difference(existing_columns)
+        if invalid_columns:
+            msg = f'invalid column name: {", ".join(invalid_columns)}'
+            raise sqlite3.OperationalError(msg)
+
+        columns_clause = ', '.join(columns)
+        values_clause = ', '.join('?' * len(columns))
+        return f'INSERT INTO element ({columns_clause}) VALUES ({values_clause})'
+
     def add_elements(self, iterable, columns=None):
         iterator = iter(iterable)
         if not columns:
@@ -624,7 +624,7 @@ class DataAccessLayer(object):
             columns = compress(columns, selectors)
             iterator = (tuple(compress(row, selectors)) for row in iterator)
 
-            sql = _make_sql_insert_elements(cur, columns)
+            sql = self._make_sql_insert_elements(cur, columns)
             cur.executemany(sql, iterator)
 
     if sqlite3.sqlite_version_info >= (3, 35, 0):
