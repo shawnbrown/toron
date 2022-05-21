@@ -711,7 +711,7 @@ class DataAccessLayer(object):
             return _rename_columns(self, mapper)
     else:
         def rename_columns(self, mapper):
-            return _rename_columns_legacy(self, mapper)
+            return _legacy_rename_columns(self, mapper)
 
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):
