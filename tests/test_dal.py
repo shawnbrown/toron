@@ -12,7 +12,6 @@ from toron._node_schema import connect
 from toron._node_schema import _schema_script
 from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import DataAccessLayer
-from toron.node import Node
 
 
 class TestQuoteIdentifier(unittest.TestCase):
@@ -157,14 +156,14 @@ class TestMakeSqlInsertElements(TempDirTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.node_path = 'mynode.toron'
-        con = connect(cls.node_path)
+        cls.file_path = 'mynode.toron'
+        con = connect(cls.file_path)
         cur = con.cursor()
         for stmnt in DataAccessLayer._add_columns_make_sql(cur, ['state', 'county', 'town']):
             cur.execute(stmnt)
 
     def setUp(self):
-        self.con = connect(self.node_path)
+        self.con = connect(self.file_path)
         self.cur = self.con.cursor()
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
@@ -329,16 +328,16 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.assertEqual(result, (0,), msg='weight is incomplete, should be 0')
 
 
-class TestNode(TempDirTestCase):
+class TestDataAccessLayer(TempDirTestCase):
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
 
     def test_on_disk(self):
         path = 'mynode.toron'
         self.assertFalse(os.path.isfile(path))
-        node = Node(path)
+        dal = DataAccessLayer(path)
 
-        del node
+        del dal
         gc.collect()  # Explicitly trigger full garbage collection.
 
         msg = 'data should persist as a file on disk'
@@ -347,23 +346,23 @@ class TestNode(TempDirTestCase):
     def test_in_memory(self):
         path = 'mem1'
         self.assertFalse(os.path.isfile(path), msg='file should not already exist')
-        node = Node(path, mode='memory')
+        dal = DataAccessLayer(path, mode='memory')
 
         msg = 'should not be saved as file, should by in-memory only'
         self.assertFalse(os.path.isfile(path), msg=msg)
 
-        connection = node._dal._connection
+        connection = dal._connection
 
         dummy_query = 'SELECT 42'  # To check connection status.
         cur = connection.execute(dummy_query)
         msg = 'in-memory connections should remain open after instantiation'
         self.assertEqual(cur.fetchone(), (42,), msg=msg)
 
-        del node
+        del dal
         gc.collect()  # Explicitly trigger full garbage collection.
 
         regex = 'closed database'
-        msg = 'connection should be closed when Node is garbage collected'
+        msg = 'connection should be closed when DAL is garbage collected'
         with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
             connection.execute(dummy_query)
 
@@ -374,8 +373,8 @@ class TestNode(TempDirTestCase):
 
     def test_add_columns(self):
         path = 'mynode.toron'
-        node = Node(path)
-        node.add_columns(['state', 'county'])  # <- Add columns.
+        dal = DataAccessLayer(path)
+        dal.add_columns(['state', 'county'])  # <- Add columns.
 
         con = sqlite3.connect(path)
 
@@ -390,15 +389,15 @@ class TestNode(TempDirTestCase):
 
     def test_add_elements(self):
         path = 'mynode.toron'
-        node = Node(path)
-        node.add_columns(['state', 'county'])  # <- Add columns.
+        dal = DataAccessLayer(path)
+        dal.add_columns(['state', 'county'])  # <- Add columns.
 
         elements = [
             ('IA', 'POLK'),
             ('IN', 'LA PORTE'),
             ('MN', 'HENNEPIN '),
         ]
-        node.add_elements(elements, columns=['state', 'county'])
+        dal.add_elements(elements, columns=['state', 'county'])
 
         con = sqlite3.connect(path)
         result = con.execute('SELECT * FROM element').fetchall()
@@ -411,8 +410,8 @@ class TestNode(TempDirTestCase):
 
     def test_add_elements_no_column_arg(self):
         path = 'mynode.toron'
-        node = Node(path)
-        node.add_columns(['state', 'county'])  # <- Add columns.
+        dal = DataAccessLayer(path)
+        dal.add_columns(['state', 'county'])  # <- Add columns.
 
         elements = [
             ('state', 'county'),  # <- Header row.
@@ -420,7 +419,7 @@ class TestNode(TempDirTestCase):
             ('IN', 'LA PORTE'),
             ('MN', 'HENNEPIN '),
         ]
-        node.add_elements(elements) # <- No *columns* argument given.
+        dal.add_elements(elements) # <- No *columns* argument given.
 
         con = sqlite3.connect(path)
         result = con.execute('SELECT * FROM element').fetchall()
@@ -434,8 +433,8 @@ class TestNode(TempDirTestCase):
     def test_add_elements_column_subset(self):
         """Omitted columns should get default value ('-')."""
         path = 'mynode.toron'
-        node = Node(path)
-        node.add_columns(['state', 'county'])  # <- Add columns.
+        dal = DataAccessLayer(path)
+        dal.add_columns(['state', 'county'])  # <- Add columns.
 
         # Element rows include "state" but not "county".
         elements = [
@@ -444,7 +443,7 @@ class TestNode(TempDirTestCase):
             ('IN',),
             ('MN',),
         ]
-        node.add_elements(elements) # <- No *columns* argument given.
+        dal.add_elements(elements) # <- No *columns* argument given.
 
         con = sqlite3.connect(path)
         result = con.execute('SELECT * FROM element').fetchall()
@@ -458,8 +457,8 @@ class TestNode(TempDirTestCase):
     def test_add_elements_column_superset(self):
         """Surplus columns should be filtered-out before loading."""
         path = 'mynode.toron'
-        node = Node(path)
-        node.add_columns(['state', 'county'])  # <- Add columns.
+        dal = DataAccessLayer(path)
+        dal.add_columns(['state', 'county'])  # <- Add columns.
 
         # Element rows include unknown columns "region" and "group".
         elements = [
@@ -468,7 +467,7 @@ class TestNode(TempDirTestCase):
             ('ENC',    'IN',    'GROUP7', 'LA PORTE'),
             ('WNC',    'MN',    'GROUP1', 'HENNEPIN '),
         ]
-        node.add_elements(elements) # <- No *columns* argument given.
+        dal.add_elements(elements) # <- No *columns* argument given.
 
         con = sqlite3.connect(path)
         result = con.execute('SELECT * FROM element').fetchall()
@@ -480,13 +479,13 @@ class TestNode(TempDirTestCase):
         self.assertEqual(result, expected)
 
 
-class TestNodeAddWeights(TempDirTestCase):
-    """Tests for node.add_weights() method."""
+class TestDataAccessLayerAddWeights(TempDirTestCase):
+    """Tests for dal.add_weights() method."""
     def setUp(self):
         self.path = 'mynode.toron'
-        self.node = Node(self.path)
-        self.node.add_columns(['state', 'county', 'tract'])
-        self.node.add_elements([
+        self.dal = DataAccessLayer(self.path)
+        self.dal.add_columns(['state', 'county', 'tract'])
+        self.dal.add_elements([
             ('state', 'county', 'tract'),
             ('12', '001', '000200'),
             ('12', '003', '040101'),
@@ -518,7 +517,7 @@ class TestNodeAddWeights(TempDirTestCase):
             ('12', '017', '450302', 183),
             ('12', '019', '030202', 62),
         ]
-        self.node.add_weights(weights, columns, name='pop10', type_info={'category': 'census'})
+        self.dal.add_weights(weights, columns, name='pop10', type_info={'category': 'census'})
 
         self.cursor.execute('SELECT * FROM weight')
         self.assertEqual(
@@ -546,7 +545,7 @@ class TestNodeAddWeights(TempDirTestCase):
             ('12', '017', 183),
             ('12', '019', 62),
         ]
-        self.node.add_weights(weights, name='pop10', type_info={'category': 'census'})
+        self.dal.add_weights(weights, name='pop10', type_info={'category': 'census'})
 
         self.cursor.execute('SELECT * FROM weight')
         self.assertEqual(
