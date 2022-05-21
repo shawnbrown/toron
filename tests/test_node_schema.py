@@ -24,8 +24,8 @@ from toron._node_schema import _make_sql_new_labels
 from toron._node_schema import _make_sql_insert_elements
 from toron._node_schema import _insert_weight_get_id
 from toron._node_schema import _make_sql_insert_element_weight
-from toron._node_schema import _update_weight_is_complete
 from toron._node_schema import savepoint
+from toron._node_schema import DataAccessLayer
 
 
 class CheckJsonMixin(object):
@@ -939,7 +939,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         sql = _make_sql_insert_element_weight(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
-        _update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
+        DataAccessLayer._update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
 
         # Check is_complete flag.
         self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
@@ -957,7 +957,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         sql = _make_sql_insert_element_weight(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
-        _update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
+        DataAccessLayer._update_weight_is_complete(self.cur, weight_id)  # <- Update is_complete!
 
         # Check is_complete flag.
         self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
