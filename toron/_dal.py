@@ -421,9 +421,26 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                 con.close()
 
 
+class DataAccessLayerPre24(DataAccessLayerPre25):
+    """This is a subclass of DataAccessLayer that supports SQLite
+    versions before 3.24.0 (2018-06-04).
+
+    For full documentation, see DataAccessLayer.
+    """
+    @staticmethod
+    def _set_properties(cursor, properties):
+        sql = '''
+            INSERT OR REPLACE INTO property(key, value) VALUES (?, ?)
+        '''
+        parameters = ((k, _dumps(v, sort_keys=True)) for k, v in properties.items())
+        cursor.executemany(sql, parameters)
+
+
 # Set the DataAccessLayer class appropriate for the current version of SQLite.
 _sqlite_version_info = sqlite3.sqlite_version_info
-if _sqlite_version_info < (3, 25, 0):
+if _sqlite_version_info < (3, 24, 0):
+    dal_class = DataAccessLayerPre24
+elif _sqlite_version_info < (3, 25, 0):
     dal_class = DataAccessLayerPre25
 elif _sqlite_version_info < (3, 35, 0):
     dal_class = DataAccessLayerPre35

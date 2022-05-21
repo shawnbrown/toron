@@ -12,6 +12,7 @@ from toron._node_schema import connect
 from toron._node_schema import _schema_script
 from toron._node_schema import _add_functions_and_triggers
 from toron._dal import DataAccessLayer
+from toron._dal import DataAccessLayerPre24
 from toron._dal import DataAccessLayerPre25
 from toron._dal import DataAccessLayerPre35
 from toron._dal import dal_class
@@ -755,14 +756,14 @@ class TestGetAndSetProperties(unittest.TestCase):
         }
         self.assertEqual(properties, expected)
 
-    def test_set_properties(self):
+    def run_set_test(self, func):
         properties = {
             'x': {'a': 1, 'b': 2},
             'y': 'abc',
             'z': 0.1875,
         }
 
-        self.dal._set_properties(self.cursor, properties)  # <- Method under test.
+        func(self.cursor, properties)  # <- Method under test.
 
         self.cursor.execute('''
             SELECT key, value
@@ -773,12 +774,18 @@ class TestGetAndSetProperties(unittest.TestCase):
         expected = sorted(properties.items())
         self.assertEqual(self.cursor.fetchall(), expected)
 
-    def test_set_properties_upsert(self):
-        self.dal._set_properties(self.cursor, {'a': 123})
-        self.dal._set_properties(self.cursor, {'b': 'xyz'})
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 24, 0), 'requires 3.24.0 or newer')
+    def test_set_properties(self):
+        self.run_set_test(DataAccessLayer._set_properties)
+
+    def test_pre24_set_properties(self):
+        self.run_set_test(DataAccessLayerPre24._set_properties)
+
+    def run_upsert_test(self, func):
+        func(self.cursor, {'a': 123, 'b': 'xyz'})
 
         try:
-            self.dal._set_properties(self.cursor, {'a': 456})  # <- Should pass without error.
+            func(self.cursor, {'a': 456})  # <- Should pass without error.
         except sqlite3.IntegrityError:
             msg = 'existing values should be replaced without error'
             self.fail(msg)
@@ -789,4 +796,11 @@ class TestGetAndSetProperties(unittest.TestCase):
             WHERE key IN ('a', 'b')
         ''')
         self.assertEqual(dict(self.cursor.fetchall()), {'a': 456, 'b': 'xyz'})
+
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 24, 0), 'requires 3.24.0 or newer')
+    def test_set_properties_upsert(self):
+        self.run_upsert_test(DataAccessLayer._set_properties)
+
+    def test_pre24_set_properties_upsert(self):
+        self.run_upsert_test(DataAccessLayerPre24._set_properties)
 
