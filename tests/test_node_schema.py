@@ -803,28 +803,28 @@ class TestMakeSqlInsertElements(TempDirTestCase):
     def test_simple_case(self):
         """Insert columns that match element table."""
         columns = ['state', 'county', 'town']
-        sql = DataAccessLayer._make_sql_insert_elements(self.cur, columns)
+        sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
         expected = 'INSERT INTO element ("state", "county", "town") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_differently_ordered_columns(self):
         """Order should reflect given *columns* not table order."""
         columns = ['town', 'county', 'state']  # <- Reverse order from table cols.
-        sql = DataAccessLayer._make_sql_insert_elements(self.cur, columns)
+        sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
         expected = 'INSERT INTO element ("town", "county", "state") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_subset_of_columns(self):
         """Insert fewer column that exist in the element table."""
         columns = ['state', 'county']  # <- Does not include "town", and that's OK.
-        sql = DataAccessLayer._make_sql_insert_elements(self.cur, columns)
+        sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
         expected = 'INSERT INTO element ("state", "county") VALUES (?, ?)'
         self.assertEqual(sql, expected)
 
     def test_bad_column_value(self):
         regex = 'invalid column name: "region"'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
-            DataAccessLayer._make_sql_insert_elements(self.cur, ['state', 'region'])
+            DataAccessLayer._add_elements_make_sql(self.cur, ['state', 'region'])
 
 
 class TestInsertWeightGetId(TempDirTestCase):
@@ -911,7 +911,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.columns = ['label_a', 'label_b']
         for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, self.columns):
             self.cur.execute(stmnt)
-        sql = DataAccessLayer._make_sql_insert_elements(self.cur, self.columns)
+        sql = DataAccessLayer._add_elements_make_sql(self.cur, self.columns)
         iterator = [
             ('X', '001'),
             ('Y', '001'),

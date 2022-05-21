@@ -587,12 +587,14 @@ class DataAccessLayer(object):
                 cur.execute(stmnt)
 
     @classmethod
-    def _make_sql_insert_elements(cls, cursor, columns):
-        """Return a SQL query for use with an executemany() call.
+    def _add_elements_make_sql(cls, cursor, columns):
+        """Return a SQL statement adding new element records (for use
+        with an executemany() call.
 
         Example:
 
-            >>> _make_sql_new_elements(cursor, ['state', 'county'])
+            >>> dal = DataAccessLayer(...)
+            >>> dal._make_sql_new_elements(cursor, ['state', 'county'])
             'INSERT INTO element ("state", "county") VALUES (?, ?)'
         """
         columns = [cls._quote_identifier(col) for col in columns]
@@ -624,7 +626,7 @@ class DataAccessLayer(object):
             columns = compress(columns, selectors)
             iterator = (tuple(compress(row, selectors)) for row in iterator)
 
-            sql = self._make_sql_insert_elements(cur, columns)
+            sql = self._add_elements_make_sql(cur, columns)
             cur.executemany(sql, iterator)
 
     if sqlite3.sqlite_version_info >= (3, 35, 0):
