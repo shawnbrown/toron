@@ -33,7 +33,7 @@ class TestNode(TempDirTestCase):
         msg = 'should not be saved as file, should by in-memory only'
         self.assertFalse(os.path.isfile(path), msg=msg)
 
-        connection = node._connection
+        connection = node._dal._connection
 
         dummy_query = 'SELECT 42'  # To check connection status.
         cur = connection.execute(dummy_query)

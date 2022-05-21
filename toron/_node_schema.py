@@ -52,6 +52,7 @@ import sqlite3
 from ast import literal_eval
 from collections import Counter
 from contextlib import contextmanager
+from itertools import compress
 from json import loads as _loads
 from json import dumps as _dumps
 from urllib.parse import quote as urllib_parse_quote
@@ -644,4 +645,81 @@ class savepoint(object):
             self.cursor.execute(f'RELEASE {self.name}')
         else:
             self.cursor.execute(f'ROLLBACK TO {self.name}')
+
+
+class DataAccessLayer(object):
+    def __init__(self, path, mode='rwc'):
+        if mode == 'memory':
+            self._connection = connect(path, mode=mode)  # In-memory connection.
+            self._transaction = lambda: transaction(self._connection)
+        else:
+            path = os.fspath(path)
+            connect(path, mode=mode).close()  # Verify path to Toron node file.
+            self._transaction = lambda: transaction(self.path, mode=mode)
+        self._path = path
+        self.mode = mode
+
+    def __del__(self):
+        if hasattr(self, '_connection'):
+            self._connection.close()
+
+    @property
+    def path(self):
+        return self._path
+
+    def add_columns(self, columns):
+        with self._transaction() as cur:
+            for stmnt in _make_sql_new_labels(cur, columns):
+                cur.execute(stmnt)
+
+    def add_elements(self, iterable, columns=None):
+        iterator = iter(iterable)
+        if not columns:
+            columns = next(iterator)
+
+        with self._transaction() as cur:
+            # Get allowed columns and build selectors values.
+            allowed_columns = _get_column_names(cur, 'element')
+            selectors = tuple((col in allowed_columns) for col in columns)
+
+            # Filter column names and iterator rows to allowed columns.
+            columns = compress(columns, selectors)
+            iterator = (tuple(compress(row, selectors)) for row in iterator)
+
+            sql = _make_sql_insert_elements(cur, columns)
+            cur.executemany(sql, iterator)
+
+    def add_weights(self, iterable, columns=None, *, name, type_info, description=None):
+        iterator = iter(iterable)
+        if not columns:
+            columns = tuple(next(iterator))
+
+        try:
+            weight_pos = columns.index(name)  # Get position of weight column.
+        except ValueError:
+            columns_string = ', '.join(repr(x) for x in columns)
+            msg = f'Name {name!r} does not appear in columns: {columns_string}'
+            raise ValueError(msg)
+
+        with self._transaction() as cur:
+            weight_id = _insert_weight_get_id(cur, name, type_info, description)
+
+            # Get allowed columns and build selectors values.
+            allowed_columns = _get_column_names(cur, 'element')
+            selectors = tuple((col in allowed_columns) for col in columns)
+
+            # Filter column names and iterator rows to allowed columns.
+            columns = compress(columns, selectors)
+            def mkrow(row):
+                weightid_and_value = (weight_id, row[weight_pos])
+                element_labels = tuple(compress(row, selectors))
+                return weightid_and_value + element_labels
+            iterator = (mkrow(row) for row in iterator)
+
+            # Insert element_weight records.
+            sql = _make_sql_insert_element_weight(cur, columns)
+            cur.executemany(sql, iterator)
+
+            # Update "weight.is_complete" value (set to 1 or 0).
+            _update_weight_is_complete(cur, weight_id)
 
