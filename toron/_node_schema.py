@@ -499,16 +499,12 @@ class DataAccessLayer(object):
             path = os.fspath(path)
             connect(path, mode=mode).close()  # Verify path to Toron node file.
             self._transaction = lambda: transaction(self.path, mode=mode)
-        self._path = path
+        self.path = path
         self.mode = mode
 
     def __del__(self):
         if hasattr(self, '_connection'):
             self._connection.close()
-
-    @property
-    def path(self):
-        return self._path
 
     @staticmethod
     def _get_column_names(cursor, table):

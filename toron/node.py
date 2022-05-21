@@ -6,12 +6,14 @@ from ._node_schema import DataAccessLayer
 class Node(object):
     def __init__(self, path, mode='rwc'):
         self._dal = DataAccessLayer(path, mode)
-        self._path = path
-        self.mode = mode
 
     @property
     def path(self):
-        return self._path
+        return self._dal.path
+
+    @property
+    def mode(self):
+        return self._dal.mode
 
     def add_columns(self, columns):
         self._dal.add_columns(columns)
