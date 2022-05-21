@@ -27,16 +27,6 @@ def _rename_columns_make_sql(column_names, new_column_names):
     return sql_stmnts
 
 
-def _rename_columns(dal, mapper):
-    """Rename columns using native RENAME COLUMN command (only for
-    SQLite 3.25.0 or newer).
-    """
-    with dal._transaction() as cur:
-        names, new_names = dal._rename_columns_apply_mapper(cur, mapper)
-        for stmnt in _rename_columns_make_sql(names, new_names):
-            cur.execute(stmnt)
-
-
 def _legacy_rename_columns_make_sql(column_names, new_column_names):
     """In SQLite versions older than 3.25.0, there was no native
     support for the RENAME COLUMN command. In these older versions
@@ -77,31 +67,6 @@ def _legacy_rename_columns_make_sql(column_names, new_column_names):
         f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(new_column_names)})',
     ]
     return statements
-
-
-def _legacy_rename_columns(dal, mapper):
-    # This code should follow the recommended, 12-step ALTER TABLE
-    # procedure detailed in the SQLite documentation:
-    #     https://www.sqlite.org/lang_altertable.html#otheralter
-    con = dal._get_connection()
-    try:
-        con.execute('PRAGMA foreign_keys=OFF')
-        cur = con.cursor()
-        with savepoint(cur):
-            names, new_names = dal._rename_columns_apply_mapper(cur, mapper)
-            for stmnt in _legacy_rename_columns_make_sql(names, new_names):
-                cur.execute(stmnt)
-
-            cur.execute('PRAGMA main.foreign_key_check')
-            one_result = cur.fetchone()
-            if one_result:
-                msg = 'foreign key violations'
-                raise Exception(msg)
-    finally:
-        cur.close()
-        con.execute('PRAGMA foreign_keys=ON')
-        if con is not getattr(dal, '_connection', None):
-            con.close()
 
 
 class DataAccessLayer(object):
@@ -229,12 +194,13 @@ class DataAccessLayer(object):
 
     # For _rename_columns_make_sql(), see module-level function definitinos.
 
-    if sqlite3.sqlite_version_info >= (3, 25, 0):
-        def rename_columns(self, mapper):
-            return _rename_columns(self, mapper)
-    else:
-        def rename_columns(self, mapper):
-            return _legacy_rename_columns(self, mapper)
+    def rename_columns(self, mapper):
+        # Rename columns using native RENAME COLUMN command (only for
+        # SQLite 3.25.0 or newer).
+        with self._transaction() as cur:
+            names, new_names = self._rename_columns_apply_mapper(cur, mapper)
+            for stmnt in _rename_columns_make_sql(names, new_names):
+                cur.execute(stmnt)
 
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):
@@ -385,9 +351,39 @@ class DataAccessLayerPre35(DataAccessLayer):
         return cursor.fetchone()[0]
 
 
+class DataAccessLayerPre25(DataAccessLayerPre35):
+    """A patched DataAccessLayer for SQLite versions before 3.25.0."""
+
+    def rename_columns(self, mapper):
+        # This code should follow the recommended, 12-step ALTER TABLE
+        # procedure detailed in the SQLite documentation:
+        #     https://www.sqlite.org/lang_altertable.html#otheralter
+        con = self._get_connection()
+        try:
+            con.execute('PRAGMA foreign_keys=OFF')
+            cur = con.cursor()
+            with savepoint(cur):
+                names, new_names = self._rename_columns_apply_mapper(cur, mapper)
+                for stmnt in _legacy_rename_columns_make_sql(names, new_names):
+                    cur.execute(stmnt)
+
+                cur.execute('PRAGMA main.foreign_key_check')
+                one_result = cur.fetchone()
+                if one_result:
+                    msg = 'foreign key violations'
+                    raise Exception(msg)
+        finally:
+            cur.close()
+            con.execute('PRAGMA foreign_keys=ON')
+            if con is not getattr(self, '_connection', None):
+                con.close()
+
+
 # Set the DataAccessLayer class appropriate for the current version of SQLite.
 _sqlite_version_info = sqlite3.sqlite_version_info
-if _sqlite_version_info < (3, 35, 0):
+if _sqlite_version_info < (3, 25, 0):
+    dal_class = DataAccessLayerPre25
+elif _sqlite_version_info < (3, 35, 0):
     dal_class = DataAccessLayerPre35
 else:
     dal_class = DataAccessLayer

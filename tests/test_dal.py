@@ -12,12 +12,13 @@ from toron._node_schema import connect
 from toron._node_schema import _schema_script
 from toron._node_schema import _add_functions_and_triggers
 from toron._dal import DataAccessLayer
+from toron._dal import DataAccessLayerPre25
 from toron._dal import DataAccessLayerPre35
 from toron._dal import dal_class
 from toron._dal import _rename_columns_make_sql
-from toron._dal import _rename_columns
+#from toron._dal import _rename_columns
 from toron._dal import _legacy_rename_columns_make_sql
-from toron._dal import _legacy_rename_columns
+#from toron._dal import _legacy_rename_columns
 
 
 SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
@@ -350,15 +351,15 @@ class TestRenameColumns(unittest.TestCase):
     @unittest.skipIf(SQLITE_VERSION_INFO < (3, 25, 0), 'requires 3.25.0 or newer')
     def test_rename_columns(self):
         """Test the native RENAME COLUMN implementation."""
-        self.run_rename_test(_rename_columns)
+        self.run_rename_test(DataAccessLayer.rename_columns)
 
     def test_legacy_rename_columns(self):
         """Test the alternate legacy implementation."""
-        self.run_rename_test(_legacy_rename_columns)
+        self.run_rename_test(DataAccessLayerPre25.rename_columns)
 
     def test_data_access_layer_rename_columns(self):
-        """Test the DataAccessLayer class' wrapper method."""
-        self.run_rename_test(DataAccessLayer.rename_columns)
+        """Test the assigned 'dal_class' class."""
+        self.run_rename_test(dal_class.rename_columns)
 
 
 class TestAddElementsMakeSql(unittest.TestCase):
