@@ -12,6 +12,10 @@ from toron._node_schema import connect
 from toron._node_schema import _schema_script
 from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import DataAccessLayer
+from toron._node_schema import _rename_columns_make_sql
+from toron._node_schema import _rename_columns
+from toron._node_schema import _legacy_rename_columns_make_sql
+from toron._node_schema import _legacy_rename_columns
 
 
 class TestDataAccessLayerOnDisk(TempDirTestCase):
@@ -256,41 +260,45 @@ class TestRenameColumnsApplyMapper(unittest.TestCase):
 
 
 class TestRenameColumnsMakeSql(unittest.TestCase):
-    maxDiff = None
-
-    def test_rename_column_command(self):
-        """The RENAME COLUMN command was added in SQLite 3.25.0."""
-        sql = DataAccessLayer._rename_columns_make_sql(
+    @unittest.skipUnless(sqlite3.sqlite_version_info >= (3, 25, 0), 'requires SQLite 3.25.0 or newer')
+    def test_rename_columns_make_sql(self):
+        """Test native RENAME COLUMN statements."""
+        sql = _rename_columns_make_sql(
             ['"state"', '"county"', '"town"'],
             ['"stusab"', '"county"', '"place"'],
         )
+        expected = [
+            'ALTER TABLE element RENAME COLUMN "state" TO "stusab"',
+            'ALTER TABLE location RENAME COLUMN "state" TO "stusab"',
+            'ALTER TABLE structure RENAME COLUMN "state" TO "stusab"',
+            'ALTER TABLE element RENAME COLUMN "town" TO "place"',
+            'ALTER TABLE location RENAME COLUMN "town" TO "place"',
+            'ALTER TABLE structure RENAME COLUMN "town" TO "place"',
+        ]
+        self.assertEqual(sql, expected)
 
-        if sqlite3.sqlite_version_info >= (3, 25, 0):
-            expected = [
-                'ALTER TABLE element RENAME COLUMN "state" TO "stusab"',
-                'ALTER TABLE location RENAME COLUMN "state" TO "stusab"',
-                'ALTER TABLE structure RENAME COLUMN "state" TO "stusab"',
-                'ALTER TABLE element RENAME COLUMN "town" TO "place"',
-                'ALTER TABLE location RENAME COLUMN "town" TO "place"',
-                'ALTER TABLE structure RENAME COLUMN "town" TO "place"',
-            ]
-        else:
-            expected = [
-                'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT DEFAULT \'-\' NOT NULL, "county" TEXT DEFAULT \'-\' NOT NULL, "place" TEXT DEFAULT \'-\' NOT NULL)',
-                'INSERT INTO new_element SELECT element_id, "state", "county", "town" FROM element',
-                'DROP TABLE element',
-                'ALTER TABLE new_element RENAME TO element',
-                'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, "stusab" TEXT, "county" TEXT, "place" TEXT)',
-                'INSERT INTO new_location SELECT _location_id, "state", "county", "town" FROM location',
-                'DROP TABLE location',
-                'ALTER TABLE new_location RENAME TO location',
-                'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, "stusab" INTEGER CHECK ("stusab" IN (0, 1)) DEFAULT 0, "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0, "place" INTEGER CHECK ("place" IN (0, 1)) DEFAULT 0)',
-                'INSERT INTO new_structure SELECT _structure_id, "state", "county", "town" FROM structure',
-                'DROP TABLE structure',
-                'ALTER TABLE new_structure RENAME TO structure',
-                'CREATE UNIQUE INDEX unique_element_index ON element("stusab", "county", "place")',
-                'CREATE UNIQUE INDEX unique_structure_index ON structure("stusab", "county", "place")',
-            ]
+    def test_legacy_rename_columns_make_sql(self):
+        """Test legacy column-rename statements for workaround procedure."""
+        sql = _legacy_rename_columns_make_sql(
+            ['"state"', '"county"', '"town"'],
+            ['"stusab"', '"county"', '"place"'],
+        )
+        expected = [
+            'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT DEFAULT \'-\' NOT NULL, "county" TEXT DEFAULT \'-\' NOT NULL, "place" TEXT DEFAULT \'-\' NOT NULL)',
+            'INSERT INTO new_element SELECT element_id, "state", "county", "town" FROM element',
+            'DROP TABLE element',
+            'ALTER TABLE new_element RENAME TO element',
+            'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, "stusab" TEXT, "county" TEXT, "place" TEXT)',
+            'INSERT INTO new_location SELECT _location_id, "state", "county", "town" FROM location',
+            'DROP TABLE location',
+            'ALTER TABLE new_location RENAME TO location',
+            'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, "stusab" INTEGER CHECK ("stusab" IN (0, 1)) DEFAULT 0, "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0, "place" INTEGER CHECK ("place" IN (0, 1)) DEFAULT 0)',
+            'INSERT INTO new_structure SELECT _structure_id, "state", "county", "town" FROM structure',
+            'DROP TABLE structure',
+            'ALTER TABLE new_structure RENAME TO structure',
+            'CREATE UNIQUE INDEX unique_element_index ON element("stusab", "county", "place")',
+            'CREATE UNIQUE INDEX unique_structure_index ON structure("stusab", "county", "place")',
+        ]
         self.assertEqual(sql, expected)
 
 
@@ -316,7 +324,7 @@ class TestRenameColumns(unittest.TestCase):
     def get_column_names(self, table):
         return self.dal._get_column_names(self.cur, table)
 
-    def test_rename(self):
+    def run_rename_test(self, rename_columns_func):
         columns_before_rename = self.get_column_names('element')
         self.assertEqual(columns_before_rename, ['element_id', 'state', 'county', 'town'])
 
@@ -324,7 +332,7 @@ class TestRenameColumns(unittest.TestCase):
             self.cur.execute('SELECT state, county, town from element').fetchall()
 
         mapper = {'state': 'stusab', 'town': 'place'}
-        self.dal.rename_columns(mapper)  # <- Rename columns!
+        rename_columns_func(self.dal, mapper)  # <- Rename columns!
 
         columns_after_rename = self.get_column_names('element')
         self.assertEqual(columns_after_rename, ['element_id', 'stusab', 'county', 'place'])
@@ -333,6 +341,19 @@ class TestRenameColumns(unittest.TestCase):
             self.cur.execute('SELECT stusab, county, place from element').fetchall()
 
         self.assertEqual(data_before_rename, data_after_rename)
+
+    @unittest.skipUnless(sqlite3.sqlite_version_info >= (3, 25, 0), 'requires SQLite 3.25.0 or newer')
+    def test_rename_columns(self):
+        """Test the native RENAME COLUMN implementation."""
+        self.run_rename_test(_rename_columns)
+
+    def test_legacy_rename_columns(self):
+        """Test the alternate legacy implementation."""
+        self.run_rename_test(_legacy_rename_columns)
+
+    def test_data_access_layer_rename_columns(self):
+        """Test the DataAccessLayer class' wrapper method."""
+        self.run_rename_test(DataAccessLayer.rename_columns)
 
 
 class TestAddElementsMakeSql(unittest.TestCase):
