@@ -14,6 +14,47 @@ from toron._node_schema import _add_functions_and_triggers
 from toron._node_schema import DataAccessLayer
 
 
+class TestDataAccessLayerOnDisk(TempDirTestCase):
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
+    def test_init_on_disk(self):
+        path = 'mynode.toron'
+        self.assertFalse(os.path.isfile(path))
+        dal = DataAccessLayer(path)
+
+        del dal
+        gc.collect()  # Explicitly trigger full garbage collection.
+
+        msg = 'data should persist as a file on disk'
+        self.assertTrue(os.path.isfile(path), msg=msg)
+
+
+class TestDataAccessLayerInMemory(unittest.TestCase):
+    def test_init_in_memory(self):
+        path = 'mem1'
+        self.assertFalse(os.path.isfile(path), msg='file should not already exist')
+        dal = DataAccessLayer(path, mode='memory')
+
+        msg = 'should not be saved as file, should by in-memory only'
+        self.assertFalse(os.path.isfile(path), msg=msg)
+
+        connection = dal._connection
+
+        dummy_query = 'SELECT 42'  # To check connection status.
+        cur = connection.execute(dummy_query)
+        msg = 'in-memory connections should remain open after instantiation'
+        self.assertEqual(cur.fetchone(), (42,), msg=msg)
+
+        del dal
+        gc.collect()  # Explicitly trigger full garbage collection.
+
+        regex = 'closed database'
+        msg = 'connection should be closed when DAL is garbage collected'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
+            connection.execute(dummy_query)
+
+
 class TestQuoteIdentifier(unittest.TestCase):
     def test_passing_behavior(self):
         values = [
@@ -151,6 +192,29 @@ class TestAddColumnsMakeSql(unittest.TestCase):
             DataAccessLayer._add_columns_make_sql(self.cur, ['state', '_location_id'])
 
 
+class TestAddColumns(unittest.TestCase):
+    @staticmethod
+    def get_column_names(connection_or_cursor, table):
+        cur = connection_or_cursor.execute(f'PRAGMA table_info({table})')
+        return [row[1] for row in cur.fetchall()]
+
+    def test_add_columns(self):
+        path = 'mynode.toron'
+        dal = DataAccessLayer(path, mode='memory')
+        dal.add_columns(['state', 'county'])  # <- Add columns.
+
+        con = dal._connection
+
+        columns = self.get_column_names(con, 'element')
+        self.assertEqual(columns, ['element_id', 'state', 'county'])
+
+        columns = self.get_column_names(con, 'location')
+        self.assertEqual(columns, ['_location_id', 'state', 'county'])
+
+        columns = self.get_column_names(con, 'structure')
+        self.assertEqual(columns, ['_structure_id', 'state', 'county'])
+
+
 class TestAddElementsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
@@ -187,6 +251,99 @@ class TestAddElementsMakeSql(unittest.TestCase):
         regex = 'invalid column name: "region"'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             DataAccessLayer._add_elements_make_sql(self.cur, ['state', 'region'])
+
+
+class TestAddElements(unittest.TestCase):
+    def test_add_elements(self):
+        path = 'mynode.toron'
+        dal = DataAccessLayer(path, mode='memory')
+        dal.add_columns(['state', 'county'])  # <- Add columns.
+
+        elements = [
+            ('IA', 'POLK'),
+            ('IN', 'LA PORTE'),
+            ('MN', 'HENNEPIN '),
+        ]
+        dal.add_elements(elements, columns=['state', 'county'])
+
+        con = dal._connection
+        result = con.execute('SELECT * FROM element').fetchall()
+        expected = [
+            (1, 'IA', 'POLK'),
+            (2, 'IN', 'LA PORTE'),
+            (3, 'MN', 'HENNEPIN '),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_add_elements_no_column_arg(self):
+        path = 'mynode.toron'
+        dal = DataAccessLayer(path, mode='memory')
+        dal.add_columns(['state', 'county'])  # <- Add columns.
+
+        elements = [
+            ('state', 'county'),  # <- Header row.
+            ('IA', 'POLK'),
+            ('IN', 'LA PORTE'),
+            ('MN', 'HENNEPIN '),
+        ]
+        dal.add_elements(elements) # <- No *columns* argument given.
+
+        con = dal._connection
+        result = con.execute('SELECT * FROM element').fetchall()
+        expected = [
+            (1, 'IA', 'POLK'),
+            (2, 'IN', 'LA PORTE'),
+            (3, 'MN', 'HENNEPIN '),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_add_elements_column_subset(self):
+        """Omitted columns should get default value ('-')."""
+        path = 'mynode.toron'
+        dal = DataAccessLayer(path, mode='memory')
+        dal.add_columns(['state', 'county'])  # <- Add columns.
+
+        # Element rows include "state" but not "county".
+        elements = [
+            ('state',),  # <- Header row.
+            ('IA',),
+            ('IN',),
+            ('MN',),
+        ]
+        dal.add_elements(elements) # <- No *columns* argument given.
+
+        con = dal._connection
+        result = con.execute('SELECT * FROM element').fetchall()
+        expected = [
+            (1, 'IA', '-'),  # <- "county" gets default '-'
+            (2, 'IN', '-'),  # <- "county" gets default '-'
+            (3, 'MN', '-'),  # <- "county" gets default '-'
+        ]
+        self.assertEqual(result, expected)
+
+    def test_add_elements_column_superset(self):
+        """Surplus columns should be filtered-out before loading."""
+        path = 'mynode.toron'
+        dal = DataAccessLayer(path, mode='memory')
+        dal.add_columns(['state', 'county'])  # <- Add columns.
+
+        # Element rows include unknown columns "region" and "group".
+        elements = [
+            ('region', 'state', 'group',  'county'),  # <- Header row.
+            ('WNC',    'IA',    'GROUP2', 'POLK'),
+            ('ENC',    'IN',    'GROUP7', 'LA PORTE'),
+            ('WNC',    'MN',    'GROUP1', 'HENNEPIN '),
+        ]
+        dal.add_elements(elements) # <- No *columns* argument given.
+
+        con = dal._connection
+        result = con.execute('SELECT * FROM element').fetchall()
+        expected = [
+            (1, 'IA', 'POLK'),
+            (2, 'IN', 'LA PORTE'),
+            (3, 'MN', 'HENNEPIN '),
+        ]
+        self.assertEqual(result, expected)
 
 
 class TestAddWeightsGetNewId(unittest.TestCase):
@@ -318,163 +475,6 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
         result = self.cur.fetchone()
         self.assertEqual(result, (0,), msg='weight is incomplete, should be 0')
-
-
-class TestDataAccessLayerOnDisk(TempDirTestCase):
-    def setUp(self):
-        self.addCleanup(self.cleanup_temp_files)
-
-    def test_init_on_disk(self):
-        path = 'mynode.toron'
-        self.assertFalse(os.path.isfile(path))
-        dal = DataAccessLayer(path)
-
-        del dal
-        gc.collect()  # Explicitly trigger full garbage collection.
-
-        msg = 'data should persist as a file on disk'
-        self.assertTrue(os.path.isfile(path), msg=msg)
-
-
-class TestDataAccessLayerInMemory(unittest.TestCase):
-    def test_init_in_memory(self):
-        path = 'mem1'
-        self.assertFalse(os.path.isfile(path), msg='file should not already exist')
-        dal = DataAccessLayer(path, mode='memory')
-
-        msg = 'should not be saved as file, should by in-memory only'
-        self.assertFalse(os.path.isfile(path), msg=msg)
-
-        connection = dal._connection
-
-        dummy_query = 'SELECT 42'  # To check connection status.
-        cur = connection.execute(dummy_query)
-        msg = 'in-memory connections should remain open after instantiation'
-        self.assertEqual(cur.fetchone(), (42,), msg=msg)
-
-        del dal
-        gc.collect()  # Explicitly trigger full garbage collection.
-
-        regex = 'closed database'
-        msg = 'connection should be closed when DAL is garbage collected'
-        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
-            connection.execute(dummy_query)
-
-
-class TestAddColumns(unittest.TestCase):
-    @staticmethod
-    def get_column_names(connection_or_cursor, table):
-        cur = connection_or_cursor.execute(f'PRAGMA table_info({table})')
-        return [row[1] for row in cur.fetchall()]
-
-    def test_add_columns(self):
-        path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
-
-        con = dal._connection
-
-        columns = self.get_column_names(con, 'element')
-        self.assertEqual(columns, ['element_id', 'state', 'county'])
-
-        columns = self.get_column_names(con, 'location')
-        self.assertEqual(columns, ['_location_id', 'state', 'county'])
-
-        columns = self.get_column_names(con, 'structure')
-        self.assertEqual(columns, ['_structure_id', 'state', 'county'])
-
-
-class TestAddElements(unittest.TestCase):
-    def test_add_elements(self):
-        path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
-
-        elements = [
-            ('IA', 'POLK'),
-            ('IN', 'LA PORTE'),
-            ('MN', 'HENNEPIN '),
-        ]
-        dal.add_elements(elements, columns=['state', 'county'])
-
-        con = dal._connection
-        result = con.execute('SELECT * FROM element').fetchall()
-        expected = [
-            (1, 'IA', 'POLK'),
-            (2, 'IN', 'LA PORTE'),
-            (3, 'MN', 'HENNEPIN '),
-        ]
-        self.assertEqual(result, expected)
-
-    def test_add_elements_no_column_arg(self):
-        path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
-
-        elements = [
-            ('state', 'county'),  # <- Header row.
-            ('IA', 'POLK'),
-            ('IN', 'LA PORTE'),
-            ('MN', 'HENNEPIN '),
-        ]
-        dal.add_elements(elements) # <- No *columns* argument given.
-
-        con = dal._connection
-        result = con.execute('SELECT * FROM element').fetchall()
-        expected = [
-            (1, 'IA', 'POLK'),
-            (2, 'IN', 'LA PORTE'),
-            (3, 'MN', 'HENNEPIN '),
-        ]
-        self.assertEqual(result, expected)
-
-    def test_add_elements_column_subset(self):
-        """Omitted columns should get default value ('-')."""
-        path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
-
-        # Element rows include "state" but not "county".
-        elements = [
-            ('state',),  # <- Header row.
-            ('IA',),
-            ('IN',),
-            ('MN',),
-        ]
-        dal.add_elements(elements) # <- No *columns* argument given.
-
-        con = dal._connection
-        result = con.execute('SELECT * FROM element').fetchall()
-        expected = [
-            (1, 'IA', '-'),  # <- "county" gets default '-'
-            (2, 'IN', '-'),  # <- "county" gets default '-'
-            (3, 'MN', '-'),  # <- "county" gets default '-'
-        ]
-        self.assertEqual(result, expected)
-
-    def test_add_elements_column_superset(self):
-        """Surplus columns should be filtered-out before loading."""
-        path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
-
-        # Element rows include unknown columns "region" and "group".
-        elements = [
-            ('region', 'state', 'group',  'county'),  # <- Header row.
-            ('WNC',    'IA',    'GROUP2', 'POLK'),
-            ('ENC',    'IN',    'GROUP7', 'LA PORTE'),
-            ('WNC',    'MN',    'GROUP1', 'HENNEPIN '),
-        ]
-        dal.add_elements(elements) # <- No *columns* argument given.
-
-        con = dal._connection
-        result = con.execute('SELECT * FROM element').fetchall()
-        expected = [
-            (1, 'IA', 'POLK'),
-            (2, 'IN', 'LA PORTE'),
-            (3, 'MN', 'HENNEPIN '),
-        ]
-        self.assertEqual(result, expected)
 
 
 class TestAddWeights(unittest.TestCase):
