@@ -391,8 +391,6 @@ def connect(path, mode='rwc'):
     """Returns a sqlite3 connection to a Toron node file."""
     uri_path = _path_to_sqlite_uri(path)
     uri_path = f'{uri_path}?mode={mode}'
-    if mode == 'memory':
-        uri_path = f'{uri_path}&cache=shared'
 
     try:
         get_connection = lambda: sqlite3.connect(
