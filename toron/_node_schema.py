@@ -613,7 +613,7 @@ class DataAccessLayer(object):
         return column_names, new_column_names
 
     if sqlite3.sqlite_version_info >= (3, 25, 0):
-        # The RENAME COLUMN command was added in SQLite 3.35.0 (2018-09-15).
+        # The RENAME COLUMN command was added in SQLite 3.25.0 (2018-09-15).
         @staticmethod
         def _rename_columns_make_sql(column_names, new_column_names):
             zipped = zip(column_names, new_column_names)
