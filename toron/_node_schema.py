@@ -613,7 +613,7 @@ class DataAccessLayer(object):
         return column_names, new_column_names
 
     if sqlite3.sqlite_version_info >= (3, 25, 0):
-        # The RENAME COLUMN command was added in SQLite 3.35.0 (2018-09-15).
+        # The RENAME COLUMN command was added in SQLite 3.25.0 (2018-09-15).
         @staticmethod
         def _rename_columns_make_sql(column_names, new_column_names):
             zipped = zip(column_names, new_column_names)
@@ -631,10 +631,9 @@ class DataAccessLayer(object):
         # Older versions of SQLite must rebuild the tables.
         @staticmethod
         def _rename_columns_make_sql(column_names, new_column_names):
-            """
-            https://www.sqlite.org/lang_altertable.html#making_other_kinds_of_table_schema_changes
-            """
-
+            # To support versions of SQLite before 3.25.0, this method
+            # prepares a sequence of operations to rebuild the table
+            # structures.
             new_element_cols = [f"{col} TEXT DEFAULT '-' NOT NULL" for col in new_column_names]
             new_location_cols = [f"{col} TEXT" for col in new_column_names]
             new_structure_cols = [f"{col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0" for col in new_column_names]
@@ -676,6 +675,9 @@ class DataAccessLayer(object):
                     cur.execute(stmnt)
     else:
         def rename_columns(self, mapper):
+            # This code should follow the recommended, 12-step ALTER TABLE
+            # procedure detailed in the SQLite documentation:
+            #     https://www.sqlite.org/lang_altertable.html#otheralter
             con = self._get_connection()
             try:
                 con.execute('PRAGMA foreign_keys=OFF')
