@@ -501,6 +501,11 @@ class DataAccessLayer(object):
         self.path = path
         self.mode = mode
 
+    def _get_connection(self):
+        if self.mode == 'memory':
+            return self._connection
+        return connect(self.path, mode=self.mode)
+
     def __del__(self):
         if hasattr(self, '_connection'):
             self._connection.close()
@@ -607,25 +612,89 @@ class DataAccessLayer(object):
 
         return column_names, new_column_names
 
-    @staticmethod
-    def _rename_columns_make_sql(column_names, new_column_names):
-        zipped = zip(column_names, new_column_names)
-        rename_pairs = [(a, b) for a, b in zipped if a != b]
+    if sqlite3.sqlite_version_info >= (3, 25, 0):
+        # The RENAME COLUMN command was added in SQLite 3.35.0 (2018-09-15).
+        @staticmethod
+        def _rename_columns_make_sql(column_names, new_column_names):
+            zipped = zip(column_names, new_column_names)
+            rename_pairs = [(a, b) for a, b in zipped if a != b]
 
-        sql_stmnts = []
-        for name, new_name in rename_pairs:
-            sql_stmnts.extend([
-                f'ALTER TABLE element RENAME COLUMN {name} TO {new_name}',
-                f'ALTER TABLE location RENAME COLUMN {name} TO {new_name}',
-                f'ALTER TABLE structure RENAME COLUMN {name} TO {new_name}',
-            ])
-        return sql_stmnts
+            sql_stmnts = []
+            for name, new_name in rename_pairs:
+                sql_stmnts.extend([
+                    f'ALTER TABLE element RENAME COLUMN {name} TO {new_name}',
+                    f'ALTER TABLE location RENAME COLUMN {name} TO {new_name}',
+                    f'ALTER TABLE structure RENAME COLUMN {name} TO {new_name}',
+                ])
+            return sql_stmnts
+    else:
+        # Older versions of SQLite must rebuild the tables.
+        @staticmethod
+        def _rename_columns_make_sql(column_names, new_column_names):
+            """
+            https://www.sqlite.org/lang_altertable.html#making_other_kinds_of_table_schema_changes
+            """
 
-    def rename_columns(self, mapper):
-        with self._transaction() as cur:
-            names, new_names = self._rename_columns_apply_mapper(cur, mapper)
-            for stmnt in self._rename_columns_make_sql(names, new_names):
-                cur.execute(stmnt)
+            new_element_cols = [f"{col} TEXT DEFAULT '-' NOT NULL" for col in new_column_names]
+            new_location_cols = [f"{col} TEXT" for col in new_column_names]
+            new_structure_cols = [f"{col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0" for col in new_column_names]
+            statements = [
+                # Rebuild 'element' table.
+                f'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+                    f'{", ".join(new_element_cols)})',
+                f'INSERT INTO new_element SELECT element_id, {", ".join(column_names)} FROM element',
+                'DROP TABLE element',
+                'ALTER TABLE new_element RENAME TO element',
+
+                # Rebuild 'location' table.
+                f'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, ' \
+                    f'{", ".join(new_location_cols)})',
+                f'INSERT INTO new_location '
+                    f'SELECT _location_id, {", ".join(column_names)} FROM location',
+                'DROP TABLE location',
+                'ALTER TABLE new_location RENAME TO location',
+
+                # Rebuild 'structure' table.
+                f'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, ' \
+                    f'{", ".join(new_structure_cols)})',
+                f'INSERT INTO new_structure ' \
+                    f'SELECT _structure_id, {", ".join(column_names)} FROM structure',
+                'DROP TABLE structure',
+                'ALTER TABLE new_structure RENAME TO structure',
+
+                # Reconstruct associated indexes.
+                f'CREATE UNIQUE INDEX unique_element_index ON element({", ".join(new_column_names)})',
+                f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(new_column_names)})',
+            ]
+            return statements
+
+    if sqlite3.sqlite_version_info >= (3, 25, 0):
+        def rename_columns(self, mapper):
+            with self._transaction() as cur:
+                names, new_names = self._rename_columns_apply_mapper(cur, mapper)
+                for stmnt in self._rename_columns_make_sql(names, new_names):
+                    cur.execute(stmnt)
+    else:
+        def rename_columns(self, mapper):
+            con = self._get_connection()
+            try:
+                con.execute('PRAGMA foreign_keys=OFF')
+                cur = con.cursor()
+                with savepoint(cur):
+                    names, new_names = self._rename_columns_apply_mapper(cur, mapper)
+                    for stmnt in self._rename_columns_make_sql(names, new_names):
+                        cur.execute(stmnt)
+
+                    cur.execute('PRAGMA main.foreign_key_check')
+                    one_result = cur.fetchone()
+                    if one_result:
+                        msg = 'foreign key violations'
+                        raise Exception(msg)
+            finally:
+                cur.close()
+                con.execute('PRAGMA foreign_keys=ON')
+                if con is not getattr(self, '_connection', None):
+                    con.close()
 
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):

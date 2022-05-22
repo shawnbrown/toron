@@ -264,14 +264,33 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
             ['"state"', '"county"', '"town"'],
             ['"stusab"', '"county"', '"place"'],
         )
-        expected = [
-            'ALTER TABLE element RENAME COLUMN "state" TO "stusab"',
-            'ALTER TABLE location RENAME COLUMN "state" TO "stusab"',
-            'ALTER TABLE structure RENAME COLUMN "state" TO "stusab"',
-            'ALTER TABLE element RENAME COLUMN "town" TO "place"',
-            'ALTER TABLE location RENAME COLUMN "town" TO "place"',
-            'ALTER TABLE structure RENAME COLUMN "town" TO "place"',
-        ]
+
+        if sqlite3.sqlite_version_info >= (3, 25, 0):
+            expected = [
+                'ALTER TABLE element RENAME COLUMN "state" TO "stusab"',
+                'ALTER TABLE location RENAME COLUMN "state" TO "stusab"',
+                'ALTER TABLE structure RENAME COLUMN "state" TO "stusab"',
+                'ALTER TABLE element RENAME COLUMN "town" TO "place"',
+                'ALTER TABLE location RENAME COLUMN "town" TO "place"',
+                'ALTER TABLE structure RENAME COLUMN "town" TO "place"',
+            ]
+        else:
+            expected = [
+                'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT DEFAULT \'-\' NOT NULL, "county" TEXT DEFAULT \'-\' NOT NULL, "place" TEXT DEFAULT \'-\' NOT NULL)',
+                'INSERT INTO new_element SELECT element_id, "state", "county", "town" FROM element',
+                'DROP TABLE element',
+                'ALTER TABLE new_element RENAME TO element',
+                'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, "stusab" TEXT, "county" TEXT, "place" TEXT)',
+                'INSERT INTO new_location SELECT _location_id, "state", "county", "town" FROM location',
+                'DROP TABLE location',
+                'ALTER TABLE new_location RENAME TO location',
+                'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, "stusab" INTEGER CHECK ("stusab" IN (0, 1)) DEFAULT 0, "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0, "place" INTEGER CHECK ("place" IN (0, 1)) DEFAULT 0)',
+                'INSERT INTO new_structure SELECT _structure_id, "state", "county", "town" FROM structure',
+                'DROP TABLE structure',
+                'ALTER TABLE new_structure RENAME TO structure',
+                'CREATE UNIQUE INDEX unique_element_index ON element("stusab", "county", "place")',
+                'CREATE UNIQUE INDEX unique_structure_index ON structure("stusab", "county", "place")',
+            ]
         self.assertEqual(sql, expected)
 
 
