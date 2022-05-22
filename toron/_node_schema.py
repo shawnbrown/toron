@@ -594,11 +594,14 @@ class DataAccessLayer(object):
             msg = 'mapper must be a callable or dict-like object'
             raise ValueError(msg)
 
+        column_names = [cls._quote_identifier(col) for col in column_names]
+        new_column_names = [cls._quote_identifier(col) for col in new_column_names]
+
         dupes = [col for col, count in Counter(new_column_names).items() if count > 1]
         if dupes:
             zipped = zip(column_names, new_column_names)
             value_pairs = [(col, new) for col, new in zipped if new in dupes]
-            value_pairs = [f'{col!r}->{new!r}' for col, new in value_pairs]
+            value_pairs = [f'{col}->{new}' for col, new in value_pairs]
             msg = f'column name collisions: {", ".join(value_pairs)}'
             raise ValueError(msg)
 

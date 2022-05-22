@@ -227,25 +227,31 @@ class TestRenameColumnsApplyMapper(unittest.TestCase):
         mapper = str.upper  # <- Callable mapper.
         result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
         column_names, new_column_names = result  # Unpack result tuple
-        self.assertEqual(column_names, ['state', 'county', 'town'])
-        self.assertEqual(new_column_names, ['STATE', 'COUNTY', 'TOWN'])
+        self.assertEqual(column_names, ['"state"', '"county"', '"town"'])
+        self.assertEqual(new_column_names, ['"STATE"', '"COUNTY"', '"TOWN"'])
 
     def test_mapper_dict(self):
         mapper = {'state': 'stusab', 'town': 'place'}  # <- Dict mapper.
         result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
         column_names, new_column_names = result  # Unpack result tuple
-        self.assertEqual(column_names, ['state', 'county', 'town'])
-        self.assertEqual(new_column_names, ['stusab', 'county', 'place'])
+        self.assertEqual(column_names, ['"state"', '"county"', '"town"'])
+        self.assertEqual(new_column_names, ['"stusab"', '"county"', '"place"'])
 
     def test_mapper_bad_type(self):
         mapper = ['state', 'stusab']  # <- Bad mapper type.
         with self.assertRaises(ValueError):
             result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
 
-    def test_duplicate_names(self):
-        regex = "column name collisions: '(state|town)'->'XXXX', '(town|state)'->'XXXX'"
+    def test_name_collision(self):
+        regex = 'column name collisions: "(state|town)"->"XXXX", "(town|state)"->"XXXX"'
         with self.assertRaisesRegex(ValueError, regex):
             mapper = {'state': 'XXXX', 'county': 'COUNTY', 'town': 'XXXX'}
+            result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+
+    def test_name_collision_from_normalization(self):
+        regex = 'column name collisions: "(state|town)"->"A B", "(town|state)"->"A B"'
+        with self.assertRaisesRegex(ValueError, regex):
+            mapper = {'state': 'A\t\tB', 'town': 'A    B    '}  # <- Gets normalized.
             result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
 
 
