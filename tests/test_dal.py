@@ -44,13 +44,12 @@ class TestQuoteIdentifier(unittest.TestCase):
             DataAccessLayer._quote_identifier(contains_nul)
 
 
-class TestAddColumnsMakeSql(TempDirTestCase):
+class TestAddColumnsMakeSql(unittest.TestCase):
     maxDiff = None
 
     def setUp(self):
-        self.con = connect('mynode.toron')
+        self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
@@ -152,19 +151,14 @@ class TestAddColumnsMakeSql(TempDirTestCase):
             DataAccessLayer._add_columns_make_sql(self.cur, ['state', '_location_id'])
 
 
-class TestMakeSqlInsertElements(TempDirTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.file_path = 'mynode.toron'
-        con = connect(cls.file_path)
-        cur = con.cursor()
-        for stmnt in DataAccessLayer._add_columns_make_sql(cur, ['state', 'county', 'town']):
-            cur.execute(stmnt)
-
+class TestMakeSqlInsertElements(unittest.TestCase):
     def setUp(self):
-        self.con = connect(self.file_path)
+        self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
+
+        for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'town']):
+            self.cur.execute(stmnt)
+
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
@@ -195,11 +189,10 @@ class TestMakeSqlInsertElements(TempDirTestCase):
             DataAccessLayer._add_elements_make_sql(self.cur, ['state', 'region'])
 
 
-class TestInsertWeightGetId(TempDirTestCase):
+class TestInsertWeightGetId(unittest.TestCase):
     def setUp(self):
-        self.con = connect('mynode.toron')
+        self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
@@ -218,15 +211,14 @@ class TestInsertWeightGetId(TempDirTestCase):
         self.assertEqual(retrieved_weight_id, weight_id, msg=msg)
 
 
-class TestAddWeightsMakeSql(TempDirTestCase):
+class TestAddWeightsMakeSql(unittest.TestCase):
     def setUp(self):
-        self.con = connect('mynode.toron')
+        self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
 
         for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'town']):
             self.cur.execute(stmnt)
 
-        self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
@@ -328,7 +320,7 @@ class TestUpdateWeightIsComplete(unittest.TestCase):
         self.assertEqual(result, (0,), msg='weight is incomplete, should be 0')
 
 
-class TestDataAccessLayer(TempDirTestCase):
+class TestDataAccessLayerOnDisk(TempDirTestCase):
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
 
@@ -343,6 +335,8 @@ class TestDataAccessLayer(TempDirTestCase):
         msg = 'data should persist as a file on disk'
         self.assertTrue(os.path.isfile(path), msg=msg)
 
+
+class TestDataAccessLayer(unittest.TestCase):
     def test_in_memory(self):
         path = 'mem1'
         self.assertFalse(os.path.isfile(path), msg='file should not already exist')
@@ -373,10 +367,10 @@ class TestDataAccessLayer(TempDirTestCase):
 
     def test_add_columns(self):
         path = 'mynode.toron'
-        dal = DataAccessLayer(path)
+        dal = DataAccessLayer(path, mode='memory')
         dal.add_columns(['state', 'county'])  # <- Add columns.
 
-        con = sqlite3.connect(path)
+        con = dal._connection
 
         columns = self.get_column_names(con, 'element')
         self.assertEqual(columns, ['element_id', 'state', 'county'])
@@ -389,7 +383,7 @@ class TestDataAccessLayer(TempDirTestCase):
 
     def test_add_elements(self):
         path = 'mynode.toron'
-        dal = DataAccessLayer(path)
+        dal = DataAccessLayer(path, mode='memory')
         dal.add_columns(['state', 'county'])  # <- Add columns.
 
         elements = [
@@ -399,7 +393,7 @@ class TestDataAccessLayer(TempDirTestCase):
         ]
         dal.add_elements(elements, columns=['state', 'county'])
 
-        con = sqlite3.connect(path)
+        con = dal._connection
         result = con.execute('SELECT * FROM element').fetchall()
         expected = [
             (1, 'IA', 'POLK'),
@@ -410,7 +404,7 @@ class TestDataAccessLayer(TempDirTestCase):
 
     def test_add_elements_no_column_arg(self):
         path = 'mynode.toron'
-        dal = DataAccessLayer(path)
+        dal = DataAccessLayer(path, mode='memory')
         dal.add_columns(['state', 'county'])  # <- Add columns.
 
         elements = [
@@ -421,7 +415,7 @@ class TestDataAccessLayer(TempDirTestCase):
         ]
         dal.add_elements(elements) # <- No *columns* argument given.
 
-        con = sqlite3.connect(path)
+        con = dal._connection
         result = con.execute('SELECT * FROM element').fetchall()
         expected = [
             (1, 'IA', 'POLK'),
@@ -433,7 +427,7 @@ class TestDataAccessLayer(TempDirTestCase):
     def test_add_elements_column_subset(self):
         """Omitted columns should get default value ('-')."""
         path = 'mynode.toron'
-        dal = DataAccessLayer(path)
+        dal = DataAccessLayer(path, mode='memory')
         dal.add_columns(['state', 'county'])  # <- Add columns.
 
         # Element rows include "state" but not "county".
@@ -445,7 +439,7 @@ class TestDataAccessLayer(TempDirTestCase):
         ]
         dal.add_elements(elements) # <- No *columns* argument given.
 
-        con = sqlite3.connect(path)
+        con = dal._connection
         result = con.execute('SELECT * FROM element').fetchall()
         expected = [
             (1, 'IA', '-'),  # <- "county" gets default '-'
@@ -457,7 +451,7 @@ class TestDataAccessLayer(TempDirTestCase):
     def test_add_elements_column_superset(self):
         """Surplus columns should be filtered-out before loading."""
         path = 'mynode.toron'
-        dal = DataAccessLayer(path)
+        dal = DataAccessLayer(path, mode='memory')
         dal.add_columns(['state', 'county'])  # <- Add columns.
 
         # Element rows include unknown columns "region" and "group".
@@ -469,7 +463,7 @@ class TestDataAccessLayer(TempDirTestCase):
         ]
         dal.add_elements(elements) # <- No *columns* argument given.
 
-        con = sqlite3.connect(path)
+        con = dal._connection
         result = con.execute('SELECT * FROM element').fetchall()
         expected = [
             (1, 'IA', 'POLK'),
@@ -479,11 +473,11 @@ class TestDataAccessLayer(TempDirTestCase):
         self.assertEqual(result, expected)
 
 
-class TestDataAccessLayerAddWeights(TempDirTestCase):
+class TestDataAccessLayerAddWeights(unittest.TestCase):
     """Tests for dal.add_weights() method."""
     def setUp(self):
         self.path = 'mynode.toron'
-        self.dal = DataAccessLayer(self.path)
+        self.dal = DataAccessLayer(self.path, mode='memory')
         self.dal.add_columns(['state', 'county', 'tract'])
         self.dal.add_elements([
             ('state', 'county', 'tract'),
@@ -498,9 +492,8 @@ class TestDataAccessLayerAddWeights(TempDirTestCase):
             ('12', '019', '030202'),
         ])
 
-        con = sqlite3.connect(self.path)
+        con = self.dal._connection
         self.cursor = con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(con.close)
         self.addCleanup(self.cursor.close)
 
@@ -522,7 +515,7 @@ class TestDataAccessLayerAddWeights(TempDirTestCase):
         self.cursor.execute('SELECT * FROM weight')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(1, 'pop10', '{"category": "census"}', None, 1)],  # <- is_complete is 1
+            [(1, 'pop10', {'category': 'census'}, None, 1)],  # <- is_complete is 1
         )
 
         self.cursor.execute("""
@@ -550,10 +543,10 @@ class TestDataAccessLayerAddWeights(TempDirTestCase):
         self.cursor.execute('SELECT * FROM weight')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(1, 'pop10', '{"category": "census"}', None, 0)],  # <- is_complete is 0
+            [(1, 'pop10', {'category': 'census'}, None, 0)],  # <- is_complete is 0
         )
 
-        # Get loaded weights/
+        # Get loaded weights.
         self.cursor.execute("""
             SELECT state, county, value
             FROM element

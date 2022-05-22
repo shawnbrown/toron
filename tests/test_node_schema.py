@@ -61,14 +61,13 @@ class TestIsWellformedJson(unittest.TestCase, CheckJsonMixin):
         self.assertFalse(_is_wellformed_json(None))
 
 
-class TestJsonTrigger(TempDirTestCase, CheckJsonMixin):
+class TestJsonTrigger(unittest.TestCase, CheckJsonMixin):
     """Check trigger behavior for `property.value` column (uses the
     TEXT_JSON declared type).
     """
     def setUp(self):
-        self.con = connect('mynode.toron')
+        self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
@@ -136,13 +135,12 @@ class TestIsWellformedUserProperties(unittest.TestCase, CheckUserPropertiesMixin
         self.assertFalse(_is_wellformed_user_properties(None))
 
 
-class TestUserPropertiesTrigger(TempDirTestCase, CheckUserPropertiesMixin):
+class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
     """Check TRIGGER behavior for edge.user_properties column."""
 
     def setUp(self):
-        self.con = connect('mynode.toron')
+        self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
@@ -240,7 +238,7 @@ class TestIsWellformedAttributes(unittest.TestCase, CheckAttributesMixin):
         self.assertFalse(_is_wellformed_attributes(None))
 
 
-class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
+class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
     """Check trigger behavior for columns with the TEXT_ATTRIBUTES
     declared type.
 
@@ -250,9 +248,8 @@ class TestAttributesTrigger(TempDirTestCase, CheckAttributesMixin):
       * weight.type_info.
     """
     def setUp(self):
-        self.con = connect('mynode.toron')
+        self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
@@ -539,7 +536,7 @@ class TestConnect(TempDirTestCase):
         os.chmod(file_path, S_IRUSR|S_IWUSR)
 
 
-class TestTransaction(TempDirTestCase):
+class TestTransactionOnDisk(TempDirTestCase):
     """Tests for the transaction() context manager."""
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
@@ -569,6 +566,9 @@ class TestTransaction(TempDirTestCase):
         with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
             connection.cursor()
 
+
+class TestTransactionInMemory(unittest.TestCase):
+    """Tests for the transaction() context manager."""
     def test_existing_connection(self):
         """When given a existing Connection, transaction() should use
         the connection as provided and leave it open when finished.
@@ -616,12 +616,11 @@ class TestTransaction(TempDirTestCase):
         self.assertEqual(result, None, msg=msg)
 
 
-class TestJsonConversion(TempDirTestCase):
+class TestJsonConversion(unittest.TestCase):
     """Registered converters should select JSON strings as objects."""
     def setUp(self):
-        self.con = connect('mynode.node')
+        self.con = connect('mynode.node', mode='memory')
         self.cur = self.con.cursor()
-        self.addCleanup(self.cleanup_temp_files)
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
