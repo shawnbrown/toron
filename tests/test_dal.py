@@ -151,7 +151,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
             DataAccessLayer._add_columns_make_sql(self.cur, ['state', '_location_id'])
 
 
-class TestMakeSqlInsertElements(unittest.TestCase):
+class TestAddElementsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
@@ -189,7 +189,7 @@ class TestMakeSqlInsertElements(unittest.TestCase):
             DataAccessLayer._add_elements_make_sql(self.cur, ['state', 'region'])
 
 
-class TestInsertWeightGetId(unittest.TestCase):
+class TestAddWeightsGetNewId(unittest.TestCase):
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
@@ -261,7 +261,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
             sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
 
 
-class TestUpdateWeightIsComplete(unittest.TestCase):
+class TestAddWeightsSetIsComplete(unittest.TestCase):
     def setUp(self):
         self.con = sqlite3.connect(':memory:', detect_types=sqlite3.PARSE_DECLTYPES, isolation_level=None)
         self.con.executescript(_schema_script)  # Create database schema.
@@ -324,7 +324,7 @@ class TestDataAccessLayerOnDisk(TempDirTestCase):
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
 
-    def test_on_disk(self):
+    def test_init_on_disk(self):
         path = 'mynode.toron'
         self.assertFalse(os.path.isfile(path))
         dal = DataAccessLayer(path)
@@ -336,8 +336,8 @@ class TestDataAccessLayerOnDisk(TempDirTestCase):
         self.assertTrue(os.path.isfile(path), msg=msg)
 
 
-class TestDataAccessLayer(unittest.TestCase):
-    def test_in_memory(self):
+class TestDataAccessLayerInMemory(unittest.TestCase):
+    def test_init_in_memory(self):
         path = 'mem1'
         self.assertFalse(os.path.isfile(path), msg='file should not already exist')
         dal = DataAccessLayer(path, mode='memory')
@@ -360,6 +360,8 @@ class TestDataAccessLayer(unittest.TestCase):
         with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
             connection.execute(dummy_query)
 
+
+class TestAddColumns(unittest.TestCase):
     @staticmethod
     def get_column_names(connection_or_cursor, table):
         cur = connection_or_cursor.execute(f'PRAGMA table_info({table})')
@@ -381,6 +383,8 @@ class TestDataAccessLayer(unittest.TestCase):
         columns = self.get_column_names(con, 'structure')
         self.assertEqual(columns, ['_structure_id', 'state', 'county'])
 
+
+class TestAddElements(unittest.TestCase):
     def test_add_elements(self):
         path = 'mynode.toron'
         dal = DataAccessLayer(path, mode='memory')
@@ -473,7 +477,7 @@ class TestDataAccessLayer(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestDataAccessLayerAddWeights(unittest.TestCase):
+class TestAddWeights(unittest.TestCase):
     """Tests for dal.add_weights() method."""
     def setUp(self):
         self.path = 'mynode.toron'
