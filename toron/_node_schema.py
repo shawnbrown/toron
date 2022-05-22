@@ -51,6 +51,7 @@ import re
 import sqlite3
 from ast import literal_eval
 from collections import Counter
+from collections.abc import Mapping
 from contextlib import contextmanager
 from itertools import compress
 from json import loads as _loads
@@ -579,6 +580,29 @@ class DataAccessLayer(object):
         with self._transaction() as cur:
             for stmnt in self._add_columns_make_sql(cur, columns):
                 cur.execute(stmnt)
+
+    @classmethod
+    def _rename_columns_apply_mapper(cls, cursor, mapper):
+        column_names = cls._get_column_names(cursor, 'element')
+        column_names = column_names[1:]  # Slice-off 'element_id'.
+
+        if callable(mapper):
+            new_column_names = [mapper(col) for col in column_names]
+        elif isinstance(mapper, Mapping):
+            new_column_names = [mapper.get(col, col) for col in column_names]
+        else:
+            msg = 'mapper must be a callable or dict-like object'
+            raise ValueError(msg)
+
+        dupes = [col for col, count in Counter(new_column_names).items() if count > 1]
+        if dupes:
+            zipped = zip(column_names, new_column_names)
+            value_pairs = [(col, new) for col, new in zipped if new in dupes]
+            value_pairs = [f'{col!r}->{new!r}' for col, new in value_pairs]
+            msg = f'column name collisions: {", ".join(value_pairs)}'
+            raise ValueError(msg)
+
+        return column_names, new_column_names
 
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):

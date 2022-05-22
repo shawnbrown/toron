@@ -215,6 +215,40 @@ class TestAddColumns(unittest.TestCase):
         self.assertEqual(columns, ['_structure_id', 'state', 'county'])
 
 
+class TestRenameColumnsApplyMapper(unittest.TestCase):
+    def setUp(self):
+        self.dal = DataAccessLayer('mynode.toron', mode='memory')
+        self.dal.add_columns(['state', 'county', 'town'])
+        self.con = self.dal._connection
+        self.cur = self.con.cursor()
+        self.addCleanup(self.cur.close)
+
+    def test_mapper_callable(self):
+        mapper = str.upper  # <- Callable mapper.
+        result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+        column_names, new_column_names = result  # Unpack result tuple
+        self.assertEqual(column_names, ['state', 'county', 'town'])
+        self.assertEqual(new_column_names, ['STATE', 'COUNTY', 'TOWN'])
+
+    def test_mapper_dict(self):
+        mapper = {'state': 'stusab', 'town': 'place'}  # <- Dict mapper.
+        result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+        column_names, new_column_names = result  # Unpack result tuple
+        self.assertEqual(column_names, ['state', 'county', 'town'])
+        self.assertEqual(new_column_names, ['stusab', 'county', 'place'])
+
+    def test_mapper_bad_type(self):
+        mapper = ['state', 'stusab']  # <- Bad mapper type.
+        with self.assertRaises(ValueError):
+            result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+
+    def test_duplicate_names(self):
+        regex = "column name collisions: '(state|town)'->'XXXX', '(town|state)'->'XXXX'"
+        with self.assertRaisesRegex(ValueError, regex):
+            mapper = {'state': 'XXXX', 'county': 'COUNTY', 'town': 'XXXX'}
+            result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+
+
 class TestAddElementsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
