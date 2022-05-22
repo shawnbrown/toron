@@ -607,6 +607,20 @@ class DataAccessLayer(object):
 
         return column_names, new_column_names
 
+    @staticmethod
+    def _rename_columns_make_sql(column_names, new_column_names):
+        zipped = zip(column_names, new_column_names)
+        rename_pairs = [(a, b) for a, b in zipped if a != b]
+
+        sql_stmnts = []
+        for name, new_name in rename_pairs:
+            sql_stmnts.extend([
+                f'ALTER TABLE element RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE location RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE structure RENAME COLUMN {name} TO {new_name}',
+            ])
+        return sql_stmnts
+
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):
         """Return a SQL statement adding new element records (for use

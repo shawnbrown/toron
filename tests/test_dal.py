@@ -255,6 +255,26 @@ class TestRenameColumnsApplyMapper(unittest.TestCase):
             result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
 
 
+class TestRenameColumnsMakeSql(unittest.TestCase):
+    maxDiff = None
+
+    def test_rename_column_command(self):
+        """The RENAME COLUMN command was added in SQLite 3.25.0."""
+        sql = DataAccessLayer._rename_columns_make_sql(
+            ['"state"', '"county"', '"town"'],
+            ['"stusab"', '"county"', '"place"'],
+        )
+        expected = [
+            'ALTER TABLE element RENAME COLUMN "state" TO "stusab"',
+            'ALTER TABLE location RENAME COLUMN "state" TO "stusab"',
+            'ALTER TABLE structure RENAME COLUMN "state" TO "stusab"',
+            'ALTER TABLE element RENAME COLUMN "town" TO "place"',
+            'ALTER TABLE location RENAME COLUMN "town" TO "place"',
+            'ALTER TABLE structure RENAME COLUMN "town" TO "place"',
+        ]
+        self.assertEqual(sql, expected)
+
+
 class TestAddElementsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
