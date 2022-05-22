@@ -621,6 +621,12 @@ class DataAccessLayer(object):
             ])
         return sql_stmnts
 
+    def rename_columns(self, mapper):
+        with self._transaction() as cur:
+            names, new_names = self._rename_columns_apply_mapper(cur, mapper)
+            for stmnt in self._rename_columns_make_sql(names, new_names):
+                cur.execute(stmnt)
+
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):
         """Return a SQL statement adding new element records (for use

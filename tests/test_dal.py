@@ -275,6 +275,47 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
         self.assertEqual(sql, expected)
 
 
+class TestRenameColumns(unittest.TestCase):
+    def setUp(self):
+        self.path = 'mynode.toron'
+        self.dal = DataAccessLayer(self.path, mode='memory')
+        self.dal.add_columns(['state', 'county', 'town'])
+        self.dal.add_elements([
+            ('state', 'county', 'town'),
+            ('CA', 'SAN DIEGO', 'CORONADO'),
+            ('IN', 'GRANT', 'MARION'),
+            ('CA', 'MARIN', 'SAN RAFAEL'),
+            ('CA', 'MARIN', 'SAUSALITO'),
+            ('AR', 'MILLER', 'TEXARKANA'),
+            ('TX', 'BOWIE', 'TEXARKANA'),
+        ])
+        self.con = self.dal._connection
+        self.cur = self.con.cursor()
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+    def get_column_names(self, table):
+        return self.dal._get_column_names(self.cur, table)
+
+    def test_rename(self):
+        columns_before_rename = self.get_column_names('element')
+        self.assertEqual(columns_before_rename, ['element_id', 'state', 'county', 'town'])
+
+        data_before_rename = \
+            self.cur.execute('SELECT state, county, town from element').fetchall()
+
+        mapper = {'state': 'stusab', 'town': 'place'}
+        self.dal.rename_columns(mapper)  # <- Rename columns!
+
+        columns_after_rename = self.get_column_names('element')
+        self.assertEqual(columns_after_rename, ['element_id', 'stusab', 'county', 'place'])
+
+        data_after_rename = \
+            self.cur.execute('SELECT stusab, county, place from element').fetchall()
+
+        self.assertEqual(data_before_rename, data_after_rename)
+
+
 class TestAddElementsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')

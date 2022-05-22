@@ -27,3 +27,6 @@ class Node(object):
                               type_info=type_info,
                               description=description)
 
+    def rename_columns(self, mapper):
+        self._dal.rename_columns(mapper)
+
