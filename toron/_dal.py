@@ -390,4 +390,4 @@ _sqlite_version_info = sqlite3.sqlite_version_info
 if _sqlite_version_info < (3, 35, 0):
     dal_class = DataAccessLayerPre35
 else:
-    dal_class = DataAccessLayerPre
+    dal_class = DataAccessLayer
