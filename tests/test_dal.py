@@ -262,13 +262,14 @@ class TestRenameColumnsApplyMapper(unittest.TestCase):
 
 
 class TestRenameColumnsMakeSql(unittest.TestCase):
+    def setUp(self):
+        self.column_names = ['"state"', '"county"', '"town"']
+        self.new_column_names = ['"stusab"', '"county"', '"place"']
+
     @unittest.skipIf(SQLITE_VERSION_INFO < (3, 25, 0), 'requires 3.25.0 or newer')
     def test_native_rename_column_support(self):
         """Test native RENAME COLUMN statements."""
-        sql = DataAccessLayer._rename_columns_make_sql(
-            ['"state"', '"county"', '"town"'],
-            ['"stusab"', '"county"', '"place"'],
-        )
+        sql = DataAccessLayer._rename_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
             'ALTER TABLE element RENAME COLUMN "state" TO "stusab"',
             'ALTER TABLE location RENAME COLUMN "state" TO "stusab"',
@@ -281,10 +282,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
 
     def test_pre25_without_native_rename(self):
         """Test legacy column-rename statements for workaround procedure."""
-        sql = DataAccessLayerPre25._rename_columns_make_sql(
-            ['"state"', '"county"', '"town"'],
-            ['"stusab"', '"county"', '"place"'],
-        )
+        sql = DataAccessLayerPre25._rename_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
             'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT DEFAULT \'-\' NOT NULL, "county" TEXT DEFAULT \'-\' NOT NULL, "place" TEXT DEFAULT \'-\' NOT NULL)',
             'INSERT INTO new_element SELECT element_id, "state", "county", "town" FROM element',
