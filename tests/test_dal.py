@@ -11,11 +11,11 @@ from .common import TempDirTestCase
 from toron._node_schema import connect
 from toron._node_schema import _schema_script
 from toron._node_schema import _add_functions_and_triggers
-from toron._node_schema import DataAccessLayer
-from toron._node_schema import _rename_columns_make_sql
-from toron._node_schema import _rename_columns
-from toron._node_schema import _legacy_rename_columns_make_sql
-from toron._node_schema import _legacy_rename_columns
+from toron._dal import DataAccessLayer
+from toron._dal import _rename_columns_make_sql
+from toron._dal import _rename_columns
+from toron._dal import _legacy_rename_columns_make_sql
+from toron._dal import _legacy_rename_columns
 
 
 class TestDataAccessLayerOnDisk(TempDirTestCase):
