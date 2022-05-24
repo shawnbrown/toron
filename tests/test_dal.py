@@ -12,10 +12,14 @@ from toron._node_schema import connect
 from toron._node_schema import _schema_script
 from toron._node_schema import _add_functions_and_triggers
 from toron._dal import DataAccessLayer
+from toron._dal import DataAccessLayerPre35
 from toron._dal import _rename_columns_make_sql
 from toron._dal import _rename_columns
 from toron._dal import _legacy_rename_columns_make_sql
 from toron._dal import _legacy_rename_columns
+
+
+SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
 
 
 class TestDataAccessLayerOnDisk(TempDirTestCase):
@@ -260,7 +264,7 @@ class TestRenameColumnsApplyMapper(unittest.TestCase):
 
 
 class TestRenameColumnsMakeSql(unittest.TestCase):
-    @unittest.skipUnless(sqlite3.sqlite_version_info >= (3, 25, 0), 'requires SQLite 3.25.0 or newer')
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 25, 0), 'requires 3.25.0 or newer')
     def test_rename_columns_make_sql(self):
         """Test native RENAME COLUMN statements."""
         sql = _rename_columns_make_sql(
@@ -342,7 +346,7 @@ class TestRenameColumns(unittest.TestCase):
 
         self.assertEqual(data_before_rename, data_after_rename)
 
-    @unittest.skipUnless(sqlite3.sqlite_version_info >= (3, 25, 0), 'requires SQLite 3.25.0 or newer')
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 25, 0), 'requires 3.25.0 or newer')
     def test_rename_columns(self):
         """Test the native RENAME COLUMN implementation."""
         self.run_rename_test(_rename_columns)
@@ -494,19 +498,27 @@ class TestAddWeightsGetNewId(unittest.TestCase):
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
-    def test_simple_case(self):
+    def run_func_test(self, func):
         name = 'myname'
         type_info = {'category': 'stuff'}
         description = 'My description.'
-        weight_id = DataAccessLayer._add_weights_get_new_id(self.cur, name, type_info, description)
+
+        weight_id = func(self.cur, name, type_info, description)  # <- Test the function.
 
         actual = self.cur.execute('SELECT * FROM weight').fetchall()
-        expected = [(1, 'myname', {'category': 'stuff'}, 'My description.', None)]
+        expected = [(1, name, type_info, description, None)]
         self.assertEqual(actual, expected)
 
         msg = 'retrieved weight_id should be same as returned from function'
         retrieved_weight_id = actual[0][0]
         self.assertEqual(retrieved_weight_id, weight_id, msg=msg)
+
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
+    def test_with_returning_clause(self):
+        self.run_func_test(DataAccessLayer._add_weights_get_new_id)
+
+    def test_pre35_without_returning_clause(self):
+        self.run_func_test(DataAccessLayerPre35._add_weights_get_new_id)
 
 
 class TestAddWeightsMakeSql(unittest.TestCase):

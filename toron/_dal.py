@@ -279,30 +279,18 @@ class DataAccessLayer(object):
             sql = self._add_elements_make_sql(cur, columns)
             cur.executemany(sql, iterator)
 
-    if sqlite3.sqlite_version_info >= (3, 35, 0):
-        # The RETURNING clause was added in SQLite 3.35.0 (released 2021-03-12).
-        @staticmethod
-        def _add_weights_get_new_id(cursor, name, type_info, description=None):
-            type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
-            sql = """
-                INSERT INTO weight(name, type_info, description)
-                VALUES(?, ?, ?)
-                RETURNING weight_id
-            """
-            cursor.execute(sql, (name, type_info, description))
-            return cursor.fetchone()[0]
-    else:
-        # Older versions of SQLite must use last_insert_rowid() function.
-        @staticmethod
-        def _add_weights_get_new_id(cursor, name, type_info, description=None):
-            type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
-            sql = """
-                INSERT INTO weight(name, type_info, description)
-                VALUES(?, ?, ?)
-            """
-            cursor.execute(sql, (name, type_info, description))
-            cursor.execute('SELECT last_insert_rowid()')
-            return cursor.fetchone()[0]
+    @staticmethod
+    def _add_weights_get_new_id(cursor, name, type_info, description=None):
+        # This method uses the RETURNING clause which was introduced
+        # in SQLite 3.35.0 (2021-03-12).
+        type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
+        sql = """
+            INSERT INTO weight(name, type_info, description)
+            VALUES(?, ?, ?)
+            RETURNING weight_id
+        """
+        cursor.execute(sql, (name, type_info, description))
+        return cursor.fetchone()[0]
 
     @classmethod
     def _add_weights_make_sql(cls, cursor, columns):
@@ -378,4 +366,21 @@ class DataAccessLayer(object):
 
             # Update "weight.is_complete" value (set to 1 or 0).
             self._add_weights_set_is_complete(cur, weight_id)
+
+
+class DataAccessLayerPre35(DataAccessLayer):
+    """A patched DataAccessLayer for SQLite versions before 3.35.0."""
+    @staticmethod
+    def _add_weights_get_new_id(cursor, name, type_info, description=None):
+        # Since the `RETURNING` clause is not available before version
+        # 3.35.0, this method executes a second statement using the
+        # last_insert_rowid() SQLite function.
+        type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
+        sql = """
+            INSERT INTO weight(name, type_info, description)
+            VALUES(?, ?, ?)
+        """
+        cursor.execute(sql, (name, type_info, description))
+        cursor.execute('SELECT last_insert_rowid()')
+        return cursor.fetchone()[0]
 

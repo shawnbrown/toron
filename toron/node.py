@@ -1,11 +1,18 @@
 """Node implementation for the Toron project."""
 
-from ._node_schema import DataAccessLayer
+import sqlite3
+
+_sqlite_version_info = sqlite3.sqlite_version_info
+
+if _sqlite_version_info < (3, 35, 0):
+    from ._dal import DataAccessLayerPre35 as dal_class
+else:
+    from ._dal import DataAccessLayer as dal_class
 
 
 class Node(object):
     def __init__(self, path, mode='rwc'):
-        self._dal = DataAccessLayer(path, mode)
+        self._dal = dal_class(path, mode)
 
     @property
     def path(self):
