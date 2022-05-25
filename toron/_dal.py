@@ -323,9 +323,11 @@ class DataAccessLayer(object):
     def _set_properties(cursor, properties):
         sql = '''
             INSERT INTO property(key, value) VALUES(?, ?)
+              ON CONFLICT(key) DO UPDATE SET value=?
         '''
-        properties = ((k, _dumps(v, sort_keys=True)) for k, v in properties.items())
-        cursor.executemany(sql, properties)
+        formatted = ((k, _dumps(v, sort_keys=True)) for k, v in properties.items())
+        parameters = ((k, v, v) for k, v in formatted)
+        cursor.executemany(sql, parameters)
 
 
 class DataAccessLayerPre35(DataAccessLayer):

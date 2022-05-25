@@ -773,3 +773,20 @@ class TestGetAndSetProperties(unittest.TestCase):
         expected = sorted(properties.items())
         self.assertEqual(self.cursor.fetchall(), expected)
 
+    def test_set_properties_upsert(self):
+        self.dal._set_properties(self.cursor, {'a': 123})
+        self.dal._set_properties(self.cursor, {'b': 'xyz'})
+
+        try:
+            self.dal._set_properties(self.cursor, {'a': 456})  # <- Should pass without error.
+        except sqlite3.IntegrityError:
+            msg = 'existing values should be replaced without error'
+            self.fail(msg)
+
+        self.cursor.execute('''
+            SELECT key, value
+            FROM main.property
+            WHERE key IN ('a', 'b')
+        ''')
+        self.assertEqual(dict(self.cursor.fetchall()), {'a': 456, 'b': 'xyz'})
+
