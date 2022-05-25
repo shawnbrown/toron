@@ -13,6 +13,26 @@ from toron._node_schema import transaction
 
 
 class DataAccessLayer(object):
+    """A data access layer to interface with the underlying SQLite
+    database. This class is not part of Toron's public interface--it
+    is intended to be wrapped inside a toron.Node instance.
+
+    Open an existing file or create a new one::
+
+        dal = DataAccessLayer('mynode.toron')
+
+    Open an existing file::
+
+        dal = DataAccessLayer('mynode.toron', mode='rw')
+
+    Open a file in read-only mode::
+
+        dal = DataAccessLayer('mynode.toron', mode='ro')
+
+    Open an in-memory node (no file on disk)::
+
+        dal = DataAccessLayer('mynode', mode='memory')
+    """
     def __init__(self, path, mode='rwc'):
         if mode == 'memory':
             self._connection = connect(path, mode=mode)  # In-memory connection.
@@ -291,7 +311,11 @@ class DataAccessLayer(object):
 
 
 class DataAccessLayerPre35(DataAccessLayer):
-    """A patched DataAccessLayer for SQLite versions before 3.35.0."""
+    """This is a subclass of DataAccessLayer that supports SQLite
+    versions before 3.35.0 (2021-03-12).
+
+    For full documentation, see DataAccessLayer.
+    """
     @staticmethod
     def _add_weights_get_new_id(cursor, name, type_info, description=None):
         # Since the `RETURNING` clause is not available before version
@@ -308,8 +332,11 @@ class DataAccessLayerPre35(DataAccessLayer):
 
 
 class DataAccessLayerPre25(DataAccessLayerPre35):
-    """A patched DataAccessLayer for SQLite versions before 3.25.0."""
+    """This is a subclass of DataAccessLayer that supports SQLite
+    versions before 3.25.0 (2018-09-15).
 
+    For full documentation, see DataAccessLayer.
+    """
     @staticmethod
     def _rename_columns_make_sql(column_names, new_column_names):
         # In SQLite versions before 3.25.0, there is no native support for the
