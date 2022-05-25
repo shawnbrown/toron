@@ -309,6 +309,24 @@ class DataAccessLayer(object):
             # Update "weight.is_complete" value (set to 1 or 0).
             self._add_weights_set_is_complete(cur, weight_id)
 
+    @staticmethod
+    def _get_properties(cursor, keys):
+        sql = f'''
+            SELECT key, value
+            FROM property
+            WHERE key IN ({", ".join("?" * len(keys))})
+        '''
+        cursor.execute(sql, keys)
+        return dict(cursor.fetchall())
+
+    @staticmethod
+    def _set_properties(cursor, properties):
+        sql = '''
+            INSERT INTO property(key, value) VALUES(?, ?)
+        '''
+        properties = ((k, _dumps(v, sort_keys=True)) for k, v in properties.items())
+        cursor.executemany(sql, properties)
+
 
 class DataAccessLayerPre35(DataAccessLayer):
     """This is a subclass of DataAccessLayer that supports SQLite

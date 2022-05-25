@@ -727,3 +727,49 @@ class TestAddWeights(unittest.TestCase):
     def test_mismatched_labels_and_element_id(self):
         raise NotImplementedError
 
+
+class TestGetAndSetProperties(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class('mynode.toron', mode='memory')
+        self.connection = self.dal._get_connection()
+        self.cursor = self.connection.cursor()
+        self.addCleanup(self.connection.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_get_properties(self):
+        self.cursor.execute('''
+            INSERT INTO property
+            VALUES
+                ('a', '{"x": 1, "y": 2}'),
+                ('b', '"xyz"'),
+                ('c', '0.1875')
+        ''')
+
+        keys = ['a', 'b', 'c']
+        properties = self.dal._get_properties(self.cursor, keys)  # <- Method under test.
+
+        expected = {
+            'a': {'x': 1, 'y': 2},
+            'b': 'xyz',
+            'c': 0.1875,
+        }
+        self.assertEqual(properties, expected)
+
+    def test_set_properties(self):
+        properties = {
+            'x': {'a': 1, 'b': 2},
+            'y': 'abc',
+            'z': 0.1875,
+        }
+
+        self.dal._set_properties(self.cursor, properties)  # <- Method under test.
+
+        self.cursor.execute('''
+            SELECT key, value
+            FROM main.property
+            WHERE key IN ('x', 'y', 'z')
+            ORDER BY key
+        ''')
+        expected = sorted(properties.items())
+        self.assertEqual(self.cursor.fetchall(), expected)
+
