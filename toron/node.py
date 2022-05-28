@@ -39,7 +39,7 @@ class Node(object):
         discrete categories::
 
             >>> node._make_structure([{'A'}, {'B'}, {'A', 'C'}])
-            [set(), {'A'}, {'B'}, {'A', 'B'}, {'A', 'C'}, {'A', 'B', 'C'}]
+            [set(), {'A'}, {'B'}, {'A', 'C'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
         The generated structure is almost always a topology but that
         is not necessarily the case. There are valid collections of
@@ -52,7 +52,7 @@ class Node(object):
         contain the intersection of {'A', 'B'} and {'A', 'C'}--the set
         {'A'}.
         """
-        structure = []
+        structure = []  # Use list to preserve lexical order of input.
         lengths = range(len(discrete_categories) + 1)
         for r in lengths:
             for c in combinations(discrete_categories, r):
