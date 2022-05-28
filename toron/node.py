@@ -53,10 +53,9 @@ class Node(object):
         {'A'}.
         """
         structure = []  # Use list to preserve lexical order of input.
-        lengths = range(len(discrete_categories) + 1)
-        for r in lengths:
-            for c in combinations(discrete_categories, r):
-                unioned = set().union(*c)
+        for length in range(len(discrete_categories) + 1):
+            for subsequence in combinations(discrete_categories, length):
+                unioned = set().union(*subsequence)
                 if unioned not in structure:
                     structure.append(unioned)
         return structure
