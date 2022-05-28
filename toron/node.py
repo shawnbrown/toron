@@ -60,3 +60,21 @@ class Node(object):
                     structure.append(unioned)
         return structure
 
+    @classmethod
+    def _minimize_discrete_categories(cls, *bases):
+        """Returns a minimal base of discrete categories that covers
+        the same generated structure as all given bases combined::
+
+            >>> base_a = [{'A'}, {'B'}, {'B', 'C'}]
+            >>> base_b = [{'A', 'C'}, {'C'}, {'C', 'D'}]
+            >>> Node._minimize_discrete_categories(base_a, base_b)
+            [{'A'}, {'B'}, {'C'}, {'C', 'D'}]
+        """
+        base_categories = []
+        for category in sorted(chain(*bases), key=len):
+            structure = cls._make_structure(base_categories)
+            if category not in structure:
+                base_categories.append(category)
+
+        return base_categories
+
