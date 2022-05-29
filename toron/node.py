@@ -4,6 +4,7 @@ from itertools import chain
 from itertools import combinations
 
 from ._dal import dal_class
+from ._exceptions import ToronWarning
 
 
 class Node(object):
@@ -77,4 +78,19 @@ class Node(object):
                 base_categories.append(category)
 
         return base_categories
+
+    def add_discrete_categories(self, discrete_categories):
+        minimized = self._minimize_discrete_categories(
+            self._dal.get_discrete_categories(),
+            discrete_categories,
+        )
+
+        omitted = [cat for cat in discrete_categories if (cat not in minimized)]
+        if omitted:
+            import warnings
+            formatted = ', '.join(repr(cat) for cat in omitted)
+            msg = f'omitting categories already covered: {formatted}'
+            warnings.warn(msg, category=ToronWarning, stacklevel=2)
+
+        self._dal.set_discrete_categories(minimized)
 

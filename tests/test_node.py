@@ -3,6 +3,7 @@
 import unittest
 
 from toron.node import Node
+from toron._exceptions import ToronWarning
 
 
 class TestNodeMakeStructure(unittest.TestCase):
@@ -72,4 +73,38 @@ class TestNodeMinimizeDiscreteCategories(unittest.TestCase):
         base_c = [{'A', 'B', 'C', 'D'}]
         result = Node._minimize_discrete_categories(base_a, base_b, base_c)
         self.assertEqual(result, [{'A'}, {'D'}, {'A', 'B'}, {'B', 'C'}])
+
+
+class TestNodeAddDiscreteCategories(unittest.TestCase):
+    def setUp(self):
+        self.node = Node('mynode.toron', mode='memory')
+        self.dal = self.node._dal
+
+    def test_add_categories_when_none_exist(self):
+        self.dal.set_discrete_categories([])  # <- Erase any existing categories.
+
+        categories = [{'A'}, {'B'}, {'C'}]
+        self.node.add_discrete_categories(categories)  # <- Method under test.
+
+        actual = self.dal.get_discrete_categories()
+        self.assertEqual(actual, categories, msg='should match given categories')
+
+    def test_add_to_existing_categories(self):
+        self.dal.set_discrete_categories([{'A'}, {'A', 'B'}])
+
+        self.node.add_discrete_categories([{'B'}, {'A', 'B', 'C'}])  # <- Method under test.
+
+        actual = self.dal.get_discrete_categories()
+        expected = [{'A'}, {'B'}, {'A', 'B', 'C'}]
+        self.assertEqual(actual, expected)
+
+    def test_warning_for_omitted(self):
+        self.dal.set_discrete_categories([{'A'}, {'B'}, {'A', 'B', 'C'}])
+
+        regex = "omitting categories already covered: {('A', 'B'|'B', 'A')}"
+        with self.assertWarnsRegex(ToronWarning, regex):
+            self.node.add_discrete_categories([{'A', 'B'}, {'A', 'C'}])  # <- Method under test.
+
+        actual = self.dal.get_discrete_categories()
+        self.assertEqual(actual, [{'A'}, {'B'}, {'A', 'C'}])
 
