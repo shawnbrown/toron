@@ -80,6 +80,52 @@ class Node(object):
         return base_categories
 
     def add_discrete_categories(self, discrete_categories):
+        """Add discrete categories to the node's internal structure.
+
+        .. code-block::
+
+            >>> node = Node(...)
+            >>> node.add_columns(['state', 'county', 'mcd'])
+            >>> node.add_discrete_categories([{'state'}, {'state', 'county'}])
+
+        **Understanding Discrete Categories**
+
+        Datasets are used to model some external domain that we want
+        to understand. Column values in the dataset refer to entities
+        in the domain. For example, a dataset with the columns "state",
+        "county", and "mcd" (Minor Civil Division) can be used to model
+        states counties and towns in the United States.
+
+        A category is discrete if its values each contain enough
+        information to identify single entities.
+
+        In our example, "state" is a discrete category because--for
+        any valid value--there exists a single entity being referred
+        to. For instance, every time we see "California" in the "state"
+        column, we can know that the record refers to the state of
+        California in the United States. There are not multiple
+        Californias, so this value alone contains enough information
+        to identify a single entity.
+
+        On the other hand, "county" is non-discrete. If we only have
+        the county value "Plymouth", we can't know if this record
+        refers to the Plymouth County in Iowa or the Plymouth County
+        in Massachusetts. To make a discrete category for counties,
+        we need to define it as a combination of "state" and "county"
+        together.
+
+        It is important to clarify that a category's discreteness is
+        not determined by the uniqueness of its values in the dataset.
+        Our example dataset would contain multiple records for which
+        the state value is "California" so the values are not unique
+        despite the category being discrete.
+
+        Even when the values in a column *are* unique, we cannot know
+        for sure if it represents a discrete category. A category's
+        discreteness is a property of the external domain being
+        modeled, not a property that can be reliably derived from the
+        dataset itself.
+        """
         minimized = self._minimize_discrete_categories(
             self._dal.get_discrete_categories(),
             discrete_categories,
