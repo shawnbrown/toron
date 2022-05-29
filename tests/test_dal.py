@@ -804,3 +804,25 @@ class TestGetAndSetProperties(unittest.TestCase):
     def test_pre24_set_properties_upsert(self):
         self.run_upsert_test(DataAccessLayerPre24._set_properties)
 
+    def run_delete_test(self, func):
+        """When a property is set to `None` is should be deleted from
+        the table.
+        """
+        func(self.cursor, {'a': 123, 'b': 456, 'c': 'abc', 'd': 'xyz'})
+
+        func(self.cursor, {'b': None, 'd': None})
+
+        self.cursor.execute('''
+            SELECT key, value
+            FROM main.property
+            WHERE key IN ('a', 'b', 'c', 'd')
+        ''')
+        self.assertEqual(dict(self.cursor.fetchall()), {'a': 123, 'c': 'abc'})
+
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 24, 0), 'requires 3.24.0 or newer')
+    def test_set_properties_delete(self):
+        self.run_delete_test(DataAccessLayer._set_properties)
+
+    def test_pre24_set_properties_delete(self):
+        self.run_delete_test(DataAccessLayerPre24._set_properties)
+

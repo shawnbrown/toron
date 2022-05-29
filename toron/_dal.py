@@ -321,11 +321,16 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _set_properties(cursor, properties):
+        sql = 'DELETE FROM property WHERE key=?'
+        parameters = [k for k, v in properties.items() if v is None]
+        cursor.executemany(sql, parameters)
+
         sql = '''
             INSERT INTO property(key, value) VALUES(?, ?)
               ON CONFLICT(key) DO UPDATE SET value=?
         '''
-        formatted = ((k, _dumps(v, sort_keys=True)) for k, v in properties.items())
+        filtered = ((k, v) for k, v in properties.items() if v is not None)
+        formatted = ((k, _dumps(v, sort_keys=True)) for k, v in filtered)
         parameters = ((k, v, v) for k, v in formatted)
         cursor.executemany(sql, parameters)
 
@@ -429,10 +434,13 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
     """
     @staticmethod
     def _set_properties(cursor, properties):
-        sql = '''
-            INSERT OR REPLACE INTO property(key, value) VALUES (?, ?)
-        '''
-        parameters = ((k, _dumps(v, sort_keys=True)) for k, v in properties.items())
+        sql = 'DELETE FROM property WHERE key=?'
+        parameters = [k for k, v in properties.items() if v is None]
+        cursor.executemany(sql, parameters)
+
+        sql = 'INSERT OR REPLACE INTO property(key, value) VALUES (?, ?)'
+        filtered = ((k, v) for k, v in properties.items() if v is not None)
+        parameters = ((k, _dumps(v, sort_keys=True)) for k, v in filtered)
         cursor.executemany(sql, parameters)
 
 
