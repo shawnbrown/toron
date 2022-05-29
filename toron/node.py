@@ -115,13 +115,13 @@ class Node(object):
         together.
 
         It is important to clarify that a category's discreteness is
-        not determined by the uniqueness of its values in the dataset.
-        Our example dataset would contain multiple records for which
-        the state value is "California" so the values are not unique
-        despite the category being discrete.
+        not determined by the uniqueness of its values. Our example
+        dataset would contain multiple records for which the state
+        value is "California" so the values are not unique despite the
+        category being discrete.
 
-        Even when the values in a column *are* unique, we cannot know
-        for sure if it represents a discrete category. A category's
+        Even when a column's values *are* unique, we cannot know for
+        sure if it represents a discrete category. A category's
         discreteness is a property of the external domain being
         modeled, not a property that can be reliably derived from the
         dataset itself.
