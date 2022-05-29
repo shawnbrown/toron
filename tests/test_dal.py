@@ -827,6 +827,49 @@ class TestGetAndSetProperties(unittest.TestCase):
         self.run_delete_test(DataAccessLayerPre24._set_properties)
 
 
+class TestSetDiscreteCategoriesStructure(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class('mynode.toron', mode='memory')
+        self.connection = self.dal._get_connection()
+        self.cursor = self.connection.cursor()
+        self.addCleanup(self.connection.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_insert_structure(self):
+        self.dal.add_columns(['state', 'county', 'town'])
+        structure = [set(),
+                     {'state'},
+                     {'state', 'county'},
+                     {'state', 'county', 'town'}]
+
+        DataAccessLayer._set_discrete_categories_structure(self.cursor, structure)  # <- Method under test.
+
+        self.cursor.execute('SELECT state, county, town FROM main.structure')
+        actual = self.cursor.fetchall()
+        expected = [(0, 0, 0),  # <- set()
+                    (1, 0, 0),  # <- {'state'}
+                    (1, 1, 0),  # <- {'state', 'county'}
+                    (1, 1, 1)]  # <- {'state', 'county', 'town'}
+        self.assertEqual(actual, expected)
+
+    def test_replace_existing(self):
+        self.dal.add_columns(['A', 'B', 'C'])
+        structure = [set(), {'A', 'B'}, {'A', 'B', 'C'}]
+        DataAccessLayer._set_discrete_categories_structure(self.cursor, structure)
+
+        structure = [set(), {'A'}, {'B'}, {'A', 'B'}, {'A', 'B', 'C'}]
+        DataAccessLayer._set_discrete_categories_structure(self.cursor, structure)  # <- Method under test.
+
+        self.cursor.execute('SELECT A, B, C FROM main.structure')
+        actual = self.cursor.fetchall()
+        expected = [(0, 0, 0),  # <- set()
+                    (1, 0, 0),  # <- {'A'}
+                    (0, 1, 0),  # <- {'B'}
+                    (1, 1, 0),  # <- {'A', 'B'}
+                    (1, 1, 1)]  # <- {'A', 'B', 'C'}
+        self.assertEqual(actual, expected)
+
+
 class TestGetAndSetDiscreteCategories(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class('mynode.toron', mode='memory')

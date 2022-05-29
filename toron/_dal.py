@@ -340,6 +340,22 @@ class DataAccessLayer(object):
             discrete_categories = properties.get('discrete_categories', [])
             return [set(x) for x in discrete_categories]
 
+    @classmethod
+    def _set_discrete_categories_structure(cls, cursor, structure):
+        """Populates 'structure' table with bitmask made from *structure*."""
+        cursor.execute('DELETE FROM structure')  # Delete all table records.
+
+        columns = cls._get_column_names(cursor, 'structure')
+        columns = columns[1:]  # Slice-off "_structure_id" column.
+
+        columns_clause = ', '.join(cls._quote_identifier(col) for col in columns)
+        values_clause = ', '.join('?' * len(columns))
+        sql = f'INSERT INTO structure ({columns_clause}) VALUES ({values_clause})'
+
+        make_bitmask = lambda cat: tuple((col in cat) for col in columns)
+        parameters = (make_bitmask(category) for category in structure)
+        cursor.executemany(sql, parameters)
+
     def set_discrete_categories(self, discrete_categories):
         with self._transaction() as cur:
             categories = [list(cat) for cat in discrete_categories]
