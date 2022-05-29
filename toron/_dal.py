@@ -362,10 +362,11 @@ class DataAccessLayer(object):
         parameters = (make_bitmask(category) for category in structure)
         cursor.executemany(sql, parameters)
 
-    def set_discrete_categories(self, discrete_categories):
+    def set_discrete_categories(self, discrete_categories, structure):
         with self._transaction() as cur:
             categories = [list(cat) for cat in discrete_categories]
             self._set_properties(cur, {'discrete_categories': categories})
+            self._set_discrete_categories_structure(cur, structure)
 
 
 class DataAccessLayerPre35(DataAccessLayer):

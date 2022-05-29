@@ -81,7 +81,8 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.dal = self.node._dal
 
     def test_add_categories_when_none_exist(self):
-        self.dal.set_discrete_categories([])  # <- Erase any existing categories.
+        self.dal.add_columns(['A', 'B', 'C'])
+        self.dal.set_discrete_categories([], [])  # <- Erase any existing categories.
 
         categories = [{'A'}, {'B'}, {'C'}]
         self.node.add_discrete_categories(categories)  # <- Method under test.
@@ -90,7 +91,11 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.assertEqual(actual, categories, msg='should match given categories')
 
     def test_add_to_existing_categories(self):
-        self.dal.set_discrete_categories([{'A'}, {'A', 'B'}])
+        columns = ['A', 'B', 'C']
+        categories = [{'A'}, {'A', 'B'}]
+        structure = [set(), {'A'}, {'B', 'A'}]
+        self.dal.add_columns(columns)
+        self.dal.set_discrete_categories(categories, structure)
 
         self.node.add_discrete_categories([{'B'}, {'A', 'B', 'C'}])  # <- Method under test.
 
@@ -99,7 +104,11 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_warning_for_omitted(self):
-        self.dal.set_discrete_categories([{'A'}, {'B'}, {'A', 'B', 'C'}])
+        columns = ['A', 'B', 'C']
+        discrete_categories = [{'A'}, {'B'}, {'A', 'B', 'C'}]
+        structure = [set(), {'A'}, {'B'}, {'A', 'B'}, {'A', 'B', 'C'}]
+        self.dal.add_columns(columns)
+        self.dal.set_discrete_categories(discrete_categories, structure)
 
         regex = "omitting categories already covered: {('A', 'B'|'B', 'A')}"
         with self.assertWarnsRegex(ToronWarning, regex):

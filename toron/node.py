@@ -92,5 +92,6 @@ class Node(object):
             msg = f'omitting categories already covered: {formatted}'
             warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
-        self._dal.set_discrete_categories(minimized)
+        structure = self._make_structure(minimized)
+        self._dal.set_discrete_categories(minimized, structure)
 

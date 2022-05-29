@@ -879,8 +879,15 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def test_set_discrete_categories(self):
-        discrete_categories = [{'A'}, {'B'}, {'C'}]
-        self.dal.set_discrete_categories(discrete_categories)  # <- Method under test.
+        self.dal.add_columns(['A', 'B', 'C'])
+
+        categories = [{'A'}, {'B'}, {'C'}]
+        structure = [set(),
+                     {'A'}, {'B'}, {'C'},
+                     {'A', 'B'}, {'A', 'C'}, {'B', 'C'},
+                     {'A', 'B', 'C'}]
+
+        self.dal.set_discrete_categories(categories, structure)  # <- Method under test.
 
         self.cursor.execute("SELECT value FROM property WHERE key='discrete_categories'")
         result = self.cursor.fetchone()[0]
@@ -902,8 +909,12 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.assertEqual(result, [])
 
     def test_get_and_set_categories(self):
-        discrete_categories = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
-        self.dal.set_discrete_categories(discrete_categories)
-        result = self.dal.get_discrete_categories()
-        self.assertEqual(discrete_categories, result)
+        self.dal.add_columns(['A', 'B', 'C'])
+
+        categories = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
+        structure = [set(), {'A'}, {'A', 'B'}, {'A', 'B', 'C'}]
+
+        self.dal.set_discrete_categories(categories, structure)  # <- Set!!!
+        result = self.dal.get_discrete_categories()  # <- Get!!!
+        self.assertEqual(result, categories)
 
