@@ -337,7 +337,8 @@ class DataAccessLayer(object):
     def get_discrete_categories(self):
         with self._transaction() as cur:
             properties = self._get_properties(cur, ['discrete_categories'])
-            return [set(x) for x in properties['discrete_categories']]
+            discrete_categories = properties.get('discrete_categories', [])
+            return [set(x) for x in discrete_categories]
 
     def set_discrete_categories(self, discrete_categories):
         with self._transaction() as cur:

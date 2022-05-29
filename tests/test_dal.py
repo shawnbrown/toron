@@ -852,6 +852,12 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         expected = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
         self.assertEqual(result, expected)
 
+    def test_get_discrete_categories_empty(self):
+        """If no discrete categories, should return empty list."""
+        self.cursor.execute("DELETE FROM property WHERE key='discrete_categories'")
+        result = self.dal.get_discrete_categories()  # <- Method under test.
+        self.assertEqual(result, [])
+
     def test_get_and_set_categories(self):
         discrete_categories = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
         self.dal.set_discrete_categories(discrete_categories)
