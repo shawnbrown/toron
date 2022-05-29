@@ -334,6 +334,16 @@ class DataAccessLayer(object):
         parameters = ((k, v, v) for k, v in formatted)
         cursor.executemany(sql, parameters)
 
+    def get_discrete_categories(self):
+        with self._transaction() as cur:
+            properties = self._get_properties(cur, ['discrete_categories'])
+            return [set(x) for x in properties['discrete_categories']]
+
+    def set_discrete_categories(self, discrete_categories):
+        with self._transaction() as cur:
+            categories = [list(cat) for cat in discrete_categories]
+            self._set_properties(cur, {'discrete_categories': categories})
+
 
 class DataAccessLayerPre35(DataAccessLayer):
     """This is a subclass of DataAccessLayer that supports SQLite
