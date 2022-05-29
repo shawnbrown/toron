@@ -402,8 +402,8 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         return statements
 
     def rename_columns(self, mapper):
-        # This code should follow the recommended, 12-step ALTER TABLE
-        # procedure detailed in the SQLite documentation:
+        # These related methods should implement the recommended, 12-step,
+        # ALTER TABLE procedure detailed in the SQLite documentation:
         #     https://www.sqlite.org/lang_altertable.html#otheralter
         con = self._get_connection()
         try:
