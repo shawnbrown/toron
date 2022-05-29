@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from itertools import compress
 from json import dumps as _dumps
 
+from toron._exceptions import ToronError
 from toron._node_schema import connect
 from toron._node_schema import savepoint
 from toron._node_schema import transaction
@@ -344,9 +345,14 @@ class DataAccessLayer(object):
     def _set_discrete_categories_structure(cls, cursor, structure):
         """Populates 'structure' table with bitmask made from *structure*."""
         cursor.execute('DELETE FROM structure')  # Delete all table records.
+        if not structure:
+            return  # <- EXIT!
 
         columns = cls._get_column_names(cursor, 'structure')
         columns = columns[1:]  # Slice-off "_structure_id" column.
+        if not columns:
+            msg = 'no labels defined, must first add columns'
+            raise ToronError(msg)
 
         columns_clause = ', '.join(cls._quote_identifier(col) for col in columns)
         values_clause = ', '.join('?' * len(columns))
