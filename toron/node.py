@@ -94,7 +94,7 @@ class Node(object):
         to understand. Column values in the dataset refer to entities
         in the domain. For example, a dataset with the columns "state",
         "county", and "mcd" (Minor Civil Division) can be used to model
-        states counties and towns in the United States.
+        states, counties, and towns in the United States.
 
         A category is discrete if its values each contain enough
         information to identify single entities.
@@ -102,7 +102,7 @@ class Node(object):
         In our example, "state" is a discrete category because--for
         any valid value--there exists a single entity being referred
         to. For instance, every time we see "California" in the "state"
-        column, we can know that the record refers to the state of
+        column, we know that the record refers to the state of
         California in the United States. There are not multiple
         Californias, so this value alone contains enough information
         to identify a single entity.
@@ -110,8 +110,8 @@ class Node(object):
         On the other hand, "county" is non-discrete. If we only have
         the county value "Plymouth", we can't know if this record
         refers to the Plymouth County in Iowa or the Plymouth County
-        in Massachusetts. To make a discrete category for counties,
-        we need to define it as a combination of "state" and "county"
+        in Massachusetts. To define a discrete category for counties,
+        we need to use the combination of "state" and "county"
         together.
 
         It is important to clarify that a category's discreteness is
