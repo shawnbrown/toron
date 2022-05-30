@@ -365,7 +365,11 @@ class DataAccessLayer(object):
         data = {}
         with self._transaction() as cur:
             for key in keys:
-                if key == 'discrete_categories':
+                if key == 'column_names':
+                    cur.execute("PRAGMA table_info('element')")
+                    names = [row[1] for row in cur.fetchall()]
+                    data[key] = names[1:]  # Slice-off element_id.
+                elif key == 'discrete_categories':
                     categories = self._get_property(cur, key) or []
                     data[key] = [set(x) for x in categories]
                 else:

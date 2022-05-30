@@ -909,6 +909,16 @@ class TestGetData(unittest.TestCase):
         self.addCleanup(self.connection.close)
         self.addCleanup(self.cursor.close)
 
+    def test_get_column_names(self):
+        self.dal.add_columns(['A', 'B', 'C'])
+        data = self.dal.get_data(['column_names'])  # <- Method under test.
+        self.assertEqual(data, {'column_names': ['A', 'B', 'C']})
+
+    def test_get_column_names_empty(self):
+        """Should return empty list when no columns have been added."""
+        data = self.dal.get_data(['column_names'])  # <- Method under test.
+        self.assertEqual(data, {'column_names': []})
+
     def test_get_discrete_categories(self):
         self.cursor.execute('''
             INSERT INTO property
