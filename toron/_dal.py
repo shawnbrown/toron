@@ -361,6 +361,13 @@ class DataAccessLayer(object):
 
         cursor.execute(sql, parameters)
 
+    def get_data(self, keys):
+        data = {}
+        with self._transaction() as cur:
+            for key in keys:
+                data[key] = self._get_property(cur, key)
+        return data
+
     def get_discrete_categories(self):
         with self._transaction() as cur:
             properties = self._get_properties(cur, ['discrete_categories'])

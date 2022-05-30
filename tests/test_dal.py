@@ -894,6 +894,29 @@ class TestGetAndSetProperty(unittest.TestCase):
         self.assertEqual(self.cursor.fetchall(), [])
 
 
+class TestGetData(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class('mynode.toron', mode='memory')
+        self.connection = self.dal._get_connection()
+        self.cursor = self.connection.cursor()
+        self.cursor.execute('''
+            INSERT INTO property
+            VALUES
+                ('a', '{"x": 1, "y": 2}'),
+                ('b', '"xyz"'),
+                ('c', '0.1875')
+        ''')
+        self.addCleanup(self.connection.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_get_data_properties(self):
+        data = self.dal.get_data(['a', 'b'])  # <- Method under test.
+        self.assertEqual(data, {'a': {'x': 1, 'y': 2}, 'b': 'xyz'})
+
+        data = self.dal.get_data(['c', 'd'])  # <- Method under test.
+        self.assertEqual(data, {'c': 0.1875, 'd': None}, msg='unknown keys should get None values')
+
+
 class TestSetDiscreteCategoriesStructure(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class('mynode.toron', mode='memory')
