@@ -337,6 +337,13 @@ class DataAccessLayer(object):
         parameters = ((k, v, v) for k, v in formatted)
         cursor.executemany(sql, parameters)
 
+    @staticmethod
+    def _get_property(cursor, key):
+        sql = 'SELECT value FROM main.property WHERE key=?'
+        cursor.execute(sql, (key,))
+        result = cursor.fetchone()
+        return result[0] if result else None
+
     def get_discrete_categories(self):
         with self._transaction() as cur:
             properties = self._get_properties(cur, ['discrete_categories'])

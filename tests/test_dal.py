@@ -827,6 +827,42 @@ class TestGetAndSetProperties(unittest.TestCase):
         self.run_delete_test(DataAccessLayerPre24._set_properties)
 
 
+class TestGetAndSetProperty(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class('mynode.toron', mode='memory')
+        self.connection = self.dal._get_connection()
+        self.cursor = self.connection.cursor()
+        self.cursor.execute('''
+            INSERT INTO property
+            VALUES
+                ('a', '{"x": 1, "y": 2}'),
+                ('b', '"xyz"'),
+                ('c', '0.1875')
+        ''')
+        self.addCleanup(self.connection.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_get_property_parse_json(self):
+        """JSON values should be parsed into objects."""
+        value = self.dal._get_property(self.cursor, 'a')
+        self.assertEqual(value, {'x': 1, 'y': 2})
+
+        value = self.dal._get_property(self.cursor, 'b')
+        self.assertEqual(value, 'xyz')
+
+        value = self.dal._get_property(self.cursor, 'c')
+        self.assertEqual(value, 0.1875)
+
+    def test_get_property_missing_key(self):
+        """Value should be None when key does not exist."""
+        value = self.dal._get_property(self.cursor, 'x')
+        self.assertIsNone(value)
+
+    @unittest.skip('not yet implemented')
+    def test_set_property(self):
+        raise NotImplementedError
+
+
 class TestSetDiscreteCategoriesStructure(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class('mynode.toron', mode='memory')
