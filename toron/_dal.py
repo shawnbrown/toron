@@ -322,10 +322,12 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _set_properties(cursor, properties):
+        # Delete properties whose values are `None`.
         sql = 'DELETE FROM property WHERE key=?'
         parameters = [k for k, v in properties.items() if v is None]
         cursor.executemany(sql, parameters)
 
+        # Insert or update remaining properties.
         sql = '''
             INSERT INTO property(key, value) VALUES(?, ?)
               ON CONFLICT(key) DO UPDATE SET value=?
@@ -468,10 +470,12 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
     """
     @staticmethod
     def _set_properties(cursor, properties):
+        # Delete properties whose values are `None`.
         sql = 'DELETE FROM property WHERE key=?'
         parameters = [k for k, v in properties.items() if v is None]
         cursor.executemany(sql, parameters)
 
+        # Insert or update remaining properties.
         sql = 'INSERT OR REPLACE INTO property(key, value) VALUES (?, ?)'
         filtered = ((k, v) for k, v in properties.items() if v is not None)
         parameters = ((k, _dumps(v, sort_keys=True)) for k, v in filtered)
