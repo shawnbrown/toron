@@ -909,14 +909,14 @@ class TestGetData(unittest.TestCase):
         self.addCleanup(self.connection.close)
         self.addCleanup(self.cursor.close)
 
-    def test_get_data_properties(self):
+    def test_get_properties(self):
         data = self.dal.get_data(['a', 'b'])  # <- Method under test.
         self.assertEqual(data, {'a': {'x': 1, 'y': 2}, 'b': 'xyz'})
 
         data = self.dal.get_data(['c', 'd'])  # <- Method under test.
         self.assertEqual(data, {'c': 0.1875, 'd': None}, msg='unknown keys should get None values')
 
-    def test_get_data_discrete_categories(self):
+    def test_get_discrete_categories(self):
         self.cursor.execute('''
             INSERT INTO property
             VALUES ('discrete_categories', '[["A"], ["A", "B"], ["A", "B", "C"]]')
@@ -925,7 +925,7 @@ class TestGetData(unittest.TestCase):
         expected = {'discrete_categories': [{"A"}, {"A", "B"}, {"A", "B", "C"}]}
         self.assertEqual(data, expected, msg='should get a list of sets')
 
-    def test_get_data_discrete_categories_empty(self):
+    def test_get_discrete_categories_empty(self):
         """If no discrete categories, should return empty list."""
         self.cursor.execute("DELETE FROM property WHERE key='discrete_categories'")
         data = self.dal.get_data(['discrete_categories'])  # <- Method under test.
