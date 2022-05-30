@@ -832,8 +832,13 @@ class TestGetAndSetProperty(unittest.TestCase):
 
     def setUp(self):
         self.dal = self.class_under_test('mynode.toron', mode='memory')
-        self.connection = self.dal._get_connection()
-        self.cursor = self.connection.cursor()
+
+        connection = self.dal._get_connection()
+        self.addCleanup(connection.close)
+
+        self.cursor = connection.cursor()
+        self.addCleanup(self.cursor.close)
+
         self.cursor.execute('''
             INSERT INTO property
             VALUES
@@ -841,8 +846,6 @@ class TestGetAndSetProperty(unittest.TestCase):
                 ('b', '"xyz"'),
                 ('c', '0.1875')
         ''')
-        self.addCleanup(self.connection.close)
-        self.addCleanup(self.cursor.close)
 
     def test_get_property_parse_json(self):
         """JSON values should be parsed into objects."""
