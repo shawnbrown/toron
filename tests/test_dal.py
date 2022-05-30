@@ -1042,21 +1042,6 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         result = self.cursor.fetchone()[0]
         self.assertEqual(result, [['A'], ['B'], ['C']])
 
-    def test_get_discrete_categories(self):
-        self.cursor.execute('''
-            INSERT INTO property
-            VALUES ('discrete_categories', '[["A"], ["A", "B"], ["A", "B", "C"]]')
-        ''')
-        result = self.dal.get_discrete_categories()  # <- Method under test.
-        expected = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
-        self.assertEqual(result, expected)
-
-    def test_get_discrete_categories_empty(self):
-        """If no discrete categories, should return empty list."""
-        self.cursor.execute("DELETE FROM property WHERE key='discrete_categories'")
-        result = self.dal.get_discrete_categories()  # <- Method under test.
-        self.assertEqual(result, [])
-
     def test_get_and_set_categories(self):
         self.dal.add_columns(['A', 'B', 'C'])
 

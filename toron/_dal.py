@@ -376,12 +376,6 @@ class DataAccessLayer(object):
                     data[key] = self._get_property(cur, key)
         return data
 
-    def get_discrete_categories(self):
-        with self._transaction() as cur:
-            properties = self._get_properties(cur, ['discrete_categories'])
-            discrete_categories = properties.get('discrete_categories', [])
-            return [set(x) for x in discrete_categories]
-
     @classmethod
     def _set_discrete_categories_structure(cls, cursor, structure):
         """Populates 'structure' table with bitmask made from *structure*."""
