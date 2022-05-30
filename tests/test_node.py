@@ -87,8 +87,12 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         categories = [{'A'}, {'B'}, {'C'}]
         self.node.add_discrete_categories(categories)  # <- Method under test.
 
-        actual = self.dal.get_discrete_categories()
-        self.assertEqual(actual, categories, msg='should match given categories')
+        data = self.dal.get_data(['discrete_categories'])
+        self.assertEqual(
+            data['discrete_categories'],
+            categories,
+            msg='should match given categories',
+        )
 
     def test_add_to_existing_categories(self):
         columns = ['A', 'B', 'C']
@@ -99,9 +103,11 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
 
         self.node.add_discrete_categories([{'B'}, {'A', 'B', 'C'}])  # <- Method under test.
 
-        actual = self.dal.get_discrete_categories()
-        expected = [{'A'}, {'B'}, {'A', 'B', 'C'}]
-        self.assertEqual(actual, expected)
+        data = self.dal.get_data(['discrete_categories'])
+        self.assertEqual(
+            data['discrete_categories'],
+            [{'A'}, {'B'}, {'A', 'B', 'C'}],
+        )
 
     def test_warning_for_omitted(self):
         columns = ['A', 'B', 'C']
@@ -114,6 +120,9 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         with self.assertWarnsRegex(ToronWarning, regex):
             self.node.add_discrete_categories([{'A', 'B'}, {'A', 'C'}])  # <- Method under test.
 
-        actual = self.dal.get_discrete_categories()
-        self.assertEqual(actual, [{'A'}, {'B'}, {'A', 'C'}])
+        data = self.dal.get_data(['discrete_categories'])
+        self.assertEqual(
+            data['discrete_categories'],
+            [{'A'}, {'B'}, {'A', 'C'}],
+        )
 

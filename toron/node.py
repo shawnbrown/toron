@@ -126,8 +126,9 @@ class Node(object):
         modeled, not a property that can be reliably derived from the
         dataset itself.
         """
+        data = self._dal.get_data(['discrete_categories'])
         minimized = self._minimize_discrete_categories(
-            self._dal.get_discrete_categories(),
+            data['discrete_categories'],
             discrete_categories,
         )
 

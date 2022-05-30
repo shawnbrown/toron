@@ -1064,6 +1064,6 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         structure = [set(), {'A'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
         self.dal.set_discrete_categories(categories, structure)  # <- Set!!!
-        result = self.dal.get_discrete_categories()  # <- Get!!!
-        self.assertEqual(result, categories)
+        data = self.dal.get_data(['discrete_categories'])  # <- Get!!!
+        self.assertEqual(data['discrete_categories'], categories)
 
