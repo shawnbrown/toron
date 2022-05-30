@@ -520,6 +520,17 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
         parameters = ((k, _dumps(v, sort_keys=True)) for k, v in filtered)
         cursor.executemany(sql, parameters)
 
+    @staticmethod
+    def _set_property(cursor, key, value):
+        if value is not None:
+            sql = 'INSERT OR REPLACE INTO property(key, value) VALUES (?, ?)'
+            parameters = (key, _dumps(value, sort_keys=True))
+        else:
+            sql = 'DELETE FROM property WHERE key=?'
+            parameters = (key,)
+
+        cursor.execute(sql, parameters)
+
 
 # Set the DataAccessLayer class appropriate for the current version of SQLite.
 _sqlite_version_info = sqlite3.sqlite_version_info

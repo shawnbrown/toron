@@ -858,25 +858,38 @@ class TestGetAndSetProperty(unittest.TestCase):
         value = self.dal._get_property(self.cursor, 'd')  # <- Method under test.
         self.assertIsNone(value)
 
-    def test_set_property(self):
+    def run_set_property(self, func):
         """Objects should be serialized as JSON formatted strings."""
-        self.dal._set_property(self.cursor, 'e', [1, 'two', 3.1875])  # <- Method under test.
-
+        func(self.cursor, 'e', [1, 'two', 3.1875])  # <- Method under test.
         self.cursor.execute("SELECT value FROM property WHERE key='e'")
         self.assertEqual(self.cursor.fetchall(), [([1, 'two', 3.1875],)])
 
-    def test_set_property_update_existing(self):
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 24, 0), 'requires 3.24.0 or newer')
+    def test_set_property(self):
+        self.run_set_property(DataAccessLayer._set_property)
+
+    def test_pre24_set_property(self):
+        self.run_set_property(DataAccessLayerPre24._set_property)
+
+    def run_set_property_update_existing(self, func):
         """Objects that already exist should get updated."""
-        self.dal._set_property(self.cursor, 'a', [1, 2])  # <- Method under test.
+        func(self.cursor, 'a', [1, 2])  # <- Method under test.
 
         self.cursor.execute("SELECT value FROM property WHERE key='a'")
         self.assertEqual(self.cursor.fetchall(), [([1, 2],)])
 
-    def test_set_property_value_is_none(self):
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 24, 0), 'requires 3.24.0 or newer')
+    def test_set_property_update_existing(self):
+        self.run_set_property_update_existing(DataAccessLayer._set_property)
+
+    def test_pre24_set_property_update_existing(self):
+        self.run_set_property_update_existing(DataAccessLayerPre24._set_property)
+
+    def run_set_property_value_is_none(self, func):
         """When value is None, record should be deleted."""
         get_results_sql = "SELECT * FROM property WHERE key IN ('a', 'b', 'c')"
 
-        self.dal._set_property(self.cursor, 'a', None)  # <- Method under test.
+        func(self.cursor, 'a', None)  # <- Method under test.
 
         self.cursor.execute(get_results_sql)
         self.assertEqual(self.cursor.fetchall(), [('b', 'xyz'), ('c', 0.1875)])
@@ -886,12 +899,26 @@ class TestGetAndSetProperty(unittest.TestCase):
         self.cursor.execute(get_results_sql)
         self.assertEqual(self.cursor.fetchall(), [('c', 0.1875),])
 
-    def test_set_property_key_is_new_value_is_none(self):
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 24, 0), 'requires 3.24.0 or newer')
+    def test_set_property_value_is_none(self):
+        self.run_set_property_value_is_none(DataAccessLayer._set_property)
+
+    def test_pre24_set_property_value_is_none(self):
+        self.run_set_property_value_is_none(DataAccessLayerPre24._set_property)
+
+    def run_set_property_key_is_new_value_is_none(self, func):
         """Should not insert record when value is None."""
-        self.dal._set_property(self.cursor, 'f', None)  # <- Method under test.
+        func(self.cursor, 'f', None)  # <- Method under test.
 
         self.cursor.execute("SELECT * FROM property WHERE key='f'")
         self.assertEqual(self.cursor.fetchall(), [])
+
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 24, 0), 'requires 3.24.0 or newer')
+    def test_set_property_key_is_new_value_is_none(self):
+        self.run_set_property_key_is_new_value_is_none(DataAccessLayer._set_property)
+
+    def test_pre24_set_property_key_is_new_value_is_none(self):
+        self.run_set_property_key_is_new_value_is_none(DataAccessLayerPre24._set_property)
 
 
 class TestGetColumnNames(unittest.TestCase):
