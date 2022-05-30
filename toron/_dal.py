@@ -365,7 +365,11 @@ class DataAccessLayer(object):
         data = {}
         with self._transaction() as cur:
             for key in keys:
-                data[key] = self._get_property(cur, key)
+                if key == 'discrete_categories':
+                    categories = self._get_property(cur, key) or []
+                    data[key] = [set(x) for x in categories]
+                else:
+                    data[key] = self._get_property(cur, key)
         return data
 
     def get_discrete_categories(self):
