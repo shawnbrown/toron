@@ -844,23 +844,54 @@ class TestGetAndSetProperty(unittest.TestCase):
 
     def test_get_property_parse_json(self):
         """JSON values should be parsed into objects."""
-        value = self.dal._get_property(self.cursor, 'a')
+        value = self.dal._get_property(self.cursor, 'a')  # <- Method under test.
         self.assertEqual(value, {'x': 1, 'y': 2})
 
-        value = self.dal._get_property(self.cursor, 'b')
+        value = self.dal._get_property(self.cursor, 'b')  # <- Method under test.
         self.assertEqual(value, 'xyz')
 
-        value = self.dal._get_property(self.cursor, 'c')
+        value = self.dal._get_property(self.cursor, 'c')  # <- Method under test.
         self.assertEqual(value, 0.1875)
 
     def test_get_property_missing_key(self):
         """Value should be None when key does not exist."""
-        value = self.dal._get_property(self.cursor, 'x')
+        value = self.dal._get_property(self.cursor, 'd')  # <- Method under test.
         self.assertIsNone(value)
 
-    @unittest.skip('not yet implemented')
     def test_set_property(self):
-        raise NotImplementedError
+        """Objects should be serialized as JSON formatted strings."""
+        self.dal._set_property(self.cursor, 'e', [1, 'two', 3.1875])  # <- Method under test.
+
+        self.cursor.execute("SELECT value FROM property WHERE key='e'")
+        self.assertEqual(self.cursor.fetchall(), [([1, 'two', 3.1875],)])
+
+    def test_set_property_update_existing(self):
+        """Objects that already exist should get updated."""
+        self.dal._set_property(self.cursor, 'a', [1, 2])  # <- Method under test.
+
+        self.cursor.execute("SELECT value FROM property WHERE key='a'")
+        self.assertEqual(self.cursor.fetchall(), [([1, 2],)])
+
+    def test_set_property_value_is_none(self):
+        """When value is None, record should be deleted."""
+        get_results_sql = "SELECT * FROM property WHERE key IN ('a', 'b', 'c')"
+
+        self.dal._set_property(self.cursor, 'a', None)  # <- Method under test.
+
+        self.cursor.execute(get_results_sql)
+        self.assertEqual(self.cursor.fetchall(), [('b', 'xyz'), ('c', 0.1875)])
+
+        self.dal._set_property(self.cursor, 'b', None)  # <- Method under test.
+
+        self.cursor.execute(get_results_sql)
+        self.assertEqual(self.cursor.fetchall(), [('c', 0.1875),])
+
+    def test_set_property_key_is_new_value_is_none(self):
+        """Should not insert record when value is None."""
+        self.dal._set_property(self.cursor, 'f', None)  # <- Method under test.
+
+        self.cursor.execute("SELECT * FROM property WHERE key='f'")
+        self.assertEqual(self.cursor.fetchall(), [])
 
 
 class TestSetDiscreteCategoriesStructure(unittest.TestCase):

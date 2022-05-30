@@ -344,6 +344,23 @@ class DataAccessLayer(object):
         result = cursor.fetchone()
         return result[0] if result else None
 
+    @staticmethod
+    def _set_property(cursor, key, value):
+        if value is None:
+            # Delete property when value is `None`.
+            sql = 'DELETE FROM property WHERE key=?'
+            parameters = (key,)
+        else:
+            # Insert or update property with JSON string.
+            sql = '''
+                INSERT INTO property(key, value) VALUES(?, ?)
+                  ON CONFLICT(key) DO UPDATE SET value=?
+            '''
+            json_value = _dumps(value, sort_keys=True)
+            parameters = (key, json_value, json_value)
+
+        cursor.execute(sql, parameters)
+
     def get_discrete_categories(self):
         with self._transaction() as cur:
             properties = self._get_properties(cur, ['discrete_categories'])
