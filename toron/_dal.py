@@ -311,16 +311,6 @@ class DataAccessLayer(object):
             self._add_weights_set_is_complete(cur, weight_id)
 
     @staticmethod
-    def _get_properties(cursor, keys):
-        sql = f'''
-            SELECT key, value
-            FROM property
-            WHERE key IN ({", ".join("?" * len(keys))})
-        '''
-        cursor.execute(sql, keys)
-        return dict(cursor.fetchall())
-
-    @staticmethod
     def _set_properties(cursor, properties):
         # Delete properties whose values are `None`.
         sql = 'DELETE FROM property WHERE key=?'

@@ -737,25 +737,6 @@ class TestGetAndSetProperties(unittest.TestCase):
         self.addCleanup(self.connection.close)
         self.addCleanup(self.cursor.close)
 
-    def test_get_properties(self):
-        self.cursor.execute('''
-            INSERT INTO property
-            VALUES
-                ('a', '{"x": 1, "y": 2}'),
-                ('b', '"xyz"'),
-                ('c', '0.1875')
-        ''')
-
-        keys = ['a', 'b', 'c']
-        properties = self.dal._get_properties(self.cursor, keys)  # <- Method under test.
-
-        expected = {
-            'a': {'x': 1, 'y': 2},
-            'b': 'xyz',
-            'c': 0.1875,
-        }
-        self.assertEqual(properties, expected)
-
     def run_set_test(self, func):
         properties = {
             'x': {'a': 1, 'b': 2},
