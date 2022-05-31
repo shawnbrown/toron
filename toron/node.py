@@ -101,37 +101,36 @@ class Node(object):
 
         **Understanding Discrete Categories**
 
-        Datasets are used to model some external domain that we want
-        to understand. Column values in the dataset refer to entities
-        in the domain. For example, a dataset with the columns "state",
+        A dataset is used to model some external domain that we want
+        to understand. For example, a dataset with the fields "state",
         "county", and "mcd" (Minor Civil Division) can be used to model
-        states, counties, and towns in the United States.
+        states, counties, and towns in the United States. Labels in the
+        dataset refer to entities in the domain.
 
         A category is discrete if its values each contain enough
         information to identify single entities.
 
         In our example, "state" is a discrete category because--for
-        any valid value--there exists a single entity being referred
-        to. For instance, every time we see "California" in the "state"
-        column, we know that the record refers to the state of
-        California in the United States. There are not multiple
-        Californias, so this value alone contains enough information
-        to identify a single entity.
+        any valid label--there exists a single entity being referred
+        to. For instance, every time we see the state label
+        "California", we know that the record refers to the state
+        of California in the United States. There are not multiple
+        states named California, so this value alone contains enough
+        information to identify a single entity.
 
-        On the other hand, "county" is non-discrete. If we only have
-        the county value "Plymouth", we can't know if this record
-        refers to the Plymouth County in Iowa or the Plymouth County
-        in Massachusetts. To define a discrete category for counties,
-        we need to use the combination of "state" and "county"
-        together.
+        On the other hand, "county" is a non-discrete category. The
+        label "Plymouth" matches two different counties--one in Iowa
+        and another in Massachusetts. To define a discrete category
+        for counties, we need to use the combination of state and
+        county labels together.
 
         It is important to clarify that a category's discreteness is
-        not determined by the uniqueness of its values. Our example
+        not determined by the uniqueness of its labels. Our example
         dataset would contain multiple records for which the state
-        value is "California" so the values are not unique despite the
+        label is "California" so the labels are not unique despite the
         category being discrete.
 
-        Even when a column's values *are* unique, we cannot know for
+        Even when a field's labels *are* unique, we cannot know for
         sure if it represents a discrete category. A category's
         discreteness is a property of the external domain being
         modeled, not a property that can be reliably derived from the
