@@ -2,6 +2,8 @@
 
 import unittest
 
+from .common import get_column_names
+
 from toron.node import Node
 from toron._exceptions import ToronWarning
 
@@ -73,6 +75,45 @@ class TestNodeMinimizeDiscreteCategories(unittest.TestCase):
         base_c = [{'A', 'B', 'C', 'D'}]
         result = Node._minimize_discrete_categories(base_a, base_b, base_c)
         self.assertEqual(result, [{'A'}, {'D'}, {'A', 'B'}, {'B', 'C'}])
+
+
+class TestNodeAddColumns(unittest.TestCase):
+    def setUp(self):
+        self.node = Node('mynode.toron', mode='memory')
+        self.dal = self.node._dal
+        self.cursor = self.dal._get_connection().cursor()
+
+    def test_add_columns(self):
+        self.node.add_columns(['A', 'B', 'C'])
+
+        columns = get_column_names(self.cursor, 'element')
+        self.assertEqual(columns, ['element_id', 'A', 'B', 'C'])
+
+        self.cursor.execute('SELECT A, B, C FROM main.structure')
+        actual = self.cursor.fetchall()
+        trivial_topology = [(0, 0, 0), (1, 1, 1)]
+        self.assertEqual(actual, trivial_topology)
+
+    def test_add_columns_in_two_parts(self):
+        self.node.add_columns(['A', 'B'])  # <- Method under test.
+
+        columns = get_column_names(self.cursor, 'element')
+        self.assertEqual(columns, ['element_id', 'A', 'B'])
+
+        self.cursor.execute('SELECT A, B FROM main.structure')
+        actual = self.cursor.fetchall()
+        trivial_topology = [(0, 0), (1, 1)]
+        self.assertEqual(actual, trivial_topology)
+
+        self.node.add_columns(['C', 'D'])  # <- Method under test.
+
+        columns = get_column_names(self.cursor, 'element')
+        self.assertEqual(columns, ['element_id', 'A', 'B', 'C', 'D'])
+
+        self.cursor.execute('SELECT A, B, C, D FROM main.structure')
+        actual = self.cursor.fetchall()
+        trivial_topology = [(0, 0, 0, 0), (1, 1, 1, 1)]
+        self.assertEqual(actual, trivial_topology)
 
 
 class TestNodeAddDiscreteCategories(unittest.TestCase):

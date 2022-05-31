@@ -382,6 +382,9 @@ class DataAccessLayer(object):
                     self._set_data_property(cur, key, [list(cat) for cat in value])
                 elif key == 'structure':
                     self._set_data_structure(cur, value)
+                elif key == 'add_columns':
+                    for stmnt in self._add_columns_make_sql(cur, value):
+                        cur.execute(stmnt)
                 else:
                     msg = f"can't set value for {key!r}"
                     raise ToronError(msg)

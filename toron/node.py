@@ -20,7 +20,18 @@ class Node(object):
         return self._dal.mode
 
     def add_columns(self, columns):
-        self._dal.add_columns(columns)
+        data = self._dal.get_data(['discrete_categories', 'column_names'])
+
+        minimized = self._minimize_discrete_categories(
+            data['discrete_categories'],
+            [set(columns).union(data['column_names'])],
+        )
+        structure = self._make_structure(minimized)
+
+        self._dal.set_data({
+            'add_columns': columns,
+            'structure': structure,
+        })
 
     def add_elements(self, iterable, columns=None):
         self._dal.add_elements(iterable, columns)
