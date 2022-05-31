@@ -79,6 +79,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
     def setUp(self):
         self.node = Node('mynode.toron', mode='memory')
         self.dal = self.node._dal
+        self.cursor = self.dal._get_connection().cursor()
 
     def test_add_categories_when_none_exist(self):
         self.dal.add_columns(['A', 'B', 'C'])
@@ -94,6 +95,12 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
             msg='should match given categories',
         )
 
+        self.cursor.execute('SELECT A, B, C FROM main.structure')
+        actual = self.cursor.fetchall()
+        expected = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1),
+                    (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)]
+        self.assertEqual(actual, expected)
+
     def test_add_to_existing_categories(self):
         columns = ['A', 'B', 'C']
         categories = [{'A'}, {'A', 'B'}]
@@ -108,6 +115,11 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
             data['discrete_categories'],
             [{'A'}, {'B'}, {'A', 'B', 'C'}],
         )
+
+        self.cursor.execute('SELECT A, B, C FROM main.structure')
+        actual = self.cursor.fetchall()
+        expected = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)]
+        self.assertEqual(actual, expected)
 
     def test_warning_for_omitted(self):
         columns = ['A', 'B', 'C']
@@ -125,4 +137,10 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
             data['discrete_categories'],
             [{'A'}, {'B'}, {'A', 'C'}],
         )
+
+        self.cursor.execute('SELECT A, B, C FROM main.structure')
+        actual = self.cursor.fetchall()
+        expected = [(0, 0, 0), (1, 0, 0), (0, 1, 0),
+                    (1, 0, 1), (1, 1, 0), (1, 1, 1)]
+        self.assertEqual(actual, expected)
 
