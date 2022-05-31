@@ -123,7 +123,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.cursor = self.dal._get_connection().cursor()
 
     def test_add_categories_when_none_exist(self):
-        self.dal.add_columns(['A', 'B', 'C'])
+        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
         self.dal.set_data({'discrete_categories': []})  # <- Erase any existing categories.
 
         categories = [{'A'}, {'B'}, {'C'}]
@@ -146,7 +146,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         columns = ['A', 'B', 'C']
         categories = [{'A'}, {'A', 'B'}]
         structure = [set(), {'A'}, {'B', 'A'}]
-        self.dal.add_columns(columns)
+        self.dal.set_data({'add_columns': columns})
         self.dal.set_data({'discrete_categories': categories})
 
         self.node.add_discrete_categories([{'B'}, {'A', 'B', 'C'}])  # <- Method under test.
@@ -166,7 +166,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         columns = ['A', 'B', 'C']
         categories = [{'A'}, {'B'}, {'A', 'B', 'C'}]
         structure = [set(), {'A'}, {'B'}, {'A', 'B'}, {'A', 'B', 'C'}]
-        self.dal.add_columns(columns)
+        self.dal.set_data({'add_columns': columns})
         self.dal.set_data({'discrete_categories': categories})
 
         regex = "omitting categories already covered: {('A', 'B'|'B', 'A')}"
@@ -193,7 +193,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         where the only open sets are the empty set (all zeros) and the
         entire space (all ones).
         """
-        self.dal.add_columns(['A', 'B', 'C'])
+        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
 
         self.node.add_discrete_categories([])  # <- Method under test.
 

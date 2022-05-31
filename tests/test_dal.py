@@ -204,7 +204,7 @@ class TestAddColumns(unittest.TestCase):
     def test_add_columns(self):
         path = 'mynode.toron'
         dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
+        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         con = dal._connection
 
@@ -221,7 +221,7 @@ class TestAddColumns(unittest.TestCase):
 class TestRenameColumnsApplyMapper(unittest.TestCase):
     def setUp(self):
         self.dal = DataAccessLayer('mynode.toron', mode='memory')
-        self.dal.add_columns(['state', 'county', 'town'])
+        self.dal.set_data({'add_columns': ['state', 'county', 'town']})
         self.con = self.dal._connection
         self.cur = self.con.cursor()
         self.addCleanup(self.cur.close)
@@ -303,7 +303,7 @@ class TestRenameColumns(unittest.TestCase):
     def setUp(self):
         self.path = 'mynode.toron'
         self.dal = dal_class(self.path, mode='memory')
-        self.dal.add_columns(['state', 'county', 'town'])
+        self.dal.set_data({'add_columns': ['state', 'county', 'town']})
         self.dal.add_elements([
             ('state', 'county', 'town'),
             ('CA', 'SAN DIEGO', 'CORONADO'),
@@ -392,7 +392,7 @@ class TestAddElements(unittest.TestCase):
     def test_add_elements(self):
         path = 'mynode.toron'
         dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
+        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
             ('IA', 'POLK'),
@@ -413,7 +413,7 @@ class TestAddElements(unittest.TestCase):
     def test_add_elements_no_column_arg(self):
         path = 'mynode.toron'
         dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
+        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
             ('state', 'county'),  # <- Header row.
@@ -436,7 +436,7 @@ class TestAddElements(unittest.TestCase):
         """Omitted columns should get default value ('-')."""
         path = 'mynode.toron'
         dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
+        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include "state" but not "county".
         elements = [
@@ -460,7 +460,7 @@ class TestAddElements(unittest.TestCase):
         """Surplus columns should be filtered-out before loading."""
         path = 'mynode.toron'
         dal = DataAccessLayer(path, mode='memory')
-        dal.add_columns(['state', 'county'])  # <- Add columns.
+        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include unknown columns "region" and "group".
         elements = [
@@ -625,7 +625,7 @@ class TestAddWeights(unittest.TestCase):
     def setUp(self):
         self.path = 'mynode.toron'
         self.dal = dal_class(self.path, mode='memory')
-        self.dal.add_columns(['state', 'county', 'tract'])
+        self.dal.set_data({'add_columns': ['state', 'county', 'tract']})
         self.dal.add_elements([
             ('state', 'county', 'tract'),
             ('12', '001', '000200'),
@@ -807,7 +807,7 @@ class TestGetColumnNames(unittest.TestCase):
         self.dal = dal_class('mynode.toron', mode='memory')
 
     def test_get_names(self):
-        self.dal.add_columns(['A', 'B', 'C'])
+        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
         data = self.dal.get_data(['column_names'])  # <- Method under test.
         self.assertEqual(data, {'column_names': ['A', 'B', 'C']})
 
@@ -843,7 +843,7 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.assertEqual(data, {'discrete_categories': []})
 
     def test_set_categories(self):
-        self.dal.add_columns(['A', 'B', 'C'])
+        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
 
         categories = [{'A'}, {'B'}, {'C'}]
         self.dal.set_data({'discrete_categories': categories})  # <- Method under test.
@@ -853,7 +853,7 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.assertEqual(result, [['A'], ['B'], ['C']])
 
     def test_get_and_set_categories(self):
-        self.dal.add_columns(['A', 'B', 'C'])
+        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
 
         categories = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
 
@@ -899,7 +899,7 @@ class TestSetStructure(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def test_insert_structure(self):
-        self.dal.add_columns(['state', 'county', 'town'])
+        self.dal.set_data({'add_columns': ['state', 'county', 'town']})
         structure = [set(),
                      {'state'},
                      {'state', 'county'},
@@ -916,7 +916,7 @@ class TestSetStructure(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_replace_existing(self):
-        self.dal.add_columns(['A', 'B', 'C'])
+        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
         structure = [set(), {'A', 'B'}, {'A', 'B', 'C'}]
         DataAccessLayer._set_data_structure(self.cursor, structure)
 
