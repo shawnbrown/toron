@@ -311,7 +311,7 @@ class DataAccessLayer(object):
             self._add_weights_set_is_complete(cur, weight_id)
 
     @staticmethod
-    def _get_property(cursor, key):
+    def _get_data_property(cursor, key):
         sql = 'SELECT value FROM main.property WHERE key=?'
         cursor.execute(sql, (key,))
         result = cursor.fetchone()
@@ -326,14 +326,14 @@ class DataAccessLayer(object):
                     names = [row[1] for row in cur.fetchall()]
                     data[key] = names[1:]  # Slice-off element_id.
                 elif key == 'discrete_categories':
-                    categories = self._get_property(cur, key) or []
+                    categories = self._get_data_property(cur, key) or []
                     data[key] = [set(x) for x in categories]
                 else:
-                    data[key] = self._get_property(cur, key)
+                    data[key] = self._get_data_property(cur, key)
         return data
 
     @staticmethod
-    def _set_property(cursor, key, value):
+    def _set_data_property(cursor, key, value):
         if value is None:
             # Delete property when value is `None`.
             sql = 'DELETE FROM property WHERE key=?'
@@ -350,7 +350,7 @@ class DataAccessLayer(object):
         cursor.execute(sql, parameters)
 
     @classmethod
-    def _set_structure(cls, cursor, structure):
+    def _set_data_structure(cls, cursor, structure):
         """Populates 'structure' table with bitmask made from *structure*."""
         cursor.execute('DELETE FROM structure')  # Delete all table records.
         if not structure:
@@ -379,9 +379,9 @@ class DataAccessLayer(object):
         with self._transaction() as cur:
             for key, value in items:
                 if key == 'discrete_categories':
-                    self._set_property(cur, key, [list(cat) for cat in value])
+                    self._set_data_property(cur, key, [list(cat) for cat in value])
                 elif key == 'structure':
-                    self._set_structure(cur, value)
+                    self._set_data_structure(cur, value)
                 else:
                     msg = f"can't set value for {key!r}"
                     raise ToronError(msg)
@@ -485,7 +485,7 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
     For full documentation, see DataAccessLayer.
     """
     @staticmethod
-    def _set_property(cursor, key, value):
+    def _set_data_property(cursor, key, value):
         if value is not None:
             sql = 'INSERT OR REPLACE INTO property(key, value) VALUES (?, ?)'
             parameters = (key, _dumps(value, sort_keys=True))

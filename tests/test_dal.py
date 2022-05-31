@@ -729,7 +729,7 @@ class TestAddWeights(unittest.TestCase):
         raise NotImplementedError
 
 
-class TestGetAndSetProperty(unittest.TestCase):
+class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
 
     def setUp(self):
@@ -751,29 +751,29 @@ class TestGetAndSetProperty(unittest.TestCase):
 
     def test_get_property_parse_json(self):
         """JSON values should be parsed into objects."""
-        value = self.dal._get_property(self.cursor, 'a')  # <- Method under test.
+        value = self.dal._get_data_property(self.cursor, 'a')  # <- Method under test.
         self.assertEqual(value, {'x': 1, 'y': 2})
 
-        value = self.dal._get_property(self.cursor, 'b')  # <- Method under test.
+        value = self.dal._get_data_property(self.cursor, 'b')  # <- Method under test.
         self.assertEqual(value, 'xyz')
 
-        value = self.dal._get_property(self.cursor, 'c')  # <- Method under test.
+        value = self.dal._get_data_property(self.cursor, 'c')  # <- Method under test.
         self.assertEqual(value, 0.1875)
 
     def test_get_property_missing_key(self):
         """Value should be None when key does not exist."""
-        value = self.dal._get_property(self.cursor, 'd')  # <- Method under test.
+        value = self.dal._get_data_property(self.cursor, 'd')  # <- Method under test.
         self.assertIsNone(value)
 
     def test_set_property(self):
         """Objects should be serialized as JSON formatted strings."""
-        self.dal._set_property(self.cursor, 'e', [1, 'two', 3.1875])  # <- Method under test.
+        self.dal._set_data_property(self.cursor, 'e', [1, 'two', 3.1875])  # <- Method under test.
         self.cursor.execute("SELECT value FROM property WHERE key='e'")
         self.assertEqual(self.cursor.fetchall(), [([1, 'two', 3.1875],)])
 
     def test_set_property_update_existing(self):
         """Objects that already exist should get updated."""
-        self.dal._set_property(self.cursor, 'a', [1, 2])  # <- Method under test.
+        self.dal._set_data_property(self.cursor, 'a', [1, 2])  # <- Method under test.
 
         self.cursor.execute("SELECT value FROM property WHERE key='a'")
         self.assertEqual(self.cursor.fetchall(), [([1, 2],)])
@@ -782,30 +782,30 @@ class TestGetAndSetProperty(unittest.TestCase):
         """When value is None, record should be deleted."""
         get_results_sql = "SELECT * FROM property WHERE key IN ('a', 'b', 'c')"
 
-        self.dal._set_property(self.cursor, 'a', None)  # <- Method under test.
+        self.dal._set_data_property(self.cursor, 'a', None)  # <- Method under test.
 
         self.cursor.execute(get_results_sql)
         self.assertEqual(self.cursor.fetchall(), [('b', 'xyz'), ('c', 0.1875)])
 
-        self.dal._set_property(self.cursor, 'b', None)  # <- Method under test.
+        self.dal._set_data_property(self.cursor, 'b', None)  # <- Method under test.
 
         self.cursor.execute(get_results_sql)
         self.assertEqual(self.cursor.fetchall(), [('c', 0.1875),])
 
     def test_set_property_key_is_new_value_is_none(self):
         """Should not insert record when value is None."""
-        self.dal._set_property(self.cursor, 'f', None)  # <- Method under test.
+        self.dal._set_data_property(self.cursor, 'f', None)  # <- Method under test.
 
         self.cursor.execute("SELECT * FROM property WHERE key='f'")
         self.assertEqual(self.cursor.fetchall(), [])
 
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 24, 0), 'requires 3.24.0 or newer')
-class TestGetAndSetPropertyLatest(TestGetAndSetProperty):
+class TestGetAndSetDataPropertyLatest(TestGetAndSetDataProperty):
     class_under_test = DataAccessLayer  # Use latest DAL class.
 
 
-class TestGetAndSetPropertyPre24(TestGetAndSetProperty):
+class TestGetAndSetDataPropertyPre24(TestGetAndSetDataProperty):
     class_under_test = DataAccessLayerPre24  # Use legacy DAL class.
 
 
@@ -912,7 +912,7 @@ class TestSetStructure(unittest.TestCase):
                      {'state', 'county'},
                      {'state', 'county', 'town'}]
 
-        DataAccessLayer._set_structure(self.cursor, structure)  # <- Method under test.
+        DataAccessLayer._set_data_structure(self.cursor, structure)  # <- Method under test.
 
         self.cursor.execute('SELECT state, county, town FROM main.structure')
         actual = self.cursor.fetchall()
@@ -925,10 +925,10 @@ class TestSetStructure(unittest.TestCase):
     def test_replace_existing(self):
         self.dal.add_columns(['A', 'B', 'C'])
         structure = [set(), {'A', 'B'}, {'A', 'B', 'C'}]
-        DataAccessLayer._set_structure(self.cursor, structure)
+        DataAccessLayer._set_data_structure(self.cursor, structure)
 
         structure = [set(), {'A'}, {'B'}, {'A', 'B'}, {'A', 'B', 'C'}]
-        DataAccessLayer._set_structure(self.cursor, structure)  # <- Method under test.
+        DataAccessLayer._set_data_structure(self.cursor, structure)  # <- Method under test.
 
         self.cursor.execute('SELECT A, B, C FROM main.structure')
         actual = self.cursor.fetchall()
