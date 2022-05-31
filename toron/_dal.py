@@ -311,23 +311,6 @@ class DataAccessLayer(object):
             self._add_weights_set_is_complete(cur, weight_id)
 
     @staticmethod
-    def _set_properties(cursor, properties):
-        # Delete properties whose values are `None`.
-        sql = 'DELETE FROM property WHERE key=?'
-        parameters = [k for k, v in properties.items() if v is None]
-        cursor.executemany(sql, parameters)
-
-        # Insert or update remaining properties.
-        sql = '''
-            INSERT INTO property(key, value) VALUES(?, ?)
-              ON CONFLICT(key) DO UPDATE SET value=?
-        '''
-        filtered = ((k, v) for k, v in properties.items() if v is not None)
-        formatted = ((k, _dumps(v, sort_keys=True)) for k, v in filtered)
-        parameters = ((k, v, v) for k, v in formatted)
-        cursor.executemany(sql, parameters)
-
-    @staticmethod
     def _get_property(cursor, key):
         sql = 'SELECT value FROM main.property WHERE key=?'
         cursor.execute(sql, (key,))
@@ -501,19 +484,6 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
 
     For full documentation, see DataAccessLayer.
     """
-    @staticmethod
-    def _set_properties(cursor, properties):
-        # Delete properties whose values are `None`.
-        sql = 'DELETE FROM property WHERE key=?'
-        parameters = [k for k, v in properties.items() if v is None]
-        cursor.executemany(sql, parameters)
-
-        # Insert or update remaining properties.
-        sql = 'INSERT OR REPLACE INTO property(key, value) VALUES (?, ?)'
-        filtered = ((k, v) for k, v in properties.items() if v is not None)
-        parameters = ((k, _dumps(v, sort_keys=True)) for k, v in filtered)
-        cursor.executemany(sql, parameters)
-
     @staticmethod
     def _set_property(cursor, key, value):
         if value is not None:
