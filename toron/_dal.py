@@ -329,11 +329,7 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _set_data_property(cursor, key, value):
-        if value is None:
-            # Delete property when value is `None`.
-            sql = 'DELETE FROM property WHERE key=?'
-            parameters = (key,)
-        else:
+        if value is not None:
             # Insert or update property with JSON string.
             sql = '''
                 INSERT INTO property(key, value) VALUES(?, ?)
@@ -341,6 +337,10 @@ class DataAccessLayer(object):
             '''
             json_value = _dumps(value, sort_keys=True)
             parameters = (key, json_value, json_value)
+        else:
+            # Delete property when value is `None`.
+            sql = 'DELETE FROM property WHERE key=?'
+            parameters = (key,)
 
         cursor.execute(sql, parameters)
 
