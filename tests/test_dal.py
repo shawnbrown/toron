@@ -6,6 +6,7 @@ import sqlite3
 import unittest
 from textwrap import dedent
 
+from .common import get_column_names
 from .common import TempDirTestCase
 
 from toron._node_schema import connect
@@ -200,11 +201,6 @@ class TestAddColumnsMakeSql(unittest.TestCase):
 
 
 class TestAddColumns(unittest.TestCase):
-    @staticmethod
-    def get_column_names(connection_or_cursor, table):
-        cur = connection_or_cursor.execute(f'PRAGMA table_info({table})')
-        return [row[1] for row in cur.fetchall()]
-
     def test_add_columns(self):
         path = 'mynode.toron'
         dal = DataAccessLayer(path, mode='memory')
@@ -212,13 +208,13 @@ class TestAddColumns(unittest.TestCase):
 
         con = dal._connection
 
-        columns = self.get_column_names(con, 'element')
+        columns = get_column_names(con, 'element')
         self.assertEqual(columns, ['element_id', 'state', 'county'])
 
-        columns = self.get_column_names(con, 'location')
+        columns = get_column_names(con, 'location')
         self.assertEqual(columns, ['_location_id', 'state', 'county'])
 
-        columns = self.get_column_names(con, 'structure')
+        columns = get_column_names(con, 'structure')
         self.assertEqual(columns, ['_structure_id', 'state', 'county'])
 
 
@@ -322,11 +318,8 @@ class TestRenameColumns(unittest.TestCase):
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
-    def get_column_names(self, table):
-        return self.dal._get_column_names(self.cur, table)
-
     def run_rename_test(self, rename_columns_func):
-        columns_before_rename = self.get_column_names('element')
+        columns_before_rename = get_column_names(self.cur, 'element')
         self.assertEqual(columns_before_rename, ['element_id', 'state', 'county', 'town'])
 
         data_before_rename = \
@@ -335,7 +328,7 @@ class TestRenameColumns(unittest.TestCase):
         mapper = {'state': 'stusab', 'town': 'place'}
         rename_columns_func(self.dal, mapper)  # <- Rename columns!
 
-        columns_after_rename = self.get_column_names('element')
+        columns_after_rename = get_column_names(self.cur, 'element')
         self.assertEqual(columns_after_rename, ['element_id', 'stusab', 'county', 'place'])
 
         data_after_rename = \

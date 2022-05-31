@@ -7,6 +7,12 @@ import tempfile
 from . import _unittest as unittest
 
 
+def get_column_names(connection_or_cursor, table):
+    """Return list of column names from given database table."""
+    cur = connection_or_cursor.execute(f'PRAGMA table_info({table})')
+    return [row[1] for row in cur.fetchall()]
+
+
 class TempDirTestCase(unittest.TestCase):
     # A TestCase to create a temporary directory, then chdir() into
     # it for testing. After testing, the original working directory
