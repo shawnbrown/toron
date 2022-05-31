@@ -202,3 +202,36 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         trivial_topology = [(0, 0, 0), (1, 1, 1)]
         self.assertEqual(actual, trivial_topology)
 
+
+class TestNodeRemoveDiscreteCategories(unittest.TestCase):
+    def setUp(self):
+        self.node = Node('mynode.toron', mode='memory')
+        self.dal = self.node._dal
+        self.cursor = self.dal._get_connection().cursor()
+
+    def test_remove_categories(self):
+        self.node.add_columns(['A', 'B', 'C'])
+        categories = [{'A'}, {'B'}, {'C'}]
+        self.node.add_discrete_categories(categories)
+
+        self.node.remove_discrete_categories([{'C'}])  # <- Method under test.
+
+        data = self.dal.get_data(['discrete_categories'])
+        self.assertEqual(
+            data['discrete_categories'],
+            [{'A'}, {'B'}, {'A', 'B', 'C'}],
+        )
+
+        self.cursor.execute('SELECT A, B, C FROM main.structure')
+        actual = self.cursor.fetchall()
+        structure = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)]
+        self.assertEqual(actual, structure)
+
+    @unittest.skip('not yet implemented')
+    def test_mandatory_category_warning(self):
+        raise NotImplementedError
+
+    @unittest.skip('not yet implemented')
+    def test_no_match_warning(self):
+        raise NotImplementedError
+

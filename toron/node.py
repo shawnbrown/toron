@@ -156,3 +156,42 @@ class Node(object):
             'structure': structure,
         })
 
+    def remove_discrete_categories(self, discrete_categories):
+        """Remove discrete categories from the node's internal
+        structure.
+
+        .. code-block::
+
+            >>> node = Node(...)
+            >>> node.remove_discrete_categories([{'county'}, {'state', 'mcd'}])
+        """
+        data = self._dal.get_data(['discrete_categories', 'column_names'])
+        current_cats = data['discrete_categories']
+        mandatory_cat = set(data['column_names'])
+
+        if mandatory_cat in discrete_categories:
+            import warnings
+            formatted = ', '.join(repr(x) for x in data['column_names'])
+            msg = f'cannot remove whole space: {{{mandatory_cat}}}'
+            warnings.warn(msg, category=ToronWarning, stacklevel=2)
+            discrete_categories.remove(mandatory_cat)  # <- Remove and continue.
+
+        no_match = [x for x in discrete_categories if x not in current_cats]
+        if no_match:
+            import warnings
+            formatted = ', '.join(repr(x) for x in no_match)
+            msg = f'no match for categories, cannot remove: {formatted}'
+            warnings.warn(msg, category=ToronWarning, stacklevel=2)
+
+        remaining_cats = [x for x in current_cats if x not in discrete_categories]
+
+        minimized = self._minimize_discrete_categories(
+            remaining_cats,
+            [mandatory_cat],
+        )
+        structure = self._make_structure(minimized)
+        self._dal.set_data({
+            'discrete_categories': minimized,
+            'structure': structure,
+        })
+
