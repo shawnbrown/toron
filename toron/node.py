@@ -140,5 +140,8 @@ class Node(object):
             warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
         structure = self._make_structure(minimized)
-        self._dal.set_discrete_categories(minimized, structure)
+        self._dal.set_data({
+            'discrete_categories': minimized,
+            'structure': structure,
+        })
 

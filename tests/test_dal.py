@@ -976,7 +976,7 @@ class TestGetProperties(unittest.TestCase):
         self.assertEqual(data, {'c': 0.1875, 'd': None})
 
 
-class TestSetDiscreteCategoriesStructure(unittest.TestCase):
+class TestSetStructure(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class('mynode.toron', mode='memory')
         self.connection = self.dal._get_connection()
@@ -991,7 +991,7 @@ class TestSetDiscreteCategoriesStructure(unittest.TestCase):
                      {'state', 'county'},
                      {'state', 'county', 'town'}]
 
-        DataAccessLayer._set_discrete_categories_structure(self.cursor, structure)  # <- Method under test.
+        DataAccessLayer._set_structure(self.cursor, structure)  # <- Method under test.
 
         self.cursor.execute('SELECT state, county, town FROM main.structure')
         actual = self.cursor.fetchall()
@@ -1004,10 +1004,10 @@ class TestSetDiscreteCategoriesStructure(unittest.TestCase):
     def test_replace_existing(self):
         self.dal.add_columns(['A', 'B', 'C'])
         structure = [set(), {'A', 'B'}, {'A', 'B', 'C'}]
-        DataAccessLayer._set_discrete_categories_structure(self.cursor, structure)
+        DataAccessLayer._set_structure(self.cursor, structure)
 
         structure = [set(), {'A'}, {'B'}, {'A', 'B'}, {'A', 'B', 'C'}]
-        DataAccessLayer._set_discrete_categories_structure(self.cursor, structure)  # <- Method under test.
+        DataAccessLayer._set_structure(self.cursor, structure)  # <- Method under test.
 
         self.cursor.execute('SELECT A, B, C FROM main.structure')
         actual = self.cursor.fetchall()
