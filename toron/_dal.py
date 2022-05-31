@@ -366,6 +366,20 @@ class DataAccessLayer(object):
                     data[key] = self._get_property(cur, key)
         return data
 
+    def set_data(self, mapping_or_items):
+        if isinstance(mapping_or_items, Mapping):
+            items = mapping_or_items.items()
+        else:
+            items = mapping_or_items
+
+        with self._transaction() as cur:
+            for key, value in items:
+                if key == 'discrete_categories':
+                    self._set_property(cur, key, [list(cat) for cat in value])
+                else:
+                    msg = f"can't set value for {key!r}"
+                    raise ToronError(msg)
+
     @classmethod
     def _set_discrete_categories_structure(cls, cursor, structure):
         """Populates 'structure' table with bitmask made from *structure*."""

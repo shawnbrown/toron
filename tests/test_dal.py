@@ -903,7 +903,7 @@ class TestGetColumnNames(unittest.TestCase):
         self.assertEqual(data, {'column_names': []})
 
 
-class TestGetDiscreteCategories(unittest.TestCase):
+class TestGetAndSetDiscreteCategories(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class('mynode.toron', mode='memory')
 
@@ -922,11 +922,30 @@ class TestGetDiscreteCategories(unittest.TestCase):
         expected = {'discrete_categories': [{"A"}, {"A", "B"}, {"A", "B", "C"}]}
         self.assertEqual(data, expected, msg='should get a list of sets')
 
-    def test_no_categories_defined(self):
+    def test_get_categories_none_defined(self):
         """If no discrete categories, should return empty list."""
         self.cursor.execute("DELETE FROM property WHERE key='discrete_categories'")
         data = self.dal.get_data(['discrete_categories'])  # <- Method under test.
         self.assertEqual(data, {'discrete_categories': []})
+
+    def test_set_categories(self):
+        self.dal.add_columns(['A', 'B', 'C'])
+
+        categories = [{'A'}, {'B'}, {'C'}]
+        self.dal.set_data({'discrete_categories': categories})  # <- Method under test.
+
+        self.cursor.execute("SELECT value FROM property WHERE key='discrete_categories'")
+        result = self.cursor.fetchone()[0]
+        self.assertEqual(result, [['A'], ['B'], ['C']])
+
+    def test_get_and_set_categories(self):
+        self.dal.add_columns(['A', 'B', 'C'])
+
+        categories = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
+
+        self.dal.set_data({'discrete_categories': categories})  # <- Set!!!
+        data = self.dal.get_data(['discrete_categories'])  # <- Get!!!
+        self.assertEqual(data['discrete_categories'], categories)
 
 
 class TestGetProperties(unittest.TestCase):
@@ -998,38 +1017,4 @@ class TestSetDiscreteCategoriesStructure(unittest.TestCase):
                     (1, 1, 0),  # <- {'A', 'B'}
                     (1, 1, 1)]  # <- {'A', 'B', 'C'}
         self.assertEqual(actual, expected)
-
-
-class TestGetAndSetDiscreteCategories(unittest.TestCase):
-    def setUp(self):
-        self.dal = dal_class('mynode.toron', mode='memory')
-        self.connection = self.dal._get_connection()
-        self.cursor = self.connection.cursor()
-        self.addCleanup(self.connection.close)
-        self.addCleanup(self.cursor.close)
-
-    def test_set_discrete_categories(self):
-        self.dal.add_columns(['A', 'B', 'C'])
-
-        categories = [{'A'}, {'B'}, {'C'}]
-        structure = [set(),
-                     {'A'}, {'B'}, {'C'},
-                     {'A', 'B'}, {'A', 'C'}, {'B', 'C'},
-                     {'A', 'B', 'C'}]
-
-        self.dal.set_discrete_categories(categories, structure)  # <- Method under test.
-
-        self.cursor.execute("SELECT value FROM property WHERE key='discrete_categories'")
-        result = self.cursor.fetchone()[0]
-        self.assertEqual(result, [['A'], ['B'], ['C']])
-
-    def test_get_and_set_categories(self):
-        self.dal.add_columns(['A', 'B', 'C'])
-
-        categories = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
-        structure = [set(), {'A'}, {'A', 'B'}, {'A', 'B', 'C'}]
-
-        self.dal.set_discrete_categories(categories, structure)  # <- Set!!!
-        data = self.dal.get_data(['discrete_categories'])  # <- Get!!!
-        self.assertEqual(data['discrete_categories'], categories)
 
