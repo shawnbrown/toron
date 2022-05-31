@@ -144,3 +144,20 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
                     (1, 0, 1), (1, 1, 0), (1, 1, 1)]
         self.assertEqual(actual, expected)
 
+    def test_structure_without_discrete_categories(self):
+        """When no discrete categories are defined, the 'structure'
+        table should contain an "indiscrete topology".
+
+        An indiscrete topology (also called a trivial topology) is one
+        where the only open sets are the empty set (all zeros) and the
+        entire space (all ones).
+        """
+        self.dal.add_columns(['A', 'B', 'C'])
+
+        self.node.add_discrete_categories([])  # <- Method under test.
+
+        self.cursor.execute('SELECT A, B, C FROM main.structure')
+        actual = self.cursor.fetchall()
+        trivial_topology = [(0, 0, 0), (1, 1, 1)]
+        self.assertEqual(actual, trivial_topology)
+

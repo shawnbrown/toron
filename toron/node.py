@@ -126,10 +126,11 @@ class Node(object):
         modeled, not a property that can be reliably derived from the
         dataset itself.
         """
-        data = self._dal.get_data(['discrete_categories'])
+        data = self._dal.get_data(['discrete_categories', 'column_names'])
         minimized = self._minimize_discrete_categories(
             data['discrete_categories'],
             discrete_categories,
+            [set(data['column_names'])],
         )
 
         omitted = [cat for cat in discrete_categories if (cat not in minimized)]
