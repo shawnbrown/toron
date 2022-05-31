@@ -317,6 +317,21 @@ class DataAccessLayer(object):
         result = cursor.fetchone()
         return result[0] if result else None
 
+    def get_data(self, keys):
+        data = {}
+        with self._transaction() as cur:
+            for key in keys:
+                if key == 'column_names':
+                    cur.execute("PRAGMA table_info('element')")
+                    names = [row[1] for row in cur.fetchall()]
+                    data[key] = names[1:]  # Slice-off element_id.
+                elif key == 'discrete_categories':
+                    categories = self._get_property(cur, key) or []
+                    data[key] = [set(x) for x in categories]
+                else:
+                    data[key] = self._get_property(cur, key)
+        return data
+
     @staticmethod
     def _set_property(cursor, key, value):
         if value is None:
@@ -333,21 +348,6 @@ class DataAccessLayer(object):
             parameters = (key, json_value, json_value)
 
         cursor.execute(sql, parameters)
-
-    def get_data(self, keys):
-        data = {}
-        with self._transaction() as cur:
-            for key in keys:
-                if key == 'column_names':
-                    cur.execute("PRAGMA table_info('element')")
-                    names = [row[1] for row in cur.fetchall()]
-                    data[key] = names[1:]  # Slice-off element_id.
-                elif key == 'discrete_categories':
-                    categories = self._get_property(cur, key) or []
-                    data[key] = [set(x) for x in categories]
-                else:
-                    data[key] = self._get_property(cur, key)
-        return data
 
     @classmethod
     def _set_structure(cls, cursor, structure):
