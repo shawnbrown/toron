@@ -102,12 +102,12 @@ class Node(object):
 
         A dataset is used to model some external domain that we want
         to understand. For example, a dataset with the fields "state",
-        "county", and "mcd" (Minor Civil Division) can be used to model
-        states, counties, and towns in the United States. Labels in the
-        dataset refer to entities in the domain.
+        "county", and "mcd" (minor civil division) can be used to model
+        states, counties, and towns in the United States. Fields in the
+        dataset contain labels that refer to entities in the domain.
 
-        A category is discrete if its values each contain enough
-        information to identify single entities.
+        A category is said to be *discrete* if its values each contain
+        enough information to identify single entities.
 
         In our example, "state" is a discrete category because--for
         any valid label--there exists a single entity being referred
@@ -117,11 +117,12 @@ class Node(object):
         states named California, so this value alone contains enough
         information to identify a single entity.
 
-        On the other hand, "county" is a non-discrete category. The
-        label "Plymouth" matches two different counties--one in Iowa
-        and another in Massachusetts. To define a discrete category
-        for counties, we need to use the combination of state and
-        county labels together.
+        On the other hand, "county" is a non-discrete category. While
+        the label "Plymouth" is valid, it matches two different
+        counties--one in Iowa and another in Massachusetts. This value
+        alone does not identify a single entity. A discrete category
+        for counties, would require a combination of "state" and
+        "county" labels together.
 
         It is important to clarify that a category's discreteness is
         not determined by the uniqueness of its labels. Our example
@@ -130,10 +131,10 @@ class Node(object):
         category being discrete.
 
         Even when a field's labels *are* unique, we cannot know for
-        sure if it represents a discrete category. A category's
-        discreteness is a property of the external domain being
-        modeled, not a property that can be reliably derived from the
-        dataset itself.
+        certain if it represents a discrete category. A category's
+        discreteness is a property of the relationsip between the
+        dataset and the domain it models. It's not a property that
+        can be derived with certainty from the dataset alone.
         """
         data = self._dal.get_data(['discrete_categories', 'column_names'])
         minimized = self._minimize_discrete_categories(
