@@ -50,19 +50,18 @@ class Node(object):
         """Returns a category structure generated from a base of
         discrete categories::
 
-            >>> node._make_structure([{'A'}, {'B'}, {'A', 'C'}])
-            [set(), {'A'}, {'B'}, {'A', 'C'}, {'A', 'B'}, {'A', 'B', 'C'}]
+            >>> node._make_structure([{'A'}, {'B'}, {'B', 'C'}])
+            [set(), {'A'}, {'B'}, {'B', 'C'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
         The generated structure is almost always a topology but that
         is not necessarily the case. There are valid collections of
         discrete categories that do not result in a valid topology::
 
-            >>> node._make_structure([{'A', 'B'}, {'A', 'C'}])
-            [set(), {'A', 'B'}, {'A', 'C'}, {'A', 'B', 'C'}]
+            >>> node._make_structure([{'A', 'B'}, {'B', 'C'}])
+            [set(), {'A', 'B'}, {'B', 'C'}, {'A', 'B', 'C'}]
 
-        The above result is not a valid topology because it does not
-        contain the intersection of {'A', 'B'} and {'A', 'C'}--the set
-        {'A'}.
+        The above result is not a topology because it's missing the
+        intersection of {'A', 'B'} and {'B', 'C'}--the set {'B'}.
         """
         structure = []  # Use list to preserve lexical order of input.
         for length in range(len(discrete_categories) + 1):
