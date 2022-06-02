@@ -174,6 +174,37 @@ class DataAccessLayer(object):
             for stmnt in self._rename_columns_make_sql(names, new_names):
                 cur.execute(stmnt)
 
+    @staticmethod
+    def _remove_columns_make_sql(column_names, names_to_remove):
+        """Return a list of SQL statements for removing label columns."""
+        names_to_remove = [col for col in names_to_remove if col in column_names]
+
+        if not names_to_remove:
+            return []  # <- EXIT!
+
+        sql_stmnts = []
+
+        sql_stmnts.extend([
+            'DROP INDEX IF EXISTS unique_element_index',
+            'DROP INDEX IF EXISTS unique_structure_index',
+        ])
+
+        for col in names_to_remove:
+            sql_stmnts.extend([
+                f'ALTER TABLE main.element DROP COLUMN {col}',
+                f'ALTER TABLE main.location DROP COLUMN {col}',
+                f'ALTER TABLE main.structure DROP COLUMN {col}',
+            ])
+
+        remaining_cols = [col for col in column_names if col not in names_to_remove]
+        remaining_cols = ', '.join(remaining_cols)
+        sql_stmnts.extend([
+            f'CREATE UNIQUE INDEX unique_element_index ON element({remaining_cols})',
+            f'CREATE UNIQUE INDEX unique_structure_index ON structure({remaining_cols})',
+        ])
+
+        return sql_stmnts
+
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):
         """Return a SQL statement adding new element records (for use

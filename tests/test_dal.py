@@ -350,6 +350,51 @@ class TestRenameColumns(unittest.TestCase):
         self.run_rename_test(dal_class.rename_columns)
 
 
+class TestRemoveColumnsMakeSql(unittest.TestCase):
+    def setUp(self):
+        self.column_names = ['"state"', '"county"', '"mcd"', '"place"']
+        self.columns_to_remove = ['"mcd"', '"place"']
+
+    @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
+    def test_native_delete_column_support(self):
+        sql_stmnts = DataAccessLayer._remove_columns_make_sql(self.column_names, self.columns_to_remove)
+        expected = [
+            'DROP INDEX IF EXISTS unique_element_index',
+            'DROP INDEX IF EXISTS unique_structure_index',
+            'ALTER TABLE main.element DROP COLUMN "mcd"',
+            'ALTER TABLE main.location DROP COLUMN "mcd"',
+            'ALTER TABLE main.structure DROP COLUMN "mcd"',
+            'ALTER TABLE main.element DROP COLUMN "place"',
+            'ALTER TABLE main.location DROP COLUMN "place"',
+            'ALTER TABLE main.structure DROP COLUMN "place"',
+            'CREATE UNIQUE INDEX unique_element_index ON element("state", "county")',
+            'CREATE UNIQUE INDEX unique_structure_index ON structure("state", "county")',
+        ]
+        self.assertEqual(sql_stmnts, expected)
+
+    @unittest.expectedFailure
+    def test_pre35_without_native_drop(self):
+        """Check SQL of column removal procedure for legacy SQLite."""
+        sql_stmnts = DataAccessLayerPre35._remove_columns_make_sql(self.column_names, self.columns_to_remove)
+        expected = [
+            'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT DEFAULT \'-\' NOT NULL, "county" TEXT DEFAULT \'-\' NOT NULL)',
+            'INSERT INTO new_element SELECT element_id, "state", "county" FROM element',
+            'DROP TABLE element',
+            'ALTER TABLE new_element RENAME TO element',
+            'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, "state" TEXT, "county" TEXT)',
+            'INSERT INTO new_location SELECT _location_id, "state", "county" FROM location',
+            'DROP TABLE location',
+            'ALTER TABLE new_location RENAME TO location',
+            'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, "state" INTEGER CHECK ("state" IN (0, 1)) DEFAULT 0, "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0)',
+            'INSERT INTO new_structure SELECT _structure_id, "state", "county" FROM structure',
+            'DROP TABLE structure',
+            'ALTER TABLE new_structure RENAME TO structure',
+            'CREATE UNIQUE INDEX unique_element_index ON element("state", "county")',
+            'CREATE UNIQUE INDEX unique_structure_index ON structure("state", "county")',
+        ]
+        self.assertEqual(sql_stmnts, expected)
+
+
 class TestAddElementsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
