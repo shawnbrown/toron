@@ -109,7 +109,7 @@ _schema_script = """
         proportion REAL CHECK (0.0 < proportion AND proportion <= 1.0) NOT NULL,
         mapping_level INTEGER NOT NULL,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id),
-        FOREIGN KEY(element_id) REFERENCES element(element_id),
+        FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (edge_id, other_element_id, element_id)
     );
 
@@ -150,7 +150,7 @@ _schema_script = """
         weight_id INTEGER,
         element_id INTEGER,
         value REAL NOT NULL,
-        FOREIGN KEY(element_id) REFERENCES element(element_id),
+        FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
         FOREIGN KEY(weight_id) REFERENCES weight(weight_id),
         UNIQUE (element_id, weight_id)
     );
