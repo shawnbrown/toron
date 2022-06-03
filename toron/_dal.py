@@ -205,6 +205,17 @@ class DataAccessLayer(object):
 
         return sql_stmnts
 
+    def remove_columns(self, columns):
+        with self._transaction() as cur:
+            column_names = self._get_column_names(cur, 'element')
+            column_names = column_names[1:]  # Slice-off 'element_id'.
+
+            column_names = [self._quote_identifier(col) for col in column_names]
+            names_to_remove = [self._quote_identifier(col) for col in columns]
+
+            for stmnt in self._remove_columns_make_sql(column_names, names_to_remove):
+                cur.execute(stmnt)
+
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):
         """Return a SQL statement adding new element records (for use

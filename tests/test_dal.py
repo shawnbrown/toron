@@ -394,6 +394,54 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
         self.assertEqual(sql_stmnts, expected)
 
 
+class TestRemoveColumns(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class('mynode.toron', mode='memory')
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+        self.dal.set_data({'add_columns': ['state', 'county', 'mcd', 'place']})
+        data = [
+            ('state', 'county', 'mcd', 'place', 'population'),
+            ('AZ', 'Graham', 'Safford', 'Cactus Flats', 1524),
+            ('CA', 'Los Angeles', 'Newhall', 'Val Verde', 2399),
+            ('CA', 'Riverside', 'Corona', 'Coronita', 2639),
+            ('CA', 'San Benito', 'Hollister', 'Ridgemark', 3212),
+            ('IN', 'LaPorte', 'Kankakee', 'Rolling Prairie', 562),
+            ('MO', 'Cass', 'Raymore', 'Belton', 6259),
+            ('OH', 'Franklin', 'Washington', 'Dublin', 40734),
+            ('PA', 'Somerset', 'Somerset', 'Somerset', 6048),
+            ('TX', 'Denton', 'Denton', 'Denton', 102631),
+            ('TX', 'Cass', 'Atlanta', 'Queen City', 1397),
+        ]
+        self.dal.add_elements(data)
+        self.dal.add_weights(data, name='population', type_info={'category': 'population'})
+
+    def test_remove_columns(self):
+        self.dal.remove_columns(['mcd', 'place'])  # <- Method under test.
+
+        actual = self.cur.execute('SELECT * FROM element').fetchall()
+
+        expected = [
+            (1, 'AZ', 'Graham'),
+            (2, 'CA', 'Los Angeles'),
+            (3, 'CA', 'Riverside'),
+            (4, 'CA', 'San Benito'),
+            (5, 'IN', 'LaPorte'),
+            (6, 'MO', 'Cass'),
+            (7, 'OH', 'Franklin'),
+            (8, 'PA', 'Somerset'),
+            (9, 'TX', 'Denton'),
+            (10, 'TX', 'Cass'),
+        ]
+
+        self.assertEqual(actual, expected)
+
+
 class TestAddElementsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
