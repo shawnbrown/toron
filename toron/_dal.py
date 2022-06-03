@@ -205,16 +205,38 @@ class DataAccessLayer(object):
 
         return sql_stmnts
 
+    @classmethod
+    def _remove_columns_execute_sql(cls, cursor, columns):
+        columns = [cls._quote_identifier(col) for col in columns]
+
+        column_names = cls._get_column_names(cursor, 'element')
+        column_names = column_names[1:]  # Slice-off 'element_id'.
+        column_names = [cls._quote_identifier(col) for col in column_names]
+
+        # Check if removing columns would cause a loss of granularity.
+        names_remaining = (col for col in column_names if col not in columns)
+        cursor.execute(f'''
+            SELECT 1
+            FROM main.element
+            GROUP BY {", ".join(names_remaining)}
+            HAVING COUNT(*) > 1
+        ''')
+        if cursor.fetchone() is not None:
+            msg = 'columns are needed to preserve granularity, cannot remove'
+            raise ToronError(msg)
+
+        # Remove columns.
+        names_to_remove = []
+        for col in columns:
+            if (col in column_names) and (col not in names_to_remove):
+                names_to_remove.append(col)
+
+        for stmnt in cls._remove_columns_make_sql(column_names, names_to_remove):
+            cursor.execute(stmnt)
+
     def remove_columns(self, columns):
         with self._transaction() as cur:
-            column_names = self._get_column_names(cur, 'element')
-            column_names = column_names[1:]  # Slice-off 'element_id'.
-
-            column_names = [self._quote_identifier(col) for col in column_names]
-            names_to_remove = [self._quote_identifier(col) for col in columns]
-
-            for stmnt in self._remove_columns_make_sql(column_names, names_to_remove):
-                cur.execute(stmnt)
+            self._remove_columns_execute_sql(cur, columns)
 
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):
@@ -500,14 +522,7 @@ class DataAccessLayerPre35(DataAccessLayer):
             con.execute('PRAGMA foreign_keys=OFF')
             cur = con.cursor()
             with savepoint(cur):
-                column_names = self._get_column_names(cur, 'element')
-                column_names = column_names[1:]  # Slice-off 'element_id'.
-
-                column_names = [self._quote_identifier(col) for col in column_names]
-                names_to_remove = [self._quote_identifier(col) for col in columns]
-
-                for stmnt in self._remove_columns_make_sql(column_names, names_to_remove):
-                    cur.execute(stmnt)
+                self._remove_columns_execute_sql(cur, columns)
 
                 cur.execute('PRAGMA main.foreign_key_check')
                 one_result = cur.fetchone()

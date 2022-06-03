@@ -17,6 +17,7 @@ from toron._dal import DataAccessLayerPre24
 from toron._dal import DataAccessLayerPre25
 from toron._dal import DataAccessLayerPre35
 from toron._dal import dal_class
+from toron._exceptions import ToronError
 
 
 SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
@@ -442,6 +443,11 @@ class TestRemoveColumnsMixin(object):
         ]
 
         self.assertEqual(actual, expected)
+
+    def test_granularity_error(self):
+        regex = 'columns are needed to preserve granularity, cannot remove'
+        with self.assertRaisesRegex(ToronError, regex):
+            self.dal.remove_columns(['county', 'mcd', 'place'])  # <- Method under test.
 
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
