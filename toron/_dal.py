@@ -436,6 +436,48 @@ class DataAccessLayerPre35(DataAccessLayer):
         cursor.execute('SELECT last_insert_rowid()')
         return cursor.fetchone()[0]
 
+    @staticmethod
+    def _remove_columns_make_sql(column_names, names_to_remove):
+        """Return a list of SQL statements for removing label columns."""
+        # In SQLite versions before 3.35.0, there is no native support for the
+        # DROP COLUMN command. In these older versions of SQLite the tables
+        # must be rebuilt. This method prepares a sequence of operations to
+        # rebuild the table structures.
+        columns_to_keep = [col for col in column_names if col not in names_to_remove]
+        new_element_cols = [f"{col} TEXT DEFAULT '-' NOT NULL" for col in columns_to_keep]
+        new_location_cols = [f"{col} TEXT" for col in columns_to_keep]
+        new_structure_cols = [f"{col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0" for col in columns_to_keep]
+
+        statements = [
+            # Rebuild 'element' table.
+            f'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+                f'{", ".join(new_element_cols)})',
+            f'INSERT INTO new_element SELECT element_id, {", ".join(columns_to_keep)} FROM element',
+            'DROP TABLE element',
+            'ALTER TABLE new_element RENAME TO element',
+
+            # Rebuild 'location' table.
+            f'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, ' \
+                f'{", ".join(new_location_cols)})',
+            f'INSERT INTO new_location '
+                f'SELECT _location_id, {", ".join(columns_to_keep)} FROM location',
+            'DROP TABLE location',
+            'ALTER TABLE new_location RENAME TO location',
+
+            # Rebuild 'structure' table.
+            f'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, ' \
+                f'{", ".join(new_structure_cols)})',
+            f'INSERT INTO new_structure ' \
+                f'SELECT _structure_id, {", ".join(columns_to_keep)} FROM structure',
+            'DROP TABLE structure',
+            'ALTER TABLE new_structure RENAME TO structure',
+
+            # Reconstruct associated indexes.
+            f'CREATE UNIQUE INDEX unique_element_index ON element({", ".join(columns_to_keep)})',
+            f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(columns_to_keep)})',
+        ]
+        return statements
+
 
 class DataAccessLayerPre25(DataAccessLayerPre35):
     """This is a subclass of DataAccessLayer that supports SQLite

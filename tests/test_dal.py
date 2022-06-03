@@ -372,7 +372,6 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
         ]
         self.assertEqual(sql_stmnts, expected)
 
-    @unittest.expectedFailure
     def test_pre35_without_native_drop(self):
         """Check SQL of column removal procedure for legacy SQLite."""
         sql_stmnts = DataAccessLayerPre35._remove_columns_make_sql(self.column_names, self.columns_to_remove)
