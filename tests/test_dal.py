@@ -394,9 +394,11 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
         self.assertEqual(sql_stmnts, expected)
 
 
-class TestRemoveColumns(unittest.TestCase):
+class TestRemoveColumnsMixin(object):
+    class_under_test = None  # When subclassing, assign DAL class to test.
+
     def setUp(self):
-        self.dal = dal_class('mynode.toron', mode='memory')
+        self.dal = self.class_under_test('mynode.toron', mode='memory')
 
         con = self.dal._get_connection()
         self.addCleanup(con.close)
@@ -440,6 +442,15 @@ class TestRemoveColumns(unittest.TestCase):
         ]
 
         self.assertEqual(actual, expected)
+
+
+@unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
+class TestRemoveColumns(TestRemoveColumnsMixin, unittest.TestCase):
+    class_under_test = DataAccessLayer
+
+
+class TestRemoveColumnsPre35(TestRemoveColumnsMixin, unittest.TestCase):
+    class_under_test = DataAccessLayerPre35
 
 
 class TestAddElementsMakeSql(unittest.TestCase):

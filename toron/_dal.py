@@ -489,6 +489,37 @@ class DataAccessLayerPre35(DataAccessLayer):
         ]
         return statements
 
+    def remove_columns(self, columns):
+        # In versions earlier than SQLite 3.35.0, there was no support for
+        # the DROP COLUMN command. This method (and other related methods
+        # in the class) should implement the recommended, 12-step, ALTER
+        # TABLE procedure detailed in the SQLite documentation:
+        #     https://www.sqlite.org/lang_altertable.html#otheralter
+        con = self._get_connection()
+        try:
+            con.execute('PRAGMA foreign_keys=OFF')
+            cur = con.cursor()
+            with savepoint(cur):
+                column_names = self._get_column_names(cur, 'element')
+                column_names = column_names[1:]  # Slice-off 'element_id'.
+
+                column_names = [self._quote_identifier(col) for col in column_names]
+                names_to_remove = [self._quote_identifier(col) for col in columns]
+
+                for stmnt in self._remove_columns_make_sql(column_names, names_to_remove):
+                    cur.execute(stmnt)
+
+                cur.execute('PRAGMA main.foreign_key_check')
+                one_result = cur.fetchone()
+                if one_result:
+                    msg = 'foreign key violations'
+                    raise Exception(msg)
+        finally:
+            cur.close()
+            con.execute('PRAGMA foreign_keys=ON')
+            if con is not getattr(self, '_connection', None):
+                con.close()
+
 
 class DataAccessLayerPre25(DataAccessLayerPre35):
     """This is a subclass of DataAccessLayer that supports SQLite
