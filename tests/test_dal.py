@@ -446,19 +446,25 @@ class TestRemoveColumnsMixin(object):
     def test_remove_columns(self):
         self.dal.remove_columns(['mcd', 'place'])  # <- Method under test.
 
-        actual = self.cur.execute('SELECT * FROM element').fetchall()
+        actual = self.cur.execute('''
+            SELECT a.*, b.value
+            FROM element a
+            JOIN element_weight b USING (element_id)
+            JOIN weight c USING (weight_id)
+            WHERE c.name='population'
+        ''').fetchall()
 
         expected = [
-            (1, 'AZ', 'Graham'),
-            (2, 'CA', 'Los Angeles'),
-            (3, 'CA', 'Riverside'),
-            (4, 'CA', 'San Benito'),
-            (5, 'IN', 'LaPorte'),
-            (6, 'MO', 'Cass'),
-            (7, 'OH', 'Franklin'),
-            (8, 'PA', 'Somerset'),
-            (9, 'TX', 'Denton'),
-            (10, 'TX', 'Cass'),
+            (1, 'AZ', 'Graham', 1524),
+            (2, 'CA', 'Los Angeles', 2399),
+            (3, 'CA', 'Riverside', 2639),
+            (4, 'CA', 'San Benito', 3212),
+            (5, 'IN', 'LaPorte', 562),
+            (6, 'MO', 'Cass', 6259),
+            (7, 'OH', 'Franklin', 40734),
+            (8, 'PA', 'Somerset', 6048),
+            (9, 'TX', 'Denton', 102631),
+            (10, 'TX', 'Cass', 1397),
         ]
 
         self.assertEqual(actual, expected)
