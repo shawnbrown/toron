@@ -435,6 +435,10 @@ class DataAccessLayer(object):
         else:
             items = mapping_or_items
 
+        # Bring 'add_columns' action to the front of the list (it
+        # should be processed first).
+        items = sorted(items, key=lambda item: item[0] != 'add_columns')
+
         with self._transaction() as cur:
             for key, value in items:
                 if key == 'discrete_categories':

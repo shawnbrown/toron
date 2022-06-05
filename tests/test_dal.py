@@ -4,6 +4,7 @@ import gc
 import os
 import sqlite3
 import unittest
+from collections import OrderedDict
 from textwrap import dedent
 
 from .common import get_column_names
@@ -203,6 +204,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
 
 class TestAddColumns(unittest.TestCase):
     def test_add_columns(self):
+        """Check that columns are added to appropriate tables."""
         path = 'mynode.toron'
         dal = DataAccessLayer(path, mode='memory')
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
@@ -217,6 +219,23 @@ class TestAddColumns(unittest.TestCase):
 
         columns = get_column_names(con, 'structure')
         self.assertEqual(columns, ['_structure_id', 'state', 'county'])
+
+    def test_set_data_order(self):
+        """The set_data() method should run 'add_columns' items first."""
+        dal = DataAccessLayer('mynode.toron', mode='memory')
+
+        mapping = OrderedDict([
+            ('structure', [{'state'}, {'county'}, {'state', 'county'}]),
+            ('add_columns', ['state', 'county']),
+        ])
+
+        try:
+            dal.set_data(mapping)  # <- Should pass without error.
+        except ToronError as err:
+            if 'must first add columns' not in str(err):
+                raise
+            msg = "should run 'add_columns' first, regardless of mapping order"
+            self.fail(msg)
 
 
 class TestRenameColumnsApplyMapper(unittest.TestCase):
