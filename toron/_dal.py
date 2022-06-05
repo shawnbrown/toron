@@ -206,7 +206,7 @@ class DataAccessLayer(object):
         return sql_stmnts
 
     @classmethod
-    def _remove_columns_execute_sql(cls, cursor, columns):
+    def _remove_columns_execute_sql(cls, cursor, columns, strategy='preserve'):
         columns = [cls._quote_identifier(col) for col in columns]
 
         column_names = cls._get_column_names(cursor, 'element')
@@ -234,9 +234,9 @@ class DataAccessLayer(object):
         for stmnt in cls._remove_columns_make_sql(column_names, names_to_remove):
             cursor.execute(stmnt)
 
-    def remove_columns(self, columns):
+    def remove_columns(self, columns, strategy='preserve'):
         with self._transaction() as cur:
-            self._remove_columns_execute_sql(cur, columns)
+            self._remove_columns_execute_sql(cur, columns, strategy)
 
     @classmethod
     def _add_elements_make_sql(cls, cursor, columns):
@@ -515,7 +515,7 @@ class DataAccessLayerPre35(DataAccessLayer):
         ]
         return statements
 
-    def remove_columns(self, columns):
+    def remove_columns(self, columns, strategy='preserve'):
         # In versions earlier than SQLite 3.35.0, there was no support for
         # the DROP COLUMN command. This method (and other related methods
         # in the class) should implement the recommended, 12-step, ALTER
@@ -526,7 +526,7 @@ class DataAccessLayerPre35(DataAccessLayer):
             con.execute('PRAGMA foreign_keys=OFF')
             cur = con.cursor()
             with savepoint(cur):
-                self._remove_columns_execute_sql(cur, columns)
+                self._remove_columns_execute_sql(cur, columns, strategy)
 
                 cur.execute('PRAGMA main.foreign_key_check')
                 one_result = cur.fetchone()
