@@ -236,11 +236,7 @@ class DataAccessLayer(object):
             raise ToronError(msg)
 
         # Remove columns.
-        names_to_remove = []
-        for col in columns:
-            if (col in column_names) and (col not in names_to_remove):
-                names_to_remove.append(col)
-
+        names_to_remove = sorted(set(columns).intersection(column_names))
         for stmnt in cls._remove_columns_make_sql(column_names, names_to_remove):
             cursor.execute(stmnt)
 
