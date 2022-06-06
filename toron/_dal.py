@@ -211,6 +211,10 @@ class DataAccessLayer(object):
         column_names = cls._get_column_names(cursor, 'element')
         column_names = column_names[1:]  # Slice-off 'element_id'.
 
+        names_to_remove = sorted(set(columns).intersection(column_names))
+        if not names_to_remove:
+            return  # <- EXIT!
+
         names_remaining = [col for col in column_names if col not in columns]
 
         categories = cls._get_data_property(cursor, 'discrete_categories') or []
@@ -235,8 +239,7 @@ class DataAccessLayer(object):
             msg = 'columns are needed to preserve granularity, cannot remove'
             raise ToronError(msg)
 
-        # Remove columns.
-        names_to_remove = sorted(set(columns).intersection(column_names))
+        # Remove specified columns.
         for stmnt in cls._remove_columns_make_sql(column_names, names_to_remove):
             cursor.execute(stmnt)
 

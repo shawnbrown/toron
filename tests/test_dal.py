@@ -472,6 +472,10 @@ class TestRemoveColumnsMixin(object):
 
         self.assertEqual(actual, expected)
 
+    def test_nonmatching_names(self):
+        """Non-matching column names should be ignored."""
+        self.dal.remove_columns(['nomatch1', 'nomatch2'])  # <- Method under test.
+
     def test_category_violation(self):
         regex = "cannot remove, categories are undefined for remaining columns: 'place'"
         with self.assertRaisesRegex(ToronError, regex):
