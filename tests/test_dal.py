@@ -428,7 +428,11 @@ class TestRemoveColumnsMixin(object):
 
         self.dal.set_data({
             'add_columns': ['state', 'county', 'mcd', 'place'],
-            'discrete_categories': [{'state'}, {'state', 'county'}],
+            'discrete_categories': [
+                {'state'},
+                {'state', 'county'},
+                {'state', 'county', 'mcd'},
+            ],
         })
         data = [
             ('state', 'county', 'mcd', 'place', 'population'),
@@ -449,6 +453,11 @@ class TestRemoveColumnsMixin(object):
     def test_remove_columns(self):
         self.dal.remove_columns(['mcd', 'place'])  # <- Method under test.
 
+        # Check rebuilt categories.
+        data = self.dal.get_data(['discrete_categories'])
+        self.assertEqual(data['discrete_categories'], [{'state'}, {'county', 'state'}])
+
+        # Check elements and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.value
             FROM element a
@@ -480,6 +489,35 @@ class TestRemoveColumnsMixin(object):
         regex = "cannot remove, categories are undefined for remaining columns: 'place'"
         with self.assertRaisesRegex(ToronError, regex):
             self.dal.remove_columns(['mcd'])  # <- Method under test.
+
+    def test_category_override(self):
+        self.dal.remove_columns(['mcd'], strategy='restructure')  # <- Method under test.
+
+        # Check rebuilt categories.
+        data = self.dal.get_data(['discrete_categories'])
+        self.assertEqual(data['discrete_categories'], [{'state'}, {'county', 'state'}])
+
+        # Check elements and weights.
+        actual = self.cur.execute('''
+            SELECT a.*, b.value
+            FROM element a
+            JOIN element_weight b USING (element_id)
+            JOIN weight c USING (weight_id)
+            WHERE c.name='population'
+        ''').fetchall()
+        expected = [
+            (1, 'AZ', 'Graham', 'Cactus Flats', 1524),
+            (2, 'CA', 'Los Angeles', 'Val Verde', 2399),
+            (3, 'CA', 'Riverside', 'Coronita', 2639),
+            (4, 'CA', 'San Benito', 'Ridgemark', 3212),
+            (5, 'IN', 'LaPorte', 'Rolling Prairie', 562),
+            (6, 'MO', 'Cass', 'Belton', 6259),
+            (7, 'OH', 'Franklin', 'Dublin', 40734),
+            (8, 'PA', 'Somerset', 'Somerset', 6048),
+            (9, 'TX', 'Denton', 'Denton', 102631),
+            (10, 'TX', 'Cass', 'Queen City', 1397),
+        ]
+        self.assertEqual(actual, expected)
 
     def test_granularity_error(self):
         regex = 'cannot remove, columns are needed to preserve granularity'

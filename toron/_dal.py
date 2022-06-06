@@ -224,9 +224,25 @@ class DataAccessLayer(object):
         # Check for a loss of category coverage.
         cols_uncovered = set(names_remaining).difference(chain(*cats_filtered))
         if cols_uncovered:
-            formatted = ', '.join(repr(x) for x in sorted(cols_uncovered))
-            msg = f'cannot remove, categories are undefined for remaining columns: {formatted}'
-            raise ToronError(msg)
+            if strategy == 'preserve':
+                formatted = ', '.join(repr(x) for x in sorted(cols_uncovered))
+                msg = f'cannot remove, categories are undefined for remaining columns: {formatted}'
+                raise ToronError(msg)
+            elif strategy == 'restructure':
+                new_categories = []
+                for cat in categories:
+                    cat = cat.difference(names_to_remove)
+                    if cat and cat not in new_categories:
+                        new_categories.append(cat)
+            else:
+                msg = f'unknown strategy: {strategy!r}'
+                raise ToronError(msg)
+        else:
+            new_categories = cats_filtered
+
+        cls._set_data_property(cursor,
+                               key='discrete_categories',
+                               value=[list(cat) for cat in new_categories])
 
         # Check for a loss of granularity.
         cursor.execute(f'''
