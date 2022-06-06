@@ -4,6 +4,7 @@ import os
 import sqlite3
 from collections import Counter
 from collections.abc import Mapping
+from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
 
@@ -207,14 +208,23 @@ class DataAccessLayer(object):
 
     @classmethod
     def _remove_columns_execute_sql(cls, cursor, columns, strategy='preserve'):
-        columns = [cls._quote_identifier(col) for col in columns]
-
         column_names = cls._get_column_names(cursor, 'element')
         column_names = column_names[1:]  # Slice-off 'element_id'.
-        column_names = [cls._quote_identifier(col) for col in column_names]
 
-        # Check if removing columns would cause a loss of granularity.
-        names_remaining = (col for col in column_names if col not in columns)
+        names_remaining = [col for col in column_names if col not in columns]
+
+        categories = cls._get_data_property(cursor, 'discrete_categories') or []
+        categories = [set(cat) for cat in categories]
+        cats_filtered = [cat for cat in categories if not cat.intersection(columns)]
+
+        # Check for a loss of category coverage.
+        cols_uncovered = set(names_remaining).difference(chain(*cats_filtered))
+        if cols_uncovered:
+            formatted = ', '.join(repr(x) for x in sorted(cols_uncovered))
+            msg = f'cannot remove, categories are undefined for remaining columns: {formatted}'
+            raise ToronError(msg)
+
+        # Check for a loss of granularity.
         cursor.execute(f'''
             SELECT 1
             FROM main.element

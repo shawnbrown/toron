@@ -426,7 +426,10 @@ class TestRemoveColumnsMixin(object):
         self.cur = con.cursor()
         self.addCleanup(self.cur.close)
 
-        self.dal.set_data({'add_columns': ['state', 'county', 'mcd', 'place']})
+        self.dal.set_data({
+            'add_columns': ['state', 'county', 'mcd', 'place'],
+            'discrete_categories': [{'state'}, {'state', 'county'}],
+        })
         data = [
             ('state', 'county', 'mcd', 'place', 'population'),
             ('AZ', 'Graham', 'Safford', 'Cactus Flats', 1524),
@@ -468,6 +471,11 @@ class TestRemoveColumnsMixin(object):
         ]
 
         self.assertEqual(actual, expected)
+
+    def test_category_violation(self):
+        regex = "cannot remove, categories are undefined for remaining columns: 'place'"
+        with self.assertRaisesRegex(ToronError, regex):
+            self.dal.remove_columns(['mcd'])  # <- Method under test.
 
     def test_granularity_error(self):
         regex = 'columns are needed to preserve granularity, cannot remove'
