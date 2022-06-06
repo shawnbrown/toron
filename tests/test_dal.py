@@ -488,8 +488,8 @@ class TestRemoveColumns(TestRemoveColumnsMixin, unittest.TestCase):
     class_under_test = DataAccessLayer
 
 
-class TestRemoveColumnsPre35(TestRemoveColumnsMixin, unittest.TestCase):
-    class_under_test = DataAccessLayerPre35
+class TestRemoveColumnsLegacy(TestRemoveColumnsMixin, unittest.TestCase):
+    class_under_test = DataAccessLayerPre24
 
 
 class TestAddElementsMakeSql(unittest.TestCase):
