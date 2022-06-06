@@ -482,7 +482,7 @@ class TestRemoveColumnsMixin(object):
             self.dal.remove_columns(['mcd'])  # <- Method under test.
 
     def test_granularity_error(self):
-        regex = 'columns are needed to preserve granularity, cannot remove'
+        regex = 'cannot remove, columns are needed to preserve granularity'
         with self.assertRaisesRegex(ToronError, regex):
             self.dal.remove_columns(['county', 'mcd', 'place'])  # <- Method under test.
 

@@ -236,7 +236,7 @@ class DataAccessLayer(object):
             HAVING COUNT(*) > 1
         ''')
         if cursor.fetchone() is not None:
-            msg = 'columns are needed to preserve granularity, cannot remove'
+            msg = 'cannot remove, columns are needed to preserve granularity'
             raise ToronError(msg)
 
         # Remove specified columns.
