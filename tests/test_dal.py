@@ -490,6 +490,10 @@ class TestRemoveColumnsMixin(object):
         with self.assertRaisesRegex(ToronError, regex):
             self.dal.remove_columns(['mcd'])  # <- Method under test.
 
+        regex = "cannot remove, categories are undefined for remaining columns: 'mcd', 'place'"
+        with self.assertRaisesRegex(ToronError, regex):
+            self.dal.remove_columns(['county'])  # <- Method under test.
+
     def test_category_override(self):
         self.dal.remove_columns(['mcd'], strategy='restructure')  # <- Method under test.
 
