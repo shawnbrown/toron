@@ -668,6 +668,13 @@ class TestAddElements(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
+    @unittest.expectedFailure
+    def test_no_columns_added(self):
+        """Specify behavior when attempting to add elements before
+        columns have been added.
+        """
+        raise NotImplementedError
+
 
 class TestAddWeightsGetNewId(unittest.TestCase):
     def setUp(self):
