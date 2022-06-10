@@ -1,9 +1,10 @@
 """Node implementation for the Toron project."""
 
+from itertools import chain
+
 from ._dal import dal_class
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
-from ._exceptions import ToronWarning
 
 
 class Node(object):
@@ -91,25 +92,7 @@ class Node(object):
         dataset and the domain it models. It's not a property that
         can be derived with certainty from the dataset alone.
         """
-        data = self._dal.get_data(['discrete_categories', 'column_names'])
-        minimized = minimize_discrete_categories(
-            data['discrete_categories'],
-            discrete_categories,
-            [set(data['column_names'])],
-        )
-
-        omitted = [cat for cat in discrete_categories if (cat not in minimized)]
-        if omitted:
-            import warnings
-            formatted = ', '.join(repr(cat) for cat in omitted)
-            msg = f'omitting categories already covered: {formatted}'
-            warnings.warn(msg, category=ToronWarning, stacklevel=2)
-
-        structure = make_structure(minimized)
-        self._dal.set_data({
-            'discrete_categories': minimized,
-            'structure': structure,
-        })
+        self._dal.add_discrete_categories(discrete_categories)
 
     def remove_discrete_categories(self, discrete_categories):
         """Remove discrete categories from the node's internal
@@ -120,33 +103,5 @@ class Node(object):
             >>> node = Node(...)
             >>> node.remove_discrete_categories([{'county'}, {'state', 'mcd'}])
         """
-        data = self._dal.get_data(['discrete_categories', 'column_names'])
-        current_cats = data['discrete_categories']
-        mandatory_cat = set(data['column_names'])
-
-        if mandatory_cat in discrete_categories:
-            import warnings
-            formatted = ', '.join(repr(x) for x in data['column_names'])
-            msg = f'cannot remove whole space: {{{mandatory_cat}}}'
-            warnings.warn(msg, category=ToronWarning, stacklevel=2)
-            discrete_categories.remove(mandatory_cat)  # <- Remove and continue.
-
-        no_match = [x for x in discrete_categories if x not in current_cats]
-        if no_match:
-            import warnings
-            formatted = ', '.join(repr(x) for x in no_match)
-            msg = f'no match for categories, cannot remove: {formatted}'
-            warnings.warn(msg, category=ToronWarning, stacklevel=2)
-
-        remaining_cats = [x for x in current_cats if x not in discrete_categories]
-
-        minimized = minimize_discrete_categories(
-            remaining_cats,
-            [mandatory_cat],
-        )
-        structure = make_structure(minimized)
-        self._dal.set_data({
-            'discrete_categories': minimized,
-            'structure': structure,
-        })
+        self._dal.remove_discrete_categories(discrete_categories)
 

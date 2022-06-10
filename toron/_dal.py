@@ -8,7 +8,10 @@ from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
 
+from ._categories import make_structure
+from ._categories import minimize_discrete_categories
 from ._exceptions import ToronError
+from ._exceptions import ToronWarning
 from ._node_schema import connect
 from ._node_schema import savepoint
 from ._node_schema import transaction
@@ -476,6 +479,58 @@ class DataAccessLayer(object):
                 else:
                     msg = f"can't set value for {key!r}"
                     raise ToronError(msg)
+
+    def add_discrete_categories(self, discrete_categories):
+        data = self.get_data(['discrete_categories', 'column_names'])
+        minimized = minimize_discrete_categories(
+            data['discrete_categories'],
+            discrete_categories,
+            [set(data['column_names'])],
+        )
+
+        omitted = [cat for cat in discrete_categories if (cat not in minimized)]
+        if omitted:
+            import warnings
+            formatted = ', '.join(repr(cat) for cat in omitted)
+            msg = f'omitting categories already covered: {formatted}'
+            warnings.warn(msg, category=ToronWarning, stacklevel=2)
+
+        structure = make_structure(minimized)
+        self.set_data({
+            'discrete_categories': minimized,
+            'structure': structure,
+        })
+
+    def remove_discrete_categories(self, discrete_categories):
+        data = self.get_data(['discrete_categories', 'column_names'])
+        current_cats = data['discrete_categories']
+        mandatory_cat = set(data['column_names'])
+
+        if mandatory_cat in discrete_categories:
+            import warnings
+            formatted = ', '.join(repr(x) for x in data['column_names'])
+            msg = f'cannot remove whole space: {{{mandatory_cat}}}'
+            warnings.warn(msg, category=ToronWarning, stacklevel=2)
+            discrete_categories.remove(mandatory_cat)  # <- Remove and continue.
+
+        no_match = [x for x in discrete_categories if x not in current_cats]
+        if no_match:
+            import warnings
+            formatted = ', '.join(repr(x) for x in no_match)
+            msg = f'no match for categories, cannot remove: {formatted}'
+            warnings.warn(msg, category=ToronWarning, stacklevel=2)
+
+        remaining_cats = [x for x in current_cats if x not in discrete_categories]
+
+        minimized = minimize_discrete_categories(
+            remaining_cats,
+            [mandatory_cat],
+        )
+        structure = make_structure(minimized)
+        self.set_data({
+            'discrete_categories': minimized,
+            'structure': structure,
+        })
 
 
 class DataAccessLayerPre35(DataAccessLayer):
