@@ -185,6 +185,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
                     (1, 0, 1), (1, 1, 0), (1, 1, 1)]
         self.assertEqual(actual, expected)
 
+    @unittest.skip('not fully implemented')
     def test_structure_without_discrete_categories(self):
         """When no discrete categories are defined, the 'structure'
         table should contain an "indiscrete topology".
@@ -197,10 +198,15 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
 
         self.node.add_discrete_categories([])  # <- Method under test.
 
+        self.cursor.execute("SELECT value FROM main.property WHERE key='discrete_categories'")
+        actual = [set(x) for x in self.cursor.fetchone()[0]]
+        indiscrete_category = [{'A', 'B', 'C'}]
+        self.assertEqual(actual, indiscrete_category)
+
         self.cursor.execute('SELECT A, B, C FROM main.structure')
         actual = self.cursor.fetchall()
-        trivial_topology = [(0, 0, 0), (1, 1, 1)]
-        self.assertEqual(actual, trivial_topology)
+        indiscrete_topology = [(0, 0, 0), (1, 1, 1)]
+        self.assertEqual(actual, indiscrete_topology)
 
 
 class TestNodeRemoveDiscreteCategories(unittest.TestCase):
