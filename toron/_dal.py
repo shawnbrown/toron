@@ -8,10 +8,10 @@ from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
 
-from toron._exceptions import ToronError
-from toron._node_schema import connect
-from toron._node_schema import savepoint
-from toron._node_schema import transaction
+from ._exceptions import ToronError
+from ._node_schema import connect
+from ._node_schema import savepoint
+from ._node_schema import transaction
 
 
 class DataAccessLayer(object):
