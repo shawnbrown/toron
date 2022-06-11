@@ -8,14 +8,14 @@ def make_structure(discrete_categories):
     """Returns a category structure generated from a base of
     discrete categories::
 
-        >>> node._make_structure([{'A'}, {'B'}, {'B', 'C'}])
+        >>> make_structure([{'A'}, {'B'}, {'B', 'C'}])
         [set(), {'A'}, {'B'}, {'B', 'C'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
     The generated structure is almost always a topology but that
     is not necessarily the case. There are valid collections of
     discrete categories that do not result in a valid topology::
 
-        >>> node._make_structure([{'A', 'B'}, {'B', 'C'}])
+        >>> make_structure([{'A', 'B'}, {'B', 'C'}])
         [set(), {'A', 'B'}, {'B', 'C'}, {'A', 'B', 'C'}]
 
     The above result is not a topology because it's missing the
@@ -36,7 +36,7 @@ def minimize_discrete_categories(*bases):
 
         >>> base_a = [{'A'}, {'B'}, {'B', 'C'}]
         >>> base_b = [{'A', 'C'}, {'C'}, {'C', 'D'}]
-        >>> Node._minimize_discrete_categories(base_a, base_b)
+        >>> minimize_discrete_categories(base_a, base_b)
         [{'A'}, {'B'}, {'C'}, {'C', 'D'}]
     """
     base_categories = []
