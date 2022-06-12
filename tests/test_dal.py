@@ -460,7 +460,12 @@ class TestRemoveColumnsMixin(object):
 
         # Check rebuilt categories.
         data = self.dal.get_data(['discrete_categories'])
-        self.assertEqual(data['discrete_categories'], [{'state'}, {'county', 'state'}])
+        self.assertEqual(data['discrete_categories'], [{'state'}, {'state', 'county'}])
+
+        # Check rebuild structure table.
+        self.cur.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cur.fetchall()}
+        self.assertEqual(actual, {(0, 0), (1, 0), (1, 1)})
 
         # Check elements and weights.
         actual = self.cur.execute('''
