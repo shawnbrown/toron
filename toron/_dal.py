@@ -457,12 +457,14 @@ class DataAccessLayer(object):
         cursor.executemany(sql, parameters)
 
     @classmethod
-    def _update_categories_and_structure(cls, cursor, categories=None):
+    def _update_categories_and_structure(cls, cursor, categories=None, *, minimize=True):
         if not categories:
             categories = cls._get_data_property(cursor, 'discrete_categories') or []
             categories = [set(x) for x in categories]
-        whole_space = set(cls._get_column_names(cursor, 'element')[1:])
-        categories = minimize_discrete_categories(chain(categories, [whole_space]))
+
+        if minimize:
+            whole_space = set(cls._get_column_names(cursor, 'element')[1:])
+            categories = minimize_discrete_categories(chain(categories, [whole_space]))
 
         list_of_lists = [list(cat) for cat in categories]
         cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
@@ -510,7 +512,7 @@ class DataAccessLayer(object):
             warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
         with self._transaction() as cur:
-            self._update_categories_and_structure(cur, minimized)
+            self._update_categories_and_structure(cur, minimized, minimize=False)
 
     def remove_discrete_categories(self, discrete_categories):
         data = self.get_data(['discrete_categories', 'column_names'])
@@ -539,7 +541,7 @@ class DataAccessLayer(object):
         )
 
         with self._transaction() as cur:
-            self._update_categories_and_structure(cur, minimized)
+            self._update_categories_and_structure(cur, minimized, minimize=False)
 
 
 class DataAccessLayerPre35(DataAccessLayer):
