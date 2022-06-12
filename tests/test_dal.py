@@ -431,14 +431,13 @@ class TestRemoveColumnsMixin(object):
         self.cur = con.cursor()
         self.addCleanup(self.cur.close)
 
-        self.dal.set_data({
-            'add_columns': ['state', 'county', 'mcd', 'place'],
-            'discrete_categories': [
-                {'state'},
-                {'state', 'county'},
-                {'state', 'county', 'mcd'},
-            ],
-        })
+        self.dal.set_data({'add_columns': ['state', 'county', 'mcd', 'place']})
+        self.dal.add_discrete_categories([
+            {'state'},
+            {'state', 'county'},
+            {'state', 'county', 'mcd'},
+        ])
+
         data = [
             ('state', 'county', 'mcd', 'place', 'population'),
             ('AZ', 'Graham', 'Safford', 'Cactus Flats', 1524),

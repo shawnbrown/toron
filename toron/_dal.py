@@ -254,6 +254,9 @@ class DataAccessLayer(object):
             msg = 'cannot remove, columns are needed to preserve granularity'
             raise ToronError(msg)
 
+        # Clear `structure` table to prevent duplicates when removing columns.
+        cursor.execute('DELETE FROM main.structure')
+
         # Remove specified columns.
         for stmnt in cls._remove_columns_make_sql(column_names, names_to_remove):
             cursor.execute(stmnt)
