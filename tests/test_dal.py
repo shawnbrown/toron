@@ -206,7 +206,7 @@ class TestAddColumns(unittest.TestCase):
     def test_add_columns(self):
         """Check that columns are added to appropriate tables."""
         path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
+        dal = dal_class(path, mode='memory')
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         con = dal._connection
@@ -227,7 +227,7 @@ class TestAddColumns(unittest.TestCase):
 
     def test_set_data_order(self):
         """The set_data() method should run 'add_columns' items first."""
-        dal = DataAccessLayer('mynode.toron', mode='memory')
+        dal = dal_class('mynode.toron', mode='memory')
 
         mapping = OrderedDict([
             ('structure', [{'state'}, {'county'}, {'state', 'county'}]),
@@ -245,7 +245,7 @@ class TestAddColumns(unittest.TestCase):
 
 class TestRenameColumnsApplyMapper(unittest.TestCase):
     def setUp(self):
-        self.dal = DataAccessLayer('mynode.toron', mode='memory')
+        self.dal = dal_class('mynode.toron', mode='memory')
         self.dal.set_data({'add_columns': ['state', 'county', 'town']})
         self.con = self.dal._connection
         self.cur = self.con.cursor()
@@ -626,7 +626,7 @@ class TestAddElementsMakeSql(unittest.TestCase):
 class TestAddElements(unittest.TestCase):
     def test_add_elements(self):
         path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
+        dal = dal_class(path, mode='memory')
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
@@ -647,7 +647,7 @@ class TestAddElements(unittest.TestCase):
 
     def test_add_elements_no_column_arg(self):
         path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
+        dal = dal_class(path, mode='memory')
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
@@ -670,7 +670,7 @@ class TestAddElements(unittest.TestCase):
     def test_add_elements_column_subset(self):
         """Omitted columns should get default value ('-')."""
         path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
+        dal = dal_class(path, mode='memory')
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include "state" but not "county".
@@ -694,7 +694,7 @@ class TestAddElements(unittest.TestCase):
     def test_add_elements_column_superset(self):
         """Surplus columns should be filtered-out before loading."""
         path = 'mynode.toron'
-        dal = DataAccessLayer(path, mode='memory')
+        dal = dal_class(path, mode='memory')
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include unknown columns "region" and "group".
