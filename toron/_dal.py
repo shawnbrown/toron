@@ -459,16 +459,14 @@ class DataAccessLayer(object):
 
     @classmethod
     def _update_categories_and_structure(cls, cursor, categories=None):
-        if categories:
-            list_of_lists = [list(cat) for cat in categories]
-            cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
-        else:
+        if not categories:
             categories = cls._get_data_property(cursor, 'discrete_categories') or []
             categories = [set(x) for x in categories]
-
         whole_space = set(cls._get_column_names(cursor, 'element')[1:])
-        if whole_space not in categories:
-            categories.append(whole_space)
+        categories = minimize_discrete_categories(chain(categories, [whole_space]))
+
+        list_of_lists = [list(cat) for cat in categories]
+        cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
 
         structure = make_structure(categories)
         cls._set_data_structure(cursor, structure)
