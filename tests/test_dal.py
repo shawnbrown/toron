@@ -503,7 +503,20 @@ class TestRemoveColumnsMixin(object):
 
         # Check rebuilt categories.
         data = self.dal.get_data(['discrete_categories'])
-        self.assertEqual(data['discrete_categories'], [{'state'}, {'county', 'state'}])
+        self.assertEqual(
+            data['discrete_categories'],
+            [{'state'}, {'county', 'state'}, {'county', 'state', 'place'}],
+        )
+
+        # Check rebuilt structure.
+        actual = self.cur.execute('SELECT * FROM structure').fetchall()
+        expected = [
+            (1, 0, 0, 0),
+            (2, 1, 0, 0),
+            (3, 1, 1, 0),
+            (4, 1, 1, 1),
+        ]
+        self.assertEqual(actual, expected)
 
         # Check elements and weights.
         actual = self.cur.execute('''
@@ -513,6 +526,7 @@ class TestRemoveColumnsMixin(object):
             JOIN weight c USING (weight_id)
             WHERE c.name='population'
         ''').fetchall()
+
         expected = [
             (1, 'AZ', 'Graham', 'Cactus Flats', 1524),
             (2, 'CA', 'Los Angeles', 'Val Verde', 2399),
@@ -1052,17 +1066,11 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.assertEqual(result, [['A'], ['B'], ['C']])
 
         self.cursor.execute("SELECT * FROM structure")
-        result = self.cursor.fetchall()
-        expected = [
-            (1, 0, 0, 0),
-            (2, 1, 0, 0),
-            (3, 0, 1, 0),
-            (4, 0, 0, 1),
-            (5, 1, 1, 1),
-            (6, 1, 1, 0),
-            (7, 1, 0, 1),
-            (8, 0, 1, 1),
-        ]
+        result = {tup[1:] for tup in self.cursor.fetchall()}
+        expected = {
+            (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1),
+            (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1),
+        }
         self.assertEqual(result, expected)
 
     def test_set_categories_implicit_whole(self):

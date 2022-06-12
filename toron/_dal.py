@@ -243,10 +243,6 @@ class DataAccessLayer(object):
         else:
             new_categories = cats_filtered
 
-        cls._set_data_property(cursor,
-                               key='discrete_categories',
-                               value=[list(cat) for cat in new_categories])
-
         # Check for a loss of granularity.
         cursor.execute(f'''
             SELECT 1
@@ -261,6 +257,9 @@ class DataAccessLayer(object):
         # Remove specified columns.
         for stmnt in cls._remove_columns_make_sql(column_names, names_to_remove):
             cursor.execute(stmnt)
+
+        # Rebuild categories property and structure table.
+        cls._update_categories_and_structure(cursor, new_categories)
 
     def remove_columns(self, columns, strategy='preserve'):
         with self._transaction() as cur:
