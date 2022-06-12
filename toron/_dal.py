@@ -457,6 +457,14 @@ class DataAccessLayer(object):
         parameters = (make_bitmask(category) for category in structure)
         cursor.executemany(sql, parameters)
 
+    @classmethod
+    def _update_categories_and_structure(cls, cursor, categories):
+        list_of_lists = [list(cat) for cat in categories]
+        cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
+
+        structure = make_structure(categories)
+        cls._set_data_structure(cursor, structure)
+
     def set_data(self, mapping_or_items):
         if isinstance(mapping_or_items, Mapping):
             items = mapping_or_items.items()
@@ -495,11 +503,8 @@ class DataAccessLayer(object):
             msg = f'omitting categories already covered: {formatted}'
             warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
-        structure = make_structure(minimized)
-        self.set_data({
-            'discrete_categories': minimized,
-            'structure': structure,
-        })
+        with self._transaction() as cur:
+            self._update_categories_and_structure(cur, minimized)
 
     def remove_discrete_categories(self, discrete_categories):
         data = self.get_data(['discrete_categories', 'column_names'])
@@ -526,11 +531,9 @@ class DataAccessLayer(object):
             remaining_cats,
             [mandatory_cat],
         )
-        structure = make_structure(minimized)
-        self.set_data({
-            'discrete_categories': minimized,
-            'structure': structure,
-        })
+
+        with self._transaction() as cur:
+            self._update_categories_and_structure(cur, minimized)
 
 
 class DataAccessLayerPre35(DataAccessLayer):
