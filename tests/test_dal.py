@@ -454,6 +454,29 @@ class TestRemoveColumnsMixin(object):
         self.dal.add_elements(data)
         self.dal.add_weights(data, name='population', type_info={'category': 'population'})
 
+    def test_initial_fixture_state(self):
+        # Check initial categories.
+        data = self.dal.get_data(['discrete_categories'])
+        expected = [
+            {'state'},
+            {'state', 'county'},
+            {'state', 'county', 'mcd'},
+            {'state', 'county', 'mcd', 'place'},  # <- whole space
+        ]
+        self.assertEqual(data['discrete_categories'], expected)
+
+        # Check initial structure table.
+        self.cur.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cur.fetchall()}
+        expected = {
+            (0, 0, 0, 0),  # <- Empty set.
+            (1, 0, 0, 0),  # <- {'state'}
+            (1, 1, 0, 0),  # <- {'state', 'county'}
+            (1, 1, 1, 0),  # <- {'state', 'county', 'mcd'}
+            (1, 1, 1, 1),  # <- whole space
+        }
+        self.assertEqual(actual, expected)
+
     def test_remove_columns(self):
         self.dal.remove_columns(['mcd', 'place'])  # <- Method under test.
 
