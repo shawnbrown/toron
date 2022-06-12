@@ -484,7 +484,7 @@ class DataAccessLayer(object):
 
         if minimize:
             whole_space = set(cls._get_column_names(cursor, 'element')[1:])
-            categories = minimize_discrete_categories(chain(categories, [whole_space]))
+            categories = minimize_discrete_categories(categories, [whole_space])
 
         list_of_lists = [list(cat) for cat in categories]
         cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
