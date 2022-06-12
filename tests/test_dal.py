@@ -1045,19 +1045,52 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.dal.set_data({'add_columns': ['A', 'B', 'C']})
 
         categories = [{'A'}, {'B'}, {'C'}]
-        self.dal.set_data({'discrete_categories': categories})  # <- Method under test.
+        self.dal.add_discrete_categories(categories)  # <- Method under test.
 
         self.cursor.execute("SELECT value FROM property WHERE key='discrete_categories'")
         result = self.cursor.fetchone()[0]
         self.assertEqual(result, [['A'], ['B'], ['C']])
 
+        self.cursor.execute("SELECT * FROM structure")
+        result = self.cursor.fetchall()
+        expected = [
+            (1, 0, 0, 0),
+            (2, 1, 0, 0),
+            (3, 0, 1, 0),
+            (4, 0, 0, 1),
+            (5, 1, 1, 1),
+            (6, 1, 1, 0),
+            (7, 1, 0, 1),
+            (8, 0, 1, 1),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_set_categories_implicit_whole(self):
+        """The "whole space" category should be added if not covered
+        by a union of existing categories.
+        """
+        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
+
+        categories = [{'A'}, {'B'}]
+        self.dal.add_discrete_categories(categories)  # <- Method under test.
+
+        self.cursor.execute("SELECT value FROM property WHERE key='discrete_categories'")
+        actual = [set(x) for x in self.cursor.fetchone()[0]]
+        expected = [
+            {'A'},
+            {'B'},
+            {'A', 'B', 'C'},  # <- The "whole space" category should be automatically added.
+        ]
+        self.assertEqual(actual, expected)
+
     def test_get_and_set_categories(self):
         self.dal.set_data({'add_columns': ['A', 'B', 'C']})
 
-        categories = [{"A"}, {"A", "B"}, {"A", "B", "C"}]
+        categories = [{'A'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
-        self.dal.set_data({'discrete_categories': categories})  # <- Set!!!
+        self.dal.add_discrete_categories(categories)  # <- Set!!!
         data = self.dal.get_data(['discrete_categories'])  # <- Get!!!
+
         self.assertEqual(data['discrete_categories'], categories)
 
 
