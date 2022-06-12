@@ -222,7 +222,8 @@ class TestAddColumns(unittest.TestCase):
 
         con = dal._get_connection()
         cur = con.execute('SELECT * FROM structure')
-        self.assertEqual(cur.fetchall(), [(1, 0, 0), (2, 1, 1)])
+        actual = {row[1:] for row in cur.fetchall()}
+        self.assertEqual(actual, {(0, 0), (1, 1)})
 
     def test_set_data_order(self):
         """The set_data() method should run 'add_columns' items first."""
@@ -509,13 +510,14 @@ class TestRemoveColumnsMixin(object):
         )
 
         # Check rebuilt structure.
-        actual = self.cur.execute('SELECT * FROM structure').fetchall()
-        expected = [
-            (1, 0, 0, 0),
-            (2, 1, 0, 0),
-            (3, 1, 1, 0),
-            (4, 1, 1, 1),
-        ]
+        self.cur.execute('SELECT * FROM structure')
+        actual = {row[1:] for row in self.cur.fetchall()}
+        expected = {
+            (0, 0, 0),
+            (1, 0, 0),
+            (1, 1, 0),
+            (1, 1, 1),
+        }
         self.assertEqual(actual, expected)
 
         # Check elements and weights.

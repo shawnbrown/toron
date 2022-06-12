@@ -20,9 +20,9 @@ class TestNodeAddColumns(unittest.TestCase):
         columns = get_column_names(self.cursor, 'element')
         self.assertEqual(columns, ['element_id', 'A', 'B', 'C'])
 
-        self.cursor.execute('SELECT A, B, C FROM main.structure')
-        actual = self.cursor.fetchall()
-        trivial_topology = [(0, 0, 0), (1, 1, 1)]
+        self.cursor.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cursor.fetchall()}
+        trivial_topology = {(0, 0, 0), (1, 1, 1)}
         self.assertEqual(actual, trivial_topology)
 
     def test_add_columns_in_two_parts(self):
@@ -31,9 +31,9 @@ class TestNodeAddColumns(unittest.TestCase):
         columns = get_column_names(self.cursor, 'element')
         self.assertEqual(columns, ['element_id', 'A', 'B'])
 
-        self.cursor.execute('SELECT A, B FROM main.structure')
-        actual = self.cursor.fetchall()
-        trivial_topology = [(0, 0), (1, 1)]
+        self.cursor.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cursor.fetchall()}
+        trivial_topology = {(0, 0), (1, 1)}
         self.assertEqual(actual, trivial_topology)
 
         self.node.add_columns(['C', 'D'])  # <- Method under test.
@@ -41,9 +41,9 @@ class TestNodeAddColumns(unittest.TestCase):
         columns = get_column_names(self.cursor, 'element')
         self.assertEqual(columns, ['element_id', 'A', 'B', 'C', 'D'])
 
-        self.cursor.execute('SELECT A, B, C, D FROM main.structure')
-        actual = self.cursor.fetchall()
-        trivial_topology = [(0, 0, 0, 0), (1, 1, 0, 0), (1, 1, 1, 1)]
+        self.cursor.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cursor.fetchall()}
+        trivial_topology = {(0, 0, 0, 0), (1, 1, 0, 0), (1, 1, 1, 1)}
         self.assertEqual(actual, trivial_topology)
 
 
@@ -67,10 +67,10 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
             msg='should match given categories',
         )
 
-        self.cursor.execute('SELECT A, B, C FROM main.structure')
-        actual = self.cursor.fetchall()
-        expected = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1),
-                    (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)]
+        self.cursor.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cursor.fetchall()}
+        expected = {(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1),
+                    (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)}
         self.assertEqual(actual, expected)
 
     def test_add_to_existing_categories(self):
@@ -88,9 +88,9 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
             [{'A'}, {'B'}, {'A', 'B', 'C'}],
         )
 
-        self.cursor.execute('SELECT A, B, C FROM main.structure')
-        actual = self.cursor.fetchall()
-        expected = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)]
+        self.cursor.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cursor.fetchall()}
+        expected = {(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)}
         self.assertEqual(actual, expected)
 
     def test_warning_for_omitted(self):
@@ -110,10 +110,10 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
             [{'A'}, {'B'}, {'A', 'C'}],
         )
 
-        self.cursor.execute('SELECT A, B, C FROM main.structure')
-        actual = self.cursor.fetchall()
-        expected = [(0, 0, 0), (1, 0, 0), (0, 1, 0),
-                    (1, 0, 1), (1, 1, 0), (1, 1, 1)]
+        self.cursor.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cursor.fetchall()}
+        expected = {(0, 0, 0), (1, 0, 0), (0, 1, 0),
+                    (1, 0, 1), (1, 1, 0), (1, 1, 1)}
         self.assertEqual(actual, expected)
 
     @unittest.skip('not fully implemented')
@@ -134,9 +134,9 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         indiscrete_category = [{'A', 'B', 'C'}]
         self.assertEqual(actual, indiscrete_category)
 
-        self.cursor.execute('SELECT A, B, C FROM main.structure')
-        actual = self.cursor.fetchall()
-        indiscrete_topology = [(0, 0, 0), (1, 1, 1)]
+        self.cursor.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cursor.fetchall()}
+        indiscrete_topology = {(0, 0, 0), (1, 1, 1)}
         self.assertEqual(actual, indiscrete_topology)
 
 
@@ -159,9 +159,9 @@ class TestNodeRemoveDiscreteCategories(unittest.TestCase):
             [{'A'}, {'B'}, {'A', 'B', 'C'}],
         )
 
-        self.cursor.execute('SELECT A, B, C FROM main.structure')
-        actual = self.cursor.fetchall()
-        structure = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)]
+        self.cursor.execute('SELECT * FROM main.structure')
+        actual = {row[1:] for row in self.cursor.fetchall()}
+        structure = {(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)}
         self.assertEqual(actual, structure)
 
     @unittest.skip('not yet implemented')
