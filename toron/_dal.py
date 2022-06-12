@@ -458,9 +458,17 @@ class DataAccessLayer(object):
         cursor.executemany(sql, parameters)
 
     @classmethod
-    def _update_categories_and_structure(cls, cursor, categories):
-        list_of_lists = [list(cat) for cat in categories]
-        cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
+    def _update_categories_and_structure(cls, cursor, categories=None):
+        if categories:
+            list_of_lists = [list(cat) for cat in categories]
+            cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
+        else:
+            categories = cls._get_data_property(cursor, 'discrete_categories') or []
+            categories = [set(x) for x in categories]
+
+        whole_space = set(cls._get_column_names(cursor, 'element')[1:])
+        if whole_space not in categories:
+            categories.append(whole_space)
 
         structure = make_structure(categories)
         cls._set_data_structure(cursor, structure)
@@ -484,6 +492,7 @@ class DataAccessLayer(object):
                 elif key == 'add_columns':
                     for stmnt in self._add_columns_make_sql(cur, value):
                         cur.execute(stmnt)
+                    self._update_categories_and_structure(cur)
                 else:
                     msg = f"can't set value for {key!r}"
                     raise ToronError(msg)

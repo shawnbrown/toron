@@ -70,7 +70,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.cursor.execute('SELECT A, B, C FROM main.structure')
         actual = self.cursor.fetchall()
         expected = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1),
-                    (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)]
+                    (1, 1, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1)]
         self.assertEqual(actual, expected)
 
     def test_add_to_existing_categories(self):
@@ -113,7 +113,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.cursor.execute('SELECT A, B, C FROM main.structure')
         actual = self.cursor.fetchall()
         expected = [(0, 0, 0), (1, 0, 0), (0, 1, 0),
-                    (1, 0, 1), (1, 1, 0), (1, 1, 1)]
+                    (1, 0, 1), (1, 1, 1), (1, 1, 0)]
         self.assertEqual(actual, expected)
 
     @unittest.skip('not fully implemented')

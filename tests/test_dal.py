@@ -220,6 +220,10 @@ class TestAddColumns(unittest.TestCase):
         columns = get_column_names(con, 'structure')
         self.assertEqual(columns, ['_structure_id', 'state', 'county'])
 
+        con = dal._get_connection()
+        cur = con.execute('SELECT * FROM structure')
+        self.assertEqual(cur.fetchall(), [(1, 0, 0), (2, 1, 1)])
+
     def test_set_data_order(self):
         """The set_data() method should run 'add_columns' items first."""
         dal = DataAccessLayer('mynode.toron', mode='memory')
