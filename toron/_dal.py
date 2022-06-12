@@ -458,6 +458,26 @@ class DataAccessLayer(object):
 
     @classmethod
     def _update_categories_and_structure(cls, cursor, categories=None, *, minimize=True):
+        """Update `discrete_categories` property and `structure` table.
+
+        Set new categories and rebuild structure table::
+
+            >>> cur = ...
+            >>> dal._update_categories_and_structure(cur, categories)
+
+        If categories have already been minimized, you can set the
+        *minimize* flag to False in order to prevent running the
+        process unnecessarily::
+
+            >>> cur = ...
+            >>> dal._update_categories_and_structure(cur, categories, minimize=False)
+
+        Refresh values if label columns have been added but there are
+        no explicit category changes (only implicit ones)::
+
+            >>> cur = ...
+            >>> dal._update_categories_and_structure(cur)
+        """
         if not categories:
             categories = cls._get_data_property(cursor, 'discrete_categories') or []
             categories = [set(x) for x in categories]
