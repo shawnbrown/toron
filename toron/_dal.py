@@ -214,8 +214,9 @@ class DataAccessLayer(object):
 
     @classmethod
     def _coarsen_records_make_sql(cls, cursor, remaining_columns):
-        quoted_remaining = (cls._quote_identifier(col) for col in remaining_columns)
-        formatted_remaining = ', '.join(quoted_remaining)
+        """Return a list of SQL statements to coarsen the dataset."""
+        quoted_names = (cls._quote_identifier(col) for col in remaining_columns)
+        formatted_names = ', '.join(quoted_names)
 
         sql_statements = []
 
@@ -224,11 +225,11 @@ class DataAccessLayer(object):
             CREATE TEMPORARY TABLE old_to_new_element_id
             AS SELECT element_id, new_element_id
             FROM main.element
-            JOIN (SELECT MIN(element_id) AS new_element_id, {formatted_remaining}
+            JOIN (SELECT MIN(element_id) AS new_element_id, {formatted_names}
                   FROM main.element
-                  GROUP BY {formatted_remaining}
+                  GROUP BY {formatted_names}
                   HAVING COUNT(*) > 1)
-            USING ({formatted_remaining})
+            USING ({formatted_names})
         ''')
 
         # Assign summed `value` to the records being kept.
