@@ -575,6 +575,29 @@ class TestRemoveColumnsMixin(object):
         with self.assertRaisesRegex(ToronError, regex):
             self.dal.remove_columns(['county', 'mcd', 'place'])  # <- Method under test.
 
+    def test_granularity_override(self):
+        """Using `strategy='coarsen'` will override granularity warning."""
+        self.dal.remove_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
+
+        actual = self.cur.execute('''
+            SELECT a.*, b.value
+            FROM element a
+            JOIN element_weight b USING (element_id)
+            JOIN weight c USING (weight_id)
+            WHERE c.name='population'
+        ''').fetchall()
+
+        expected = [
+            (1, 'AZ', 1524),
+            (2, 'CA', 8250),  # <- Aggregate sum of 3 records.
+            (5, 'IN', 562),
+            (6, 'MO', 6259),
+            (7, 'OH', 40734),
+            (8, 'PA', 6048),
+            (9, 'TX', 104028),  # <- Aggregate sum of 2 records.
+        ]
+        self.assertEqual(actual, expected)
+
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
 class TestRemoveColumns(TestRemoveColumnsMixin, unittest.TestCase):

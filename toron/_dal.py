@@ -210,6 +210,73 @@ class DataAccessLayer(object):
         return sql_stmnts
 
     @classmethod
+    def _coarsen_records_make_sql(cls, cursor, remaining_columns):
+        quoted_remaining = (cls._quote_identifier(col) for col in remaining_columns)
+        formatted_remaining = ', '.join(quoted_remaining)
+
+        sql_statements = []
+
+        # Build a temp table with old-to-new element_id mappings.
+        sql_statements.append(f'''
+            CREATE TEMPORARY TABLE old_to_new_element_id
+            AS SELECT element_id, new_element_id
+            FROM main.element
+            JOIN (SELECT MIN(element_id) AS new_element_id, {formatted_remaining}
+                  FROM main.element
+                  GROUP BY {formatted_remaining}
+                  HAVING COUNT(*) > 1)
+            USING ({formatted_remaining})
+        ''')
+
+        # Assign summed `value` to records being kept and discard old
+        # `element_weight` records.
+        sql_statements.extend([
+            '''
+                UPDATE main.element_weight
+                SET value=summed_value
+                FROM (SELECT weight_id AS old_weight_id,
+                             new_element_id,
+                             SUM(value) AS summed_value
+                      FROM main.element_weight
+                      JOIN temp.old_to_new_element_id USING (element_id)
+                      GROUP BY weight_id, new_element_id)
+                WHERE weight_id=old_weight_id AND element_id=new_element_id
+            ''',
+            '''
+                DELETE FROM main.element_weight
+                WHERE element_id IN (
+                    SELECT element_id
+                    FROM temp.old_to_new_element_id
+                    WHERE element_id != new_element_id
+                )
+            ''',
+        ])
+
+        # TODO: Assign proportion sums to `relation` table.
+        # TODO: Discard old relations.
+        # TODO: Update relation.mapping_level
+
+        # Discard old `element` records.
+        sql_statements.append('''
+            DELETE FROM main.element
+            WHERE element_id IN (
+                SELECT element_id
+                FROM temp.old_to_new_element_id
+                WHERE element_id != new_element_id
+            )
+        ''')
+
+        # TODO: Update weight.is_complete for incomplete weights.
+        # TODO: Update edge.is_complete for incomplete edges.
+        # TODO: Collapse duplicates in `location` table.
+        # TODO: Collapse duplicates in `quantity` table.
+
+        # Remove temporary table.
+        sql_statements.append('DROP TABLE temp.old_to_new_element_id')
+
+        return sql_statements
+
+    @classmethod
     def _remove_columns_execute_sql(cls, cursor, columns, strategy='preserve'):
         column_names = cls._get_column_names(cursor, 'element')
         column_names = column_names[1:]  # Slice-off 'element_id'.
@@ -251,8 +318,12 @@ class DataAccessLayer(object):
             HAVING COUNT(*) > 1
         ''')
         if cursor.fetchone() is not None:
-            msg = 'cannot remove, columns are needed to preserve granularity'
-            raise ToronError(msg)
+            if strategy == 'preserve' or strategy == 'restructure':
+                msg = 'cannot remove, columns are needed to preserve granularity'
+                raise ToronError(msg)
+            elif strategy == 'coarsen':
+                for stmnt in cls._coarsen_records_make_sql(cursor, names_remaining):
+                    cursor.execute(stmnt)
 
         # Clear `structure` table to prevent duplicates when removing columns.
         cursor.execute('DELETE FROM main.structure')
@@ -263,6 +334,8 @@ class DataAccessLayer(object):
 
         # Rebuild categories property and structure table.
         cls._update_categories_and_structure(cursor, new_categories)
+
+        # TODO: Recalculate node_hash for `properties` table.
 
     def remove_columns(self, columns, strategy='preserve'):
         with self._transaction() as cur:
