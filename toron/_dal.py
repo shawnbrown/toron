@@ -17,7 +17,7 @@ from ._node_schema import savepoint
 from ._node_schema import transaction
 
 
-_sqlite_version_info = sqlite3.sqlite_version_info
+_SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
 
 
 class DataAccessLayer(object):
@@ -232,7 +232,7 @@ class DataAccessLayer(object):
         ''')
 
         # Assign summed `value` to the records being kept.
-        if _sqlite_version_info >= (3, 33, 0):
+        if _SQLITE_VERSION_INFO >= (3, 33, 0):
             # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
             sql_statements.append('''
                 UPDATE main.element_weight
@@ -843,11 +843,11 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
 
 
 # Set the DataAccessLayer class appropriate for the current version of SQLite.
-if _sqlite_version_info < (3, 24, 0):
+if _SQLITE_VERSION_INFO < (3, 24, 0):
     dal_class = DataAccessLayerPre24
-elif _sqlite_version_info < (3, 25, 0):
+elif _SQLITE_VERSION_INFO < (3, 25, 0):
     dal_class = DataAccessLayerPre25
-elif _sqlite_version_info < (3, 35, 0):
+elif _SQLITE_VERSION_INFO < (3, 35, 0):
     dal_class = DataAccessLayerPre35
 else:
     dal_class = DataAccessLayer
