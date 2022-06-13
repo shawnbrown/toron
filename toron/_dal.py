@@ -17,6 +17,9 @@ from ._node_schema import savepoint
 from ._node_schema import transaction
 
 
+_sqlite_version_info = sqlite3.sqlite_version_info
+
+
 class DataAccessLayer(object):
     """A data access layer to interface with the underlying SQLite
     database. This class is not part of Toron's public interface--it
@@ -228,10 +231,10 @@ class DataAccessLayer(object):
             USING ({formatted_remaining})
         ''')
 
-        # Assign summed `value` to records being kept and discard old
-        # `element_weight` records.
-        sql_statements.extend([
-            '''
+        # Assign summed `value` to the records being kept.
+        if _sqlite_version_info >= (3, 33, 0):
+            # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
+            sql_statements.append('''
                 UPDATE main.element_weight
                 SET value=summed_value
                 FROM (SELECT weight_id AS old_weight_id,
@@ -241,16 +244,40 @@ class DataAccessLayer(object):
                       JOIN temp.old_to_new_element_id USING (element_id)
                       GROUP BY weight_id, new_element_id)
                 WHERE weight_id=old_weight_id AND element_id=new_element_id
-            ''',
-            '''
-                DELETE FROM main.element_weight
-                WHERE element_id IN (
-                    SELECT element_id
-                    FROM temp.old_to_new_element_id
-                    WHERE element_id != new_element_id
+            ''')
+        else:
+            sql_statements.append('''
+                WITH
+                    SummedValues AS (
+                        SELECT weight_id, new_element_id, SUM(value) AS summed_value
+                        FROM main.element_weight
+                        JOIN temp.old_to_new_element_id USING (element_id)
+                        GROUP BY weight_id, new_element_id
+                    ),
+                    RecordsToUpdate AS (
+                        SELECT element_weight_id AS record_id, summed_value
+                        FROM main.element_weight a
+                        JOIN SummedValues b
+                        ON (a.weight_id=b.weight_id AND a.element_id=b.new_element_id)
+                    )
+                UPDATE main.element_weight
+                SET value = (
+                    SELECT summed_value
+                    FROM RecordsToUpdate
+                    WHERE element_weight_id=record_id
                 )
-            ''',
-        ])
+                WHERE element_weight_id IN (SELECT record_id FROM RecordsToUpdate)
+            ''')
+
+        # Discard old `element_weight` records.
+        sql_statements.append('''
+            DELETE FROM main.element_weight
+            WHERE element_id IN (
+                SELECT element_id
+                FROM temp.old_to_new_element_id
+                WHERE element_id != new_element_id
+            )
+        ''')
 
         # TODO: Assign proportion sums to `relation` table.
         # TODO: Discard old relations.
@@ -816,7 +843,6 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
 
 
 # Set the DataAccessLayer class appropriate for the current version of SQLite.
-_sqlite_version_info = sqlite3.sqlite_version_info
 if _sqlite_version_info < (3, 24, 0):
     dal_class = DataAccessLayerPre24
 elif _sqlite_version_info < (3, 25, 0):
