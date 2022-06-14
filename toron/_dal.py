@@ -220,7 +220,7 @@ class DataAccessLayer(object):
 
         sql_statements = []
 
-        # Build a temp table with old-to-new element_id mappings.
+        # Build a temporary table with old-to-new `element_id` mapping.
         sql_statements.append(f'''
             CREATE TEMPORARY TABLE old_to_new_element_id
             AS SELECT element_id, new_element_id
@@ -232,7 +232,7 @@ class DataAccessLayer(object):
             USING ({formatted_names})
         ''')
 
-        # Assign summed `value` to the records being kept.
+        # Assign summed `value` to `element_weight` records being kept.
         if _SQLITE_VERSION_INFO >= (3, 33, 0):
             # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
             sql_statements.append('''
@@ -280,9 +280,9 @@ class DataAccessLayer(object):
             )
         ''')
 
-        # TODO: Assign proportion sums to `relation` table.
-        # TODO: Discard old relations.
-        # TODO: Update relation.mapping_level
+        # TODO: Assign summed `proportion` to `relation` records being kept.
+        # TODO: Discard old `relation` records.
+        # TODO: Update `relation.mapping_level` codes.
 
         # Discard old `element` records.
         sql_statements.append('''
@@ -294,13 +294,16 @@ class DataAccessLayer(object):
             )
         ''')
 
-        # TODO: Update weight.is_complete for incomplete weights.
-        # TODO: Update edge.is_complete for incomplete edges.
-        # TODO: Collapse duplicates in `location` table.
-        # TODO: Collapse duplicates in `quantity` table.
+        # TODO: Update `is_complete` for incomplete `weight` records.
+        # TODO: Update `is_complete` for incomplete `edge` records.
 
-        # Remove temporary table.
+        # Remove old-to-new temporary table for `element_id` mapping.
         sql_statements.append('DROP TABLE temp.old_to_new_element_id')
+
+        # TODO: Build a temporary table with old-to-new `location_id` mapping.
+        # TODO: Assign summed `value` to `quantity` records being kept.
+        # TODO: Discard old `location` records.
+        # TODO: Remove old-to-new temporary table for `location_id` mapping.
 
         return sql_statements
 
