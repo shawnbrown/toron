@@ -526,7 +526,13 @@ class TestRemoveColumnsMixin(object):
         with self.assertRaisesRegex(ToronError, regex):
             self.dal.remove_columns(['county'])  # <- Method under test.
 
-    def test_category_override(self):
+    def test_granularity_violation(self):
+        regex = 'cannot remove, columns are needed to preserve granularity'
+        with self.assertRaisesRegex(ToronError, regex):
+            self.dal.remove_columns(['county', 'mcd', 'place'])  # <- Method under test.
+
+    def test_strategy_restructure(self):
+        """The 'restructure' strategy should override category error."""
         self.dal.remove_columns(['mcd'], strategy='restructure')  # <- Method under test.
 
         # Check rebuilt categories.
@@ -570,13 +576,8 @@ class TestRemoveColumnsMixin(object):
         ]
         self.assertEqual(actual, expected)
 
-    def test_granularity_error(self):
-        regex = 'cannot remove, columns are needed to preserve granularity'
-        with self.assertRaisesRegex(ToronError, regex):
-            self.dal.remove_columns(['county', 'mcd', 'place'])  # <- Method under test.
-
-    def test_granularity_override(self):
-        """Using `strategy='coarsen'` will override granularity warning."""
+    def test_strategy_coarsen(self):
+        """The 'coarsen' strategy should override granularity error."""
         self.dal.remove_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
 
         actual = self.cur.execute('''
@@ -599,7 +600,7 @@ class TestRemoveColumnsMixin(object):
         self.assertEqual(actual, expected)
 
     def test_strategy_coarsenrestructure(self):
-        """The 'coarsenrestructure' strategy to override both
+        """The 'coarsenrestructure' strategy should override both
         granularity and category errors.
 
         Note: The example result used in this test is nonsensical but
