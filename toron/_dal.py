@@ -325,19 +325,16 @@ class DataAccessLayer(object):
         # Check for a loss of category coverage.
         cols_uncovered = set(names_remaining).difference(chain(*cats_filtered))
         if cols_uncovered:
-            if strategy == 'preserve' or strategy == 'coarsen':
+            if strategy not in {'restructure', 'coarsenrestructure'}:
                 formatted = ', '.join(repr(x) for x in sorted(cols_uncovered))
                 msg = f'cannot remove, categories are undefined for remaining columns: {formatted}'
                 raise ToronError(msg)
-            elif strategy == 'restructure' or strategy == 'coarsenrestructure':
-                new_categories = []
-                for cat in categories:
-                    cat = cat.difference(names_to_remove)
-                    if cat and cat not in new_categories:
-                        new_categories.append(cat)
-            else:
-                msg = f'unknown strategy: {strategy!r}'
-                raise ToronError(msg)
+
+            new_categories = []
+            for cat in categories:
+                cat = cat.difference(names_to_remove)
+                if cat and cat not in new_categories:
+                    new_categories.append(cat)
         else:
             new_categories = cats_filtered
 
@@ -349,12 +346,12 @@ class DataAccessLayer(object):
             HAVING COUNT(*) > 1
         ''')
         if cursor.fetchone() is not None:
-            if strategy == 'preserve' or strategy == 'restructure':
+            if strategy not in {'coarsen', 'coarsenrestructure'}:
                 msg = 'cannot remove, columns are needed to preserve granularity'
                 raise ToronError(msg)
-            elif strategy == 'coarsen' or strategy == 'coarsenrestructure':
-                for stmnt in cls._coarsen_records_make_sql(cursor, names_remaining):
-                    cursor.execute(stmnt)
+
+            for stmnt in cls._coarsen_records_make_sql(cursor, names_remaining):
+                cursor.execute(stmnt)
 
         # Clear `structure` table to prevent duplicates when removing columns.
         cursor.execute('DELETE FROM main.structure')
