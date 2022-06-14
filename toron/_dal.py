@@ -325,11 +325,11 @@ class DataAccessLayer(object):
         # Check for a loss of category coverage.
         cols_uncovered = set(names_remaining).difference(chain(*cats_filtered))
         if cols_uncovered:
-            if strategy == 'preserve':
+            if strategy == 'preserve' or strategy == 'coarsen':
                 formatted = ', '.join(repr(x) for x in sorted(cols_uncovered))
                 msg = f'cannot remove, categories are undefined for remaining columns: {formatted}'
                 raise ToronError(msg)
-            elif strategy == 'restructure':
+            elif strategy == 'restructure' or strategy == 'coarsenrestructure':
                 new_categories = []
                 for cat in categories:
                     cat = cat.difference(names_to_remove)
@@ -352,7 +352,7 @@ class DataAccessLayer(object):
             if strategy == 'preserve' or strategy == 'restructure':
                 msg = 'cannot remove, columns are needed to preserve granularity'
                 raise ToronError(msg)
-            elif strategy == 'coarsen':
+            elif strategy == 'coarsen' or strategy == 'coarsenrestructure':
                 for stmnt in cls._coarsen_records_make_sql(cursor, names_remaining):
                     cursor.execute(stmnt)
 

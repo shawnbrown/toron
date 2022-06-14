@@ -598,6 +598,37 @@ class TestRemoveColumnsMixin(object):
         ]
         self.assertEqual(actual, expected)
 
+    def test_strategy_coarsenrestructure(self):
+        """The 'coarsenrestructure' strategy to override both
+        granularity and category errors.
+
+        Note: The example result used in this test is nonsensical but
+        it does serve to validate the strategy behavior.
+        """
+        self.dal.remove_columns(['state', 'mcd', 'place'], strategy='coarsenrestructure')  # <- Method under test.
+
+        actual = self.cur.execute('''
+            SELECT a.*, b.value
+            FROM element a
+            JOIN element_weight b USING (element_id)
+            JOIN weight c USING (weight_id)
+            WHERE c.name='population'
+        ''').fetchall()
+
+        expected = [
+            (1, 'Graham', 1524),
+            (2, 'Los Angeles', 2399),
+            (3, 'Riverside', 2639),
+            (4, 'San Benito', 3212),
+            (5, 'LaPorte', 562),
+            (6, 'Cass', 7656),  # <- Aggregate sum of 2 records.
+            (7, 'Franklin', 40734),
+            (8, 'Somerset', 6048),
+            (9, 'Denton', 102631),
+        ]
+
+        self.assertEqual(actual, expected)
+
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
 class TestRemoveColumns(TestRemoveColumnsMixin, unittest.TestCase):
