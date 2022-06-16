@@ -630,6 +630,35 @@ class TestRemoveColumnsMixin(object):
 
         self.assertEqual(actual, expected)
 
+    def test_coarsening_incomplete_weight(self):
+        data = [
+            ('element_id', 'state', 'new_count'),
+            (1, 'AZ', 253),
+            # 2 missing.
+            # 3 missing.
+            (4, 'CA', 121),
+            (5, 'IN', 25),
+            (6, 'MO', 528),
+            (7, 'OH', 7033),
+            (8, 'PA', 407),
+            (9, 'TX', 6214),
+            # 10 missing.
+        ]
+
+        self.dal.add_weights(data, name='new_count', type_info={'category': 'new_count'})
+
+        self.cur.execute("SELECT is_complete FROM weight WHERE name='new_count'")
+        actual = self.cur.fetchone()[0]
+        msg = "should be False/0 because it's incomplete"
+        self.assertEqual(actual, False, msg=msg)
+
+        self.dal.remove_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
+
+        self.cur.execute("SELECT is_complete FROM weight WHERE name='new_count'")
+        actual = self.cur.fetchone()[0]
+        msg = 'should be True/1 (complete) after coarsening'
+        self.assertEqual(actual, True, msg=msg)
+
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
 class TestRemoveColumns(TestRemoveColumnsMixin, unittest.TestCase):

@@ -232,6 +232,24 @@ class DataAccessLayer(object):
             USING ({formatted_names})
         ''')
 
+        # Add missing `element_id` values needed for aggregation.
+        sql_statements.append('''
+            WITH
+                MatchingRecords AS (
+                    SELECT weight_id, element_id, new_element_id
+                    FROM main.element_weight
+                    JOIN temp.old_to_new_element_id USING (element_id)
+                ),
+                MissingElements AS (
+                    SELECT DISTINCT weight_id, new_element_id FROM MatchingRecords
+                    EXCEPT
+                    SELECT DISTINCT weight_id, element_id FROM MatchingRecords
+                )
+            INSERT INTO main.element_weight (weight_id, element_id, value)
+            SELECT weight_id, new_element_id, 0
+            FROM MissingElements
+        ''')
+
         # Assign summed `value` to `element_weight` records being kept.
         if _SQLITE_VERSION_INFO >= (3, 33, 0):
             # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
@@ -294,7 +312,35 @@ class DataAccessLayer(object):
             )
         ''')
 
-        # TODO: Update `is_complete` for incomplete `weight` records.
+        # Update `is_complete` for incomplete `weight` records.
+        sql_statements.append('''
+            WITH
+                WeightCounts AS (
+                    SELECT weight_id, COUNT(*) AS weight_count
+                    FROM main.weight
+                    JOIN main.element_weight USING (weight_id)
+                    WHERE is_complete=0
+                    GROUP by weight_id
+                ),
+                ElementCounts AS (
+                    SELECT COUNT(*) AS element_count FROM main.element
+                ),
+                NewStatus AS (
+                    SELECT
+                        weight_id AS record_id,
+                        weight_count=element_count AS is_complete
+                    FROM WeightCounts
+                    CROSS JOIN ElementCounts
+                )
+            UPDATE main.weight
+            SET is_complete = (
+                SELECT is_complete
+                FROM NewStatus
+                WHERE weight_id=record_id
+            )
+            WHERE weight_id IN (SELECT record_id FROM NewStatus)
+        ''')
+
         # TODO: Update `is_complete` for incomplete `edge` records.
 
         # Remove old-to-new temporary table for `element_id` mapping.
