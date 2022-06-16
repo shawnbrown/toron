@@ -232,7 +232,7 @@ class DataAccessLayer(object):
             USING ({formatted_names})
         ''')
 
-        # Add missing `element_id` values needed for aggregation.
+        # Add missing `element_weight.element_id` values needed for aggregation.
         sql_statements.append('''
             WITH
                 MatchingRecords AS (
@@ -298,6 +298,7 @@ class DataAccessLayer(object):
             )
         ''')
 
+        # TODO: Add missing `relation.element_id` values needed for aggregation.
         # TODO: Assign summed `proportion` to `relation` records being kept.
         # TODO: Discard old `relation` records.
         # TODO: Update `relation.mapping_level` codes.
