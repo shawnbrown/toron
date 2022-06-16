@@ -644,7 +644,6 @@ class TestRemoveColumnsMixin(object):
             (9, 'TX', 6214),
             # 10 missing.
         ]
-
         self.dal.add_weights(data, name='new_count', type_info={'category': 'new_count'})
 
         self.cur.execute("SELECT is_complete FROM weight WHERE name='new_count'")
@@ -658,6 +657,28 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.fetchone()[0]
         msg = 'should be True/1 (complete) after coarsening'
         self.assertEqual(actual, True, msg=msg)
+
+        actual = set(self.cur.execute('''
+            SELECT a.*, b.value
+            FROM element a
+            JOIN element_weight b USING (element_id)
+            JOIN weight c USING (weight_id)
+            WHERE c.name='new_count'
+        ''').fetchall())
+
+        expected = {
+            (1, 'AZ', 253),
+            (2, 'CA', 121),  # <- Remaining record uses `element_id` 2.
+            # 3 aggregated together with 2.
+            # 4 aggregated together with 2.
+            (5, 'IN', 25),
+            (6, 'MO', 528),
+            (7, 'OH', 7033),
+            (8, 'PA', 407),
+            (9, 'TX', 6214),  # <- Remaining record uses `element_id` 9.
+            # 10 aggregated together with 9.
+        }
+        self.assertEqual(actual, expected)
 
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
