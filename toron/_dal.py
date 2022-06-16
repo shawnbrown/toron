@@ -320,7 +320,7 @@ class DataAccessLayer(object):
                     FROM main.weight
                     JOIN main.element_weight USING (weight_id)
                     WHERE is_complete=0
-                    GROUP by weight_id
+                    GROUP BY weight_id
                 ),
                 ElementCounts AS (
                     SELECT COUNT(*) AS element_count FROM main.element
