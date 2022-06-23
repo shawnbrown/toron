@@ -75,7 +75,7 @@ class Node(object):
 
         On the other hand, "county" is a non-discrete category. While
         the label "Plymouth" is valid, it matches two different
-        counties--one in Iowa and another in Massachusetts. This value
+        counties--one in Massachusetts and another in Iowa. This value
         alone does not identify a single entity. A discrete category
         for counties, would require a combination of "state" and
         "county" labels together.
