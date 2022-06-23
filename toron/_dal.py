@@ -348,6 +348,7 @@ class DataAccessLayer(object):
         sql_statements.append('DROP TABLE temp.old_to_new_element_id')
 
         # TODO: Build a temporary table with old-to-new `location_id` mapping.
+        # TODO: Add missing `quantity._location_id` values needed for aggregation.
         # TODO: Assign summed `value` to `quantity` records being kept.
         # TODO: Discard old `location` records.
         # TODO: Remove old-to-new temporary table for `location_id` mapping.
