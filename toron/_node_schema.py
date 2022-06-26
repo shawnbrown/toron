@@ -33,16 +33,16 @@ the application layer:
               |      | ...        |••••>| ...          |<••••| ...           |
               |      +------------+     +--------------+     +---------------+
               |
-              |  +-------------------+                         +----------+
-              |  | element_weight    |     +-------------+     | property |
-              |  +-------------------+     | weight      |     +----------+
-              |  | element_weight_id |     +-------------+     | key      |
-              |  | weight_id         |<----| weight_id   |     | value    |
-              +->| element_id        |•••  | name        |     +----------+
-                 | value             |  •  | type_info   |
-                 +-------------------+  •  | description |
-                                        ••>| is_complete |
-                                           +-------------+
+              |  +-------------------+                          +----------+
+              |  | element_weight    |     +--------------+     | property |
+              |  +-------------------+     | weighting    |     +----------+
+              |  | element_weight_id |     +--------------+     | key      |
+              |  | weighting_id      |<----| weighting_id |     | value    |
+              +->| element_id        |•••  | name         |     +----------+
+                 | value             |  •  | type_info    |
+                 +-------------------+  •  | description  |
+                                        ••>| is_complete  |
+                                           +--------------+
 """
 
 import itertools
@@ -136,8 +136,8 @@ _schema_script = """
         FOREIGN KEY(_location_id) REFERENCES location(_location_id)
     );
 
-    CREATE TABLE weight(
-        weight_id INTEGER PRIMARY KEY,
+    CREATE TABLE weighting(
+        weighting_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         type_info TEXT_ATTRIBUTES NOT NULL,
         description TEXT,
@@ -147,12 +147,12 @@ _schema_script = """
 
     CREATE TABLE element_weight(
         element_weight_id INTEGER PRIMARY KEY,
-        weight_id INTEGER,
+        weighting_id INTEGER,
         element_id INTEGER,
         value REAL NOT NULL,
-        FOREIGN KEY(weight_id) REFERENCES weight(weight_id) ON DELETE CASCADE,
+        FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
         FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
-        UNIQUE (element_id, weight_id)
+        UNIQUE (element_id, weighting_id)
     );
 
     CREATE TABLE property(
@@ -351,7 +351,7 @@ def _add_functions_and_triggers(connection):
     jsonflatobj_columns = [
         ('edge', 'type_info'),
         ('quantity', 'attributes'),
-        ('weight', 'type_info'),
+        ('weighting', 'type_info'),
     ]
     for table, column in jsonflatobj_columns:
         connection.execute(_make_trigger_for_attributes('INSERT', table, column))

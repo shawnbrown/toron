@@ -494,7 +494,7 @@ class TestRemoveColumnsMixin(object):
             SELECT a.*, b.value
             FROM element a
             JOIN element_weight b USING (element_id)
-            JOIN weight c USING (weight_id)
+            JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
 
@@ -558,7 +558,7 @@ class TestRemoveColumnsMixin(object):
             SELECT a.*, b.value
             FROM element a
             JOIN element_weight b USING (element_id)
-            JOIN weight c USING (weight_id)
+            JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
 
@@ -584,7 +584,7 @@ class TestRemoveColumnsMixin(object):
             SELECT a.*, b.value
             FROM element a
             JOIN element_weight b USING (element_id)
-            JOIN weight c USING (weight_id)
+            JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
 
@@ -612,7 +612,7 @@ class TestRemoveColumnsMixin(object):
             SELECT a.*, b.value
             FROM element a
             JOIN element_weight b USING (element_id)
-            JOIN weight c USING (weight_id)
+            JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
 
@@ -646,14 +646,14 @@ class TestRemoveColumnsMixin(object):
         ]
         self.dal.add_weights(data, name='new_count', type_info={'category': 'new_count'})
 
-        self.cur.execute("SELECT is_complete FROM weight WHERE name='new_count'")
+        self.cur.execute("SELECT is_complete FROM weighting WHERE name='new_count'")
         actual = self.cur.fetchone()[0]
         msg = "should be False/0 because it's incomplete"
         self.assertEqual(actual, False, msg=msg)
 
         self.dal.remove_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
 
-        self.cur.execute("SELECT is_complete FROM weight WHERE name='new_count'")
+        self.cur.execute("SELECT is_complete FROM weighting WHERE name='new_count'")
         actual = self.cur.fetchone()[0]
         msg = 'should be True/1 (complete) after coarsening'
         self.assertEqual(actual, True, msg=msg)
@@ -662,7 +662,7 @@ class TestRemoveColumnsMixin(object):
             SELECT a.*, b.value
             FROM element a
             JOIN element_weight b USING (element_id)
-            JOIN weight c USING (weight_id)
+            JOIN weighting c USING (weighting_id)
             WHERE c.name='new_count'
         ''').fetchall())
 
@@ -840,15 +840,15 @@ class TestAddWeightsGetNewId(unittest.TestCase):
         type_info = {'category': 'stuff'}
         description = 'My description.'
 
-        weight_id = func(self.cur, name, type_info, description)  # <- Test the function.
+        weighting_id = func(self.cur, name, type_info, description)  # <- Test the function.
 
-        actual = self.cur.execute('SELECT * FROM weight').fetchall()
+        actual = self.cur.execute('SELECT * FROM weighting').fetchall()
         expected = [(1, name, type_info, description, None)]
         self.assertEqual(actual, expected)
 
-        msg = 'retrieved weight_id should be same as returned from function'
-        retrieved_weight_id = actual[0][0]
-        self.assertEqual(retrieved_weight_id, weight_id, msg=msg)
+        msg = 'retrieved weighting_id should be same as returned from function'
+        retrieved_weighting_id = actual[0][0]
+        self.assertEqual(retrieved_weighting_id, weighting_id, msg=msg)
 
     @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
     def test_with_returning_clause(self):
@@ -873,8 +873,8 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         columns = ['state', 'county', 'town']
         sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
-            INSERT INTO element_weight (weight_id, element_id, value)
-            SELECT ? AS weight_id, element_id, ? AS value
+            INSERT INTO element_weight (weighting_id, element_id, value)
+            SELECT ? AS weighting_id, element_id, ? AS value
             FROM element
             WHERE "state"=? AND "county"=? AND "town"=?
             GROUP BY "state", "county", "town"
@@ -889,8 +889,8 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         columns = ['state', 'county']
         sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
-            INSERT INTO element_weight (weight_id, element_id, value)
-            SELECT ? AS weight_id, element_id, ? AS value
+            INSERT INTO element_weight (weighting_id, element_id, value)
+            SELECT ? AS weighting_id, element_id, ? AS value
             FROM element
             WHERE "state"=? AND "county"=?
             GROUP BY "state", "county"
@@ -930,41 +930,41 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def test_complete(self):
-        weight_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
+        weighting_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
 
         # Insert element_weight records.
         iterator = [
-            (weight_id, 12, 'X', '001'),
-            (weight_id, 35, 'Y', '001'),
-            (weight_id, 20, 'Z', '002'),
+            (weighting_id, 12, 'X', '001'),
+            (weighting_id, 35, 'Y', '001'),
+            (weighting_id, 20, 'Z', '002'),
         ]
         sql = dal_class._add_weights_make_sql(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
-        dal_class._add_weights_set_is_complete(self.cur, weight_id)  # <- Update is_complete!
+        dal_class._add_weights_set_is_complete(self.cur, weighting_id)  # <- Update is_complete!
 
         # Check is_complete flag.
-        self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
+        self.cur.execute('SELECT is_complete FROM weighting WHERE weighting_id=?', (weighting_id,))
         result = self.cur.fetchone()
-        self.assertEqual(result, (1,), msg='weight is complete, should be 1')
+        self.assertEqual(result, (1,), msg='weighting is complete, should be 1')
 
     def test_incomplete(self):
-        weight_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
+        weighting_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
 
         # Insert element_weight records.
         iterator = [
-            (weight_id, 12, 'X', '001'),
-            (weight_id, 35, 'Y', '001'),
+            (weighting_id, 12, 'X', '001'),
+            (weighting_id, 35, 'Y', '001'),
         ]
         sql = dal_class._add_weights_make_sql(self.cur, self.columns)
         self.cur.executemany(sql, iterator)
 
-        dal_class._add_weights_set_is_complete(self.cur, weight_id)  # <- Update is_complete!
+        dal_class._add_weights_set_is_complete(self.cur, weighting_id)  # <- Update is_complete!
 
         # Check is_complete flag.
-        self.cur.execute('SELECT is_complete FROM weight WHERE weight_id=?', (weight_id,))
+        self.cur.execute('SELECT is_complete FROM weighting WHERE weighting_id=?', (weighting_id,))
         result = self.cur.fetchone()
-        self.assertEqual(result, (0,), msg='weight is incomplete, should be 0')
+        self.assertEqual(result, (0,), msg='weighting is incomplete, should be 0')
 
 
 class TestAddWeights(unittest.TestCase):
@@ -1006,7 +1006,7 @@ class TestAddWeights(unittest.TestCase):
         ]
         self.dal.add_weights(weights, columns, name='pop10', type_info={'category': 'census'})
 
-        self.cursor.execute('SELECT * FROM weight')
+        self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
             self.cursor.fetchall(),
             [(1, 'pop10', {'category': 'census'}, None, 1)],  # <- is_complete is 1
@@ -1016,7 +1016,7 @@ class TestAddWeights(unittest.TestCase):
             SELECT state, county, tract, value
             FROM element
             NATURAL JOIN element_weight
-            WHERE weight_id=1
+            WHERE weighting_id=1
         """)
         self.assertEqual(set(self.cursor.fetchall()), set(weights))
 
@@ -1034,7 +1034,7 @@ class TestAddWeights(unittest.TestCase):
         ]
         self.dal.add_weights(weights, name='pop10', type_info={'category': 'census'})
 
-        self.cursor.execute('SELECT * FROM weight')
+        self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
             self.cursor.fetchall(),
             [(1, 'pop10', {'category': 'census'}, None, 0)],  # <- is_complete is 0
@@ -1045,7 +1045,7 @@ class TestAddWeights(unittest.TestCase):
             SELECT state, county, value
             FROM element
             JOIN element_weight USING (element_id)
-            WHERE weight_id=1
+            WHERE weighting_id=1
         """)
         result = self.cursor.fetchall()
 

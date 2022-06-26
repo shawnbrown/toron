@@ -236,17 +236,17 @@ class DataAccessLayer(object):
         sql_statements.append('''
             WITH
                 MatchingRecords AS (
-                    SELECT weight_id, element_id, new_element_id
+                    SELECT weighting_id, element_id, new_element_id
                     FROM main.element_weight
                     JOIN temp.old_to_new_element_id USING (element_id)
                 ),
                 MissingElements AS (
-                    SELECT DISTINCT weight_id, new_element_id FROM MatchingRecords
+                    SELECT DISTINCT weighting_id, new_element_id FROM MatchingRecords
                     EXCEPT
-                    SELECT DISTINCT weight_id, element_id FROM MatchingRecords
+                    SELECT DISTINCT weighting_id, element_id FROM MatchingRecords
                 )
-            INSERT INTO main.element_weight (weight_id, element_id, value)
-            SELECT weight_id, new_element_id, 0
+            INSERT INTO main.element_weight (weighting_id, element_id, value)
+            SELECT weighting_id, new_element_id, 0
             FROM MissingElements
         ''')
 
@@ -256,28 +256,28 @@ class DataAccessLayer(object):
             sql_statements.append('''
                 UPDATE main.element_weight
                 SET value=summed_value
-                FROM (SELECT weight_id AS old_weight_id,
+                FROM (SELECT weighting_id AS old_weighting_id,
                              new_element_id,
                              SUM(value) AS summed_value
                       FROM main.element_weight
                       JOIN temp.old_to_new_element_id USING (element_id)
-                      GROUP BY weight_id, new_element_id)
-                WHERE weight_id=old_weight_id AND element_id=new_element_id
+                      GROUP BY weighting_id, new_element_id)
+                WHERE weighting_id=old_weighting_id AND element_id=new_element_id
             ''')
         else:
             sql_statements.append('''
                 WITH
                     SummedValues AS (
-                        SELECT weight_id, new_element_id, SUM(value) AS summed_value
+                        SELECT weighting_id, new_element_id, SUM(value) AS summed_value
                         FROM main.element_weight
                         JOIN temp.old_to_new_element_id USING (element_id)
-                        GROUP BY weight_id, new_element_id
+                        GROUP BY weighting_id, new_element_id
                     ),
                     RecordsToUpdate AS (
                         SELECT element_weight_id AS record_id, summed_value
                         FROM main.element_weight a
                         JOIN SummedValues b
-                        ON (a.weight_id=b.weight_id AND a.element_id=b.new_element_id)
+                        ON (a.weighting_id=b.weighting_id AND a.element_id=b.new_element_id)
                     )
                 UPDATE main.element_weight
                 SET value = (
@@ -313,33 +313,33 @@ class DataAccessLayer(object):
             )
         ''')
 
-        # Update `is_complete` for incomplete `weight` records.
+        # Update `is_complete` for incomplete `weighting` records.
         sql_statements.append('''
             WITH
                 WeightCounts AS (
-                    SELECT weight_id, COUNT(*) AS weight_count
-                    FROM main.weight
-                    JOIN main.element_weight USING (weight_id)
+                    SELECT weighting_id, COUNT(*) AS weight_count
+                    FROM main.weighting
+                    JOIN main.element_weight USING (weighting_id)
                     WHERE is_complete=0
-                    GROUP BY weight_id
+                    GROUP BY weighting_id
                 ),
                 ElementCounts AS (
                     SELECT COUNT(*) AS element_count FROM main.element
                 ),
                 NewStatus AS (
                     SELECT
-                        weight_id AS record_id,
+                        weighting_id AS record_id,
                         weight_count=element_count AS is_complete
                     FROM WeightCounts
                     CROSS JOIN ElementCounts
                 )
-            UPDATE main.weight
+            UPDATE main.weighting
             SET is_complete = (
                 SELECT is_complete
                 FROM NewStatus
-                WHERE weight_id=record_id
+                WHERE weighting_id=record_id
             )
-            WHERE weight_id IN (SELECT record_id FROM NewStatus)
+            WHERE weighting_id IN (SELECT record_id FROM NewStatus)
         ''')
 
         # TODO: Update `is_complete` for incomplete `edge` records.
@@ -466,9 +466,9 @@ class DataAccessLayer(object):
         # in SQLite 3.35.0 (2021-03-12).
         type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
         sql = """
-            INSERT INTO weight(name, type_info, description)
+            INSERT INTO weighting(name, type_info, description)
             VALUES(?, ?, ?)
-            RETURNING weight_id
+            RETURNING weighting_id
         """
         cursor.execute(sql, (name, type_info, description))
         return cursor.fetchone()[0]
@@ -492,8 +492,8 @@ class DataAccessLayer(object):
         groupby_clause = ', '.join(columns)
 
         sql = f"""
-            INSERT INTO element_weight (weight_id, element_id, value)
-            SELECT ? AS weight_id, element_id, ? AS value
+            INSERT INTO element_weight (weighting_id, element_id, value)
+            SELECT ? AS weighting_id, element_id, ? AS value
             FROM element
             WHERE {where_clause}
             GROUP BY {groupby_clause}
@@ -502,17 +502,17 @@ class DataAccessLayer(object):
         return sql
 
     @staticmethod
-    def _add_weights_set_is_complete(cursor, weight_id):
-        """Set the 'weight.is_complete' value to 1 or 0 (True/False)."""
+    def _add_weights_set_is_complete(cursor, weighting_id):
+        """Set the 'weighting.is_complete' value to 1 or 0 (True/False)."""
         sql = """
-            UPDATE weight
+            UPDATE weighting
             SET is_complete=((SELECT COUNT(*)
                               FROM element_weight
-                              WHERE weight_id=?) = (SELECT COUNT(*)
-                                                    FROM element))
-            WHERE weight_id=?
+                              WHERE weighting_id=?) = (SELECT COUNT(*)
+                                                       FROM element))
+            WHERE weighting_id=?
         """
-        cursor.execute(sql, (weight_id, weight_id))
+        cursor.execute(sql, (weighting_id, weighting_id))
 
     def add_weights(self, iterable, columns=None, *, name, type_info, description=None):
         iterator = iter(iterable)
@@ -527,7 +527,7 @@ class DataAccessLayer(object):
             raise ValueError(msg)
 
         with self._transaction() as cur:
-            weight_id = self._add_weights_get_new_id(cur, name, type_info, description)
+            weighting_id = self._add_weights_get_new_id(cur, name, type_info, description)
 
             # Get allowed columns and build selectors values.
             allowed_columns = self._get_column_names(cur, 'element')
@@ -536,7 +536,7 @@ class DataAccessLayer(object):
             # Filter column names and iterator rows to allowed columns.
             columns = compress(columns, selectors)
             def mkrow(row):
-                weightid_and_value = (weight_id, row[weight_pos])
+                weightid_and_value = (weighting_id, row[weight_pos])
                 element_labels = tuple(compress(row, selectors))
                 return weightid_and_value + element_labels
             iterator = (mkrow(row) for row in iterator)
@@ -545,8 +545,8 @@ class DataAccessLayer(object):
             sql = self._add_weights_make_sql(cur, columns)
             cur.executemany(sql, iterator)
 
-            # Update "weight.is_complete" value (set to 1 or 0).
-            self._add_weights_set_is_complete(cur, weight_id)
+            # Update "weighting.is_complete" value (set to 1 or 0).
+            self._add_weights_set_is_complete(cur, weighting_id)
 
     @staticmethod
     def _get_data_property(cursor, key):
@@ -729,7 +729,7 @@ class DataAccessLayerPre35(DataAccessLayer):
         # last_insert_rowid() SQLite function.
         type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
         sql = """
-            INSERT INTO weight(name, type_info, description)
+            INSERT INTO weighting(name, type_info, description)
             VALUES(?, ?, ?)
         """
         cursor.execute(sql, (name, type_info, description))
