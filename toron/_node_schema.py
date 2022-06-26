@@ -106,7 +106,7 @@ _schema_script = """
         edge_id INTEGER,
         other_element_id INTEGER NOT NULL,
         element_id INTEGER,
-        proportion REAL CHECK (0.0 < proportion AND proportion <= 1.0) NOT NULL,
+        proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0) NOT NULL,
         mapping_level INTEGER NOT NULL,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
         FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
