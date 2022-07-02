@@ -113,20 +113,22 @@ class DataAccessLayer(object):
 
         sql_stmnts.extend([
             'DROP INDEX IF EXISTS unique_element_index',
+            'DROP INDEX IF EXISTS unique_location_index',
             'DROP INDEX IF EXISTS unique_structure_index',
         ])
 
         for col in new_cols:
             sql_stmnts.extend([
-                f"ALTER TABLE element ADD COLUMN {col} TEXT DEFAULT '-' NOT NULL",
-                f'ALTER TABLE location ADD COLUMN {col} TEXT',
-                f'ALTER TABLE structure ADD COLUMN {col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0',
+                f"ALTER TABLE element ADD COLUMN {col} TEXT DEFAULT '-' NOT NULL CHECK ({col} != '')",
+                f"ALTER TABLE location ADD COLUMN {col} TEXT DEFAULT '' NOT NULL",
+                f"ALTER TABLE structure ADD COLUMN {col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0",
             ])
 
         label_cols = current_cols[1:] + new_cols  # All columns except the id column.
         label_cols = ', '.join(label_cols)
         sql_stmnts.extend([
             f'CREATE UNIQUE INDEX unique_element_index ON element({label_cols})',
+            f'CREATE UNIQUE INDEX unique_location_index ON location({label_cols})',
             f'CREATE UNIQUE INDEX unique_structure_index ON structure({label_cols})',
         ])
 
@@ -193,6 +195,7 @@ class DataAccessLayer(object):
 
         sql_stmnts.extend([
             'DROP INDEX IF EXISTS unique_element_index',
+            'DROP INDEX IF EXISTS unique_location_index',
             'DROP INDEX IF EXISTS unique_structure_index',
         ])
 
@@ -207,6 +210,7 @@ class DataAccessLayer(object):
         remaining_cols = ', '.join(remaining_cols)
         sql_stmnts.extend([
             f'CREATE UNIQUE INDEX unique_element_index ON element({remaining_cols})',
+            f'CREATE UNIQUE INDEX unique_location_index ON location({remaining_cols})',
             f'CREATE UNIQUE INDEX unique_structure_index ON structure({remaining_cols})',
         ])
 
@@ -774,6 +778,7 @@ class DataAccessLayerPre35(DataAccessLayer):
 
             # Reconstruct associated indexes.
             f'CREATE UNIQUE INDEX unique_element_index ON element({", ".join(columns_to_keep)})',
+            f'CREATE UNIQUE INDEX unique_location_index ON location({", ".join(columns_to_keep)})',
             f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(columns_to_keep)})',
         ]
         return statements
@@ -844,6 +849,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
 
             # Reconstruct associated indexes.
             f'CREATE UNIQUE INDEX unique_element_index ON element({", ".join(new_column_names)})',
+            f'CREATE UNIQUE INDEX unique_location_index ON location({", ".join(new_column_names)})',
             f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(new_column_names)})',
         ]
         return statements
