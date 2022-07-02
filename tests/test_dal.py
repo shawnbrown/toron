@@ -10,9 +10,9 @@ from textwrap import dedent
 from .common import get_column_names
 from .common import TempDirTestCase
 
-from toron._node_schema import connect
-from toron._node_schema import _schema_script
-from toron._node_schema import _add_functions_and_triggers
+from toron._schema import connect
+from toron._schema import _schema_script
+from toron._schema import _add_functions_and_triggers
 from toron._dal import DataAccessLayer
 from toron._dal import DataAccessLayerPre24
 from toron._dal import DataAccessLayerPre25

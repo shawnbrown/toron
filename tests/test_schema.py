@@ -8,17 +8,19 @@ from stat import S_IRUSR, S_IWUSR
 from .common import TempDirTestCase
 
 from toron._exceptions import ToronError
-from toron._node_schema import SQLITE_JSON1_ENABLED
-from toron._node_schema import _is_wellformed_json
-from toron._node_schema import _is_wellformed_user_properties
-from toron._node_schema import _is_wellformed_attributes
-from toron._node_schema import _schema_script
-from toron._node_schema import _make_trigger_for_attributes
-from toron._node_schema import _add_functions_and_triggers
-from toron._node_schema import _path_to_sqlite_uri
-from toron._node_schema import connect
-from toron._node_schema import transaction
-from toron._node_schema import savepoint
+from toron._schema import (
+    SQLITE_JSON1_ENABLED,
+    _is_wellformed_json,
+    _is_wellformed_user_properties,
+    _is_wellformed_attributes,
+    _schema_script,
+    _make_trigger_for_attributes,
+    _add_functions_and_triggers,
+    _path_to_sqlite_uri,
+    connect,
+    transaction,
+    savepoint,
+)
 
 
 class CheckJsonMixin(object):
