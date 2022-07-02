@@ -8,13 +8,11 @@ from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
 
+from . import _node_schema
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
 from ._exceptions import ToronError
 from ._exceptions import ToronWarning
-from ._node_schema import connect
-from ._node_schema import savepoint
-from ._node_schema import transaction
 
 
 _SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
@@ -43,19 +41,19 @@ class DataAccessLayer(object):
     """
     def __init__(self, path, mode='rwc'):
         if mode == 'memory':
-            self._connection = connect(path, mode=mode)  # In-memory connection.
-            self._transaction = lambda: transaction(self._connection)
+            self._connection = _node_schema.connect(path, mode=mode)  # In-memory connection.
+            self._transaction = lambda: _node_schema.transaction(self._connection)
         else:
             path = os.fspath(path)
-            connect(path, mode=mode).close()  # Verify path to Toron node file.
-            self._transaction = lambda: transaction(self.path, mode=mode)
+            _node_schema.connect(path, mode=mode).close()  # Verify path to Toron node file.
+            self._transaction = lambda: _node_schema.transaction(self.path, mode=mode)
         self.path = path
         self.mode = mode
 
     def _get_connection(self):
         if self.mode == 'memory':
             return self._connection
-        return connect(self.path, mode=self.mode)
+        return _node_schema.connect(self.path, mode=self.mode)
 
     def __del__(self):
         if hasattr(self, '_connection'):
@@ -793,7 +791,7 @@ class DataAccessLayerPre35(DataAccessLayer):
         try:
             con.execute('PRAGMA foreign_keys=OFF')
             cur = con.cursor()
-            with savepoint(cur):
+            with _node_schema.savepoint(cur):
                 self._remove_columns_execute_sql(cur, columns, strategy)
 
                 cur.execute('PRAGMA main.foreign_key_check')
@@ -862,7 +860,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         try:
             con.execute('PRAGMA foreign_keys=OFF')
             cur = con.cursor()
-            with savepoint(cur):
+            with _node_schema.savepoint(cur):
                 names, new_names = self._rename_columns_apply_mapper(cur, mapper)
                 for stmnt in self._rename_columns_make_sql(names, new_names):
                     cur.execute(stmnt)
