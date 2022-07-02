@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
+import csv
 import itertools
 import hashlib
 import os
 import sqlite3
 import textwrap
 
-from toron import _csv as csv
 from toron.connector import _Connector
 from toron.connector import _duplicate_label_sets
 from toron.connector import _invalid_unmapped_levels
