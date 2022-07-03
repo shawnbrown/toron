@@ -236,6 +236,11 @@ def sql_column_def_location_label(name: str) -> str:
     return f"{name} TEXT DEFAULT '' NOT NULL"
 
 
+def sql_column_def_structure_label(name: str) -> str:
+    """Return a `structure` table column-def for a label column."""
+    return f"{name} INTEGER CHECK ({name} IN (0, 1)) DEFAULT 0"
+
+
 def _is_wellformed_json(x):
     """Return 1 if *x* is well-formed JSON or return 0 if *x* is not
     well-formed. This function should be registered with SQLite (via
