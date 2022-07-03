@@ -217,6 +217,19 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
     ]
 
 
+def sql_column_def_element_label(name: str) -> str:
+    """Return an `element` table column-def for a label column.
+
+    The value should follow the SQLite syntax described at:
+
+        https://www.sqlite.org/syntax/column-def.html
+
+    The returned definition is suitable for use in ALTER TABLE or
+    CREATE TABLE statements.
+    """
+    return f"{name} TEXT DEFAULT '-' NOT NULL CHECK ({name} != '')"
+
+
 def _is_wellformed_json(x):
     """Return 1 if *x* is well-formed JSON or return 0 if *x* is not
     well-formed. This function should be registered with SQLite (via

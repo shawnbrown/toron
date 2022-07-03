@@ -312,7 +312,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
         """Test legacy column-rename statements for workaround procedure."""
         sql = DataAccessLayerPre25._rename_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
-            'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT DEFAULT \'-\' NOT NULL, "county" TEXT DEFAULT \'-\' NOT NULL, "place" TEXT DEFAULT \'-\' NOT NULL)',
+            'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT DEFAULT \'-\' NOT NULL CHECK ("stusab" != \'\'), "county" TEXT DEFAULT \'-\' NOT NULL CHECK ("county" != \'\'), "place" TEXT DEFAULT \'-\' NOT NULL CHECK ("place" != \'\'))',
             'INSERT INTO new_element SELECT element_id, "state", "county", "town" FROM element',
             'DROP TABLE element',
             'ALTER TABLE new_element RENAME TO element',
@@ -410,7 +410,7 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
         """Check SQL of column removal procedure for legacy SQLite."""
         sql_stmnts = DataAccessLayerPre35._remove_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
-            'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT DEFAULT \'-\' NOT NULL, "county" TEXT DEFAULT \'-\' NOT NULL)',
+            'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT DEFAULT \'-\' NOT NULL CHECK ("state" != \'\'), "county" TEXT DEFAULT \'-\' NOT NULL CHECK ("county" != \'\'))',
             'INSERT INTO new_element SELECT element_id, "state", "county" FROM element',
             'DROP TABLE element',
             'ALTER TABLE new_element RENAME TO element',
