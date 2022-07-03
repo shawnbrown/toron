@@ -243,20 +243,16 @@ def _make_trigger_for_json(insert_or_update, table, column):
         raise ValueError(msg)
 
     if SQLITE_JSON1_ENABLED:
-        when_clause = f"""
-            NEW.{column} IS NOT NULL
-            AND json_valid(NEW.{column}) = 0
-        """.rstrip()
+        json_valid_func = 'json_valid'
     else:
-        when_clause = f"""
-            NEW.{column} IS NOT NULL
-            AND is_wellformed_json(NEW.{column}) = 0
-        """.rstrip()
+        json_valid_func = 'is_wellformed_json'
 
     return f'''
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
         BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
-        WHEN{when_clause}
+        WHEN
+            NEW.{column} IS NOT NULL
+            AND {json_valid_func}(NEW.{column}) = 0
         BEGIN
             SELECT RAISE(ABORT, '{table}.{column} must be wellformed JSON');
         END;
