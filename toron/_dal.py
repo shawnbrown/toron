@@ -115,7 +115,7 @@ class DataAccessLayer(object):
         for col in new_cols:
             sql_stmnts.extend([
                 f"ALTER TABLE element ADD COLUMN {_schema.sql_column_def_element_label(col)}",
-                f"ALTER TABLE location ADD COLUMN {col} TEXT DEFAULT '' NOT NULL",
+                f"ALTER TABLE location ADD COLUMN {_schema.sql_column_def_location_label(col)}",
                 f"ALTER TABLE structure ADD COLUMN {col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0",
             ])
 
@@ -730,7 +730,7 @@ class DataAccessLayerPre35(DataAccessLayer):
         # rebuild the table structures.
         columns_to_keep = [col for col in column_names if col not in names_to_remove]
         new_element_cols = [_schema.sql_column_def_element_label(col) for col in columns_to_keep]
-        new_location_cols = [f"{col} TEXT" for col in columns_to_keep]
+        new_location_cols = [_schema.sql_column_def_location_label(col) for col in columns_to_keep]
         new_structure_cols = [f"{col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0" for col in columns_to_keep]
 
         statements = [
@@ -801,7 +801,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         # must be rebuilt. This method prepares a sequence of operations to
         # rebuild the table structures.
         new_element_cols = [_schema.sql_column_def_element_label(col) for col in new_column_names]
-        new_location_cols = [f"{col} TEXT" for col in new_column_names]
+        new_location_cols = [_schema.sql_column_def_location_label(col) for col in new_column_names]
         new_structure_cols = [f"{col} INTEGER CHECK ({col} IN (0, 1)) DEFAULT 0" for col in new_column_names]
         statements = [
             # Rebuild 'element' table.
