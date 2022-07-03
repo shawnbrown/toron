@@ -51,6 +51,7 @@ import re
 import sqlite3
 from contextlib import contextmanager
 from json import loads as _loads
+from typing import List
 from urllib.parse import quote as urllib_parse_quote
 
 from ._exceptions import ToronError
@@ -195,6 +196,25 @@ def normalize_identifier(value: str) -> str:
 
     value = value.replace('"', '""')
     return f'"{value}"'
+
+
+def sql_drop_label_indexes() -> List[str]:
+    """Return list of SQL statements to drop unique label indexes."""
+    return [
+        'DROP INDEX IF EXISTS unique_element_index',
+        'DROP INDEX IF EXISTS unique_location_index',
+        'DROP INDEX IF EXISTS unique_structure_index',
+    ]
+
+
+def sql_create_label_indexes(columns: List[str]) -> List[str]:
+    """Return list of SQL statements to create unique label indexes."""
+    formatted = ', '.join(normalize_identifier(x) for x in columns)
+    return [
+        f'CREATE UNIQUE INDEX unique_element_index ON element({formatted})',
+        f'CREATE UNIQUE INDEX unique_location_index ON location({formatted})',
+        f'CREATE UNIQUE INDEX unique_structure_index ON structure({formatted})',
+    ]
 
 
 def _is_wellformed_json(x):

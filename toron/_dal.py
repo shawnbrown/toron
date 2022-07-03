@@ -109,11 +109,7 @@ class DataAccessLayer(object):
 
         sql_stmnts = []
 
-        sql_stmnts.extend([
-            'DROP INDEX IF EXISTS unique_element_index',
-            'DROP INDEX IF EXISTS unique_location_index',
-            'DROP INDEX IF EXISTS unique_structure_index',
-        ])
+        sql_stmnts.extend(_schema.sql_drop_label_indexes())
 
         for col in new_cols:
             sql_stmnts.extend([
@@ -123,12 +119,7 @@ class DataAccessLayer(object):
             ])
 
         label_cols = current_cols[1:] + new_cols  # All columns except the id column.
-        label_cols = ', '.join(label_cols)
-        sql_stmnts.extend([
-            f'CREATE UNIQUE INDEX unique_element_index ON element({label_cols})',
-            f'CREATE UNIQUE INDEX unique_location_index ON location({label_cols})',
-            f'CREATE UNIQUE INDEX unique_structure_index ON structure({label_cols})',
-        ])
+        sql_stmnts.extend(_schema.sql_create_label_indexes(label_cols))
 
         return sql_stmnts
 
@@ -191,11 +182,7 @@ class DataAccessLayer(object):
 
         sql_stmnts = []
 
-        sql_stmnts.extend([
-            'DROP INDEX IF EXISTS unique_element_index',
-            'DROP INDEX IF EXISTS unique_location_index',
-            'DROP INDEX IF EXISTS unique_structure_index',
-        ])
+        sql_stmnts.extend(_schema.sql_drop_label_indexes())
 
         for col in names_to_remove:
             sql_stmnts.extend([
@@ -205,12 +192,7 @@ class DataAccessLayer(object):
             ])
 
         remaining_cols = [col for col in column_names if col not in names_to_remove]
-        remaining_cols = ', '.join(remaining_cols)
-        sql_stmnts.extend([
-            f'CREATE UNIQUE INDEX unique_element_index ON element({remaining_cols})',
-            f'CREATE UNIQUE INDEX unique_location_index ON location({remaining_cols})',
-            f'CREATE UNIQUE INDEX unique_structure_index ON structure({remaining_cols})',
-        ])
+        sql_stmnts.extend(_schema.sql_create_label_indexes(remaining_cols))
 
         return sql_stmnts
 
@@ -773,12 +755,11 @@ class DataAccessLayerPre35(DataAccessLayer):
                 f'SELECT _structure_id, {", ".join(columns_to_keep)} FROM structure',
             'DROP TABLE structure',
             'ALTER TABLE new_structure RENAME TO structure',
-
-            # Reconstruct associated indexes.
-            f'CREATE UNIQUE INDEX unique_element_index ON element({", ".join(columns_to_keep)})',
-            f'CREATE UNIQUE INDEX unique_location_index ON location({", ".join(columns_to_keep)})',
-            f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(columns_to_keep)})',
         ]
+
+        # Reconstruct associated indexes.
+        statements.extend(_schema.sql_create_label_indexes(columns_to_keep))
+
         return statements
 
     def remove_columns(self, columns, strategy='preserve'):
@@ -844,12 +825,11 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                 f'SELECT _structure_id, {", ".join(column_names)} FROM structure',
             'DROP TABLE structure',
             'ALTER TABLE new_structure RENAME TO structure',
-
-            # Reconstruct associated indexes.
-            f'CREATE UNIQUE INDEX unique_element_index ON element({", ".join(new_column_names)})',
-            f'CREATE UNIQUE INDEX unique_location_index ON location({", ".join(new_column_names)})',
-            f'CREATE UNIQUE INDEX unique_structure_index ON structure({", ".join(new_column_names)})',
         ]
+
+        # Reconstruct associated indexes.
+        statements.extend(_schema.sql_create_label_indexes(new_column_names))
+
         return statements
 
     def rename_columns(self, mapper):
