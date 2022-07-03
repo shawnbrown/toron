@@ -164,6 +164,33 @@ _schema_script = """
 """
 
 
+def normalize_identifier(value: str) -> str:
+    """Normalize and return a delimited identifier suitable as a SQLite
+    column name.
+
+    .. code-block::
+
+        >>> normalize_identifier('A')
+        '"A"'
+        >>> normalize_identifier('   A   B')
+        '"A B"'
+    """
+    value.encode('utf-8', errors='strict')  # Raises error on surrogate codes.
+
+    nul_pos = value.find('\x00')
+    if nul_pos != -1:
+        raise UnicodeEncodeError(
+            'utf-8',            # encoding
+            value,              # object
+            nul_pos,            # start position
+            nul_pos + 1,        # end position
+            'NUL not allowed',  # reason
+        )
+
+    value = ' '.join(value.split()).replace('"', '""')
+    return f'"{value}"'
+
+
 def _is_wellformed_json(x):
     """Return 1 if *x* is well-formed JSON or return 0 if *x* is not
     well-formed. This function should be registered with SQLite (via
