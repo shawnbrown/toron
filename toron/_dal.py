@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
+from typing import Type
 
 from . import _schema
 from ._categories import make_structure
@@ -876,6 +877,8 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
 
 
 # Set the DataAccessLayer class appropriate for the current version of SQLite.
+dal_class: Type[DataAccessLayer]
+
 if _SQLITE_VERSION_INFO < (3, 24, 0):
     dal_class = DataAccessLayerPre24
 elif _SQLITE_VERSION_INFO < (3, 25, 0):
