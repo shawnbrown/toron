@@ -25,19 +25,29 @@ from toron._schema import (
 
 
 class TestNormalizeIdentifier(unittest.TestCase):
+    values = [
+        ('abc',        '"abc"'),
+        ('a b c',      '"a b c"'),      # whitepsace
+        ('   abc   ',  '"abc"'),        # leading/trailing whitespace
+        ('a   b\tc',   '"a b c"'),      # irregular whitepsace
+        ('a\n b\r\nc', '"a b c"'),      # linebreaks
+        ("a 'b' c",    '"a \'b\' c"'),  # single quotes
+        ('a "b" c',    '"a ""b"" c"'),  # double quotes
+        ('"   abc"',   '"   abc"'),     # idempotent, leading whitespace
+        ('"ab""c"',    '"ab""c"'),      # idempotent, escaped quotes
+        ('"a b"c"',    '"a b""c"'),     # normalize malformed quotes
+    ]
+
     def test_passing_behavior(self):
-        values = [
-            ('abc',        '"abc"'),
-            ('a b c',      '"a b c"'),      # whitepsace
-            ('   abc   ',  '"abc"'),        # leading/trailing whitespace
-            ('a   b\tc',   '"a b c"'),      # irregular whitepsace
-            ('a\n b\r\nc', '"a b c"'),      # linebreaks
-            ("a 'b' c",    '"a \'b\' c"'),  # single quotes
-            ('a "b" c',    '"a ""b"" c"'),  # double quotes
-        ]
-        for s_in, s_out in values:
-            with self.subTest(input_string=s_in, output_string=s_out):
-                self.assertEqual(normalize_identifier(s_in), s_out)
+        for input_value, result in self.values:
+            with self.subTest(input_value=input_value, expected_output=result):
+                self.assertEqual(normalize_identifier(input_value), result)
+
+    def test_idempotence(self):
+        values = [result for _, result in self.values]
+        for result in values:
+            with self.subTest(input_value=result, expected_output=result):
+                self.assertEqual(normalize_identifier(result), result)
 
     def test_surrogate_codes(self):
         """Should only allow clean UTF-8 (no surrogate codes)."""

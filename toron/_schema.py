@@ -187,7 +187,13 @@ def normalize_identifier(value: str) -> str:
             'NUL not allowed',  # reason
         )
 
-    value = ' '.join(value.split()).replace('"', '""')
+    if value.startswith('"') and value.endswith('"'):
+        value = value[1:-1]
+        value = value.replace('""', '"')
+    else:
+        value = ' '.join(value.split())
+
+    value = value.replace('"', '""')
     return f'"{value}"'
 
 
