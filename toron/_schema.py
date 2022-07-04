@@ -313,16 +313,17 @@ def _make_trigger_for_user_properties(insert_or_update, table, column):
     The trigger will pass without error if the value is wellformed.
     """
     if SQLITE_JSON1_ENABLED:
-        user_properties_check = f"(json_valid(NEW.{column}) = 0 OR json_type(NEW.{column}) != 'object')"
+        userproperties_are_invalid = \
+            f"(json_valid(NEW.{column}) = 0 OR json_type(NEW.{column}) != 'object')"
     else:
-        user_properties_check = f'user_userproperties_valid(NEW.{column}) = 0'
+        userproperties_are_invalid = f'user_userproperties_valid(NEW.{column}) = 0'
 
     return f'''
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
         BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
         WHEN
             NEW.{column} IS NOT NULL
-            AND {user_properties_check}
+            AND {userproperties_are_invalid}
         BEGIN
             SELECT RAISE(ABORT, '{table}.{column} must be wellformed JSON object');
         END;
@@ -372,24 +373,22 @@ def _make_trigger_for_attributes(insert_or_update, table, column):
         raise ValueError(msg)
 
     if SQLITE_JSON1_ENABLED:
-        when_clause = f"""
-            NEW.{column} IS NOT NULL
-            AND (json_valid(NEW.{column}) = 0
+        attributes_are_invalid = f"""
+            (json_valid(NEW.{column}) = 0
                  OR json_type(NEW.{column}) != 'object'
                  OR (SELECT COUNT(*)
                      FROM json_each(NEW.{column})
                      WHERE json_each.type != 'text') != 0)
-        """.rstrip()
+        """.strip()
     else:
-        when_clause = f"""
-            NEW.{column} IS NOT NULL
-            AND user_attributes_valid(NEW.{column}) = 0
-        """.rstrip()
+        attributes_are_invalid = f'user_attributes_valid(NEW.{column}) = 0'
 
     return f'''
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
         BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
-        WHEN{when_clause}
+        WHEN
+            NEW.{column} IS NOT NULL
+            AND {attributes_are_invalid}
         BEGIN
             SELECT RAISE(ABORT, '{table}.{column} must be a JSON object with text values');
         END;
