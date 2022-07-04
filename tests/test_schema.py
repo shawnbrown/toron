@@ -11,7 +11,7 @@ from toron._exceptions import ToronError
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
     _user_json_valid,
-    _is_wellformed_user_properties,
+    _user_userproperties_valid,
     _is_wellformed_attributes,
     _schema_script,
     _make_trigger_for_attributes,
@@ -157,25 +157,25 @@ class CheckUserPropertiesMixin(object):
     ]
 
 
-class TestIsWellformedUserProperties(unittest.TestCase, CheckUserPropertiesMixin):
+class TestUserUserpropertiesValid(unittest.TestCase, CheckUserPropertiesMixin):
     """Check application defined SQL function for TEXT_USERPROPERTIES."""
     def test_valid_values(self):
         for value in self.valid_values:
             with self.subTest(value=value):
-                self.assertTrue(_is_wellformed_user_properties(value))
+                self.assertTrue(_user_userproperties_valid(value))
 
     def test_not_an_object(self):
         for value in self.not_an_object:
             with self.subTest(value=value):
-                self.assertFalse(_is_wellformed_user_properties(value))
+                self.assertFalse(_user_userproperties_valid(value))
 
     def test_malformed_json(self):
         for value in self.malformed_json:
             with self.subTest(value=value):
-                self.assertFalse(_is_wellformed_user_properties(value))
+                self.assertFalse(_user_userproperties_valid(value))
 
     def test_none(self):
-        self.assertFalse(_is_wellformed_user_properties(None))
+        self.assertFalse(_user_userproperties_valid(None))
 
 
 class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
