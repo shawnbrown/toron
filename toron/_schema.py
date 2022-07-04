@@ -62,29 +62,27 @@ sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
 sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 
 
-def _is_sqlite_json1_enabled():
-    """Check if SQLite implementation includes JSON1 extension."""
-    # The inclusion of JSON functions is optional when compiling SQLite.
-    # In versions 3.38.0 and newer, JSON functions are included by
-    # default but can be disabled (opt-out policy). For older versions
-    # of SQLite, JSON functions are available on an opt-in basis. It is
-    # necessary to test for their presence rathern than referencing the
-    # SQLite version number.
-    #
-    # For more information, see:
-    #     https://www.sqlite.org/json1.html#compiling_in_json_support
-
-    con = sqlite3.connect(':memory:')
-    try:
-        con.execute("SELECT json_valid('123')")
-    except sqlite3.OperationalError:
-        return False
-    finally:
-        con.close()
-    return True
-
-
-SQLITE_JSON1_ENABLED = _is_sqlite_json1_enabled()
+# Check if SQLite implementation includes JSON1 extension and assign
+# SQLITE_JSON1_ENABLED.
+#
+# The inclusion of JSON functions is optional when compiling SQLite.
+# In versions 3.38.0 (2022-02-22) and newer, JSON functions are
+# included by default but can be disabled (opt-out policy). For older
+# versions of SQLite, JSON functions are available on an opt-in basis.
+# It is necessary to test for their presence rathern than referencing
+# the SQLite version number.
+#
+# For more information, see:
+#     https://www.sqlite.org/json1.html#compiling_in_json_support
+try:
+    _con = sqlite3.connect(':memory:')
+    _con.execute("SELECT json_valid('123')")
+    SQLITE_JSON1_ENABLED = True
+except sqlite3.OperationalError:
+    SQLITE_JSON1_ENABLED = False
+finally:
+    _con.close()
+    del _con
 
 
 _schema_script = """
