@@ -329,26 +329,27 @@ def _make_trigger_for_user_properties(insert_or_update, table, column):
     '''
 
 
-def _is_wellformed_attributes(x):
-    """Returns 1 if *x* is a wellformed TEXT_ATTRIBUTES column
-    value else returns 0. TEXT_ATTRIBUTES should be flat, JSON
-    object strings. This function should be registered with SQLite
-    (via the create_function() method) when the JSON1 extension
-    is not available.
+def _user_attributes_valid(x: str) -> bool:
+    """A user-defined function to use when the SQLite JSON1 extension
+    is not available (register as 'user_attributes_valid').
+
+    Returns True if *x* is a wellformed TEXT_ATTRIBUTES value or return
+    False if it is not wellformed. A TEXT_ATTRIBUTES value should be a
+    JSON object that contains only string values.
     """
     try:
         obj = _loads(x)
     except (ValueError, TypeError):
-        return 0
+        return False
 
     if not isinstance(obj, dict):
-        return 0
+        return False
 
     for value in obj.values():
         if not isinstance(value, str):
-            return 0
+            return False
 
-    return 1
+    return True
 
 
 def _make_trigger_for_attributes(insert_or_update, table, column):
@@ -382,7 +383,7 @@ def _make_trigger_for_attributes(insert_or_update, table, column):
     else:
         when_clause = f"""
             NEW.{column} IS NOT NULL
-            AND is_wellformed_attributes(NEW.{column}) = 0
+            AND user_attributes_valid(NEW.{column}) = 0
         """.rstrip()
 
     return f'''
@@ -408,11 +409,11 @@ def _add_functions_and_triggers(connection):
             connection.create_function(
                 'user_userproperties_valid', 1, _user_userproperties_valid, deterministic=True)
             connection.create_function(
-                'is_wellformed_attributes', 1, _is_wellformed_attributes, deterministic=True)
+                'user_attributes_valid', 1, _user_attributes_valid, deterministic=True)
         except TypeError:
             connection.create_function('user_json_valid', 1, _user_json_valid)
             connection.create_function('user_userproperties_valid', 1, _user_userproperties_valid)
-            connection.create_function('is_wellformed_attributes', 1, _is_wellformed_attributes)
+            connection.create_function('user_attributes_valid', 1, _user_attributes_valid)
 
     connection.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
     connection.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))

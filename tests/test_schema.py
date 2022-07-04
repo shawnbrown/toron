@@ -12,7 +12,7 @@ from toron._schema import (
     SQLITE_JSON1_ENABLED,
     _user_json_valid,
     _user_userproperties_valid,
-    _is_wellformed_attributes,
+    _user_attributes_valid,
     _schema_script,
     _make_trigger_for_attributes,
     _add_functions_and_triggers,
@@ -255,30 +255,30 @@ class CheckAttributesMixin(object):
     ]
 
 
-class TestIsWellformedAttributes(unittest.TestCase, CheckAttributesMixin):
+class TestUserAttributesValid(unittest.TestCase, CheckAttributesMixin):
     """Check application defined SQL function for TEXT_ATTRIBUTES."""
     def test_valid_values(self):
         for value in self.valid_values:
             with self.subTest(value=value):
-                self.assertTrue(_is_wellformed_attributes(value))
+                self.assertTrue(_user_attributes_valid(value))
 
     def test_non_string_values(self):
         for value in self.non_string_values:
             with self.subTest(value=value):
-                self.assertFalse(_is_wellformed_attributes(value))
+                self.assertFalse(_user_attributes_valid(value))
 
     def test_not_an_object(self):
         for value in self.not_an_object:
             with self.subTest(value=value):
-                self.assertFalse(_is_wellformed_attributes(value))
+                self.assertFalse(_user_attributes_valid(value))
 
     def test_malformed_json(self):
         for value in self.malformed_json:
             with self.subTest(value=value):
-                self.assertFalse(_is_wellformed_attributes(value))
+                self.assertFalse(_user_attributes_valid(value))
 
     def test_none(self):
-        self.assertFalse(_is_wellformed_attributes(None))
+        self.assertFalse(_user_attributes_valid(None))
 
 
 class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
