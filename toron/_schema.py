@@ -59,6 +59,7 @@ from ._exceptions import ToronError
 
 sqlite3.register_converter('TEXT_JSON', _loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
+sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 
 
 def _is_sqlite_json1_enabled():
