@@ -10,7 +10,7 @@ from .common import TempDirTestCase
 from toron._exceptions import ToronError
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
-    _is_wellformed_json,
+    _user_json_valid,
     _is_wellformed_user_properties,
     _is_wellformed_attributes,
     _schema_script,
@@ -88,20 +88,20 @@ class CheckJsonMixin(object):
     ]
 
 
-class TestIsWellformedJson(unittest.TestCase, CheckJsonMixin):
+class TestUserJsonValid(unittest.TestCase, CheckJsonMixin):
     """Check application defined SQL function for TEXT_JSON."""
     def test_valid_values(self):
         for value in self.valid_values:
             with self.subTest(value=value):
-                self.assertTrue(_is_wellformed_json(value))
+                self.assertTrue(_user_json_valid(value))
 
     def test_malformed_json(self):
         for value in self.malformed_json:
             with self.subTest(value=value):
-                self.assertFalse(_is_wellformed_json(value))
+                self.assertFalse(_user_json_valid(value))
 
     def test_none(self):
-        self.assertFalse(_is_wellformed_json(None))
+        self.assertFalse(_user_json_valid(None))
 
 
 class TestJsonTrigger(unittest.TestCase, CheckJsonMixin):

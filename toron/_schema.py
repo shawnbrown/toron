@@ -242,11 +242,12 @@ def sql_column_def_structure_label(name: str) -> str:
     return f"{name} INTEGER CHECK ({name} IN (0, 1)) DEFAULT 0"
 
 
-def _is_wellformed_json(x):
-    """Return 1 if *x* is well-formed JSON or return 0 if *x* is not
-    well-formed. This function should be registered with SQLite (via
-    the create_function() method) when the JSON1 extension is not
-    available.
+def _user_json_valid(x: str) -> bool:
+    """A user-defined function to use when the SQLite JSON1 extension
+    is not available (register as 'user_json_valid').
+
+    Returns True if *x* is well-formed JSON and returns False if *x*
+    is not well-formed JSON.
 
     This function mimics the JSON1 json_valid() function, see:
         https://www.sqlite.org/json1.html#jvalid
@@ -254,8 +255,8 @@ def _is_wellformed_json(x):
     try:
         _loads(x)
     except (ValueError, TypeError):
-        return 0
-    return 1
+        return False
+    return True
 
 
 def _make_trigger_for_json(insert_or_update, table, column):
@@ -270,7 +271,7 @@ def _make_trigger_for_json(insert_or_update, table, column):
     if SQLITE_JSON1_ENABLED:
         json_valid_func = 'json_valid'
     else:
-        json_valid_func = 'is_wellformed_json'
+        json_valid_func = 'user_json_valid'
 
     return f'''
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
@@ -406,13 +407,13 @@ def _add_functions_and_triggers(connection):
     if not SQLITE_JSON1_ENABLED:
         try:
             connection.create_function(
-                'is_wellformed_json', 1, _is_wellformed_json, deterministic=True)
+                'user_json_valid', 1, _user_json_valid, deterministic=True)
             connection.create_function(
                 'is_wellformed_user_properties', 1, _is_wellformed_user_properties, deterministic=True)
             connection.create_function(
                 'is_wellformed_attributes', 1, _is_wellformed_attributes, deterministic=True)
         except TypeError:
-            connection.create_function('is_wellformed_json', 1, _is_wellformed_json)
+            connection.create_function('user_json_valid', 1, _user_json_valid)
             connection.create_function('is_wellformed_user_properties', 1, _is_wellformed_user_properties)
             connection.create_function('is_wellformed_attributes', 1, _is_wellformed_attributes)
 
