@@ -193,8 +193,8 @@ class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
         return (
             None,                      # edge_id (INTEGER PRIMARY KEY)
             f'name{index}',            # name
-            '{"category": "census"}',  # type_info
             None,                      # description
+            '{"category": "census"}',  # type_info
             value,                     # user_properties
             '00000000-0000-0000-0000-000000000000',  # other_uuid
             f'other{index}.toron',     # other_filename_hint
@@ -299,40 +299,41 @@ class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
     def test_valid_values(self):
         for index, value in enumerate(self.valid_values):
             with self.subTest(value=value):
-                parameters = (None, f'name{index}', value, None, 0)
-                self.cur.execute("INSERT INTO weighting VALUES (?, ?, ?, ?, ?)", parameters)
+                parameters = (f'name{index}', value, 0)
+                self.cur.execute("INSERT INTO weighting (name, type_info, is_complete) VALUES (?, ?, ?)", parameters)
 
     def test_non_string_values(self):
         regex = 'must be a JSON object with text values'
         for value in self.non_string_values:
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (None, 'nonstring', value, None, 0)
-                    self.cur.execute("INSERT INTO weighting VALUES (?, ?, ?, ?, ?)", parameters)
+                    parameters = ('nonstring', value, 0)
+                    self.cur.execute('INSERT INTO weighting (name, type_info, is_complete) VALUES (?, ?, ?)', parameters)
 
     def test_not_an_object(self):
         regex = 'must be a JSON object with text values'
         for value in self.not_an_object:
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (None, 'nonobject', value, None, 0)
-                    self.cur.execute("INSERT INTO weighting VALUES (?, ?, ?, ?, ?)", parameters)
+                    parameters = ('nonobject', value, 0)
+                    statement = 'INSERT INTO weighting (name, type_info, is_complete) VALUES (?, ?, ?)'
+                    self.cur.execute(statement, parameters)
 
     def test_malformed_json(self):
         regex = 'must be a JSON object with text values'
         for index, value in enumerate(self.malformed_json):
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (None, 'malformed', value, None, 0)
-                    self.cur.execute("INSERT INTO weighting VALUES (?, ?, ?, ?, ?)", parameters)
+                    parameters = ('malformed', value, 0)
+                    self.cur.execute('INSERT INTO weighting (name, type_info, is_complete) VALUES (?, ?, ?)', parameters)
 
     def test_none(self):
         """The property.value column should accept None/NULL values."""
         value = None
 
         with self.assertRaises(sqlite3.IntegrityError):
-            parameters = (None, 'blerg', value, None, 0)
-            self.cur.execute("INSERT INTO weighting VALUES (?, ?, ?, ?, ?)", parameters)
+            parameters = ('blerg', value, 0)
+            self.cur.execute("INSERT INTO weighting (name, type_info, is_complete) VALUES (?, ?, ?)", parameters)
 
 
 class TestTriggerCoverage(unittest.TestCase):
@@ -682,7 +683,7 @@ class TestJsonConversion(unittest.TestCase):
         """Selecting TEXT_ATTRIBUTES should convert strings into objects."""
         self.cur.execute(
             'INSERT INTO weighting VALUES (?, ?, ?, ?, ?)',
-            (None, 'foo', '{"bar": "baz"}', None, 0)
+            (None, 'foo', None, '{"bar": "baz"}', 0)
         )
         self.cur.execute("SELECT type_info FROM weighting WHERE name='foo'")
         self.assertEqual(self.cur.fetchall(), [({'bar': 'baz'},)])

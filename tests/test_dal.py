@@ -850,10 +850,10 @@ class TestAddWeightsGetNewId(unittest.TestCase):
         type_info = {'category': 'stuff'}
         description = 'My description.'
 
-        weighting_id = func(self.cur, name, type_info, description)  # <- Test the function.
+        weighting_id = func(self.cur, name, type_info=type_info, description=description)  # <- Test the function.
 
         actual = self.cur.execute('SELECT * FROM weighting').fetchall()
-        expected = [(1, name, type_info, description, None)]
+        expected = [(1, name, description, type_info, None)]
         self.assertEqual(actual, expected)
 
         msg = 'retrieved weighting_id should be same as returned from function'
@@ -1019,7 +1019,7 @@ class TestAddWeights(unittest.TestCase):
         self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(1, 'pop10', {'category': 'census'}, None, 1)],  # <- is_complete is 1
+            [(1, 'pop10', None, {'category': 'census'}, 1)],  # <- is_complete is 1
         )
 
         self.cursor.execute("""
@@ -1047,7 +1047,7 @@ class TestAddWeights(unittest.TestCase):
         self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(1, 'pop10', {'category': 'census'}, None, 0)],  # <- is_complete is 0
+            [(1, 'pop10', None, {'category': 'census'}, 0)],  # <- is_complete is 0
         )
 
         # Get loaded weights.
