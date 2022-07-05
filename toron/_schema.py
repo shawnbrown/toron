@@ -444,9 +444,9 @@ def _add_functions_and_triggers(connection):
     connection.execute(_make_trigger_for_user_properties('UPDATE', 'edge', 'user_properties'))
 
     jsonflatobj_columns = [
-        ('edge', 'type_info'),
+        #('edge', 'type_info'),
         ('quantity', 'attributes'),
-        ('weighting', 'type_info'),
+        #('weighting', 'type_info'),
     ]
     for table, column in jsonflatobj_columns:
         connection.execute(_make_trigger_for_attributes('INSERT', table, column))

@@ -283,55 +283,54 @@ class TestUserAttributesValid(unittest.TestCase, CheckAttributesMixin):
 
 
 class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
-    """Check trigger behavior for columns with the TEXT_ATTRIBUTES
-    declared type.
-
-    There are three columns that use this type:
-      * edge.type_info
-      * quantity.attributes
-      * weighting.type_info.
+    """Check trigger behavior for `quantity.attributes` column with the
+    TEXT_ATTRIBUTES declared type.
     """
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
         self.cur = self.con.cursor()
+        self.cur.execute("INSERT INTO location (_location_id) VALUES (1)")
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
+        self.sql_insert = 'INSERT INTO quantity (_location_id, attributes, value) VALUES (?, ?, ?)'
+
     def test_valid_values(self):
-        for index, value in enumerate(self.valid_values):
-            with self.subTest(value=value):
-                parameters = (f'name{index}', value)
-                self.cur.execute("INSERT INTO weighting (name, type_info) VALUES (?, ?)", parameters)
+        for attributes in self.valid_values:
+            with self.subTest(attributes=attributes):
+                parameters = (1, attributes, 100)
+                self.cur.execute(self.sql_insert, parameters)
 
     def test_non_string_values(self):
         regex = 'must be a JSON object with text values'
-        for value in self.non_string_values:
-            with self.subTest(value=value):
+        for attributes in self.non_string_values:
+            with self.subTest(attributes=attributes):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = ('nonstring', value)
-                    self.cur.execute('INSERT INTO weighting (name, type_info) VALUES (?, ?)', parameters)
+                    parameters = (1, attributes, 100)
+                    self.cur.execute(self.sql_insert, parameters)
 
     def test_not_an_object(self):
         regex = 'must be a JSON object with text values'
-        for value in self.not_an_object:
-            with self.subTest(value=value):
+        for attributes in self.not_an_object:
+            with self.subTest(attributes=attributes):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = ('nonobject', value)
-                    statement = 'INSERT INTO weighting (name, type_info) VALUES (?, ?)'
-                    self.cur.execute(statement, parameters)
+                    parameters = (1, attributes, 100)
+                    self.cur.execute(self.sql_insert, parameters)
 
     def test_malformed_json(self):
         regex = 'must be a JSON object with text values'
-        for index, value in enumerate(self.malformed_json):
-            with self.subTest(value=value):
+        for attributes in self.malformed_json:
+            with self.subTest(attributes=attributes):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = ('malformed', value)
-                    self.cur.execute('INSERT INTO weighting (name, type_info) VALUES (?, ?)', parameters)
+                    parameters = (1, attributes, 100)
+                    self.cur.execute(self.sql_insert, parameters)
 
     def test_none(self):
-        """The `weighting.type_info` column should accept None/NULL values."""
-        parameters = ('blerg', None)
-        self.cur.execute('INSERT INTO weighting (name, type_info) VALUES (?, ?)', parameters)
+        """The `quantity.attributes` column should not accept NULL values."""
+        regex = 'NOT NULL constraint failed'
+        parameters = (1, None, 100)
+        with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+            self.cur.execute(self.sql_insert, parameters)
 
 
 class TestUserSelectorsValid(unittest.TestCase):
@@ -454,6 +453,7 @@ class TestTriggerCoverage(unittest.TestCase):
 
         return expected_triggers
 
+    @unittest.expectedFailure
     def test_add_functions_and_triggers(self):
         """Check that all custom 'TEXT_...' type columns have
         associated INSERT and UPDATE triggers.
