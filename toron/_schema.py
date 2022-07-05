@@ -14,8 +14,8 @@ the application layer:
   +---------------------+        | relation_id      |     •••• <Other Node>
   | edge_id             |------->| edge_id          |     •
   | name                |  ••••••| other_element_id |<•••••
-  | type_info           |  •  •••| element_id       |<-+     +--------------+
-  | description         |  •  •  | proportion       |  |     | quantity     |
+  | description         |  •  •••| element_id       |<-+     +--------------+
+  | type_info           |  •  •  | proportion       |  |     | quantity     |
   | user_properties     |  •  •  | mapping_level    |  |     +--------------+
   | other_uuid          |  •  •  +------------------+  |     | quantity_id  |
   | other_filename_hint |  •  •                        |  +->| _location_id |
@@ -39,8 +39,8 @@ the application layer:
               |  | element_weight_id |     +--------------+     | key      |
               |  | weighting_id      |<----| weighting_id |     | value    |
               +->| element_id        |•••  | name         |     +----------+
-                 | value             |  •  | type_info    |
-                 +-------------------+  •  | description  |
+                 | value             |  •  | description  |
+                 +-------------------+  •  | type_info    |
                                         ••>| is_complete  |
                                            +--------------+
 """
