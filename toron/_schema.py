@@ -443,14 +443,8 @@ def _add_functions_and_triggers(connection):
     connection.execute(_make_trigger_for_user_properties('INSERT', 'edge', 'user_properties'))
     connection.execute(_make_trigger_for_user_properties('UPDATE', 'edge', 'user_properties'))
 
-    jsonflatobj_columns = [
-        #('edge', 'type_info'),
-        ('quantity', 'attributes'),
-        #('weighting', 'type_info'),
-    ]
-    for table, column in jsonflatobj_columns:
-        connection.execute(_make_trigger_for_attributes('INSERT', table, column))
-        connection.execute(_make_trigger_for_attributes('UPDATE', table, column))
+    connection.execute(_make_trigger_for_attributes('INSERT', 'quantity', 'attributes'))
+    connection.execute(_make_trigger_for_attributes('UPDATE', 'quantity', 'attributes'))
 
 
 def _path_to_sqlite_uri(path):
