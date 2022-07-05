@@ -462,7 +462,7 @@ class TestRemoveColumnsMixin(object):
             ('TX', 'Cass', 'Atlanta', 'Queen City', 1397),
         ]
         self.dal.add_elements(data)
-        self.dal.add_weights(data, name='population', type_info={'category': 'population'})
+        self.dal.add_weights(data, name='population', type_info=None)
 
     def test_initial_fixture_state(self):
         # Check initial categories.
@@ -654,7 +654,7 @@ class TestRemoveColumnsMixin(object):
             (9, 'TX', 6214),
             # 10 missing.
         ]
-        self.dal.add_weights(data, name='new_count', type_info={'category': 'new_count'})
+        self.dal.add_weights(data, name='new_count', type_info=['[foo="bar"]'])
 
         self.cur.execute("SELECT is_complete FROM weighting WHERE name='new_count'")
         actual = self.cur.fetchone()[0]
@@ -847,7 +847,7 @@ class TestAddWeightsGetNewId(unittest.TestCase):
 
     def run_func_test(self, func):
         name = 'myname'
-        type_info = {'category': 'stuff'}
+        type_info = ['[category="stuff"]']
         description = 'My description.'
 
         weighting_id = func(self.cur, name, type_info=type_info, description=description)  # <- Test the function.
@@ -940,7 +940,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def test_complete(self):
-        weighting_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
+        weighting_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', ['[category="census"]'])
 
         # Insert element_weight records.
         iterator = [
@@ -959,7 +959,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.assertEqual(result, (1,), msg='weighting is complete, should be 1')
 
     def test_incomplete(self):
-        weighting_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', {'category': 'census'})
+        weighting_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', ['[category="census"]'])
 
         # Insert element_weight records.
         iterator = [
@@ -1014,12 +1014,12 @@ class TestAddWeights(unittest.TestCase):
             ('12', '017', '450302', 183),
             ('12', '019', '030202', 62),
         ]
-        self.dal.add_weights(weights, columns, name='pop10', type_info={'category': 'census'})
+        self.dal.add_weights(weights, columns, name='pop10', type_info=None)
 
         self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(1, 'pop10', None, {'category': 'census'}, 1)],  # <- is_complete is 1
+            [(1, 'pop10', None, None, 1)],  # <- is_complete is 1
         )
 
         self.cursor.execute("""
@@ -1042,12 +1042,12 @@ class TestAddWeights(unittest.TestCase):
             ('12', '017', 183),
             ('12', '019', 62),
         ]
-        self.dal.add_weights(weights, name='pop10', type_info={'category': 'census'})
+        self.dal.add_weights(weights, name='pop10', type_info=None)
 
         self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(1, 'pop10', None, {'category': 'census'}, 0)],  # <- is_complete is 0
+            [(1, 'pop10', None, None, 0)],  # <- is_complete is 0
         )
 
         # Get loaded weights.

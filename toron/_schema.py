@@ -418,6 +418,48 @@ def _user_selectors_valid(x: str) -> bool:
     return True
 
 
+def _sql_trigger_validate_selectors(insert_or_update: str, table: str, column: str) -> str:
+    """Return a SQL statement for creating a temporary trigger. The
+    trigger is used to validate the contents of TEXT_SELECTORS
+    type columns.
+
+    The trigger will pass without error if the JSON is a wellformed
+    "array" containing "text" values.
+
+    The trigger will raise an error if the value is:
+
+      * not wellformed JSON
+      * not an "array" type
+      * an "array" type that contains one or more "integer", "real",
+        "true", "false", "null", "object" or "array" types
+    """
+    if insert_or_update.upper() not in {'INSERT', 'UPDATE'}:
+        msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
+        raise ValueError(msg)
+
+    if SQLITE_JSON1_ENABLED:
+        selectors_are_invalid = f"""
+            (json_valid(NEW.{column}) = 0
+                 OR json_type(NEW.{column}) != 'array'
+                 OR (SELECT COUNT(*)
+                     FROM json_each(NEW.{column})
+                     WHERE json_each.type != 'text') != 0)
+        """.strip()
+    else:
+        selectors_are_invalid = f'user_selectors_valid(NEW.{column}) = 0'
+
+    return f'''
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{insert_or_update.lower()}_{table}_{column}
+        BEFORE {insert_or_update.upper()} ON main.{table} FOR EACH ROW
+        WHEN
+            NEW.{column} IS NOT NULL
+            AND {selectors_are_invalid}
+        BEGIN
+            SELECT RAISE(ABORT, '{table}.{column} must be a JSON array with text values');
+        END;
+    '''
+
+
 def _add_functions_and_triggers(connection):
     """Create triggers and application-defined functions *connection*.
 
@@ -432,10 +474,13 @@ def _add_functions_and_triggers(connection):
                 'user_userproperties_valid', 1, _user_userproperties_valid, deterministic=True)
             connection.create_function(
                 'user_attributes_valid', 1, _user_attributes_valid, deterministic=True)
+            connection.create_function(
+                'user_selectors_valid', 1, _user_selectors_valid, deterministic=True)
         except TypeError:
             connection.create_function('user_json_valid', 1, _user_json_valid)
             connection.create_function('user_userproperties_valid', 1, _user_userproperties_valid)
             connection.create_function('user_attributes_valid', 1, _user_attributes_valid)
+            connection.create_function('user_selectors_valid', 1, _user_selectors_valid)
 
     connection.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
     connection.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))
@@ -445,6 +490,12 @@ def _add_functions_and_triggers(connection):
 
     connection.execute(_make_trigger_for_attributes('INSERT', 'quantity', 'attributes'))
     connection.execute(_make_trigger_for_attributes('UPDATE', 'quantity', 'attributes'))
+
+    connection.execute(_sql_trigger_validate_selectors('INSERT', 'edge', 'type_info'))
+    connection.execute(_sql_trigger_validate_selectors('UPDATE', 'edge', 'type_info'))
+
+    connection.execute(_sql_trigger_validate_selectors('INSERT', 'weighting', 'type_info'))
+    connection.execute(_sql_trigger_validate_selectors('UPDATE', 'weighting', 'type_info'))
 
 
 def _path_to_sqlite_uri(path):

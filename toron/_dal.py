@@ -446,10 +446,14 @@ class DataAccessLayer(object):
             cur.executemany(sql, iterator)
 
     @staticmethod
-    def _add_weights_get_new_id(cursor, name, type_info, description=None):
+    def _add_weights_get_new_id(cursor, name, type_info=None, description=None):
         # This method uses the RETURNING clause which was introduced
         # in SQLite 3.35.0 (2021-03-12).
-        type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
+        if type_info:
+            type_info = _dumps(type_info)  # Dump JSON to string.
+        elif type_info is not None:
+            type_info = None  # Set falsy values to None.
+
         sql = """
             INSERT INTO weighting(name, type_info, description)
             VALUES(?, ?, ?)
@@ -712,7 +716,11 @@ class DataAccessLayerPre35(DataAccessLayer):
         # Since the `RETURNING` clause is not available before version
         # 3.35.0, this method executes a second statement using the
         # last_insert_rowid() SQLite function.
-        type_info = _dumps(type_info, sort_keys=True)  # Dump JSON to string.
+        if type_info:
+            type_info = _dumps(type_info)  # Dump JSON to string.
+        elif type_info is not None:
+            type_info = None  # Set falsy values to None.
+
         sql = """
             INSERT INTO weighting(name, type_info, description)
             VALUES(?, ?, ?)

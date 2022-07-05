@@ -195,7 +195,7 @@ class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
             None,                      # edge_id (INTEGER PRIMARY KEY)
             f'name{index}',            # name
             None,                      # description
-            '{"category": "census"}',  # type_info
+            None,                      # type_info
             value,                     # user_properties
             '00000000-0000-0000-0000-000000000000',  # other_uuid
             f'other{index}.toron',     # other_filename_hint
@@ -333,52 +333,108 @@ class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
             self.cur.execute(self.sql_insert, parameters)
 
 
-class TestUserSelectorsValid(unittest.TestCase):
+class CheckSelectorsMixin(object):
+    """Valid TEXT_SELECTORS values must be JSON arrays with string values."""
+    valid_values = [
+        r'["[a=\"one\"]", "[b=\"two\"]"]',
+        r'["[c]"]',
+    ]
+    non_string_values = [
+        r'["[a=\"one\"]", 2]',                # <- contains integer
+        r'["[a=\"one\"]", ["[b=\"two\"]"]]',  # <- contains nested object
+    ]
+    not_an_array = [
+        '{"a": "one", "b": "two"}',  # <- array
+        '"one"',                     # <- text
+        '123',                       # <- integer
+        '3.14',                      # <- real
+        'true',                      # <- boolean
+    ]
+    malformed_json = [
+        r'["[a=\"one\"]", "[b=\"two\"]"',   # <- No closing bracket.
+        r'["[a=\"one\"]", "[b=\"two\"]]',   # <- No closing quote.
+        r"['[a=\"one\"]', '[b=\"two\"]']",  # <- Requires double quotes.
+        'abc',                              # <- Not quoted.
+        '',                                 # <- No contents.
+    ]
+
+
+class TestUserSelectorsValid(unittest.TestCase, CheckSelectorsMixin):
     """Check application defined SQL function for TEXT_SELECTORS."""
     def test_valid_values(self):
-        valid_values = [
-            r'["[a=\"one\"]", "[b=\"two\"]"]',
-            r'["[c]"]',
-        ]
-        for value in valid_values:
+        for value in self.valid_values:
             with self.subTest(value=value):
                 self.assertTrue(_user_selectors_valid(value))
 
     def test_non_string_values(self):
-        non_string_values = [
-            r'["[a=\"one\"]", 2]',                # <- contains integer
-            r'["[a=\"one\"]", ["[b=\"two\"]"]]',  # <- contains nested object
-        ]
-        for value in non_string_values:
+        for value in self.non_string_values:
             with self.subTest(value=value):
                 self.assertFalse(_user_selectors_valid(value))
 
     def test_not_an_array(self):
-        not_an_array = [
-            '{"a": "one", "b": "two"}',  # <- array
-            '"one"',                     # <- text
-            '123',                       # <- integer
-            '3.14',                      # <- real
-            'true',                      # <- boolean
-        ]
-        for value in not_an_array:
+        for value in self.not_an_array:
             with self.subTest(value=value):
                 self.assertFalse(_user_selectors_valid(value))
 
     def test_malformed_json(self):
-        malformed_json = [
-            r'["[a=\"one\"]", "[b=\"two\"]"',   # <- No closing bracket.
-            r'["[a=\"one\"]", "[b=\"two\"]]',   # <- No closing quote.
-            r"['[a=\"one\"]', '[b=\"two\"]']",  # <- Requires double quotes.
-            'abc',                              # <- Not quoted.
-            '',                                 # <- No contents.
-        ]
-        for value in malformed_json:
+        for value in self.malformed_json:
             with self.subTest(value=value):
                 self.assertFalse(_user_selectors_valid(value))
 
     def test_none(self):
         self.assertFalse(_user_selectors_valid(None))
+
+
+class TestSelectorsTrigger(unittest.TestCase, CheckSelectorsMixin):
+    """Check trigger behavior for columns with the TEXT_SELECTORS
+    declared type.
+
+    There are two columns that use this type:
+      * edge.type_info
+      * weighting.type_info.
+    """
+    def setUp(self):
+        self.con = connect('mynode.toron', mode='memory')
+        self.cur = self.con.cursor()
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+
+        self.sql_insert = 'INSERT INTO weighting (name, type_info) VALUES (?, ?)'
+
+    def test_valid_values(self):
+        for index, value in enumerate(self.valid_values):
+            with self.subTest(value=value):
+                parameters = (f'name{index}', value)
+                self.cur.execute(self.sql_insert, parameters)
+
+    def test_non_string_values(self):
+        regex = 'must be a JSON array with text values'
+        for index, value in enumerate(self.non_string_values):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+                    parameters = (f'name{index}', value)
+                    self.cur.execute(self.sql_insert, parameters)
+
+    def test_not_an_array(self):
+        regex = 'must be a JSON array with text values'
+        for index, value in enumerate(self.not_an_array):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+                    parameters = (f'name{index}', value)
+                    self.cur.execute(self.sql_insert, parameters)
+
+    def test_malformed_json(self):
+        regex = 'must be a JSON array with text values'
+        for index, value in enumerate(self.malformed_json):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
+                    parameters = (f'name{index}', value)
+                    self.cur.execute(self.sql_insert, parameters)
+
+    def test_none(self):
+        """The `weighting.type_info` column should accept None/NULL values."""
+        parameters = ('blerg', None)
+        self.cur.execute(self.sql_insert, parameters)
 
 
 class TestTriggerCoverage(unittest.TestCase):
@@ -453,7 +509,6 @@ class TestTriggerCoverage(unittest.TestCase):
 
         return expected_triggers
 
-    @unittest.expectedFailure
     def test_add_functions_and_triggers(self):
         """Check that all custom 'TEXT_...' type columns have
         associated INSERT and UPDATE triggers.
@@ -727,12 +782,23 @@ class TestJsonConversion(unittest.TestCase):
 
     def test_text_attributes(self):
         """Selecting TEXT_ATTRIBUTES should convert strings into objects."""
+        self.cur.execute('INSERT INTO location (_location_id) VALUES (1)')
+
         self.cur.execute(
-            'INSERT INTO weighting VALUES (?, ?, ?, ?, ?)',
-            (None, 'foo', None, '{"bar": "baz"}', 0)
+            'INSERT INTO quantity VALUES (?, ?, ?, ?)',
+            (1, 1, '{"foo": "bar"}', 100)
+        )
+        self.cur.execute("SELECT attributes FROM quantity WHERE quantity_id=1")
+        self.assertEqual(self.cur.fetchall(), [({'foo': 'bar'},)])
+
+    def test_text_selectors(self):
+        """Selecting TEXT_SELECTORS should convert strings into objects."""
+        self.cur.execute(
+            'INSERT INTO weighting (name, type_info) VALUES (?, ?)',
+            ('foo', r'["[bar=\"baz\"]"]')
         )
         self.cur.execute("SELECT type_info FROM weighting WHERE name='foo'")
-        self.assertEqual(self.cur.fetchall(), [({'bar': 'baz'},)])
+        self.assertEqual(self.cur.fetchall(), [(['[bar="baz"]'],)])
 
 
 class TestSavepoint(unittest.TestCase):
