@@ -13,6 +13,7 @@ from toron._schema import (
     _user_json_valid,
     _user_userproperties_valid,
     _user_attributes_valid,
+    _user_selectors_valid,
     _schema_script,
     _make_trigger_for_attributes,
     _add_functions_and_triggers,
@@ -331,6 +332,54 @@ class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
         """The `weighting.type_info` column should accept None/NULL values."""
         parameters = ('blerg', None)
         self.cur.execute('INSERT INTO weighting (name, type_info) VALUES (?, ?)', parameters)
+
+
+class TestUserSelectorsValid(unittest.TestCase):
+    """Check application defined SQL function for TEXT_SELECTORS."""
+    def test_valid_values(self):
+        valid_values = [
+            r'["[a=\"one\"]", "[b=\"two\"]"]',
+            r'["[c]"]',
+        ]
+        for value in valid_values:
+            with self.subTest(value=value):
+                self.assertTrue(_user_selectors_valid(value))
+
+    def test_non_string_values(self):
+        non_string_values = [
+            r'["[a=\"one\"]", 2]',                # <- contains integer
+            r'["[a=\"one\"]", ["[b=\"two\"]"]]',  # <- contains nested object
+        ]
+        for value in non_string_values:
+            with self.subTest(value=value):
+                self.assertFalse(_user_selectors_valid(value))
+
+    def test_not_an_array(self):
+        not_an_array = [
+            '{"a": "one", "b": "two"}',  # <- array
+            '"one"',                     # <- text
+            '123',                       # <- integer
+            '3.14',                      # <- real
+            'true',                      # <- boolean
+        ]
+        for value in not_an_array:
+            with self.subTest(value=value):
+                self.assertFalse(_user_selectors_valid(value))
+
+    def test_malformed_json(self):
+        malformed_json = [
+            r'["[a=\"one\"]", "[b=\"two\"]"',   # <- No closing bracket.
+            r'["[a=\"one\"]", "[b=\"two\"]]',   # <- No closing quote.
+            r"['[a=\"one\"]', '[b=\"two\"]']",  # <- Requires double quotes.
+            'abc',                              # <- Not quoted.
+            '',                                 # <- No contents.
+        ]
+        for value in malformed_json:
+            with self.subTest(value=value):
+                self.assertFalse(_user_selectors_valid(value))
+
+    def test_none(self):
+        self.assertFalse(_user_selectors_valid(None))
 
 
 class TestTriggerCoverage(unittest.TestCase):

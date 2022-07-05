@@ -394,6 +394,30 @@ def _make_trigger_for_attributes(insert_or_update, table, column):
     '''
 
 
+def _user_selectors_valid(x: str) -> bool:
+    """A user-defined function to use when the SQLite JSON1 extension
+    is not available (register as 'user_attributes_valid').
+
+    Returns True if *x* is a wellformed TEXT_SELECTORS value or return
+    False if it is not wellformed. A wellformed TEXT_SELECTORS value is
+    a string containing a JSON formatted "array" type (returned as a
+    list by the loads() function) that contains "string" values.
+    """
+    try:
+        obj = _loads(x)
+    except (ValueError, TypeError):
+        return False
+
+    if not isinstance(obj, list):
+        return False
+
+    for value in obj:
+        if not isinstance(value, str):
+            return False
+
+    return True
+
+
 def _add_functions_and_triggers(connection):
     """Create triggers and application-defined functions *connection*.
 
