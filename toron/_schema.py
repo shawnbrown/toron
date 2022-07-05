@@ -98,7 +98,7 @@ _schema_script = """
         other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
         other_filename_hint TEXT NOT NULL,
         other_element_hash TEXT,
-        is_complete INTEGER CHECK (is_complete IN (0, 1)),
+        is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
         UNIQUE (name, other_uuid)
     );
 
@@ -142,7 +142,7 @@ _schema_script = """
         name TEXT NOT NULL,
         description TEXT,
         type_info TEXT_SELECTORS NOT NULL,
-        is_complete INTEGER CHECK (is_complete IN (0, 1)),
+        is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
         UNIQUE (name)
     );
 

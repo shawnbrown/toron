@@ -853,7 +853,7 @@ class TestAddWeightsGetNewId(unittest.TestCase):
         weighting_id = func(self.cur, name, type_info=type_info, description=description)  # <- Test the function.
 
         actual = self.cur.execute('SELECT * FROM weighting').fetchall()
-        expected = [(1, name, description, type_info, None)]
+        expected = [(1, name, description, type_info, 0)]
         self.assertEqual(actual, expected)
 
         msg = 'retrieved weighting_id should be same as returned from function'
