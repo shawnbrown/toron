@@ -328,12 +328,9 @@ class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
                     self.cur.execute('INSERT INTO weighting (name, type_info) VALUES (?, ?)', parameters)
 
     def test_none(self):
-        """The property.value column should accept None/NULL values."""
-        value = None
-
-        with self.assertRaises(sqlite3.IntegrityError):
-            parameters = ('blerg', value)
-            self.cur.execute("INSERT INTO weighting (name, type_info) VALUES (?, ?)", parameters)
+        """The `weighting.type_info` column should accept None/NULL values."""
+        parameters = ('blerg', None)
+        self.cur.execute('INSERT INTO weighting (name, type_info) VALUES (?, ?)', parameters)
 
 
 class TestTriggerCoverage(unittest.TestCase):

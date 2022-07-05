@@ -93,7 +93,7 @@ _schema_script = """
         edge_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        type_info TEXT_SELECTORS NOT NULL,
+        type_info TEXT_SELECTORS,
         user_properties TEXT_USERPROPERTIES,
         other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
         other_filename_hint TEXT NOT NULL,
@@ -141,7 +141,7 @@ _schema_script = """
         weighting_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        type_info TEXT_SELECTORS NOT NULL,
+        type_info TEXT_SELECTORS,
         is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
         UNIQUE (name)
     );
