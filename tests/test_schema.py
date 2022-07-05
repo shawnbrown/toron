@@ -360,22 +360,32 @@ class TestTriggerCoverage(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def get_actual_trigger_names(self):
-        """Helper function to return list of actual temp trigger names."""
+        """Helper function to return list of actual temporary trigger names."""
         self.cur.execute("SELECT name FROM sqlite_temp_master WHERE type='trigger'")
         return [row[0] for row in self.cur]
 
-    def get_all_table_names(self):
-        """Helper function to return list of table names from main schema."""
-        self.cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        return [row[0] for row in self.cur]
+    def get_table_names(self):
+        """Helper function to return list of table names from main schema.
+        Internal schema tables (beginning with 'sqlite_') are omitted).
 
-    def get_text_attributes_columns(self, table):
-        """Helper function to return list of TEXT_ATTRIBUTES columns."""
+        For information, see:
+            https://www.sqlite.org/fileformat2.html#internal_schema_objects
+        """
+        self.cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        table_names = [row[0] for row in self.cur]
+        table_names = [name for name in table_names if not name.startswith('sqlite_')]
+        return table_names
+
+    def get_custom_type_columns(self, table):
+        """Return names of all columns whose defined type does not
+        exactly match a built-in SQLite column affinity.
+        """
+        builtins = {'TEXT', 'NUMERIC', 'INTEGER', 'REAL', 'BLOB'}
         orig_factory = self.cur.row_factory
         try:
             self.cur.row_factory = sqlite3.Row
             self.cur.execute(f"PRAGMA main.table_info('{table}')")
-            filtered_rows = [row for row in self.cur if row['type'] == 'TEXT_ATTRIBUTES']
+            filtered_rows = [row for row in self.cur if row['type'] not in builtins]
             column_names = [row['name'] for row in filtered_rows]
         finally:
             self.cur.row_factory = orig_factory
@@ -388,26 +398,18 @@ class TestTriggerCoverage(unittest.TestCase):
 
     def get_expected_trigger_names(self):
         """Helper function to return list of expected trigger names."""
-        table_names = self.get_all_table_names()
-
         expected_triggers = []
-        for table in table_names:
-            column_names = self.get_text_attributes_columns(table)
+        for table in self.get_table_names():
+            column_names = self.get_custom_type_columns(table)
             for column in column_names:
                 expected_triggers.append(self.make_trigger_name('insert', table, column))
                 expected_triggers.append(self.make_trigger_name('update', table, column))
 
-        expected_triggers.append('trigger_check_insert_edge_user_properties')
-        expected_triggers.append('trigger_check_update_edge_user_properties')
-
-        expected_triggers.append('trigger_check_insert_property_value')
-        expected_triggers.append('trigger_check_update_property_value')
-
         return expected_triggers
 
     def test_add_functions_and_triggers(self):
-        """Test that all TEXT_ATTRIBUTES columns have proper INSERT and
-        UPDATE triggers.
+        """Check that all custom 'TEXT_...' type columns have
+        associated INSERT and UPDATE triggers.
         """
         self.cur.executescript(_schema_script)  # <- Create database tables.
         _add_functions_and_triggers(self.cur.connection)  # <- Create triggers.

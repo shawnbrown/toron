@@ -59,6 +59,7 @@ from ._exceptions import ToronError
 
 sqlite3.register_converter('TEXT_JSON', _loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
+sqlite3.register_converter('TEXT_SELECTORS', _loads)
 sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 
 
@@ -91,7 +92,7 @@ _schema_script = """
     CREATE TABLE edge(
         edge_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
-        type_info TEXT_ATTRIBUTES NOT NULL,
+        type_info TEXT_SELECTORS NOT NULL,
         description TEXT,
         user_properties TEXT_USERPROPERTIES,
         other_uuid TEXT CHECK (other_uuid LIKE '________-____-____-____-____________') NOT NULL,
@@ -139,7 +140,7 @@ _schema_script = """
     CREATE TABLE weighting(
         weighting_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
-        type_info TEXT_ATTRIBUTES NOT NULL,
+        type_info TEXT_SELECTORS NOT NULL,
         description TEXT,
         is_complete INTEGER CHECK (is_complete IN (0, 1)),
         UNIQUE (name)
