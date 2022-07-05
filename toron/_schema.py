@@ -95,7 +95,7 @@ _schema_script = """
         description TEXT,
         type_info TEXT_SELECTORS NOT NULL,
         user_properties TEXT_USERPROPERTIES,
-        other_uuid TEXT CHECK (other_uuid LIKE '________-____-____-____-____________') NOT NULL,
+        other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
         other_filename_hint TEXT NOT NULL,
         other_element_hash TEXT,
         is_complete INTEGER CHECK (is_complete IN (0, 1)),
@@ -107,7 +107,7 @@ _schema_script = """
         edge_id INTEGER,
         other_element_id INTEGER NOT NULL,
         element_id INTEGER,
-        proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0) NOT NULL,
+        proportion REAL NOT NULL CHECK (0.0 <= proportion AND proportion <= 1.0),
         mapping_level INTEGER NOT NULL,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
         FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
@@ -228,12 +228,12 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
 
 def sql_column_def_element_label(name: str) -> str:
     """Return an `element` table column-def for a label column."""
-    return f"{name} TEXT DEFAULT '-' NOT NULL CHECK ({name} != '')"
+    return f"{name} TEXT NOT NULL CHECK ({name} != '') DEFAULT '-'"
 
 
 def sql_column_def_location_label(name: str) -> str:
     """Return a `location` table column-def for a label column."""
-    return f"{name} TEXT DEFAULT '' NOT NULL"
+    return f"{name} TEXT NOT NULL DEFAULT ''"
 
 
 def sql_column_def_structure_label(name: str) -> str:
