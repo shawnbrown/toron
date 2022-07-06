@@ -36,10 +36,10 @@ class Node(object):
     def add_elements(self, iterable, columns=None):
         self._dal.add_elements(iterable, columns)
 
-    def add_weights(self, iterable, columns=None, *, name, type_info, description=None):
+    def add_weights(self, iterable, columns=None, *, name, selectors, description=None):
         self._dal.add_weights(iterable, columns,
                               name=name,
-                              type_info=type_info,
+                              selectors=selectors,
                               description=description)
 
     def rename_columns(self, mapper):

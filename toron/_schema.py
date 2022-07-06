@@ -15,7 +15,7 @@ the application layer:
   | edge_id             |------->| edge_id          |     •
   | name                |  ••••••| other_element_id |<•••••
   | description         |  •  •••| element_id       |<-+     +--------------+
-  | type_info           |  •  •  | proportion       |  |     | quantity     |
+  | selectors           |  •  •  | proportion       |  |     | quantity     |
   | user_properties     |  •  •  | mapping_level    |  |     +--------------+
   | other_uuid          |  •  •  +------------------+  |     | quantity_id  |
   | other_filename_hint |  •  •                        |  +->| _location_id |
@@ -40,7 +40,7 @@ the application layer:
               |  | weighting_id      |<----| weighting_id |     | value    |
               +->| element_id        |•••  | name         |     +----------+
                  | value             |  •  | description  |
-                 +-------------------+  •  | type_info    |
+                 +-------------------+  •  | selectors    |
                                         ••>| is_complete  |
                                            +--------------+
 """
@@ -93,7 +93,7 @@ _schema_script = """
         edge_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        type_info TEXT_SELECTORS,
+        selectors TEXT_SELECTORS,
         user_properties TEXT_USERPROPERTIES,
         other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
         other_filename_hint TEXT NOT NULL,
@@ -141,7 +141,7 @@ _schema_script = """
         weighting_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
-        type_info TEXT_SELECTORS,
+        selectors TEXT_SELECTORS,
         is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
         UNIQUE (name)
     );
@@ -491,11 +491,11 @@ def _add_functions_and_triggers(connection):
     connection.execute(_make_trigger_for_attributes('INSERT', 'quantity', 'attributes'))
     connection.execute(_make_trigger_for_attributes('UPDATE', 'quantity', 'attributes'))
 
-    connection.execute(_sql_trigger_validate_selectors('INSERT', 'edge', 'type_info'))
-    connection.execute(_sql_trigger_validate_selectors('UPDATE', 'edge', 'type_info'))
+    connection.execute(_sql_trigger_validate_selectors('INSERT', 'edge', 'selectors'))
+    connection.execute(_sql_trigger_validate_selectors('UPDATE', 'edge', 'selectors'))
 
-    connection.execute(_sql_trigger_validate_selectors('INSERT', 'weighting', 'type_info'))
-    connection.execute(_sql_trigger_validate_selectors('UPDATE', 'weighting', 'type_info'))
+    connection.execute(_sql_trigger_validate_selectors('INSERT', 'weighting', 'selectors'))
+    connection.execute(_sql_trigger_validate_selectors('UPDATE', 'weighting', 'selectors'))
 
 
 def _path_to_sqlite_uri(path):

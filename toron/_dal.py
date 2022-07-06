@@ -446,20 +446,20 @@ class DataAccessLayer(object):
             cur.executemany(sql, iterator)
 
     @staticmethod
-    def _add_weights_get_new_id(cursor, name, type_info=None, description=None):
+    def _add_weights_get_new_id(cursor, name, selectors=None, description=None):
         # This method uses the RETURNING clause which was introduced
         # in SQLite 3.35.0 (2021-03-12).
-        if type_info:
-            type_info = _dumps(type_info)  # Dump JSON to string.
-        elif type_info is not None:
-            type_info = None  # Set falsy values to None.
+        if selectors:
+            selectors = _dumps(selectors)  # Dump JSON to string.
+        elif selectors is not None:
+            selectors = None  # Set falsy values to None.
 
         sql = """
-            INSERT INTO weighting(name, type_info, description)
+            INSERT INTO weighting(name, selectors, description)
             VALUES(?, ?, ?)
             RETURNING weighting_id
         """
-        cursor.execute(sql, (name, type_info, description))
+        cursor.execute(sql, (name, selectors, description))
         return cursor.fetchone()[0]
 
     @classmethod
@@ -503,7 +503,7 @@ class DataAccessLayer(object):
         """
         cursor.execute(sql, (weighting_id, weighting_id))
 
-    def add_weights(self, iterable, columns=None, *, name, type_info, description=None):
+    def add_weights(self, iterable, columns=None, *, name, selectors, description=None):
         iterator = iter(iterable)
         if not columns:
             columns = tuple(next(iterator))
@@ -516,7 +516,7 @@ class DataAccessLayer(object):
             raise ValueError(msg)
 
         with self._transaction() as cur:
-            weighting_id = self._add_weights_get_new_id(cur, name, type_info, description)
+            weighting_id = self._add_weights_get_new_id(cur, name, selectors, description)
 
             # Get allowed columns and build selectors values.
             allowed_columns = self._get_column_names(cur, 'element')
@@ -712,20 +712,20 @@ class DataAccessLayerPre35(DataAccessLayer):
     For full documentation, see DataAccessLayer.
     """
     @staticmethod
-    def _add_weights_get_new_id(cursor, name, type_info, description=None):
+    def _add_weights_get_new_id(cursor, name, selectors, description=None):
         # Since the `RETURNING` clause is not available before version
         # 3.35.0, this method executes a second statement using the
         # last_insert_rowid() SQLite function.
-        if type_info:
-            type_info = _dumps(type_info)  # Dump JSON to string.
-        elif type_info is not None:
-            type_info = None  # Set falsy values to None.
+        if selectors:
+            selectors = _dumps(selectors)  # Dump JSON to string.
+        elif selectors is not None:
+            selectors = None  # Set falsy values to None.
 
         sql = """
-            INSERT INTO weighting(name, type_info, description)
+            INSERT INTO weighting(name, selectors, description)
             VALUES(?, ?, ?)
         """
-        cursor.execute(sql, (name, type_info, description))
+        cursor.execute(sql, (name, selectors, description))
         cursor.execute('SELECT last_insert_rowid()')
         return cursor.fetchone()[0]
 

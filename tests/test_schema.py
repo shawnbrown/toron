@@ -195,7 +195,7 @@ class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
             None,                      # edge_id (INTEGER PRIMARY KEY)
             f'name{index}',            # name
             None,                      # description
-            None,                      # type_info
+            None,                      # selectors
             value,                     # user_properties
             '00000000-0000-0000-0000-000000000000',  # other_uuid
             f'other{index}.toron',     # other_filename_hint
@@ -390,8 +390,8 @@ class TestSelectorsTrigger(unittest.TestCase, CheckSelectorsMixin):
     declared type.
 
     There are two columns that use this type:
-      * edge.type_info
-      * weighting.type_info.
+      * edge.selectors
+      * weighting.selectors.
     """
     def setUp(self):
         self.con = connect('mynode.toron', mode='memory')
@@ -399,7 +399,7 @@ class TestSelectorsTrigger(unittest.TestCase, CheckSelectorsMixin):
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
-        self.sql_insert = 'INSERT INTO weighting (name, type_info) VALUES (?, ?)'
+        self.sql_insert = 'INSERT INTO weighting (name, selectors) VALUES (?, ?)'
 
     def test_valid_values(self):
         for index, value in enumerate(self.valid_values):
@@ -432,7 +432,7 @@ class TestSelectorsTrigger(unittest.TestCase, CheckSelectorsMixin):
                     self.cur.execute(self.sql_insert, parameters)
 
     def test_none(self):
-        """The `weighting.type_info` column should accept None/NULL values."""
+        """The `weighting.selectors` column should accept None/NULL values."""
         parameters = ('blerg', None)
         self.cur.execute(self.sql_insert, parameters)
 
@@ -794,10 +794,10 @@ class TestJsonConversion(unittest.TestCase):
     def test_text_selectors(self):
         """Selecting TEXT_SELECTORS should convert strings into objects."""
         self.cur.execute(
-            'INSERT INTO weighting (name, type_info) VALUES (?, ?)',
+            'INSERT INTO weighting (name, selectors) VALUES (?, ?)',
             ('foo', r'["[bar=\"baz\"]"]')
         )
-        self.cur.execute("SELECT type_info FROM weighting WHERE name='foo'")
+        self.cur.execute("SELECT selectors FROM weighting WHERE name='foo'")
         self.assertEqual(self.cur.fetchall(), [(['[bar="baz"]'],)])
 
 

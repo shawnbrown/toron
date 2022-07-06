@@ -462,7 +462,7 @@ class TestRemoveColumnsMixin(object):
             ('TX', 'Cass', 'Atlanta', 'Queen City', 1397),
         ]
         self.dal.add_elements(data)
-        self.dal.add_weights(data, name='population', type_info=None)
+        self.dal.add_weights(data, name='population', selectors=None)
 
     def test_initial_fixture_state(self):
         # Check initial categories.
@@ -654,7 +654,7 @@ class TestRemoveColumnsMixin(object):
             (9, 'TX', 6214),
             # 10 missing.
         ]
-        self.dal.add_weights(data, name='new_count', type_info=['[foo="bar"]'])
+        self.dal.add_weights(data, name='new_count', selectors=['[foo="bar"]'])
 
         self.cur.execute("SELECT is_complete FROM weighting WHERE name='new_count'")
         actual = self.cur.fetchone()[0]
@@ -847,13 +847,13 @@ class TestAddWeightsGetNewId(unittest.TestCase):
 
     def run_func_test(self, func):
         name = 'myname'
-        type_info = ['[category="stuff"]']
+        selectors = ['[category="stuff"]']
         description = 'My description.'
 
-        weighting_id = func(self.cur, name, type_info=type_info, description=description)  # <- Test the function.
+        weighting_id = func(self.cur, name, selectors=selectors, description=description)  # <- Test the function.
 
         actual = self.cur.execute('SELECT * FROM weighting').fetchall()
-        expected = [(1, name, description, type_info, 0)]
+        expected = [(1, name, description, selectors, 0)]
         self.assertEqual(actual, expected)
 
         msg = 'retrieved weighting_id should be same as returned from function'
@@ -1014,7 +1014,7 @@ class TestAddWeights(unittest.TestCase):
             ('12', '017', '450302', 183),
             ('12', '019', '030202', 62),
         ]
-        self.dal.add_weights(weights, columns, name='pop10', type_info=None)
+        self.dal.add_weights(weights, columns, name='pop10', selectors=None)
 
         self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
@@ -1042,7 +1042,7 @@ class TestAddWeights(unittest.TestCase):
             ('12', '017', 183),
             ('12', '019', 62),
         ]
-        self.dal.add_weights(weights, name='pop10', type_info=None)
+        self.dal.add_weights(weights, name='pop10', selectors=None)
 
         self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
