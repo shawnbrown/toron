@@ -503,7 +503,7 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.execute('''
             SELECT a.*, b.value
             FROM element a
-            JOIN element_weight b USING (element_id)
+            JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
@@ -567,7 +567,7 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.execute('''
             SELECT a.*, b.value
             FROM element a
-            JOIN element_weight b USING (element_id)
+            JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
@@ -593,7 +593,7 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.execute('''
             SELECT a.*, b.value
             FROM element a
-            JOIN element_weight b USING (element_id)
+            JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
@@ -621,7 +621,7 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.execute('''
             SELECT a.*, b.value
             FROM element a
-            JOIN element_weight b USING (element_id)
+            JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
@@ -671,7 +671,7 @@ class TestRemoveColumnsMixin(object):
         actual = set(self.cur.execute('''
             SELECT a.*, b.value
             FROM element a
-            JOIN element_weight b USING (element_id)
+            JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='new_count'
         ''').fetchall())
@@ -883,7 +883,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         columns = ['state', 'county', 'town']
         sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
-            INSERT INTO main.element_weight (weighting_id, element_id, value)
+            INSERT INTO main.weight (weighting_id, element_id, value)
             SELECT ? AS weighting_id, element_id, ? AS value
             FROM main.element
             WHERE "state"=? AND "county"=? AND "town"=?
@@ -899,7 +899,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         columns = ['state', 'county']
         sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
-            INSERT INTO main.element_weight (weighting_id, element_id, value)
+            INSERT INTO main.weight (weighting_id, element_id, value)
             SELECT ? AS weighting_id, element_id, ? AS value
             FROM main.element
             WHERE "state"=? AND "county"=?
@@ -942,7 +942,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
     def test_complete(self):
         weighting_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', ['[category="census"]'])
 
-        # Insert element_weight records.
+        # Insert weight records.
         iterator = [
             (weighting_id, 12, 'X', '001'),
             (weighting_id, 35, 'Y', '001'),
@@ -961,7 +961,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
     def test_incomplete(self):
         weighting_id = dal_class._add_weights_get_new_id(self.cur, 'tot10', ['[category="census"]'])
 
-        # Insert element_weight records.
+        # Insert weight records.
         iterator = [
             (weighting_id, 12, 'X', '001'),
             (weighting_id, 35, 'Y', '001'),
@@ -1025,7 +1025,7 @@ class TestAddWeights(unittest.TestCase):
         self.cursor.execute("""
             SELECT state, county, tract, value
             FROM element
-            NATURAL JOIN element_weight
+            NATURAL JOIN weight
             WHERE weighting_id=1
         """)
         self.assertEqual(set(self.cursor.fetchall()), set(weights))
@@ -1054,7 +1054,7 @@ class TestAddWeights(unittest.TestCase):
         self.cursor.execute("""
             SELECT state, county, value
             FROM element
-            JOIN element_weight USING (element_id)
+            JOIN weight USING (element_id)
             WHERE weighting_id=1
         """)
         result = self.cursor.fetchall()

@@ -26,23 +26,23 @@ the application layer:
                      +------------+  |  +--------------+  |  +---------------+
                      | element    |  |  | location     |  |  | structure     |
                      +------------+  |  +--------------+  |  +---------------+
-              +------| element_id |--+  | _location_id |--+  | _structure_id |
-              |      | label_a    |••••>| label_a      |<••••| label_a       |
-              |      | label_b    |••••>| label_b      |<••••| label_b       |
-              |      | label_c    |••••>| label_c      |<••••| label_c       |
-              |      | ...        |••••>| ...          |<••••| ...           |
-              |      +------------+     +--------------+     +---------------+
-              |
-              |  +-------------------+                          +----------+
-              |  | element_weight    |     +--------------+     | property |
-              |  +-------------------+     | weighting    |     +----------+
-              |  | element_weight_id |     +--------------+     | key      |
-              |  | weighting_id      |<----| weighting_id |     | value    |
-              +->| element_id        |•••  | name         |     +----------+
-                 | value             |  •  | description  |
-                 +-------------------+  •  | selectors    |
-                                        ••>| is_complete  |
-                                           +--------------+
+                  +--| element_id |--+  | _location_id |--+  | _structure_id |
+                  |  | label_a    |••••>| label_a      |<••••| label_a       |
+                  |  | label_b    |••••>| label_b      |<••••| label_b       |
+                  |  | label_c    |••••>| label_c      |<••••| label_c       |
+                  |  | ...        |••••>| ...          |<••••| ...           |
+                  |  +------------+     +--------------+     +---------------+
+                  |
+                  |  +--------------+                          +----------+
+                  |  | weight       |     +--------------+     | property |
+                  |  +--------------+     | weighting    |     +----------+
+                  |  | weight_id    |     +--------------+     | key      |
+                  |  | weighting_id |<----| weighting_id |     | value    |
+                  +->| element_id   |•••  | name         |     +----------+
+                     | value        |  •  | description  |
+                     +--------------+  •  | selectors    |
+                                       ••>| is_complete  |
+                                          +--------------+
 """
 
 import itertools
@@ -146,8 +146,8 @@ _schema_script = """
         UNIQUE (name)
     );
 
-    CREATE TABLE main.element_weight(
-        element_weight_id INTEGER PRIMARY KEY,
+    CREATE TABLE main.weight(
+        weight_id INTEGER PRIMARY KEY,
         weighting_id INTEGER,
         element_id INTEGER,
         value REAL NOT NULL,
