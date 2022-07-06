@@ -63,7 +63,7 @@ class DataAccessLayer(object):
     @staticmethod
     def _get_column_names(cursor, table):
         """Return a list of column names from the given table."""
-        cursor.execute(f"PRAGMA table_info('{table}')")
+        cursor.execute(f"PRAGMA main.table_info('{table}')")
         return [row[1] for row in cursor.fetchall()]
 
     @staticmethod
@@ -114,9 +114,9 @@ class DataAccessLayer(object):
 
         for col in new_cols:
             sql_stmnts.extend([
-                f"ALTER TABLE element ADD COLUMN {_schema.sql_column_def_element_label(col)}",
-                f"ALTER TABLE location ADD COLUMN {_schema.sql_column_def_location_label(col)}",
-                f"ALTER TABLE structure ADD COLUMN {_schema.sql_column_def_structure_label(col)}",
+                f"ALTER TABLE main.element ADD COLUMN {_schema.sql_column_def_element_label(col)}",
+                f"ALTER TABLE main.location ADD COLUMN {_schema.sql_column_def_location_label(col)}",
+                f"ALTER TABLE main.structure ADD COLUMN {_schema.sql_column_def_structure_label(col)}",
             ])
 
         label_cols = current_cols[1:] + new_cols  # All columns except the id column.
@@ -159,9 +159,9 @@ class DataAccessLayer(object):
         sql_stmnts = []
         for name, new_name in rename_pairs:
             sql_stmnts.extend([
-                f'ALTER TABLE element RENAME COLUMN {name} TO {new_name}',
-                f'ALTER TABLE location RENAME COLUMN {name} TO {new_name}',
-                f'ALTER TABLE structure RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE main.element RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE main.location RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE main.structure RENAME COLUMN {name} TO {new_name}',
             ])
         return sql_stmnts
 
@@ -426,7 +426,7 @@ class DataAccessLayer(object):
 
         columns_clause = ', '.join(columns)
         values_clause = ', '.join('?' * len(columns))
-        return f'INSERT INTO element ({columns_clause}) VALUES ({values_clause})'
+        return f'INSERT INTO main.element ({columns_clause}) VALUES ({values_clause})'
 
     def add_elements(self, iterable, columns=None):
         iterator = iter(iterable)
@@ -455,7 +455,7 @@ class DataAccessLayer(object):
             selectors = None  # Set falsy values to None.
 
         sql = """
-            INSERT INTO weighting(name, selectors, description)
+            INSERT INTO main.weighting(name, selectors, description)
             VALUES(?, ?, ?)
             RETURNING weighting_id
         """
@@ -481,9 +481,9 @@ class DataAccessLayer(object):
         groupby_clause = ', '.join(columns)
 
         sql = f"""
-            INSERT INTO element_weight (weighting_id, element_id, value)
+            INSERT INTO main.element_weight (weighting_id, element_id, value)
             SELECT ? AS weighting_id, element_id, ? AS value
-            FROM element
+            FROM main.element
             WHERE {where_clause}
             GROUP BY {groupby_clause}
             HAVING COUNT(*)=1
@@ -494,11 +494,11 @@ class DataAccessLayer(object):
     def _add_weights_set_is_complete(cursor, weighting_id):
         """Set the 'weighting.is_complete' value to 1 or 0 (True/False)."""
         sql = """
-            UPDATE weighting
+            UPDATE main.weighting
             SET is_complete=((SELECT COUNT(*)
-                              FROM element_weight
+                              FROM main.element_weight
                               WHERE weighting_id=?) = (SELECT COUNT(*)
-                                                       FROM element))
+                                                       FROM main.element))
             WHERE weighting_id=?
         """
         cursor.execute(sql, (weighting_id, weighting_id))
@@ -549,7 +549,7 @@ class DataAccessLayer(object):
         with self._transaction() as cur:
             for key in keys:
                 if key == 'column_names':
-                    cur.execute("PRAGMA table_info('element')")
+                    cur.execute("PRAGMA main.table_info('element')")
                     names = [row[1] for row in cur.fetchall()]
                     data[key] = names[1:]  # Slice-off element_id.
                 elif key == 'discrete_categories':
@@ -564,14 +564,14 @@ class DataAccessLayer(object):
         if value is not None:
             # Insert or update property with JSON string.
             sql = '''
-                INSERT INTO property(key, value) VALUES(?, ?)
+                INSERT INTO main.property(key, value) VALUES(?, ?)
                   ON CONFLICT(key) DO UPDATE SET value=?
             '''
             json_value = _dumps(value, sort_keys=True)
             parameters = (key, json_value, json_value)
         else:
             # Delete property when value is `None`.
-            sql = 'DELETE FROM property WHERE key=?'
+            sql = 'DELETE FROM main.property WHERE key=?'
             parameters = (key,)
 
         cursor.execute(sql, parameters)
@@ -579,7 +579,7 @@ class DataAccessLayer(object):
     @classmethod
     def _set_data_structure(cls, cursor, structure):
         """Populates 'structure' table with bitmask made from *structure*."""
-        cursor.execute('DELETE FROM structure')  # Delete all table records.
+        cursor.execute('DELETE FROM main.structure')  # Delete all table records.
         if not structure:
             return  # <- EXIT!
 
@@ -722,7 +722,7 @@ class DataAccessLayerPre35(DataAccessLayer):
             selectors = None  # Set falsy values to None.
 
         sql = """
-            INSERT INTO weighting(name, selectors, description)
+            INSERT INTO main.weighting(name, selectors, description)
             VALUES(?, ?, ?)
         """
         cursor.execute(sql, (name, selectors, description))
@@ -743,27 +743,27 @@ class DataAccessLayerPre35(DataAccessLayer):
 
         statements = [
             # Rebuild 'element' table.
-            f'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+            f'CREATE TABLE main.new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
                 f'{", ".join(new_element_cols)})',
-            f'INSERT INTO new_element SELECT element_id, {", ".join(columns_to_keep)} FROM element',
-            'DROP TABLE element',
-            'ALTER TABLE new_element RENAME TO element',
+            f'INSERT INTO main.new_element SELECT element_id, {", ".join(columns_to_keep)} FROM main.element',
+            'DROP TABLE main.element',
+            'ALTER TABLE main.new_element RENAME TO element',
 
             # Rebuild 'location' table.
-            f'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, ' \
+            f'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, ' \
                 f'{", ".join(new_location_cols)})',
-            f'INSERT INTO new_location '
-                f'SELECT _location_id, {", ".join(columns_to_keep)} FROM location',
-            'DROP TABLE location',
-            'ALTER TABLE new_location RENAME TO location',
+            f'INSERT INTO main.new_location '
+                f'SELECT _location_id, {", ".join(columns_to_keep)} FROM main.location',
+            'DROP TABLE main.location',
+            'ALTER TABLE main.new_location RENAME TO location',
 
             # Rebuild 'structure' table.
-            f'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, ' \
+            f'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, ' \
                 f'{", ".join(new_structure_cols)})',
-            f'INSERT INTO new_structure ' \
-                f'SELECT _structure_id, {", ".join(columns_to_keep)} FROM structure',
-            'DROP TABLE structure',
-            'ALTER TABLE new_structure RENAME TO structure',
+            f'INSERT INTO main.new_structure ' \
+                f'SELECT _structure_id, {", ".join(columns_to_keep)} FROM main.structure',
+            'DROP TABLE main.structure',
+            'ALTER TABLE main.new_structure RENAME TO structure',
         ]
 
         # Reconstruct associated indexes.
@@ -813,27 +813,27 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in new_column_names]
         statements = [
             # Rebuild 'element' table.
-            f'CREATE TABLE new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+            f'CREATE TABLE main.new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
                 f'{", ".join(new_element_cols)})',
-            f'INSERT INTO new_element SELECT element_id, {", ".join(column_names)} FROM element',
-            'DROP TABLE element',
-            'ALTER TABLE new_element RENAME TO element',
+            f'INSERT INTO main.new_element SELECT element_id, {", ".join(column_names)} FROM main.element',
+            'DROP TABLE main.element',
+            'ALTER TABLE main.new_element RENAME TO element',
 
             # Rebuild 'location' table.
-            f'CREATE TABLE new_location(_location_id INTEGER PRIMARY KEY, ' \
+            f'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, ' \
                 f'{", ".join(new_location_cols)})',
-            f'INSERT INTO new_location '
-                f'SELECT _location_id, {", ".join(column_names)} FROM location',
-            'DROP TABLE location',
-            'ALTER TABLE new_location RENAME TO location',
+            f'INSERT INTO main.new_location '
+                f'SELECT _location_id, {", ".join(column_names)} FROM main.location',
+            'DROP TABLE main.location',
+            'ALTER TABLE main.new_location RENAME TO location',
 
             # Rebuild 'structure' table.
-            f'CREATE TABLE new_structure(_structure_id INTEGER PRIMARY KEY, ' \
+            f'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, ' \
                 f'{", ".join(new_structure_cols)})',
-            f'INSERT INTO new_structure ' \
-                f'SELECT _structure_id, {", ".join(column_names)} FROM structure',
-            'DROP TABLE structure',
-            'ALTER TABLE new_structure RENAME TO structure',
+            f'INSERT INTO main.new_structure ' \
+                f'SELECT _structure_id, {", ".join(column_names)} FROM main.structure',
+            'DROP TABLE main.structure',
+            'ALTER TABLE main.new_structure RENAME TO structure',
         ]
 
         # Reconstruct associated indexes.
@@ -875,10 +875,10 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
     @staticmethod
     def _set_data_property(cursor, key, value):
         if value is not None:
-            sql = 'INSERT OR REPLACE INTO property(key, value) VALUES (?, ?)'
+            sql = 'INSERT OR REPLACE INTO main.property(key, value) VALUES (?, ?)'
             parameters = (key, _dumps(value, sort_keys=True))
         else:
-            sql = 'DELETE FROM property WHERE key=?'
+            sql = 'DELETE FROM main.property WHERE key=?'
             parameters = (key,)
 
         cursor.execute(sql, parameters)

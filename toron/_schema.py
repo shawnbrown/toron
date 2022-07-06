@@ -89,7 +89,7 @@ finally:
 _schema_script = """
     PRAGMA foreign_keys = ON;
 
-    CREATE TABLE edge(
+    CREATE TABLE main.edge(
         edge_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
@@ -102,7 +102,7 @@ _schema_script = """
         UNIQUE (name, other_uuid)
     );
 
-    CREATE TABLE relation(
+    CREATE TABLE main.relation(
         relation_id INTEGER PRIMARY KEY,
         edge_id INTEGER,
         other_element_id INTEGER NOT NULL,
@@ -114,22 +114,22 @@ _schema_script = """
         UNIQUE (edge_id, other_element_id, element_id)
     );
 
-    CREATE TABLE element(
+    CREATE TABLE main.element(
         element_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
         /* label columns added programmatically */
     );
 
-    CREATE TABLE location(
+    CREATE TABLE main.location(
         _location_id INTEGER PRIMARY KEY
         /* label columns added programmatically */
     );
 
-    CREATE TABLE structure(
+    CREATE TABLE main.structure(
         _structure_id INTEGER PRIMARY KEY
         /* label columns added programmatically */
     );
 
-    CREATE TABLE quantity(
+    CREATE TABLE main.quantity(
         quantity_id INTEGER PRIMARY KEY,
         _location_id INTEGER,
         attributes TEXT_ATTRIBUTES NOT NULL,
@@ -137,7 +137,7 @@ _schema_script = """
         FOREIGN KEY(_location_id) REFERENCES location(_location_id)
     );
 
-    CREATE TABLE weighting(
+    CREATE TABLE main.weighting(
         weighting_id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
@@ -146,7 +146,7 @@ _schema_script = """
         UNIQUE (name)
     );
 
-    CREATE TABLE element_weight(
+    CREATE TABLE main.element_weight(
         element_weight_id INTEGER PRIMARY KEY,
         weighting_id INTEGER,
         element_id INTEGER,
@@ -156,12 +156,12 @@ _schema_script = """
         UNIQUE (element_id, weighting_id)
     );
 
-    CREATE TABLE property(
+    CREATE TABLE main.property(
         key TEXT PRIMARY KEY NOT NULL,
         value TEXT_JSON
     );
 
-    INSERT INTO property VALUES ('schema_version', '1');
+    INSERT INTO main.property VALUES ('schema_version', '1');
 """
 
 
@@ -201,9 +201,9 @@ def normalize_identifier(value: str) -> str:
 def sql_drop_label_indexes() -> List[str]:
     """Return list of SQL statements to drop unique label indexes."""
     return [
-        'DROP INDEX IF EXISTS unique_element_index',
-        'DROP INDEX IF EXISTS unique_location_index',
-        'DROP INDEX IF EXISTS unique_structure_index',
+        'DROP INDEX IF EXISTS main.unique_element_index',
+        'DROP INDEX IF EXISTS main.unique_location_index',
+        'DROP INDEX IF EXISTS main.unique_structure_index',
     ]
 
 
@@ -211,9 +211,9 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
     """Return list of SQL statements to create unique label indexes."""
     formatted = ', '.join(normalize_identifier(x) for x in columns)
     return [
-        f'CREATE UNIQUE INDEX unique_element_index ON element({formatted})',
-        f'CREATE UNIQUE INDEX unique_location_index ON location({formatted})',
-        f'CREATE UNIQUE INDEX unique_structure_index ON structure({formatted})',
+        f'CREATE UNIQUE INDEX main.unique_element_index ON element({formatted})',
+        f'CREATE UNIQUE INDEX main.unique_location_index ON location({formatted})',
+        f'CREATE UNIQUE INDEX main.unique_structure_index ON structure({formatted})',
     ]
 
 
