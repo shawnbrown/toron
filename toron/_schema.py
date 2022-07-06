@@ -258,7 +258,9 @@ def _user_json_valid(x: str) -> bool:
     return True
 
 
-def _make_trigger_for_json(insert_or_update, table, column):
+def _sql_trigger_validate_json(
+    insert_or_update: str, table: str, column: str
+) -> str:
     """Return a SQL statement for creating a temporary trigger. The
     trigger is used to validate the contents of TEXT_JSON type columns.
     The trigger will pass without error if the JSON is wellformed.
@@ -301,7 +303,9 @@ def _user_userproperties_valid(x: str) -> bool:
     return isinstance(obj, dict)
 
 
-def _make_trigger_for_user_properties(insert_or_update, table, column):
+def _sql_trigger_validate_userproperties(
+    insert_or_update: str, table: str, column: str
+) -> str:
     """Return a CREATE TRIGGER statement to check TEXT_USERPROPERTIES
     values. This trigger is used to check values before they are saved
     in the database.
@@ -352,7 +356,9 @@ def _user_attributes_valid(x: str) -> bool:
     return True
 
 
-def _make_trigger_for_attributes(insert_or_update, table, column):
+def _sql_trigger_validate_attributes(
+    insert_or_update: str, table: str, column: str
+) -> str:
     """Return a SQL statement for creating a temporary trigger. The
     trigger is used to validate the contents of TEXT_ATTRIBUTES
     type columns.
@@ -418,7 +424,9 @@ def _user_selectors_valid(x: str) -> bool:
     return True
 
 
-def _sql_trigger_validate_selectors(insert_or_update: str, table: str, column: str) -> str:
+def _sql_trigger_validate_selectors(
+    insert_or_update: str, table: str, column: str
+) -> str:
     """Return a SQL statement for creating a temporary trigger. The
     trigger is used to validate the contents of TEXT_SELECTORS
     type columns.
@@ -482,14 +490,14 @@ def _add_functions_and_triggers(connection):
             connection.create_function('user_attributes_valid', 1, _user_attributes_valid)
             connection.create_function('user_selectors_valid', 1, _user_selectors_valid)
 
-    connection.execute(_make_trigger_for_json('INSERT', 'property', 'value'))
-    connection.execute(_make_trigger_for_json('UPDATE', 'property', 'value'))
+    connection.execute(_sql_trigger_validate_json('INSERT', 'property', 'value'))
+    connection.execute(_sql_trigger_validate_json('UPDATE', 'property', 'value'))
 
-    connection.execute(_make_trigger_for_user_properties('INSERT', 'edge', 'user_properties'))
-    connection.execute(_make_trigger_for_user_properties('UPDATE', 'edge', 'user_properties'))
+    connection.execute(_sql_trigger_validate_userproperties('INSERT', 'edge', 'user_properties'))
+    connection.execute(_sql_trigger_validate_userproperties('UPDATE', 'edge', 'user_properties'))
 
-    connection.execute(_make_trigger_for_attributes('INSERT', 'quantity', 'attributes'))
-    connection.execute(_make_trigger_for_attributes('UPDATE', 'quantity', 'attributes'))
+    connection.execute(_sql_trigger_validate_attributes('INSERT', 'quantity', 'attributes'))
+    connection.execute(_sql_trigger_validate_attributes('UPDATE', 'quantity', 'attributes'))
 
     connection.execute(_sql_trigger_validate_selectors('INSERT', 'edge', 'selectors'))
     connection.execute(_sql_trigger_validate_selectors('UPDATE', 'edge', 'selectors'))

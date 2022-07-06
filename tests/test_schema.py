@@ -15,7 +15,7 @@ from toron._schema import (
     _user_attributes_valid,
     _user_selectors_valid,
     _schema_script,
-    _make_trigger_for_attributes,
+    _sql_trigger_validate_attributes,
     _add_functions_and_triggers,
     _path_to_sqlite_uri,
     connect,
