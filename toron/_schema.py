@@ -555,12 +555,13 @@ def connect(path, mode='rwc'):
     try:
         _add_functions_and_triggers(con)
     except (sqlite3.OperationalError, sqlite3.DatabaseError):
-        # Raises OperationalError when *path* is a database with an unknown
-        # schema and DatabaseError when *path* is a file but not a database.
+        # SQLite raises an OperationalError when *path* is a database with
+        # an unknown schema and DatabaseError when *path* is a file but not
+        # a database.
         con.close()
         raise ToronError(f'Path is not a Toron node: {path!r}')
 
-    cur = con.execute("SELECT value FROM property WHERE key='schema_version'")
+    cur = con.execute("SELECT value FROM main.property WHERE key='schema_version'")
     schema_version, *_ = cur.fetchone() or (None,)
     cur.close()
 
