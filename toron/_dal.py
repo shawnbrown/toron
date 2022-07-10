@@ -51,6 +51,40 @@ class DataAccessLayer(object):
         self.path = path
         self.mode = mode
 
+    @classmethod
+    def open(cls, path: str, mode: str = 'readonly'):
+        """Open a node directly from drive (does not load into memory).
+
+        By default, nodes are opened in ``'readonly'`` mode::
+
+            >>> from toron import Node
+            >>> node = Node.open('mynode.toron')
+
+        To make changes to an existing node or create a new node
+        directly on drive, use ``'readwrite'`` mode. Use this mode
+        with caution since changes are applied immediately to the
+        file on drive and cannot be undone::
+
+            >>> from toron import Node
+            >>> node = Node.open('mynode.toron', mode='readwrite')
+        """
+        if mode == 'readonly':
+            uri_access_mode = 'ro'
+        elif mode == 'readwrite':
+            uri_access_mode = 'rwc'
+        else:
+            msg = f'invalid mode: {mode!r}'
+            raise ToronError(msg)
+
+        path = os.fspath(path)
+        _schema.connect(path, mode=uri_access_mode).close()  # Verify path to Toron node file.
+
+        obj = cls.__new__(cls)
+        obj._transaction = lambda: _schema.transaction(path, mode=uri_access_mode)
+        obj.path = path
+        obj.mode = uri_access_mode
+        return obj
+
     def _get_connection(self):
         if self.mode == 'memory':
             return self._connection

@@ -24,6 +24,51 @@ from toron._exceptions import ToronError
 SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
 
 
+class TestDataAccessLayerOpen(TempDirTestCase):
+    def setUp(self):
+        self.existing_path = 'existing_node.toron'
+        connect(self.existing_path).close()  # Create empty Toron node file.
+        self.addCleanup(self.cleanup_temp_files)
+
+    def test_new_readwrite(self):
+        """In readwrite mode, nodes can be created directly on drive."""
+        new_path = 'new_node.toron'
+        self.assertFalse(os.path.isfile(new_path))
+
+        dal = dal_class.open(new_path, mode='readwrite')
+        with dal._transaction() as cur:
+            pass  # Dummy transaction to test connectivity.
+        del dal
+        gc.collect()  # Explicitly trigger full garbage collection.
+
+        msg = 'data should persist as a file on drive'
+        self.assertTrue(os.path.isfile(new_path), msg=msg)
+
+    def test_new_readonly(self):
+        """In readonly mode, nodes must already exist--cannot be created."""
+        new_path = 'new_node.toron'
+        self.assertFalse(os.path.isfile(new_path))
+
+        with self.assertRaises(ToronError):
+            dal_class.open(new_path)  # <- Defaults to mode='readonly'.
+
+    def test_existing_readwrite(self):
+        self.assertTrue(os.path.isfile(self.existing_path))
+        dal = dal_class.open(self.existing_path, mode='readwrite')
+        with dal._transaction() as cur:
+            pass  # Dummy transaction to test connectivity.
+
+    def test_existing_readonly(self):
+        self.assertTrue(os.path.isfile(self.existing_path))
+        dal = dal_class.open(self.existing_path)  # <- Defaults to mode='readonly'.
+        with dal._transaction() as cur:
+            pass  # Dummy transaction to test connectivity.
+
+    def test_bad_mode(self):
+        with self.assertRaises(ToronError):
+            dal_class.open(self.existing_path, mode='badmode')
+
+
 class TestDataAccessLayerOnDisk(TempDirTestCase):
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
