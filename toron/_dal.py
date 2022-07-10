@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
-from typing import Type
+from typing import Set, Type
 
 from . import _schema
 from ._categories import make_structure
@@ -19,12 +19,14 @@ from ._exceptions import ToronWarning
 
 
 _SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
+_temp_files_to_delete_atexit: Set[str] = set()
 
-
-_PATHS_TO_DELETE_AT_EXIT = set()
 
 def _delete_leftover_temp_files():
     """Remove temporary files left-over from `cache_to_drive` usage.
+
+    This function should be registered with the `atexit` module
+    and should execute only once when the interpreter exits.
 
     While Node objects contain a __del__() method, it should not be
     relied upon to finalize resources. This function will clean-up
@@ -39,7 +41,7 @@ def _delete_leftover_temp_files():
 
         https://docs.python.org/3/reference/datamodel.html#object.__del__
     """
-    for path in _PATHS_TO_DELETE_AT_EXIT:
+    for path in _temp_files_to_delete_atexit:
         try:
             os.unlink(path)
         except Exception as e:
@@ -47,7 +49,8 @@ def _delete_leftover_temp_files():
             msg = f'cannot remove temporary file {path!r}, {e.__class__.__name__}'
             warnings.warn(msg, RuntimeWarning)
 
-atexit.register(_delete_leftover_temp_files)
+
+atexit.register(_delete_leftover_temp_files)  # <- Register!.
 
 
 class DataAccessLayer(object):
@@ -105,7 +108,7 @@ class DataAccessLayer(object):
             fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
             fh.close()
             target_path = fh.name
-            _PATHS_TO_DELETE_AT_EXIT.add(target_path)
+            _temp_files_to_delete_atexit.add(target_path)
         else:
             target_path = ':memory:'
 
@@ -183,7 +186,7 @@ class DataAccessLayer(object):
             self._connection.close()
         elif hasattr(self, '_temp_path'):
             os.unlink(self._temp_path)
-            _PATHS_TO_DELETE_AT_EXIT.discard(self._temp_path)
+            _temp_files_to_delete_atexit.discard(self._temp_path)
             del self._temp_path
 
     @staticmethod

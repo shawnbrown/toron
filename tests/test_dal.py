@@ -18,7 +18,7 @@ from toron._dal import DataAccessLayerPre24
 from toron._dal import DataAccessLayerPre25
 from toron._dal import DataAccessLayerPre35
 from toron._dal import dal_class
-from toron._dal import _PATHS_TO_DELETE_AT_EXIT
+from toron._dal import _temp_files_to_delete_atexit
 from toron._exceptions import ToronError
 
 
@@ -88,10 +88,10 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         dal = dal_class.from_file(self.existing_path, cache_to_drive=True)
         path = dal.path
 
-        self.assertIn(path, _PATHS_TO_DELETE_AT_EXIT)
+        self.assertIn(path, _temp_files_to_delete_atexit)
 
         dal.__del__()
-        self.assertNotIn(path, _PATHS_TO_DELETE_AT_EXIT)
+        self.assertNotIn(path, _temp_files_to_delete_atexit)
 
     def test_atexit_behavior(self):
         class DummyDataAccessLayer(dal_class):
@@ -102,7 +102,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         path = dal.path
 
         dal.__del__()
-        self.assertIn(path, _PATHS_TO_DELETE_AT_EXIT)
+        self.assertIn(path, _temp_files_to_delete_atexit)
 
         # The `_delete_leftover_temp_files()` function will raise
         # a RuntimeWarning after tests complete if a file cannot be
