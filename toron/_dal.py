@@ -1,5 +1,6 @@
 """Data access layer to interact with Toron node files."""
 
+import atexit
 import os
 import sqlite3
 import tempfile
@@ -18,6 +19,35 @@ from ._exceptions import ToronWarning
 
 
 _SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
+
+
+_PATHS_TO_DELETE_AT_EXIT = set()
+
+def _delete_leftover_temp_files():
+    """Remove temporary files left-over from `cache_to_drive` usage.
+
+    While Node objects contain a __del__() method, it should not be
+    relied upon to finalize resources. This function will clean-up
+    any left-over temporary files that were not removed by __del__().
+
+    The Python documentation states:
+
+        It is not guaranteed that __del__() methods are called
+        for objects that still exist when the interpreter exits.
+
+    For more details see:
+
+        https://docs.python.org/3/reference/datamodel.html#object.__del__
+    """
+    for path in _PATHS_TO_DELETE_AT_EXIT:
+        try:
+            os.unlink(path)
+        except Exception as e:
+            import warnings
+            msg = f'cannot remove temporary file {path!r}, {e.__class__.__name__}'
+            warnings.warn(msg, RuntimeWarning)
+
+atexit.register(_delete_leftover_temp_files)
 
 
 class DataAccessLayer(object):
@@ -75,6 +105,7 @@ class DataAccessLayer(object):
             fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
             fh.close()
             target_path = fh.name
+            _PATHS_TO_DELETE_AT_EXIT.add(target_path)
         else:
             target_path = ':memory:'
 
@@ -152,6 +183,8 @@ class DataAccessLayer(object):
             self._connection.close()
         elif hasattr(self, '_temp_path'):
             os.unlink(self._temp_path)
+            _PATHS_TO_DELETE_AT_EXIT.discard(self._temp_path)
+            del self._temp_path
 
     @staticmethod
     def _get_column_names(cursor, table):
