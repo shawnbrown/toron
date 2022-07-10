@@ -25,8 +25,8 @@ _temp_files_to_delete_atexit: Set[str] = set()
 def _delete_leftover_temp_files():
     """Remove temporary files left-over from `cache_to_drive` usage.
 
-    This function should be registered with the `atexit` module
-    and should execute only once when the interpreter exits.
+    This function is intended to be registered with the `atexit` module
+    and executed only once when the interpreter exits.
 
     While Node objects contain a __del__() method, it should not be
     relied upon to finalize resources. This function will clean-up
@@ -41,7 +41,8 @@ def _delete_leftover_temp_files():
 
         https://docs.python.org/3/reference/datamodel.html#object.__del__
     """
-    for path in _temp_files_to_delete_atexit:
+    while _temp_files_to_delete_atexit:
+        path = _temp_files_to_delete_atexit.pop()
         try:
             os.unlink(path)
         except Exception as e:
