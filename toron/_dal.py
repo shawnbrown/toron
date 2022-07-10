@@ -2,6 +2,7 @@
 
 import os
 import sqlite3
+import tempfile
 from collections import Counter
 from collections.abc import Mapping
 from itertools import chain
@@ -52,6 +53,57 @@ class DataAccessLayer(object):
         self.mode = mode
 
     @classmethod
+    def from_file(cls, path: str, cache_to_drive: bool = False):
+        """Create a node from a file on drive.
+
+        By default, nodes are loaded into memory::
+
+            >>> from toron import Node
+            >>> node = Node.from_file('mynode.toron')
+
+        If you want to load a node into on-drive cache (instead of into
+        memory), you can use ``cache_to_drive=True`` which stores the
+        working node data in a temporary location::
+
+            >>> from toron import Node
+            >>> node = Node.from_file('mynode.toron', cache_to_drive=True)
+        """
+        path = os.fspath(path)
+        source_con = _schema.connect(path, mode='ro')
+
+        if cache_to_drive:
+            fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
+            fh.close()
+            target_path = fh.name
+        else:
+            target_path = ':memory:'
+
+        try:
+            target_con = sqlite3.connect(
+                database=target_path,
+                detect_types=sqlite3.PARSE_DECLTYPES,
+                isolation_level=None,
+            )
+            source_con.backup(target_con)
+            _schema._add_functions_and_triggers(target_con)
+        finally:
+            source_con.close()
+
+        obj = cls.__new__(cls)
+        if cache_to_drive:
+            target_con.close()
+            obj._temp_path = target_path
+            obj._transaction = lambda: _schema.transaction(target_path, mode='rw')
+            obj.path = target_path
+            obj.mode = 'rw'
+        else:
+            obj._connection = target_con
+            obj._transaction = lambda: _schema.transaction(obj._connection)
+            obj.path = None
+            obj.mode = None
+        return obj
+
+    @classmethod
     def open(cls, path: str, mode: str = 'readonly'):
         """Open a node directly from drive (does not load into memory).
 
@@ -67,6 +119,11 @@ class DataAccessLayer(object):
 
             >>> from toron import Node
             >>> node = Node.open('mynode.toron', mode='readwrite')
+
+        If you need to work on nodes that are too large to fit into
+        memory but you don't want to risk damaging the original node,
+        you can use ``from_file()`` with the ``cache_to_drive=True``
+        option.
         """
         if mode == 'readonly':
             uri_access_mode = 'ro'
@@ -93,6 +150,8 @@ class DataAccessLayer(object):
     def __del__(self):
         if hasattr(self, '_connection'):
             self._connection.close()
+        elif hasattr(self, '_temp_path'):
+            os.unlink(self._temp_path)
 
     @staticmethod
     def _get_column_names(cursor, table):
