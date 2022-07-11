@@ -3,6 +3,7 @@
 import gc
 import os
 import sqlite3
+import tempfile
 import unittest
 from collections import OrderedDict
 from textwrap import dedent
@@ -39,6 +40,36 @@ def get_dal_filepath(dal):
     if name != 'main':
         raise Exception(f"expected 'main' database: got {name!r}")
     return file
+
+
+class TestDataAccessLayerInit(TempDirTestCase):
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
+    def test_load_in_memory(self):
+        dal = dal_class.new_init()  # <- Loads into memory.
+
+        # Check file path of underlying database (should be blank).
+        filepath = get_dal_filepath(dal)
+        self.assertEqual(filepath, '', msg='expecting empty string for in-memory DAL')
+
+        # Check for DAL functionality.
+        result = dal.get_data(['schema_version'])
+        expected = {'schema_version': 1}
+        self.assertEqual(result, expected)
+
+    def test_cache_to_drive(self):
+        dal = dal_class.new_init(cache_to_drive=True)  # <- Writes to temporary file.
+
+        # Check file path of underlying database.
+        filepath = get_dal_filepath(dal)
+        regex = f'^{tempfile.gettempdir()}.+\\.toron$'
+        self.assertRegex(filepath, regex, msg='expecting tempfile path for on-drive DAL')
+
+        # Check for DAL functionality.
+        result = dal.get_data(['schema_version'])
+        expected = {'schema_version': 1}
+        self.assertEqual(result, expected)
 
 
 class TestDataAccessLayerFromFile(TempDirTestCase):

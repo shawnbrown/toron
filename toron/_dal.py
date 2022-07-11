@@ -87,6 +87,39 @@ class DataAccessLayer(object):
         self.mode = mode
 
     @classmethod
+    def new_init(cls, cache_to_drive: bool = False):
+        """Initialize a new node instance."""
+        if cache_to_drive:
+            fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
+            fh.close()
+            target_path = fh.name
+            _temp_files_to_delete_atexit.add(target_path)
+        else:
+            target_path = ':memory:'
+
+        con = sqlite3.connect(
+            database=target_path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+        )
+        con.executescript(_schema._schema_script)  # Create database schema.
+        _schema._add_functions_and_triggers(con)
+
+        obj = cls.__new__(cls)
+        if cache_to_drive:
+            con.close()
+            obj._temp_path = target_path
+            obj._transaction = lambda: _schema.transaction(target_path, mode='rw')
+            obj.path = target_path
+            obj.mode = 'rw'
+        else:
+            obj._connection = con
+            obj._transaction = lambda: _schema.transaction(obj._connection)
+            obj.path = None
+            obj.mode = None
+        return obj
+
+    @classmethod
     def from_file(cls, path: str, cache_to_drive: bool = False):
         """Create a node from a file on drive.
 
