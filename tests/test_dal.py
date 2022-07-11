@@ -63,7 +63,8 @@ class TestDataAccessLayerInit(TempDirTestCase):
 
         # Check file path of underlying database.
         filepath = get_dal_filepath(dal)
-        regex = f'^{tempfile.gettempdir()}.+\\.toron$'
+        tempdir = tempfile.gettempdir().replace('\\', '\\\\')  # Escape any "\" chars for regex.
+        regex = f'^{tempdir}.+\\.toron$'
         self.assertRegex(filepath, regex, msg='expecting tempfile path for on-drive DAL')
 
         # Check for DAL functionality.
