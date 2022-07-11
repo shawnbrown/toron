@@ -25,6 +25,22 @@ from toron._exceptions import ToronError
 SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
 
 
+def get_dal_filepath(dal):
+    """Helper function returns path of DAL's db file (if any)."""
+    if hasattr(dal, '_connection'):
+        con = dal._connection
+    elif dal.path:
+        con = sqlite3.connect(dal.path)
+    else:
+        raise Exception(f'cannot get connection from data access layer: {dal}')
+
+    cur = con.execute('PRAGMA database_list')
+    _, name, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
+    if name != 'main':
+        raise Exception(f"expected 'main' database: got {name!r}")
+    return file
+
+
 class TestDataAccessLayerFromFile(TempDirTestCase):
     def setUp(self):
         self.existing_path = 'existing_node.toron'
@@ -34,28 +50,12 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         con.close()
         self.addCleanup(self.cleanup_temp_files)
 
-    @staticmethod
-    def get_main_filepath(dal):
-        """Helper function returns path of DAL's db file (if any)."""
-        if hasattr(dal, '_connection'):
-            con = dal._connection
-        elif dal.path:
-            con = sqlite3.connect(dal.path)
-        else:
-            raise Exception(f'cannot get connection from data access layer: {dal}')
-
-        cur = con.execute('PRAGMA database_list')
-        _, name, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
-        if name != 'main':
-            raise Exception(f"expected 'main' database: got {name!r}")
-        return file
-
     def test_load_in_memory(self):
         # Load data from file.
         dal = dal_class.from_file(self.existing_path)  # <- Defaults to in-memory.
 
         # Check that `dal` is using an in-memory connection.
-        filepath = self.get_main_filepath(dal)
+        filepath = get_dal_filepath(dal)
         self.assertEqual(filepath, '', msg='should be empty string for in-memory db')
 
         # For in-memory connections, path and node are unused.
@@ -72,7 +72,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         dal = dal_class.from_file(self.existing_path, cache_to_drive=True)  # <- Cached in temp file.
 
         # Check that `dal` is using an on-drive connection.
-        filepath = self.get_main_filepath(dal)
+        filepath = get_dal_filepath(dal)
         self.assertRegex(filepath, '.toron$', msg="temp file should use '.toron' suffix")
 
         # For on-drive connections, path and node are used.
