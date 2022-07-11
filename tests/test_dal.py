@@ -373,8 +373,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
 class TestAddColumns(unittest.TestCase):
     def test_add_columns(self):
         """Check that columns are added to appropriate tables."""
-        path = 'mynode.toron'
-        dal = dal_class(path, mode='memory')
+        dal = dal_class.new_init()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         con = dal._connection
@@ -395,7 +394,7 @@ class TestAddColumns(unittest.TestCase):
 
     def test_set_data_order(self):
         """The set_data() method should run 'add_columns' items first."""
-        dal = dal_class('mynode.toron', mode='memory')
+        dal = dal_class.new_init()
 
         mapping = OrderedDict([
             ('structure', [{'state'}, {'county'}, {'state', 'county'}]),
@@ -413,7 +412,7 @@ class TestAddColumns(unittest.TestCase):
 
 class TestRenameColumnsApplyMapper(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class('mynode.toron', mode='memory')
+        self.dal = dal_class.new_init()
         self.dal.set_data({'add_columns': ['state', 'county', 'town']})
         self.con = self.dal._connection
         self.cur = self.con.cursor()
@@ -495,8 +494,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
 
 class TestRenameColumns(unittest.TestCase):
     def setUp(self):
-        self.path = 'mynode.toron'
-        self.dal = dal_class(self.path, mode='memory')
+        self.dal = dal_class.new_init()
         self.dal.set_data({'add_columns': ['state', 'county', 'town']})
         self.dal.add_elements([
             ('state', 'county', 'town'),
@@ -902,8 +900,7 @@ class TestAddElementsMakeSql(unittest.TestCase):
 
 class TestAddElements(unittest.TestCase):
     def test_add_elements(self):
-        path = 'mynode.toron'
-        dal = dal_class(path, mode='memory')
+        dal = dal_class.new_init()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
@@ -923,8 +920,7 @@ class TestAddElements(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_add_elements_no_column_arg(self):
-        path = 'mynode.toron'
-        dal = dal_class(path, mode='memory')
+        dal = dal_class.new_init()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
@@ -946,8 +942,7 @@ class TestAddElements(unittest.TestCase):
 
     def test_add_elements_column_subset(self):
         """Omitted columns should get default value ('-')."""
-        path = 'mynode.toron'
-        dal = dal_class(path, mode='memory')
+        dal = dal_class.new_init()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include "state" but not "county".
@@ -970,8 +965,7 @@ class TestAddElements(unittest.TestCase):
 
     def test_add_elements_column_superset(self):
         """Surplus columns should be filtered-out before loading."""
-        path = 'mynode.toron'
-        dal = dal_class(path, mode='memory')
+        dal = dal_class.new_init()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include unknown columns "region" and "group".
@@ -1142,8 +1136,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
 class TestAddWeights(unittest.TestCase):
     """Tests for dal.add_weights() method."""
     def setUp(self):
-        self.path = 'mynode.toron'
-        self.dal = dal_class(self.path, mode='memory')
+        self.dal = dal_class.new_init()
         self.dal.set_data({'add_columns': ['state', 'county', 'tract']})
         self.dal.add_elements([
             ('state', 'county', 'tract'),
@@ -1323,7 +1316,7 @@ class TestGetAndSetDataPropertyPre24(TestGetAndSetDataProperty):
 
 class TestGetColumnNames(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class('mynode.toron', mode='memory')
+        self.dal = dal_class.new_init()
 
     def test_get_names(self):
         self.dal.set_data({'add_columns': ['A', 'B', 'C']})
@@ -1338,7 +1331,7 @@ class TestGetColumnNames(unittest.TestCase):
 
 class TestGetAndSetDiscreteCategories(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class('mynode.toron', mode='memory')
+        self.dal = dal_class.new_init()
 
         connection = self.dal._get_connection()
         self.addCleanup(connection.close)
@@ -1410,7 +1403,7 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
 
 class TestGetProperties(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class('mynode.toron', mode='memory')
+        self.dal = dal_class.new_init()
 
         connection = self.dal._get_connection()
         self.addCleanup(connection.close)
@@ -1438,7 +1431,7 @@ class TestGetProperties(unittest.TestCase):
 
 class TestSetStructure(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class('mynode.toron', mode='memory')
+        self.dal = dal_class.new_init()
         self.connection = self.dal._get_connection()
         self.cursor = self.connection.cursor()
         self.addCleanup(self.connection.close)

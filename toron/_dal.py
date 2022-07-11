@@ -211,7 +211,7 @@ class DataAccessLayer(object):
         return obj
 
     def _get_connection(self):
-        if self.mode == 'memory':
+        if hasattr(self, '_connection'):
             return self._connection
         return _schema.connect(self.path, mode=self.mode)
 
