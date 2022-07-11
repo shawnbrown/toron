@@ -10,7 +10,7 @@ from toron._exceptions import ToronWarning
 
 class TestNodeAddColumns(unittest.TestCase):
     def setUp(self):
-        self.node = Node('mynode.toron', mode='memory')
+        self.node = Node()
         self.dal = self.node._dal
         self.cursor = self.dal._get_connection().cursor()
 
@@ -49,7 +49,7 @@ class TestNodeAddColumns(unittest.TestCase):
 
 class TestNodeAddDiscreteCategories(unittest.TestCase):
     def setUp(self):
-        self.node = Node('mynode.toron', mode='memory')
+        self.node = Node()
         self.dal = self.node._dal
         self.cursor = self.dal._get_connection().cursor()
 
@@ -141,7 +141,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
 
 class TestNodeRemoveDiscreteCategories(unittest.TestCase):
     def setUp(self):
-        self.node = Node('mynode.toron', mode='memory')
+        self.node = Node()
         self.dal = self.node._dal
         self.cursor = self.dal._get_connection().cursor()
 

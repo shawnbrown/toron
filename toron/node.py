@@ -8,8 +8,8 @@ from ._categories import minimize_discrete_categories
 
 
 class Node(object):
-    def __init__(self, path, mode='rwc'):
-        self._dal = dal_class(path, mode)
+    def __init__(self, cache_to_drive: bool = False) -> None:
+        self._dal = dal_class.new_init(cache_to_drive=cache_to_drive)
 
     @property
     def path(self):
