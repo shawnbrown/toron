@@ -47,7 +47,7 @@ class TestDataAccessLayerInit(TempDirTestCase):
         self.addCleanup(self.cleanup_temp_files)
 
     def test_load_in_memory(self):
-        dal = dal_class.new_init()  # <- Loads into memory.
+        dal = dal_class()  # <- Loads into memory.
 
         # Check file path of underlying database (should be blank).
         filepath = get_dal_filepath(dal)
@@ -59,7 +59,7 @@ class TestDataAccessLayerInit(TempDirTestCase):
         self.assertEqual(result, expected)
 
     def test_cache_to_drive(self):
-        dal = dal_class.new_init(cache_to_drive=True)  # <- Writes to temporary file.
+        dal = dal_class(cache_to_drive=True)  # <- Writes to temporary file.
 
         # Check file path of underlying database.
         filepath = get_dal_filepath(dal)
@@ -184,47 +184,6 @@ class TestDataAccessLayerOpen(TempDirTestCase):
     def test_bad_mode(self):
         with self.assertRaises(ToronError):
             dal_class.open(self.existing_path, mode='badmode')
-
-
-class TestDataAccessLayerOnDisk(TempDirTestCase):
-    def setUp(self):
-        self.addCleanup(self.cleanup_temp_files)
-
-    def test_init_on_disk(self):
-        path = 'mynode.toron'
-        self.assertFalse(os.path.isfile(path))
-        dal = dal_class(path)
-
-        del dal
-        gc.collect()  # Explicitly trigger full garbage collection.
-
-        msg = 'data should persist as a file on disk'
-        self.assertTrue(os.path.isfile(path), msg=msg)
-
-
-class TestDataAccessLayerInMemory(unittest.TestCase):
-    def test_init_in_memory(self):
-        path = 'mem1'
-        self.assertFalse(os.path.isfile(path), msg='file should not already exist')
-        dal = dal_class(path, mode='memory')
-
-        msg = 'should not be saved as file, should by in-memory only'
-        self.assertFalse(os.path.isfile(path), msg=msg)
-
-        connection = dal._connection
-
-        dummy_query = 'SELECT 42'  # To check connection status.
-        cur = connection.execute(dummy_query)
-        msg = 'in-memory connections should remain open after instantiation'
-        self.assertEqual(cur.fetchone(), (42,), msg=msg)
-
-        del dal
-        gc.collect()  # Explicitly trigger full garbage collection.
-
-        regex = 'closed database'
-        msg = 'connection should be closed when DAL is garbage collected'
-        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
-            connection.execute(dummy_query)
 
 
 class TestQuoteIdentifier(unittest.TestCase):
@@ -373,7 +332,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
 class TestAddColumns(unittest.TestCase):
     def test_add_columns(self):
         """Check that columns are added to appropriate tables."""
-        dal = dal_class.new_init()
+        dal = dal_class()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         con = dal._connection
@@ -394,7 +353,7 @@ class TestAddColumns(unittest.TestCase):
 
     def test_set_data_order(self):
         """The set_data() method should run 'add_columns' items first."""
-        dal = dal_class.new_init()
+        dal = dal_class()
 
         mapping = OrderedDict([
             ('structure', [{'state'}, {'county'}, {'state', 'county'}]),
@@ -412,7 +371,7 @@ class TestAddColumns(unittest.TestCase):
 
 class TestRenameColumnsApplyMapper(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class.new_init()
+        self.dal = dal_class()
         self.dal.set_data({'add_columns': ['state', 'county', 'town']})
         self.con = self.dal._connection
         self.cur = self.con.cursor()
@@ -494,7 +453,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
 
 class TestRenameColumns(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class.new_init()
+        self.dal = dal_class()
         self.dal.set_data({'add_columns': ['state', 'county', 'town']})
         self.dal.add_elements([
             ('state', 'county', 'town'),
@@ -593,7 +552,7 @@ class TestRemoveColumnsMixin(object):
     class_under_test = None  # When subclassing, assign DAL class to test.
 
     def setUp(self):
-        self.dal = self.class_under_test('mynode.toron', mode='memory')
+        self.dal = self.class_under_test()
 
         con = self.dal._get_connection()
         self.addCleanup(con.close)
@@ -900,7 +859,7 @@ class TestAddElementsMakeSql(unittest.TestCase):
 
 class TestAddElements(unittest.TestCase):
     def test_add_elements(self):
-        dal = dal_class.new_init()
+        dal = dal_class()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
@@ -920,7 +879,7 @@ class TestAddElements(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_add_elements_no_column_arg(self):
-        dal = dal_class.new_init()
+        dal = dal_class()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
@@ -942,7 +901,7 @@ class TestAddElements(unittest.TestCase):
 
     def test_add_elements_column_subset(self):
         """Omitted columns should get default value ('-')."""
-        dal = dal_class.new_init()
+        dal = dal_class()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include "state" but not "county".
@@ -965,7 +924,7 @@ class TestAddElements(unittest.TestCase):
 
     def test_add_elements_column_superset(self):
         """Surplus columns should be filtered-out before loading."""
-        dal = dal_class.new_init()
+        dal = dal_class()
         dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include unknown columns "region" and "group".
@@ -1136,7 +1095,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
 class TestAddWeights(unittest.TestCase):
     """Tests for dal.add_weights() method."""
     def setUp(self):
-        self.dal = dal_class.new_init()
+        self.dal = dal_class()
         self.dal.set_data({'add_columns': ['state', 'county', 'tract']})
         self.dal.add_elements([
             ('state', 'county', 'tract'),
@@ -1238,7 +1197,7 @@ class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
 
     def setUp(self):
-        self.dal = self.class_under_test('mynode.toron', mode='memory')
+        self.dal = self.class_under_test()
 
         connection = self.dal._get_connection()
         self.addCleanup(connection.close)
@@ -1316,7 +1275,7 @@ class TestGetAndSetDataPropertyPre24(TestGetAndSetDataProperty):
 
 class TestGetColumnNames(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class.new_init()
+        self.dal = dal_class()
 
     def test_get_names(self):
         self.dal.set_data({'add_columns': ['A', 'B', 'C']})
@@ -1331,7 +1290,7 @@ class TestGetColumnNames(unittest.TestCase):
 
 class TestGetAndSetDiscreteCategories(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class.new_init()
+        self.dal = dal_class()
 
         connection = self.dal._get_connection()
         self.addCleanup(connection.close)
@@ -1403,7 +1362,7 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
 
 class TestGetProperties(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class.new_init()
+        self.dal = dal_class()
 
         connection = self.dal._get_connection()
         self.addCleanup(connection.close)
@@ -1431,7 +1390,7 @@ class TestGetProperties(unittest.TestCase):
 
 class TestSetStructure(unittest.TestCase):
     def setUp(self):
-        self.dal = dal_class.new_init()
+        self.dal = dal_class()
         self.connection = self.dal._get_connection()
         self.cursor = self.connection.cursor()
         self.addCleanup(self.connection.close)

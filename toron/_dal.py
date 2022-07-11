@@ -59,35 +59,18 @@ class DataAccessLayer(object):
     database. This class is not part of Toron's public interface--it
     is intended to be wrapped inside a toron.Node instance.
 
-    Open an existing file or create a new one::
+    Make a new node-backend/DAL as an in-memory database::
 
-        dal = DataAccessLayer('mynode.toron')
+        >>> from toron._dal import dal_class
+        >>> dal = dal_class()
 
-    Open an existing file::
+    Make a new node-backend/DAL as an on-drive database (instead of
+    in-memory)::
 
-        dal = DataAccessLayer('mynode.toron', mode='rw')
-
-    Open a file in read-only mode::
-
-        dal = DataAccessLayer('mynode.toron', mode='ro')
-
-    Open an in-memory node (no file on disk)::
-
-        dal = DataAccessLayer('mynode', mode='memory')
+        >>> from toron._dal import dal_class
+        >>> dal = dal_class(cache_to_drive=True)
     """
-    def __init__(self, path, mode='rwc'):
-        if mode == 'memory':
-            self._connection = _schema.connect(path, mode=mode)  # In-memory connection.
-            self._transaction = lambda: _schema.transaction(self._connection)
-        else:
-            path = os.fspath(path)
-            _schema.connect(path, mode=mode).close()  # Verify path to Toron node file.
-            self._transaction = lambda: _schema.transaction(self.path, mode=mode)
-        self.path = path
-        self.mode = mode
-
-    @classmethod
-    def new_init(cls, cache_to_drive: bool = False):
+    def __init__(self, cache_to_drive: bool = False):
         """Initialize a new node instance."""
         if cache_to_drive:
             fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
@@ -105,19 +88,17 @@ class DataAccessLayer(object):
         con.executescript(_schema._schema_script)  # Create database schema.
         _schema._add_functions_and_triggers(con)
 
-        obj = cls.__new__(cls)
         if cache_to_drive:
             con.close()
-            obj._temp_path = target_path
-            obj._transaction = lambda: _schema.transaction(target_path, mode='rw')
-            obj.path = target_path
-            obj.mode = 'rw'
+            self._temp_path = target_path
+            self._transaction = lambda: _schema.transaction(target_path, mode='rw')
+            self.path = target_path
+            self.mode = 'rw'
         else:
-            obj._connection = con
-            obj._transaction = lambda: _schema.transaction(obj._connection)
-            obj.path = None
-            obj.mode = None
-        return obj
+            self._connection = con
+            self._transaction = lambda: _schema.transaction(self._connection)
+            self.path = None
+            self.mode = None
 
     @classmethod
     def from_file(cls, path: str, cache_to_drive: bool = False):
