@@ -116,14 +116,13 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
                     (1, 0, 1), (1, 1, 0), (1, 1, 1)}
         self.assertEqual(actual, expected)
 
-    @unittest.skip('not fully implemented')
     def test_structure_without_discrete_categories(self):
-        """When no discrete categories are defined, the 'structure'
-        table should contain an "indiscrete topology".
+        """When no discrete categories are defined, the `structure`
+        table should contain the "indiscrete topology".
 
-        An indiscrete topology (also called a trivial topology) is one
-        where the only open sets are the empty set (all zeros) and the
-        entire space (all ones).
+        The indiscrete topology (also called the trivial topology) is
+        one where the only open sets are the empty set (all zeros) and
+        the entire space (all ones).
         """
         self.dal.set_data({'add_columns': ['A', 'B', 'C']})
 
