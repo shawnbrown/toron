@@ -72,30 +72,36 @@ class DataAccessLayer(object):
     """
     def __init__(self, cache_to_drive: bool = False):
         """Initialize a new node instance."""
+        # Get `target_path` for temporary file or in-memory database.
         if cache_to_drive:
-            fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
-            fh.close()
-            target_path = fh.name
+            temp_f = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
+            temp_f.close()
+            target_path = temp_f.name
             _temp_files_to_delete_atexit.add(target_path)
         else:
-            target_path = ':memory:'
+            target_path = ':memory:'  # <- In-memory only (no file on-drive).
 
+        # Create new database connection.
         con = sqlite3.connect(
             database=target_path,
             detect_types=sqlite3.PARSE_DECLTYPES,
             isolation_level=None,
         )
-        con.executescript(_schema._schema_script)  # Create database schema.
+
+        # Create Node schema, add functions, and add triggers.
+        con.executescript(_schema._schema_script)
         _schema._add_functions_and_triggers(con)
 
+        # Assign object attributes.
         if cache_to_drive:
-            con.close()
+            con.close()  # Close on-drive connection (only open when accessed).
             self._temp_path = target_path
             self._transaction = lambda: _schema.transaction(target_path, mode='rw')
             self.path = target_path
             self.mode = 'rw'
         else:
-            self._connection = con
+            self._connection = con  # Keep in-memory connection open (data is
+                                    # discarded once closed).
             self._transaction = lambda: _schema.transaction(self._connection)
             self.path = None
             self.mode = None
