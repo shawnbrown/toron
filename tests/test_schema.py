@@ -39,12 +39,16 @@ class TestNormalizeIdentifier(unittest.TestCase):
         ('"a b"c"',    '"a b""c"'),     # normalize malformed quotes
     ]
 
-    def test_passing_behavior(self):
+    def test_normalization(self):
         for input_value, result in self.values:
             with self.subTest(input_value=input_value, expected_output=result):
                 self.assertEqual(normalize_identifier(input_value), result)
 
     def test_idempotence(self):
+        """The function should be idempotent. I.e., if a value has
+        already been normalized, running the function again on the
+        result should not change it further.
+        """
         values = [result for _, result in self.values]
         for result in values:
             with self.subTest(input_value=result, expected_output=result):
