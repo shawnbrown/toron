@@ -192,11 +192,17 @@ class DataAccessLayer(object):
             >>> ...
             >>> dal.to_file('mynode.toron')
 
-        Calling with ``fsync==True`` (the default) tells the filesystem
-        to flush buffered data to permanent storage. This could cause a
-        delay while data is being synchronized. If you prefer faster
-        (but less-safe) file handling or plan to explicitly synchronize
-        at a later time, you can use ``fsync==False`` to skip this step.
+        On Unix systems (e.g., Linux, macOS), calling with
+        ``fsync==True`` (the default) tells the filesystem to flush
+        buffered data to permanent storage. This could cause a delay
+        while data is being synchronized. If you prefer faster (but
+        less-safe) file handling or plan to explicitly synchronize at
+        a later time, you can use ``fsync==False`` to skip this step.
+
+        On Windows systems, the *fsync* argument is ignored and
+        behavior is left entirely to the OS. This is because Windows
+        provides no good way to obtain a directory descriptor--which
+        is necessary for the fsync behavior implemented here.
         """
         dst_path = os.fspath(path)
         dst_dirname = os.path.normpath(os.path.dirname(dst_path))
@@ -241,10 +247,14 @@ class DataAccessLayer(object):
         # Move file to final path.
         os.replace(tmp_path, dst_path)
 
+        # Exit early when running Windows--skips fsync.
+        if sys.platform == 'win32':  # Currently, there's no good way to get
+            return  # <- EXIT!       # a directory descriptor on Windows.
+
         # Flush buffered data to permanent storage (for more info, see
         # Jeff Moyer's article https://lwn.net/Articles/457667/).
         if fsync:
-            fd = os.open(dst_dirname, 0)
+            fd = os.open(dst_dirname, 0)  # Open directory descriptor.
             try:
                 _best_effort_fsync(fd)
             finally:
