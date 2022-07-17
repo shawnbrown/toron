@@ -4,6 +4,7 @@ import gc
 import os
 import json
 import sqlite3
+import stat
 import tempfile
 import unittest
 from collections import OrderedDict
@@ -213,6 +214,48 @@ class TestDataAccessLayerToFile(TempDirTestCase):
         dal2 = dal_class.from_file(file_path)
         expected = dal2.get_data(['testkey'])
         self.assertEqual(expected, {'testkey': 'testvalue'})
+
+    def test_replace_existing(self):
+        file_path = 'mynode.toron'
+
+        # Create a new file.
+        with open(file_path, 'wt') as f:
+            f.write('original content\n')
+
+        # Verify that file exists.
+        self.assertTrue(os.path.isfile(file_path))
+
+        # Create a dummy DAL and overwrite the existing file.
+        dal1 = self.make_dummy_dal(testkey='was overwritten')
+        dal1.to_file(file_path)  # <- Should overwrite existing file.
+
+        # Verify that file was overwritten.
+        dal2 = dal_class.from_file(file_path)
+        expected = dal2.get_data(['testkey'])
+        self.assertEqual(expected, {'testkey': 'was overwritten'})
+
+    def test_readonly_failure(self):
+        """If the destination file is read-only, should fail."""
+        file_path = 'mynode.toron'
+
+        # Create a new file and set it to read-only permissions.
+        with open(file_path, 'wt') as f:
+            f.write('original content\n')
+        os.chmod(file_path, stat.S_IREAD)
+        self.addCleanup(lambda: os.chmod(file_path, stat.S_IWRITE))
+
+        # Verify read-only status.
+        self.assertFalse(os.access(file_path, os.W_OK), msg='expecting read-only')
+
+        # Check that method raises an error if destination is read-only.
+        regex = "The file 'mynode.toron' is read-only."
+        with self.assertRaisesRegex(PermissionError, regex):
+            dal = self.make_dummy_dal(testkey='testvalue')
+            dal.to_file(file_path)  # <- Method under test.
+
+        # Verify that existing file is unchanged.
+        with open(file_path) as f:
+            self.assertEqual(f.read(), 'original content\n')
 
 
 class TestQuoteIdentifier(unittest.TestCase):

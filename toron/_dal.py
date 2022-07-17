@@ -169,11 +169,15 @@ class DataAccessLayer(object):
             >>> dal.to_file('mynode.toron')
         """
         dst_path = os.fspath(path)
-        dst_basename = os.path.basename(dst_path)
+
+        # Check if destination is read-only.
+        if os.path.isfile(dst_path) and not os.access(dst_path, os.W_OK):
+            msg = f'The file {dst_path!r} is read-only.'
+            raise PermissionError(msg)
 
         # Get temporary file path.
         temp_f = tempfile.NamedTemporaryFile(
-            prefix=f'{dst_basename}.temp-',
+            prefix=f'{os.path.basename(dst_path)}.temp-',
             dir=os.path.dirname(dst_path),
             delete=False,
         )
@@ -193,6 +197,15 @@ class DataAccessLayer(object):
             dst_con.close()
             if src_con is not getattr(self, '_connection', None):
                 src_con.close()
+
+        # Again, check if destination is read-only. This check is repeated
+        # because the backup() method could take a significant amount of
+        # time for large datasets which would leave plenty of opportunity
+        # for the file permissions to have been changed.
+        if os.path.isfile(dst_path) and not os.access(dst_path, os.W_OK):
+            os.unlink(tmp_path)  # Remove temporary file.
+            msg = f'The file {dst_path!r} is read-only.'
+            raise PermissionError(msg)
 
         # Move file to final path.
         os.replace(tmp_path, dst_path)
