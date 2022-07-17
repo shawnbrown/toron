@@ -2,6 +2,7 @@
 
 import gc
 import os
+import json
 import sqlite3
 import tempfile
 import unittest
@@ -184,6 +185,34 @@ class TestDataAccessLayerOpen(TempDirTestCase):
     def test_bad_mode(self):
         with self.assertRaises(ToronError):
             dal_class.open(self.existing_path, mode='badmode')
+
+
+class TestDataAccessLayerToFile(TempDirTestCase):
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
+    @staticmethod
+    def make_dummy_dal(**properties):
+        dal = dal_class()
+        con = dal._get_connection()
+        sql = "INSERT INTO main.property (key, value) VALUES(?, ?)"
+        params = ((k, json.dumps(v)) for k, v in properties.items())
+        con.executemany(sql, params)
+        return dal
+
+    def test_from_memory(self):
+        dal1 = self.make_dummy_dal(testkey='testvalue')
+
+        file_path = 'mynode.toron'
+
+        self.assertFalse(os.path.isfile(file_path))
+
+        dal1.to_file(file_path)
+        self.assertTrue(os.path.isfile(file_path))
+
+        dal2 = dal_class.from_file(file_path)
+        expected = dal2.get_data(['testkey'])
+        self.assertEqual(expected, {'testkey': 'testvalue'})
 
 
 class TestQuoteIdentifier(unittest.TestCase):

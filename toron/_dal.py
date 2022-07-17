@@ -158,6 +158,34 @@ class DataAccessLayer(object):
             obj.mode = None
         return obj
 
+    def to_file(self, path):
+        """Write node data to a file.
+
+        .. code-block::
+
+            >>> from toron._dal import dal_class
+            >>> dal = dal_class()
+            >>> ...
+            >>> dal.to_file('mynode.toron')
+        """
+        dst_path = os.fspath(path)
+        tmp_path = dst_path + '-temp'
+
+        dst_con = sqlite3.connect(
+            database=tmp_path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+        )
+        src_con = self._get_connection()
+        try:
+            src_con.backup(dst_con)
+        finally:
+            dst_con.close()
+            if src_con is not getattr(self, '_connection', None):
+                src_con.close()
+
+        os.replace(tmp_path, dst_path)
+
     @classmethod
     def open(cls, path: str, mode: str = 'readonly'):
         """Open a node directly from drive (does not load into memory).
