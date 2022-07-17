@@ -169,8 +169,10 @@ class DataAccessLayer(object):
             >>> dal.to_file('mynode.toron')
         """
         dst_path = os.fspath(path)
+        dst_basename = os.path.basename(dst_path)
+
         temp_f = tempfile.NamedTemporaryFile(
-            suffix='-temp',
+            prefix=f'{dst_basename}.temp-',
             dir=os.path.dirname(dst_path),
             delete=False,
         )
