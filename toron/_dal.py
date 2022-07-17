@@ -171,6 +171,7 @@ class DataAccessLayer(object):
         dst_path = os.fspath(path)
         dst_basename = os.path.basename(dst_path)
 
+        # Get temporary file path.
         temp_f = tempfile.NamedTemporaryFile(
             prefix=f'{dst_basename}.temp-',
             dir=os.path.dirname(dst_path),
@@ -179,6 +180,7 @@ class DataAccessLayer(object):
         temp_f.close()
         tmp_path = temp_f.name
 
+        # Copy node data from source to destination.
         dst_con = sqlite3.connect(
             database=tmp_path,
             detect_types=sqlite3.PARSE_DECLTYPES,
@@ -192,6 +194,7 @@ class DataAccessLayer(object):
             if src_con is not getattr(self, '_connection', None):
                 src_con.close()
 
+        # Move file to final path.
         os.replace(tmp_path, dst_path)
 
     @classmethod
