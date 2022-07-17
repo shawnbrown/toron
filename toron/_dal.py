@@ -3,6 +3,7 @@
 import atexit
 import os
 import sqlite3
+import sys
 import tempfile
 from collections import Counter
 from collections.abc import Mapping
@@ -10,12 +11,35 @@ from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
 from typing import Set, Type
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 from . import _schema
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
 from ._exceptions import ToronError
 from ._exceptions import ToronWarning
+
+
+if sys.platform != 'win32' and hasattr(fcntl, 'F_FULLFSYNC'):
+    # From the macOS man page for FSYNC(2):
+    #   For applications that require tighter guarantees about the integrity of
+    #   their data, Mac OS X provides the F_FULLFSYNC fcntl.  The F_FULLFSYNC
+    #   fcntl asks the drive to flush all buffered data to permanent storage.
+    #
+    # Also see:
+    #   https://github.com/libuv/libuv/pull/2135
+    #   https://github.com/python/cpython/issues/47767 (patch accepted)
+    #   https://github.com/python/cpython/issues/56086 (patch rejected)
+    def _best_effort_fsync(fd):
+        """Flush buffered data to drive for dir/file descriptor *fd*."""
+        r = fcntl.fcntl(fd, fcntl.F_FULLFSYNC)
+        if r != 0:  # If F_FULLFSYNC is not working or failed.
+            os.fsync(fd)  # <- fall back to os.fsync().
+else:
+    _best_effort_fsync = os.fsync
 
 
 _SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
@@ -158,7 +182,7 @@ class DataAccessLayer(object):
             obj.mode = None
         return obj
 
-    def to_file(self, path):
+    def to_file(self, path, fsync=True):
         """Write node data to a file.
 
         .. code-block::
@@ -167,8 +191,15 @@ class DataAccessLayer(object):
             >>> dal = dal_class()
             >>> ...
             >>> dal.to_file('mynode.toron')
+
+        Calling with ``fsync==True`` (the default) tells the filesystem
+        to flush buffered data to permanent storage. This could cause a
+        delay while data is being synchronized. If you prefer faster
+        (but less-safe) file handling or plan to explicitly synchronize
+        at a later time, you can use ``fsync==False`` to skip this step.
         """
         dst_path = os.fspath(path)
+        dst_dirname = os.path.normpath(os.path.dirname(dst_path))
 
         # Check if destination is read-only.
         if os.path.isfile(dst_path) and not os.access(dst_path, os.W_OK):
@@ -178,7 +209,7 @@ class DataAccessLayer(object):
         # Get temporary file path.
         temp_f = tempfile.NamedTemporaryFile(
             prefix=f'{os.path.basename(dst_path)}.temp-',
-            dir=os.path.dirname(dst_path),
+            dir=dst_dirname,
             delete=False,
         )
         temp_f.close()
@@ -209,6 +240,15 @@ class DataAccessLayer(object):
 
         # Move file to final path.
         os.replace(tmp_path, dst_path)
+
+        # Flush buffered data to permanent storage (for more info, see
+        # Jeff Moyer's article https://lwn.net/Articles/457667/).
+        if fsync:
+            fd = os.open(dst_dirname, 0)
+            try:
+                _best_effort_fsync(fd)
+            finally:
+                os.close(fd)
 
     @classmethod
     def open(cls, path: str, mode: str = 'readonly'):
