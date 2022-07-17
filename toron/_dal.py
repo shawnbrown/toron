@@ -169,7 +169,13 @@ class DataAccessLayer(object):
             >>> dal.to_file('mynode.toron')
         """
         dst_path = os.fspath(path)
-        tmp_path = dst_path + '-temp'
+        temp_f = tempfile.NamedTemporaryFile(
+            suffix='-temp',
+            dir=os.path.dirname(dst_path),
+            delete=False,
+        )
+        temp_f.close()
+        tmp_path = temp_f.name
 
         dst_con = sqlite3.connect(
             database=tmp_path,
