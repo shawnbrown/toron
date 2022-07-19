@@ -248,7 +248,7 @@ class TestDataAccessLayerToFile(TempDirTestCase):
         self.assertFalse(os.access(file_path, os.W_OK), msg='expecting read-only')
 
         # Check that method raises an error if destination is read-only.
-        regex = "The file 'mynode.toron' is read-only."
+        regex = "The file '.*mynode.toron' is read-only."
         with self.assertRaisesRegex(PermissionError, regex):
             dal = self.make_dummy_dal(testkey='testvalue')
             dal.to_file(file_path)  # <- Method under test.

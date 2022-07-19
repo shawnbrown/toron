@@ -100,7 +100,7 @@ class DataAccessLayer(object):
         if cache_to_drive:
             temp_f = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
             temp_f.close()
-            target_path = temp_f.name
+            target_path = os.path.abspath(temp_f.name)
             _temp_files_to_delete_atexit.add(target_path)
         else:
             target_path = ':memory:'  # <- In-memory only (no file on-drive).
@@ -152,7 +152,7 @@ class DataAccessLayer(object):
         if cache_to_drive:
             fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
             fh.close()
-            target_path = fh.name
+            target_path = os.path.abspath(fh.name)
             _temp_files_to_delete_atexit.add(target_path)
         else:
             target_path = ':memory:'
@@ -204,7 +204,7 @@ class DataAccessLayer(object):
         provides no good way to obtain a directory descriptor--which
         is necessary for the fsync behavior implemented here.
         """
-        dst_path = os.fspath(path)
+        dst_path = os.path.abspath(os.fspath(path))
         dst_dirname = os.path.normpath(os.path.dirname(dst_path))
 
         # Check if destination is read-only.
@@ -290,7 +290,7 @@ class DataAccessLayer(object):
             msg = f'invalid mode: {mode!r}'
             raise ToronError(msg)
 
-        path = os.fspath(path)
+        path = os.path.abspath(os.fspath(path))
         _schema.connect(path, mode=uri_access_mode).close()  # Verify path to Toron node file.
 
         obj = cls.__new__(cls)
