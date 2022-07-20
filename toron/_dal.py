@@ -14,7 +14,7 @@ from typing import Set, Type
 try:
     import fcntl
 except ImportError:
-    fcntl = None
+    fcntl = None  # type: ignore
 
 from . import _schema
 from ._categories import make_structure
