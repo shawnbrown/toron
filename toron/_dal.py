@@ -213,13 +213,13 @@ class DataAccessLayer(object):
             raise PermissionError(msg)
 
         # Get temporary file path.
-        temp_f = tempfile.NamedTemporaryFile(
+        tmp_f = tempfile.NamedTemporaryFile(
             prefix=f'{os.path.basename(dst_path)}.temp-',
             dir=dst_dirname,
             delete=False,
         )
-        temp_f.close()
-        tmp_path = temp_f.name
+        tmp_f.close()
+        tmp_path = tmp_f.name
 
         # Copy node data from source to destination.
         dst_con = sqlite3.connect(
