@@ -242,6 +242,8 @@ class TestDataAccessLayerToFile(TempDirTestCase):
         with open(file_path, 'wt') as f:
             f.write('original content\n')
         os.chmod(file_path, stat.S_IREAD)
+
+        # Re-enable write permissions during clean-up.
         self.addCleanup(lambda: os.chmod(file_path, stat.S_IWRITE))
 
         # Verify read-only status.
