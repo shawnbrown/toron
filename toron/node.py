@@ -1,6 +1,7 @@
 """Node implementation for the Toron project."""
 
 from itertools import chain
+from typing import List
 
 from ._dal import dal_class
 from ._categories import make_structure
@@ -19,7 +20,14 @@ class Node(object):
     def mode(self):
         return self._dal.mode
 
-    def add_columns(self, columns):
+    def add_columns(self, columns: List[str]) -> None:
+        """Add columns to node.
+
+        .. code-block::
+
+            >>> node = toron.Node()
+            >>> node.add_columns(['state', 'county', 'mcd'])
+        """
         data = self._dal.get_data(['discrete_categories', 'column_names'])
 
         minimized = minimize_discrete_categories(
