@@ -4,6 +4,7 @@ from itertools import chain
 from typing import List
 
 from ._dal import dal_class
+from ._dal import Strategy as _Strategy
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
 
@@ -40,6 +41,47 @@ class Node(object):
             'add_columns': columns,
             'structure': structure,
         })
+
+    def remove_columns(
+        self, columns: List[str], strategy: _Strategy = 'preserve'
+    ) -> None:
+        """Remove columns from node.
+
+        .. code-block::
+
+            >>> node = toron.Node.from_file(...)
+            >>> node.remove_columns(['C', 'D'])
+
+        The following *strategy* values can be used when deleting
+        columns:
+
+        +--------------------------+----------------------------------+
+        | Value                    | Meaning                          |
+        +==========================+==================================+
+        | ``'preserve'``           | Remove columns if the node's     |
+        |                          | granularity and category         |
+        |                          | structure can be preserved or    |
+        |                          | raise a ToronError if they       |
+        |                          | cannot.                          |
+        +--------------------------+----------------------------------+
+        | ``'restructure'``        | Remove columns and restructure   |
+        |                          | existing categories as necessary |
+        |                          | or raise a ToronError if its     |
+        |                          | granularity cannot be preserved. |
+        +--------------------------+----------------------------------+
+        | ``'coarsen'``            | Remove columns and coarsen       |
+        |                          | the node's granularity as        |
+        |                          | necessary or raise a ToronError  |
+        |                          | if its category structure cannot |
+        |                          | be preserved.                    |
+        +--------------------------+----------------------------------+
+        | ``'coarsenrestructure'`` | Remove columns, coarsen the      |
+        |                          | node's granularity, and rebuild  |
+        |                          | existing categories as           |
+        |                          | necessary.                       |
+        +--------------------------+----------------------------------+
+        """
+        self._dal.remove_columns(columns, strategy=strategy)
 
     def add_elements(self, iterable, columns=None):
         self._dal.add_elements(iterable, columns)
