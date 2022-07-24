@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
-from typing import Set, Type
+from ._typing import Literal, Set, Type, TypeAlias
 try:
     import fcntl
 except ImportError:
@@ -76,6 +76,9 @@ def _delete_leftover_temp_files():
 
 
 atexit.register(_delete_leftover_temp_files)  # <- Register!.
+
+
+Strategy: TypeAlias = Literal['preserve', 'restructure', 'coarsen', 'coarsenrestructure']
 
 
 class DataAccessLayer(object):
@@ -593,7 +596,9 @@ class DataAccessLayer(object):
         return sql_statements
 
     @classmethod
-    def _remove_columns_execute_sql(cls, cursor, columns, strategy='preserve'):
+    def _remove_columns_execute_sql(
+        cls, cursor, columns, strategy: Strategy ='preserve'
+    ) -> None:
         column_names = cls._get_column_names(cursor, 'element')
         column_names = column_names[1:]  # Slice-off 'element_id'.
 
@@ -650,7 +655,7 @@ class DataAccessLayer(object):
 
         # TODO: Recalculate node_hash for `properties` table.
 
-    def remove_columns(self, columns, strategy='preserve'):
+    def remove_columns(self, columns, strategy: Strategy = 'preserve'):
         with self._transaction() as cur:
             self._remove_columns_execute_sql(cur, columns, strategy)
 
@@ -1023,7 +1028,7 @@ class DataAccessLayerPre35(DataAccessLayer):
 
         return statements
 
-    def remove_columns(self, columns, strategy='preserve'):
+    def remove_columns(self, columns, strategy: Strategy ='preserve'):
         # In versions earlier than SQLite 3.35.0, there was no support for
         # the DROP COLUMN command. This method (and other related methods
         # in the class) should implement the recommended, 12-step, ALTER
