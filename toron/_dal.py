@@ -127,8 +127,8 @@ class DataAccessLayer(object):
             self._connection = con  # Keep in-memory connection open (data is
                                     # discarded once closed).
             self._transaction = lambda: _schema.transaction(self._connection)
-            self.path = None
-            self.mode = None
+            self.path = None  # type: ignore[assignment]
+            self.mode = None  # type: ignore[assignment]
 
     @classmethod
     def from_file(cls, path: str, cache_to_drive: bool = False):
@@ -178,8 +178,8 @@ class DataAccessLayer(object):
         else:
             obj._connection = target_con
             obj._transaction = lambda: _schema.transaction(obj._connection)
-            obj.path = None
-            obj.mode = None
+            obj.path = None  # type: ignore[assignment]
+            obj.mode = None  # type: ignore[assignment]
         return obj
 
     def to_file(self, path, fsync=True):
