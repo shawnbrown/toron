@@ -22,8 +22,8 @@ class TestNodeAddColumns(unittest.TestCase):
 
         self.cursor.execute('SELECT * FROM main.structure')
         actual = {row[1:] for row in self.cursor.fetchall()}
-        trivial_topology = {(0, 0, 0), (1, 1, 1)}
-        self.assertEqual(actual, trivial_topology)
+        expected = {(0, 0, 0), (1, 1, 1)}  # The trivial topology.
+        self.assertEqual(actual, expected)
 
     def test_add_columns_in_two_parts(self):
         self.node.add_columns(['A', 'B'])  # <- Method under test.
@@ -33,8 +33,8 @@ class TestNodeAddColumns(unittest.TestCase):
 
         self.cursor.execute('SELECT * FROM main.structure')
         actual = {row[1:] for row in self.cursor.fetchall()}
-        trivial_topology = {(0, 0), (1, 1)}
-        self.assertEqual(actual, trivial_topology)
+        expected = {(0, 0), (1, 1)}  # The trivial topology.
+        self.assertEqual(actual, expected)
 
         self.node.add_columns(['C', 'D'])  # <- Method under test.
 
@@ -43,8 +43,8 @@ class TestNodeAddColumns(unittest.TestCase):
 
         self.cursor.execute('SELECT * FROM main.structure')
         actual = {row[1:] for row in self.cursor.fetchall()}
-        trivial_topology = {(0, 0, 0, 0), (1, 1, 0, 0), (1, 1, 1, 1)}
-        self.assertEqual(actual, trivial_topology)
+        expected = {(0, 0, 0, 0), (1, 1, 0, 0), (1, 1, 1, 1)}
+        self.assertEqual(actual, expected)
 
 
 class TestNodeAddDiscreteCategories(unittest.TestCase):
