@@ -82,8 +82,6 @@ Strategy: TypeAlias = Literal['preserve', 'restructure', 'coarsen', 'coarsenrest
 PathType: TypeAlias = Union[str, bytes, os.PathLike]
 
 
-#DALType = TypeVar('DALType', bound='DataAccessLayer')
-
 class DataAccessLayer(object):
     """A data access layer to interface with the underlying SQLite
     database. This class is not part of Toron's public interface--it
