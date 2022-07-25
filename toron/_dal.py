@@ -82,6 +82,8 @@ Strategy: TypeAlias = Literal['preserve', 'restructure', 'coarsen', 'coarsenrest
 PathType: TypeAlias = Union[str, bytes, os.PathLike]
 
 
+#DALType = TypeVar('DALType', bound='DataAccessLayer')
+
 class DataAccessLayer(object):
     """A data access layer to interface with the underlying SQLite
     database. This class is not part of Toron's public interface--it
@@ -137,7 +139,7 @@ class DataAccessLayer(object):
     @classmethod
     def from_file(
         cls, path: PathType, cache_to_drive: bool = False
-    ) -> DataAccessLayer:
+    ) -> 'DataAccessLayer':
         """Create a node from a file on drive.
 
         By default, nodes are loaded into memory::
@@ -267,7 +269,7 @@ class DataAccessLayer(object):
                 os.close(fd)
 
     @classmethod
-    def open(cls, path: PathType, mode: str = 'readonly') -> DataAccessLayer:
+    def open(cls, path: PathType, mode: str = 'readonly') -> 'DataAccessLayer':
         """Open a node directly from drive (does not load into memory).
 
         By default, nodes are opened in ``'readonly'`` mode::
