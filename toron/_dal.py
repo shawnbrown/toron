@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
-from ._typing import Literal, Set, Type, TypeAlias
+from ._typing import Literal, Set, Type, TypeAlias, Union
 try:
     import fcntl
 except ImportError:
@@ -79,6 +79,7 @@ atexit.register(_delete_leftover_temp_files)  # <- Register!.
 
 
 Strategy: TypeAlias = Literal['preserve', 'restructure', 'coarsen', 'coarsenrestructure']
+PathType: TypeAlias = Union[str, bytes, os.PathLike]
 
 
 class DataAccessLayer(object):
@@ -134,7 +135,7 @@ class DataAccessLayer(object):
             self.mode = None  # type: ignore[assignment]
 
     @classmethod
-    def from_file(cls, path: str, cache_to_drive: bool = False):
+    def from_file(cls, path: PathType, cache_to_drive: bool = False):
         """Create a node from a file on drive.
 
         By default, nodes are loaded into memory::
@@ -149,7 +150,7 @@ class DataAccessLayer(object):
             >>> from toron import Node
             >>> node = Node.from_file('mynode.toron', cache_to_drive=True)
         """
-        path = os.fspath(path)
+        path = os.fsdecode(path)
         source_con = _schema.connect(path, mode='ro')
 
         if cache_to_drive:
@@ -185,7 +186,7 @@ class DataAccessLayer(object):
             obj.mode = None  # type: ignore[assignment]
         return obj
 
-    def to_file(self, path, fsync=True):
+    def to_file(self, path: PathType, fsync: bool = True):
         """Write node data to a file.
 
         .. code-block::
@@ -207,7 +208,7 @@ class DataAccessLayer(object):
         provides no good way to obtain a directory descriptor--which
         is necessary for the fsync behavior implemented here.
         """
-        dst_path = os.path.abspath(os.fspath(path))
+        dst_path = os.path.abspath(os.fsdecode(path))
         dst_dirname = os.path.normpath(os.path.dirname(dst_path))
 
         # Check if destination is read-only.
@@ -264,7 +265,7 @@ class DataAccessLayer(object):
                 os.close(fd)
 
     @classmethod
-    def open(cls, path: str, mode: str = 'readonly'):
+    def open(cls, path: PathType, mode: str = 'readonly'):
         """Open a node directly from drive (does not load into memory).
 
         By default, nodes are opened in ``'readonly'`` mode::
@@ -293,7 +294,7 @@ class DataAccessLayer(object):
             msg = f'invalid mode: {mode!r}'
             raise ToronError(msg)
 
-        path = os.path.abspath(os.fspath(path))
+        path = os.path.abspath(os.fsdecode(path))
         _schema.connect(path, mode=uri_access_mode).close()  # Verify path to Toron node file.
 
         obj = cls.__new__(cls)
