@@ -135,7 +135,9 @@ class DataAccessLayer(object):
             self.mode = None  # type: ignore[assignment]
 
     @classmethod
-    def from_file(cls, path: PathType, cache_to_drive: bool = False):
+    def from_file(
+        cls, path: PathType, cache_to_drive: bool = False
+    ) -> DataAccessLayer:
         """Create a node from a file on drive.
 
         By default, nodes are loaded into memory::
@@ -265,7 +267,7 @@ class DataAccessLayer(object):
                 os.close(fd)
 
     @classmethod
-    def open(cls, path: PathType, mode: str = 'readonly'):
+    def open(cls, path: PathType, mode: str = 'readonly') -> DataAccessLayer:
         """Open a node directly from drive (does not load into memory).
 
         By default, nodes are opened in ``'readonly'`` mode::
