@@ -18,6 +18,7 @@ from toron._schema import (
     _sql_trigger_validate_attributes,
     _add_functions_and_triggers,
     _validate_permissions_get_mode,
+    _make_sqlite_uri_filepath,
     _path_to_sqlite_uri,
     connect,
     normalize_identifier,
@@ -576,6 +577,56 @@ class TestValidatePermissionsGetMode():
 
         result = _validate_permissions_get_mode(self.new_path, required_permissions=None)
         self.assertEqual(result, 'rwc')
+
+
+class TestMakeSqliteUriFilepath(unittest.TestCase):
+    def test_cases_without_mode(self):
+        self.assertEqual(
+            _make_sqlite_uri_filepath('mynode.toron', mode=None),
+            'file:mynode.toron',
+        )
+        self.assertEqual(
+            _make_sqlite_uri_filepath('my?node.toron', mode=None),
+            'file:my%3Fnode.toron',
+        )
+        self.assertEqual(
+            _make_sqlite_uri_filepath('path///to//mynode.toron', mode=None),
+            'file:path/to/mynode.toron',
+        )
+
+    def test_cases_with_mode(self):
+        self.assertEqual(
+            _make_sqlite_uri_filepath('mynode.toron', mode='ro'),
+            'file:mynode.toron?mode=ro',
+        )
+        self.assertEqual(
+            _make_sqlite_uri_filepath('my?node.toron', mode='rw'),
+            'file:my%3Fnode.toron?mode=rw',
+        )
+        self.assertEqual(
+            _make_sqlite_uri_filepath('path///to//mynode.toron', mode='rwc'),
+            'file:path/to/mynode.toron?mode=rwc',
+        )
+
+    def test_windows_specifics(self):
+        if os.name != 'nt':
+            return
+
+        path = r'path\to\mynode.toron'
+        expected = 'file:path/to/mynode.toron'
+        self.assertEqual(_make_sqlite_uri_filepath(path, mode=None), expected)
+
+        path = r'C:\path\to\my node.toron'
+        expected = 'file:/C:/path/to/my%20node.toron'
+        self.assertEqual(_make_sqlite_uri_filepath(path, mode=None), expected)
+
+        path = r'C:\path\to\myno:de.toron'  # <- Errant ":".
+        expected = 'file:/C:/path/to/myno%3Ade.toron'
+        self.assertEqual(_make_sqlite_uri_filepath(path, mode=None), expected)
+
+        path = r'C:mynode.toron'  # <- Relative path with drive letter.
+        expected = f'file:/{os.getcwd()}/mynode.toron'.replace("\\", "/")
+        self.assertEqual(_make_sqlite_uri_filepath(path, mode=None), expected)
 
 
 class TestPathToSqliteUri(unittest.TestCase):

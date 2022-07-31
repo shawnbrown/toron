@@ -565,6 +565,33 @@ def _validate_permissions_get_mode(
     raise ToronError(msg)
 
 
+def _make_sqlite_uri_filepath(path: str, mode: Literal['ro', 'rw', 'rwc', None]) -> str:
+    """Return a SQLite compatible URI file path.
+
+    Unlike pathlib's URI handling, SQLite accepts relative URI paths.
+    For details, see:
+
+        https://www.sqlite.org/uri.html#the_uri_path
+    """
+    if os.name == 'nt':  # Windows
+        if re.match(r'^[a-zA-Z]:', path):
+            path = os.path.abspath(path)  # Paths with drive-letter must be absolute.
+            drive_prefix = f'/{path[:2]}'  # Must not url-quote colon after drive-letter.
+            path = path[2:]
+        else:
+            drive_prefix = ''
+        path = path.replace('\\', '/')
+        path = urllib_parse_quote(path)
+        path = f'{drive_prefix}{path}'
+    else:
+        path = urllib_parse_quote(path)
+
+    path = re.sub('/+', '/', path)
+    if mode:
+        return f'file:{path}?mode={mode}'
+    return f'file:{path}'
+
+
 def _path_to_sqlite_uri(path):
     """Convert a path into a SQLite compatible URI.
 
