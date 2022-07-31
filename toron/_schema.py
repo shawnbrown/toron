@@ -592,6 +592,57 @@ def _make_sqlite_uri_filepath(path: str, mode: Literal['ro', 'rw', 'rwc', None])
     return f'file:{path}'
 
 
+def connect_db(
+    path: str, required_permissions: Literal['readonly', 'readwrite', None]
+) -> sqlite3.Connection:
+    """Returns a sqlite3 connection to a Toron node file."""
+    if path == ':memory:':
+        con = sqlite3.connect(
+            database=path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+        )
+        con.executescript(_schema_script)  # Create database schema.
+    else:
+        access_mode = _validate_permissions_get_mode(path, required_permissions)
+        uri_path = _make_sqlite_uri_filepath(path, access_mode)
+
+        try:
+            get_connection = lambda: sqlite3.connect(
+                database=uri_path,
+                detect_types=sqlite3.PARSE_DECLTYPES,
+                isolation_level=None,
+                uri=True,
+            )
+            if os.path.exists(path):
+                con = get_connection()
+            else:
+                con = get_connection()
+                con.executescript(_schema_script)  # Create database schema.
+        except sqlite3.OperationalError as err:
+            msg = str(err).replace('database file', f'node file {path!r}')
+            raise ToronError(msg)
+
+    try:
+        _add_functions_and_triggers(con)
+    except (sqlite3.OperationalError, sqlite3.DatabaseError):
+        # SQLite raises an OperationalError when *path* is a database with
+        # an unknown schema and DatabaseError when *path* is a file but not
+        # a database.
+        con.close()
+        raise ToronError(f'Path is not a Toron node: {path!r}')
+
+    cur = con.execute("SELECT value FROM main.property WHERE key='schema_version'")
+    schema_version, *_ = cur.fetchone() or (None,)
+    cur.close()
+
+    if schema_version != 1:  # When schema version is unsupported.
+        msg = f'Unsupported Toron node format: schema version {schema_version!r}'
+        raise ToronError(msg)
+
+    return con
+
+
 def _path_to_sqlite_uri(path):
     """Convert a path into a SQLite compatible URI.
 

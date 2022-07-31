@@ -21,6 +21,7 @@ from toron._schema import (
     _make_sqlite_uri_filepath,
     _path_to_sqlite_uri,
     connect,
+    connect_db,
     normalize_identifier,
     transaction,
     savepoint,
@@ -789,6 +790,151 @@ class TestConnect(TempDirTestCase):
         # Close the connection and change the status back to read-write.
         con.close()
         os.chmod(file_path, S_IRUSR|S_IWUSR)
+
+
+class TestConnectDb(TempDirTestCase):
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
+    def test_new_file(self):
+        """If a node file doesn't exist it should be created."""
+        path = 'mynode.node'
+        connect_db(path, required_permissions=None).close()  # Creates Toron db at given path.
+
+        con = sqlite3.connect(path)
+        cur = con.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = {row[0] for row in cur}
+        tables.discard('sqlite_sequence')  # <- Table added by SQLite.
+
+        expected = {
+            'edge',
+            'element',
+            'location',
+            'property',
+            'quantity',
+            'relation',
+            'structure',
+            'weight',
+            'weighting',
+        }
+        self.assertSetEqual(tables, expected)
+
+    def test_nonfile_path(self):
+        """Non-file resources should fail immediately."""
+        path = 'mydirectory'
+        os.mkdir(path)  # <- Create a directory with the given `path` name.
+
+        regex = "unable to open node file 'mydirectory'"
+        msg = 'should fail if path is a directory instead of a file'
+        with self.assertRaisesRegex(ToronError, regex, msg=msg):
+            connect_db(path, required_permissions=None)
+
+    def test_nondatabase_file(self):
+        """Non-database files should fail."""
+        # Build a non-database file.
+        path = 'not_a_database.txt'
+        with open(path, 'w') as f:
+            f.write('Hello World\n')
+
+        with self.assertRaises(ToronError):
+            connect_db(path, required_permissions=None)
+
+    def test_unknown_schema(self):
+        """Database files with unknown schemas should fail."""
+        # Build a non-Toron SQLite database file.
+        path = 'mydata.db'
+        con = sqlite3.connect(path)
+        con.executescript('''
+            CREATE TABLE mytable(col1, col2);
+            INSERT INTO mytable VALUES ('a', 1), ('b', 2), ('c', 3);
+        ''')
+        con.close()
+
+        with self.assertRaises(ToronError):
+            connect_db(path, required_permissions=None)
+
+    def test_unsupported_schema_version(self):
+        """Unsupported schema version should fail."""
+        path = 'mynode.toron'
+
+        con = connect_db(path, required_permissions=None)
+        con.execute("INSERT OR REPLACE INTO property VALUES ('schema_version', '999')")
+        con.commit()
+        con.close()
+
+        regex = 'Unsupported Toron node format: schema version 999'
+        with self.assertRaisesRegex(ToronError, regex):
+            connect_db(path, required_permissions=None)
+
+    def test_readwrite_permissions(self):
+        path = 'mynode.toron'
+
+        # Connect to nonexistent file (creates file).
+        self.assertFalse(os.path.isfile(path))
+        connect_db(path, required_permissions='readwrite').close()
+
+        # Connect to existing file.
+        self.assertTrue(os.path.isfile(path))
+        connect_db(path, required_permissions='readwrite').close()  # Connects to existing.
+
+        # Connect to existing file with read-only permissions (should fail).
+        os.chmod(path, S_IRUSR)  # Set to read-only.
+        self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))  # Revert to read-write after test.
+        with self.assertRaises(PermissionError):
+            connect_db(path, required_permissions='readwrite')
+
+    def test_readonly_permissions(self):
+        # Open nonexistent file with "readonly" permissions (fails).
+        regex = ("file 'path1.toron' does not exist, must require "
+                 "'readwrite' or None permissions, got 'readonly'")
+        with self.assertRaisesRegex(ToronError, regex):
+            connect_db('path1.toron', required_permissions='readonly')
+
+        path = 'path2.toron'
+        connect_db(path, required_permissions='readwrite').close()  # Create node.
+
+        # Open existing, but not-readonly file with "readonly" permissions.
+        regex = f"required 'readonly' permissions but {path!r} is not read-only"
+        with self.assertRaisesRegex(PermissionError, regex):
+            connect_db(path, required_permissions='readonly')
+
+        os.chmod(path, S_IRUSR)  # Set file permissions to read-only.
+        self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))
+
+        # Open readonly connection to file with read-only permissions.
+        con = connect_db(path, required_permissions='readonly')
+        self.addCleanup(con.close)
+        regex = 'attempt to write a readonly database'
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            con.execute('INSERT INTO property VALUES (?, ?)', ('key1', '"value1"'))
+
+    def test_none_permissions(self):
+        path = 'mynode.toron'
+
+        self.assertFalse(os.path.isfile(path))
+        connect_db(path, required_permissions=None).close()  # Creates node.
+
+        self.assertTrue(os.path.isfile(path))
+        connect_db(path, required_permissions=None).close()  # Connects to existing.
+
+        os.chmod(path, S_IRUSR)  # Set file permissions to read-only.
+        self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))
+        connect_db(path, required_permissions=None).close()  # Connects to read-only.
+
+    def test_invalid_permissions(self):
+        path = 'mynode.toron'
+        regex = (f"file {path!r} does not exist, must require 'readwrite' "
+                 f"or None permissions, got 'badpermissions'")
+        with self.assertRaisesRegex(ToronError, regex):
+            connect_db(path, required_permissions='badpermissions')
+
+        connect_db(path, required_permissions='readwrite').close()  # Create node.
+
+        regex = (f"`required_permissions` must be 'readonly', 'readwrite', "
+                 f"or None; got 'badpermissions'")
+        with self.assertRaisesRegex(ToronError, regex):
+            connect_db(path, required_permissions='badpermissions')
 
 
 class TestTransactionOnDisk(TempDirTestCase):
