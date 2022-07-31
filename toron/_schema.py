@@ -51,7 +51,7 @@ import re
 import sqlite3
 from contextlib import contextmanager
 from json import loads as _loads
-from typing import List
+from ._typing import List, Literal
 from urllib.parse import quote as urllib_parse_quote
 
 from ._exceptions import ToronError
@@ -504,6 +504,65 @@ def _add_functions_and_triggers(connection):
 
     connection.execute(_sql_trigger_validate_selectors('INSERT', 'weighting', 'selectors'))
     connection.execute(_sql_trigger_validate_selectors('UPDATE', 'weighting', 'selectors'))
+
+
+def _validate_permissions_get_mode(
+    path: str,
+    required_permissions: Literal['readonly', 'readwrite', None],
+) -> Literal['ro', 'rw', 'rwc']:
+    """Validate permissions and return URI mode for SQLite connection.
+
+    IMPORTANT: The reason for enforcing filesystem permissions,
+    rather than relying on SQLite URI access modes, is to mitigate
+    the chance of data corruption. While SQLite can open files in
+    read-only mode, doing so does not ensure that the database
+    file on the drive will always remain safe to copy. At this
+    time, SQLite makes no guarantees that use of the "ro" URI
+    access mode is equivalent to using a database with read-only
+    permissions enforced by the filesystem.
+
+    In a high availability computing environment, it is possible
+    that an automated backup system could copy a database file
+    while a transaction is in progress. Toron requires the use
+    read-only file permissions to mitigate the chance that a
+    backup process makes a corrupted copy.
+
+    For related information, see section 1.2 of "How To Corrupt
+    An SQLite Database File":
+
+        https://www.sqlite.org/howtocorrupt.html
+    """
+    # If file does not exist, return "rwc" (read-write-create mode).
+    if not os.path.exists(path):
+        if required_permissions == 'readwrite' or required_permissions is None:
+            return 'rwc'  # <- EXIT!
+
+        msg = f"file {path!r} does not exist, must require 'readwrite' " \
+              f"or None permissions, got {required_permissions!r}"
+        raise ToronError(msg)
+
+    if required_permissions == 'readonly':
+        # Raise error if file has write permissions.
+        if os.access(path, os.W_OK):
+            msg = f"required 'readonly' permissions but {path!r} is not read-only"
+            raise PermissionError(msg)
+        return 'ro'  # <- EXIT!
+
+    if required_permissions == 'readwrite':
+        # Raise error if file does not have write permissions.
+        if not os.access(path, os.W_OK):
+            msg = f"required 'readwrite' permissions but {path!r} does not " \
+                  f"have write access"
+            raise PermissionError(msg)
+        return 'rw'  # <- EXIT!
+
+    # If no required permissions, default to "rw" (read-write mode).
+    if required_permissions is None:
+        return 'rw'  # <- EXIT!
+
+    msg = f"`required_permissions` must be 'readonly', 'readwrite', " \
+          f"or None; got {required_permissions!r}"
+    raise ToronError(msg)
 
 
 def _path_to_sqlite_uri(path):
