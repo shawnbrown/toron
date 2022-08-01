@@ -751,7 +751,7 @@ class savepoint(object):
 
 
 @contextmanager
-def transaction2(
+def transaction(
     path_or_connection: Union[str, sqlite3.Connection],
     required_permissions: RequiredPermissions,
 ):

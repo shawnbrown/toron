@@ -145,7 +145,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         # removed.
 
 
-class TestDataAccessLayerOpen2(TempDirTestCase):
+class TestDataAccessLayerOpen(TempDirTestCase):
     def setUp(self):
         self.existing_path = 'existing_node.toron'
         connect_db(self.existing_path, None).close()  # Create empty Toron node file.
@@ -159,7 +159,7 @@ class TestDataAccessLayerOpen2(TempDirTestCase):
         new_path = 'new_node.toron'
         self.assertFalse(os.path.isfile(new_path))
 
-        dal = dal_class.open2(new_path, 'readwrite')
+        dal = dal_class.open(new_path, 'readwrite')
         with dal._transaction() as cur:
             pass  # Dummy transaction to test connectivity.
         del dal
@@ -173,10 +173,10 @@ class TestDataAccessLayerOpen2(TempDirTestCase):
 
         msg = "required 'readwrite' will fail when file is 'readonly'"
         with self.assertRaises(PermissionError, msg=msg):
-            dal_class.open2(self.existing_path, 'readwrite')
+            dal_class.open(self.existing_path, 'readwrite')
 
         os.chmod(self.existing_path, S_IRUSR|S_IWUSR)  # Set read-write permissions.
-        dal = dal_class.open2(self.existing_path, 'readwrite')
+        dal = dal_class.open(self.existing_path, 'readwrite')
         with dal._transaction() as cur:
             pass  # Dummy transaction to test connectivity.
 
@@ -186,17 +186,17 @@ class TestDataAccessLayerOpen2(TempDirTestCase):
         self.assertFalse(os.path.isfile(new_path))
 
         with self.assertRaises(ToronError):
-            dal_class.open2(new_path)  # <- Defaults to required_permissions='readonly'.
+            dal_class.open(new_path)  # <- Defaults to required_permissions='readonly'.
 
     def test_readonly_existing(self):
         self.assertTrue(os.path.isfile(self.existing_path))
-        dal = dal_class.open2(self.existing_path)  # <- Defaults to mode='readonly'.
+        dal = dal_class.open(self.existing_path)  # <- Defaults to mode='readonly'.
         with dal._transaction() as cur:
             pass  # Dummy transaction to test connectivity.
 
     def test_bad_permissions(self):
         with self.assertRaises(ToronError):
-            dal_class.open2(self.existing_path, 'badpermissions')
+            dal_class.open(self.existing_path, 'badpermissions')
 
 
 class TestDataAccessLayerToFile(TempDirTestCase):

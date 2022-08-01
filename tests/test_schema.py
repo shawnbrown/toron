@@ -23,7 +23,7 @@ from toron._schema import (
     connect,
     connect_db,
     normalize_identifier,
-    transaction2,
+    transaction,
     savepoint,
 )
 
@@ -937,7 +937,7 @@ class TestConnectDb(TempDirTestCase):
             connect_db(path, required_permissions='badpermissions')
 
 
-class TestTransaction2OnDisk(TempDirTestCase):
+class TestTransactionOnDisk(TempDirTestCase):
     """Tests for the transaction() context manager."""
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
@@ -951,7 +951,7 @@ class TestTransaction2OnDisk(TempDirTestCase):
         required_permissions = 'readwrite'
         connect_db(path, required_permissions).close()  # Create file with Toron schema.
 
-        with transaction2(path, required_permissions) as cursor:
+        with transaction(path, required_permissions) as cursor:
             connection = cursor.connection
             self.assertTrue(connection.in_transaction)
 
@@ -968,7 +968,7 @@ class TestTransaction2OnDisk(TempDirTestCase):
             connection.cursor()
 
 
-class TestTransaction2InMemory(unittest.TestCase):
+class TestTransactionInMemory(unittest.TestCase):
     """Tests for the transaction() context manager."""
     def test_existing_connection(self):
         """When given a existing Connection, transaction() should use
@@ -976,7 +976,7 @@ class TestTransaction2InMemory(unittest.TestCase):
         """
         connection = connect_db(':memory:', required_permissions=None)  # Create in-memory database with Toron schema.
 
-        with transaction2(connection, required_permissions=None) as cursor:
+        with transaction(connection, required_permissions=None) as cursor:
             self.assertTrue(connection.in_transaction)
 
         regex = 'closed cursor'
@@ -997,7 +997,7 @@ class TestTransaction2InMemory(unittest.TestCase):
     def test_transaction_commit(self):
         connection = connect_db(':memory:', required_permissions=None)
 
-        with transaction2(connection, required_permissions=None) as cursor:
+        with transaction(connection, required_permissions=None) as cursor:
             cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")
 
         result = connection.execute("SELECT * FROM property WHERE key='key1'").fetchone()
@@ -1008,7 +1008,7 @@ class TestTransaction2InMemory(unittest.TestCase):
         connection = connect_db(':memory:', required_permissions=None)
 
         with self.assertRaises(Exception):
-            with transaction2(connection) as cursor:
+            with transaction(connection) as cursor:
                 cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")  # <- Success.
                 cursor.execute("""INSERT INTO property VALUES ('key2', 'bad json')""")  # <- Failure.
 
