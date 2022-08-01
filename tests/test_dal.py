@@ -14,7 +14,6 @@ from textwrap import dedent
 from .common import get_column_names
 from .common import TempDirTestCase
 
-from toron._schema import connect
 from toron._schema import connect_db
 from toron._schema import _schema_script
 from toron._schema import _add_functions_and_triggers
@@ -80,7 +79,7 @@ class TestDataAccessLayerInit(TempDirTestCase):
 class TestDataAccessLayerFromFile(TempDirTestCase):
     def setUp(self):
         self.existing_path = 'existing_node.toron'
-        con = connect(self.existing_path)
+        con = connect_db(self.existing_path, 'readwrite')
         params = ('testkey', '"testval"')
         con.execute("INSERT INTO main.property(key, value) VALUES(?, ?)", params)
         con.close()
@@ -305,7 +304,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
     maxDiff = None
 
     def setUp(self):
-        self.con = connect('mynode.toron', mode='memory')
+        self.con = connect_db(':memory:', None)
         self.cur = self.con.cursor()
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
@@ -906,7 +905,7 @@ class TestRemoveColumnsLegacy(TestRemoveColumnsMixin, unittest.TestCase):
 
 class TestAddElementsMakeSql(unittest.TestCase):
     def setUp(self):
-        self.con = connect('mynode.toron', mode='memory')
+        self.con = connect_db(':memory:', None)
         self.cur = self.con.cursor()
 
         for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'town']):
@@ -1040,7 +1039,7 @@ class TestAddElements(unittest.TestCase):
 
 class TestAddWeightsGetNewId(unittest.TestCase):
     def setUp(self):
-        self.con = connect('mynode.toron', mode='memory')
+        self.con = connect_db(':memory:', None)
         self.cur = self.con.cursor()
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
@@ -1070,7 +1069,7 @@ class TestAddWeightsGetNewId(unittest.TestCase):
 
 class TestAddWeightsMakeSql(unittest.TestCase):
     def setUp(self):
-        self.con = connect('mynode.toron', mode='memory')
+        self.con = connect_db(':memory:', None)
         self.cur = self.con.cursor()
 
         for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'town']):
