@@ -272,6 +272,29 @@ class DataAccessLayer(object):
         path: PathType,
         required_permissions: _schema.RequiredPermissions = 'readonly',
     ) -> 'DataAccessLayer':
+        """Open a node directly from drive (does not load into memory).
+
+        By default, ``'readonly'`` file permissions are required:
+
+            >>> dal = DataAccessLayer.open('mynode.toron')
+
+        If you want to make sure the file can be modified, you can
+        require ``'readwrite'`` permissions. Use this mode with caution
+        since changes are applied immediately to the file on drive and
+        cannot be undone::
+
+            >>> dal = DataAccessLayer.open('mynode.toron', required_permissions='readwrite')
+
+        You can also open a node file without requiring any specific
+        permissions::
+
+            >>> dal = DataAccessLayer.open('mynode.toron', required_permissions=None)
+
+        If you need to work on files that are too large to fit into
+        memory but you don't want to risk damaging the original node,
+        you can use ``from_file()`` with the ``cache_to_drive=True``
+        option.
+        """
         path = os.path.abspath(os.fsdecode(path))
         _schema.connect_db(path, required_permissions).close()  # Verify path to Toron node file.
 
