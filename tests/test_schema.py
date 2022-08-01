@@ -24,6 +24,7 @@ from toron._schema import (
     connect_db,
     normalize_identifier,
     transaction,
+    transaction2,
     savepoint,
 )
 
@@ -1009,6 +1010,86 @@ class TestTransactionInMemory(unittest.TestCase):
 
         with self.assertRaises(Exception):
             with transaction(connection) as cursor:
+                cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")  # <- Success.
+                cursor.execute("""INSERT INTO property VALUES ('key2', 'bad json')""")  # <- Failure.
+
+        result = connection.execute("SELECT * FROM property WHERE key='key1'").fetchone()
+        msg = 'a failed transaction should rollback all changes to the database'
+        self.assertEqual(result, None, msg=msg)
+
+
+class TestTransaction2OnDisk(TempDirTestCase):
+    """Tests for the transaction() context manager."""
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
+    def test_path_and_mode(self):
+        """When given *path* and *required_permissions* arguments,
+        transaction() should establish its own connection and then
+        close this connection once it is finished.
+        """
+        path = 'mynode.toron'
+        required_permissions = 'readwrite'
+        connect_db(path, required_permissions).close()  # Create file with Toron schema.
+
+        with transaction2(path, required_permissions) as cursor:
+            connection = cursor.connection
+            self.assertTrue(connection.in_transaction)
+
+        # Cursor should be closed after `with` block exits.
+        regex = 'closed cursor'
+        msg = 'Cursor should be closed after exiting context.'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
+            cursor.execute('SELECT 1')
+
+        # Connection should be closed after `with` block exits.
+        regex = 'closed database'
+        msg = 'Connection should be closed after exiting context.'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
+            connection.cursor()
+
+
+class TestTransaction2InMemory(unittest.TestCase):
+    """Tests for the transaction() context manager."""
+    def test_existing_connection(self):
+        """When given a existing Connection, transaction() should use
+        the connection as provided and leave it open when finished.
+        """
+        connection = connect_db(':memory:', required_permissions=None)  # Create in-memory database with Toron schema.
+
+        with transaction2(connection, required_permissions=None) as cursor:
+            self.assertTrue(connection.in_transaction)
+
+        regex = 'closed cursor'
+        msg = 'Cursor should be closed after exiting context.'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex, msg=msg):
+            cursor.execute('SELECT 1')
+
+        try:
+            cursor = connection.cursor()  # <- Should pass without error.
+            cursor.close()
+            connection.close()
+        except sqlite3.ProgrammingError as err:
+            if 'closed database' not in str(err):
+                raise
+            msg = 'existing connections must remain open after exiting context'
+            self.fail(msg)
+
+    def test_transaction_commit(self):
+        connection = connect_db(':memory:', required_permissions=None)
+
+        with transaction2(connection, required_permissions=None) as cursor:
+            cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")
+
+        result = connection.execute("SELECT * FROM property WHERE key='key1'").fetchone()
+        msg = 'successful transaction should commit changes to database'
+        self.assertEqual(result, ('key1', 'value1'), msg=msg)
+
+    def test_transaction_rollback(self):
+        connection = connect_db(':memory:', required_permissions=None)
+
+        with self.assertRaises(Exception):
+            with transaction2(connection) as cursor:
                 cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")  # <- Success.
                 cursor.execute("""INSERT INTO property VALUES ('key2', 'bad json')""")  # <- Failure.
 

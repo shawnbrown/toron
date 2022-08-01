@@ -124,13 +124,15 @@ class DataAccessLayer(object):
         if cache_to_drive:
             con.close()  # Close on-drive connection (only open when accessed).
             self._temp_path = target_path
-            self._transaction = lambda: _schema.transaction(target_path, mode='rw')
+            #self._transaction = lambda: _schema.transaction(target_path, mode='rw')
+            self._transaction = lambda: _schema.transaction2(target_path, 'readwrite')
             self.path = target_path
             self.mode = 'rw'
         else:
             self._connection = con  # Keep in-memory connection open (data is
                                     # discarded once closed).
-            self._transaction = lambda: _schema.transaction(self._connection)
+            #self._transaction = lambda: _schema.transaction(self._connection)
+            self._transaction = lambda: _schema.transaction2(self._connection, 'readwrite')
             self.path = None  # type: ignore[assignment]
             self.mode = None  # type: ignore[assignment]
 
@@ -178,12 +180,14 @@ class DataAccessLayer(object):
         if cache_to_drive:
             target_con.close()
             obj._temp_path = target_path
-            obj._transaction = lambda: _schema.transaction(target_path, mode='rw')
+            #obj._transaction = lambda: _schema.transaction(target_path, mode='rw')
+            obj._transaction = lambda: _schema.transaction2(target_path, 'readwrite')
             obj.path = target_path
             obj.mode = 'rw'
         else:
             obj._connection = target_con
-            obj._transaction = lambda: _schema.transaction(obj._connection)
+            #obj._transaction = lambda: _schema.transaction(obj._connection)
+            obj._transaction = lambda: _schema.transaction2(obj._connection, None)
             obj.path = None  # type: ignore[assignment]
             obj.mode = None  # type: ignore[assignment]
         return obj
@@ -303,6 +307,21 @@ class DataAccessLayer(object):
         obj._transaction = lambda: _schema.transaction(path, mode=uri_access_mode)
         obj.path = path
         obj.mode = uri_access_mode
+        return obj
+
+    @classmethod
+    def open2(
+        cls,
+        path: PathType,
+        required_permissions: _schema.RequiredPermissions = 'readonly',
+    ) -> 'DataAccessLayer':
+        path = os.path.abspath(os.fsdecode(path))
+        _schema.connect_db(path, required_permissions).close()  # Verify path to Toron node file.
+
+        obj = cls.__new__(cls)
+        obj._transaction = lambda: _schema.transaction2(str(path), required_permissions)
+        obj.path = path
+        obj.mode = None  # type: ignore[assignment]
         return obj
 
     def _get_connection(self):

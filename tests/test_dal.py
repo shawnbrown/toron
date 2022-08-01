@@ -8,12 +8,14 @@ import stat
 import tempfile
 import unittest
 from collections import OrderedDict
+from stat import S_IRUSR, S_IWUSR
 from textwrap import dedent
 
 from .common import get_column_names
 from .common import TempDirTestCase
 
 from toron._schema import connect
+from toron._schema import connect_db
 from toron._schema import _schema_script
 from toron._schema import _add_functions_and_triggers
 from toron._dal import DataAccessLayer
@@ -186,6 +188,60 @@ class TestDataAccessLayerOpen(TempDirTestCase):
     def test_bad_mode(self):
         with self.assertRaises(ToronError):
             dal_class.open(self.existing_path, mode='badmode')
+
+
+class TestDataAccessLayerOpen2(TempDirTestCase):
+    def setUp(self):
+        self.existing_path = 'existing_node.toron'
+        connect_db(self.existing_path, None).close()  # Create empty Toron node file.
+        self.addCleanup(self.cleanup_temp_files)
+
+        os.chmod(self.existing_path, S_IRUSR)  # Set to read-only.
+        self.addCleanup(lambda: os.chmod(self.existing_path, S_IRUSR|S_IWUSR))  # Revert to read-write after test.
+
+    def test_readwrite_new(self):
+        """In readwrite mode, nodes can be created directly on drive."""
+        new_path = 'new_node.toron'
+        self.assertFalse(os.path.isfile(new_path))
+
+        dal = dal_class.open2(new_path, 'readwrite')
+        with dal._transaction() as cur:
+            pass  # Dummy transaction to test connectivity.
+        del dal
+        gc.collect()  # Explicitly trigger full garbage collection.
+
+        msg = 'data should persist as a file on drive'
+        self.assertTrue(os.path.isfile(new_path), msg=msg)
+
+    def test_readwrite_existing(self):
+        self.assertTrue(os.path.isfile(self.existing_path))
+
+        msg = "required 'readwrite' will fail when file is 'readonly'"
+        with self.assertRaises(PermissionError, msg=msg):
+            dal_class.open2(self.existing_path, 'readwrite')
+
+        os.chmod(self.existing_path, S_IRUSR|S_IWUSR)  # Set read-write permissions.
+        dal = dal_class.open2(self.existing_path, 'readwrite')
+        with dal._transaction() as cur:
+            pass  # Dummy transaction to test connectivity.
+
+    def test_readonly_new(self):
+        """In readonly mode, nodes must already exist--cannot be created."""
+        new_path = 'new_node.toron'
+        self.assertFalse(os.path.isfile(new_path))
+
+        with self.assertRaises(ToronError):
+            dal_class.open2(new_path)  # <- Defaults to required_permissions='readonly'.
+
+    def test_readonly_existing(self):
+        self.assertTrue(os.path.isfile(self.existing_path))
+        dal = dal_class.open2(self.existing_path)  # <- Defaults to mode='readonly'.
+        with dal._transaction() as cur:
+            pass  # Dummy transaction to test connectivity.
+
+    def test_bad_permissions(self):
+        with self.assertRaises(ToronError):
+            dal_class.open2(self.existing_path, 'badpermissions')
 
 
 class TestDataAccessLayerToFile(TempDirTestCase):
