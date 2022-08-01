@@ -431,15 +431,14 @@ def _sql_trigger_validate_selectors(
     trigger is used to validate the contents of TEXT_SELECTORS
     type columns.
 
-    The trigger will pass without error if the JSON is a wellformed
-    "array" containing "text" values.
+    The trigger will pass without error when the value is a wellformed
+    JSON "array" containing "text" elements.
 
-    The trigger will raise an error if the value is:
-
+    The trigger will raise an error when the value is:
       * not wellformed JSON
       * not an "array" type
       * an "array" type that contains one or more "integer", "real",
-        "true", "false", "null", "object" or "array" types
+        "true", "false", "null", "object" or "array" elements
     """
     if insert_or_update.upper() not in {'INSERT', 'UPDATE'}:
         msg = f"expected 'INSERT' or 'UPDATE', got {insert_or_update!r}"
