@@ -511,7 +511,7 @@ RequiredPermissions: TypeAlias = Literal['readonly', 'readwrite', None]
 
 def _validate_permissions_get_mode(
     path: str,
-    required_permissions: Literal['readonly', 'readwrite', None],
+    required_permissions: RequiredPermissions,
 ) -> Literal['ro', 'rw', 'rwc']:
     """Validate permissions and return URI mode for SQLite connection.
 
@@ -596,7 +596,7 @@ def _make_sqlite_uri_filepath(path: str, mode: Literal['ro', 'rw', 'rwc', None])
 
 
 def connect_db(
-    path: str, required_permissions: Literal['readonly', 'readwrite', None]
+    path: str, required_permissions: RequiredPermissions
 ) -> sqlite3.Connection:
     """Returns a sqlite3 connection to a Toron node file."""
     if path == ':memory:':
