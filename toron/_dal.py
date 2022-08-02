@@ -304,10 +304,10 @@ class DataAccessLayer(object):
         obj.mode = None  # type: ignore[assignment]
         return obj
 
-    def _get_connection(self):
+    def _get_connection(self) -> sqlite3.Connection:
         if hasattr(self, '_connection'):
             return self._connection
-        return _schema.connect(self.path, mode=self.mode)
+        return _schema.connect_db(self.path, required_permissions=None)
 
     def __del__(self):
         if hasattr(self, '_connection'):
