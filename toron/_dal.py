@@ -98,6 +98,8 @@ class DataAccessLayer(object):
         >>> from toron._dal import dal_class
         >>> dal = dal_class(cache_to_drive=True)
     """
+    _required_permissions: _schema.RequiredPermissions
+
     def __init__(self, cache_to_drive: bool = False):
         """Initialize a new node instance."""
         # Get `target_path` for temporary file or in-memory database.
@@ -126,13 +128,13 @@ class DataAccessLayer(object):
             self._temp_path = target_path
             self._transaction = lambda: _schema.transaction(target_path, 'readwrite')
             self.path = target_path
-            self.mode = 'rw'
+            self._required_permissions = 'readwrite'
         else:
             self._connection = con  # Keep in-memory connection open (data is
                                     # discarded once closed).
             self._transaction = lambda: _schema.transaction(self._connection, 'readwrite')
             self.path = None  # type: ignore[assignment]
-            self.mode = None  # type: ignore[assignment]
+            self._required_permissions = 'readwrite'
 
     @classmethod
     def from_file(
@@ -180,12 +182,12 @@ class DataAccessLayer(object):
             obj._temp_path = target_path
             obj._transaction = lambda: _schema.transaction(target_path, 'readwrite')
             obj.path = target_path
-            obj.mode = 'rw'
+            obj._required_permissions = 'readwrite'
         else:
             obj._connection = target_con
-            obj._transaction = lambda: _schema.transaction(obj._connection, None)
+            obj._transaction = lambda: _schema.transaction(obj._connection, 'readwrite')
             obj.path = None  # type: ignore[assignment]
-            obj.mode = None  # type: ignore[assignment]
+            obj._required_permissions = 'readwrite'
         return obj
 
     def to_file(self, path: PathType, fsync: bool = True):
@@ -301,13 +303,13 @@ class DataAccessLayer(object):
         obj = cls.__new__(cls)
         obj._transaction = lambda: _schema.transaction(str(path), required_permissions)
         obj.path = path
-        obj.mode = None  # type: ignore[assignment]
+        obj._required_permissions = required_permissions
         return obj
 
     def _get_connection(self) -> sqlite3.Connection:
         if hasattr(self, '_connection'):
             return self._connection
-        return _schema.connect_db(self.path, required_permissions=None)
+        return _schema.connect_db(self.path, self._required_permissions)
 
     def __del__(self):
         if hasattr(self, '_connection'):

@@ -93,9 +93,8 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         filepath = get_dal_filepath(dal)
         self.assertEqual(filepath, '', msg='should be empty string for in-memory db')
 
-        # For in-memory connections, path and node are unused.
+        # For in-memory connections, path is unused.
         self.assertIsNone(dal.path)
-        self.assertIsNone(dal.mode)
 
         # Check that node contains test value.
         value = dal.get_data(['testkey'])
@@ -112,7 +111,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
 
         # For on-drive connections, path and node are used.
         self.assertIsNotNone(dal.path)
-        self.assertEqual(dal.mode, 'rw')
+        self.assertEqual(dal._required_permissions, 'readwrite')
 
         # Check that node contains test value.
         value = dal.get_data(['testkey'])
