@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
-from ._typing import Literal, Set, Type, TypeAlias, Union
+from ._typing import Literal, Optional, Set, Type, TypeAlias, Union
 try:
     import fcntl
 except ImportError:
@@ -98,7 +98,9 @@ class DataAccessLayer(object):
         >>> from toron._dal import dal_class
         >>> dal = dal_class(cache_to_drive=True)
     """
+    _filename: Optional[str]
     _required_permissions: _schema.RequiredPermissions
+    _cleanup_item: Optional[Union[str, sqlite3.Connection]]
 
     def __init__(self, cache_to_drive: bool = False):
         """Initialize a new node instance."""
@@ -125,16 +127,17 @@ class DataAccessLayer(object):
         # Assign object attributes.
         if cache_to_drive:
             con.close()  # Close on-drive connection (only open when accessed).
-            self._temp_path = target_path
             self._transaction = lambda: _schema.transaction(target_path, 'readwrite')
-            self.path = target_path
+            self._filename = target_path
             self._required_permissions = 'readwrite'
+            self._cleanup_item = target_path
         else:
             self._connection = con  # Keep in-memory connection open (data is
                                     # discarded once closed).
             self._transaction = lambda: _schema.transaction(self._connection, 'readwrite')
-            self.path = None  # type: ignore[assignment]
+            self._filename = None
             self._required_permissions = 'readwrite'
+            self._cleanup_item = con
 
     @classmethod
     def from_file(
@@ -179,15 +182,16 @@ class DataAccessLayer(object):
         obj = cls.__new__(cls)
         if cache_to_drive:
             target_con.close()
-            obj._temp_path = target_path
             obj._transaction = lambda: _schema.transaction(target_path, 'readwrite')
-            obj.path = target_path
+            obj._filename = target_path
             obj._required_permissions = 'readwrite'
+            obj._cleanup_item = target_path
         else:
             obj._connection = target_con
             obj._transaction = lambda: _schema.transaction(obj._connection, 'readwrite')
-            obj.path = None  # type: ignore[assignment]
+            obj._filename = None
             obj._required_permissions = 'readwrite'
+            obj._cleanup_item = target_con
         return obj
 
     def to_file(self, path: PathType, fsync: bool = True):
@@ -302,22 +306,33 @@ class DataAccessLayer(object):
 
         obj = cls.__new__(cls)
         obj._transaction = lambda: _schema.transaction(str(path), required_permissions)
-        obj.path = path
+        obj._filename = path
         obj._required_permissions = required_permissions
+        obj._cleanup_item = None
         return obj
+
+    @property
+    def filename(self) -> Optional[str]:
+        return getattr(self, '_filename', None)
 
     def _get_connection(self) -> sqlite3.Connection:
         if hasattr(self, '_connection'):
             return self._connection
-        return _schema.connect_db(self.path, self._required_permissions)
+        if self._filename:
+            return _schema.connect_db(self._filename, self._required_permissions)
+        raise RuntimeError('cannot get connection')
 
     def __del__(self):
-        if hasattr(self, '_connection'):
-            self._connection.close()
-        elif hasattr(self, '_temp_path'):
-            os.unlink(self._temp_path)
-            _temp_files_to_delete_atexit.discard(self._temp_path)
-            del self._temp_path
+        if isinstance(self._cleanup_item, sqlite3.Connection):
+            self._cleanup_item.close()
+        elif isinstance(self._cleanup_item, str):
+            os.unlink(self._cleanup_item)
+            _temp_files_to_delete_atexit.discard(self._cleanup_item)
+            self._cleanup_item = None
+        else:
+            if self._cleanup_item is not None:
+                msg = f'unknown cleanup item {self._cleanup_item!r}'
+                raise RuntimeError(msg)
 
     @staticmethod
     def _get_column_names(cursor, table):
