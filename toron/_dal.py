@@ -7,10 +7,11 @@ import sys
 import tempfile
 from collections import Counter
 from collections.abc import Mapping
+from contextlib import contextmanager
 from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
-from ._typing import Literal, Optional, Set, Type, TypeAlias, Union
+from ._typing import Generator, Literal, Optional, Set, Type, TypeAlias, Union
 try:
     import fcntl
 except ImportError:
@@ -127,16 +128,14 @@ class DataAccessLayer(object):
         # Assign object attributes.
         if cache_to_drive:
             con.close()  # Close on-drive connection (only open when accessed).
-            self._transaction = lambda: _schema.transaction(target_path, 'readwrite')
             self._filename = target_path
             self._required_permissions = 'readwrite'
             self._cleanup_item = target_path
         else:
-            self._connection = con  # Keep in-memory connection open (data is
-                                    # discarded once closed).
-            self._transaction = lambda: _schema.transaction(self._connection, 'readwrite')
+            self._connection = con  # Keep connection open (in-memory database
+                                    # is discarded once closed).
             self._filename = None
-            self._required_permissions = 'readwrite'
+            self._required_permissions = None
             self._cleanup_item = con
 
     @classmethod
@@ -182,16 +181,15 @@ class DataAccessLayer(object):
         obj = cls.__new__(cls)
         if cache_to_drive:
             target_con.close()
-            obj._transaction = lambda: _schema.transaction(target_path, 'readwrite')
             obj._filename = target_path
             obj._required_permissions = 'readwrite'
             obj._cleanup_item = target_path
         else:
             obj._connection = target_con
-            obj._transaction = lambda: _schema.transaction(obj._connection, 'readwrite')
             obj._filename = None
-            obj._required_permissions = 'readwrite'
+            obj._required_permissions = None
             obj._cleanup_item = target_con
+
         return obj
 
     def to_file(self, path: PathType, fsync: bool = True):
@@ -305,7 +303,6 @@ class DataAccessLayer(object):
         _schema.connect_db(path, required_permissions).close()  # Verify path to Toron node file.
 
         obj = cls.__new__(cls)
-        obj._transaction = lambda: _schema.transaction(str(path), required_permissions)
         obj._filename = path
         obj._required_permissions = required_permissions
         obj._cleanup_item = None
@@ -321,6 +318,40 @@ class DataAccessLayer(object):
         if self._filename:
             return _schema.connect_db(self._filename, self._required_permissions)
         raise RuntimeError('cannot get connection')
+
+    @contextmanager
+    def _transaction(self) -> Generator[sqlite3.Cursor, None, None]:
+        """A context manager that yields a cursor that runs in an
+        isolated transaction. If the context manager exits without
+        errors, the transaction is committed. If an exception is
+        raised, all changes are rolled-back::
+
+            >>> with self._transaction() as cur:
+            >>>     cur.execute(...)
+        """
+        if hasattr(self, '_connection'):
+            # If using an in-memory database, use the persistent
+            # connection and leave it open when finished.
+            cur = self._connection.cursor()
+            try:
+                with _schema.savepoint(cur):
+                    yield cur
+            finally:
+                cur.close()
+        else:
+            # If using an on-drive database, create a new
+            # connection and close it when finished.
+            filename = self.filename  # Assign locally to limit dot-lookups.
+            if not filename:
+                raise RuntimeError('expected filename, none found')
+            con = _schema.connect_db(filename, self._required_permissions)
+            cur = con.cursor()
+            try:
+                with _schema.savepoint(cur):
+                    yield cur
+            finally:
+                cur.close()
+                con.close()
 
     def __del__(self):
         if isinstance(self._cleanup_item, sqlite3.Connection):

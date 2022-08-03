@@ -49,7 +49,6 @@ import itertools
 import os
 import re
 import sqlite3
-from contextlib import contextmanager
 from json import loads as _loads
 from ._typing import List, Literal, TypeAlias, Union
 from urllib.parse import quote as urllib_parse_quote
@@ -681,30 +680,4 @@ class savepoint(object):
             self.cursor.execute(f'RELEASE {self.name}')
         else:
             self.cursor.execute(f'ROLLBACK TO {self.name}')
-
-
-@contextmanager
-def transaction(
-    path_or_connection: Union[str, sqlite3.Connection],
-    required_permissions: RequiredPermissions,
-):
-    """A context manager that yields a cursor that runs in an
-    isolated transaction. If the context manager exits without
-    errors, the transaction is committed. If an exception is
-    raised, all changes are rolled-back.
-    """
-    if isinstance(path_or_connection, sqlite3.Connection):
-        connection = path_or_connection
-        connection_close = lambda: None  # Don't close already-existing cursor.
-    else:
-        connection = connect_db(path_or_connection, required_permissions)
-        connection_close = connection.close
-
-    cursor = connection.cursor()
-    try:
-        with savepoint(cursor):
-            yield cursor
-    finally:
-        cursor.close()
-        connection_close()
 

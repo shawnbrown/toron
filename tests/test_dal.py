@@ -269,6 +269,128 @@ class TestDataAccessLayerToFile(TempDirTestCase):
             self.assertEqual(f.read(), 'original content\n')
 
 
+class TestTransaction(TempDirTestCase):
+    """Tests for the _transaction() context manager.
+
+    When DAL is backed with a file on-drive, the _transaction()
+    method should establish its own connection and then close this
+    connection once it is finished.
+    """
+    def setUp(self):
+        self.addCleanup(self.cleanup_temp_files)
+
+    def assertCursorOpen(self, cursor, msg=None):
+        try:
+            cursor.execute('SELECT 1')
+        except sqlite3.ProgrammingError:
+            self.fail(msg or 'cursor is not open')
+        cursor.fetchall()  # Discard query result.
+
+    def assertCursorClosed(self, cursor, msg=None):
+        try:
+            cursor.execute('SELECT 1')
+        except sqlite3.ProgrammingError:
+            return
+        cursor.fetchall()  # Discard query result.
+        self.fail(msg or 'cursor is not closed')
+
+    def assertConnectionOpen(self, connection, msg=None):
+        try:
+            cur = connection.cursor()
+        except sqlite3.ProgrammingError:
+            self.fail(msg or 'connection is not open')
+        cur.close()  # Close unused cursor.
+
+    def assertConnectionClosed(self, connection, msg=None):
+        try:
+            cur = connection.cursor()
+        except sqlite3.ProgrammingError:
+            return
+        cur.close()  # Close unused cursor.
+        self.fail(msg or 'connection is not closed')
+
+    def test_transaction_commit(self):
+        dal = dal_class()
+
+        with dal._transaction() as cursor:
+            cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")
+
+        con = dal._get_connection()
+        result = con.execute("SELECT * FROM property WHERE key='key1'").fetchone()
+        msg = 'successful transaction should commit changes to database'
+        self.assertEqual(result, ('key1', 'value1'), msg=msg)
+
+    def test_transaction_rollback(self):
+        dal = dal_class()
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            with dal._transaction() as cursor:
+                cursor.execute("""INSERT INTO property VALUES ('key1', '"value1"')""")  # <- Success.
+                cursor.execute("""INSERT INTO property VALUES ('key2', 'bad json')""")  # <- Failure.
+
+        con = dal._get_connection()
+        result = con.execute("SELECT * FROM property WHERE key='key1'").fetchone()
+        msg = 'a failed transaction should rollback all changes to the database'
+        self.assertEqual(result, None, msg=msg)
+
+    def test_tempfile_on_drive(self):
+        """When using an on-drive file, _transaction() should establish
+        its own connection and then close this connection once it is
+        finished.
+        """
+        dal = dal_class(cache_to_drive=True)  # Create new tempfile.
+
+        cm = dal._transaction()  # Instantiate context manager.
+
+        cur = cm.__enter__()  # Enter context (returns cursor).
+        self.assertCursorOpen(cur)
+
+        con = cur.connection
+        self.assertConnectionOpen(con)
+
+        cm.__exit__(None, None, None)  # Exit context.
+        self.assertCursorClosed(cur)
+        self.assertConnectionClosed(con)
+
+    def test_existing_file_on_drive(self):
+        """When using an on-drive file, _transaction() should establish
+        its own connection and then close this connection once it is
+        finished.
+        """
+        dal_class().to_file('mynode.toron')  # Create file on drive.
+        dal = dal_class.open('mynode.toron', 'readwrite')  # Open existing file.
+
+        cm = dal._transaction()  # Instantiate context manager.
+
+        cur = cm.__enter__()  # Enter context (returns cursor).
+        self.assertCursorOpen(cur)
+
+        con = cur.connection
+        self.assertConnectionOpen(con)
+
+        cm.__exit__(None, None, None)  # Exit context.
+        self.assertCursorClosed(cur)
+        self.assertConnectionClosed(con)
+
+    def test_persistent_inmemory_connection(self):
+        """When given a in-memory Connection, transaction() should use
+        the connection as provided and leave it open when finished.
+        """
+        dal = dal_class()
+
+        cm = dal._transaction()  # Instantiate context manager.
+
+        cur = cm.__enter__()  # Enter context (returns cursor).
+        self.assertCursorOpen(cur)
+
+        con = cur.connection
+        self.assertConnectionOpen(con)
+
+        cm.__exit__(None, None, None)  # Exit context.
+        self.assertCursorClosed(cur)
+        self.assertConnectionOpen(con, msg='connection should remain open')
+
+
 class TestAddColumnsMakeSql(unittest.TestCase):
     maxDiff = None
 
