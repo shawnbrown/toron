@@ -203,11 +203,12 @@ class DataAccessLayer(object):
             >>> dal.to_file('mynode.toron')
 
         On Unix systems (e.g., Linux, macOS), calling with
-        ``fsync==True`` (the default) tells the filesystem to flush
-        buffered data to permanent storage. This could cause a delay
-        while data is being synchronized. If you prefer faster (but
-        less-safe) file handling or plan to explicitly synchronize at
-        a later time, you can use ``fsync==False`` to skip this step.
+        ``fsync=True`` (the default) tells the filesystem to
+        immediately flush buffered data to permanent storage. This
+        could cause a delay while data is being synchronized. If you
+        prefer faster (but slightly less-safe) file handling or if
+        you plan to explicitly synchronize at a later time, you can
+        use ``fsync=False`` to skip this step.
 
         On Windows systems, the *fsync* argument is ignored and
         behavior is left entirely to the OS. This is because Windows
