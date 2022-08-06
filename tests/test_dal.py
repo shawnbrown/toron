@@ -118,6 +118,10 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         expected = {'testkey': 'testval'}
         self.assertEqual(value, expected)
 
+    def test_nonexistent_file(self):
+        with self.assertRaises(ToronError):
+            dal_class.from_file('nonexistent_file.toron')
+
     def test_del_behavior(self):
         dal = dal_class.from_file(self.existing_path, cache_to_drive=True)
         path = dal.filename

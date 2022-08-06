@@ -157,7 +157,7 @@ class DataAccessLayer(object):
             >>> node = Node.from_file('mynode.toron', cache_to_drive=True)
         """
         path = os.fsdecode(path)
-        source_con = _schema.connect_db(path, required_permissions=None)
+        source_con = _schema.connect_db(path, required_permissions=None, access_mode='ro')
 
         if cache_to_drive:
             fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
