@@ -546,7 +546,7 @@ class TestValidatePermissions(TempDirTestCase):
     def tearDownClass(cls):
         # Add write-permissions back to `ro_path` file so TemporaryDirectory()
         # can properly clean-up after itself on Windows when using some older
-        # vesions of Python.
+        # versions of Python.
         #
         # See related issue:
         #     https://bugs.python.org/issue29982
