@@ -17,7 +17,7 @@ from toron._schema import (
     _schema_script,
     _sql_trigger_validate_attributes,
     _add_functions_and_triggers,
-    _validate_permissions_get_mode,
+    _validate_permissions,
     _make_sqlite_uri_filepath,
     connect_db,
     normalize_identifier,
@@ -525,7 +525,7 @@ class TestTriggerCoverage(unittest.TestCase):
         self.assertEqual(set(actual_triggers), set(expected_triggers))
 
 
-class TestValidatePermissionsGetMode():
+class TestValidatePermissions(TempDirTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -543,38 +543,38 @@ class TestValidatePermissionsGetMode():
         cls.new_path = 'new_file.toron'
 
     def test_readonly_required(self):
-        result = _validate_permissions_get_mode(self.ro_path, required_permissions='readonly')
-        self.assertEqual(result, 'ro')
+        try:
+            _validate_permissions(self.ro_path, required_permissions='readonly')
+        except Exception:
+            self.fail("read-only file should work when requiring 'readonly'")
 
         with self.assertRaises(PermissionError):
-            _validate_permissions_get_mode(self.rw_path, required_permissions='readonly')
+            _validate_permissions(self.rw_path, required_permissions='readonly')
 
         with self.assertRaises(ToronError):
-            _validate_permissions_get_mode(self.new_path, required_permissions='readonly')
+            _validate_permissions(self.new_path, required_permissions='readonly')
 
     def test_readwrite_required(self):
-        result = _validate_permissions_get_mode(self.rw_path, required_permissions='readwrite')
-        self.assertEqual(result, 'rw')
+        try:
+            _validate_permissions(self.rw_path, required_permissions='readwrite')
+        except Exception:
+            self.fail("read-write file should work when requiring 'readwrite'")
 
         with self.assertRaises(PermissionError):
-            _validate_permissions_get_mode(self.ro_path, required_permissions='readwrite')
+            _validate_permissions(self.ro_path, required_permissions='readwrite')
 
-        result = _validate_permissions_get_mode(self.new_path, required_permissions='readwrite')
-        self.assertEqual(result, 'rwc')
+        try:
+            _validate_permissions(self.new_path, required_permissions='readwrite')
+        except Exception:
+            self.fail("nonexistent file should work when requiring 'readwrite'")
 
     def test_none_required(self):
-        result = _validate_permissions_get_mode(self.ro_path, required_permissions=None)
-        msg = ("Should return 'rw' mode even if file permissions are "
-               "read-only. This will make sure that "
-               "connection can "
-               "write if permissions are changed during run-time.")
-        self.assertEqual(result, 'rw', msg=msg)
-
-        result = _validate_permissions_get_mode(self.rw_path, required_permissions=None)
-        self.assertEqual(result, 'rw')
-
-        result = _validate_permissions_get_mode(self.new_path, required_permissions=None)
-        self.assertEqual(result, 'rwc')
+        try:
+            _validate_permissions(self.ro_path, required_permissions=None)
+            _validate_permissions(self.rw_path, required_permissions=None)
+            _validate_permissions(self.new_path, required_permissions=None)
+        except Exception:
+            self.fail("requiring `None` permissions should work in all cases")
 
 
 class TestMakeSqliteUriFilepath(unittest.TestCase):

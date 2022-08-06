@@ -507,11 +507,11 @@ def _add_functions_and_triggers(connection):
 RequiredPermissions: TypeAlias = Literal['readonly', 'readwrite', None]
 
 
-def _validate_permissions_get_mode(
+def _validate_permissions(
     path: str,
     required_permissions: RequiredPermissions,
-) -> Literal['ro', 'rw', 'rwc']:
-    """Validate permissions and return URI mode for SQLite connection.
+) -> None:
+    """Raise error if file does not have required permissions.
 
     IMPORTANT: The reason for enforcing filesystem permissions,
     rather than relying on SQLite URI access modes, is to mitigate
@@ -533,21 +533,22 @@ def _validate_permissions_get_mode(
 
         https://www.sqlite.org/howtocorrupt.html
     """
-    # If file does not exist, return "rwc" (read-write-create mode).
-    if not os.path.exists(path):
-        if required_permissions == 'readwrite' or required_permissions is None:
-            return 'rwc'  # <- EXIT!
+    if required_permissions is None:
+        return  # <- EXIT!
 
-        msg = f"file {path!r} does not exist, must require 'readwrite' " \
-              f"or None permissions, got {required_permissions!r}"
-        raise ToronError(msg)
+    if not os.path.exists(path):
+        if required_permissions != 'readwrite' and required_permissions is not None:
+            msg = f"file {path!r} does not exist, must require 'readwrite' " \
+                  f"or None permissions, got {required_permissions!r}"
+            raise ToronError(msg)
+        return  # <- EXIT!
 
     if required_permissions == 'readonly':
         # Raise error if file has write permissions.
         if os.access(path, os.W_OK):
             msg = f"required 'readonly' permissions but {path!r} is not read-only"
             raise PermissionError(msg)
-        return 'ro'  # <- EXIT!
+        return  # <- EXIT!
 
     if required_permissions == 'readwrite':
         # Raise error if file does not have write permissions.
@@ -555,11 +556,7 @@ def _validate_permissions_get_mode(
             msg = f"required 'readwrite' permissions but {path!r} does not " \
                   f"have write access"
             raise PermissionError(msg)
-        return 'rw'  # <- EXIT!
-
-    # If no required permissions, default to "rw" (read-write mode).
-    if required_permissions is None:
-        return 'rw'  # <- EXIT!
+        return  # <- EXIT!
 
     msg = f"`required_permissions` must be 'readonly', 'readwrite', " \
           f"or None; got {required_permissions!r}"
@@ -594,7 +591,9 @@ def _make_sqlite_uri_filepath(path: str, mode: Literal['ro', 'rw', 'rwc', None])
 
 
 def connect_db(
-    path: str, required_permissions: RequiredPermissions
+    path: str,
+    required_permissions: RequiredPermissions,
+    access_mode: Literal['ro', 'rw', 'rwc', None] = None,
 ) -> sqlite3.Connection:
     """Returns a sqlite3 connection to a Toron node file."""
     if path == ':memory:':
@@ -605,7 +604,9 @@ def connect_db(
         )
         con.executescript(_schema_script)  # Create database schema.
     else:
-        access_mode = _validate_permissions_get_mode(path, required_permissions)
+        _validate_permissions(path, required_permissions)
+        if not access_mode and required_permissions == 'readonly':
+            access_mode = 'ro'
         uri_path = _make_sqlite_uri_filepath(path, access_mode)
 
         try:
