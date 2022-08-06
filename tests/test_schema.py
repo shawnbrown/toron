@@ -542,6 +542,17 @@ class TestValidatePermissions(TempDirTestCase):
         # Define path but don't create a file (file should not exist).
         cls.new_path = 'new_file.toron'
 
+    @classmethod
+    def tearDownClass(cls):
+        # Add write-permissions back to `ro_path` file so TemporaryDirectory()
+        # can properly clean-up after itself on Windows when using some older
+        # vesions of Python.
+        #
+        # See related issue:
+        #     https://bugs.python.org/issue29982
+        os.chmod(cls.ro_path, S_IRUSR|S_IWUSR)
+        super().tearDownClass()
+
     def test_readonly_required(self):
         try:
             _validate_permissions(self.ro_path, required_permissions='readonly')
