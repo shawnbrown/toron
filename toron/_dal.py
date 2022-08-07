@@ -114,14 +114,8 @@ class DataAccessLayer(object):
         else:
             target_path = ':memory:'  # <- In-memory only (no file on-drive).
 
-        # Create new database connection.
-        con = sqlite3.connect(
-            database=target_path,
-            detect_types=sqlite3.PARSE_DECLTYPES,
-            isolation_level=None,
-        )
-
         # Create Node schema, add functions, and add triggers.
+        con = _schema.get_raw_connection(target_path)  # Connect to empty db.
         con.executescript(_schema._schema_script)
         _schema._add_functions_and_triggers(con)
 
@@ -168,11 +162,7 @@ class DataAccessLayer(object):
             target_path = ':memory:'
 
         try:
-            target_con = sqlite3.connect(
-                database=target_path,
-                detect_types=sqlite3.PARSE_DECLTYPES,
-                isolation_level=None,
-            )
+            target_con = _schema.get_raw_connection(target_path)
             source_con.backup(target_con)
             _schema._add_functions_and_triggers(target_con)
         finally:
@@ -233,11 +223,7 @@ class DataAccessLayer(object):
         tmp_path = tmp_f.name
 
         # Copy node data from source to destination.
-        dst_con = sqlite3.connect(
-            database=tmp_path,
-            detect_types=sqlite3.PARSE_DECLTYPES,
-            isolation_level=None,
-        )
+        dst_con = _schema.get_raw_connection(tmp_path)
         src_con = self._get_connection()
         try:
             src_con.backup(dst_con)
