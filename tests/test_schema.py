@@ -19,7 +19,7 @@ from toron._schema import (
     _add_functions_and_triggers,
     _validate_permissions,
     _make_sqlite_uri_filepath,
-    connect_db,
+    get_connection,
     normalize_identifier,
     savepoint,
 )
@@ -114,7 +114,7 @@ class TestJsonTrigger(unittest.TestCase, CheckJsonMixin):
     TEXT_JSON declared type).
     """
     def setUp(self):
-        self.con = connect_db(':memory:', None)
+        self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
@@ -187,7 +187,7 @@ class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
     """Check TRIGGER behavior for edge.user_properties column."""
 
     def setUp(self):
-        self.con = connect_db(':memory:', None)
+        self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
@@ -291,7 +291,7 @@ class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
     TEXT_ATTRIBUTES declared type.
     """
     def setUp(self):
-        self.con = connect_db(':memory:', None)
+        self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
         self.cur.execute("INSERT INTO location (_location_id) VALUES (1)")
         self.addCleanup(self.con.close)
@@ -398,7 +398,7 @@ class TestSelectorsTrigger(unittest.TestCase, CheckSelectorsMixin):
       * weighting.selectors.
     """
     def setUp(self):
-        self.con = connect_db(':memory:', None)
+        self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
@@ -645,7 +645,7 @@ class TestConnectDb(TempDirTestCase):
     def test_new_file(self):
         """If a node file doesn't exist it should be created."""
         path = 'mynode.node'
-        connect_db(path, required_permissions=None).close()  # Creates Toron db at given path.
+        get_connection(path, required_permissions=None).close()  # Creates Toron db at given path.
 
         con = sqlite3.connect(path)
         cur = con.cursor()
@@ -674,7 +674,7 @@ class TestConnectDb(TempDirTestCase):
         regex = "unable to open node file 'mydirectory'"
         msg = 'should fail if path is a directory instead of a file'
         with self.assertRaisesRegex(ToronError, regex, msg=msg):
-            connect_db(path, required_permissions=None)
+            get_connection(path, required_permissions=None)
 
     def test_nondatabase_file(self):
         """Non-database files should fail."""
@@ -684,7 +684,7 @@ class TestConnectDb(TempDirTestCase):
             f.write('Hello World\n')
 
         with self.assertRaises(ToronError):
-            connect_db(path, required_permissions=None)
+            get_connection(path, required_permissions=None)
 
     def test_unknown_schema(self):
         """Database files with unknown schemas should fail."""
@@ -698,58 +698,58 @@ class TestConnectDb(TempDirTestCase):
         con.close()
 
         with self.assertRaises(ToronError):
-            connect_db(path, required_permissions=None)
+            get_connection(path, required_permissions=None)
 
     def test_unsupported_schema_version(self):
         """Unsupported schema version should fail."""
         path = 'mynode.toron'
 
-        con = connect_db(path, required_permissions=None)
+        con = get_connection(path, required_permissions=None)
         con.execute("INSERT OR REPLACE INTO property VALUES ('schema_version', '999')")
         con.commit()
         con.close()
 
         regex = 'Unsupported Toron node format: schema version 999'
         with self.assertRaisesRegex(ToronError, regex):
-            connect_db(path, required_permissions=None)
+            get_connection(path, required_permissions=None)
 
     def test_readwrite_permissions(self):
         path = 'mynode.toron'
 
         # Connect to nonexistent file (creates file).
         self.assertFalse(os.path.isfile(path))
-        connect_db(path, required_permissions='readwrite').close()
+        get_connection(path, required_permissions='readwrite').close()
 
         # Connect to existing file.
         self.assertTrue(os.path.isfile(path))
-        connect_db(path, required_permissions='readwrite').close()  # Connects to existing.
+        get_connection(path, required_permissions='readwrite').close()  # Connects to existing.
 
         # Connect to existing file with read-only permissions (should fail).
         os.chmod(path, S_IRUSR)  # Set to read-only.
         self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))  # Revert to read-write after test.
         with self.assertRaises(PermissionError):
-            connect_db(path, required_permissions='readwrite')
+            get_connection(path, required_permissions='readwrite')
 
     def test_readonly_permissions(self):
         # Open nonexistent file with "readonly" permissions (fails).
         regex = ("file 'path1.toron' does not exist, must require "
                  "'readwrite' or None permissions, got 'readonly'")
         with self.assertRaisesRegex(ToronError, regex):
-            connect_db('path1.toron', required_permissions='readonly')
+            get_connection('path1.toron', required_permissions='readonly')
 
         path = 'path2.toron'
-        connect_db(path, required_permissions='readwrite').close()  # Create node.
+        get_connection(path, required_permissions='readwrite').close()  # Create node.
 
         # Open existing, but not-readonly file with "readonly" permissions.
         regex = f"required 'readonly' permissions but {path!r} is not read-only"
         with self.assertRaisesRegex(PermissionError, regex):
-            connect_db(path, required_permissions='readonly')
+            get_connection(path, required_permissions='readonly')
 
         os.chmod(path, S_IRUSR)  # Set file permissions to read-only.
         self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))
 
         # Open readonly connection to file with read-only permissions.
-        con = connect_db(path, required_permissions='readonly')
+        con = get_connection(path, required_permissions='readonly')
         self.addCleanup(con.close)
         regex = 'attempt to write a readonly database'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
@@ -759,34 +759,34 @@ class TestConnectDb(TempDirTestCase):
         path = 'mynode.toron'
 
         self.assertFalse(os.path.isfile(path))
-        connect_db(path, required_permissions=None).close()  # Creates node.
+        get_connection(path, required_permissions=None).close()  # Creates node.
 
         self.assertTrue(os.path.isfile(path))
-        connect_db(path, required_permissions=None).close()  # Connects to existing.
+        get_connection(path, required_permissions=None).close()  # Connects to existing.
 
         os.chmod(path, S_IRUSR)  # Set file permissions to read-only.
         self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))
-        connect_db(path, required_permissions=None).close()  # Connects to read-only.
+        get_connection(path, required_permissions=None).close()  # Connects to read-only.
 
     def test_invalid_permissions(self):
         path = 'mynode.toron'
         regex = (f"file {path!r} does not exist, must require 'readwrite' "
                  f"or None permissions, got 'badpermissions'")
         with self.assertRaisesRegex(ToronError, regex):
-            connect_db(path, required_permissions='badpermissions')
+            get_connection(path, required_permissions='badpermissions')
 
-        connect_db(path, required_permissions='readwrite').close()  # Create node.
+        get_connection(path, required_permissions='readwrite').close()  # Create node.
 
         regex = (f"`required_permissions` must be 'readonly', 'readwrite', "
                  f"or None; got 'badpermissions'")
         with self.assertRaisesRegex(ToronError, regex):
-            connect_db(path, required_permissions='badpermissions')
+            get_connection(path, required_permissions='badpermissions')
 
 
 class TestJsonConversion(unittest.TestCase):
     """Registered converters should select JSON strings as objects."""
     def setUp(self):
-        self.con = connect_db(':memory:', None)
+        self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)

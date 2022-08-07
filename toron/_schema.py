@@ -620,13 +620,14 @@ def get_connection_raw(
     return con
 
 
-def connect_db(
+def get_connection(
     path: str,
     required_permissions: RequiredPermissions,
     access_mode: Literal['ro', 'rw', 'rwc', None] = None,
 ) -> sqlite3.Connection:
     """Return an SQLite 3 connection to a Toron database containing a
-    supported node schema with required triggers and functions.
+    supported node schema with required file permissions, triggers, and
+    functions.
     """
     if path == ':memory:':
         con = get_connection_raw(path)

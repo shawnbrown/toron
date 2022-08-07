@@ -301,7 +301,7 @@ class DataAccessLayer(object):
         option.
         """
         path = os.path.abspath(os.fsdecode(path))
-        _schema.connect_db(path, required_permissions).close()  # Verify path to Toron node file.
+        _schema.get_connection(path, required_permissions).close()  # Verify path to Toron node file.
 
         obj = cls.__new__(cls)
         obj._filename = path
@@ -317,7 +317,7 @@ class DataAccessLayer(object):
         if hasattr(self, '_connection'):
             return self._connection
         if self._filename:
-            return _schema.connect_db(self._filename, self._required_permissions)
+            return _schema.get_connection(self._filename, self._required_permissions)
         raise RuntimeError('cannot get connection')
 
     @contextmanager
@@ -345,7 +345,7 @@ class DataAccessLayer(object):
             filename = self.filename  # Assign locally to limit dot-lookups.
             if not filename:
                 raise RuntimeError('expected filename, none found')
-            con = _schema.connect_db(filename, self._required_permissions)
+            con = _schema.get_connection(filename, self._required_permissions)
             cur = con.cursor()
             try:
                 with _schema.savepoint(cur):
