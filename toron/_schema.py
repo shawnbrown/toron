@@ -590,11 +590,13 @@ def _make_sqlite_uri_filepath(path: str, mode: Literal['ro', 'rw', 'rwc', None])
     return f'file:{path}'
 
 
-def get_connection_raw(
+def get_raw_connection(
     path: str,
     access_mode: Literal['ro', 'rw', 'rwc', None] = None,
 ) -> sqlite3.Connection:
-    """Open and return an SQLite 3 connection to the given *path*.
+    """Open and return an SQLite 3 connection to the given *path* using
+    the specified URI access mode if provided. If path is ':memory:',
+    then *access_mode* is ignored.
 
     NOTE: This method should only establish a connection, it should
     not execute queries of any kind.
@@ -630,7 +632,7 @@ def get_connection(
     functions.
     """
     if path == ':memory:':
-        con = get_connection_raw(path)
+        con = get_raw_connection(path)
         con.executescript(_schema_script)  # Create database schema.
     else:
         _validate_permissions(path, required_permissions)
@@ -638,9 +640,9 @@ def get_connection(
             access_mode = 'ro'
 
         if os.path.exists(path):
-            con = get_connection_raw(path, access_mode)
+            con = get_raw_connection(path, access_mode)
         else:
-            con = get_connection_raw(path, access_mode)
+            con = get_raw_connection(path, access_mode)
             con.executescript(_schema_script)  # Create database schema.
 
     try:
