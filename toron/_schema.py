@@ -590,40 +590,57 @@ def _make_sqlite_uri_filepath(path: str, mode: Literal['ro', 'rw', 'rwc', None])
     return f'file:{path}'
 
 
+def get_connection_raw(
+    path: str,
+    access_mode: Literal['ro', 'rw', 'rwc', None] = None,
+) -> sqlite3.Connection:
+    """Open and return an SQLite 3 connection to the given *path*.
+
+    NOTE: This method should only establish a connection, it should
+    not execute queries of any kind.
+    """
+    if path == ':memory:':
+        normalized_path = path
+        is_uri_path = False
+    else:
+        normalized_path = _make_sqlite_uri_filepath(path, access_mode)
+        is_uri_path = True
+
+    try:
+        con = sqlite3.connect(
+            database=normalized_path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+            uri=is_uri_path,
+        )
+    except sqlite3.OperationalError as err:
+        msg = str(err).replace('database file', f'node file {path!r}')
+        raise ToronError(msg)
+
+    return con
+
+
 def connect_db(
     path: str,
     required_permissions: RequiredPermissions,
     access_mode: Literal['ro', 'rw', 'rwc', None] = None,
 ) -> sqlite3.Connection:
-    """Returns a sqlite3 connection to a Toron node file."""
+    """Return an SQLite 3 connection to a Toron database containing a
+    supported node schema with required triggers and functions.
+    """
     if path == ':memory:':
-        con = sqlite3.connect(
-            database=path,
-            detect_types=sqlite3.PARSE_DECLTYPES,
-            isolation_level=None,
-        )
+        con = get_connection_raw(path)
         con.executescript(_schema_script)  # Create database schema.
     else:
         _validate_permissions(path, required_permissions)
         if not access_mode and required_permissions == 'readonly':
             access_mode = 'ro'
-        uri_path = _make_sqlite_uri_filepath(path, access_mode)
 
-        try:
-            get_connection = lambda: sqlite3.connect(
-                database=uri_path,
-                detect_types=sqlite3.PARSE_DECLTYPES,
-                isolation_level=None,
-                uri=True,
-            )
-            if os.path.exists(path):
-                con = get_connection()
-            else:
-                con = get_connection()
-                con.executescript(_schema_script)  # Create database schema.
-        except sqlite3.OperationalError as err:
-            msg = str(err).replace('database file', f'node file {path!r}')
-            raise ToronError(msg)
+        if os.path.exists(path):
+            con = get_connection_raw(path, access_mode)
+        else:
+            con = get_connection_raw(path, access_mode)
+            con.executescript(_schema_script)  # Create database schema.
 
     try:
         _add_functions_and_triggers(con)
