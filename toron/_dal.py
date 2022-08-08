@@ -6,12 +6,20 @@ import sqlite3
 import sys
 import tempfile
 from collections import Counter
-from collections.abc import Mapping
 from contextlib import contextmanager
 from itertools import chain
 from itertools import compress
 from json import dumps as _dumps
-from ._typing import Generator, Literal, Optional, Set, Type, TypeAlias, Union
+from ._typing import (
+    Generator,
+    Literal,
+    Mapping,
+    Optional,
+    Set,
+    Type,
+    TypeAlias,
+    Union,
+)
 try:
     import fcntl
 except ImportError:
