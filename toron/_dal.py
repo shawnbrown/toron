@@ -223,7 +223,8 @@ class DataAccessLayer(object):
 
         # Get temporary file path.
         tmp_f = tempfile.NamedTemporaryFile(
-            prefix=f'{os.path.basename(dst_path)}.temp-',
+            suffix='.temp',
+            prefix=f'{os.path.splitext(os.path.basename(dst_path))[0]}-',
             dir=dst_dirname,
             delete=False,
         )
