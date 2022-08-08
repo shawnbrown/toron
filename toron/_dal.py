@@ -814,6 +814,36 @@ class DataAccessLayer(object):
             self._add_weights_set_is_complete(cur, weighting_id)
 
     @staticmethod
+    def _add_quantities_get_location_id(
+        cursor: sqlite3.Cursor,
+        labels: Mapping[str, str],
+    ) -> int:
+        """Return _location_id for given labels.
+
+        IMPORTANT: To assure correct behavior, the given *labels* must
+        contain all label columns present in the 'location' table.
+        """
+        keys = [_schema.normalize_identifier(k) for k in labels.keys()]
+        values = [str(v).strip() for v in labels.values()]
+
+        select_sql = f"""
+            SELECT _location_id
+            FROM main.location
+            WHERE {' AND '.join(f'{k}=?' for k in keys)}
+        """
+        cursor.execute(select_sql, values)
+        location_id = cursor.fetchone()
+        if location_id:
+            return location_id[0]  # <- EXIT!
+
+        insert_sql = f"""
+            INSERT INTO main.location({', '.join(keys)})
+            VALUES({', '.join(['?'] * len(labels))})
+        """
+        cursor.execute(insert_sql, values)
+        return cursor.lastrowid
+
+    @staticmethod
     def _get_data_property(cursor, key):
         sql = 'SELECT value FROM main.property WHERE key=?'
         cursor.execute(sql, (key,))

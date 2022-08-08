@@ -1372,6 +1372,62 @@ class TestAddWeights(unittest.TestCase):
         raise NotImplementedError
 
 
+class TestAddQuantitiesGetLocationId(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+        self.dal.set_data({'add_columns': ['state', 'county', 'tract']})
+        con = self.dal._connection
+        self.cursor = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_insert_values(self):
+        self.cursor.execute('SELECT * FROM location')
+        msg = 'table should start out empty'
+        self.assertEqual(self.cursor.fetchall(), [], msg=msg)
+
+        labels_a = {'state': '12', 'county': '001', 'tract': '000200'}
+        labels_b = {'state': '12', 'county': '', 'tract': ''}
+
+        # Should insert new record.
+        location_id = self.dal._add_quantities_get_location_id(self.cursor, labels_a)
+        self.assertEqual(location_id, 1)
+
+        # Should insert new record.
+        location_id = self.dal._add_quantities_get_location_id(self.cursor, labels_b)
+        self.assertEqual(location_id, 2)
+
+        self.cursor.execute('SELECT * FROM location')
+        expected = [
+            (1, '12', '001', '000200'),
+            (2, '12', '', ''),
+        ]
+        msg = 'two records should have been inserted'
+        self.assertEqual(self.cursor.fetchall(), expected, msg=msg)
+
+    def test_select_existing_record(self):
+        self.cursor.execute('SELECT * FROM location')
+        msg = 'table should start out empty'
+        self.assertEqual(self.cursor.fetchall(), [], msg=msg)
+
+        labels = {'state': '12', 'county': '001', 'tract': '000200'}
+
+        # Should insert new record.
+        location_id = self.dal._add_quantities_get_location_id(self.cursor, labels)
+        self.assertEqual(location_id, 1)
+
+        # Should select existing record.
+        location_id = self.dal._add_quantities_get_location_id(self.cursor, labels)
+        self.assertEqual(location_id, 1)
+
+        self.cursor.execute('SELECT * FROM location')
+        expected = [
+            (1, '12', '001', '000200'),
+        ]
+        msg = 'only one record should have been inserted'
+        self.assertEqual(self.cursor.fetchall(), expected, msg=msg)
+
+
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
 
