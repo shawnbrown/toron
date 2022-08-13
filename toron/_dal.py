@@ -839,10 +839,15 @@ class DataAccessLayer(object):
             SELECT _location_id
             FROM main.location
             WHERE {' AND '.join(f'{k}=?' for k in keys)}
+            LIMIT 2
         """
         cursor.execute(select_sql, values)
         location_id = cursor.fetchone()
         if location_id:
+            if cursor.fetchone() is not None:
+                raise RuntimeError(
+                    f'multiple location ids for given labels: {dict(labels)!r}'
+                )
             return location_id[0]  # <- EXIT!
 
         insert_sql = f"""
@@ -850,6 +855,8 @@ class DataAccessLayer(object):
             VALUES({', '.join(['?'] * len(labels))})
         """
         cursor.execute(insert_sql, values)
+        if not cursor.lastrowid:
+            raise RuntimeError('record just inserted, lastrowid should not be None')
         return cursor.lastrowid
 
     @staticmethod

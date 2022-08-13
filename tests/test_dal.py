@@ -1427,6 +1427,20 @@ class TestAddQuantitiesGetLocationId(unittest.TestCase):
         msg = 'only one record should have been inserted'
         self.assertEqual(self.cursor.fetchall(), expected, msg=msg)
 
+    def test_multiple_match_error(self):
+        # Insert records.
+        self.dal._add_quantities_get_location_id(
+            self.cursor, {'state': '12', 'county': '001', 'tract': '000200'}
+        )
+        self.dal._add_quantities_get_location_id(
+            self.cursor, {'state': '12', 'county': '', 'tract': ''}
+        )
+
+        # Test failure when labels match multiple records.
+        labels = {'state': '12'}
+        with self.assertRaises(RuntimeError):
+            location_id = self.dal._add_quantities_get_location_id(self.cursor, labels)
+
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
