@@ -24,6 +24,7 @@ from toron._dal import DataAccessLayerPre35
 from toron._dal import dal_class
 from toron._dal import _temp_files_to_delete_atexit
 from toron._exceptions import ToronError
+from toron._exceptions import ToronWarning
 
 
 SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
@@ -1583,7 +1584,8 @@ class TestAddQuantities(unittest.TestCase):
             ('OH', 'FRANKLIN', '', 566499),  # <- Not loaded (no attributes).
             ('OH', 'FRANKLIN', 'TOT_FEMALE', 596915),
         ]
-        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows'):
+            self.dal.add_quantities(data, 'counts')  # <- Method under test.
 
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         expected_quantity_records = [
@@ -1598,7 +1600,8 @@ class TestAddQuantities(unittest.TestCase):
             ('OH', 'BUTLER', 'TOT_MALE', 180140),
             ('OH', 'BUTLER', 'TOT_FEMALE', 187990),
         ]
-        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows'):
+            self.dal.add_quantities(data, 'counts')  # <- Method under test.
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, [])
 
@@ -1607,7 +1610,8 @@ class TestAddQuantities(unittest.TestCase):
             ('OH', 'FRANKLIN', 566499),
             ('OH', 'FRANKLIN', 596915),
         ]
-        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows'):
+            self.dal.add_quantities(data, 'counts')  # <- Method under test.
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, [])
 

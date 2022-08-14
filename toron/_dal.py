@@ -962,6 +962,8 @@ class DataAccessLayer(object):
                 row_dict = {k: v for k, v in row_dict.items() if k and v}
                 return {k: row_dict.get(k, '') for k in label_columns}
 
+            missing_attrs_count = 0
+
             for loc_dict, group in groupby(dict_rows, key=make_loc_dict):
                 loc_id = self._add_quantities_get_location_id(cur, loc_dict)
 
@@ -970,6 +972,7 @@ class DataAccessLayer(object):
 
                 for attr, val in attrs_vals:
                     if attr == '{}':
+                        missing_attrs_count += 1
                         continue
 
                     statement = """
@@ -977,6 +980,11 @@ class DataAccessLayer(object):
                             VALUES(?, ?, ?)
                     """
                     cur.execute(statement, (loc_id, attr, val))
+
+            if missing_attrs_count:
+                import warnings
+                msg = f'missing attribute data, skipped {missing_attrs_count} rows'
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
     @staticmethod
     def _get_data_property(cursor, key):
