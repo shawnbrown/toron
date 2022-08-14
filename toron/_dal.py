@@ -953,9 +953,9 @@ class DataAccessLayer(object):
 
             def make_attrs_vals(row_dict):  # <- Helper function.
                 quant_value = row_dict[value]
-                attr_dict = {k: v for k, v in row_dict.items() if is_attr(k)}
-                attr_dict = {k: v for k, v in attr_dict.items() if v != '' and v is not None}
-                attr_json = _dumps(attr_dict, sort_keys=True)
+                attr_items = ((k, v) for k, v in row_dict.items() if is_attr(k))
+                attr_items = ((k, v) for k, v in attr_items if v != '' and v is not None)
+                attr_json = _dumps(dict(attr_items), sort_keys=True)
                 return (attr_json, quant_value)
 
             def make_loc_dict(row_dict):  # <- Helper function.
