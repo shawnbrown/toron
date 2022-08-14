@@ -944,9 +944,11 @@ class DataAccessLayer(object):
                     return col in attributes
             else:
                 def is_attr(col):  # <- Helper function.
-                    return (col not in label_columns
-                            and not col.startswith('_')
-                            and col != value)
+                    return (
+                        col not in label_columns
+                        and not col.startswith('_')
+                        and col != value
+                    )
 
             def make_attrs_vals(row_dict):  # <- Helper function.
                 quant_value = row_dict[value]
