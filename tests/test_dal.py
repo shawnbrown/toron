@@ -1615,6 +1615,24 @@ class TestAddQuantities(unittest.TestCase):
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, [])
 
+    def test_no_quantity_values(self):
+        data = [
+            ('state', 'county', 'census', 'counts'),
+            ('OH', 'BUTLER', 'TOT_MALE', 0),  # <- Zero should be included.
+            ('OH', 'BUTLER', 'TOT_FEMALE', ''),  # <- Not loaded (empty string).
+            ('OH', 'FRANKLIN', 'TOT_MALE', 566499),
+            ('OH', 'FRANKLIN', 'TOT_FEMALE', None),  # <- Not loaded (None).
+        ]
+        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows.*inserted 2 rows'):
+            self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        expected_quantity_records = [
+            (1, 1, {'census': 'TOT_MALE'}, 0),
+            (2, 2, {'census': 'TOT_MALE'}, 566499),
+        ]
+        self.assertEqual(records, expected_quantity_records)
+
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.

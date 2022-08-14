@@ -963,6 +963,7 @@ class DataAccessLayer(object):
                 return {k: row_dict.get(k, '') for k in label_columns}
 
             missing_attrs_count = 0
+            missing_vals_count = 0
             inserted_rows_count = 0
 
             for loc_dict, group in groupby(dict_rows, key=make_loc_dict):
@@ -976,6 +977,10 @@ class DataAccessLayer(object):
                         missing_attrs_count += 1
                         continue
 
+                    if val == '' or val is None:
+                        missing_vals_count += 1
+                        continue
+
                     statement = """
                         INSERT INTO main.quantity (_location_id, attributes, value)
                             VALUES(?, ?, ?)
@@ -987,6 +992,10 @@ class DataAccessLayer(object):
             if missing_attrs_count:
                 warning_msgs.append(
                     f'skipped {missing_attrs_count} rows with no attributes'
+                )
+            if missing_vals_count:
+                warning_msgs.append(
+                    f'skipped {missing_vals_count} rows with no quantity value'
                 )
 
             if warning_msgs:
