@@ -864,6 +864,30 @@ class DataAccessLayer(object):
             raise RuntimeError('record just inserted, lastrowid should not be None')
         return cursor.lastrowid
 
+    @staticmethod
+    def _add_quantities_warn(
+        missing_attrs_count: int,
+        missing_vals_count: int,
+        inserted_rows_count: int,
+    ) -> None:
+        """If needed, emit ToronWarning with relevant information."""
+        messages = []
+
+        if missing_attrs_count:
+            messages.append(
+                f'skipped {missing_attrs_count} rows with no attributes'
+            )
+
+        if missing_vals_count:
+            messages.append(
+                f'skipped {missing_vals_count} rows with no quantity value'
+            )
+
+        if messages:
+            import warnings
+            msg = f'{", ".join(messages)}, inserted {inserted_rows_count} rows'
+            warnings.warn(msg, category=ToronWarning, stacklevel=3)
+
     def add_quantities(
         self,
         data: Union[Iterable[Mapping], Iterable[Sequence]],
@@ -988,20 +1012,11 @@ class DataAccessLayer(object):
                     cur.execute(statement, (loc_id, attr, val))
                     inserted_rows_count += 1
 
-            warning_msgs = []
-            if missing_attrs_count:
-                warning_msgs.append(
-                    f'skipped {missing_attrs_count} rows with no attributes'
-                )
-            if missing_vals_count:
-                warning_msgs.append(
-                    f'skipped {missing_vals_count} rows with no quantity value'
-                )
-
-            if warning_msgs:
-                import warnings
-                msg = f'{", ".join(warning_msgs)}, inserted {inserted_rows_count} rows'
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+            self._add_quantities_warn(
+                missing_attrs_count,
+                missing_vals_count,
+                inserted_rows_count,
+            )
 
     @staticmethod
     def _get_data_property(cursor, key):
