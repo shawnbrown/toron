@@ -1442,6 +1442,87 @@ class TestAddQuantitiesGetLocationId(unittest.TestCase):
             location_id = self.dal._add_quantities_get_location_id(self.cursor, labels)
 
 
+class TestAddQuantities(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+        self.dal.set_data({'add_columns': ['state', 'county']})
+        con = self.dal._connection
+        self.cursor = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+    sample_location_records = [
+        (1, 'OH', 'BUTLER'),
+        (2, 'OH', 'FRANKLIN')
+    ]
+
+    sample_quantity_records = [
+        (1, 1, {'census': 'TOT_MALE'}, 180140),
+        (2, 1, {'census': 'TOT_FEMALE'}, 187990),
+        (3, 2, {'census': 'TOT_MALE'}, 566499),
+        (4, 2, {'census': 'TOT_FEMALE'}, 596915)
+    ]
+
+    def test_header(self):
+        data = [
+            ('state', 'county', 'census', 'counts'),
+            ('OH', 'BUTLER', 'TOT_MALE', 180140),
+            ('OH', 'BUTLER', 'TOT_FEMALE', 187990),
+            ('OH', 'FRANKLIN', 'TOT_MALE', 566499),
+            ('OH', 'FRANKLIN', 'TOT_FEMALE', 596915),
+        ]
+        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+        records = self.cursor.execute('SELECT * FROM location').fetchall()
+        self.assertEqual(records, self.sample_location_records)
+
+        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        self.assertEqual(records, self.sample_quantity_records)
+
+    def test_no_header(self):
+        data = [
+            ('OH', 'BUTLER', 'TOT_MALE', 180140),
+            ('OH', 'BUTLER', 'TOT_FEMALE', 187990),
+            ('OH', 'FRANKLIN', 'TOT_MALE', 566499),
+            ('OH', 'FRANKLIN', 'TOT_FEMALE', 596915),
+        ]
+        columns = ('state', 'county', 'census', 'counts')
+        self.dal.add_quantities(data, 'counts', columns=columns)  # <- Method under test.
+
+        records = self.cursor.execute('SELECT * FROM location').fetchall()
+        self.assertEqual(records, self.sample_location_records)
+
+        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        self.assertEqual(records, self.sample_quantity_records)
+
+    def test_dict_rows(self):
+        data = [
+            {'state': 'OH', 'county': 'BUTLER', 'census': 'TOT_MALE', 'counts': 180140},
+            {'state': 'OH', 'county': 'BUTLER', 'census': 'TOT_FEMALE', 'counts': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_MALE', 'counts': 566499},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_FEMALE', 'counts': 596915},
+        ]
+        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+        records = self.cursor.execute('SELECT * FROM location').fetchall()
+        self.assertEqual(records, self.sample_location_records)
+
+        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        self.assertEqual(records, self.sample_quantity_records)
+
+    def test_non_mapping_non_sequence(self):
+        """Given *data* must contain dict-rows or sequence-rows."""
+        data = [
+            {'state', 'county', 'census', 'counts'},   # <- set (non-sequence)
+            {'OH', 'BUTLER', 'TOT_MALE', 180140},      # <- set (non-sequence)
+            {'OH', 'BUTLER', 'TOT_FEMALE', 187990},    # <- set (non-sequence)
+            {'OH', 'FRANKLIN', 'TOT_MALE', 566499},    # <- set (non-sequence)
+            {'OH', 'FRANKLIN', 'TOT_FEMALE', 596915},  # <- set (non-sequence)
+        ]
+        with self.assertRaises(TypeError):
+            self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
 

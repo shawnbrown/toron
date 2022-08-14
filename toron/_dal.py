@@ -9,12 +9,15 @@ from collections import Counter
 from contextlib import contextmanager
 from itertools import chain
 from itertools import compress
+from itertools import groupby
 from json import dumps as _dumps
 from ._typing import (
     Generator,
+    Iterable,
     Literal,
     Mapping,
     Optional,
+    Sequence,
     Set,
     Type,
     TypeAlias,
@@ -858,6 +861,113 @@ class DataAccessLayer(object):
         if not cursor.lastrowid:
             raise RuntimeError('record just inserted, lastrowid should not be None')
         return cursor.lastrowid
+
+    def add_quantities(
+        self,
+        data: Union[Iterable[Mapping], Iterable[Sequence]],
+        value: str,
+        *,
+        attributes: Optional[Iterable[str]] = None,
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        """Add quantities and associated attributes. Quantity values
+        are automatically associated with matching element labels.
+
+        Parameters
+        ----------
+        data : Iterable[Mapping] | Iterable[Sequence]
+            Iterable of rows or dict-rows that contain the data to be
+            loaded. Must contain one or more `element` columns, one or
+            more `attribute` columns, and one `value` column.
+        value : str
+            Name of column which contains the quantity values.
+        attributes : Iterable[str], optional
+            Name of columns which contain attributes. If not given,
+            attributes will default to all non-element, non-value
+            columns that don't begin with an underscore ('_').
+        columns : Sequence[str], optional
+            Optional sequence of data column names--must be given when
+            *data* does not contain fieldname information.
+
+        Load quantites with a header row::
+
+            >>> data = [
+            ...     ['elem1', 'elem2', 'attr1', 'attr2', 'quant'],
+            ...     ['A', 'x', 'foo', 'corge', 12],
+            ...     ['B', 'y', 'bar', 'qux', 10],
+            ...     ['C', 'z', 'baz', 'quux', 15],
+            ... ]
+            >>> dal.add_quantities(data, 'quant')
+
+        Load quantites using a specified *columns* argument::
+
+            >>> data = [
+            ...     ['A', 'x', 'foo', 'corge', 12],
+            ...     ['B', 'y', 'bar', 'qux', 10],
+            ...     ['C', 'z', 'baz', 'quux', 15],
+            ... ]
+            >>> dal.add_quantities(data, 'quant', columns=['elem1', 'elem2', 'attr1', 'attr2', 'quant'])
+
+        Load quantites using a dictionary-rows::
+
+            >>> data = [
+            ...     {'elem1': 'A', 'elem2': 'x', 'attr1': 'foo', 'attr2': 'corge', 'quant': 12},
+            ...     {'elem1': 'B', 'elem2': 'y', 'attr1': 'bar', 'attr2': 'qux', 'quant': 10},
+            ...     {'elem1': 'C', 'elem2': 'z', 'attr1': 'baz', 'attr2': 'quux', 'quant': 15},
+            ... ]
+            >>> dal.add_quantities(data, 'counts')
+        """
+        # Normalize data as dict_rows.
+        iter_data = iter(data)
+        first_element = next(iter_data)
+        if isinstance(first_element, Sequence):
+            if not columns:
+                columns = first_element
+            else:
+                iter_data = chain([first_element], iter_data)
+            dict_rows = (dict(zip(columns, row)) for row in iter_data)
+        elif isinstance(first_element, Mapping):
+            dict_rows = chain([first_element], iter_data)  # type: ignore [assignment]
+        else:
+            msg = (f'data must contain mappings or sequences, '
+                   f'got type {type(first_element)}')
+            raise TypeError(msg)
+
+        # Prepare data and insert quantities.
+        with self._transaction() as cur:
+            label_columns = self._get_column_names(cur, 'location')[1:]
+
+            if attributes:
+                def is_attr(col):  # <- Helper function.
+                    return col in attributes
+            else:
+                def is_attr(col):  # <- Helper function.
+                    return (col not in label_columns
+                            and not col.startswith('_')
+                            and col != value)
+
+            def make_attrs_vals(row_dict):  # <- Helper function.
+                quant_value = row_dict[value]
+                attr_dict = {k: v for k, v in row_dict.items() if is_attr(k)}
+                attr_json = _dumps(attr_dict, sort_keys=True)
+                return (attr_json, quant_value)
+
+            def make_loc_dict(row_dict):  # <- Helper function.
+                row_dict = {k: v for k, v in row_dict.items() if k and v}
+                return {k: row_dict.get(k, '') for k in label_columns}
+
+            for loc_dict, group in groupby(dict_rows, key=make_loc_dict):
+                loc_id = self._add_quantities_get_location_id(cur, loc_dict)
+
+                group = (row_dict for row_dict in group if (value in row_dict))
+                attrs_vals = (make_attrs_vals(row_dict) for row_dict in group)
+
+                statement = """
+                    INSERT INTO main.quantity (_location_id, attributes, value)
+                        VALUES(?, ?, ?)
+                """
+                parameters = ((loc_id, attr, val) for attr, val in attrs_vals)
+                cur.executemany(statement, parameters)
 
     @staticmethod
     def _get_data_property(cursor, key):
