@@ -1575,6 +1575,23 @@ class TestAddQuantities(unittest.TestCase):
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, self.sample_quantity_records)
 
+    def test_no_attribute_values(self):
+        data = [
+            ('state', 'county', 'census', 'counts'),
+            ('OH', 'BUTLER', '', 180140),  # <- Not loaded (no attributes).
+            ('OH', 'BUTLER', 'TOT_FEMALE', 187990),
+            ('OH', 'FRANKLIN', '', 566499),  # <- Not loaded (no attributes).
+            ('OH', 'FRANKLIN', 'TOT_FEMALE', 596915),
+        ]
+        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        expected_quantity_records = [
+            (1, 1, {'census': 'TOT_FEMALE'}, 187990),
+            (2, 2, {'census': 'TOT_FEMALE'}, 596915)
+        ]
+        self.assertEqual(records, expected_quantity_records)
+
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.

@@ -954,6 +954,7 @@ class DataAccessLayer(object):
             def make_attrs_vals(row_dict):  # <- Helper function.
                 quant_value = row_dict[value]
                 attr_dict = {k: v for k, v in row_dict.items() if is_attr(k)}
+                attr_dict = {k: v for k, v in attr_dict.items() if v != '' and v is not None}
                 attr_json = _dumps(attr_dict, sort_keys=True)
                 return (attr_json, quant_value)
 
@@ -968,6 +969,9 @@ class DataAccessLayer(object):
                 attrs_vals = (make_attrs_vals(row_dict) for row_dict in group)
 
                 for attr, val in attrs_vals:
+                    if attr == '{}':
+                        continue
+
                     statement = """
                         INSERT INTO main.quantity (_location_id, attributes, value)
                             VALUES(?, ?, ?)
