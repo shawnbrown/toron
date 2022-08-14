@@ -967,12 +967,12 @@ class DataAccessLayer(object):
                 group = (row_dict for row_dict in group if (value in row_dict))
                 attrs_vals = (make_attrs_vals(row_dict) for row_dict in group)
 
-                statement = """
-                    INSERT INTO main.quantity (_location_id, attributes, value)
-                        VALUES(?, ?, ?)
-                """
-                parameters = ((loc_id, attr, val) for attr, val in attrs_vals)
-                cur.executemany(statement, parameters)
+                for attr, val in attrs_vals:
+                    statement = """
+                        INSERT INTO main.quantity (_location_id, attributes, value)
+                            VALUES(?, ?, ?)
+                    """
+                    cur.execute(statement, (loc_id, attr, val))
 
     @staticmethod
     def _get_data_property(cursor, key):
