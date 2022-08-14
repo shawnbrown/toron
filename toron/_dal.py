@@ -948,6 +948,7 @@ class DataAccessLayer(object):
                         col not in label_columns
                         and not col.startswith('_')
                         and col != value
+                        and col.strip() != ''
                     )
 
             def make_attrs_vals(row_dict):  # <- Helper function.

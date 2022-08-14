@@ -1541,6 +1541,23 @@ class TestAddQuantities(unittest.TestCase):
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, self.sample_quantity_records)
 
+    def test_ignore_empty_string_attrs(self):
+        """The empty string column ('') should not be loaded as an attribute."""
+        data = [
+            ('state', 'county', 'census', '', 'counts'),
+            ('OH', 'BUTLER', 'TOT_MALE', 'A', 180140),
+            ('OH', 'BUTLER', 'TOT_FEMALE', 'B', 187990),
+            ('OH', 'FRANKLIN', 'TOT_MALE', 'C', 566499),
+            ('OH', 'FRANKLIN', 'TOT_FEMALE', 'D', 596915),
+        ]
+        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+        records = self.cursor.execute('SELECT * FROM location').fetchall()
+        self.assertEqual(records, self.sample_location_records)
+
+        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        self.assertEqual(records, self.sample_quantity_records)
+
     def test_explicit_attributes(self):
         """Only include specified attributes (if given)."""
         data = [
