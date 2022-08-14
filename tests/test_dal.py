@@ -1584,7 +1584,7 @@ class TestAddQuantities(unittest.TestCase):
             ('OH', 'FRANKLIN', '', 566499),  # <- Not loaded (no attributes).
             ('OH', 'FRANKLIN', 'TOT_FEMALE', 596915),
         ]
-        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows'):
+        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows.*inserted 2 rows'):
             self.dal.add_quantities(data, 'counts')  # <- Method under test.
 
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
@@ -1600,8 +1600,8 @@ class TestAddQuantities(unittest.TestCase):
             ('OH', 'BUTLER', 'TOT_MALE', 180140),
             ('OH', 'BUTLER', 'TOT_FEMALE', 187990),
         ]
-        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows'):
-            self.dal.add_quantities(data, 'counts')  # <- Method under test.
+        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows.*inserted 0 rows'):
+           self.dal.add_quantities(data, 'counts')  # <- Method under test.
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, [])
 
@@ -1610,7 +1610,7 @@ class TestAddQuantities(unittest.TestCase):
             ('OH', 'FRANKLIN', 566499),
             ('OH', 'FRANKLIN', 596915),
         ]
-        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows'):
+        with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows.*inserted 0 rows'):
             self.dal.add_quantities(data, 'counts')  # <- Method under test.
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, [])

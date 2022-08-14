@@ -963,6 +963,7 @@ class DataAccessLayer(object):
                 return {k: row_dict.get(k, '') for k in label_columns}
 
             missing_attrs_count = 0
+            inserted_rows_count = 0
 
             for loc_dict, group in groupby(dict_rows, key=make_loc_dict):
                 loc_id = self._add_quantities_get_location_id(cur, loc_dict)
@@ -980,10 +981,17 @@ class DataAccessLayer(object):
                             VALUES(?, ?, ?)
                     """
                     cur.execute(statement, (loc_id, attr, val))
+                    inserted_rows_count += 1
 
+            warning_msgs = []
             if missing_attrs_count:
+                warning_msgs.append(
+                    f'skipped {missing_attrs_count} rows with no attributes'
+                )
+
+            if warning_msgs:
                 import warnings
-                msg = f'missing attribute data, skipped {missing_attrs_count} rows'
+                msg = f'{", ".join(warning_msgs)}, inserted {inserted_rows_count} rows'
                 warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
     @staticmethod
