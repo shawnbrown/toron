@@ -7,9 +7,11 @@ import sys
 import tempfile
 from collections import Counter
 from contextlib import contextmanager
-from itertools import chain
-from itertools import compress
-from itertools import groupby
+from itertools import (
+    chain,
+    compress,
+    groupby,
+)
 from json import dumps as _dumps
 from ._typing import (
     Generator,
