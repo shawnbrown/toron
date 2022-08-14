@@ -1522,6 +1522,42 @@ class TestAddQuantities(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.dal.add_quantities(data, 'counts')  # <- Method under test.
 
+    def test_ignore_underscore_attrs(self):
+        """The '_dummy' column should not be loaded as an attribute
+        beucase it starts with an underscore.
+        """
+        data = [
+            ('state', 'county', 'census', '_dummy', 'counts'),
+            ('OH', 'BUTLER', 'TOT_MALE', 'A', 180140),
+            ('OH', 'BUTLER', 'TOT_FEMALE', 'B', 187990),
+            ('OH', 'FRANKLIN', 'TOT_MALE', 'C', 566499),
+            ('OH', 'FRANKLIN', 'TOT_FEMALE', 'D', 596915),
+        ]
+        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+        records = self.cursor.execute('SELECT * FROM location').fetchall()
+        self.assertEqual(records, self.sample_location_records)
+
+        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        self.assertEqual(records, self.sample_quantity_records)
+
+    def test_explicit_attributes(self):
+        """Only include specified attributes (if given)."""
+        data = [
+            ('state', 'county', 'census', 'dummy', 'counts'),
+            ('OH', 'BUTLER', 'TOT_MALE', 'A', 180140),
+            ('OH', 'BUTLER', 'TOT_FEMALE', 'B', 187990),
+            ('OH', 'FRANKLIN', 'TOT_MALE', 'C', 566499),
+            ('OH', 'FRANKLIN', 'TOT_FEMALE', 'D', 596915),
+        ]
+        self.dal.add_quantities(data, 'counts', attributes=['census'])  # <- Method under test.
+
+        records = self.cursor.execute('SELECT * FROM location').fetchall()
+        self.assertEqual(records, self.sample_location_records)
+
+        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        self.assertEqual(records, self.sample_quantity_records)
+
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
