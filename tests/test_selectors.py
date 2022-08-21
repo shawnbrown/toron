@@ -23,3 +23,22 @@ class TestSelector(unittest.TestCase):
         with self.assertRaises(TypeError):
             Selector('abc', ignore_case=True)
 
+    def test_match_any_value(self):
+        selector = Selector('abc')
+        self.assertTrue(selector({'abc': 'xyz'}))
+        self.assertTrue(selector({'abc': 'qrs'}))
+        self.assertFalse(selector({'jkl': 'qrs'}))  # <- No attribute 'abc'.
+        self.assertFalse(selector({'abc': ''}))  # <- Value is not truthy.
+
+    def test_match_exact_value(self):
+        selector = Selector('abc', '=', 'xyz')
+        self.assertTrue(selector({'abc': 'xyz'}))
+        self.assertFalse(selector({'abc': 'qrs'}))  # <- Value does not match.
+        self.assertFalse(selector({'jkl': 'xyz'}))  # <- No attribute 'abc'.
+        self.assertFalse(selector({'abc': 'XYZ'}))  # <- Matching is case-sensitive.
+
+    def test_unknown_operator(self):
+        regex = r"unknown operator: '//"
+        with self.assertRaisesRegex(ValueError, regex):
+            Selector('abc', '//', 'xyz')
+

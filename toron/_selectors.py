@@ -23,3 +23,16 @@ class Selector(object):
         self.val = val
         self.ignore_case = ignore_case
 
+        # Define appropriate match function.
+        if op is None:  # Any truthy value.
+            match_func = lambda a, b: bool(b)
+        elif op == '=':  # Exact match.
+            match_func = lambda a, b: a == b
+        else:
+            raise ValueError(f'unknown operator: {op!r}')
+
+        self._match_func = match_func
+
+    def __call__(self, dict_row):
+        return self._match_func(self.val, dict_row.get(self.attr, ''))
+
