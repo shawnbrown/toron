@@ -62,6 +62,14 @@ class TestSelector(unittest.TestCase):
         self.assertTrue(selector({'abc': 'xyz'}))  # <- Exact value should match, too.
         self.assertFalse(selector({'abc': 'wxyz'}))  # <- Does not start with "xyz".
 
+    def test_match_ends_with_value(self):
+        selector = Selector('abc', '$=', 'xyz')
+        self.assertTrue(selector({'abc': 'pqrxyz'}))
+        self.assertTrue(selector({'abc': 'pqr-xyz'}))
+        self.assertTrue(selector({'abc': 'pqr xyz'}))
+        self.assertTrue(selector({'abc': 'xyz'}))  # <- Exact value should match, too.
+        self.assertFalse(selector({'abc': 'xyz0'}))  # <- Does not end with "xyz".
+
     def test_unknown_operator(self):
         regex = r"unknown operator: '//"
         with self.assertRaisesRegex(ValueError, regex):

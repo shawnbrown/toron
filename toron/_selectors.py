@@ -34,6 +34,8 @@ class Selector(object):
             match_func = lambda a, b: b.startswith(f'{a}-') or a == b
         elif op == '^=':  # Starts with.
             match_func = lambda a, b: b.startswith(a)
+        elif op == '$=':  # Ends with.
+            match_func = lambda a, b: b.endswith(a)
         else:
             raise ValueError(f'unknown operator: {op!r}')
 
