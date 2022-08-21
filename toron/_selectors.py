@@ -1,6 +1,6 @@
 """Handling for attribute selectors (using CSS-inspired syntax)."""
 
-from ._typing import Literal, Optional
+from ._typing import Literal, Mapping, Optional, Tuple
 
 
 class Selector(object):
@@ -47,10 +47,10 @@ class Selector(object):
         else:
             self._match_func = match_func
 
-    def __call__(self, dict_row):
+    def __call__(self, dict_row: Mapping[str, str]) -> bool:
         return self._match_func(self.val, dict_row.get(self.attr, ''))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         cls_name = self.__class__.__name__
         if not self.op:
             return f'{cls_name}({self.attr!r})'
@@ -58,7 +58,7 @@ class Selector(object):
             return f'{cls_name}({self.attr!r}, {self.op!r}, {self.val!r}, ignore_case=True)'
         return f'{cls_name}({self.attr!r}, {self.op!r}, {self.val!r})'
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return CSS-like string of selector."""
         if not self.val:
             return f'[{self.attr}]'
@@ -69,7 +69,7 @@ class Selector(object):
         return f'[{self.attr}{self.op}"{value}"]'
 
     @property
-    def specificity(self):
+    def specificity(self) -> Tuple[int, int]:
         """Return specificity value of selector.
 
         Selectors that match attributes of any value will have a
