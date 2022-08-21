@@ -7,7 +7,8 @@ class Selector(object):
     """Callable (function-like) object to check for matching key/value
     pairs in a dictionary.
 
-    Match when key 'A' is defined and its value is truthy::
+    Match when key 'A' is defined and its value is any non-empty
+    string::
 
         selector = Selector('A')
         >>> selector({'A': 'xyzzy'})
@@ -37,6 +38,25 @@ class Selector(object):
         True
         >>> selector({'a': 'xyzzy'})
         False
+
+    Match behavior can be changed by providing different *op* values:
+
+    +----------+--------------------------------------------------+
+    | ``op``   | matches                                          |
+    +==========+==================================================+
+    | ``'='``  | exact match                                      |
+    +----------+--------------------------------------------------+
+    | ``'~='`` | whitespace separated list containing *val*       |
+    +----------+--------------------------------------------------+
+    | ``'|='`` | string starting with *val* followed by "``-``"   |
+    |          | or exact match                                   |
+    +----------+--------------------------------------------------+
+    | ``'^='`` | string starting with *val*                       |
+    +----------+--------------------------------------------------+
+    | ``'$='`` | string ending with *val*                         |
+    +----------+--------------------------------------------------+
+    | ``'*='`` | string containing *val* as a substring           |
+    +----------+--------------------------------------------------+
     """
     def __init__(
         self,
