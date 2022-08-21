@@ -40,7 +40,9 @@ class TestSelector(unittest.TestCase):
     def test_match_whitespace_separated_list(self):
         selector = Selector('abc', '~=', 'xyz')
         self.assertTrue(selector({'abc': 'ghi xyz qrs'}))
+        self.assertTrue(selector({'abc': 'xyz'}))  # <- Exact value should match, too.
         self.assertFalse(selector({'abc': 'ghi-xyz-qrs'}))  # <- Not whitespace separated.
+        self.assertFalse(selector({'abc': 'ghi wxyz qrs'}))  # <- Substring won't match (must be exact).
 
         # Check irregular whitespace.
         self.assertTrue(selector({'abc': 'ijk\tlmn\fopq\r\nxyz\nrst   uvw'}))
