@@ -10,7 +10,7 @@ class Selector(object):
     Match when key 'A' is defined and its value is any non-empty
     string::
 
-        selector = Selector('A')
+        >>> selector = Selector('A')
         >>> selector({'A': 'xyzzy'})
         True
         >>> selector({'A': 'plover'})
