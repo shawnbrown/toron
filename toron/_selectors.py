@@ -4,6 +4,40 @@ from ._typing import Literal, Mapping, Optional, Tuple
 
 
 class Selector(object):
+    """Callable (function-like) object to check for matching key/value
+    pairs in a dictionary.
+
+    Match when key 'A' is defined and its value is truthy::
+
+        selector = Selector('A')
+        >>> selector({'A': 'xyzzy'})
+        True
+        >>> selector({'A': 'plover'})
+        True
+        >>> selector({'B': 'plugh'})
+        False
+        >>> selector({'A': '', 'B': 'plugh'})
+        False
+
+    Match when key 'A' is defined and value is exactly 'xyzzy'::
+
+        >>> selector = Selector('A', '=', 'xyzzy')
+        >>> selector({'A': 'xyzzy', 'B': 'plugh'})
+        True
+        >>> selector({'A': 'plover', 'B': 'plugh'})
+        False
+
+    Match when key 'A' is defined and value is a case-insensitive
+    match to 'Xyzzy'::
+
+        >>> selector = Selector('A', '=', 'Xyzzy', ignore_case=True)
+        >>> selector({'A': 'xyzzy'})
+        True
+        >>> selector({'A': 'XYZZY'})
+        True
+        >>> selector({'a': 'xyzzy'})
+        False
+    """
     def __init__(
         self,
         attr: str,
