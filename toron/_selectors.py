@@ -68,3 +68,16 @@ class Selector(object):
             return f'[{self.attr}{self.op}"{value}" i]'
         return f'[{self.attr}{self.op}"{value}"]'
 
+    @property
+    def specificity(self):
+        """Return specificity value of selector.
+
+        Selectors that match attributes of any value will have a
+        specificity of (1, 0) and Selectors that match attributes
+        of a specific value should have a specificity of (1, 1).
+        The use of `ignore_case` has no effect on specificity.
+        """
+        if self.val:
+            return (1, 1)
+        return (1, 0)
+

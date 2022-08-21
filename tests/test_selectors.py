@@ -123,3 +123,18 @@ class TestSelector(unittest.TestCase):
         selector = Selector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(str(selector), '[aaa="xxx" i]')
 
+    def test_specificity(self):
+        """Specificity is modeled after CSS specificity but it's not
+        the same. To see how specificity is determined in CSS, see:
+
+            https://www.w3.org/TR/selectors-4/#specificity
+        """
+        selector = Selector('aaa')
+        self.assertEqual(selector.specificity, (1, 0))
+
+        selector = Selector('aaa', '=', 'xxx')
+        self.assertEqual(selector.specificity, (1, 1))
+
+        selector = Selector('aaa', '=', 'xxx', ignore_case=True)
+        self.assertEqual(selector.specificity, (1, 1))
+
