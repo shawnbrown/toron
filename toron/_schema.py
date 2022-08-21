@@ -522,11 +522,13 @@ def _validate_permissions(
     access mode is equivalent to using a database with read-only
     permissions enforced by the filesystem.
 
-    In a high availability computing environment, it is possible
+    In a high availability computing environment, it's possible
     that an automated backup system could copy a database file
-    while a transaction is in progress. Toron requires the use
-    read-only file permissions to mitigate the chance that a
-    backup process makes a corrupted copy.
+    while a transaction is in progress. For this reason, when
+    opening an existing database directly on drive, Toron requires
+    the use read-only file permissions (unless the user specifies
+    otherwise) to mitigate the chance that a backup process makes
+    a corrupted copy.
 
     For related information, see section 1.2 of "How To Corrupt
     An SQLite Database File":
