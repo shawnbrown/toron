@@ -84,3 +84,22 @@ class TestSelector(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             Selector('aaa', '//', 'xxx')
 
+    def test_ignore_case(self):
+        selector = Selector('aaa', '=', 'xxx', ignore_case=True)
+        self.assertTrue(selector({'aaa': 'XXX'}))
+
+        selector = Selector('aaa', '~=', 'xxx', ignore_case=True)
+        self.assertTrue(selector({'aaa': 'zzz XXX yyy'}))
+
+        selector = Selector('aaa', '|=', 'xxx', ignore_case=True)
+        self.assertTrue(selector({'aaa': 'XXX-YYY'}))
+
+        selector = Selector('aaa', '^=', 'xxx', ignore_case=True)
+        self.assertTrue(selector({'aaa': 'XXXyyy'}))
+
+        selector = Selector('aaa', '$=', 'xxx', ignore_case=True)
+        self.assertTrue(selector({'aaa': 'zzzXXX'}))
+
+        selector = Selector('aaa', '*=', 'xxx', ignore_case=True)
+        self.assertTrue(selector({'aaa': 'zzzXXXyyy'}))
+

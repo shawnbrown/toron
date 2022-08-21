@@ -41,7 +41,11 @@ class Selector(object):
         else:
             raise ValueError(f'unknown operator: {op!r}')
 
-        self._match_func = match_func
+        # Assign match function to instance.
+        if ignore_case:
+            self._match_func = lambda a, b: match_func(a.upper(), b.upper())
+        else:
+            self._match_func = match_func
 
     def __call__(self, dict_row):
         return self._match_func(self.val, dict_row.get(self.attr, ''))
