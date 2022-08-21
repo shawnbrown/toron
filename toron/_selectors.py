@@ -12,8 +12,8 @@ class Selector(object):
         ignore_case: Optional[bool] = None,
     ) -> None:
         """Initialize Selector instance."""
-        if (op and not val) or (val and not op):
-            raise TypeError('must provide `op` and `val` together')
+        if bool(op) != bool(val):
+            raise TypeError('must use `op` and `val` together or not at all')
 
         if ignore_case and not (op and val):
             raise TypeError('got `ignore_case`, must also provide `op` and `val`')
