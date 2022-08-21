@@ -72,10 +72,11 @@ class Selector(object):
     def specificity(self) -> Tuple[int, int]:
         """Return specificity value of selector.
 
-        Selectors that match attributes of any value will have a
-        specificity of (1, 0) and Selectors that match attributes
-        of a specific value should have a specificity of (1, 1).
-        The use of `ignore_case` has no effect on specificity.
+        Selectors that match attributes with any value will have a
+        specificity of `(1, 0)` and Selectors that match attributes
+        with a specific value will have a specificity of `(1, 1)`.
+        The given `op` and use of `ignore_case` have no effect on
+        specificity.
         """
         if self.val:
             return (1, 1)
