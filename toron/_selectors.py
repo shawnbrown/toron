@@ -28,6 +28,8 @@ class Selector(object):
             match_func = lambda a, b: bool(b)
         elif op == '=':  # Exact match.
             match_func = lambda a, b: a == b
+        elif op == '~=':  # Contained in whitespace separated list.
+            match_func = lambda a, b: a in b.split()
         else:
             raise ValueError(f'unknown operator: {op!r}')
 

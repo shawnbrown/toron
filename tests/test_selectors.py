@@ -37,6 +37,14 @@ class TestSelector(unittest.TestCase):
         self.assertFalse(selector({'jkl': 'xyz'}))  # <- No attribute 'abc'.
         self.assertFalse(selector({'abc': 'XYZ'}))  # <- Matching is case-sensitive.
 
+    def test_match_whitespace_separated_list(self):
+        selector = Selector('abc', '~=', 'xyz')
+        self.assertTrue(selector({'abc': 'ghi xyz qrs'}))
+        self.assertFalse(selector({'abc': 'ghi-xyz-qrs'}))  # <- Not whitespace separated.
+
+        # Check irregular whitespace.
+        self.assertTrue(selector({'abc': 'ijk\tlmn\fopq\r\nxyz\nrst   uvw'}))
+
     def test_unknown_operator(self):
         regex = r"unknown operator: '//"
         with self.assertRaisesRegex(ValueError, regex):
