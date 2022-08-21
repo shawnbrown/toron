@@ -113,3 +113,13 @@ class TestSelector(unittest.TestCase):
         sel_repr = "Selector('aaa', '=', 'xxx', ignore_case=True)"
         self.assertEqual(repr(eval(sel_repr)), sel_repr)
 
+    def test_str(self):
+        selector = Selector('aaa')
+        self.assertEqual(str(selector), '[aaa]')
+
+        selector = Selector('aaa', '=', 'xxx')
+        self.assertEqual(str(selector), '[aaa="xxx"]')
+
+        selector = Selector('aaa', '=', 'xxx', ignore_case=True)
+        self.assertEqual(str(selector), '[aaa="xxx" i]')
+

@@ -58,3 +58,13 @@ class Selector(object):
             return f'{cls_name}({self.attr!r}, {self.op!r}, {self.val!r}, ignore_case=True)'
         return f'{cls_name}({self.attr!r}, {self.op!r}, {self.val!r})'
 
+    def __str__(self):
+        """Return CSS-like string of selector."""
+        if not self.val:
+            return f'[{self.attr}]'
+
+        value = self.val.replace(r'"', r'\"')
+        if self.ignore_case:
+            return f'[{self.attr}{self.op}"{value}" i]'
+        return f'[{self.attr}{self.op}"{value}"]'
+
