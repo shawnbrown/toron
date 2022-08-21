@@ -70,6 +70,14 @@ class TestSelector(unittest.TestCase):
         self.assertTrue(selector({'abc': 'xyz'}))  # <- Exact value should match, too.
         self.assertFalse(selector({'abc': 'xyz0'}))  # <- Does not end with "xyz".
 
+    def test_match_substring_value(self):
+        selector = Selector('abc', '*=', 'xyz')
+        self.assertTrue(selector({'abc': 'PQRxyzGHI'}))
+        self.assertTrue(selector({'abc': 'PQR-xyz-GHI'}))
+        self.assertTrue(selector({'abc': 'PQR xyz GHI'}))
+        self.assertTrue(selector({'abc': 'xyz'}))  # <- Exact value should match, too.
+        self.assertFalse(selector({'abc': 'PQRx-yz-GHI'}))  # <- No matching substring.
+
     def test_unknown_operator(self):
         regex = r"unknown operator: '//"
         with self.assertRaisesRegex(ValueError, regex):

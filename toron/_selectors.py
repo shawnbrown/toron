@@ -36,6 +36,8 @@ class Selector(object):
             match_func = lambda a, b: b.startswith(a)
         elif op == '$=':  # Ends with.
             match_func = lambda a, b: b.endswith(a)
+        elif op == '*=':  # Matches value as substring.
+            match_func = lambda a, b: a in b
         else:
             raise ValueError(f'unknown operator: {op!r}')
 
