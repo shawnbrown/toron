@@ -30,6 +30,8 @@ class Selector(object):
             match_func = lambda a, b: a == b
         elif op == '~=':  # Contained in whitespace separated list.
             match_func = lambda a, b: a in b.split()
+        elif op == '|=':  # Starts with value followed by "-" or exact match.
+            match_func = lambda a, b: b.startswith(f'{a}-') or a == b
         else:
             raise ValueError(f'unknown operator: {op!r}')
 
