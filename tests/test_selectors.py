@@ -54,6 +54,14 @@ class TestSelector(unittest.TestCase):
         self.assertFalse(selector({'abc': 'xyz pqr'}))  # <- Cannot be followed by any char except "-".
         self.assertFalse(selector({'abc': 'ghi-xyz-pqr'}))  # <- Does not start with "xyz".
 
+    def test_match_starts_with_value(self):
+        selector = Selector('abc', '^=', 'xyz')
+        self.assertTrue(selector({'abc': 'xyzpqr'}))
+        self.assertTrue(selector({'abc': 'xyz-pqr'}))
+        self.assertTrue(selector({'abc': 'xyz pqr'}))
+        self.assertTrue(selector({'abc': 'xyz'}))  # <- Exact value should match, too.
+        self.assertFalse(selector({'abc': 'wxyz'}))  # <- Does not start with "xyz".
+
     def test_unknown_operator(self):
         regex = r"unknown operator: '//"
         with self.assertRaisesRegex(ValueError, regex):
