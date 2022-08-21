@@ -103,3 +103,13 @@ class TestSelector(unittest.TestCase):
         selector = Selector('aaa', '*=', 'xxx', ignore_case=True)
         self.assertTrue(selector({'aaa': 'zzzXXXyyy'}))
 
+    def test_repr(self):
+        sel_repr = "Selector('aaa')"
+        self.assertEqual(repr(eval(sel_repr)), sel_repr)
+
+        sel_repr = "Selector('aaa', '=', 'xxx')"
+        self.assertEqual(repr(eval(sel_repr)), sel_repr)
+
+        sel_repr = "Selector('aaa', '=', 'xxx', ignore_case=True)"
+        self.assertEqual(repr(eval(sel_repr)), sel_repr)
+

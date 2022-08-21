@@ -50,3 +50,11 @@ class Selector(object):
     def __call__(self, dict_row):
         return self._match_func(self.val, dict_row.get(self.attr, ''))
 
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        if not self.op:
+            return f'{cls_name}({self.attr!r})'
+        if self.ignore_case:
+            return f'{cls_name}({self.attr!r}, {self.op!r}, {self.val!r}, ignore_case=True)'
+        return f'{cls_name}({self.attr!r}, {self.op!r}, {self.val!r})'
+
