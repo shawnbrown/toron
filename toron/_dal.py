@@ -279,7 +279,7 @@ class DataAccessLayer(object):
     ) -> 'DataAccessLayer':
         """Open a node directly from drive (does not load into memory).
 
-        By default, ``'readonly'`` file permissions are required:
+        By default, ``'readonly'`` file permissions are required::
 
             >>> dal = DataAccessLayer.open('mynode.toron')
 
