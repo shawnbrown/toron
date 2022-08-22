@@ -1,0 +1,15 @@
+# ========================
+# Development Dependencies
+# ========================
+#
+# These are not installation requirements!
+#
+# The following dependencies are only required for
+# testing, building, and documentation generation.
+#
+# pip install -r requirements-dev.txt
+
+lark
+twine
+wheel
+
