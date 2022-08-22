@@ -51,13 +51,15 @@ args = [
     sys.executable or 'python',  # Python interpreter to call.
     '-B',  # Don't write .pyc files on import.
     '-m', 'lark.tools.standalone', # Run Lark's standalone generator.
-    '--out', OUTPUT_FILE,  # Specify output file.
     GRAMMAR_FILE,  # Specify grammar file.
 ]
 print(f'Lark grammar updated, generating stand-alone parser...')
 print(f'  grammar - {GRAMMAR_FILE}')
-print(f'   parser - {OUTPUT_FILE} ', end='', flush=True)
-exit_status = subprocess.call(args)
+print(f'   parser - {OUTPUT_FILE}', end=' ', flush=True)
+with open(OUTPUT_FILE, 'w') as f:
+    f.write('# type: ignore\n\n')
+    f.flush()
+    exit_status = subprocess.call(args, stdout=f)
 print(f'(rebuilt)')
 
 # Set parser's last-modified time to match grammar's.
