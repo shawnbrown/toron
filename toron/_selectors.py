@@ -72,10 +72,10 @@ class Selector(object):
         if ignore_case and not (op and val):
             raise TypeError('got `ignore_case`, must also provide `op` and `val`')
 
-        self.attr = attr
-        self.op = op
-        self.val = val
-        self.ignore_case = ignore_case
+        self._attr = attr
+        self._op = op
+        self._val = val
+        self._ignore_case = ignore_case
 
         # Define appropriate match function.
         if op is None:  # Any truthy value.
@@ -102,7 +102,7 @@ class Selector(object):
             self._match_func = match_func
 
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
-        return self._match_func(self.val, dict_row.get(self.attr, ''))
+        return self._match_func(self._val, dict_row.get(self._attr, ''))
 
     def __repr__(self) -> str:
         """Return eval-able string representation of selector.
@@ -114,11 +114,11 @@ class Selector(object):
             "Selector('A', '=', 'xyzzy')"
         """
         cls_name = self.__class__.__name__
-        if not self.op:
-            return f'{cls_name}({self.attr!r})'
-        if self.ignore_case:
-            return f'{cls_name}({self.attr!r}, {self.op!r}, {self.val!r}, ignore_case=True)'
-        return f'{cls_name}({self.attr!r}, {self.op!r}, {self.val!r})'
+        if not self._op:
+            return f'{cls_name}({self._attr!r})'
+        if self._ignore_case:
+            return f'{cls_name}({self._attr!r}, {self._op!r}, {self._val!r}, ignore_case=True)'
+        return f'{cls_name}({self._attr!r}, {self._op!r}, {self._val!r})'
 
     def __str__(self) -> str:
         """Return CSS-like string of selector.
@@ -129,13 +129,13 @@ class Selector(object):
             >>> str(selector)
             '[A="xyzzy"]'
         """
-        if not self.val:
-            return f'[{self.attr}]'
+        if not self._val:
+            return f'[{self._attr}]'
 
-        value = self.val.replace(r'"', r'\"')
-        if self.ignore_case:
-            return f'[{self.attr}{self.op}"{value}" i]'
-        return f'[{self.attr}{self.op}"{value}"]'
+        value = self._val.replace(r'"', r'\"')
+        if self._ignore_case:
+            return f'[{self._attr}{self._op}"{value}" i]'
+        return f'[{self._attr}{self._op}"{value}"]'
 
     @property
     def specificity(self) -> Tuple[int, int]:
@@ -147,7 +147,7 @@ class Selector(object):
         The given `op` and use of `ignore_case` have no effect on
         specificity.
         """
-        if self.val:
+        if self._val:
             return (1, 1)
         return (1, 0)
 
