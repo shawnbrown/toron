@@ -210,7 +210,7 @@ selector_grammar = r"""
 
     !operator : "=" | "~=" | "|=" | "^=" | "$=" | "*="
 
-    value : IDENTIFIER | SINGLE_OR_DOUBLE_QUOTED_STRING
+    value : IDENTIFIER | DOUBLE_QUOTED_STRING | SINGLE_QUOTED_STRING
 
     ignore_case : "i" | "I"
 
@@ -230,9 +230,8 @@ selector_grammar = r"""
     //
     _STRING_INNER : /.*?/
     _STRING_ESC_INNER : _STRING_INNER /(?<!\\)(\\\\)*?/
-    _DOUBLE_QUOTED_STRING : "\"" _STRING_ESC_INNER "\""
-    _SINGLE_QUOTED_STRING : "'" _STRING_ESC_INNER "'"
-    SINGLE_OR_DOUBLE_QUOTED_STRING : _SINGLE_QUOTED_STRING | _DOUBLE_QUOTED_STRING
+    DOUBLE_QUOTED_STRING : "\"" _STRING_ESC_INNER "\""
+    SINGLE_QUOTED_STRING : "'" _STRING_ESC_INNER "'"
 
     %import common.WS  // import whitespace
     %ignore WS         // ignore whitespace between tokens
