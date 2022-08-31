@@ -137,11 +137,14 @@ class Selector(object):
             return f'[{self._attr}{self._op}"{value}" i]'
         return f'[{self._attr}{self._op}"{value}"]'
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
         if self._ignore_case and other._ignore_case:
-            self_val = self._val.lower()
-            other_val = other._val.lower()
+            # The __init__() function assures that when `ignore_case` is
+            # given, that `op` and `val` are also given. The parser grammar
+            # requires this, too (though mypy doesn't know it).
+            self_val = self._val.lower()  # type: ignore[union-attr]
+            other_val = other._val.lower()  # type: ignore[union-attr]
         else:
             self_val = self._val
             other_val = other._val
@@ -154,13 +157,13 @@ class Selector(object):
             and self._ignore_case == other._ignore_case
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
         return hash((
             self.__class__,
             self._attr,
             self._op,
-            self._val.lower() if self._ignore_case else self._val,
+            self._val.lower() if self._ignore_case else self._val,  # type: ignore[union-attr]
             self._ignore_case,
         ))
 
