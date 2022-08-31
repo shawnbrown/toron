@@ -184,6 +184,13 @@ class Selector(object):
         return (1, 0)
 
 
+class CompoundSelector(object):
+    def __new__(cls, selectors):
+        if len(selectors) == 1:
+            return selectors[0]  # Return simple selector, if one item.
+        return super().__new__(cls, selectors)
+
+
 selector_grammar = r"""
     // --------------------------------------------------------------------
     // Lark grammar for CSS-inspired attribute selectors in Toron.
@@ -240,9 +247,7 @@ selector_grammar = r"""
 
 class SelectorTransformer(Transformer):
     def compound_selector(self, args):
-        if len(args) == 1:
-            return args[0]
-        return args
+        return CompoundSelector(args)
 
     @v_args(inline=True)
     def selector(self, attr, op=None, val=None, ignore_case=None):

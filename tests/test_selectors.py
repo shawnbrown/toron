@@ -3,6 +3,7 @@
 import unittest
 
 from toron._selectors import Selector
+from toron._selectors import CompoundSelector
 from toron._selectors import parse_selector
 
 
@@ -181,6 +182,14 @@ class TestSelector(unittest.TestCase):
 
         selector = Selector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(selector.specificity, (1, 1))
+
+
+class TestCompoundSelector(unittest.TestCase):
+    def test_simple_selector(self):
+        """When given a single item list, should return the item itself."""
+        selector = Selector('aaa')
+        result = CompoundSelector([selector])
+        self.assertIs(selector, result)
 
 
 class TestParseSelector(unittest.TestCase):
