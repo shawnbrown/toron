@@ -123,6 +123,47 @@ class TestSelector(unittest.TestCase):
         selector = Selector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(str(selector), '[aaa="xxx" i]')
 
+    def test_hash(self):
+        equal_hash_values = [
+            (Selector('aaa'),
+             Selector('aaa')),
+
+            (Selector('aaa', '=', 'xxx'),
+             Selector('aaa', '=', 'xxx')),
+
+            (Selector('aaa', '=', 'xxx', ignore_case=True),
+             Selector('aaa', '=', 'xxx', ignore_case=True)),
+
+            (Selector('aaa', '=', 'xxx', ignore_case=False),
+             Selector('aaa', '=', 'xxx', ignore_case=None)),
+
+            (Selector('aaa', '=', 'qqq', ignore_case=True),
+             Selector('aaa', '=', 'QQQ', ignore_case=True)),
+        ]
+        for a, b in equal_hash_values:
+            with self.subTest(a=a, b=b):
+                self.assertEqual(hash(a), hash(b))
+
+        not_equal_hash_values = [
+            (Selector('aaa'),
+             Selector('bbb')),
+
+            (Selector('aaa', '=', 'xxx'),
+             Selector('aaa', '^=', 'xxx')),
+
+            (Selector('aaa', '=', 'xxx'),
+             Selector('aaa', '=', 'yyy')),
+
+            (Selector('aaa', '=', 'xxx'),
+             Selector('bbb', '=', 'xxx')),
+
+            (Selector('aaa', '=', 'xxx', ignore_case=True),
+             Selector('AAA', '=', 'xxx', ignore_case=True)),
+        ]
+        for a, b in not_equal_hash_values:
+            with self.subTest(a=a, b=b):
+                self.assertNotEqual(hash(a), hash(b))
+
     def test_specificity(self):
         """Specificity is modeled after CSS specificity but it's not
         the same. To see how specificity is determined in CSS, see:

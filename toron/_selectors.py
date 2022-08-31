@@ -75,7 +75,7 @@ class Selector(object):
         self._attr = attr
         self._op = op
         self._val = val
-        self._ignore_case = ignore_case
+        self._ignore_case = bool(ignore_case)
 
         # Define appropriate match function.
         if op is None:  # Any truthy value.
@@ -136,6 +136,16 @@ class Selector(object):
         if self._ignore_case:
             return f'[{self._attr}{self._op}"{value}" i]'
         return f'[{self._attr}{self._op}"{value}"]'
+
+    def __hash__(self):
+        """Build and return the hash value of this instance."""
+        return hash((
+            self.__class__,
+            self._attr,
+            self._op,
+            self._val.lower() if self._ignore_case else self._val,
+            self._ignore_case,
+        ))
 
     @property
     def specificity(self) -> Tuple[int, int]:
