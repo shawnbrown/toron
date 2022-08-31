@@ -184,37 +184,6 @@ class Selector(object):
         return (1, 0)
 
 
-class SelectorTransformer(Transformer):
-    def compound_selector(self, args):
-        if len(args) == 1:
-            return args[0]
-        return args
-
-    @v_args(inline=True)
-    def selector(self, attr, op=None, val=None, ignore_case=None):
-        return Selector(attr, op, val, ignore_case)
-
-    @v_args(inline=True)
-    def attribute(self, token):
-        return token.value
-
-    @v_args(inline=True)
-    def operator(self, token):
-        return token.value
-
-    @v_args(inline=True)
-    def value(self, token):
-        s = token.value
-        if s.startswith('"') and s.endswith('"'):
-            return s[1:-1].replace('\\"', '"')
-
-        if s.startswith("'") and s.endswith("'"):
-            return s[1:-1].replace("\\'", "'")
-
-    def ignore_case(self, args):
-        return True
-
-
 selector_grammar = r"""
     // --------------------------------------------------------------------
     // Lark grammar for CSS-inspired attribute selectors in Toron.
@@ -268,6 +237,37 @@ selector_grammar = r"""
     %import common.WS  // import whitespace
     %ignore WS         // ignore whitespace between tokens
 """
+
+
+class SelectorTransformer(Transformer):
+    def compound_selector(self, args):
+        if len(args) == 1:
+            return args[0]
+        return args
+
+    @v_args(inline=True)
+    def selector(self, attr, op=None, val=None, ignore_case=None):
+        return Selector(attr, op, val, ignore_case)
+
+    @v_args(inline=True)
+    def attribute(self, token):
+        return token.value
+
+    @v_args(inline=True)
+    def operator(self, token):
+        return token.value
+
+    @v_args(inline=True)
+    def value(self, token):
+        s = token.value
+        if s.startswith('"') and s.endswith('"'):
+            return s[1:-1].replace('\\"', '"')
+
+        if s.startswith("'") and s.endswith("'"):
+            return s[1:-1].replace("\\'", "'")
+
+    def ignore_case(self, args):
+        return True
 
 
 parse_selector = Lark(selector_grammar,
