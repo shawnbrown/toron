@@ -123,8 +123,8 @@ class TestSelector(unittest.TestCase):
         selector = Selector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(str(selector), '[aaa="xxx" i]')
 
-    def test_hash(self):
-        equal_hash_values = [
+    def test_eq_and_hash(self):
+        equal_values = [
             (Selector('aaa'),
              Selector('aaa')),
 
@@ -140,11 +140,12 @@ class TestSelector(unittest.TestCase):
             (Selector('aaa', '=', 'qqq', ignore_case=True),
              Selector('aaa', '=', 'QQQ', ignore_case=True)),
         ]
-        for a, b in equal_hash_values:
+        for a, b in equal_values:
             with self.subTest(a=a, b=b):
+                self.assertEqual(a, b)
                 self.assertEqual(hash(a), hash(b))
 
-        not_equal_hash_values = [
+        not_equal_values = [
             (Selector('aaa'),
              Selector('bbb')),
 
@@ -160,8 +161,9 @@ class TestSelector(unittest.TestCase):
             (Selector('aaa', '=', 'xxx', ignore_case=True),
              Selector('AAA', '=', 'xxx', ignore_case=True)),
         ]
-        for a, b in not_equal_hash_values:
+        for a, b in not_equal_values:
             with self.subTest(a=a, b=b):
+                self.assertNotEqual(a, b)
                 self.assertNotEqual(hash(a), hash(b))
 
     def test_specificity(self):

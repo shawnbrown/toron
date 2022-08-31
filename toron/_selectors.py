@@ -137,6 +137,23 @@ class Selector(object):
             return f'[{self._attr}{self._op}"{value}" i]'
         return f'[{self._attr}{self._op}"{value}"]'
 
+    def __eq__(self, other):
+        """Check if self is equal to other."""
+        if self._ignore_case and other._ignore_case:
+            self_val = self._val.lower()
+            other_val = other._val.lower()
+        else:
+            self_val = self._val
+            other_val = other._val
+
+        return (
+            self.__class__ == other.__class__
+            and self._attr == other._attr
+            and self._op == other._op
+            and self_val == other_val
+            and self._ignore_case == other._ignore_case
+        )
+
     def __hash__(self):
         """Build and return the hash value of this instance."""
         return hash((
