@@ -3,6 +3,7 @@
 import unittest
 
 from toron._selectors import Selector
+from toron._selectors import parse_selector
 
 
 class TestSelector(unittest.TestCase):
@@ -180,4 +181,16 @@ class TestSelector(unittest.TestCase):
 
         selector = Selector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(selector.specificity, (1, 1))
+
+
+class TestParseSelector(unittest.TestCase):
+    def test_matches_any(self):
+        result = parse_selector('[aaa]')
+        expected = Selector('aaa')
+        self.assertEqual(result, expected)
+
+    def test_matches_value(self):
+        result = parse_selector('[aaa="xxx"]')
+        expected = Selector('aaa', '=', 'xxx')
+        self.assertEqual(result, expected)
 

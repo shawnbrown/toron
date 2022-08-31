@@ -2,6 +2,8 @@
 
 from ._typing import Literal, Mapping, Optional, Tuple
 
+from ._selectors_parser import Lark_StandAlone, Transformer, v_args
+
 
 class Selector(object):
     """Callable (function-like) object to check for matching key/value
@@ -180,4 +182,38 @@ class Selector(object):
         if self._val:
             return (1, 1)
         return (1, 0)
+
+
+class SelectorTransformer(Transformer):
+    def compound_selector(self, args):
+        if len(args) == 1:
+            return args[0]
+        return args
+
+    @v_args(inline=True)
+    def selector(self, attr, op=None, val=None, ignore_case=None):
+        return Selector(attr, op, val, ignore_case)
+
+    @v_args(inline=True)
+    def attribute(self, token):
+        return token.value
+
+    @v_args(inline=True)
+    def operator(self, token):
+        return token.value
+
+    @v_args(inline=True)
+    def value(self, token):
+        s = token.value
+        if s.startswith('"') and s.endswith('"'):
+            return s[1:-1].replace('\\"', '"')
+
+        if s.startswith("'") and s.endswith("'"):
+            return s[1:-1].replace("\\'", "'")
+
+    def ignore_case(self, args):
+        return True
+
+
+parse_selector = Lark_StandAlone(transformer=SelectorTransformer()).parse
 
