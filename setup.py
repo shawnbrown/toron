@@ -11,7 +11,10 @@ setup(
     url='https://github.com/shawnbrown/toron',
     packages=['toron'],
     # Additional fields:
-    install_requires=['typing_extensions;python_version<"3.10"'],
+    install_requires=[
+        'lark',
+        'typing_extensions;python_version<"3.10"',
+    ],
     python_requires='>=3.7',
     description='',
     long_description='',
