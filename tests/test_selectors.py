@@ -209,6 +209,16 @@ class TestCompoundSelector(unittest.TestCase):
             with self.subTest(r=r):
                 self.assertEqual(repr(eval(r)), r)
 
+    def test_str(self):
+        selector = CompoundSelector([Selector('aaa'), Selector('bbb'), Selector('ccc')])
+        self.assertEqual(str(selector), '[aaa][bbb][ccc]')
+
+        selector = CompoundSelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])
+        self.assertEqual(str(selector), '[aaa="xxx"][bbb]')
+
+        selector = CompoundSelector([Selector('aaa', '=', 'xxx', ignore_case=True), Selector('bbb')])
+        self.assertEqual(str(selector), '[aaa="xxx" i][bbb]')
+
 
 class TestParseSelector(unittest.TestCase):
     def test_matches_any(self):

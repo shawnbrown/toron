@@ -202,6 +202,10 @@ class CompoundSelector(object):
         selectors = ', '.join(repr(selector) for selector in self._selectors)
         return f'{cls_name}([{selectors}])'
 
+    def __str__(self) -> str:
+        """Return CSS-like string of selector."""
+        return ''.join(str(selector) for selector in self._selectors)
+
 
 selector_grammar = r"""
     // --------------------------------------------------------------------
