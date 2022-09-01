@@ -206,6 +206,52 @@ class TestSelectorComparisonKey(unittest.TestCase):
         expected = [Selector('aaa', '=', 'qqq'), Selector('bbb')]
         self.assertEqual(result, expected)
 
+    def test_compound_selector(self):
+        compound = CompoundSelector([Selector('aaa'), Selector('bbb')])
+        result = _selector_comparison_key(compound)
+        expected = (
+            'CompoundSelector',
+            frozenset({
+                ('simple', ('aaa', '', '', '')),
+                ('simple', ('bbb', '', '', '')),
+            }),
+        )
+        self.assertEqual(result, expected)
+
+    def test_matches_any_selector(self):
+        compound = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        result = _selector_comparison_key(compound)
+        expected = (
+            'MatchesAnySelector',
+            frozenset({
+                ('simple', ('aaa', '', '', '')),
+                ('simple', ('bbb', '', '', '')),
+            }),
+        )
+        self.assertEqual(result, expected)
+
+    def test_compound_and_matches_any_selector(self):
+        nested = CompoundSelector([
+            Selector('aaa'),
+            MatchesAnySelector([Selector('bbb'), Selector('ccc')]),
+        ])
+
+        result = _selector_comparison_key(nested)
+        expected = (
+            'CompoundSelector',
+            frozenset({
+                ('simple', ('aaa', '', '', '')),
+                (
+                    'MatchesAnySelector',
+                    frozenset({
+                        ('simple', ('bbb', '', '', '')),
+                        ('simple', ('ccc', '', '', '')),
+                    }),
+                ),
+            }),
+        )
+        self.assertEqual(result, expected)
+
 
 class TestMatchesAnySelector(unittest.TestCase):
     def test_matches_any(self):

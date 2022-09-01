@@ -182,7 +182,7 @@ class Selector(object):
         return (1, 0)
 
 
-def _selector_comparison_key(selector: Selector) -> Tuple[str, Tuple[str, ...]]:
+def _selector_comparison_key(selector):
     """Returns a value suitable for comparing selectors for equality.
 
     This is suitable for use as a sort key::
@@ -196,6 +196,10 @@ def _selector_comparison_key(selector: Selector) -> Tuple[str, Tuple[str, ...]]:
         >>> _selector_comparison_key(Selector('aaa', '=', 'xxx'))
         ('simple', ('aaa', '=', 'xxx', ''))
     """
+    if hasattr(selector, '_selectors'):
+        cmp_keys = [_selector_comparison_key(x) for x in selector._selectors]
+        return (selector.__class__.__name__, frozenset(cmp_keys))
+
     attr = selector._attr or ''
     op = selector._op or ''
     val = selector._val or ''
@@ -312,7 +316,7 @@ class CompoundSelector(object):
         sum of the specificity values of the selectors it contains.
         """
         specificity_values = [x.specificity for x in self._selectors]
-        return tuple(sum(tup) for tup in zip(*specificity_values))
+        return tuple(sum(tup) for tup in zip(*specificity_values))  # type: ignore[return-value]
 
 
 selector_grammar = r"""
