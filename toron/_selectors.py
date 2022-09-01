@@ -171,9 +171,7 @@ class Selector(object):
 
     @property
     def specificity(self) -> Tuple[int, int]:
-        """Return specificity value of selector.
-
-        Selectors that match attributes with any value will have a
+        """Selectors that match attributes with any value will have a
         specificity of `(1, 0)` and Selectors that match attributes
         with a specific value will have a specificity of `(1, 1)`.
         The given `op` and use of `ignore_case` have no effect on
@@ -213,7 +211,7 @@ class MatchesAnySelector(object):
     """Callable (function-like) object to check that a dict_row
     contains at least one matching selector.
 
-    This class is designed to mimic the matches-any selector--i.e.,
+    This class is designed to mimic the "matches-any" selector--i.e.,
     the :is() pseudo-class. For details, see:
 
         https://www.w3.org/TR/selectors-4/#matches
@@ -263,9 +261,7 @@ class MatchesAnySelector(object):
 
     @property
     def specificity(self) -> Tuple[int, int]:
-        """Return specificity value of selector.
-
-        The specificity of a matches-any selector (i.e., the :is()
+        """The specificity of a "matches-any" selector (i.e., the :is()
         pseudo-class) is the specificity of the most specific selector
         it contains.
         """
@@ -312,10 +308,8 @@ class CompoundSelector(object):
 
     @property
     def specificity(self) -> Tuple[int, int]:
-        """Return specificity value of selector.
-
-        The specificity of a compound selector is the element-wise sum
-        of the specificity values of the selectors it contains.
+        """The specificity of a compound selector is the element-wise
+        sum of the specificity values of the selectors it contains.
         """
         specificity_values = [x.specificity for x in self._selectors]
         return tuple(sum(tup) for tup in zip(*specificity_values))
