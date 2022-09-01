@@ -259,6 +259,24 @@ class TestCompoundSelector(unittest.TestCase):
         sel_b = CompoundSelector([Selector('ccc'), Selector('aaa')])
         self.assertNotEqual(hash(sel_a), hash(sel_b))
 
+    def test_specificity(self):
+        """Specificity is modeled after CSS specificity but it's not
+        the same. To see how specificity is determined in CSS, see:
+
+            https://www.w3.org/TR/selectors-4/#specificity
+        """
+        sel = CompoundSelector([Selector('aaa'), Selector('bbb')])
+        self.assertEqual(sel.specificity, (2, 0))
+
+        sel = CompoundSelector([Selector('aaa'), Selector('bbb', '=', 'yyy')])
+        self.assertEqual(sel.specificity, (2, 1))
+
+        sel = CompoundSelector([Selector('aaa', '=', 'xxx'), Selector('bbb', '=', 'yyy')])
+        self.assertEqual(sel.specificity, (2, 2))
+
+        sel = CompoundSelector([Selector('aaa'), Selector('bbb'), Selector('ccc', '=', 'zzz')])
+        self.assertEqual(sel.specificity, (3, 1))
+
 
 class TestParseSelector(unittest.TestCase):
     def test_matches_any(self):

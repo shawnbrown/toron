@@ -247,6 +247,16 @@ class CompoundSelector(object):
         selector_hashes = frozenset(hash(x) for x in self._selectors)
         return hash((self.__class__, selector_hashes))
 
+    @property
+    def specificity(self) -> Tuple[int, int]:
+        """Return specificity value of selector.
+
+        The specificity of a compound selector is the element-wise sum
+        of the specificity values of the selectors it contains.
+        """
+        specificity_values = [x.specificity for x in self._selectors]
+        return tuple(sum(tup) for tup in zip(*specificity_values))
+
 
 selector_grammar = r"""
     // --------------------------------------------------------------------
