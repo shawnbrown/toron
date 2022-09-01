@@ -3,6 +3,7 @@
 import unittest
 
 from toron._selectors import Selector
+from toron._selectors import MatchesAnySelector
 from toron._selectors import CompoundSelector
 from toron._selectors import _selector_comparison_key
 from toron._selectors import parse_selector
@@ -206,6 +207,72 @@ class TestSelectorComparisonKey(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
+class TestMatchesAnySelector(unittest.TestCase):
+    def test_matches_any(self):
+        """Returns True if one or more selectors match."""
+        selector = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
+        self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz'}))
+        self.assertTrue(selector({'bbb': 'yyy', 'ccc': 'zzz'}))
+        self.assertFalse(selector({'ccc': 'zzz'}))
+
+    def test_repr(self):
+        repr_list = [
+            "MatchesAnySelector([Selector('aaa'), Selector('bbb'), Selector('ccc')])",
+            "MatchesAnySelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])",
+            "MatchesAnySelector([Selector('aaa', '=', 'xxx', ignore_case=True), Selector('bbb')])",
+        ]
+        for r in repr_list:
+            with self.subTest(r=r):
+                self.assertEqual(repr(eval(r)), r)
+
+    def test_str(self):
+        selector = MatchesAnySelector([Selector('aaa'), Selector('bbb'), Selector('ccc')])
+        self.assertEqual(str(selector), ':is([aaa], [bbb], [ccc])')
+
+        selector = MatchesAnySelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])
+        self.assertEqual(str(selector), ':is([aaa="xxx"], [bbb])')
+
+        selector = MatchesAnySelector([Selector('aaa', '=', 'xxx', ignore_case=True), Selector('bbb')])
+        self.assertEqual(str(selector), ':is([aaa="xxx" i], [bbb])')
+
+    def test_eq(self):
+        sel_a = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        sel_b = MatchesAnySelector([Selector('bbb'), Selector('aaa')])
+        self.assertEqual(sel_a, sel_b)
+
+        sel_a = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        sel_b = MatchesAnySelector([Selector('ccc'), Selector('aaa')])
+        self.assertNotEqual(sel_a, sel_b)
+
+    def test_hash(self):
+        sel_a = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        sel_b = MatchesAnySelector([Selector('bbb'), Selector('aaa')])
+        self.assertEqual(hash(sel_a), hash(sel_b))
+
+        sel_a = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        sel_b = MatchesAnySelector([Selector('ccc'), Selector('aaa')])
+        self.assertNotEqual(hash(sel_a), hash(sel_b))
+
+    def test_specificity(self):
+        """Specificity is modeled after CSS specificity but it's not
+        the same. To see how specificity is determined in CSS, see:
+
+            https://www.w3.org/TR/selectors-4/#specificity
+        """
+        sel = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        self.assertEqual(sel.specificity, (1, 0))
+
+        sel = MatchesAnySelector([Selector('aaa'), Selector('bbb', '=', 'yyy')])
+        self.assertEqual(sel.specificity, (1, 1))
+
+        sel = MatchesAnySelector([Selector('aaa', '=', 'xxx'), Selector('bbb', '=', 'yyy')])
+        self.assertEqual(sel.specificity, (1, 1))
+
+        sel = MatchesAnySelector([Selector('aaa'), Selector('bbb'), Selector('ccc', '=', 'zzz')])
+        self.assertEqual(sel.specificity, (1, 1))
+
+
 class TestCompoundSelector(unittest.TestCase):
     def test_simple_selector(self):
         """When given a single item list, should return the item itself."""
@@ -287,5 +354,10 @@ class TestParseSelector(unittest.TestCase):
     def test_matches_value(self):
         result = parse_selector('[aaa="xxx"]')
         expected = Selector('aaa', '=', 'xxx')
+        self.assertEqual(result, expected)
+
+    def test_matches_any(self):
+        result = parse_selector(':is([aaa], [bbb])')
+        expected = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
         self.assertEqual(result, expected)
 

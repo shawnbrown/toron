@@ -209,6 +209,69 @@ def _selector_comparison_key(selector: Selector) -> Tuple[str, Tuple[str, ...]]:
     return ('simple', (attr, op, val, ignore_case))
 
 
+class MatchesAnySelector(object):
+    """Callable (function-like) object to check that a dict_row
+    contains at least one matching selector.
+
+    This class is designed to mimic the matches-any selector--i.e.,
+    the :is() pseudo-class. For details, see:
+
+        https://www.w3.org/TR/selectors-4/#matches
+    """
+    def __new__(cls, selectors):
+        if len(selectors) == 1:
+            return selectors[0]  # Return simple selector, if one item.
+        return super().__new__(cls)
+
+    def __init__(self, selectors: List[Selector]) -> None:
+        """Initialize class instance."""
+        self._selectors = selectors
+
+    def __call__(self, dict_row: Mapping[str, str]) -> bool:
+        """Return True if selector matches values in *dict_row*."""
+        for selector in self._selectors:
+            if selector(dict_row):
+                return True
+        return False
+
+    def __repr__(self) -> str:
+        """Return eval-able string representation of selector."""
+        cls_name = self.__class__.__name__
+        selectors = ', '.join(repr(selector) for selector in self._selectors)
+        return f'{cls_name}([{selectors}])'
+
+    def __str__(self) -> str:
+        """Return CSS-like string of selector."""
+        inner_str = ', '.join(str(selector) for selector in self._selectors)
+        return f':is({inner_str})'
+
+    def __eq__(self, other) -> bool:
+        """Check if self is equal to other."""
+        if not isinstance(other, self.__class__):
+            return False
+
+        self_selectors = \
+            frozenset(_selector_comparison_key(x) for x in self._selectors)
+        other_selectors = \
+            frozenset(_selector_comparison_key(x) for x in other._selectors)
+
+        return self_selectors == other_selectors
+
+    def __hash__(self):
+        selector_hashes = frozenset(hash(x) for x in self._selectors)
+        return hash((self.__class__, selector_hashes))
+
+    @property
+    def specificity(self) -> Tuple[int, int]:
+        """Return specificity value of selector.
+
+        The specificity of a matches-any selector (i.e., the :is()
+        pseudo-class) is the specificity of the most specific selector
+        it contains.
+        """
+        return max(x.specificity for x in self._selectors)
+
+
 class CompoundSelector(object):
     def __new__(cls, selectors):
         if len(selectors) == 1:
@@ -315,6 +378,9 @@ selector_grammar = r"""
 class SelectorTransformer(Transformer):
     def compound_selector(self, args):
         return CompoundSelector(args)
+
+    def matches_any(self, args):
+        return MatchesAnySelector(args)
 
     @v_args(inline=True)
     def selector(self, attr, op=None, val=None, ignore_case=None):
