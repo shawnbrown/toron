@@ -189,15 +189,15 @@ class TestSelector(unittest.TestCase):
 class TestSelectorComparisonKey(unittest.TestCase):
     def test_simple_key(self):
         result = _selector_comparison_key(Selector('aaa'))
-        expected = (Selector, ('aaa', '', '', ''))
+        expected = (Selector, ('aaa', None, None, False))
         self.assertEqual(result, expected)
 
         result = _selector_comparison_key(Selector('aaa', '=', 'Qqq'))
-        expected = (Selector, ('aaa', '=', 'Qqq', ''))
+        expected = (Selector, ('aaa', '=', 'Qqq', False))
         self.assertEqual(result, expected)
 
         result = _selector_comparison_key(Selector('aaa', '=', 'Qqq', ignore_case=True))
-        expected = (Selector, ('aaa', '=', 'qqq', 'i'))
+        expected = (Selector, ('aaa', '=', 'qqq', True))
         self.assertEqual(result, expected)
 
     def test_simple_sort(self):
@@ -212,8 +212,8 @@ class TestSelectorComparisonKey(unittest.TestCase):
         expected = (
             CompoundSelector,
             frozenset({
-                (Selector, ('aaa', '', '', '')),
-                (Selector, ('bbb', '', '', '')),
+                (Selector, ('aaa', None, None, False)),
+                (Selector, ('bbb', None, None, False)),
             }),
         )
         self.assertEqual(result, expected)
@@ -224,8 +224,8 @@ class TestSelectorComparisonKey(unittest.TestCase):
         expected = (
             MatchesAnySelector,
             frozenset({
-                (Selector, ('aaa', '', '', '')),
-                (Selector, ('bbb', '', '', '')),
+                (Selector, ('aaa', None, None, False)),
+                (Selector, ('bbb', None, None, False)),
             }),
         )
         self.assertEqual(result, expected)
@@ -240,12 +240,12 @@ class TestSelectorComparisonKey(unittest.TestCase):
         expected = (
             CompoundSelector,
             frozenset({
-                (Selector, ('aaa', '', '', '')),
+                (Selector, ('aaa', None, None, False)),
                 (
                     MatchesAnySelector,
                     frozenset({
-                        (Selector, ('bbb', '', '', '')),
-                        (Selector, ('ccc', '', '', '')),
+                        (Selector, ('bbb', None, None, False)),
+                        (Selector, ('ccc', None, None, False)),
                     }),
                 ),
             }),

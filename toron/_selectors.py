@@ -166,21 +166,17 @@ def _selector_comparison_key(selector):
     .. code-block::
 
         >>> _selector_comparison_key(Selector('aaa', '=', 'xxx'))
-        (Selector, ('aaa', '=', 'xxx', ''))
+        (Selector, ('aaa', '=', 'xxx', False))
     """
     if hasattr(selector, '_selectors'):
         cmp_keys = [_selector_comparison_key(x) for x in selector._selectors]
         return (selector.__class__, frozenset(cmp_keys))
 
-    attr = selector._attr or ''
-    op = selector._op or ''
-    val = selector._val or ''
-    if selector._ignore_case:
+    val = selector._val
+    ignore_case = selector._ignore_case
+    if ignore_case and val:
         val = val.lower()
-        ignore_case = 'i'
-    else:
-        ignore_case = ''
-    return (selector.__class__, (attr, op, val, ignore_case))
+    return (selector.__class__, (selector._attr, selector._op, val, ignore_case))
 
 
 class MatchesAnySelector(object):
