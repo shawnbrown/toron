@@ -1,6 +1,6 @@
 """Handling for attribute selectors (using CSS-inspired syntax)."""
 
-from ._typing import Literal, Mapping, Optional, Tuple
+from ._typing import List, Literal, Mapping, Optional, Tuple
 
 from lark import Lark, Transformer, v_args
 
@@ -188,7 +188,13 @@ class CompoundSelector(object):
     def __new__(cls, selectors):
         if len(selectors) == 1:
             return selectors[0]  # Return simple selector, if one item.
-        return super().__new__(cls, selectors)
+        return super().__new__(cls)
+
+    def __init__(self, selectors: List[Selector]):
+        self._selectors = selectors
+
+    def __call__(self, dict_row: Mapping[str, str]) -> bool:
+        return all(selector(dict_row) for selector in self._selectors)
 
 
 selector_grammar = r"""

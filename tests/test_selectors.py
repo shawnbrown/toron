@@ -191,6 +191,14 @@ class TestCompoundSelector(unittest.TestCase):
         result = CompoundSelector([selector])
         self.assertIs(selector, result)
 
+    def test_multiple_selectors(self):
+        """All selectors must match to return True."""
+        selector = CompoundSelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])
+        self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
+        self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'zzz'}))
+        self.assertFalse(selector({'aaa': 'yyy', 'bbb': 'yyy'}))  # <- value of 'aaa' does not match
+        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz'}))  # <- no key matching 'bbb'
+
 
 class TestParseSelector(unittest.TestCase):
     def test_matches_any(self):
