@@ -1,11 +1,17 @@
 """Handling for attribute selectors (using CSS-inspired syntax)."""
 
+from abc import ABC
 from ._typing import List, Literal, Mapping, Optional, Tuple
 
 from lark import Lark, Transformer, v_args
 
 
-class Selector(object):
+class SelectorBase(ABC):
+    """Abstract base class for attribute selector objects."""
+    pass
+
+
+class Selector(SelectorBase):
     """Callable (function-like) object to check for matching key/value
     pairs in a dictionary.
 
@@ -179,7 +185,7 @@ def _get_comparison_key(selector):
     return (selector.__class__, (selector._attr, selector._op, val, ignore_case))
 
 
-class MatchesAnySelector(object):
+class MatchesAnySelector(SelectorBase):
     """Callable (function-like) object to check that a dict_row
     contains at least one matching selector.
 
@@ -232,7 +238,7 @@ class MatchesAnySelector(object):
         return max(x.specificity for x in self._selectors)
 
 
-class CompoundSelector(object):
+class CompoundSelector(SelectorBase):
     def __new__(cls, selectors):
         if len(selectors) == 1:
             return selectors[0]  # Return simple selector, if one item.
