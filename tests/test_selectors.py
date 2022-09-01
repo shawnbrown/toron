@@ -189,15 +189,15 @@ class TestSelector(unittest.TestCase):
 class TestSelectorComparisonKey(unittest.TestCase):
     def test_simple_key(self):
         result = _selector_comparison_key(Selector('aaa'))
-        expected = ('simple', ('aaa', '', '', ''))
+        expected = (Selector, ('aaa', '', '', ''))
         self.assertEqual(result, expected)
 
         result = _selector_comparison_key(Selector('aaa', '=', 'Qqq'))
-        expected = ('simple', ('aaa', '=', 'Qqq', ''))
+        expected = (Selector, ('aaa', '=', 'Qqq', ''))
         self.assertEqual(result, expected)
 
         result = _selector_comparison_key(Selector('aaa', '=', 'Qqq', ignore_case=True))
-        expected = ('simple', ('aaa', '=', 'qqq', 'i'))
+        expected = (Selector, ('aaa', '=', 'qqq', 'i'))
         self.assertEqual(result, expected)
 
     def test_simple_sort(self):
@@ -210,10 +210,10 @@ class TestSelectorComparisonKey(unittest.TestCase):
         compound = CompoundSelector([Selector('aaa'), Selector('bbb')])
         result = _selector_comparison_key(compound)
         expected = (
-            'CompoundSelector',
+            CompoundSelector,
             frozenset({
-                ('simple', ('aaa', '', '', '')),
-                ('simple', ('bbb', '', '', '')),
+                (Selector, ('aaa', '', '', '')),
+                (Selector, ('bbb', '', '', '')),
             }),
         )
         self.assertEqual(result, expected)
@@ -222,10 +222,10 @@ class TestSelectorComparisonKey(unittest.TestCase):
         compound = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
         result = _selector_comparison_key(compound)
         expected = (
-            'MatchesAnySelector',
+            MatchesAnySelector,
             frozenset({
-                ('simple', ('aaa', '', '', '')),
-                ('simple', ('bbb', '', '', '')),
+                (Selector, ('aaa', '', '', '')),
+                (Selector, ('bbb', '', '', '')),
             }),
         )
         self.assertEqual(result, expected)
@@ -238,14 +238,14 @@ class TestSelectorComparisonKey(unittest.TestCase):
 
         result = _selector_comparison_key(nested)
         expected = (
-            'CompoundSelector',
+            CompoundSelector,
             frozenset({
-                ('simple', ('aaa', '', '', '')),
+                (Selector, ('aaa', '', '', '')),
                 (
-                    'MatchesAnySelector',
+                    MatchesAnySelector,
                     frozenset({
-                        ('simple', ('bbb', '', '', '')),
-                        ('simple', ('ccc', '', '', '')),
+                        (Selector, ('bbb', '', '', '')),
+                        (Selector, ('ccc', '', '', '')),
                     }),
                 ),
             }),

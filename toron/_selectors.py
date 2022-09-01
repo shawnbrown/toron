@@ -141,13 +141,11 @@ class Selector(object):
 
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        if not isinstance(other, self.__class__):
-            return False
         return _selector_comparison_key(self) == _selector_comparison_key(other)
 
     def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
-        return hash((self.__class__, _selector_comparison_key(self)))
+        return hash(_selector_comparison_key(self))
 
     @property
     def specificity(self) -> Tuple[int, int]:
@@ -165,20 +163,14 @@ class Selector(object):
 def _selector_comparison_key(selector):
     """Returns a value suitable for comparing selectors for equality.
 
-    This is suitable for use as a sort key::
-
-        >>> selectors = [Selector('bbb'), Selector('aaa', '=', 'xxx')]
-        >>> sorted(selectors, key=_selector_comparison_key)
-        [Selector('aaa', '=', 'xxx'), Selector('bbb')]
-
-    And it can also be used directly::
+    .. code-block::
 
         >>> _selector_comparison_key(Selector('aaa', '=', 'xxx'))
-        ('simple', ('aaa', '=', 'xxx', ''))
+        (Selector, ('aaa', '=', 'xxx', ''))
     """
     if hasattr(selector, '_selectors'):
         cmp_keys = [_selector_comparison_key(x) for x in selector._selectors]
-        return (selector.__class__.__name__, frozenset(cmp_keys))
+        return (selector.__class__, frozenset(cmp_keys))
 
     attr = selector._attr or ''
     op = selector._op or ''
@@ -188,7 +180,7 @@ def _selector_comparison_key(selector):
         ignore_case = 'i'
     else:
         ignore_case = ''
-    return ('simple', (attr, op, val, ignore_case))
+    return (selector.__class__, (attr, op, val, ignore_case))
 
 
 class MatchesAnySelector(object):
@@ -229,13 +221,11 @@ class MatchesAnySelector(object):
 
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        if not isinstance(other, self.__class__):
-            return False
         return _selector_comparison_key(self) == _selector_comparison_key(other)
 
     def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
-        return hash((self.__class__, _selector_comparison_key(self)))
+        return hash(_selector_comparison_key(self))
 
     @property
     def specificity(self) -> Tuple[int, int]:
@@ -270,13 +260,11 @@ class CompoundSelector(object):
 
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        if not isinstance(other, self.__class__):
-            return False
         return _selector_comparison_key(self) == _selector_comparison_key(other)
 
     def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
-        return hash((self.__class__, _selector_comparison_key(self)))
+        return hash(_selector_comparison_key(self))
 
     @property
     def specificity(self) -> Tuple[int, int]:
