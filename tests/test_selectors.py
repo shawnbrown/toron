@@ -5,7 +5,7 @@ import unittest
 from toron._selectors import Selector
 from toron._selectors import MatchesAnySelector
 from toron._selectors import CompoundSelector
-from toron._selectors import _selector_comparison_key
+from toron._selectors import _get_comparison_key
 from toron._selectors import parse_selector
 
 
@@ -186,29 +186,29 @@ class TestSelector(unittest.TestCase):
         self.assertEqual(selector.specificity, (1, 1))
 
 
-class TestSelectorComparisonKey(unittest.TestCase):
+class TestGetComparisonKey(unittest.TestCase):
     def test_simple_key(self):
-        result = _selector_comparison_key(Selector('aaa'))
+        result = _get_comparison_key(Selector('aaa'))
         expected = (Selector, ('aaa', None, None, False))
         self.assertEqual(result, expected)
 
-        result = _selector_comparison_key(Selector('aaa', '=', 'Qqq'))
+        result = _get_comparison_key(Selector('aaa', '=', 'Qqq'))
         expected = (Selector, ('aaa', '=', 'Qqq', False))
         self.assertEqual(result, expected)
 
-        result = _selector_comparison_key(Selector('aaa', '=', 'Qqq', ignore_case=True))
+        result = _get_comparison_key(Selector('aaa', '=', 'Qqq', ignore_case=True))
         expected = (Selector, ('aaa', '=', 'qqq', True))
         self.assertEqual(result, expected)
 
     def test_simple_sort(self):
         selectors = [Selector('bbb'), Selector('aaa', '=', 'qqq')]
-        result = sorted(selectors, key=_selector_comparison_key)
+        result = sorted(selectors, key=_get_comparison_key)
         expected = [Selector('aaa', '=', 'qqq'), Selector('bbb')]
         self.assertEqual(result, expected)
 
     def test_compound_selector(self):
         compound = CompoundSelector([Selector('aaa'), Selector('bbb')])
-        result = _selector_comparison_key(compound)
+        result = _get_comparison_key(compound)
         expected = (
             CompoundSelector,
             frozenset({
@@ -220,7 +220,7 @@ class TestSelectorComparisonKey(unittest.TestCase):
 
     def test_matches_any_selector(self):
         compound = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
-        result = _selector_comparison_key(compound)
+        result = _get_comparison_key(compound)
         expected = (
             MatchesAnySelector,
             frozenset({
@@ -236,7 +236,8 @@ class TestSelectorComparisonKey(unittest.TestCase):
             MatchesAnySelector([Selector('bbb'), Selector('ccc')]),
         ])
 
-        result = _selector_comparison_key(nested)
+        result = _get_comparison_key(nested)
+
         expected = (
             CompoundSelector,
             frozenset({

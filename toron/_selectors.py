@@ -141,11 +141,11 @@ class Selector(object):
 
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        return _selector_comparison_key(self) == _selector_comparison_key(other)
+        return _get_comparison_key(self) == _get_comparison_key(other)
 
     def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
-        return hash(_selector_comparison_key(self))
+        return hash(_get_comparison_key(self))
 
     @property
     def specificity(self) -> Tuple[int, int]:
@@ -160,16 +160,16 @@ class Selector(object):
         return (1, 0)
 
 
-def _selector_comparison_key(selector):
+def _get_comparison_key(selector):
     """Returns a value suitable for comparing selectors for equality.
 
     .. code-block::
 
-        >>> _selector_comparison_key(Selector('aaa', '=', 'xxx'))
+        >>> _get_comparison_key(Selector('aaa', '=', 'xxx'))
         (Selector, ('aaa', '=', 'xxx', False))
     """
     if hasattr(selector, '_selectors'):
-        cmp_keys = [_selector_comparison_key(x) for x in selector._selectors]
+        cmp_keys = [_get_comparison_key(x) for x in selector._selectors]
         return (selector.__class__, frozenset(cmp_keys))
 
     val = selector._val
@@ -217,11 +217,11 @@ class MatchesAnySelector(object):
 
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        return _selector_comparison_key(self) == _selector_comparison_key(other)
+        return _get_comparison_key(self) == _get_comparison_key(other)
 
     def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
-        return hash(_selector_comparison_key(self))
+        return hash(_get_comparison_key(self))
 
     @property
     def specificity(self) -> Tuple[int, int]:
@@ -256,11 +256,11 @@ class CompoundSelector(object):
 
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        return _selector_comparison_key(self) == _selector_comparison_key(other)
+        return _get_comparison_key(self) == _get_comparison_key(other)
 
     def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
-        return hash(_selector_comparison_key(self))
+        return hash(_get_comparison_key(self))
 
     @property
     def specificity(self) -> Tuple[int, int]:
