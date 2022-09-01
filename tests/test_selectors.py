@@ -4,6 +4,7 @@ import unittest
 
 from toron._selectors import Selector
 from toron._selectors import CompoundSelector
+from toron._selectors import _selector_comparison_key
 from toron._selectors import parse_selector
 
 
@@ -182,6 +183,27 @@ class TestSelector(unittest.TestCase):
 
         selector = Selector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(selector.specificity, (1, 1))
+
+
+class TestSelectorComparisonKey(unittest.TestCase):
+    def test_simple_key(self):
+        result = _selector_comparison_key(Selector('aaa'))
+        expected = ('simple', ('aaa', '', '', ''))
+        self.assertEqual(result, expected)
+
+        result = _selector_comparison_key(Selector('aaa', '=', 'Qqq'))
+        expected = ('simple', ('aaa', '=', 'Qqq', ''))
+        self.assertEqual(result, expected)
+
+        result = _selector_comparison_key(Selector('aaa', '=', 'Qqq', ignore_case=True))
+        expected = ('simple', ('aaa', '=', 'qqq', 'i'))
+        self.assertEqual(result, expected)
+
+    def test_simple_sort(self):
+        selectors = [Selector('bbb'), Selector('aaa', '=', 'qqq')]
+        result = sorted(selectors, key=_selector_comparison_key)
+        expected = [Selector('aaa', '=', 'qqq'), Selector('bbb')]
+        self.assertEqual(result, expected)
 
 
 class TestCompoundSelector(unittest.TestCase):

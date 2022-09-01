@@ -184,6 +184,31 @@ class Selector(object):
         return (1, 0)
 
 
+def _selector_comparison_key(selector: Selector) -> Tuple[str, Tuple[str, ...]]:
+    """Returns a value suitable for comparing selectors for equality.
+
+    This is suitable for use as a sort key::
+
+        >>> selectors = [Selector('bbb'), Selector('aaa', '=', 'xxx')]
+        >>> sorted(selectors, key=_selector_comparison_key)
+        [Selector('aaa', '=', 'xxx'), Selector('bbb')]
+
+    And it can also be used directly::
+
+        >>> _selector_comparison_key(Selector('aaa', '=', 'xxx'))
+        ('simple', ('aaa', '=', 'xxx', ''))
+    """
+    attr = selector._attr or ''
+    op = selector._op or ''
+    val = selector._val or ''
+    if selector._ignore_case:
+        val = val.lower()
+        ignore_case = 'i'
+    else:
+        ignore_case = ''
+    return ('simple', (attr, op, val, ignore_case))
+
+
 class CompoundSelector(object):
     def __new__(cls, selectors):
         if len(selectors) == 1:
