@@ -141,33 +141,13 @@ class Selector(object):
 
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        if self._ignore_case and other._ignore_case:
-            # The __init__() function assures that when `ignore_case` is
-            # given, that `op` and `val` are also given. The parser grammar
-            # requires this, too (though mypy doesn't know it).
-            self_val = self._val.lower()  # type: ignore[union-attr]
-            other_val = other._val.lower()  # type: ignore[union-attr]
-        else:
-            self_val = self._val
-            other_val = other._val
-
-        return (
-            self.__class__ == other.__class__
-            and self._attr == other._attr
-            and self._op == other._op
-            and self_val == other_val
-            and self._ignore_case == other._ignore_case
-        )
+        if not isinstance(other, self.__class__):
+            return False
+        return _selector_comparison_key(self) == _selector_comparison_key(other)
 
     def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
-        return hash((
-            self.__class__,
-            self._attr,
-            self._op,
-            self._val.lower() if self._ignore_case else self._val,  # type: ignore[union-attr]
-            self._ignore_case,
-        ))
+        return hash((self.__class__, _selector_comparison_key(self)))
 
     @property
     def specificity(self) -> Tuple[int, int]:
@@ -251,17 +231,11 @@ class MatchesAnySelector(object):
         """Check if self is equal to other."""
         if not isinstance(other, self.__class__):
             return False
+        return _selector_comparison_key(self) == _selector_comparison_key(other)
 
-        self_selectors = \
-            frozenset(_selector_comparison_key(x) for x in self._selectors)
-        other_selectors = \
-            frozenset(_selector_comparison_key(x) for x in other._selectors)
-
-        return self_selectors == other_selectors
-
-    def __hash__(self):
-        selector_hashes = frozenset(hash(x) for x in self._selectors)
-        return hash((self.__class__, selector_hashes))
+    def __hash__(self) -> int:
+        """Build and return the hash value of this instance."""
+        return hash((self.__class__, _selector_comparison_key(self)))
 
     @property
     def specificity(self) -> Tuple[int, int]:
@@ -298,17 +272,11 @@ class CompoundSelector(object):
         """Check if self is equal to other."""
         if not isinstance(other, self.__class__):
             return False
+        return _selector_comparison_key(self) == _selector_comparison_key(other)
 
-        self_selectors = \
-            frozenset(_selector_comparison_key(x) for x in self._selectors)
-        other_selectors = \
-            frozenset(_selector_comparison_key(x) for x in other._selectors)
-
-        return self_selectors == other_selectors
-
-    def __hash__(self):
-        selector_hashes = frozenset(hash(x) for x in self._selectors)
-        return hash((self.__class__, selector_hashes))
+    def __hash__(self) -> int:
+        """Build and return the hash value of this instance."""
+        return hash((self.__class__, _selector_comparison_key(self)))
 
     @property
     def specificity(self) -> Tuple[int, int]:
