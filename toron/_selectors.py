@@ -231,6 +231,18 @@ class CompoundSelector(object):
         """Return CSS-like string of selector."""
         return ''.join(str(selector) for selector in self._selectors)
 
+    def __eq__(self, other) -> bool:
+        """Check if self is equal to other."""
+        if not isinstance(other, self.__class__):
+            return False
+
+        self_selectors = \
+            frozenset(_selector_comparison_key(x) for x in self._selectors)
+        other_selectors = \
+            frozenset(_selector_comparison_key(x) for x in other._selectors)
+
+        return self_selectors == other_selectors
+
 
 selector_grammar = r"""
     // --------------------------------------------------------------------
