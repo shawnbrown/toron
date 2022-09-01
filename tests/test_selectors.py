@@ -250,6 +250,15 @@ class TestCompoundSelector(unittest.TestCase):
         sel_b = CompoundSelector([Selector('ccc'), Selector('aaa')])
         self.assertNotEqual(sel_a, sel_b)
 
+    def test_hash(self):
+        sel_a = CompoundSelector([Selector('aaa'), Selector('bbb')])
+        sel_b = CompoundSelector([Selector('bbb'), Selector('aaa')])
+        self.assertEqual(hash(sel_a), hash(sel_b))
+
+        sel_a = CompoundSelector([Selector('aaa'), Selector('bbb')])
+        sel_b = CompoundSelector([Selector('ccc'), Selector('aaa')])
+        self.assertNotEqual(hash(sel_a), hash(sel_b))
+
 
 class TestParseSelector(unittest.TestCase):
     def test_matches_any(self):

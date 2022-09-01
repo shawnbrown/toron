@@ -243,6 +243,10 @@ class CompoundSelector(object):
 
         return self_selectors == other_selectors
 
+    def __hash__(self):
+        selector_hashes = frozenset(hash(x) for x in self._selectors)
+        return hash((self.__class__, selector_hashes))
+
 
 selector_grammar = r"""
     // --------------------------------------------------------------------
