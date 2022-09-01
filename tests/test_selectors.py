@@ -279,7 +279,7 @@ class TestCompoundSelector(unittest.TestCase):
 
 
 class TestParseSelector(unittest.TestCase):
-    def test_matches_any(self):
+    def test_matches_attr(self):
         result = parse_selector('[aaa]')
         expected = Selector('aaa')
         self.assertEqual(result, expected)
