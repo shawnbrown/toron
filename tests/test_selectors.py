@@ -199,6 +199,16 @@ class TestCompoundSelector(unittest.TestCase):
         self.assertFalse(selector({'aaa': 'yyy', 'bbb': 'yyy'}))  # <- value of 'aaa' does not match
         self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz'}))  # <- no key matching 'bbb'
 
+    def test_repr(self):
+        repr_list = [
+            "CompoundSelector([Selector('aaa'), Selector('bbb'), Selector('ccc')])",
+            "CompoundSelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])",
+            "CompoundSelector([Selector('aaa', '=', 'xxx', ignore_case=True), Selector('bbb')])",
+        ]
+        for r in repr_list:
+            with self.subTest(r=r):
+                self.assertEqual(repr(eval(r)), r)
+
 
 class TestParseSelector(unittest.TestCase):
     def test_matches_any(self):

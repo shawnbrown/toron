@@ -196,6 +196,12 @@ class CompoundSelector(object):
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
         return all(selector(dict_row) for selector in self._selectors)
 
+    def __repr__(self) -> str:
+        """Return eval-able string representation of selector."""
+        cls_name = self.__class__.__name__
+        selectors = ', '.join(repr(selector) for selector in self._selectors)
+        return f'{cls_name}([{selectors}])'
+
 
 selector_grammar = r"""
     // --------------------------------------------------------------------
