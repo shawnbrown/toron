@@ -43,6 +43,18 @@ class SelectorBase(ABC):
         raise NotImplementedError
 
 
+class SelectorContainer(SelectorBase):
+    selector_list: List[SelectorBase]
+
+    def __init__(self, selector_list: List[SelectorBase]) -> None:
+        """Initialize class instance."""
+        self.selector_list = selector_list
+
+    def __contains__(self, item) -> bool:
+        """Check if *item* is in `self.selector_list`."""
+        return item in self.selector_list
+
+
 class Selector(SelectorBase):
     """Callable (function-like) object to check for matching key/value
     pairs in a dictionary.
@@ -198,8 +210,8 @@ def _get_comparison_key(selector):
         >>> _get_comparison_key(Selector('aaa', '=', 'xxx'))
         (Selector, ('aaa', '=', 'xxx', False))
     """
-    if hasattr(selector, '_selectors'):
-        cmp_keys = [_get_comparison_key(x) for x in selector._selectors]
+    if hasattr(selector, 'selector_list'):
+        cmp_keys = [_get_comparison_key(x) for x in selector.selector_list]
         return (selector.__class__, frozenset(cmp_keys))
 
     val = selector._val
@@ -209,7 +221,7 @@ def _get_comparison_key(selector):
     return (selector.__class__, (selector._attr, selector._op, val, ignore_case))
 
 
-class MatchesAnySelector(SelectorBase):
+class MatchesAnySelector(SelectorContainer):
     """Callable (function-like) object to check that a dict_row
     contains at least one matching selector.
 
@@ -218,18 +230,14 @@ class MatchesAnySelector(SelectorBase):
 
         https://www.w3.org/TR/selectors-4/#matches
     """
-    def __new__(cls, selectors):
-        if len(selectors) == 1:
-            return selectors[0]  # Return simple selector, if one item.
+    def __new__(cls, selector_list):
+        if len(selector_list) == 1:
+            return selector_list[0]  # Return simple selector, if one item.
         return super().__new__(cls)
-
-    def __init__(self, selectors: List[Selector]) -> None:
-        """Initialize class instance."""
-        self._selectors = selectors
 
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
         """Return True if selector matches values in *dict_row*."""
-        for selector in self._selectors:
+        for selector in self.selector_list:
             if selector(dict_row):
                 return True
         return False
@@ -237,12 +245,12 @@ class MatchesAnySelector(SelectorBase):
     def __repr__(self) -> str:
         """Return eval-able string representation of selector."""
         cls_name = self.__class__.__name__
-        selectors = ', '.join(repr(selector) for selector in self._selectors)
+        selectors = ', '.join(repr(x) for x in self.selector_list)
         return f'{cls_name}([{selectors}])'
 
     def __str__(self) -> str:
         """Return CSS-like string of selector."""
-        inner_str = ', '.join(str(selector) for selector in self._selectors)
+        inner_str = ', '.join(str(x) for x in self.selector_list)
         return f':is({inner_str})'
 
     @property
@@ -251,37 +259,34 @@ class MatchesAnySelector(SelectorBase):
         pseudo-class) is the specificity of the most specific selector
         it contains.
         """
-        return max(x.specificity for x in self._selectors)
+        return max(x.specificity for x in self.selector_list)
 
 
-class CompoundSelector(SelectorBase):
-    def __new__(cls, selectors):
-        if len(selectors) == 1:
-            return selectors[0]  # Return simple selector, if one item.
+class CompoundSelector(SelectorContainer):
+    def __new__(cls, selector_list):
+        if len(selector_list) == 1:
+            return selector_list[0]  # Return simple selector, if one item.
         return super().__new__(cls)
 
-    def __init__(self, selectors: List[Selector]):
-        self._selectors = selectors
-
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
-        return all(selector(dict_row) for selector in self._selectors)
+        return all(selector(dict_row) for selector in self.selector_list)
 
     def __repr__(self) -> str:
         """Return eval-able string representation of selector."""
         cls_name = self.__class__.__name__
-        selectors = ', '.join(repr(selector) for selector in self._selectors)
+        selectors = ', '.join(repr(selector) for selector in self.selector_list)
         return f'{cls_name}([{selectors}])'
 
     def __str__(self) -> str:
         """Return CSS-like string of selector."""
-        return ''.join(str(selector) for selector in self._selectors)
+        return ''.join(str(selector) for selector in self.selector_list)
 
     @property
     def specificity(self) -> Tuple[int, int]:
         """The specificity of a compound selector is the element-wise
         sum of the specificity values of the selectors it contains.
         """
-        specificity_values = [x.specificity for x in self._selectors]
+        specificity_values = [x.specificity for x in self.selector_list]
         return tuple(sum(tup) for tup in zip(*specificity_values))  # type: ignore[return-value]
 
 
