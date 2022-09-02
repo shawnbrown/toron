@@ -56,6 +56,12 @@ class SelectorContainer(SelectorBase):
         """Check if *item* is in `self.selector_list`."""
         return item in self.selector_list
 
+    def __repr__(self) -> str:
+        """Return eval-able string representation of selector."""
+        cls_name = self.__class__.__name__
+        selectors = ', '.join(repr(x) for x in self.selector_list)
+        return f'{cls_name}([{selectors}])'
+
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
         return _get_comparison_key(self) == _get_comparison_key(other)
@@ -266,12 +272,6 @@ class MatchesAnySelector(SelectorContainer):
                 return True
         return False
 
-    def __repr__(self) -> str:
-        """Return eval-able string representation of selector."""
-        cls_name = self.__class__.__name__
-        selectors = ', '.join(repr(x) for x in self.selector_list)
-        return f'{cls_name}([{selectors}])'
-
     def __str__(self) -> str:
         """Return CSS-like string of selector."""
         inner_str = ', '.join(str(x) for x in self.selector_list)
@@ -294,12 +294,6 @@ class CompoundSelector(SelectorContainer):
 
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
         return all(selector(dict_row) for selector in self.selector_list)
-
-    def __repr__(self) -> str:
-        """Return eval-able string representation of selector."""
-        cls_name = self.__class__.__name__
-        selectors = ', '.join(repr(selector) for selector in self.selector_list)
-        return f'{cls_name}([{selectors}])'
 
     def __str__(self) -> str:
         """Return CSS-like string of selector."""
