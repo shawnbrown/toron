@@ -1,6 +1,6 @@
 """Handling for attribute selectors (using CSS-inspired syntax)."""
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from ._typing import List, Literal, Mapping, Optional, Tuple
 
 from lark import Lark, Transformer, v_args
@@ -8,7 +8,41 @@ from lark import Lark, Transformer, v_args
 
 class SelectorBase(ABC):
     """Abstract base class for attribute selector objects."""
-    pass
+    @abstractmethod
+    def __init__(self) -> None:
+        """Initialize class instance."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def __call__(self, dict_row: Mapping[str, str]) -> bool:
+        """Return True if selector matches values in *dict_row*."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def __repr__(self) -> str:
+        """Return eval-able string representation of selector."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def __str__(self) -> str:
+        """Return CSS-like string of selector."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def __eq__(self, other) -> bool:
+        """Check if self is equal to other."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def __hash__(self) -> int:
+        """Build and return hash value of this instance."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def specificity(self) -> Tuple[int, int]:
+        """Selector specificity value."""
+        raise NotImplementedError
 
 
 class Selector(SelectorBase):
