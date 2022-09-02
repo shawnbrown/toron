@@ -613,7 +613,7 @@ class TestParserSelectorIntegration(unittest.TestCase):
         self.assertFalse(selector({'ccc': 'zzz'}))
 
     def test_mixed_types(self):
-        selector = parse_selector('[aaa="xxx"]:is([bbb], [ccc]):not([ddd], [eee="qqq"])')
+        selector = parse_selector('[aaa="xxx"]:is([bbb], [ccc]):not([ddd], [eee="qqq" i])')
         self.assertEqual(selector.specificity, (3, 2))
 
         self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
@@ -621,11 +621,11 @@ class TestParserSelectorIntegration(unittest.TestCase):
         self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz', 'eee': 'rrr'}))
         self.assertFalse(selector({'aaa': 'xxx'}))  # <- Needs [bbb] or [ccc]
         self.assertFalse(selector({'aaa': 'qqq', 'bbb': 'yyy'}))  # <- Needs [aaa="xxx"]
-        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz', 'eee': 'qqq'}))  # <- Cannot have [eee="qqq"]
+        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz', 'eee': 'QQq'}))  # <- Cannot have [eee="qqq"]
         self.assertFalse(selector({'aaa': 'xxx', 'bbb': 'yyy', 'ddd': 'www'}))  # <- Cannot have [ddd]
 
     def test_nested_mixed_types(self):
-        selector = parse_selector('[aaa="xxx"]:is([bbb], [ccc], :not([ddd], :where([eee="qqq"])))')
+        selector = parse_selector('[aaa="xxx"]:is([bbb], [ccc], :not([ddd], :where([eee="qqq" i])))')
         self.assertEqual(selector.specificity, (2, 1))
 
         self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
@@ -634,6 +634,6 @@ class TestParserSelectorIntegration(unittest.TestCase):
         self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy', 'ddd': 'www'}))
         self.assertFalse(selector({'aaa': 'xxx', 'ddd': 'www'}))  # <- Needs [bbb] or [ccc] or cannot have [ddd]
         self.assertFalse(selector({'aaa': 'qqq', 'bbb': 'yyy'}))  # <- Needs [aaa="xxx"]
-        self.assertFalse(selector({'aaa': 'xxx', 'eee': 'qqq'}))  # <- Cannot have [eee="qqq"]
+        self.assertFalse(selector({'aaa': 'xxx', 'eee': 'QQq'}))  # <- Cannot have [eee="qqq"]
         self.assertFalse(selector({'aaa': 'xxx', 'ddd': 'www'}))  # <- Cannot have [ddd]
 
