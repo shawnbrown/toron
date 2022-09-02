@@ -546,14 +546,18 @@ class TestCompoundSelector(unittest.TestCase):
 
 
 class TestParseSelector(unittest.TestCase):
-    def test_matches_attr(self):
+    def test_simple_selector(self):
         result = parse_selector('[aaa]')
         expected = SimpleSelector('aaa')
         self.assertEqual(result, expected)
 
-    def test_matches_value(self):
         result = parse_selector('[aaa="xxx"]')
         expected = SimpleSelector('aaa', '=', 'xxx')
+        self.assertEqual(result, expected)
+
+    def test_compound_selector(self):
+        result = parse_selector('[aaa="xxx"][bbb]')
+        expected = CompoundSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])
         self.assertEqual(result, expected)
 
     def test_matches_any(self):
@@ -561,8 +565,13 @@ class TestParseSelector(unittest.TestCase):
         expected = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertEqual(result, expected)
 
-    def test_matches_negation(self):
+    def test_negation(self):
         result = parse_selector(':not([aaa], [bbb])')
         expected = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        self.assertEqual(result, expected)
+
+    def test_specificity_adjustment(self):
+        result = parse_selector(':where([aaa], [bbb])')
+        expected = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertEqual(result, expected)
 
