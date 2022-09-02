@@ -237,11 +237,11 @@ def _get_comparison_key(
         >>> _get_comparison_key(SimpleSelector('aaa', '=', 'xxx'))
         (SimpleSelector, ('aaa', '=', 'xxx', False))
     """
-    if isinstance(selector, SelectorContainer):
+    if isinstance(selector, SelectorContainer):  # <- Recurses into containers.
         cmp_keys = [_get_comparison_key(x) for x in selector.selector_list]
         return (selector.__class__, frozenset(cmp_keys))
 
-    if isinstance(selector, SimpleSelector):
+    if isinstance(selector, SimpleSelector):  # <- Terminating case.
         val = selector._val
         ignore_case = selector._ignore_case
         if ignore_case and val:
