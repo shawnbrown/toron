@@ -5,6 +5,7 @@ import unittest
 from toron._selectors import SimpleSelector
 from toron._selectors import MatchesAnySelector
 from toron._selectors import NegationSelector
+from toron._selectors import SpecificityAdjustmentSelector
 from toron._selectors import CompoundSelector
 from toron._selectors import _get_comparison_key
 from toron._selectors import parse_selector
@@ -386,6 +387,73 @@ class TestNegationSelector(unittest.TestCase):
 
         sel = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc', '=', 'zzz')])
         self.assertEqual(sel.specificity, (1, 1))
+
+
+
+class TestSpecificityAdjustmentSelector(unittest.TestCase):
+    def test_matches_any(self):
+        """Returns True if one or more selectors match."""
+        selector = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
+        self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz'}))
+        self.assertTrue(selector({'bbb': 'yyy', 'ccc': 'zzz'}))
+        self.assertFalse(selector({'ccc': 'zzz'}))
+
+    def test_repr(self):
+        repr_list = [
+            "SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc')])",
+            "SpecificityAdjustmentSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])",
+            "SpecificityAdjustmentSelector([SimpleSelector('aaa', '=', 'xxx', ignore_case=True), SimpleSelector('bbb')])",
+        ]
+        for r in repr_list:
+            with self.subTest(r=r):
+                self.assertEqual(repr(eval(r)), r)
+
+    def test_str(self):
+        selector = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc')])
+        self.assertEqual(str(selector), ':where([aaa], [bbb], [ccc])')
+
+        selector = SpecificityAdjustmentSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])
+        self.assertEqual(str(selector), ':where([aaa="xxx"], [bbb])')
+
+        selector = SpecificityAdjustmentSelector([SimpleSelector('aaa', '=', 'xxx', ignore_case=True), SimpleSelector('bbb')])
+        self.assertEqual(str(selector), ':where([aaa="xxx" i], [bbb])')
+
+    def test_eq(self):
+        sel_a = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = SpecificityAdjustmentSelector([SimpleSelector('bbb'), SimpleSelector('aaa')])
+        self.assertEqual(sel_a, sel_b)
+
+        sel_a = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = SpecificityAdjustmentSelector([SimpleSelector('ccc'), SimpleSelector('aaa')])
+        self.assertNotEqual(sel_a, sel_b)
+
+    def test_hash(self):
+        sel_a = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = SpecificityAdjustmentSelector([SimpleSelector('bbb'), SimpleSelector('aaa')])
+        self.assertEqual(hash(sel_a), hash(sel_b))
+
+        sel_a = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = SpecificityAdjustmentSelector([SimpleSelector('ccc'), SimpleSelector('aaa')])
+        self.assertNotEqual(hash(sel_a), hash(sel_b))
+
+    def test_specificity(self):
+        """Specificity is modeled after CSS specificity but it's not
+        the same. To see how specificity is determined in CSS, see:
+
+            https://www.w3.org/TR/selectors-4/#specificity
+        """
+        sel = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        self.assertEqual(sel.specificity, (0, 0))
+
+        sel = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb', '=', 'yyy')])
+        self.assertEqual(sel.specificity, (0, 0))
+
+        sel = SpecificityAdjustmentSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb', '=', 'yyy')])
+        self.assertEqual(sel.specificity, (0, 0))
+
+        sel = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc', '=', 'zzz')])
+        self.assertEqual(sel.specificity, (0, 0))
 
 
 class TestCompoundSelector(unittest.TestCase):

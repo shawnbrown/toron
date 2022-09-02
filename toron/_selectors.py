@@ -314,6 +314,36 @@ class NegationSelector(SelectorContainer):
         return max(x.specificity for x in self.selector_list)
 
 
+class SpecificityAdjustmentSelector(SelectorContainer):
+    """
+    This class is designed to mimic the "specificity-adjustment"
+    selector--i.e., the :where() pseudo-class. For details, see:
+
+        https://www.w3.org/TR/selectors-4/#zero-matches
+    """
+    def __new__(cls, selector_list):
+        if len(selector_list) == 1:
+            return selector_list[0]  # Return simple selector, if one item.
+        return super().__new__(cls)
+
+    def __call__(self, dict_row: Mapping[str, str]) -> bool:
+        """Return True if selector matches values in *dict_row*."""
+        for selector in self.selector_list:
+            if selector(dict_row):
+                return True
+        return False
+
+    def __str__(self) -> str:
+        """Return CSS-like string of selector."""
+        inner_str = ', '.join(str(x) for x in self.selector_list)
+        return f':where({inner_str})'
+
+    @property
+    def specificity(self) -> Tuple[int, int]:
+        """Specificity is always zero."""
+        return (0, 0)
+
+
 class CompoundSelector(SelectorContainer):
     def __new__(cls, selector_list):
         if len(selector_list) == 1:
@@ -399,6 +429,9 @@ class SelectorTransformer(Transformer):
 
     def negation(self, args):
         return NegationSelector(args)
+
+    def specificity_adjustment(self, args):
+        return SpecificityAdjustmentSelector(args)
 
     @v_args(inline=True)
     def selector(self, attr, op=None, val=None, ignore_case=None):
