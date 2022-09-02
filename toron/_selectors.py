@@ -1,7 +1,7 @@
 """Handling for attribute selectors (using CSS-inspired syntax)."""
 
 from abc import ABC, abstractmethod
-from ._typing import List, Literal, Mapping, Optional, Tuple
+from ._typing import List, Literal, Mapping, Optional, Tuple, Union
 
 from lark import Lark, Transformer, v_args
 
@@ -28,13 +28,15 @@ class SelectorBase(ABC):
         """Return CSS-like string of selector."""
         raise NotImplementedError
 
+    @abstractmethod
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        return _get_comparison_key(self) == _get_comparison_key(other)
+        raise NotImplementedError
 
+    @abstractmethod
     def __hash__(self) -> int:
         """Build and return the hash value of this instance."""
-        return hash(_get_comparison_key(self))
+        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -44,15 +46,23 @@ class SelectorBase(ABC):
 
 
 class SelectorContainer(SelectorBase):
-    selector_list: List[SelectorBase]
-
-    def __init__(self, selector_list: List[SelectorBase]) -> None:
+    def __init__(
+        self, selector_list: List[Union['SelectorContainer', 'SimpleSelector']]
+    ) -> None:
         """Initialize class instance."""
         self.selector_list = selector_list
 
     def __contains__(self, item) -> bool:
         """Check if *item* is in `self.selector_list`."""
         return item in self.selector_list
+
+    def __eq__(self, other) -> bool:
+        """Check if self is equal to other."""
+        return _get_comparison_key(self) == _get_comparison_key(other)
+
+    def __hash__(self) -> int:
+        """Build and return the hash value of this instance."""
+        return hash(_get_comparison_key(self))
 
 
 class SimpleSelector(SelectorBase):
@@ -189,6 +199,14 @@ class SimpleSelector(SelectorBase):
             return f'[{self._attr}{self._op}"{value}" i]'
         return f'[{self._attr}{self._op}"{value}"]'
 
+    def __eq__(self, other) -> bool:
+        """Check if self is equal to other."""
+        return _get_comparison_key(self) == _get_comparison_key(other)
+
+    def __hash__(self) -> int:
+        """Build and return the hash value of this instance."""
+        return hash(_get_comparison_key(self))
+
     @property
     def specificity(self) -> Tuple[int, int]:
         """SimpleSelector that match attributes with any value will
@@ -202,7 +220,9 @@ class SimpleSelector(SelectorBase):
         return (1, 0)
 
 
-def _get_comparison_key(selector):
+def _get_comparison_key(
+    selector: Union[SimpleSelector, SelectorContainer]
+) ->  Tuple:
     """Returns a value suitable for comparing selectors for equality.
 
     .. code-block::
@@ -210,15 +230,19 @@ def _get_comparison_key(selector):
         >>> _get_comparison_key(SimpleSelector('aaa', '=', 'xxx'))
         (SimpleSelector, ('aaa', '=', 'xxx', False))
     """
-    if hasattr(selector, 'selector_list'):
+    if isinstance(selector, SelectorContainer):
         cmp_keys = [_get_comparison_key(x) for x in selector.selector_list]
         return (selector.__class__, frozenset(cmp_keys))
 
-    val = selector._val
-    ignore_case = selector._ignore_case
-    if ignore_case and val:
-        val = val.lower()
-    return (selector.__class__, (selector._attr, selector._op, val, ignore_case))
+    if isinstance(selector, SimpleSelector):
+        val = selector._val
+        ignore_case = selector._ignore_case
+        if ignore_case and val:
+            val = val.lower()
+        return (selector.__class__, (selector._attr, selector._op, val, ignore_case))
+
+    cls_name = selector.__class__.__name__
+    raise ValueError(f'comparison key for {cls_name} type not implemented')
 
 
 class MatchesAnySelector(SelectorContainer):
