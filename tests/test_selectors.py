@@ -575,3 +575,52 @@ class TestParseSelector(unittest.TestCase):
         expected = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertEqual(result, expected)
 
+
+class TestParserSelectorIntegration(unittest.TestCase):
+    """Check parser and selector integration with common use cases."""
+    def test_simple_selector(self):
+        selector = parse_selector('[aaa]')
+        self.assertTrue(selector({'aaa': 'xxx'}))
+        self.assertFalse(selector({'bbb': 'yyy'}))
+
+        selector = parse_selector('[aaa="xxx"]')
+        self.assertTrue(selector({'aaa': 'xxx'}))
+        self.assertFalse(selector({'aaa': 'zzz'}))
+
+    def test_compound_selector(self):
+        selector = parse_selector('[aaa="xxx"][bbb]')
+        self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
+        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz'}))
+
+    def test_matches_any(self):
+        selector = parse_selector(':is([aaa], [bbb])')
+        self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz'}))
+        self.assertTrue(selector({'bbb': 'yyy', 'ccc': 'zzz'}))
+        self.assertFalse(selector({'ccc': 'zzz'}))
+
+    def test_negation(self):
+        selector = parse_selector(':not([aaa], [bbb])')
+        self.assertTrue(selector({'ccc': 'zzz'}))
+        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz'}))
+        self.assertFalse(selector({'bbb': 'yyy', 'ccc': 'zzz'}))
+
+    def test_specificity_adjustment(self):
+        selector = parse_selector(':where([aaa], [bbb])')
+        self.assertEqual(selector.specificity, (0, 0))
+
+        self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz'}))
+        self.assertTrue(selector({'bbb': 'yyy', 'ccc': 'zzz'}))
+        self.assertFalse(selector({'ccc': 'zzz'}))
+
+    def test_nested_selectors(self):
+        selector = parse_selector('[aaa="xxx"]:is([bbb], [ccc]):not([ddd], [eee="qqq"])')
+        self.assertEqual(selector.specificity, (3, 2))
+
+        self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
+        self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz'}))
+        self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz', 'eee': 'rrr'}))
+        self.assertFalse(selector({'aaa': 'xxx'}))  # <- Needs [bbb] or [ccc]
+        self.assertFalse(selector({'aaa': 'qqq', 'bbb': 'yyy'}))  # <- Needs [aaa="xxx"]
+        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz', 'eee': 'qqq'}))  # <- Cannot have [eee="qqq"]
+        self.assertFalse(selector({'aaa': 'xxx', 'bbb': 'yyy', 'ddd': 'www'}))  # <- Cannot have [ddd]
+
