@@ -28,15 +28,13 @@ class SelectorBase(ABC):
         """Return CSS-like string of selector."""
         raise NotImplementedError
 
-    @abstractmethod
     def __eq__(self, other) -> bool:
         """Check if self is equal to other."""
-        raise NotImplementedError
+        return _get_comparison_key(self) == _get_comparison_key(other)
 
-    @abstractmethod
     def __hash__(self) -> int:
-        """Build and return hash value of this instance."""
-        raise NotImplementedError
+        """Build and return the hash value of this instance."""
+        return hash(_get_comparison_key(self))
 
     @property
     @abstractmethod
@@ -179,14 +177,6 @@ class Selector(SelectorBase):
             return f'[{self._attr}{self._op}"{value}" i]'
         return f'[{self._attr}{self._op}"{value}"]'
 
-    def __eq__(self, other) -> bool:
-        """Check if self is equal to other."""
-        return _get_comparison_key(self) == _get_comparison_key(other)
-
-    def __hash__(self) -> int:
-        """Build and return the hash value of this instance."""
-        return hash(_get_comparison_key(self))
-
     @property
     def specificity(self) -> Tuple[int, int]:
         """Selectors that match attributes with any value will have a
@@ -255,14 +245,6 @@ class MatchesAnySelector(SelectorBase):
         inner_str = ', '.join(str(selector) for selector in self._selectors)
         return f':is({inner_str})'
 
-    def __eq__(self, other) -> bool:
-        """Check if self is equal to other."""
-        return _get_comparison_key(self) == _get_comparison_key(other)
-
-    def __hash__(self) -> int:
-        """Build and return the hash value of this instance."""
-        return hash(_get_comparison_key(self))
-
     @property
     def specificity(self) -> Tuple[int, int]:
         """The specificity of a "matches-any" selector (i.e., the :is()
@@ -293,14 +275,6 @@ class CompoundSelector(SelectorBase):
     def __str__(self) -> str:
         """Return CSS-like string of selector."""
         return ''.join(str(selector) for selector in self._selectors)
-
-    def __eq__(self, other) -> bool:
-        """Check if self is equal to other."""
-        return _get_comparison_key(self) == _get_comparison_key(other)
-
-    def __hash__(self) -> int:
-        """Build and return the hash value of this instance."""
-        return hash(_get_comparison_key(self))
 
     @property
     def specificity(self) -> Tuple[int, int]:
