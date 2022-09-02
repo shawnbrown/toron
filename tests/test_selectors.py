@@ -4,6 +4,7 @@ import unittest
 
 from toron._selectors import SimpleSelector
 from toron._selectors import MatchesAnySelector
+from toron._selectors import NegationSelector
 from toron._selectors import CompoundSelector
 from toron._selectors import _get_comparison_key
 from toron._selectors import parse_selector
@@ -320,6 +321,73 @@ class TestMatchesAnySelector(unittest.TestCase):
         self.assertEqual(sel.specificity, (1, 1))
 
 
+class TestNegationSelector(unittest.TestCase):
+    def test_negation(self):
+        """Returns True if one or more selectors match."""
+        selector = NegationSelector([SimpleSelector('aaa', '=', 'qqq'), SimpleSelector('ccc')])
+        self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
+        self.assertTrue(selector({'aaa': 'xxx'}))
+        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz'}))  # <- Key 'ccc' matches.
+        self.assertFalse(selector({'aaa': 'qqq', 'bbb': 'yyy'}))  # <- Key 'aaa' has matching value 'qqq'.
+        self.assertFalse(selector({'ccc': 'zzz'}))  # <- Key 'ccc' matches.
+
+    def test_repr(self):
+        repr_list = [
+            "NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc')])",
+            "NegationSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])",
+            "NegationSelector([SimpleSelector('aaa', '=', 'xxx', ignore_case=True), SimpleSelector('bbb')])",
+        ]
+        for r in repr_list:
+            with self.subTest(r=r):
+                self.assertEqual(repr(eval(r)), r)
+
+    def test_str(self):
+        selector = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc')])
+        self.assertEqual(str(selector), ':not([aaa], [bbb], [ccc])')
+
+        selector = NegationSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])
+        self.assertEqual(str(selector), ':not([aaa="xxx"], [bbb])')
+
+        selector = NegationSelector([SimpleSelector('aaa', '=', 'xxx', ignore_case=True), SimpleSelector('bbb')])
+        self.assertEqual(str(selector), ':not([aaa="xxx" i], [bbb])')
+
+    def test_eq(self):
+        sel_a = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = NegationSelector([SimpleSelector('bbb'), SimpleSelector('aaa')])
+        self.assertEqual(sel_a, sel_b)
+
+        sel_a = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = NegationSelector([SimpleSelector('ccc'), SimpleSelector('aaa')])
+        self.assertNotEqual(sel_a, sel_b)
+
+    def test_hash(self):
+        sel_a = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = NegationSelector([SimpleSelector('bbb'), SimpleSelector('aaa')])
+        self.assertEqual(hash(sel_a), hash(sel_b))
+
+        sel_a = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = NegationSelector([SimpleSelector('ccc'), SimpleSelector('aaa')])
+        self.assertNotEqual(hash(sel_a), hash(sel_b))
+
+    def test_specificity(self):
+        """Specificity is modeled after CSS specificity but it's not
+        the same. To see how specificity is determined in CSS, see:
+
+            https://www.w3.org/TR/selectors-4/#specificity
+        """
+        sel = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        self.assertEqual(sel.specificity, (1, 0))
+
+        sel = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb', '=', 'yyy')])
+        self.assertEqual(sel.specificity, (1, 1))
+
+        sel = NegationSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb', '=', 'yyy')])
+        self.assertEqual(sel.specificity, (1, 1))
+
+        sel = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc', '=', 'zzz')])
+        self.assertEqual(sel.specificity, (1, 1))
+
+
 class TestCompoundSelector(unittest.TestCase):
     def test_simple_selector(self):
         """When given a single item list, should return the item itself."""
@@ -406,5 +474,10 @@ class TestParseSelector(unittest.TestCase):
     def test_matches_any(self):
         result = parse_selector(':is([aaa], [bbb])')
         expected = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        self.assertEqual(result, expected)
+
+    def test_matches_negation(self):
+        result = parse_selector(':not([aaa], [bbb])')
+        expected = NegationSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertEqual(result, expected)
 

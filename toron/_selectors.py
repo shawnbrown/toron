@@ -286,6 +286,34 @@ class MatchesAnySelector(SelectorContainer):
         return max(x.specificity for x in self.selector_list)
 
 
+class NegationSelector(SelectorContainer):
+    """
+    This class is designed to mimic the "negation" selector--i.e.,
+    the :not() pseudo-class. For details, see:
+
+        https://www.w3.org/TR/selectors-4/#negation
+    """
+    def __call__(self, dict_row: Mapping[str, str]) -> bool:
+        """Return True if selector matches values in *dict_row*."""
+        for selector in self.selector_list:
+            if selector(dict_row):
+                return False
+        return True
+
+    def __str__(self) -> str:
+        """Return CSS-like string of selector."""
+        inner_str = ', '.join(str(x) for x in self.selector_list)
+        return f':not({inner_str})'
+
+    @property
+    def specificity(self) -> Tuple[int, int]:
+        """The specificity of a "negation" selector (i.e., the :is()
+        pseudo-class) is the specificity of the most specific selector
+        it contains.
+        """
+        return max(x.specificity for x in self.selector_list)
+
+
 class CompoundSelector(SelectorContainer):
     def __new__(cls, selector_list):
         if len(selector_list) == 1:
@@ -368,6 +396,9 @@ class SelectorTransformer(Transformer):
 
     def matches_any(self, args):
         return MatchesAnySelector(args)
+
+    def negation(self, args):
+        return NegationSelector(args)
 
     @v_args(inline=True)
     def selector(self, attr, op=None, val=None, ignore_case=None):
