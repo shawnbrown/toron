@@ -170,6 +170,7 @@ class SimpleSelector(SelectorBase):
             self._match_func = match_func
 
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
+        """Return True if selector matches values in *dict_row*."""
         return self._match_func(self._val, dict_row.get(self._attr, ''))
 
     def __repr__(self) -> str:
@@ -346,6 +347,7 @@ class CompoundSelector(SelectorContainer):
         return super().__new__(cls)
 
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
+        """Return True if selector matches values in *dict_row*."""
         return all(selector(dict_row) for selector in self.selector_list)
 
     def __str__(self) -> str:
