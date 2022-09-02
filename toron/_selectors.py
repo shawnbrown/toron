@@ -321,11 +321,6 @@ class SpecificityAdjustmentSelector(SelectorContainer):
 
         https://www.w3.org/TR/selectors-4/#zero-matches
     """
-    def __new__(cls, selector_list):
-        if len(selector_list) == 1:
-            return selector_list[0]  # Return simple selector, if one item.
-        return super().__new__(cls)
-
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
         """Return True if selector matches values in *dict_row*."""
         for selector in self.selector_list:

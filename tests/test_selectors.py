@@ -257,6 +257,12 @@ class TestGetComparisonKey(unittest.TestCase):
 
 
 class TestMatchesAnySelector(unittest.TestCase):
+    def test_single_selector(self):
+        """When given a single item list, should return the item itself."""
+        selector = SimpleSelector('aaa')
+        result = MatchesAnySelector([selector])
+        self.assertIs(selector, result)
+
     def test_matches_any(self):
         """Returns True if one or more selectors match."""
         selector = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
@@ -323,6 +329,12 @@ class TestMatchesAnySelector(unittest.TestCase):
 
 
 class TestNegationSelector(unittest.TestCase):
+    def test_single_selector(self):
+        """Single item lists should not receive special handling."""
+        selector = SimpleSelector('aaa')
+        result = NegationSelector([selector])
+        self.assertIsNot(selector, result)
+
     def test_negation(self):
         """Returns True if one or more selectors match."""
         selector = NegationSelector([SimpleSelector('aaa', '=', 'qqq'), SimpleSelector('ccc')])
@@ -389,8 +401,13 @@ class TestNegationSelector(unittest.TestCase):
         self.assertEqual(sel.specificity, (1, 1))
 
 
-
 class TestSpecificityAdjustmentSelector(unittest.TestCase):
+    def test_single_selector(self):
+        """Single item lists should not receive special handling."""
+        selector = SimpleSelector('aaa')
+        result = SpecificityAdjustmentSelector([selector])
+        self.assertIsNot(selector, result)
+
     def test_matches_any(self):
         """Returns True if one or more selectors match."""
         selector = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
@@ -457,7 +474,7 @@ class TestSpecificityAdjustmentSelector(unittest.TestCase):
 
 
 class TestCompoundSelector(unittest.TestCase):
-    def test_simple_selector(self):
+    def test_single_selector(self):
         """When given a single item list, should return the item itself."""
         selector = SimpleSelector('aaa')
         result = CompoundSelector([selector])
