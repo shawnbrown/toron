@@ -2,47 +2,47 @@
 
 import unittest
 
-from toron._selectors import Selector
+from toron._selectors import SimpleSelector
 from toron._selectors import MatchesAnySelector
 from toron._selectors import CompoundSelector
 from toron._selectors import _get_comparison_key
 from toron._selectors import parse_selector
 
 
-class TestSelector(unittest.TestCase):
+class TestSimpleSelector(unittest.TestCase):
     def test_instantiation(self):
-        Selector('aaa')
-        Selector('aaa', '=', 'xxx')
-        Selector('aaa', '=', 'xxx', ignore_case=True)
+        SimpleSelector('aaa')
+        SimpleSelector('aaa', '=', 'xxx')
+        SimpleSelector('aaa', '=', 'xxx', ignore_case=True)
 
         with self.assertRaises(TypeError):
-            Selector()
+            SimpleSelector()
 
         with self.assertRaises(TypeError):
-            Selector('aaa', '=', None)
+            SimpleSelector('aaa', '=', None)
 
         with self.assertRaises(TypeError):
-            Selector('aaa', None, 'xxx')
+            SimpleSelector('aaa', None, 'xxx')
 
         with self.assertRaises(TypeError):
-            Selector('aaa', ignore_case=True)
+            SimpleSelector('aaa', ignore_case=True)
 
     def test_match_any_value(self):
-        selector = Selector('aaa')
+        selector = SimpleSelector('aaa')
         self.assertTrue(selector({'aaa': 'xxx'}))
         self.assertTrue(selector({'aaa': 'yyy'}))
         self.assertFalse(selector({'BBB': 'yyy'}))  # <- No attribute 'aaa'.
         self.assertFalse(selector({'aaa': ''}))  # <- Value is not truthy.
 
     def test_match_exact_value(self):
-        selector = Selector('aaa', '=', 'xxx')
+        selector = SimpleSelector('aaa', '=', 'xxx')
         self.assertTrue(selector({'aaa': 'xxx'}))
         self.assertFalse(selector({'aaa': 'YYY'}))  # <- Value does not match.
         self.assertFalse(selector({'BBB': 'xxx'}))  # <- No attribute 'aaa'.
         self.assertFalse(selector({'aaa': 'XXX'}))  # <- Matching is case-sensitive.
 
     def test_match_whitespace_separated_list(self):
-        selector = Selector('aaa', '~=', 'xxx')
+        selector = SimpleSelector('aaa', '~=', 'xxx')
         self.assertTrue(selector({'aaa': 'ZZZ xxx YYY'}))
         self.assertTrue(selector({'aaa': 'xxx'}))  # <- Exact value should match, too.
         self.assertFalse(selector({'aaa': 'ZZZ-xxx-YYY'}))  # <- Not whitespace separated.
@@ -52,14 +52,14 @@ class TestSelector(unittest.TestCase):
         self.assertTrue(selector({'aaa': 'UUU\tVVV\fWWW\r\nxxx\nYYY   ZZZ'}))
 
     def test_match_starts_with_value_and_hyphen(self):
-        selector = Selector('aaa', '|=', 'xxx')
+        selector = SimpleSelector('aaa', '|=', 'xxx')
         self.assertTrue(selector({'aaa': 'xxx-YYY'}))
         self.assertTrue(selector({'aaa': 'xxx'}))  # <- Exact value should match, too.
         self.assertFalse(selector({'aaa': 'xxx YYY'}))  # <- Cannot be followed by any char except "-".
         self.assertFalse(selector({'aaa': 'ZZZ-xxx-YYY'}))  # <- Does not start with "xxx".
 
     def test_match_starts_with_value(self):
-        selector = Selector('aaa', '^=', 'xxx')
+        selector = SimpleSelector('aaa', '^=', 'xxx')
         self.assertTrue(selector({'aaa': 'xxxYYY'}))
         self.assertTrue(selector({'aaa': 'xxx-YYY'}))
         self.assertTrue(selector({'aaa': 'xxx YYY'}))
@@ -67,7 +67,7 @@ class TestSelector(unittest.TestCase):
         self.assertFalse(selector({'aaa': 'Zxxx'}))  # <- Does not start with "xxx".
 
     def test_match_ends_with_value(self):
-        selector = Selector('aaa', '$=', 'xxx')
+        selector = SimpleSelector('aaa', '$=', 'xxx')
         self.assertTrue(selector({'aaa': 'ZZZxxx'}))
         self.assertTrue(selector({'aaa': 'ZZZ-xxx'}))
         self.assertTrue(selector({'aaa': 'ZZZ xxx'}))
@@ -75,7 +75,7 @@ class TestSelector(unittest.TestCase):
         self.assertFalse(selector({'aaa': 'xxxZ'}))  # <- Does not end with "xxx".
 
     def test_match_substring_value(self):
-        selector = Selector('aaa', '*=', 'xxx')
+        selector = SimpleSelector('aaa', '*=', 'xxx')
         self.assertTrue(selector({'aaa': 'ZZZxxxYYY'}))
         self.assertTrue(selector({'aaa': 'ZZZ-xxx-YYY'}))
         self.assertTrue(selector({'aaa': 'xxx'}))  # <- Exact value should match, too.
@@ -86,63 +86,63 @@ class TestSelector(unittest.TestCase):
     def test_unknown_operator(self):
         regex = r"unknown operator: '//"
         with self.assertRaisesRegex(ValueError, regex):
-            Selector('aaa', '//', 'xxx')
+            SimpleSelector('aaa', '//', 'xxx')
 
     def test_ignore_case(self):
-        selector = Selector('aaa', '=', 'xxx', ignore_case=True)
+        selector = SimpleSelector('aaa', '=', 'xxx', ignore_case=True)
         self.assertTrue(selector({'aaa': 'XXX'}))
 
-        selector = Selector('aaa', '~=', 'xxx', ignore_case=True)
+        selector = SimpleSelector('aaa', '~=', 'xxx', ignore_case=True)
         self.assertTrue(selector({'aaa': 'zzz XXX yyy'}))
 
-        selector = Selector('aaa', '|=', 'xxx', ignore_case=True)
+        selector = SimpleSelector('aaa', '|=', 'xxx', ignore_case=True)
         self.assertTrue(selector({'aaa': 'XXX-YYY'}))
 
-        selector = Selector('aaa', '^=', 'xxx', ignore_case=True)
+        selector = SimpleSelector('aaa', '^=', 'xxx', ignore_case=True)
         self.assertTrue(selector({'aaa': 'XXXyyy'}))
 
-        selector = Selector('aaa', '$=', 'xxx', ignore_case=True)
+        selector = SimpleSelector('aaa', '$=', 'xxx', ignore_case=True)
         self.assertTrue(selector({'aaa': 'zzzXXX'}))
 
-        selector = Selector('aaa', '*=', 'xxx', ignore_case=True)
+        selector = SimpleSelector('aaa', '*=', 'xxx', ignore_case=True)
         self.assertTrue(selector({'aaa': 'zzzXXXyyy'}))
 
     def test_repr(self):
-        sel_repr = "Selector('aaa')"
+        sel_repr = "SimpleSelector('aaa')"
         self.assertEqual(repr(eval(sel_repr)), sel_repr)
 
-        sel_repr = "Selector('aaa', '=', 'xxx')"
+        sel_repr = "SimpleSelector('aaa', '=', 'xxx')"
         self.assertEqual(repr(eval(sel_repr)), sel_repr)
 
-        sel_repr = "Selector('aaa', '=', 'xxx', ignore_case=True)"
+        sel_repr = "SimpleSelector('aaa', '=', 'xxx', ignore_case=True)"
         self.assertEqual(repr(eval(sel_repr)), sel_repr)
 
     def test_str(self):
-        selector = Selector('aaa')
+        selector = SimpleSelector('aaa')
         self.assertEqual(str(selector), '[aaa]')
 
-        selector = Selector('aaa', '=', 'xxx')
+        selector = SimpleSelector('aaa', '=', 'xxx')
         self.assertEqual(str(selector), '[aaa="xxx"]')
 
-        selector = Selector('aaa', '=', 'xxx', ignore_case=True)
+        selector = SimpleSelector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(str(selector), '[aaa="xxx" i]')
 
     def test_eq_and_hash(self):
         equal_values = [
-            (Selector('aaa'),
-             Selector('aaa')),
+            (SimpleSelector('aaa'),
+             SimpleSelector('aaa')),
 
-            (Selector('aaa', '=', 'xxx'),
-             Selector('aaa', '=', 'xxx')),
+            (SimpleSelector('aaa', '=', 'xxx'),
+             SimpleSelector('aaa', '=', 'xxx')),
 
-            (Selector('aaa', '=', 'xxx', ignore_case=True),
-             Selector('aaa', '=', 'xxx', ignore_case=True)),
+            (SimpleSelector('aaa', '=', 'xxx', ignore_case=True),
+             SimpleSelector('aaa', '=', 'xxx', ignore_case=True)),
 
-            (Selector('aaa', '=', 'xxx', ignore_case=False),
-             Selector('aaa', '=', 'xxx', ignore_case=None)),
+            (SimpleSelector('aaa', '=', 'xxx', ignore_case=False),
+             SimpleSelector('aaa', '=', 'xxx', ignore_case=None)),
 
-            (Selector('aaa', '=', 'qqq', ignore_case=True),
-             Selector('aaa', '=', 'QQQ', ignore_case=True)),
+            (SimpleSelector('aaa', '=', 'qqq', ignore_case=True),
+             SimpleSelector('aaa', '=', 'QQQ', ignore_case=True)),
         ]
         for a, b in equal_values:
             with self.subTest(a=a, b=b):
@@ -150,20 +150,20 @@ class TestSelector(unittest.TestCase):
                 self.assertEqual(hash(a), hash(b))
 
         not_equal_values = [
-            (Selector('aaa'),
-             Selector('bbb')),
+            (SimpleSelector('aaa'),
+             SimpleSelector('bbb')),
 
-            (Selector('aaa', '=', 'xxx'),
-             Selector('aaa', '^=', 'xxx')),
+            (SimpleSelector('aaa', '=', 'xxx'),
+             SimpleSelector('aaa', '^=', 'xxx')),
 
-            (Selector('aaa', '=', 'xxx'),
-             Selector('aaa', '=', 'yyy')),
+            (SimpleSelector('aaa', '=', 'xxx'),
+             SimpleSelector('aaa', '=', 'yyy')),
 
-            (Selector('aaa', '=', 'xxx'),
-             Selector('bbb', '=', 'xxx')),
+            (SimpleSelector('aaa', '=', 'xxx'),
+             SimpleSelector('bbb', '=', 'xxx')),
 
-            (Selector('aaa', '=', 'xxx', ignore_case=True),
-             Selector('AAA', '=', 'xxx', ignore_case=True)),
+            (SimpleSelector('aaa', '=', 'xxx', ignore_case=True),
+             SimpleSelector('AAA', '=', 'xxx', ignore_case=True)),
         ]
         for a, b in not_equal_values:
             with self.subTest(a=a, b=b):
@@ -176,64 +176,64 @@ class TestSelector(unittest.TestCase):
 
             https://www.w3.org/TR/selectors-4/#specificity
         """
-        selector = Selector('aaa')
+        selector = SimpleSelector('aaa')
         self.assertEqual(selector.specificity, (1, 0))
 
-        selector = Selector('aaa', '=', 'xxx')
+        selector = SimpleSelector('aaa', '=', 'xxx')
         self.assertEqual(selector.specificity, (1, 1))
 
-        selector = Selector('aaa', '=', 'xxx', ignore_case=True)
+        selector = SimpleSelector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(selector.specificity, (1, 1))
 
 
 class TestGetComparisonKey(unittest.TestCase):
     def test_simple_key(self):
-        result = _get_comparison_key(Selector('aaa'))
-        expected = (Selector, ('aaa', None, None, False))
+        result = _get_comparison_key(SimpleSelector('aaa'))
+        expected = (SimpleSelector, ('aaa', None, None, False))
         self.assertEqual(result, expected)
 
-        result = _get_comparison_key(Selector('aaa', '=', 'Qqq'))
-        expected = (Selector, ('aaa', '=', 'Qqq', False))
+        result = _get_comparison_key(SimpleSelector('aaa', '=', 'Qqq'))
+        expected = (SimpleSelector, ('aaa', '=', 'Qqq', False))
         self.assertEqual(result, expected)
 
-        result = _get_comparison_key(Selector('aaa', '=', 'Qqq', ignore_case=True))
-        expected = (Selector, ('aaa', '=', 'qqq', True))
+        result = _get_comparison_key(SimpleSelector('aaa', '=', 'Qqq', ignore_case=True))
+        expected = (SimpleSelector, ('aaa', '=', 'qqq', True))
         self.assertEqual(result, expected)
 
     def test_simple_sort(self):
-        selectors = [Selector('bbb'), Selector('aaa', '=', 'qqq')]
+        selectors = [SimpleSelector('bbb'), SimpleSelector('aaa', '=', 'qqq')]
         result = sorted(selectors, key=_get_comparison_key)
-        expected = [Selector('aaa', '=', 'qqq'), Selector('bbb')]
+        expected = [SimpleSelector('aaa', '=', 'qqq'), SimpleSelector('bbb')]
         self.assertEqual(result, expected)
 
     def test_compound_selector(self):
-        compound = CompoundSelector([Selector('aaa'), Selector('bbb')])
+        compound = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         result = _get_comparison_key(compound)
         expected = (
             CompoundSelector,
             frozenset({
-                (Selector, ('aaa', None, None, False)),
-                (Selector, ('bbb', None, None, False)),
+                (SimpleSelector, ('aaa', None, None, False)),
+                (SimpleSelector, ('bbb', None, None, False)),
             }),
         )
         self.assertEqual(result, expected)
 
     def test_matches_any_selector(self):
-        compound = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        compound = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         result = _get_comparison_key(compound)
         expected = (
             MatchesAnySelector,
             frozenset({
-                (Selector, ('aaa', None, None, False)),
-                (Selector, ('bbb', None, None, False)),
+                (SimpleSelector, ('aaa', None, None, False)),
+                (SimpleSelector, ('bbb', None, None, False)),
             }),
         )
         self.assertEqual(result, expected)
 
     def test_compound_and_matches_any_selector(self):
         nested = CompoundSelector([
-            Selector('aaa'),
-            MatchesAnySelector([Selector('bbb'), Selector('ccc')]),
+            SimpleSelector('aaa'),
+            MatchesAnySelector([SimpleSelector('bbb'), SimpleSelector('ccc')]),
         ])
 
         result = _get_comparison_key(nested)
@@ -241,12 +241,12 @@ class TestGetComparisonKey(unittest.TestCase):
         expected = (
             CompoundSelector,
             frozenset({
-                (Selector, ('aaa', None, None, False)),
+                (SimpleSelector, ('aaa', None, None, False)),
                 (
                     MatchesAnySelector,
                     frozenset({
-                        (Selector, ('bbb', None, None, False)),
-                        (Selector, ('ccc', None, None, False)),
+                        (SimpleSelector, ('bbb', None, None, False)),
+                        (SimpleSelector, ('ccc', None, None, False)),
                     }),
                 ),
             }),
@@ -257,7 +257,7 @@ class TestGetComparisonKey(unittest.TestCase):
 class TestMatchesAnySelector(unittest.TestCase):
     def test_matches_any(self):
         """Returns True if one or more selectors match."""
-        selector = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        selector = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
         self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz'}))
         self.assertTrue(selector({'bbb': 'yyy', 'ccc': 'zzz'}))
@@ -265,40 +265,40 @@ class TestMatchesAnySelector(unittest.TestCase):
 
     def test_repr(self):
         repr_list = [
-            "MatchesAnySelector([Selector('aaa'), Selector('bbb'), Selector('ccc')])",
-            "MatchesAnySelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])",
-            "MatchesAnySelector([Selector('aaa', '=', 'xxx', ignore_case=True), Selector('bbb')])",
+            "MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc')])",
+            "MatchesAnySelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])",
+            "MatchesAnySelector([SimpleSelector('aaa', '=', 'xxx', ignore_case=True), SimpleSelector('bbb')])",
         ]
         for r in repr_list:
             with self.subTest(r=r):
                 self.assertEqual(repr(eval(r)), r)
 
     def test_str(self):
-        selector = MatchesAnySelector([Selector('aaa'), Selector('bbb'), Selector('ccc')])
+        selector = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc')])
         self.assertEqual(str(selector), ':is([aaa], [bbb], [ccc])')
 
-        selector = MatchesAnySelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])
+        selector = MatchesAnySelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])
         self.assertEqual(str(selector), ':is([aaa="xxx"], [bbb])')
 
-        selector = MatchesAnySelector([Selector('aaa', '=', 'xxx', ignore_case=True), Selector('bbb')])
+        selector = MatchesAnySelector([SimpleSelector('aaa', '=', 'xxx', ignore_case=True), SimpleSelector('bbb')])
         self.assertEqual(str(selector), ':is([aaa="xxx" i], [bbb])')
 
     def test_eq(self):
-        sel_a = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
-        sel_b = MatchesAnySelector([Selector('bbb'), Selector('aaa')])
+        sel_a = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = MatchesAnySelector([SimpleSelector('bbb'), SimpleSelector('aaa')])
         self.assertEqual(sel_a, sel_b)
 
-        sel_a = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
-        sel_b = MatchesAnySelector([Selector('ccc'), Selector('aaa')])
+        sel_a = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = MatchesAnySelector([SimpleSelector('ccc'), SimpleSelector('aaa')])
         self.assertNotEqual(sel_a, sel_b)
 
     def test_hash(self):
-        sel_a = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
-        sel_b = MatchesAnySelector([Selector('bbb'), Selector('aaa')])
+        sel_a = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = MatchesAnySelector([SimpleSelector('bbb'), SimpleSelector('aaa')])
         self.assertEqual(hash(sel_a), hash(sel_b))
 
-        sel_a = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
-        sel_b = MatchesAnySelector([Selector('ccc'), Selector('aaa')])
+        sel_a = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = MatchesAnySelector([SimpleSelector('ccc'), SimpleSelector('aaa')])
         self.assertNotEqual(hash(sel_a), hash(sel_b))
 
     def test_specificity(self):
@@ -307,29 +307,29 @@ class TestMatchesAnySelector(unittest.TestCase):
 
             https://www.w3.org/TR/selectors-4/#specificity
         """
-        sel = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        sel = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertEqual(sel.specificity, (1, 0))
 
-        sel = MatchesAnySelector([Selector('aaa'), Selector('bbb', '=', 'yyy')])
+        sel = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb', '=', 'yyy')])
         self.assertEqual(sel.specificity, (1, 1))
 
-        sel = MatchesAnySelector([Selector('aaa', '=', 'xxx'), Selector('bbb', '=', 'yyy')])
+        sel = MatchesAnySelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb', '=', 'yyy')])
         self.assertEqual(sel.specificity, (1, 1))
 
-        sel = MatchesAnySelector([Selector('aaa'), Selector('bbb'), Selector('ccc', '=', 'zzz')])
+        sel = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc', '=', 'zzz')])
         self.assertEqual(sel.specificity, (1, 1))
 
 
 class TestCompoundSelector(unittest.TestCase):
     def test_simple_selector(self):
         """When given a single item list, should return the item itself."""
-        selector = Selector('aaa')
+        selector = SimpleSelector('aaa')
         result = CompoundSelector([selector])
         self.assertIs(selector, result)
 
     def test_multiple_selectors(self):
         """All selectors must match to return True."""
-        selector = CompoundSelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])
+        selector = CompoundSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])
         self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy'}))
         self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'zzz'}))
         self.assertFalse(selector({'aaa': 'yyy', 'bbb': 'yyy'}))  # <- value of 'aaa' does not match
@@ -337,40 +337,40 @@ class TestCompoundSelector(unittest.TestCase):
 
     def test_repr(self):
         repr_list = [
-            "CompoundSelector([Selector('aaa'), Selector('bbb'), Selector('ccc')])",
-            "CompoundSelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])",
-            "CompoundSelector([Selector('aaa', '=', 'xxx', ignore_case=True), Selector('bbb')])",
+            "CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc')])",
+            "CompoundSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])",
+            "CompoundSelector([SimpleSelector('aaa', '=', 'xxx', ignore_case=True), SimpleSelector('bbb')])",
         ]
         for r in repr_list:
             with self.subTest(r=r):
                 self.assertEqual(repr(eval(r)), r)
 
     def test_str(self):
-        selector = CompoundSelector([Selector('aaa'), Selector('bbb'), Selector('ccc')])
+        selector = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc')])
         self.assertEqual(str(selector), '[aaa][bbb][ccc]')
 
-        selector = CompoundSelector([Selector('aaa', '=', 'xxx'), Selector('bbb')])
+        selector = CompoundSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb')])
         self.assertEqual(str(selector), '[aaa="xxx"][bbb]')
 
-        selector = CompoundSelector([Selector('aaa', '=', 'xxx', ignore_case=True), Selector('bbb')])
+        selector = CompoundSelector([SimpleSelector('aaa', '=', 'xxx', ignore_case=True), SimpleSelector('bbb')])
         self.assertEqual(str(selector), '[aaa="xxx" i][bbb]')
 
     def test_eq(self):
-        sel_a = CompoundSelector([Selector('aaa'), Selector('bbb')])
-        sel_b = CompoundSelector([Selector('bbb'), Selector('aaa')])
+        sel_a = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = CompoundSelector([SimpleSelector('bbb'), SimpleSelector('aaa')])
         self.assertEqual(sel_a, sel_b)
 
-        sel_a = CompoundSelector([Selector('aaa'), Selector('bbb')])
-        sel_b = CompoundSelector([Selector('ccc'), Selector('aaa')])
+        sel_a = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = CompoundSelector([SimpleSelector('ccc'), SimpleSelector('aaa')])
         self.assertNotEqual(sel_a, sel_b)
 
     def test_hash(self):
-        sel_a = CompoundSelector([Selector('aaa'), Selector('bbb')])
-        sel_b = CompoundSelector([Selector('bbb'), Selector('aaa')])
+        sel_a = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = CompoundSelector([SimpleSelector('bbb'), SimpleSelector('aaa')])
         self.assertEqual(hash(sel_a), hash(sel_b))
 
-        sel_a = CompoundSelector([Selector('aaa'), Selector('bbb')])
-        sel_b = CompoundSelector([Selector('ccc'), Selector('aaa')])
+        sel_a = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
+        sel_b = CompoundSelector([SimpleSelector('ccc'), SimpleSelector('aaa')])
         self.assertNotEqual(hash(sel_a), hash(sel_b))
 
     def test_specificity(self):
@@ -379,32 +379,32 @@ class TestCompoundSelector(unittest.TestCase):
 
             https://www.w3.org/TR/selectors-4/#specificity
         """
-        sel = CompoundSelector([Selector('aaa'), Selector('bbb')])
+        sel = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertEqual(sel.specificity, (2, 0))
 
-        sel = CompoundSelector([Selector('aaa'), Selector('bbb', '=', 'yyy')])
+        sel = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb', '=', 'yyy')])
         self.assertEqual(sel.specificity, (2, 1))
 
-        sel = CompoundSelector([Selector('aaa', '=', 'xxx'), Selector('bbb', '=', 'yyy')])
+        sel = CompoundSelector([SimpleSelector('aaa', '=', 'xxx'), SimpleSelector('bbb', '=', 'yyy')])
         self.assertEqual(sel.specificity, (2, 2))
 
-        sel = CompoundSelector([Selector('aaa'), Selector('bbb'), Selector('ccc', '=', 'zzz')])
+        sel = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc', '=', 'zzz')])
         self.assertEqual(sel.specificity, (3, 1))
 
 
 class TestParseSelector(unittest.TestCase):
     def test_matches_attr(self):
         result = parse_selector('[aaa]')
-        expected = Selector('aaa')
+        expected = SimpleSelector('aaa')
         self.assertEqual(result, expected)
 
     def test_matches_value(self):
         result = parse_selector('[aaa="xxx"]')
-        expected = Selector('aaa', '=', 'xxx')
+        expected = SimpleSelector('aaa', '=', 'xxx')
         self.assertEqual(result, expected)
 
     def test_matches_any(self):
         result = parse_selector(':is([aaa], [bbb])')
-        expected = MatchesAnySelector([Selector('aaa'), Selector('bbb')])
+        expected = MatchesAnySelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertEqual(result, expected)
 

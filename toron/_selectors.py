@@ -55,14 +55,14 @@ class SelectorContainer(SelectorBase):
         return item in self.selector_list
 
 
-class Selector(SelectorBase):
+class SimpleSelector(SelectorBase):
     """Callable (function-like) object to check for matching key/value
     pairs in a dictionary.
 
     Match when key 'A' is defined and its value is any non-empty
     string::
 
-        >>> selector = Selector('A')
+        >>> selector = SimpleSelector('A')
         >>> selector({'A': 'xyzzy'})
         True
         >>> selector({'A': 'plover'})
@@ -74,7 +74,7 @@ class Selector(SelectorBase):
 
     Match when key 'A' is defined and value is exactly 'xyzzy'::
 
-        >>> selector = Selector('A', '=', 'xyzzy')
+        >>> selector = SimpleSelector('A', '=', 'xyzzy')
         >>> selector({'A': 'xyzzy', 'B': 'plugh'})
         True
         >>> selector({'A': 'plover', 'B': 'plugh'})
@@ -83,7 +83,7 @@ class Selector(SelectorBase):
     Match when key 'A' is defined and value is a case-insensitive
     match to 'Xyzzy'::
 
-        >>> selector = Selector('A', '=', 'Xyzzy', ignore_case=True)
+        >>> selector = SimpleSelector('A', '=', 'Xyzzy', ignore_case=True)
         >>> selector({'A': 'xyzzy'})
         True
         >>> selector({'A': 'XYZZY'})
@@ -117,7 +117,7 @@ class Selector(SelectorBase):
         val: Optional[str] = None,
         ignore_case: Optional[bool] = None,
     ) -> None:
-        """Initialize Selector instance."""
+        """Initialize class instance."""
         if bool(op) != bool(val):
             raise TypeError('must use `op` and `val` together or not at all')
 
@@ -161,9 +161,9 @@ class Selector(SelectorBase):
 
         .. code-block::
 
-            >>> selector = Selector('A', '=', 'xyzzy')
+            >>> selector = SimpleSelector('A', '=', 'xyzzy')
             >>> repr(selector)
-            "Selector('A', '=', 'xyzzy')"
+            "SimpleSelector('A', '=', 'xyzzy')"
         """
         cls_name = self.__class__.__name__
         if not self._op:
@@ -177,7 +177,7 @@ class Selector(SelectorBase):
 
         .. code-block::
 
-            >>> selector = Selector('A', '=', 'xyzzy')
+            >>> selector = SimpleSelector('A', '=', 'xyzzy')
             >>> str(selector)
             '[A="xyzzy"]'
         """
@@ -191,11 +191,11 @@ class Selector(SelectorBase):
 
     @property
     def specificity(self) -> Tuple[int, int]:
-        """Selectors that match attributes with any value will have a
-        specificity of `(1, 0)` and Selectors that match attributes
-        with a specific value will have a specificity of `(1, 1)`.
-        The given `op` and use of `ignore_case` have no effect on
-        specificity.
+        """SimpleSelector that match attributes with any value will
+        have a specificity of `(1, 0)` and Selectors that match
+        attributes with a specific value will have a specificity of
+        `(1, 1)`. The given `op` and use of `ignore_case` have no
+        effect on specificity.
         """
         if self._val:
             return (1, 1)
@@ -207,8 +207,8 @@ def _get_comparison_key(selector):
 
     .. code-block::
 
-        >>> _get_comparison_key(Selector('aaa', '=', 'xxx'))
-        (Selector, ('aaa', '=', 'xxx', False))
+        >>> _get_comparison_key(SimpleSelector('aaa', '=', 'xxx'))
+        (SimpleSelector, ('aaa', '=', 'xxx', False))
     """
     if hasattr(selector, 'selector_list'):
         cmp_keys = [_get_comparison_key(x) for x in selector.selector_list]
@@ -353,7 +353,7 @@ class SelectorTransformer(Transformer):
 
     @v_args(inline=True)
     def selector(self, attr, op=None, val=None, ignore_case=None):
-        return Selector(attr, op, val, ignore_case)
+        return SimpleSelector(attr, op, val, ignore_case)
 
     @v_args(inline=True)
     def attribute(self, token):
