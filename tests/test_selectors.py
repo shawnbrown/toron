@@ -621,7 +621,7 @@ class TestParserSelectorIntegration(unittest.TestCase):
         self.assertTrue(selector({'aaa': 'xxx', 'ccc': 'zzz', 'eee': 'rrr'}))
         self.assertFalse(selector({'aaa': 'xxx'}))  # <- Needs [bbb] or [ccc]
         self.assertFalse(selector({'aaa': 'qqq', 'bbb': 'yyy'}))  # <- Needs [aaa="xxx"]
-        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz', 'eee': 'QQq'}))  # <- Cannot have [eee="qqq"]
+        self.assertFalse(selector({'aaa': 'xxx', 'ccc': 'zzz', 'eee': 'QQq'}))  # <- Cannot have [eee="qqq" i]
         self.assertFalse(selector({'aaa': 'xxx', 'bbb': 'yyy', 'ddd': 'www'}))  # <- Cannot have [ddd]
 
     def test_nested_mixed_types(self):
@@ -634,6 +634,6 @@ class TestParserSelectorIntegration(unittest.TestCase):
         self.assertTrue(selector({'aaa': 'xxx', 'bbb': 'yyy', 'ddd': 'www'}))
         self.assertFalse(selector({'aaa': 'xxx', 'ddd': 'www'}))  # <- Needs [bbb] or [ccc] or cannot have [ddd]
         self.assertFalse(selector({'aaa': 'qqq', 'bbb': 'yyy'}))  # <- Needs [aaa="xxx"]
-        self.assertFalse(selector({'aaa': 'xxx', 'eee': 'QQq'}))  # <- Cannot have [eee="qqq"]
+        self.assertFalse(selector({'aaa': 'xxx', 'eee': 'QQq'}))  # <- Cannot have [eee="qqq" i]
         self.assertFalse(selector({'aaa': 'xxx', 'ddd': 'www'}))  # <- Cannot have [ddd]
 
