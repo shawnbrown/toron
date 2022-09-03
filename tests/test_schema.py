@@ -348,7 +348,7 @@ class CheckSelectorsMixin(object):
         r'["[a=\"one\"]", ["[b=\"two\"]"]]',  # <- contains nested object
     ]
     not_an_array = [
-        '{"a": "one", "b": "two"}',  # <- array
+        '{"a": "one", "b": "two"}',  # <- object
         '"one"',                     # <- text
         '123',                       # <- integer
         '3.14',                      # <- real
