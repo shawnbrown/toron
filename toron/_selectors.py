@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from json import loads
-from ._typing import List, Literal, Mapping, Optional, Tuple, Union
+from ._typing import Any, List, Literal, Mapping, Optional, Tuple, Union
 
 from lark import Lark, Transformer, UnexpectedInput, v_args
 
@@ -228,9 +228,7 @@ class SimpleSelector(SelectorBase):
         return (1, 0)
 
 
-def _get_comparison_key(
-    selector: Union[SimpleSelector, SelectorContainer]
-) ->  Tuple:
+def _get_comparison_key(obj: Any) ->  Any:
     """Returns a value suitable for comparing selectors for equality.
 
     .. code-block::
@@ -238,19 +236,23 @@ def _get_comparison_key(
         >>> _get_comparison_key(SimpleSelector('aaa', '=', 'xxx'))
         (SimpleSelector, ('aaa', '=', 'xxx', False))
     """
-    if isinstance(selector, SelectorContainer):  # <- Recurses into containers.
-        cmp_keys = [_get_comparison_key(x) for x in selector.selector_list]
-        return (selector.__class__, frozenset(cmp_keys))
+    if isinstance(obj, SelectorContainer):  # <- Recurses into containers.
+        cmp_keys = [_get_comparison_key(x) for x in obj.selector_list]
+        return (obj.__class__, frozenset(cmp_keys))
 
-    if isinstance(selector, SimpleSelector):  # <- Terminating case.
-        val = selector._val
-        ignore_case = selector._ignore_case
+    if isinstance(obj, SimpleSelector):  # <- Terminating case.
+        val = obj._val
+        ignore_case = obj._ignore_case
         if ignore_case and val:
             val = val.lower()
-        return (selector.__class__, (selector._attr, selector._op, val, ignore_case))
+        return (obj.__class__, (obj._attr, obj._op, val, ignore_case))
 
-    cls_name = selector.__class__.__name__
-    raise ValueError(f'comparison key for {cls_name} type not implemented')
+    if isinstance(obj, SelectorBase):
+        # If selector type but not already handled, raise an error.
+        cls_name = obj.__class__.__name__
+        raise ValueError(f'comparison key not implemented for type: {cls_name}')
+
+    return obj  # Return non-selector types as-is.
 
 
 class MatchesAnySelector(SelectorContainer):

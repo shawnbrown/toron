@@ -3,6 +3,7 @@
 import json
 import unittest
 
+from toron._selectors import SelectorBase
 from toron._selectors import SimpleSelector
 from toron._selectors import MatchesAnySelector
 from toron._selectors import NegationSelector
@@ -257,6 +258,29 @@ class TestGetComparisonKey(unittest.TestCase):
             }),
         )
         self.assertEqual(result, expected)
+
+    def test_non_selector_type(self):
+        result = _get_comparison_key('abc')
+        self.assertEqual(result, 'abc', msg='should be returned unchanged')
+
+        result = _get_comparison_key(123)
+        self.assertEqual(result, 123, msg='should be returned unchanged')
+
+    def test_unhandled_selector(self):
+        class DummySelector(SelectorBase):
+            __init__ = lambda self: None
+            __call__ = lambda self, _: None
+            __eq__ = lambda self, _: None
+            __hash__ = lambda self: NotImplemented
+            __repr__ = lambda self: None
+            __str__ = lambda self: None
+            specificity = property(lambda self: (0, 0))
+
+        dummy_selector = DummySelector()
+
+        regex = 'comparison key not implemented for type: DummySelector'
+        with self.assertRaisesRegex(ValueError, regex):
+            _get_comparison_key(dummy_selector)
 
 
 class TestMatchesAnySelector(unittest.TestCase):
