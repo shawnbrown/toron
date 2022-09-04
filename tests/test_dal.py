@@ -17,6 +17,7 @@ from .common import TempDirTestCase
 from toron._schema import get_connection
 from toron._schema import _schema_script
 from toron._schema import _add_functions_and_triggers
+from toron._selectors import SimpleSelector
 from toron._dal import DataAccessLayer
 from toron._dal import DataAccessLayerPre24
 from toron._dal import DataAccessLayerPre25
@@ -1148,7 +1149,7 @@ class TestAddWeightsGetNewId(unittest.TestCase):
         weighting_id = func(self.cur, name, selectors=selectors, description=description)  # <- Test the function.
 
         actual = self.cur.execute('SELECT * FROM weighting').fetchall()
-        expected = [(1, name, description, selectors, 0)]
+        expected = [(1, name, description, [SimpleSelector('category', '=', 'stuff')], 0)]
         self.assertEqual(actual, expected)
 
         msg = 'retrieved weighting_id should be same as returned from function'

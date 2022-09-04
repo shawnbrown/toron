@@ -54,11 +54,12 @@ from ._typing import List, Literal, TypeAlias, Union
 from urllib.parse import quote as urllib_parse_quote
 
 from ._exceptions import ToronError
+from ._selectors import convert_text_selectors
 
 
 sqlite3.register_converter('TEXT_JSON', _loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
-sqlite3.register_converter('TEXT_SELECTORS', _loads)
+sqlite3.register_converter('TEXT_SELECTORS', convert_text_selectors)
 sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 
 

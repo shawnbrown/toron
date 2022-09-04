@@ -8,6 +8,7 @@ from stat import S_IRUSR, S_IWUSR
 from .common import TempDirTestCase
 
 from toron._exceptions import ToronError
+from toron._selectors import SimpleSelector
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
     _user_json_valid,
@@ -818,7 +819,7 @@ class TestJsonConversion(unittest.TestCase):
             ('foo', r'["[bar=\"baz\"]"]')
         )
         self.cur.execute("SELECT selectors FROM weighting WHERE name='foo'")
-        self.assertEqual(self.cur.fetchall(), [(['[bar="baz"]'],)])
+        self.assertEqual(self.cur.fetchall(), [([SimpleSelector('bar', '=', 'baz')],)])
 
 
 class TestSavepoint(unittest.TestCase):
