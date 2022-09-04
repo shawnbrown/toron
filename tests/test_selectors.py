@@ -610,6 +610,12 @@ class TestConvertTextSelectors(unittest.TestCase):
         expected = [SimpleSelector('aaa')]
         self.assertEqual(result, expected)
 
+    def test_json_bytes_input(self):
+        json_bytes = b'["[aaa]"]'
+        result = convert_text_selectors(json_bytes)
+        expected = [SimpleSelector('aaa')]
+        self.assertEqual(result, expected)
+
     def test_multiple_single_selectors(self):
         json_string = '["[aaa]", "[bbb]"]'
         result = convert_text_selectors(json_string)

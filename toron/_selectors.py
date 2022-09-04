@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from json import loads
-from ._typing import Any, List, Literal, Mapping, Optional, Tuple, Union
+from ._typing import Any, AnyStr, List, Literal, Mapping, Optional, Tuple, Union
 
 from lark import Lark, Transformer, UnexpectedInput, v_args
 
@@ -467,7 +467,7 @@ class SelectorSyntaxError(SyntaxError):
     """Error parsing selector syntax."""
 
 
-def convert_text_selectors(selector_json: str) -> List[CompoundSelector]:
+def convert_text_selectors(selector_json: AnyStr) -> List[CompoundSelector]:
     """Convert JSON TEXT_SELECTORS into list of Selector objects."""
     list_of_strings = loads(selector_json)
     try:
