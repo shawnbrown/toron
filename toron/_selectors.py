@@ -1,9 +1,10 @@
 """Handling for attribute selectors (using CSS-inspired syntax)."""
 
 from abc import ABC, abstractmethod
+from json import loads
 from ._typing import List, Literal, Mapping, Optional, Tuple, Union
 
-from lark import Lark, Transformer, v_args
+from lark import Lark, Transformer, UnexpectedInput, v_args
 
 
 class SelectorBase(ABC):
@@ -458,4 +459,25 @@ class SelectorTransformer(Transformer):
 parse_selector = Lark(selector_grammar,
                       parser='lalr',
                       transformer=SelectorTransformer()).parse
+
+
+class SelectorSyntaxError(SyntaxError):
+    """Error parsing selector syntax."""
+
+
+def convert_text_selectors(selector_json: str) -> List[CompoundSelector]:
+    """Convert JSON TEXT_SELECTORS into list of Selector objects."""
+    list_of_strings = loads(selector_json)
+    try:
+        list_of_selectors = [parse_selector(x) for x in list_of_strings]
+        # Ignoring return-value because Mypy cannot (apparently) see
+        # result of the SelectorTransformer which is registered with
+        # the parser.
+        return list_of_selectors  # type: ignore[return-value]
+
+    except UnexpectedInput as err:
+        while err.__context__ and isinstance(err.__context__, UnexpectedInput):
+            err = err.__context__
+        selector_error = SelectorSyntaxError(err)
+        raise selector_error from None
 

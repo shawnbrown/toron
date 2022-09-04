@@ -1,5 +1,6 @@
 """Tests for toron._selectors module."""
 
+import json
 import unittest
 
 from toron._selectors import SimpleSelector
@@ -9,6 +10,8 @@ from toron._selectors import SpecificityAdjustmentSelector
 from toron._selectors import CompoundSelector
 from toron._selectors import _get_comparison_key
 from toron._selectors import parse_selector
+from toron._selectors import convert_text_selectors
+from toron._selectors import SelectorSyntaxError
 
 
 class TestSimpleSelector(unittest.TestCase):
@@ -574,6 +577,63 @@ class TestParseSelector(unittest.TestCase):
         result = parse_selector(':where([aaa], [bbb])')
         expected = SpecificityAdjustmentSelector([SimpleSelector('aaa'), SimpleSelector('bbb')])
         self.assertEqual(result, expected)
+
+
+class TestConvertTextSelectors(unittest.TestCase):
+    def test_single_selector(self):
+        json_string = '["[aaa]"]'
+        result = convert_text_selectors(json_string)
+        expected = [SimpleSelector('aaa')]
+        self.assertEqual(result, expected)
+
+    def test_multiple_single_selectors(self):
+        json_string = '["[aaa]", "[bbb]"]'
+        result = convert_text_selectors(json_string)
+        expected = [SimpleSelector('aaa'), SimpleSelector('bbb')]
+        self.assertEqual(result, expected)
+
+    def test_compound_selector(self):
+        json_string = '["[aaa][bbb]"]'
+        result = convert_text_selectors(json_string)
+        expected = [
+            CompoundSelector([
+                SimpleSelector('aaa'),
+                SimpleSelector('bbb'),
+            ]),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_multiple_mixed_selectors(self):
+        json_string = r'["[aaa][bbb]", "[ccc=\"zzz\"]:not([ddd])", "[eee]"]'
+        result = convert_text_selectors(json_string)
+        expected = [
+            CompoundSelector([
+                SimpleSelector('aaa'),
+                SimpleSelector('bbb'),
+            ]),
+            CompoundSelector([
+                SimpleSelector('ccc', '=', 'zzz'),
+                NegationSelector([SimpleSelector('ddd')]),
+            ]),
+            SimpleSelector('eee'),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_json_syntax_error(self):
+        """JSON syntax errors are not handled, should raise normally."""
+        json_string = '["[aaa=]"'
+        with self.assertRaises(json.JSONDecodeError):
+            convert_text_selectors(json_string)
+
+    def test_selector_syntax_error(self):
+        """Selector grammar errors should raise SelectorSyntaxError."""
+        json_string = '["[aaa=]"]'
+        regex = (
+            '\\[aaa=\\]\n'
+            '     \\^\n'
+        )
+        with self.assertRaisesRegex(SelectorSyntaxError, regex):
+            convert_text_selectors(json_string)
 
 
 class TestParserSelectorIntegration(unittest.TestCase):
