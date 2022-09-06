@@ -891,9 +891,10 @@ class TestSavepoint(unittest.TestCase):
             try:
                 with savepoint(cur):  # <- Nested rollback!
                     cur.execute("INSERT INTO test_table VALUES ('two')")
-                    raise Exception()
-            except Exception:
-                pass
+                    raise Exception('dummy error')
+            except Exception as err:
+                if str(err) != 'dummy error':
+                    raise
             cur.execute("INSERT INTO test_table VALUES ('three')")
 
         cur.execute('SELECT * FROM test_table')
