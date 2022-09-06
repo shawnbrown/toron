@@ -1662,7 +1662,7 @@ class TestGetRawQuantities(unittest.TestCase):
         return list(itertools.islice(iterable, n))
 
     def test_get_all(self):
-        result = list(self.dal.get_raw_quantities())
+        result = self.dal.get_raw_quantities()
         expected = [
             {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_MALE',   'value': 180140},
             {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_FEMALE', 'value': 187990},
@@ -1671,15 +1671,30 @@ class TestGetRawQuantities(unittest.TestCase):
             {'state': 'OH', 'county': '',         'census': 'TOT_ALL',    'value': 368130},
             {'state': 'OH', 'county': '',         'census': 'TOT_ALL',    'value': 1163414},
         ]
-        self.assertEqual(result, expected)
+        self.assertEqual(list(result), expected)
 
     def test_where_args_for_location(self):
-        result = list(self.dal.get_raw_quantities(state='OH', county='BUTLER'))
+        result = self.dal.get_raw_quantities(state='OH', county='BUTLER')
         expected = [
-            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_MALE',   'value': 180140},
-            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'BUTLER', 'census': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER', 'census': 'TOT_FEMALE', 'value': 187990},
         ]
-        self.assertEqual(result, expected)
+        self.assertEqual(list(result), expected)
+
+    def test_where_args_for_attribute(self):
+        result = self.dal.get_raw_quantities(census='TOT_ALL')
+        expected = [
+            {'state': 'OH', 'county': '', 'census': 'TOT_ALL', 'value': 368130},
+            {'state': 'OH', 'county': '', 'census': 'TOT_ALL', 'value': 1163414},
+        ]
+        self.assertEqual(list(result), expected)
+
+    def test_where_args_for_location_and_attribute(self):
+        result = self.dal.get_raw_quantities(county='FRANKLIN', census='TOT_MALE')
+        expected = [
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_MALE', 'value': 566499},
+        ]
+        self.assertEqual(list(result), expected)
 
     def test_multiple_cursors(self):
         iterable1 = self.dal.get_raw_quantities()

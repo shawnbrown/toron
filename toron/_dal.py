@@ -1043,31 +1043,44 @@ class DataAccessLayer(object):
             label_cols = self._get_column_names(cur, 'location')[1:]
             normalized_cols = [_schema.normalize_identifier(x) for x in label_cols]
 
-            normalized_where = {}
+            where_items = {}
+            filter_items = {}
             for key, val in where.items():
                 normalized_key = _schema.normalize_identifier(key)
                 if normalized_key in normalized_cols:
-                    normalized_where[normalized_key] = val
+                    where_items[normalized_key] = val
+                else:
+                    filter_items[key] = val
 
             statement = f"""
                 SELECT {', '.join(normalized_cols)}, attributes, value
                 FROM main.quantity
                 JOIN main.location USING (_location_id)
             """
-            if normalized_where:
-                conditions = [f'{x}=?' for x in normalized_where]
-                parameters = tuple(normalized_where.values())
+            if where_items:
+                conditions = [f'{x}=?' for x in where_items]
+                parameters = tuple(where_items.values())
                 statement = statement + f'WHERE {" AND ".join(conditions)}'
                 cur.execute(statement, parameters)
             else:
                 cur.execute(statement)
+
+            if filter_items:
+                def where_func(row_dict):
+                    for k, v in filter_items.items():
+                        if row_dict[k] != v:
+                            return False
+                    return True
+            else:
+                where_func = lambda x: True
 
             for row in cur:
                 *labels, attr_dict, value = row  # Unpack row.
                 row_dict = dict(zip(label_cols, labels))
                 row_dict.update(attr_dict)
                 row_dict['value'] = value
-                yield row_dict
+                if where_func(row_dict):
+                    yield row_dict
 
     @staticmethod
     def _get_data_property(cursor, key):
