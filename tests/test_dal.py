@@ -1,6 +1,7 @@
 """Tests for toron/node.py module."""
 
 import gc
+import itertools
 import os
 import json
 import sqlite3
@@ -1633,6 +1634,79 @@ class TestAddQuantities(unittest.TestCase):
             (2, 2, {'census': 'TOT_MALE'}, 566499),
         ]
         self.assertEqual(records, expected_quantity_records)
+
+
+class TestGetRawQuantities(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+        self.dal.set_data({'add_columns': ['state', 'county']})
+        con = self.dal._connection
+        self.cursor = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+        data = [
+            ('state', 'county',   'census',     'counts'),
+            ('OH',    'BUTLER',   'TOT_MALE',   180140),
+            ('OH',    'BUTLER',   'TOT_FEMALE', 187990),
+            ('OH',    'FRANKLIN', 'TOT_MALE',   566499),
+            ('OH',    'FRANKLIN', 'TOT_FEMALE', 596915),
+            ('OH',    '',         'TOT_ALL',    368130),
+            ('OH',    '',         'TOT_ALL',    1163414),
+        ]
+        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+    @staticmethod
+    def take(iterable, n):  # <- Helper function.
+        """Return first n items of the iterable as a list."""
+        return list(itertools.islice(iterable, n))
+
+    def test_get_all(self):
+        result = list(self.dal.get_raw_quantities())
+        expected = [
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_MALE',   'value': 566499},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_FEMALE', 'value': 596915},
+            {'state': 'OH', 'county': '',         'census': 'TOT_ALL',    'value': 368130},
+            {'state': 'OH', 'county': '',         'census': 'TOT_ALL',    'value': 1163414},
+        ]
+        self.assertEqual(result, expected)
+
+    def test_multiple_cursors(self):
+        iterable1 = self.dal.get_raw_quantities()
+        iterable2 = self.dal.get_raw_quantities()
+
+        # First 4 items from iterable1.
+        result = self.take(iterable1, 4)
+        expected = [
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_MALE',   'value': 566499},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_FEMALE', 'value': 596915},
+        ]
+        self.assertEqual(result, expected)
+
+        # First 3 items from iterable2.
+        result = self.take(iterable2, 3)
+        expected = [
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_MALE',   'value': 566499},
+        ]
+        self.assertEqual(result, expected)
+
+        # Remaining items from iterable1.
+        result = list(iterable1)
+        expected = [
+            {'state': 'OH', 'county': '',         'census': 'TOT_ALL',    'value': 368130},
+            {'state': 'OH', 'county': '',         'census': 'TOT_ALL',    'value': 1163414},
+        ]
+        self.assertEqual(result, expected)
+
+        # Deleting iterable2 before it's entirely consumed should
+        # not raise an error warning or otherwise cause problems.
+        del iterable2
 
 
 class TestGetAndSetDataProperty(unittest.TestCase):

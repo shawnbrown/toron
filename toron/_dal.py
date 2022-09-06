@@ -14,6 +14,8 @@ from itertools import (
 )
 from json import dumps as _dumps
 from ._typing import (
+    Callable,
+    Dict,
     Generator,
     Iterable,
     Literal,
@@ -1032,6 +1034,25 @@ class DataAccessLayer(object):
                 missing_vals_count,
                 inserted_rows_count,
             )
+
+    def get_raw_quantities(self) -> Iterable[Dict[str, Union[str, float]]]:
+        """Get raw data quantities."""
+        with self._transaction(method=None) as cur:
+            label_cols = self._get_column_names(cur, 'location')[1:]
+            normalized_cols = [_schema.normalize_identifier(x) for x in label_cols]
+
+            statement = f"""
+                SELECT {', '.join(normalized_cols)}, attributes, value
+                FROM main.quantity
+                JOIN main.location USING (_location_id)
+            """
+            cur.execute(statement)
+            for row in cur:
+                *labels, attr_dict, value = row  # Unpack row.
+                row_dict = dict(zip(label_cols, labels))
+                row_dict.update(attr_dict)
+                row_dict['value'] = value
+                yield row_dict
 
     @staticmethod
     def _get_data_property(cursor, key):
