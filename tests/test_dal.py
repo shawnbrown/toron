@@ -1673,6 +1673,14 @@ class TestGetRawQuantities(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_where_args_for_location(self):
+        result = list(self.dal.get_raw_quantities(state='OH', county='BUTLER'))
+        expected = [
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_FEMALE', 'value': 187990},
+        ]
+        self.assertEqual(result, expected)
+
     def test_multiple_cursors(self):
         iterable1 = self.dal.get_raw_quantities()
         iterable2 = self.dal.get_raw_quantities()

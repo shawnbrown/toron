@@ -1035,18 +1035,33 @@ class DataAccessLayer(object):
                 inserted_rows_count,
             )
 
-    def get_raw_quantities(self) -> Iterable[Dict[str, Union[str, float]]]:
+    def get_raw_quantities(
+        self, **where: str
+    ) -> Iterable[Dict[str, Union[str, float]]]:
         """Get raw data quantities."""
         with self._transaction(method=None) as cur:
             label_cols = self._get_column_names(cur, 'location')[1:]
             normalized_cols = [_schema.normalize_identifier(x) for x in label_cols]
+
+            normalized_where = {}
+            for key, val in where.items():
+                normalized_key = _schema.normalize_identifier(key)
+                if normalized_key in normalized_cols:
+                    normalized_where[normalized_key] = val
 
             statement = f"""
                 SELECT {', '.join(normalized_cols)}, attributes, value
                 FROM main.quantity
                 JOIN main.location USING (_location_id)
             """
-            cur.execute(statement)
+            if normalized_where:
+                conditions = [f'{x}=?' for x in normalized_where]
+                parameters = tuple(normalized_where.values())
+                statement = statement + f'WHERE {" AND ".join(conditions)}'
+                cur.execute(statement, parameters)
+            else:
+                cur.execute(statement)
+
             for row in cur:
                 *labels, attr_dict, value = row  # Unpack row.
                 row_dict = dict(zip(label_cols, labels))
