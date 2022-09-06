@@ -321,7 +321,10 @@ class DataAccessLayer(object):
         raise RuntimeError('cannot get connection')
 
     @contextmanager
-    def _transaction(self) -> Generator[sqlite3.Cursor, None, None]:
+    def _transaction(
+        self,
+        method: Literal['savepoint', None] = 'savepoint',
+    ) -> Generator[sqlite3.Cursor, None, None]:
         """A context manager that yields a cursor that runs in an
         isolated transaction. If the context manager exits without
         errors, the transaction is committed. If an exception is
@@ -335,8 +338,14 @@ class DataAccessLayer(object):
             # connection and leave it open when finished.
             cur = self._connection.cursor()
             try:
-                with _schema.savepoint(cur):
+                if method == 'savepoint':
+                    with _schema.savepoint(cur):
+                        yield cur
+                elif method is None:
                     yield cur
+                else:
+                    msg = f'unknown transaction method: {method}'
+                    raise ValueError(msg)
             finally:
                 cur.close()
         else:
@@ -348,8 +357,14 @@ class DataAccessLayer(object):
             con = _schema.get_connection(filename, self._required_permissions)
             cur = con.cursor()
             try:
-                with _schema.savepoint(cur):
+                if method == 'savepoint':
+                    with _schema.savepoint(cur):
+                        yield cur
+                elif method is None:
                     yield cur
+                else:
+                    msg = f'unknown transaction method: {method!r}'
+                    raise ValueError(msg)
             finally:
                 cur.close()
                 con.close()
