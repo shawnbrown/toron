@@ -339,9 +339,9 @@ class DataAccessLayer(object):
         if method == 'savepoint':
             transaction_cm = _schema.savepoint
         elif method == 'begin':
-            transaction_cm = _schema.begin
-        elif method is None:
-            transaction_cm = nullcontext  # No transaction handling.
+            transaction_cm = _schema.begin  # type: ignore [assignment]
+        elif method is None:  # Don't use transaction handling.
+            transaction_cm = nullcontext  # type: ignore [assignment]
         else:
             msg = f'unknown transaction method: {method!r}'
             raise ValueError(msg)
