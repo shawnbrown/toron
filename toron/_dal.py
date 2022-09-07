@@ -325,7 +325,7 @@ class DataAccessLayer(object):
     @contextmanager
     def _transaction(
         self,
-        method: Literal['savepoint', None] = 'savepoint',
+        method: Literal['savepoint', 'begin', None] = 'savepoint',
     ) -> Generator[sqlite3.Cursor, None, None]:
         """A context manager that yields a cursor that runs in an
         isolated transaction. If the context manager exits without
@@ -342,6 +342,9 @@ class DataAccessLayer(object):
             try:
                 if method == 'savepoint':
                     with _schema.savepoint(cur):
+                        yield cur
+                elif method == 'begin':
+                    with _schema.begin(cur):
                         yield cur
                 elif method is None:
                     yield cur
@@ -361,6 +364,9 @@ class DataAccessLayer(object):
             try:
                 if method == 'savepoint':
                     with _schema.savepoint(cur):
+                        yield cur
+                elif method == 'begin':
+                    with _schema.begin(cur):
                         yield cur
                 elif method is None:
                     yield cur
