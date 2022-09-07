@@ -49,6 +49,7 @@ import itertools
 import os
 import re
 import sqlite3
+from contextlib import contextmanager
 from json import loads as _loads
 from ._typing import List, Literal, TypeAlias, Union
 from urllib.parse import quote as urllib_parse_quote
@@ -704,4 +705,37 @@ class savepoint(object):
             self.cursor.execute(f'RELEASE {self.name}')
         else:
             self.cursor.execute(f'ROLLBACK TO {self.name}')
+
+
+@contextmanager
+def begin(cursor):
+    """Context manager to handle transaction using BEGIN and COMMIT
+    (or ROLLBACK if an error occurs).
+
+    .. code-block::
+
+        >>> cur = con.cursor()
+        >>> with begin(cur):
+        ...     cur.execute(...)
+    """
+    if cursor.connection.isolation_level is not None:
+        isolation_level = cursor.connection.isolation_level
+        msg = (
+            f'isolation_level must be None, got: {isolation_level!r}\n'
+            '\n'
+            'For explicit transaction handling, the connection must '
+            'be operating in "autocommit" mode. Turn on autocommit '
+            'mode by setting "con.isolation_level = None".'
+        )
+        raise sqlite3.OperationalError(msg)
+
+    cursor.execute(f'BEGIN TRANSACTION')
+    try:
+        yield None
+        finalize = 'COMMIT TRANSACTION'
+    except Exception:
+        finalize = 'ROLLBACK TRANSACTION'
+        raise
+    finally:
+        cursor.execute(finalize)
 

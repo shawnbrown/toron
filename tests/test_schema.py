@@ -23,6 +23,7 @@ from toron._schema import (
     get_connection,
     normalize_identifier,
     savepoint,
+    begin,
 )
 
 
@@ -908,5 +909,82 @@ class TestSavepoint(unittest.TestCase):
         regex = "isolation_level must be None, got: 'DEFERRED'"
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             with savepoint(cur):  # <- Should raise error.
+                pass
+
+
+class TestBegin(unittest.TestCase):
+    def setUp(self):
+        con = sqlite3.connect(':memory:')
+        con.isolation_level = None
+        self.cursor = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_transaction_status(self):
+        con = self.cursor.connection
+
+        self.assertFalse(con.in_transaction)
+
+        with begin(self.cursor):
+            self.assertTrue(con.in_transaction)
+
+        self.assertFalse(con.in_transaction)
+
+    def test_release(self):
+        cur = self.cursor
+
+        with begin(cur):
+            cur.execute('CREATE TEMPORARY TABLE test_table ("A")')
+            cur.execute("INSERT INTO test_table VALUES ('one')")
+            cur.execute("INSERT INTO test_table VALUES ('two')")
+            cur.execute("INSERT INTO test_table VALUES ('three')")
+
+        cur.execute('SELECT * FROM test_table')
+        self.assertEqual(cur.fetchall(), [('one',), ('two',), ('three',)])
+
+    def test_no_transaction_nesting(self):
+        """Transactions initialized with BEGIN should fail if nested."""
+        cur = self.cursor
+
+        with self.assertRaises(sqlite3.OperationalError):
+            with begin(cur):
+                with begin(cur):  # <- Nested inside BEGIN!
+                    pass
+
+        with self.assertRaises(sqlite3.OperationalError):
+            with savepoint(cur):
+                with begin(cur):  # <- Nested inside SAVEPOINT!
+                    pass
+
+        with self.assertRaises(sqlite3.OperationalError):
+            with begin(cur):
+                with savepoint(cur):  # <- Cannot contain SAVEPOINT either!
+                    pass
+
+    def test_rollback(self):
+        cur = self.cursor
+
+        with begin(cur):  # <- Released.
+            cur.execute('CREATE TEMPORARY TABLE test_table ("A")')
+
+        try:
+            with begin(cur):  # <- Rolled back!
+                cur.execute("INSERT INTO test_table VALUES ('one')")
+                cur.execute("INSERT INTO test_table VALUES ('two')")
+                cur.execute("INSERT INTO missing_table VALUES ('three')")  # <- Bad table.
+        except sqlite3.OperationalError:
+            pass
+
+        cur.execute('SELECT * FROM test_table')
+        self.assertEqual(cur.fetchall(), [], 'Table should exist but contain no records.')
+
+    def test_bad_isolation_level(self):
+        connection = sqlite3.connect(':memory:')
+        connection.isolation_level = 'DEFERRED'  # <- Incompatible isolation level.
+        cur = connection.cursor()
+
+        regex = "isolation_level must be None, got: 'DEFERRED'"
+        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+            with begin(cur):  # <- Should raise error.
                 pass
 
