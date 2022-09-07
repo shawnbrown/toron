@@ -6,7 +6,7 @@ import sqlite3
 import sys
 import tempfile
 from collections import Counter
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from itertools import (
     chain,
     compress,
@@ -335,22 +335,24 @@ class DataAccessLayer(object):
             >>> with self._transaction() as cur:
             >>>     cur.execute(...)
         """
+        # Determine transaction context manager.
+        if method == 'savepoint':
+            transaction_cm = _schema.savepoint
+        elif method == 'begin':
+            transaction_cm = _schema.begin
+        elif method is None:
+            transaction_cm = nullcontext  # No transaction handling.
+        else:
+            msg = f'unknown transaction method: {method!r}'
+            raise ValueError(msg)
+
         if hasattr(self, '_connection'):
             # If using an in-memory database, use the persistent
             # connection and leave it open when finished.
             cur = self._connection.cursor()
             try:
-                if method == 'savepoint':
-                    with _schema.savepoint(cur):
-                        yield cur
-                elif method == 'begin':
-                    with _schema.begin(cur):
-                        yield cur
-                elif method is None:
+                with transaction_cm(cur):
                     yield cur
-                else:
-                    msg = f'unknown transaction method: {method}'
-                    raise ValueError(msg)
             finally:
                 cur.close()
         else:
@@ -362,17 +364,8 @@ class DataAccessLayer(object):
             con = _schema.get_connection(filename, self._required_permissions)
             cur = con.cursor()
             try:
-                if method == 'savepoint':
-                    with _schema.savepoint(cur):
-                        yield cur
-                elif method == 'begin':
-                    with _schema.begin(cur):
-                        yield cur
-                elif method is None:
+                with transaction_cm(cur):
                     yield cur
-                else:
-                    msg = f'unknown transaction method: {method!r}'
-                    raise ValueError(msg)
             finally:
                 cur.close()
                 con.close()
