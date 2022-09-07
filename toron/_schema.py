@@ -669,6 +669,20 @@ def get_connection(
     return con
 
 
+def _validate_isolation_level(connection):
+    """Raise error if connection uses improper isolation level."""
+    if connection.isolation_level is not None:
+        isolation_level = connection.isolation_level
+        msg = (
+            f'isolation_level must be None, got: {isolation_level!r}\n'
+            '\n'
+            'For explicit transaction handling, the connection must '
+            'be operating in "autocommit" mode. Turn on autocommit '
+            'mode by setting "con.isolation_level = None".'
+        )
+        raise sqlite3.OperationalError(msg)
+
+
 _SAVEPOINT_NAME_GENERATOR = (f'svpnt{n}' for n in itertools.count())
 
 
@@ -683,17 +697,7 @@ class savepoint(object):
             cur.execute(...)
     """
     def __init__(self, cursor):
-        if cursor.connection.isolation_level is not None:
-            isolation_level = cursor.connection.isolation_level
-            msg = (
-                f'isolation_level must be None, got: {isolation_level!r}\n'
-                '\n'
-                'For explicit transaction handling, the connection must '
-                'be operating in "autocommit" mode. Turn on autocommit '
-                'mode by setting "con.isolation_level = None".'
-            )
-            raise sqlite3.OperationalError(msg)
-
+        _validate_isolation_level(cursor.connection)
         self.name = next(_SAVEPOINT_NAME_GENERATOR)
         self.cursor = cursor
 
@@ -718,17 +722,7 @@ def begin(cursor):
         >>> with begin(cur):
         ...     cur.execute(...)
     """
-    if cursor.connection.isolation_level is not None:
-        isolation_level = cursor.connection.isolation_level
-        msg = (
-            f'isolation_level must be None, got: {isolation_level!r}\n'
-            '\n'
-            'For explicit transaction handling, the connection must '
-            'be operating in "autocommit" mode. Turn on autocommit '
-            'mode by setting "con.isolation_level = None".'
-        )
-        raise sqlite3.OperationalError(msg)
-
+    _validate_isolation_level(cursor.connection)
     cursor.execute(f'BEGIN TRANSACTION')
     try:
         yield None
