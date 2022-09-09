@@ -13,6 +13,11 @@ from itertools import (
     groupby,
 )
 from json import dumps as _dumps
+from json import loads as _loads
+from ._selectors import (
+    CompoundSelector,
+    SimpleSelector,
+)
 from ._typing import (
     Callable,
     Dict,
@@ -1039,47 +1044,49 @@ class DataAccessLayer(object):
     ) -> Iterable[Dict[str, Union[str, float]]]:
         """Get raw data quantities."""
         with self._transaction(method=None) as cur:
-            label_cols = self._get_column_names(cur, 'location')[1:]
-            normalized_cols = [_schema.normalize_identifier(x) for x in label_cols]
+            loc_cols_raw = self._get_column_names(cur, 'location')[1:]
+            loc_cols = [_schema.normalize_identifier(x) for x in loc_cols_raw]
 
-            where_items = {}
-            filter_items = {}
-            for key, val in where.items():
-                normalized_key = _schema.normalize_identifier(key)
-                if normalized_key in normalized_cols:
-                    where_items[normalized_key] = val
+            # Partition location and atttribute keys into separate dicts.
+            loc_dict = {}
+            attr_dict = {}
+            for k, v in where.items():
+                normalized_key = _schema.normalize_identifier(k)
+                if normalized_key in loc_cols:
+                    loc_dict[normalized_key] = v
                 else:
-                    filter_items[key] = val
+                    attr_dict[k] = v
 
+            # Build items for where clause.
+            where_items = [f'{k}=?' for k in loc_dict.keys()]
+            parameters = tuple(loc_dict.values())
+
+            if attr_dict:
+                selector = CompoundSelector(
+                    [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
+                )
+                func = lambda attr: selector(_loads(attr))
+
+                func_name = 'USERFUNC_1'
+                cur.connection.create_function(func_name, 1, func)  # <- Register!
+                where_items.append(f'{func_name}(attributes)=1')
+
+            # Build SQL query.
             statement = f"""
-                SELECT {', '.join(normalized_cols)}, attributes, value
+                SELECT {', '.join(loc_cols)}, attributes, value
                 FROM main.quantity
                 JOIN main.location USING (_location_id)
+                {'WHERE ' if where_items else ''}{' AND '.join(where_items)}
             """
-            if where_items:
-                conditions = [f'{x}=?' for x in where_items]
-                parameters = tuple(where_items.values())
-                statement = statement + f'WHERE {" AND ".join(conditions)}'
-                cur.execute(statement, parameters)
-            else:
-                cur.execute(statement)
 
-            if filter_items:
-                def where_func(row_dict):
-                    for k, v in filter_items.items():
-                        if row_dict[k] != v:
-                            return False
-                    return True
-            else:
-                where_func = lambda x: True
-
+            # Execute SQL query and yield results.
+            cur.execute(statement, parameters)
             for row in cur:
                 *labels, attr_dict, value = row  # Unpack row.
-                row_dict = dict(zip(label_cols, labels))
+                row_dict = dict(zip(loc_cols_raw, labels))
                 row_dict.update(attr_dict)
                 row_dict['value'] = value
-                if where_func(row_dict):
-                    yield row_dict
+                yield row_dict
 
     @staticmethod
     def _get_data_property(cursor, key):
