@@ -17,6 +17,7 @@ from json import loads as _loads
 from ._selectors import (
     CompoundSelector,
     SimpleSelector,
+    accepts_json_input,
 )
 from ._typing import (
     Callable,
@@ -1062,11 +1063,9 @@ class DataAccessLayer(object):
             parameters = tuple(loc_dict.values())
 
             if attr_dict:
-                selector = CompoundSelector(
+                func = accepts_json_input(CompoundSelector(
                     [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
-                )
-                func = lambda attr: selector(_loads(attr))
-
+                ))
                 func_name = 'USERFUNC_1'
                 cur.connection.create_function(func_name, 1, func)  # <- Register!
                 where_items.append(f'{func_name}(attributes)=1')
