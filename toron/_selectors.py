@@ -468,7 +468,16 @@ class SelectorSyntaxError(SyntaxError):
 
 
 def convert_text_selectors(selector_json: AnyStr) -> List[CompoundSelector]:
-    """Convert JSON TEXT_SELECTORS into list of Selector objects."""
+    """Convert JSON TEXT_SELECTORS into list of Selector objects.
+
+    .. code-block::
+
+        >>> text_selectors = '["[A]", "[B][C=\\"ddd\\"]"]'
+        >>> convert_text_selectors(text_selectors)
+        [SimpleSelector('A'),
+         CompoundSelector([SimpleSelector('B'),
+                           SimpleSelector('C', '=', 'ddd')])]
+    """
     list_of_strings = loads(selector_json)
     try:
         list_of_selectors = [parse_selector(x) for x in list_of_strings]
