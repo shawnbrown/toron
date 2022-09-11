@@ -599,6 +599,46 @@ class TestAcceptsJsonInput(unittest.TestCase):
         self.assertNotEqual(hash(wrapped1), hash(selector1))
         self.assertNotEqual(hash(wrapped2), hash(selector2))
 
+    def test_eq(self):
+        wrapped1 = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+        wrapped2 = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+        self.assertEqual(wrapped1, wrapped2)
+
+    def test_hash_table_behavior(self):
+        """Equivalent objects should be indistinguishable from each
+        other by `set` and `dict` hash-table handling.
+        """
+        wrapped1 = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+        wrapped2 = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+
+        self.assertNotEqual(id(wrapped1), id(wrapped2))
+        self.assertEqual(hash(wrapped1), hash(wrapped2))
+        self.assertEqual(wrapped1, wrapped2)
+
+        my_set = {wrapped1, wrapped2}
+        self.assertEqual(
+            my_set,
+            {wrapped1},
+            msg='only one item because sets cannot contain duplicates',
+        )
+        self.assertEqual(
+            my_set,
+            {wrapped2},
+            msg='wrapped2 should be indistinguishable',
+        )
+
+        my_dict = {wrapped1: 'x', wrapped2: 'y'}
+        self.assertEqual(
+            my_dict,
+            {wrapped2: 'y'},
+            msg='only one item because dictionaries cannot contain duplicate keys',
+        )
+        self.assertEqual(
+            my_dict,
+            {wrapped1: 'y'},
+            msg='wrapped2 should be indistinguishable',
+        )
+
     def test_repr_and_str(self):
         """Repr should be eval-able and str should match eval."""
         wrapped = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
@@ -761,4 +801,39 @@ class TestParserSelectorIntegration(unittest.TestCase):
         self.assertFalse(selector({'aaa': 'qqq', 'bbb': 'yyy'}))  # <- Needs [aaa="xxx"]
         self.assertFalse(selector({'aaa': 'xxx', 'eee': 'QQq'}))  # <- Cannot have [eee="qqq" i]
         self.assertFalse(selector({'aaa': 'xxx', 'ddd': 'www'}))  # <- Cannot have [ddd]
+
+    def test_hash_table_behavior(self):
+        """Selectors with equivalent behavior should be indistinguishable
+        from each other by `set` and `dict` hash-table handling.
+        """
+        selector1 = parse_selector('[aaa][bbb="ccc"]')
+        selector2 = parse_selector('[bbb="ccc"][aaa]')
+
+        self.assertNotEqual(id(selector1), id(selector2))
+        self.assertEqual(hash(selector1), hash(selector2))
+        self.assertEqual(selector1, selector2)
+
+        my_set = {selector1, selector2}
+        self.assertEqual(
+            my_set,
+            {selector1},
+            msg='only one item because sets cannot contain duplicates',
+        )
+        self.assertEqual(
+            my_set,
+            {selector2},
+            msg='selector2 should be indistinguishable',
+        )
+
+        my_dict = {selector1: 'x', selector2: 'y'}
+        self.assertEqual(
+            my_dict,
+            {selector2: 'y'},
+            msg='only one item because dictionaries cannot contain duplicate keys',
+        )
+        self.assertEqual(
+            my_dict,
+            {selector1: 'y'},
+            msg='selector2 should be indistinguishable',
+        )
 

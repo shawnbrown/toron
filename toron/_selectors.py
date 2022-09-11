@@ -381,6 +381,12 @@ class accepts_json_input(object):
         """Equivalent behavior should, ideally, have the same hash."""
         return hash((self.__class__, hash(self.selector)))
 
+    def __eq__(self, other: Any) -> bool:
+        try:
+            return hash(self) == hash(other)
+        except TypeError:
+            return False
+
     def __repr__(self) -> str:
         """Return eval-able string representation of object."""
         cls_name = self.__class__.__name__

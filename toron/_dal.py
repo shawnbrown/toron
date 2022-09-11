@@ -1067,7 +1067,11 @@ class DataAccessLayer(object):
                     [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
                 ))
                 func_name = 'USERFUNC_1'
-                cur.connection.create_function(func_name, 1, func)  # <- Register!
+                try:
+                    cur.connection.create_function(func_name, 1, func, deterministic=True)
+                except sqlite3.NotSupportedError:
+                    # The `deterministic` arg is new in Python 3.8.3.
+                    cur.connection.create_function(func_name, 1, func)
                 where_items.append(f'{func_name}(attributes)=1')
 
             # Build SQL query.
