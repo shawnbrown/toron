@@ -51,7 +51,7 @@ import re
 import sqlite3
 from contextlib import contextmanager
 from json import loads as _loads
-from ._typing import List, Literal, TypeAlias, Union
+from ._typing import Callable, List, Literal, TypeAlias, Union
 from urllib.parse import quote as urllib_parse_quote
 
 from ._exceptions import ToronError
@@ -732,4 +732,85 @@ def begin(cursor):
         raise
     finally:
         cursor.execute(finalize)
+
+
+class _UserfuncNamePool(object):
+    """A class to generate and reuse names for registering user-defined
+    functions in SQLite. While Connection.create_function() can remove
+    a Python interpreter reference to a callable object (by setting
+    `func` to None), the name is still referenced from within the
+    SQLite connection itself. To prevent the accumulation of a large
+    number of useless function names within a SQLite connection, this
+    class provides a pool of names that can be reused.
+
+    Note: It is OK to use the same pool instance for multiple live
+    database connections. The pool does not need to maintain any
+    specific minimum size or track any specific connection's registered
+    functions. Its only purpose is to mitigate the gradual accumulation
+    of registered-but-useless function names in long-lived SQLite
+    connections.
+    """
+    def __init__(self):
+        self.name_pool = set()
+        self._name_gen = (f'usrfunc{n}' for n in itertools.count())
+
+    def acquire(self):
+        if self.name_pool:
+            return self.name_pool.pop()
+        return next(self._name_gen)
+
+    def release(self, name):
+        self.name_pool.add(name)
+
+
+_userfunc_name_pool = _UserfuncNamePool()
+
+
+@contextmanager
+def userfunc(
+    cursor_or_connection: Union[sqlite3.Cursor, sqlite3.Connection],
+    func: Callable,
+    narg: int = 1,
+):
+    """Context manager to handle transaction using BEGIN and COMMIT
+    (or ROLLBACK if an error occurs).
+
+    .. code-block::
+
+        >>> def myfunc(x):
+        ...    return ...
+        >>>
+        >>> cur = con.cursor()
+        >>> with userfunc(cur, myfunc) as func_name:
+        ...     cur.execute(f'SELECT {func_name}(A) FROM ...')
+    """
+    if isinstance(cursor_or_connection, sqlite3.Cursor):
+        con = cursor_or_connection.connection
+    elif isinstance(cursor_or_connection, sqlite3.Connection):
+        con = cursor_or_connection
+    else:
+        raise TypeError
+
+    name = _userfunc_name_pool.acquire()
+
+    # Create user-defined SQL function.
+    try:
+        con.create_function(name, narg, func=func, deterministic=True)
+    except sqlite3.NotSupportedError:  # `deterministic` arg new in Python 3.8.3
+        con.create_function(name, narg, func=func)
+
+    try:
+        yield name
+    finally:
+        # Remove user-defined SQL function.
+        #
+        # Must include comment "# type: ignore [arg-type]" because the
+        # current typeshed stub for sqlite3's Connection.create_function()
+        # does not recognize `None` as a valid *func* type (for more info,
+        # see https://github.com/python/typeshed/issues/8727).
+        try:
+            con.create_function(name, narg, func=None, deterministic=True)  # type: ignore [arg-type]
+        except sqlite3.NotSupportedError:
+            con.create_function(name, narg, func=None)  # type: ignore [arg-type]
+        _userfunc_name_pool.release(name)
 
