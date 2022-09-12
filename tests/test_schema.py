@@ -3,6 +3,7 @@
 import gc
 import os
 import sqlite3
+import sys
 import unittest
 import weakref
 from collections import namedtuple, OrderedDict, UserString
@@ -1038,6 +1039,22 @@ class TestUserfunc_and_UserfuncNamePool(unittest.TestCase):
             msg = 'func should still be alive due to a strong reference ' \
                   'since it is registered as a SQLite user-function'
             self.assertIsNotNone(get_ref(), msg=msg)
+
+        msg = 'after context manager closes, SQL function should not work'
+        with self.assertRaises(sqlite3.OperationalError, msg=msg):
+            self.cursor.execute(f'SELECT {funcname}(3)')
+
+        if sys.version_info[:2] == (3, 7):
+            # Skip garbage collection test in Python 3.7. In version
+            # 3.7, the sqlite3 implementation maintains a persistent
+            # strong reference to each *func* that is registered. Also
+            # in version 3.7, user-defined SQL functions/callables must
+            # be hashable--which means that a weakref proxy can't be
+            # used as a workaround. So this is a known memory leak and,
+            # unfortunately, there's no easy fix for it. That said,
+            # Python 3.7 will be EOL on June 27, 2023 (so this issue
+            # will fade away in time).
+            return
 
         gc.collect()  # Trigger full garbage collection.
         msg = 'after context manager closes, object should be garbage collected'
