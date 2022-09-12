@@ -796,7 +796,7 @@ def userfunc(
     # Create user-defined SQL function.
     try:
         con.create_function(name, narg, func=func, deterministic=True)
-    except sqlite3.NotSupportedError:  # `deterministic` arg new in Python 3.8.3
+    except TypeError:  # The `deterministic` argument is new in Python 3.8.
         con.create_function(name, narg, func=func)
 
     try:
@@ -810,7 +810,7 @@ def userfunc(
         # see https://github.com/python/typeshed/issues/8727).
         try:
             con.create_function(name, narg, func=None, deterministic=True)  # type: ignore [arg-type]
-        except sqlite3.NotSupportedError:
+        except TypeError:
             con.create_function(name, narg, func=None)  # type: ignore [arg-type]
         _userfunc_name_pool.release(name)
 
