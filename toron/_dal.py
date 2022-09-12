@@ -17,7 +17,6 @@ from json import loads as _loads
 from ._selectors import (
     CompoundSelector,
     SimpleSelector,
-    accepts_json_input,
 )
 from ._typing import (
     Callable,
@@ -1091,21 +1090,25 @@ class DataAccessLayer(object):
             parameters = tuple(loc_dict.values())
 
             if attr_dict:
-                func = accepts_json_input(CompoundSelector(
+                # Build function to match attributes.
+                selector = CompoundSelector(
                     [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
-                ))
-                func_name = 'USERFUNC_1'
-                try:
-                    cur.connection.create_function(func_name, 1, func, deterministic=True)
-                except sqlite3.NotSupportedError:
-                    # The `deterministic` arg is new in Python 3.8.3.
-                    cur.connection.create_function(func_name, 1, func)
-                where_items.append(f'{func_name}(attributes)=1')
+                )
+                func = lambda x: selector(_loads(x))  # Handles JSON input.
 
-            results = self._get_raw_quantities_execute(
-                cur, loc_cols_raw, loc_cols, where_items, parameters
-            )
-            yield from results
+                # Register SQL function, execute query, and yield results.
+                with _schema.userfunc(cur, func) as func_name:
+                    where_items.append(f'{func_name}(attributes)=1')
+                    results = self._get_raw_quantities_execute(
+                        cur, loc_cols_raw, loc_cols, where_items, parameters
+                    )
+                    yield from results
+            else:
+                # Execute query and yield results.
+                results = self._get_raw_quantities_execute(
+                    cur, loc_cols_raw, loc_cols, where_items, parameters
+                )
+                yield from results
 
     @staticmethod
     def _get_data_property(cursor, key):

@@ -366,33 +366,6 @@ class CompoundSelector(SelectorContainer):
         return tuple(sum(tup) for tup in zip(*specificity_values))  # type: ignore[return-value]
 
 
-class accepts_json_input(object):
-    """Wrapper to change selectors so they accept JSON string input."""
-    def __init__(self, selector: SelectorBase) -> None:
-        """This wrapper uses composition rather than inheritance."""
-        self.selector = selector
-
-    def __call__(self, json_obj_str: str) -> bool:
-        """Convert JSON string into dict before calling selector."""
-        row_dict = loads(json_obj_str)  # Load JSON object string (makes dict).
-        return self.selector(row_dict)
-
-    def __hash__(self) -> int:
-        """Equivalent behavior should, ideally, have the same hash."""
-        return hash((self.__class__, hash(self.selector)))
-
-    def __eq__(self, other: Any) -> bool:
-        try:
-            return hash(self) == hash(other)
-        except TypeError:
-            return False
-
-    def __repr__(self) -> str:
-        """Return eval-able string representation of object."""
-        cls_name = self.__class__.__name__
-        return f'{cls_name}({self.selector!r})'
-
-
 selector_grammar = r"""
     // --------------------------------------------------------------------
     // Lark grammar for CSS-inspired attribute selectors in Toron.
