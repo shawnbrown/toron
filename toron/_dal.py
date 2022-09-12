@@ -24,11 +24,13 @@ from ._typing import (
     Dict,
     Generator,
     Iterable,
+    List,
     Literal,
     Mapping,
     Optional,
     Sequence,
     Set,
+    Tuple,
     Type,
     TypeAlias,
     Union,
@@ -1040,6 +1042,32 @@ class DataAccessLayer(object):
                 inserted_rows_count,
             )
 
+    @staticmethod
+    def _get_raw_quantities_execute(
+        cursor: sqlite3.Cursor,
+        loc_cols_raw: List[str],
+        loc_cols: List[str],
+        where_items: List[str],
+        parameters: Tuple[str, ...],
+    ) -> Generator[Dict[str, Union[str, float]], None, None]:
+        """Build query, execute, and yield results of dict rows."""
+        # Build SQL query.
+        statement = f"""
+            SELECT {', '.join(loc_cols)}, attributes, value
+            FROM main.quantity
+            JOIN main.location USING (_location_id)
+            {'WHERE ' if where_items else ''}{' AND '.join(where_items)}
+        """
+
+        # Execute SQL query and yield results.
+        cursor.execute(statement, parameters)
+        for row in cursor:
+            *labels, attr_dict, value = row  # Unpack row.
+            row_dict = dict(zip(loc_cols_raw, labels))
+            row_dict.update(attr_dict)
+            row_dict['value'] = value
+            yield row_dict
+
     def get_raw_quantities(
         self, **where: str
     ) -> Iterable[Dict[str, Union[str, float]]]:
@@ -1074,22 +1102,10 @@ class DataAccessLayer(object):
                     cur.connection.create_function(func_name, 1, func)
                 where_items.append(f'{func_name}(attributes)=1')
 
-            # Build SQL query.
-            statement = f"""
-                SELECT {', '.join(loc_cols)}, attributes, value
-                FROM main.quantity
-                JOIN main.location USING (_location_id)
-                {'WHERE ' if where_items else ''}{' AND '.join(where_items)}
-            """
-
-            # Execute SQL query and yield results.
-            cur.execute(statement, parameters)
-            for row in cur:
-                *labels, attr_dict, value = row  # Unpack row.
-                row_dict = dict(zip(loc_cols_raw, labels))
-                row_dict.update(attr_dict)
-                row_dict['value'] = value
-                yield row_dict
+            results = self._get_raw_quantities_execute(
+                cur, loc_cols_raw, loc_cols, where_items, parameters
+            )
+            yield from results
 
     @staticmethod
     def _get_data_property(cursor, key):
