@@ -755,12 +755,14 @@ class _UserfuncNamePool(object):
         self._name_gen = (f'usrfunc{n}' for n in itertools.count())
 
     def acquire(self):
-        if self.name_pool:
-            return self.name_pool.pop()
-        return next(self._name_gen)
+        try:
+            name = self.name_pool.pop()  # Get an existing name from the pool.
+        except KeyError:
+            name = next(self._name_gen)  # Generate a new name.
+        return name
 
     def release(self, name):
-        self.name_pool.add(name)
+        self.name_pool.add(name)  # Return a name back to the pool.
 
 
 _userfunc_name_pool = _UserfuncNamePool()
