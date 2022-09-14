@@ -1111,6 +1111,84 @@ class DataAccessLayer(object):
                 yield from results
 
     @staticmethod
+    def _delete_raw_quantities_execute(
+        cursor: sqlite3.Cursor,
+        where_items: List[str],
+        parameters: Tuple[str, ...],
+    ) -> Tuple[int, int]:
+        """Build and execute SQL statement to delete rows."""
+        # Delete quantity records that match where_items and parameters.
+        statement = f"""
+            DELETE FROM main.quantity
+            WHERE quantity_id IN (
+                SELECT quantity_id
+                FROM main.quantity
+                JOIN main.location USING (_location_id)
+                WHERE {' AND '.join(where_items)}
+            )
+        """
+        cursor.execute(statement, parameters)
+        deleted_rowcount = cursor.rowcount
+
+        # Delete any unused location records.
+        statement = """
+            DELETE FROM main.location
+            WHERE _location_id IN (
+                SELECT t1._location_id
+                FROM main.location t1
+                LEFT JOIN main.quantity t2
+                    ON t1._location_id=t2._location_id
+                WHERE t2._location_id IS NULL
+            )
+        """
+        cursor.execute(statement)
+
+        return deleted_rowcount
+
+    def delete_raw_quantities(self, **where: str) -> None:
+        """Delete data quantities."""
+        if not where:
+            msg = 'requires at least one key-word argument'
+            raise TypeError(msg)
+
+        with self._transaction(method='begin') as cur:
+            loc_cols_raw = self._get_column_names(cur, 'location')[1:]
+            loc_cols = [_schema.normalize_identifier(x) for x in loc_cols_raw]
+
+            # Partition location and atttribute keys into separate dicts.
+            loc_dict = {}
+            attr_dict = {}
+            for k, v in where.items():
+                normalized_key = _schema.normalize_identifier(k)
+                if normalized_key in loc_cols:
+                    loc_dict[normalized_key] = v
+                else:
+                    attr_dict[k] = v
+
+            # Build items for where clause.
+            where_items = [f'{k}=?' for k in loc_dict.keys()]
+            parameters = tuple(loc_dict.values())
+
+            if attr_dict:
+                # Build function to match attributes.
+                selector = CompoundSelector(
+                    [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
+                )
+                func = lambda x: selector(_loads(x))  # Handles JSON input.
+
+                # Register SQL function, execute query, and yield results.
+                with _schema.userfunc(cur, func) as func_name:
+                    where_items.append(f'{func_name}(attributes)=1')
+                    self._delete_raw_quantities_execute(
+                        cur, where_items, parameters
+                    )
+            else:
+                # Execute query and yield results.
+                self._delete_raw_quantities_execute(
+                    cur, where_items, parameters
+                )
+
+    @staticmethod
     def _get_data_property(cursor, key):
         sql = 'SELECT value FROM main.property WHERE key=?'
         cursor.execute(sql, (key,))

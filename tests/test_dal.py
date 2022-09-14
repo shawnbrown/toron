@@ -1732,6 +1732,119 @@ class TestGetRawQuantities(unittest.TestCase):
         del iterable2
 
 
+class TestDeleteRawQuantities(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+        self.dal.set_data({'add_columns': ['state', 'county']})
+        con = self.dal._connection
+        self.cursor = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+        data = [
+            ('state', 'county',   'census',     'counts'),
+            ('OH',    'BUTLER',   'TOT_MALE',   180140),
+            ('OH',    'BUTLER',   'TOT_FEMALE', 187990),
+            ('OH',    'FRANKLIN', 'TOT_MALE',   566499),
+            ('OH',    'FRANKLIN', 'TOT_FEMALE', 596915),
+            ('OH',    '',         'TOT_ALL',    1531544),
+        ]
+        self.dal.add_quantities(data, 'counts')  # <- Method under test.
+
+    def assertRemainingQuantities(self, expected):
+        result = self.cursor.execute('SELECT * FROM quantity').fetchall()
+        self.assertEqual(result, expected)
+
+    def assertRemainingLocations(self, expected):
+        result = self.cursor.execute('SELECT * FROM location').fetchall()
+        self.assertEqual(result, expected)
+
+    def test_delete_by_location(self):
+        self.dal.delete_raw_quantities(county='FRANKLIN')
+
+        self.assertRemainingQuantities([
+            (1, 1, {'census': 'TOT_MALE'},   180140),
+            (2, 1, {'census': 'TOT_FEMALE'}, 187990),
+            (5, 3, {'census': 'TOT_ALL'},    1531544)
+        ])
+
+        self.assertRemainingLocations([
+            (1, 'OH', 'BUTLER'),
+            (3, 'OH', ''),
+        ])
+
+    def test_delete_by_attribute(self):
+        self.dal.delete_raw_quantities(census='TOT_ALL')
+
+        self.assertRemainingQuantities([
+            (1, 1, {'census': 'TOT_MALE'},   180140),
+            (2, 1, {'census': 'TOT_FEMALE'}, 187990),
+            (3, 2, {'census': 'TOT_MALE'},   566499),
+            (4, 2, {'census': 'TOT_FEMALE'}, 596915),
+        ])
+
+        self.assertRemainingLocations([
+            (1, 'OH', 'BUTLER'),
+            (2, 'OH', 'FRANKLIN'),
+        ])
+
+    def test_delete_by_location_and_attribute(self):
+        self.dal.delete_raw_quantities(county='FRANKLIN', census='TOT_MALE')
+
+        self.assertRemainingQuantities([
+            (1, 1, {'census': 'TOT_MALE'},   180140),
+            (2, 1, {'census': 'TOT_FEMALE'}, 187990),
+            (4, 2, {'census': 'TOT_FEMALE'}, 596915),
+            (5, 3, {'census': 'TOT_ALL'},    1531544),
+        ])
+
+        self.assertRemainingLocations([
+            (1, 'OH', 'BUTLER'),
+            (2, 'OH', 'FRANKLIN'),
+            (3, 'OH', ''),
+        ])
+
+    def test_delete_all_records(self):
+        self.dal.delete_raw_quantities(state='OH')
+        self.assertRemainingQuantities(expected=[])
+        self.assertRemainingLocations(expected=[])
+
+    def test_no_rows_deleted(self):
+        expected_quantities = [
+            (1, 1, {'census': 'TOT_MALE'},   180140),
+            (2, 1, {'census': 'TOT_FEMALE'}, 187990),
+            (3, 2, {'census': 'TOT_MALE'},   566499),
+            (4, 2, {'census': 'TOT_FEMALE'}, 596915),
+            (5, 3, {'census': 'TOT_ALL'},    1531544),
+        ]
+        expected_locations = [
+            (1, 'OH', 'BUTLER'),
+            (2, 'OH', 'FRANKLIN'),
+            (3, 'OH', ''),
+        ]
+
+        self.dal.delete_raw_quantities(state='OH', county='NO-MATCH')
+        self.assertRemainingQuantities(expected_quantities)
+        self.assertRemainingLocations(expected_locations)
+
+        self.dal.delete_raw_quantities(census='NO-MATCH')
+        self.assertRemainingQuantities(expected_quantities)
+        self.assertRemainingLocations(expected_locations)
+
+        self.dal.delete_raw_quantities(county='NO-MATCH', census='NO-MATCH')
+        self.assertRemainingQuantities(expected_quantities)
+        self.assertRemainingLocations(expected_locations)
+
+        self.dal.delete_raw_quantities(census='NO-MATCH')
+        self.assertRemainingQuantities(expected_quantities)
+        self.assertRemainingLocations(expected_locations)
+
+    def test_missing_kwds(self):
+        msg = 'should fail if no arguments are passed to function'
+        with self.assertRaises(TypeError, msg=msg):
+            self.dal.delete_raw_quantities()
+
+
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
 
