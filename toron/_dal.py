@@ -355,28 +355,23 @@ class DataAccessLayer(object):
             raise ValueError(msg)
 
         if hasattr(self, '_connection'):
-            # If using an in-memory database, use the persistent
-            # connection and leave it open when finished.
-            cur = self._connection.cursor()
-            try:
-                with transaction_cm(cur):
-                    yield cur
-            finally:
-                cur.close()
+            # In-memory database (leave connection open when finished).
+            con = self._connection
+            con_close = lambda: None
         else:
-            # If using an on-drive database, create a new
-            # connection and close it when finished.
-            filename = self.filename  # Assign locally to limit dot-lookups.
-            if not filename:
+            # On-drive database (close connection when finished).
+            if not self.filename:
                 raise RuntimeError('expected filename, none found')
-            con = _schema.get_connection(filename, self._required_permissions)
-            cur = con.cursor()
-            try:
-                with transaction_cm(cur):
-                    yield cur
-            finally:
-                cur.close()
-                con.close()
+            con = _schema.get_connection(self.filename, self._required_permissions)
+            con_close = con.close
+
+        cur = con.cursor()
+        try:
+            with transaction_cm(cur):
+                yield cur
+        finally:
+            cur.close()
+            con_close()
 
     def __del__(self):
         if isinstance(self._cleanup_item, sqlite3.Connection):
