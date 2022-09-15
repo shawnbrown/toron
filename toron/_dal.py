@@ -19,6 +19,7 @@ from ._selectors import (
     SimpleSelector,
 )
 from ._typing import (
+    Any,
     Callable,
     Dict,
     Generator,
@@ -1042,17 +1043,51 @@ class DataAccessLayer(object):
             )
 
     @staticmethod
+    def _get_raw_quantities_format_args(
+        location_cols: List[str], where: Dict[str, str]
+    ) -> Tuple[List[str], Tuple[str, ...], Optional[Callable[[Any], bool]]]:
+        """Format arguments for get_raw_quantities() and
+        delete_raw_quantities() methods.
+        """
+        normalized = [_schema.normalize_identifier(x) for x in location_cols]
+
+        # Partition location and atttribute keys into separate dicts.
+        loc_dict = {}
+        attr_dict = {}
+        for k, v in where.items():
+            normalized_key = _schema.normalize_identifier(k)
+            if normalized_key in normalized:
+                loc_dict[normalized_key] = v
+            else:
+                attr_dict[k] = v
+
+        # Build items for where clause.
+        where_items = [f'{k}=?' for k in loc_dict.keys()]
+        parameters = tuple(loc_dict.values())
+
+        # Build function to check for matching attributes.
+        if attr_dict:
+            selector = CompoundSelector(
+                [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
+            )
+            attr_func = lambda x: selector(_loads(x))  # Handles JSON input.
+        else:
+            attr_func = None
+
+        return where_items, parameters, attr_func
+
+    @staticmethod
     def _get_raw_quantities_execute(
         cursor: sqlite3.Cursor,
-        loc_cols_raw: List[str],
-        loc_cols: List[str],
+        location_cols: List[str],
         where_items: List[str],
         parameters: Tuple[str, ...],
     ) -> Generator[Dict[str, Union[str, float]], None, None]:
         """Build query, execute, and yield results of dict rows."""
         # Build SQL query.
+        normalized = [_schema.normalize_identifier(x) for x in location_cols]
         statement = f"""
-            SELECT {', '.join(loc_cols)}, attributes, value
+            SELECT {', '.join(normalized)}, attributes, value
             FROM main.quantity
             JOIN main.location USING (_location_id)
             {'WHERE ' if where_items else ''}{' AND '.join(where_items)}
@@ -1062,7 +1097,7 @@ class DataAccessLayer(object):
         cursor.execute(statement, parameters)
         for row in cursor:
             *labels, attr_dict, value = row  # Unpack row.
-            row_dict = dict(zip(loc_cols_raw, labels))
+            row_dict = dict(zip(location_cols, labels))
             row_dict.update(attr_dict)
             row_dict['value'] = value
             yield row_dict
@@ -1072,41 +1107,22 @@ class DataAccessLayer(object):
     ) -> Iterable[Dict[str, Union[str, float]]]:
         """Get raw data quantities."""
         with self._transaction(method=None) as cur:
-            loc_cols_raw = self._get_column_names(cur, 'location')[1:]
-            loc_cols = [_schema.normalize_identifier(x) for x in loc_cols_raw]
+            location_cols = self._get_column_names(cur, 'location')[1:]
+            where_items, parameters, attr_func = \
+                self._get_raw_quantities_format_args(location_cols, where)
 
-            # Partition location and atttribute keys into separate dicts.
-            loc_dict = {}
-            attr_dict = {}
-            for k, v in where.items():
-                normalized_key = _schema.normalize_identifier(k)
-                if normalized_key in loc_cols:
-                    loc_dict[normalized_key] = v
-                else:
-                    attr_dict[k] = v
-
-            # Build items for where clause.
-            where_items = [f'{k}=?' for k in loc_dict.keys()]
-            parameters = tuple(loc_dict.values())
-
-            if attr_dict:
-                # Build function to match attributes.
-                selector = CompoundSelector(
-                    [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
-                )
-                func = lambda x: selector(_loads(x))  # Handles JSON input.
-
+            if attr_func:
                 # Register SQL function, execute query, and yield results.
-                with _schema.userfunc(cur, func) as func_name:
+                with _schema.userfunc(cur, attr_func) as func_name:
                     where_items.append(f'{func_name}(attributes)=1')
                     results = self._get_raw_quantities_execute(
-                        cur, loc_cols_raw, loc_cols, where_items, parameters
+                        cur, location_cols, where_items, parameters
                     )
                     yield from results
             else:
                 # Execute query and yield results.
                 results = self._get_raw_quantities_execute(
-                    cur, loc_cols_raw, loc_cols, where_items, parameters
+                    cur, location_cols, where_items, parameters
                 )
                 yield from results
 
@@ -1115,7 +1131,7 @@ class DataAccessLayer(object):
         cursor: sqlite3.Cursor,
         where_items: List[str],
         parameters: Tuple[str, ...],
-    ) -> Tuple[int, int]:
+    ) -> int:
         """Build and execute SQL statement to delete rows."""
         # Delete quantity records that match where_items and parameters.
         statement = f"""
@@ -1152,32 +1168,13 @@ class DataAccessLayer(object):
             raise TypeError(msg)
 
         with self._transaction(method='begin') as cur:
-            loc_cols_raw = self._get_column_names(cur, 'location')[1:]
-            loc_cols = [_schema.normalize_identifier(x) for x in loc_cols_raw]
+            location_cols = self._get_column_names(cur, 'location')[1:]
+            where_items, parameters, attr_func = \
+                self._get_raw_quantities_format_args(location_cols, where)
 
-            # Partition location and atttribute keys into separate dicts.
-            loc_dict = {}
-            attr_dict = {}
-            for k, v in where.items():
-                normalized_key = _schema.normalize_identifier(k)
-                if normalized_key in loc_cols:
-                    loc_dict[normalized_key] = v
-                else:
-                    attr_dict[k] = v
-
-            # Build items for where clause.
-            where_items = [f'{k}=?' for k in loc_dict.keys()]
-            parameters = tuple(loc_dict.values())
-
-            if attr_dict:
-                # Build function to match attributes.
-                selector = CompoundSelector(
-                    [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
-                )
-                func = lambda x: selector(_loads(x))  # Handles JSON input.
-
+            if attr_func:
                 # Register SQL function, execute query, and yield results.
-                with _schema.userfunc(cur, func) as func_name:
+                with _schema.userfunc(cur, attr_func) as func_name:
                     where_items.append(f'{func_name}(attributes)=1')
                     self._delete_raw_quantities_execute(
                         cur, where_items, parameters
