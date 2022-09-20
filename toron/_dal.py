@@ -43,8 +43,8 @@ except ImportError:
 from . import _schema
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
-from ._exceptions import ToronError
-from ._exceptions import ToronWarning
+from ._utils import ToronError
+from ._utils import ToronWarning
 
 
 if sys.platform != 'win32' and hasattr(fcntl, 'F_FULLFSYNC'):

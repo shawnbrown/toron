@@ -10,7 +10,7 @@ from collections import namedtuple, OrderedDict, UserString
 from stat import S_IRUSR, S_IWUSR
 from .common import TempDirTestCase
 
-from toron._exceptions import ToronError
+from toron._utils import ToronError
 from toron._selectors import SimpleSelector
 from toron._schema import (
     SQLITE_JSON1_ENABLED,

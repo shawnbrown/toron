@@ -54,7 +54,7 @@ from json import loads as _loads
 from ._typing import Callable, List, Literal, TypeAlias, Union
 from urllib.parse import quote as urllib_parse_quote
 
-from ._exceptions import ToronError
+from ._utils import ToronError
 from ._selectors import convert_text_selectors
 
 

@@ -25,8 +25,8 @@ from toron._dal import DataAccessLayerPre25
 from toron._dal import DataAccessLayerPre35
 from toron._dal import dal_class
 from toron._dal import _temp_files_to_delete_atexit
-from toron._exceptions import ToronError
-from toron._exceptions import ToronWarning
+from toron._utils import ToronError
+from toron._utils import ToronWarning
 
 
 SQLITE_VERSION_INFO = sqlite3.sqlite_version_info

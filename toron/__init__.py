@@ -9,7 +9,7 @@ from toron._gpn_node import Node
 from toron.connector import IN_MEMORY
 from toron.connector import TEMP_FILE
 from toron.connector import READ_ONLY
-from ._exceptions import ToronError
+from ._utils import ToronError
 
 __all__ = [
     'Node',

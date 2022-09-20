@@ -5,7 +5,7 @@ import unittest
 from .common import get_column_names
 
 from toron.node import Node
-from toron._exceptions import ToronWarning
+from toron._utils import ToronWarning
 
 
 class TestNodeAddColumns(unittest.TestCase):
