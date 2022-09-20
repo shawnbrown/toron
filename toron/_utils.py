@@ -165,23 +165,28 @@ def wide_to_long(
 
     dict_rows = _data_to_dict_rows(data, columns)
 
-    for old_row in dict_rows:
-        other_vars_dict = {k: v for k, v in old_row.items() if k not in value_vars}
+    for input_row in dict_rows:
+        other_vars_dict = {k: v for k, v in input_row.items() if k not in value_vars}
         for var in value_vars:
-            value = old_row[var]
+            try:
+                value = input_row[var]
+            except KeyError:
+                msg = f'{var!r} not in {tuple(input_row.keys())!r}'
+                raise KeyError(msg) from None
+
             if value is None or value == '':
                 continue
 
-            new_row = dict(attrs_func(var))
+            output_row = dict(attrs_func(var))
 
-            collisions = new_row.keys() & other_vars_dict.keys()
+            collisions = output_row.keys() & other_vars_dict.keys()
             if collisions:
                 import warnings
                 formatted = ', '.join(repr(k) for k in collisions)
                 msg = f'attributes cannot use the same names as other columns: {formatted}'
                 warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
-            new_row.update(other_vars_dict)
-            new_row[value_name] = value
-            yield new_row
+            output_row.update(other_vars_dict)
+            output_row[value_name] = value
+            yield output_row
 

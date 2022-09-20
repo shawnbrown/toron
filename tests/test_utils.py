@@ -159,3 +159,14 @@ class TestWideToLong(unittest.TestCase):
         ]
         self.assertEqual(list(result), expected)
 
+    def test_missing_value_vars(self):
+        data = [
+            ('state', 'county',   'TOT_MALE', 'TOT_FEMALE'),
+            ('OH',    'BUTLER',   180140,     187990),
+            ('OH',    'FRANKLIN', 566499,     596915),
+        ]
+        regex = r"'BAD_VAR' not in \('state', 'county', 'TOT_MALE', 'TOT_FEMALE'\)"
+        with self.assertRaisesRegex(KeyError, regex):
+            generator = wide_to_long(data, ['TOT_MALE', 'TOT_FEMALE', 'BAD_VAR'])
+            list(generator)  # <- Must consume generator (it's not primed).
+
