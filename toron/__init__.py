@@ -9,7 +9,11 @@ from toron._gpn_node import Node
 from toron.connector import IN_MEMORY
 from toron.connector import TEMP_FILE
 from toron.connector import READ_ONLY
-from ._utils import ToronError
+from ._utils import (
+    ToronError,
+    ToronWarning,
+    wide_to_long,
+)
 
 __all__ = [
     'Node',
@@ -17,4 +21,6 @@ __all__ = [
     'TEMP_FILE',
     'READ_ONLY',
     'ToronError',
+    'ToronWarning',
+    'wide_to_long',
 ]
