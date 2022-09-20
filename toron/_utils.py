@@ -12,6 +12,8 @@ and can be imported.
 
 from itertools import chain
 from ._typing import (
+    Callable,
+    Generator,
     Iterable,
     Mapping,
     Optional,
@@ -48,4 +50,47 @@ def _data_to_dict_rows(
                f'got type {type(first_element)}')
         raise TypeError(msg)
     return dict_rows
+
+
+def wide_to_long(
+    data: Union[Iterable[Mapping], Iterable[Sequence]],
+    value_vars: Sequence[str],
+    make_attrs: Union[str, Callable[[str], Mapping[str, str]]] = 'variable',
+    *,
+    value_name: str = 'value',
+    columns: Optional[Sequence[str]] = None,
+) -> Generator[Mapping, None, None]:
+    """A generator to unpivot data from wide to long format and yield
+    dictionary rows.
+    """
+    attrs_func: Callable[[str], Mapping[str, str]]
+    if isinstance(make_attrs, str):
+        attrs_func = lambda x: {make_attrs: x}  # type: ignore [dict-item]
+    elif callable(make_attrs):
+        attrs_func = make_attrs
+    else:
+        cls_name = make_attrs.__class__.__name__
+        raise TypeError(f'make_attrs type unsupported: {cls_name}')
+
+    dict_rows = _data_to_dict_rows(data, columns)
+
+    for old_row in dict_rows:
+        other_vars_dict = {k: v for k, v in old_row.items() if k not in value_vars}
+        for var in value_vars:
+            value = old_row[var]
+            if value is None or value == '':
+                continue
+
+            new_row = dict(attrs_func(var))
+
+            collisions = new_row.keys() & other_vars_dict.keys()
+            if collisions:
+                import warnings
+                formatted = ', '.join(repr(k) for k in collisions)
+                msg = f'attributes cannot use the same names as other columns: {formatted}'
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+
+            new_row.update(other_vars_dict)
+            new_row[value_name] = value
+            yield new_row
 
