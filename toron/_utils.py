@@ -60,8 +60,99 @@ def wide_to_long(
     value_name: str = 'value',
     columns: Optional[Sequence[str]] = None,
 ) -> Generator[Mapping, None, None]:
-    """A generator to unpivot data from wide to long format and yield
-    dictionary rows.
+    """A generator function to unpivot data from wide to long format
+    and yield dictionary rows.
+
+    Parameters
+    ----------
+
+    data : iterable of mappings (dict) or sequences
+        Wide-format data.
+    value_vars : sequence of str
+        Column(s) to unpivot.
+    make_attrs : callable or str, default 'variable'
+        Function or string used to make attribute item(s).
+    value_name : str, default 'value'
+        Name to use for the 'value' column.
+    columns : sequence of str, optional
+        Column names to use if data is a sequence with no header row.
+
+    Returns
+    -------
+
+    Generator
+        Unpivoted dictionary rows.
+
+    Examples
+    --------
+
+    Use variable as a single attribute item:
+
+    .. code-block::
+
+        >>> from toron import wide_to_long
+        >>> wide_data = [
+        ...     ('A', 'B', 'C'),
+        ...     ('a', 1,   2),
+        ...     ('b', 3,   4),
+        ...     ('c', 5,   6),
+        ... ]
+
+    .. code-block::
+
+        >>> long_data = wide_to_long(wide_data, value_vars=['B', 'C'])
+        >>> list(long_data)
+        [{'A': 'a', 'variable': 'B', 'value': 1},
+         {'A': 'a', 'variable': 'C', 'value': 2},
+         {'A': 'b', 'variable': 'B', 'value': 3},
+         {'A': 'b', 'variable': 'C', 'value': 4},
+         {'A': 'c', 'variable': 'B', 'value': 5},
+         {'A': 'c', 'variable': 'C', 'value': 6}]
+
+    .. code-block::
+
+        >>> long_data = wide_to_long(wide_data, value_vars=['B', 'C'], make_attrs='altname')
+        >>> list(long_data)
+        [{'A': 'a', 'altname': 'B', 'value': 1},
+         {'A': 'a', 'altname': 'C', 'value': 2},
+         {'A': 'b', 'altname': 'B', 'value': 3},
+         {'A': 'b', 'altname': 'C', 'value': 4},
+         {'A': 'c', 'altname': 'B', 'value': 5},
+         {'A': 'c', 'altname': 'C', 'value': 6}]
+        >>>
+
+    Transform variables into multiple attribute items (with a
+    function):
+
+    .. code-block::
+
+        >>> from toron import wide_to_long
+        >>> wide_data = [
+        ...     ('A', 'B1970', 'C1980', 'D'),
+        ...     ('a', 10,      20,      30),
+        ...     ('b', 40,      50,      60),
+        ...     ('c', 70,      80,      90),
+        ... ]
+
+    .. code-block::
+
+        >>> def make_attrs(var):
+        ...     return {'letter': var[:1], 'year': var[1:]}
+        ...
+
+    .. code-block::
+
+        >>> long_data = wide_to_long(wide_data, ['B1970', 'C1980', 'D'], make_attrs)
+        >>> list(long_data)
+        [{'A': 'a', 'letter': 'B', 'year': '1970', 'value': 10},
+         {'A': 'a', 'letter': 'C', 'year': '1980', 'value': 20},
+         {'A': 'a', 'letter': 'D', 'year': '',     'value': 30},
+         {'A': 'b', 'letter': 'B', 'year': '1970', 'value': 40},
+         {'A': 'b', 'letter': 'C', 'year': '1980', 'value': 50},
+         {'A': 'b', 'letter': 'D', 'year': '',     'value': 60},
+         {'A': 'c', 'letter': 'B', 'year': '1970', 'value': 70},
+         {'A': 'c', 'letter': 'C', 'year': '1980', 'value': 80},
+         {'A': 'c', 'letter': 'D', 'year': '',     'value': 90}]
     """
     attrs_func: Callable[[str], Mapping[str, str]]
     if isinstance(make_attrs, str):
