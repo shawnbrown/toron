@@ -8,7 +8,7 @@ from toron._utils import wide_to_long
 class TestWideToLong(unittest.TestCase):
     maxDiff = None
 
-    def test_multiple_value_columns(self):
+    def test_multiple_value_vars(self):
         data = [
             ('state', 'county',   'TOT_MALE', 'TOT_FEMALE'),
             ('OH',    'BUTLER',   180140,     187990),
@@ -24,7 +24,7 @@ class TestWideToLong(unittest.TestCase):
         ]
         self.assertEqual(list(result), expected)
 
-    def test_single_value_column(self):
+    def test_single_value_var(self):
         data = [
             ('state', 'county',   'TOT_ALL'),
             ('OH',    'BUTLER',   368130),
