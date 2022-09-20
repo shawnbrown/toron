@@ -1,4 +1,4 @@
-"""unittest compatibility layer."""
+"""compatibility layer for `unittest` (Python standard library)"""
 import sys
 from unittest import *
 

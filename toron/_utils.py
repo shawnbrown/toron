@@ -1,13 +1,13 @@
-"""Stand-alone utility functions and classes for the Toron project.
+"""Utility functions and classes for the Toron project.
 
-This sub-module contains data handling functions, exception classes,
-and warning classes.
+This sub-module contains code that is used elsewhere in Toron to
+handle data, raise exceptions, and issue warnings.
 
-NOTE: Ideally, this module should not import any other modules from
-within Toron itself--it should only import packages from the Python
-Standard Library. That said, Toron's compatibility modules (like
-`_typing`) are treated as if they are part of the Standard Library
-and can be imported.
+NOTE: Ideally, this module should not import code from within Toron
+itself--it should only import from the Python Standard Library or
+indepdendent, third-party packages. That said, Toron's compatibility
+modules (like `_typing`) are treated as if they are part of the
+Standard Library and may be imported.
 """
 
 from itertools import chain

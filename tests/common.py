@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""Common functions and classes for test cases."""
 import glob
 import os
 import shutil

@@ -1,4 +1,4 @@
-"""Tests for toron/node.py module."""
+"""Tests for toron/_dal.py module."""
 
 import gc
 import itertools
