@@ -6,6 +6,8 @@ from toron._utils import wide_to_long
 
 
 class TestWideToLong(unittest.TestCase):
+    maxDiff = None
+
     def test_multiple_value_columns(self):
         data = [
             ('state', 'county',   'TOT_MALE', 'TOT_FEMALE'),
@@ -15,9 +17,9 @@ class TestWideToLong(unittest.TestCase):
         result = wide_to_long(data, ['TOT_MALE', 'TOT_FEMALE'])
 
         expected = [
-            {'state': 'OH', 'county': 'BUTLER', 'variable': 'TOT_MALE', 'value': 180140},
-            {'state': 'OH', 'county': 'BUTLER', 'variable': 'TOT_FEMALE', 'value': 187990},
-            {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_MALE', 'value': 566499},
+            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_MALE',   'value': 566499},
             {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_FEMALE', 'value': 596915},
         ]
         self.assertEqual(list(result), expected)
@@ -31,7 +33,7 @@ class TestWideToLong(unittest.TestCase):
         result = wide_to_long(data, ['TOT_ALL'])
 
         expected = [
-            {'state': 'OH', 'county': 'BUTLER', 'variable': 'TOT_ALL', 'value': 368130},
+            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_ALL', 'value': 368130},
             {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_ALL', 'value': 1163414},
         ]
         self.assertEqual(list(result), expected)
@@ -47,9 +49,9 @@ class TestWideToLong(unittest.TestCase):
 
         # Uses "census" as attr key.
         expected = [
-            {'state': 'OH', 'county': 'BUTLER', 'census': 'TOT_MALE', 'value': 180140},
-            {'state': 'OH', 'county': 'BUTLER', 'census': 'TOT_FEMALE', 'value': 187990},
-            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_MALE', 'value': 566499},
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'TOT_FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_MALE',   'value': 566499},
             {'state': 'OH', 'county': 'FRANKLIN', 'census': 'TOT_FEMALE', 'value': 596915},
         ]
         self.assertEqual(list(result), expected)
@@ -68,9 +70,9 @@ class TestWideToLong(unittest.TestCase):
         )
 
         expected = [
-            {'state': 'OH', 'county': 'BUTLER', 'census': 'tot_male', 'value': 180140},
-            {'state': 'OH', 'county': 'BUTLER', 'census': 'tot_female', 'value': 187990},
-            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'tot_male', 'value': 566499},
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'tot_male',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'census': 'tot_female', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'census': 'tot_male',   'value': 566499},
             {'state': 'OH', 'county': 'FRANKLIN', 'census': 'tot_female', 'value': 596915},
         ]
         self.assertEqual(list(result), expected)
@@ -88,9 +90,9 @@ class TestWideToLong(unittest.TestCase):
         )
 
         expected = [
-            {'state': 'OH', 'county': 'BUTLER', 'catalog': 'TOT', 'sex': 'MALE', 'value': 180140},
-            {'state': 'OH', 'county': 'BUTLER', 'catalog': 'TOT', 'sex': 'FEMALE', 'value': 187990},
-            {'state': 'OH', 'county': 'FRANKLIN', 'catalog': 'TOT', 'sex': 'MALE', 'value': 566499},
+            {'state': 'OH', 'county': 'BUTLER',   'catalog': 'TOT', 'sex': 'MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'catalog': 'TOT', 'sex': 'FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'catalog': 'TOT', 'sex': 'MALE',   'value': 566499},
             {'state': 'OH', 'county': 'FRANKLIN', 'catalog': 'TOT', 'sex': 'FEMALE', 'value': 596915},
         ]
         self.assertEqual(list(result), expected)
@@ -101,28 +103,28 @@ class TestWideToLong(unittest.TestCase):
             ('OH',    'BUTLER',   180140,     187990),
             ('OH',    'FRANKLIN', 566499,     596915),
         ]
-        columns = ('state', 'county',   'TOT_MALE', 'TOT_FEMALE')
+        columns = ('state', 'county', 'TOT_MALE', 'TOT_FEMALE')
         result = wide_to_long(data, ['TOT_MALE', 'TOT_FEMALE'], columns=columns)
 
         expected = [
-            {'state': 'OH', 'county': 'BUTLER', 'variable': 'TOT_MALE', 'value': 180140},
-            {'state': 'OH', 'county': 'BUTLER', 'variable': 'TOT_FEMALE', 'value': 187990},
-            {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_MALE', 'value': 566499},
+            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_MALE',   'value': 566499},
             {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_FEMALE', 'value': 596915},
         ]
         self.assertEqual(list(result), expected)
 
     def test_dict_rows(self):
         data = [
-            {'state': 'OH', 'county': 'BUTLER', 'TOT_MALE': 180140, 'TOT_FEMALE': 187990},
+            {'state': 'OH', 'county': 'BUTLER',   'TOT_MALE': 180140, 'TOT_FEMALE': 187990},
             {'state': 'OH', 'county': 'FRANKLIN', 'TOT_MALE': 566499, 'TOT_FEMALE': 596915},
         ]
         result = wide_to_long(data, ['TOT_MALE', 'TOT_FEMALE'])
 
         expected = [
-            {'state': 'OH', 'county': 'BUTLER', 'variable': 'TOT_MALE', 'value': 180140},
-            {'state': 'OH', 'county': 'BUTLER', 'variable': 'TOT_FEMALE', 'value': 187990},
-            {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_MALE', 'value': 566499},
+            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_MALE',   'value': 180140},
+            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_FEMALE', 'value': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_MALE',   'value': 566499},
             {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_FEMALE', 'value': 596915},
         ]
         self.assertEqual(list(result), expected)
@@ -144,7 +146,7 @@ class TestWideToLong(unittest.TestCase):
             ('state', 'county',   'TOT_MALE', 'TOT_FEMALE', 'OTHER'),
             ('OH',    'BUTLER',   180140,     187990,        None),  # <- Omits None.
             ('OH',    'FRANKLIN', 566499,     596915,        ''),    # <- Omits empty string.
-            ('OH',    '-',        None,       '',            0),     # <- Retains zeros.
+            ('OH',    '-',        None,       '',            0),     # <- Retains zero.
         ]
         result = wide_to_long(data, ['TOT_MALE', 'TOT_FEMALE', 'OTHER'])
 
@@ -155,6 +157,5 @@ class TestWideToLong(unittest.TestCase):
             {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_FEMALE', 'value': 596915},
             {'state': 'OH', 'county': '-',        'variable': 'OTHER',      'value': 0},
         ]
-        self.maxDiff = None
         self.assertEqual(list(result), expected)
 
