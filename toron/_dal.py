@@ -43,8 +43,11 @@ except ImportError:
 from . import _schema
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
-from ._utils import ToronError
-from ._utils import ToronWarning
+from ._utils import (
+    ToronError,
+    ToronWarning,
+    _data_to_dict_rows,
+)
 
 
 if sys.platform != 'win32' and hasattr(fcntl, 'F_FULLFSYNC'):
@@ -962,21 +965,7 @@ class DataAccessLayer(object):
             ... ]
             >>> dal.add_quantities(data, 'counts')
         """
-        # Normalize data as dict_rows.
-        iter_data = iter(data)
-        first_element = next(iter_data)
-        if isinstance(first_element, Sequence):
-            if not columns:
-                columns = first_element
-            else:
-                iter_data = chain([first_element], iter_data)
-            dict_rows = (dict(zip(columns, row)) for row in iter_data)
-        elif isinstance(first_element, Mapping):
-            dict_rows = chain([first_element], iter_data)  # type: ignore [assignment]
-        else:
-            msg = (f'data must contain mappings or sequences, '
-                   f'got type {type(first_element)}')
-            raise TypeError(msg)
+        dict_rows = _data_to_dict_rows(data, columns)
 
         # Prepare data and insert quantities.
         with self._transaction() as cur:
