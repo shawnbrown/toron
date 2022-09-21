@@ -15,6 +15,8 @@ from ._utils import (
     wide_to_long,
 )
 
+ToronError.__module__ = 'toron'
+
 __all__ = [
     'Node',
     'IN_MEMORY',
