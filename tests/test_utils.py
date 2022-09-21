@@ -2,6 +2,7 @@
 
 import unittest
 
+from toron._utils import ToronError
 from toron._utils import wide_to_long
 
 
@@ -165,8 +166,11 @@ class TestWideToLong(unittest.TestCase):
             ('OH',    'BUTLER',   180140,     187990),
             ('OH',    'FRANKLIN', 566499,     596915),
         ]
-        regex = r"'BAD_VAR' not in \('state', 'county', 'TOT_MALE', 'TOT_FEMALE'\)"
-        with self.assertRaisesRegex(KeyError, regex):
+        regex = (
+            r"wide_to_long\(\) got value_vars not present in data: 'BAD_VAR' "
+            r"not in \['state', 'county', 'TOT_MALE', 'TOT_FEMALE'\]"
+        )
+        with self.assertRaisesRegex(ToronError, regex):
             generator = wide_to_long(data, ['TOT_MALE', 'TOT_FEMALE', 'BAD_VAR'])
             list(generator)  # <- Must consume generator (it's not primed).
 

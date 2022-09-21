@@ -171,8 +171,11 @@ def wide_to_long(
             try:
                 value = input_row[var]
             except KeyError:
-                msg = f'{var!r} not in {tuple(input_row.keys())!r}'
-                raise KeyError(msg) from None
+                msg = f'wide_to_long() got value_vars not present in data: ' \
+                      f'{var!r} not in {list(input_row.keys())!r}'
+                generator_error = ToronError(msg)
+                generator_error.__cause__ = None
+                raise generator_error
 
             if value is None or value == '':
                 continue
