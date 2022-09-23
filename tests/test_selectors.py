@@ -10,6 +10,7 @@ from toron._selectors import NegationSelector
 from toron._selectors import SpecificityAdjustmentSelector
 from toron._selectors import CompoundSelector
 from toron._selectors import _get_comparison_key
+from toron._selectors import accepts_json_input
 from toron._selectors import parse_selector
 from toron._selectors import convert_text_selectors
 from toron._selectors import SelectorSyntaxError
@@ -570,6 +571,80 @@ class TestCompoundSelector(unittest.TestCase):
 
         sel = CompoundSelector([SimpleSelector('aaa'), SimpleSelector('bbb'), SimpleSelector('ccc', '=', 'zzz')])
         self.assertEqual(sel.specificity, (3, 1))
+
+
+class TestAcceptsJsonInput(unittest.TestCase):
+    def test_wrapping(self):
+        """Should accept JSON object strings not Python dict objects."""
+        selector = SimpleSelector('aaa', '=', 'xxx')
+        wrapped = accepts_json_input(selector)  # <- Wrap selector.
+
+        json_string = '{"aaa": "xxx"}'
+        self.assertTrue(wrapped(json_string), msg='should accept JSON string')
+
+        with self.assertRaises(TypeError, msg='should fail if given dict'):
+            row_dict = {'aaa': 'xxx'}
+            self.assertTrue(wrapped(row_dict))
+
+    def test_hash(self):
+        """Functionally equivalent behavior should, ideally, have the
+        same hash.
+        """
+        selector1 = SimpleSelector('aaa', '=', 'xxx')
+        selector2 = SimpleSelector('aaa', '=', 'xxx')
+        wrapped1 = accepts_json_input(selector1)
+        wrapped2 = accepts_json_input(selector2)
+
+        self.assertEqual(hash(wrapped1), hash(wrapped2))
+        self.assertNotEqual(hash(wrapped1), hash(selector1))
+        self.assertNotEqual(hash(wrapped2), hash(selector2))
+
+    def test_eq(self):
+        wrapped1 = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+        wrapped2 = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+        self.assertEqual(wrapped1, wrapped2)
+
+    def test_hash_table_behavior(self):
+        """Equivalent objects should be indistinguishable from each
+        other by `set` and `dict` hash-table handling.
+        """
+        wrapped1 = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+        wrapped2 = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+
+        self.assertNotEqual(id(wrapped1), id(wrapped2))
+        self.assertEqual(hash(wrapped1), hash(wrapped2))
+        self.assertEqual(wrapped1, wrapped2)
+
+        my_set = {wrapped1, wrapped2}
+        self.assertEqual(
+            my_set,
+            {wrapped1},
+            msg='only one item because sets cannot contain duplicates',
+        )
+        self.assertEqual(
+            my_set,
+            {wrapped2},
+            msg='wrapped2 should be indistinguishable',
+        )
+
+        my_dict = {wrapped1: 'x', wrapped2: 'y'}
+        self.assertEqual(
+            my_dict,
+            {wrapped2: 'y'},
+            msg='only one item because dictionaries cannot contain duplicate keys',
+        )
+        self.assertEqual(
+            my_dict,
+            {wrapped1: 'y'},
+            msg='wrapped2 should be indistinguishable',
+        )
+
+    def test_repr_and_str(self):
+        """Repr should be eval-able and str should match eval."""
+        wrapped = accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))
+        expected = "accepts_json_input(SimpleSelector('aaa', '=', 'xxx'))"
+        self.assertEqual(repr(wrapped), expected)
+        self.assertEqual(str(wrapped), expected)
 
 
 class TestParseSelector(unittest.TestCase):
