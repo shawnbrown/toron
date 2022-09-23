@@ -1731,6 +1731,20 @@ class TestGetRawQuantities(unittest.TestCase):
         # not raise an error warning or otherwise cause problems.
         del iterable2
 
+    @unittest.expectedFailure
+    def test_generator_userfunction_interaction(self):
+        """Closing a generator early should not raise an exception."""
+        # Get quantities filtered using `census` attribute--this creates
+        # a user-defined function.
+        generator = self.dal.get_raw_quantities(census='TOT_ALL')
+
+        # Start iterating over generator but close before StopIteration.
+        next(generator)  # Fetch one result (start iteration).
+        try:
+            generator.close()  # Close generator early (before it's exhausted).
+        except sqlite3.OperationalError as err:
+            self.fail(str(err))
+
 
 class TestDeleteRawQuantities(unittest.TestCase):
     def setUp(self):
