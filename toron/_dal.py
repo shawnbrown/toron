@@ -17,6 +17,7 @@ from json import loads as _loads
 from ._selectors import (
     CompoundSelector,
     SimpleSelector,
+    accepts_json_input,
 )
 from ._typing import (
     Any,
@@ -1054,7 +1055,7 @@ class DataAccessLayer(object):
             selector = CompoundSelector(
                 [SimpleSelector(k, '=', v) for k, v in attr_dict.items()]
             )
-            attr_func = lambda x: selector(_loads(x))  # Handles JSON input.
+            attr_func = accepts_json_input(selector)
         else:
             attr_func = None
 
