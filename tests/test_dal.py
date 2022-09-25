@@ -1731,7 +1731,6 @@ class TestGetRawQuantities(unittest.TestCase):
         # not raise an error warning or otherwise cause problems.
         del iterable2
 
-    @unittest.expectedFailure
     def test_generator_userfunction_interaction(self):
         """Closing a generator early should not raise an exception."""
         # Get quantities filtered using `census` attribute--this creates

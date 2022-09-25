@@ -1096,19 +1096,12 @@ class DataAccessLayer(object):
                 self._get_raw_quantities_format_args(location_cols, where)
 
             if attr_func:
-                # Register SQL function, execute query, and yield results.
-                with _schema.userfunc(cur, attr_func) as func_name:
-                    where_items.append(f'{func_name}(attributes)=1')
-                    results = self._get_raw_quantities_execute(
-                        cur, location_cols, where_items, parameters
-                    )
-                    yield from results
-            else:
-                # Execute query and yield results.
-                results = self._get_raw_quantities_execute(
-                    cur, location_cols, where_items, parameters
-                )
-                yield from results
+                func_name = _schema.get_userfunc(cur, attr_func)
+                where_items.append(f'{func_name}(attributes)=1')
+
+            yield from self._get_raw_quantities_execute(
+                cur, location_cols, where_items, parameters
+            )
 
     @staticmethod
     def _delete_raw_quantities_execute(
@@ -1157,17 +1150,10 @@ class DataAccessLayer(object):
                 self._get_raw_quantities_format_args(location_cols, where)
 
             if attr_func:
-                # Register SQL function, execute query, and yield results.
-                with _schema.userfunc(cur, attr_func) as func_name:
-                    where_items.append(f'{func_name}(attributes)=1')
-                    self._delete_raw_quantities_execute(
-                        cur, where_items, parameters
-                    )
-            else:
-                # Execute query and yield results.
-                self._delete_raw_quantities_execute(
-                    cur, where_items, parameters
-                )
+                func_name = _schema.get_userfunc(cur, attr_func)
+                where_items.append(f'{func_name}(attributes)=1')
+
+            self._delete_raw_quantities_execute(cur, where_items, parameters)
 
     @staticmethod
     def _get_data_property(cursor, key):
