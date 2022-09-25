@@ -777,10 +777,6 @@ def _sql_create_function(
         >>> cursor = ...
         >>> myfunc = lambda x: ...
         >>> _sql_create_function(cursor, 'myfunc', myfunc)
-
-    Once created, the new function can be used in SQL statements::
-
-        >>> cursor.execute('SELECT myfunc(a) FROM mytable')
     """
     if isinstance(cursor_or_connection, sqlite3.Cursor):
         con = cursor_or_connection.connection
@@ -797,7 +793,19 @@ def _sql_create_function(
 
 
 def get_userfunc(cursor: sqlite3.Cursor, func: Callable) -> str:
-    """Get user-defined SQL function name."""
+    """Get user-defined SQL function name (registers SQL function
+    if needed).
+
+    .. code-block::
+
+        >>> cursor = ...
+        >>> myfunc = lambda x: ...
+        >>> func_name = get_userfunc(cursor, myfunc)
+
+    Once created, the new function can be used in SQL statements::
+
+        >>> cursor.execute(f'SELECT {func_name}(a) FROM mytable')
+    """
     # Get function name if it's in the registry.
     name = _USERFUNC_NAME_REGISTRY.get(func)
 
