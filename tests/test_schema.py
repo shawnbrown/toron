@@ -28,8 +28,6 @@ from toron._schema import (
     normalize_identifier,
     savepoint,
     begin,
-    _userfunc_name_pool,
-    userfunc,
     _USERFUNC_NAME_REGISTRY,
     _USERFUNC_NAME_GENERATOR,
     _sql_function_exists,
@@ -997,73 +995,6 @@ class TestBegin(unittest.TestCase):
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
             with begin(cur):  # <- Should raise error.
                 pass
-
-
-class TestUserfunc_and_UserfuncNamePool(unittest.TestCase):
-    def setUp(self):
-        self.connection = sqlite3.connect(':memory:')
-        self.cursor = self.connection.cursor()
-        self.addCleanup(self.connection.close)
-        self.addCleanup(self.cursor.close)
-
-    def test_name_pool(self):
-        name1 = _userfunc_name_pool.acquire()
-        name2 = _userfunc_name_pool.acquire()
-        self.assertNotIn(name1, _userfunc_name_pool.name_pool)
-        self.assertNotIn(name2, _userfunc_name_pool.name_pool)
-
-        _userfunc_name_pool.release(name1)
-        self.assertIn(name1, _userfunc_name_pool.name_pool)
-
-        _userfunc_name_pool.release(name2)
-        self.assertIn(name1, _userfunc_name_pool.name_pool)
-        self.assertIn(name2, _userfunc_name_pool.name_pool)
-
-    def test_connection(self):
-        with userfunc(self.connection, lambda x: x * 2) as funcname:
-            self.cursor.execute(f'SELECT {funcname}(3)')
-            results = self.cursor.fetchall()
-        self.assertEqual(results, [(6,)])
-
-    def test_cursor(self):
-        with userfunc(self.cursor, lambda x: x * 2) as funcname:
-            self.cursor.execute(f'SELECT {funcname}(3)')
-            results = self.cursor.fetchall()
-        self.assertEqual(results, [(6,)])
-
-    def test_removal(self):
-        func = lambda x: x * 2
-        get_ref = weakref.ref(func)
-        with userfunc(self.connection, func) as funcname:
-            del func  # Remove strong reference from local scope.
-            gc.collect()  # Trigger full garbage collection.
-
-            self.cursor.execute(f'SELECT {funcname}(3)')
-            results = self.cursor.fetchall()
-
-            msg = 'func should still be alive due to a strong reference ' \
-                  'since it is registered as a SQLite user-function'
-            self.assertIsNotNone(get_ref(), msg=msg)
-
-        msg = 'after context manager closes, SQL function should not work'
-        with self.assertRaises(sqlite3.OperationalError, msg=msg):
-            self.cursor.execute(f'SELECT {funcname}(3)')
-
-        if sys.version_info[:2] == (3, 7):
-            # Skip garbage collection test in Python 3.7. In version
-            # 3.7, the sqlite3 implementation maintains a persistent
-            # strong reference to each *func* that is registered. Also
-            # in version 3.7, user-defined SQL functions/callables must
-            # be hashable--which means that a weakref proxy can't be
-            # used as a workaround. So this is a known memory leak and,
-            # unfortunately, there's no easy fix for it. That said,
-            # Python 3.7 will be EOL on June 27, 2023 (so this issue
-            # will fade away in time).
-            return
-
-        gc.collect()  # Trigger full garbage collection.
-        msg = 'after context manager closes, object should be garbage collected'
-        self.assertIsNone(get_ref(), msg=msg)
 
 
 class TestGetUserfunc(unittest.TestCase):
