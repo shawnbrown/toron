@@ -10,6 +10,7 @@ from collections import namedtuple, OrderedDict, UserString
 from stat import S_IRUSR, S_IWUSR
 from .common import TempDirTestCase
 
+from toron._typing import Generator
 from toron._utils import ToronError
 from toron._selectors import SimpleSelector
 from toron._schema import (
@@ -29,6 +30,10 @@ from toron._schema import (
     begin,
     _userfunc_name_pool,
     userfunc,
+    _USERFUNC_NAME_REGISTRY,
+    _USERFUNC_NAME_GENERATOR,
+    _sql_function_exists,
+    get_userfunc,
 )
 
 
@@ -1059,4 +1064,79 @@ class TestUserfunc_and_UserfuncNamePool(unittest.TestCase):
         gc.collect()  # Trigger full garbage collection.
         msg = 'after context manager closes, object should be garbage collected'
         self.assertIsNone(get_ref(), msg=msg)
+
+
+class TestGetUserfunc(unittest.TestCase):
+    def setUp(self):
+        con = sqlite3.connect(':memory:')
+        con.isolation_level = None
+        self.cursor = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_sql_function_exists(self):
+        newfunc_name = 'new_userfunc'
+        self.assertFalse(
+            _sql_function_exists(self.cursor, newfunc_name),
+            msg=f'function {newfunc_name!r} should not exist yet',
+        )
+
+        newfunc = lambda x: x * 2
+        self.cursor.connection.create_function(newfunc_name, 1, newfunc)
+
+        self.assertTrue(
+            _sql_function_exists(self.cursor, newfunc_name),
+            msg=f'function {newfunc_name!r} should exist now',
+        )
+
+    def test_userfunc_name_generator(self):
+        """Should generate values like 'userfunc_0', 'userfunc_1', etc."""
+        self.assertIsInstance(_USERFUNC_NAME_GENERATOR, Generator)
+
+        sample_name = next(_USERFUNC_NAME_GENERATOR)
+        before, sep, after = sample_name.partition('_')
+
+        self.assertEqual(before, 'userfunc')
+        self.assertTrue(after.isdecimal())
+
+    def test_userfunc_name_registry(self):
+        names_before = list(_USERFUNC_NAME_REGISTRY.values())
+
+        newfunc = lambda x: x * 2
+        name = get_userfunc(self.cursor, newfunc)
+
+        names_after = list(_USERFUNC_NAME_REGISTRY.values())
+
+        self.assertNotIn(name, names_before)
+        self.assertIn(name, names_after)
+
+    def test_userfunc_in_sql_statement(self):
+        """Check that user-defined function is usable from SQLite."""
+        newfunc = lambda x: x * 2
+        userfunc = get_userfunc(self.cursor, lambda x: x * 2)
+        self.cursor.execute(f'SELECT {userfunc}(3)')  # <- Used from SQL.
+        self.assertEqual(self.cursor.fetchall(), [(6,)])
+
+    def test_persistent_function_names(self):
+        """Functions should get persistent SQL function names. When a
+        function is reused during the same interpreter session, it
+        should get its previously established SQL function name--not
+        a new name. This should hold true even when using different
+        cursors backed by different connections.
+        """
+        first_con = sqlite3.connect(':memory:')
+        self.addCleanup(first_con.close)
+
+        second_con = sqlite3.connect(':memory:')
+        self.addCleanup(second_con.close)
+
+        newfunc = lambda x: x * 2
+
+        name1 = get_userfunc(first_con.cursor(), newfunc)
+        name2 = get_userfunc(first_con.cursor(), newfunc)
+        self.assertEqual(name1, name2, msg='should get same name')
+
+        name1 = get_userfunc(first_con.cursor(), newfunc)
+        name2 = get_userfunc(second_con.cursor(), newfunc)
+        self.assertEqual(name1, name2, msg='should get same name even on different connections')
 

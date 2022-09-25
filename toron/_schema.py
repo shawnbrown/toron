@@ -51,7 +51,7 @@ import re
 import sqlite3
 from contextlib import contextmanager
 from json import loads as _loads
-from ._typing import Callable, List, Literal, TypeAlias, Union
+from ._typing import Callable, Dict, List, Literal, TypeAlias, Union
 from urllib.parse import quote as urllib_parse_quote
 
 from ._utils import ToronError
@@ -815,4 +815,87 @@ def userfunc(
         except TypeError:
             con.create_function(name, narg, func=None)  # type: ignore [arg-type]
         _userfunc_name_pool.release(name)
+
+
+# A generator of names for user-defined SQL functions.
+_USERFUNC_NAME_GENERATOR = (f'userfunc_{n}' for n in itertools.count())
+
+# A registry of callable objects and their associated SQL function names.
+_USERFUNC_NAME_REGISTRY: Dict[Callable, str] = {}
+
+
+def _sql_function_exists(
+    cursor: sqlite3.Cursor,
+    name: str,
+) -> bool:
+    """Return True if the named SQL function is known to exist.
+
+    .. code-block::
+
+        >>> _sql_function_exists(cursor, 'length')
+        True
+
+    The "function_list" PRAGMA (used by this implementation) is an
+    optional part of SQLite but was included by default starting in
+    SQLite 3.30.0. If this PRAGMA is not available, this function
+    will always return False even if the SQL function exists.
+    """
+    try:
+        sql = 'SELECT EXISTS(SELECT 1 FROM pragma_function_list WHERE name=?)'
+        cursor.execute(sql, (name,))
+        return cursor.fetchone() == (1,)
+    except sqlite3.OperationalError:
+        return False
+
+
+def _sql_create_function(
+    cursor_or_connection: Union[sqlite3.Cursor, sqlite3.Connection],
+    name: str,
+    func: Callable,
+) -> None:
+    """Create a deterministic, user-defined SQL function of 1 argument.
+
+    .. code-block::
+
+        >>> cursor = ...
+        >>> myfunc = lambda x: ...
+        >>> _sql_create_function(cursor, 'myfunc', myfunc)
+
+    Once created, the new function can be used in SQL statements::
+
+        >>> cursor.execute('SELECT myfunc(a) FROM mytable')
+    """
+    if isinstance(cursor_or_connection, sqlite3.Cursor):
+        con = cursor_or_connection.connection
+    elif isinstance(cursor_or_connection, sqlite3.Connection):
+        con = cursor_or_connection
+    else:
+        raise TypeError
+
+    # Call with `deterministic` arg (new in Python 3.8) or fallback.
+    try:
+        con.create_function(name, narg=1, func=func, deterministic=True)
+    except TypeError:
+        con.create_function(name, narg=1, func=func)
+
+
+def get_userfunc(cursor: sqlite3.Cursor, func: Callable) -> str:
+    """Get user-defined SQL function name."""
+    # Get function name if it's in the registry.
+    name = _USERFUNC_NAME_REGISTRY.get(func)
+
+    # If no name, register new name, create SQL func, and return name.
+    if name is None:
+        name = next(_USERFUNC_NAME_GENERATOR)
+        _sql_create_function(cursor, name, func)
+        _USERFUNC_NAME_REGISTRY[func] = name
+        return name  # <- EXIT!
+
+    # If SQL function is known to exist, return name.
+    if _sql_function_exists(cursor, name):
+        return name  # <- EXIT!
+
+    # Create SQL function and return name.
+    _sql_create_function(cursor, name, func)
+    return name
 
