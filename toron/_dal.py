@@ -927,7 +927,7 @@ class DataAccessLayer(object):
         data : Iterable[Mapping] | Iterable[Sequence]
             Iterable of rows or dict-rows that contain the data to be
             loaded. Must contain one or more `element` columns, one or
-            more `attribute` columns, and one `value` column.
+            more `attribute` columns, and a single `value` column.
         value : str
             Name of column which contains the quantity values.
         attributes : Iterable[str], optional
