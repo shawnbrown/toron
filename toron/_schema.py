@@ -49,9 +49,10 @@ import itertools
 import os
 import re
 import sqlite3
+from collections import UserList
 from contextlib import contextmanager
 from json import loads as _loads
-from ._typing import Callable, Dict, List, Literal, TypeAlias, Union
+from ._typing import Callable, Dict, Iterable, List, Literal, Sequence, TypeAlias, Union
 from urllib.parse import quote as urllib_parse_quote
 
 from ._utils import ToronError
@@ -62,6 +63,77 @@ sqlite3.register_converter('TEXT_JSON', _loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
 sqlite3.register_converter('TEXT_SELECTORS', convert_text_selectors)
 sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
+
+
+class BitList(UserList):
+    """List of integer bits used to encode mapping_level.
+
+    Create a BitList that can be converted to bytes::
+
+        >>> bits = BitList([1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1])
+        >>> bytes(bits)
+        b'\xe7p'
+
+    A BitList can be created from bytes, too::
+
+        >>> BitList.from_bytes(b'\xe7p')
+        BitList([1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0])
+
+    When comparing two BitLists, trailing zeros are ignored::
+
+        >>> BitList([1, 1]) == BitList([1, 1, 0, 0])
+        True
+    """
+    def __init__(self, sequence: Sequence = None) -> None:
+        """Initialize a new BitList instance."""
+        if sequence is None:
+            sequence = []
+        super().__init__((1 if x else 0) for x in sequence)
+
+    @staticmethod
+    def _strip_trailing_zeros(sequence: Iterable) -> list:
+        """Helper function to remove trailing 0s (for comparisons)."""
+        data = list(sequence)
+        while data:
+            if data[-1] == 0:
+                data.pop()  # Remove trailing 0 bit.
+            else:
+                break
+        return data
+
+    def __eq__(self, other) -> bool:
+        """Return True if BitList == other (ignoring trailing 0s)."""
+        normalized_self = self._strip_trailing_zeros(self)
+        if isinstance(other, Iterable):
+            normalized_other = self._strip_trailing_zeros(other)
+        else:
+            normalized_other = other
+        return normalized_self == normalized_other
+
+    @classmethod
+    def from_bytes(cls, bytes_: bytes) -> 'BitList':
+        """Take a bytes object and returns a new BitList."""
+        eight_bit_chunks = (bin(x)[2:].rjust(8, '0') for x in bytes_)
+        bitstr = ''.join(eight_bit_chunks)
+        return cls(int(x) for x in bitstr)  # type: ignore [arg-type]
+
+    def __repr__(self) -> str:
+        """Return string representation of BitList object."""
+        return f'{self.__class__.__name__}({self.data})'
+
+    def __bytes__(self) -> bytes:
+        """Return a bytes object representing the list of bits."""
+        bitstr = ''.join(str(x) for x in self.data)
+
+        # Make sure length of bits is a multiple of 8.
+        bitstr = bitstr.rstrip('0')
+        remainder = len(bitstr) % 8
+        if remainder:
+            bitstr = bitstr + '0' * (8 - remainder)
+
+        # Group into 8-bit chunks and convert to bytes.
+        eight_bit_chunks = (bitstr[i:i + 8] for i in range(0, len(bitstr), 8))
+        return b''.join(int(x, 2).to_bytes(1, 'big') for x in eight_bit_chunks)
 
 
 # Check if SQLite implementation includes JSON1 extension and assign
