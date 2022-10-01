@@ -68,13 +68,13 @@ sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 class BitList(UserList):
     """List of integer bits used to encode mapping_level.
 
-    Create a BitList that can be converted to bytes::
+    Create a BitList from a list of strings and convert it to bytes::
 
         >>> bits = BitList([1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1])
         >>> bytes(bits)
         b'\xe7p'
 
-    A BitList can be created from bytes, too::
+    Create a BitList directly from bytes::
 
         >>> BitList.from_bytes(b'\xe7p')
         BitList([1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0])
@@ -83,6 +83,12 @@ class BitList(UserList):
 
         >>> BitList([1, 1]) == BitList([1, 1, 0, 0])
         True
+
+    Register the BitList type with SQLite::
+
+        >>> import sqlite3
+        >>> sqlite3.register_adapter(BitList, bytes)
+        >>> sqlite3.register_converter('BLOB_BITLIST', BitList.from_bytes)
     """
     def __init__(self, sequence: Sequence = None) -> None:
         """Initialize a new BitList instance."""
