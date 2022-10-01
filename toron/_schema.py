@@ -59,6 +59,108 @@ from ._utils import ToronError
 from ._selectors import convert_text_selectors
 
 
+_schema_script = """
+    PRAGMA foreign_keys = ON;
+
+    CREATE TABLE main.edge(
+        edge_id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        selectors TEXT_SELECTORS,
+        user_properties TEXT_USERPROPERTIES,
+        other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
+        other_filename_hint TEXT NOT NULL,
+        other_element_hash TEXT,
+        is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
+        UNIQUE (name, other_uuid)
+    );
+
+    CREATE TABLE main.relation(
+        relation_id INTEGER PRIMARY KEY,
+        edge_id INTEGER,
+        other_element_id INTEGER NOT NULL,
+        element_id INTEGER,
+        proportion REAL NOT NULL CHECK (0.0 <= proportion AND proportion <= 1.0),
+        mapping_level BLOB_BITLIST NOT NULL,
+        FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
+        FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
+        UNIQUE (edge_id, other_element_id, element_id)
+    );
+
+    CREATE TABLE main.element(
+        element_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
+        /* label columns added programmatically */
+    );
+
+    CREATE TABLE main.location(
+        _location_id INTEGER PRIMARY KEY
+        /* label columns added programmatically */
+    );
+
+    CREATE TABLE main.structure(
+        _structure_id INTEGER PRIMARY KEY
+        /* label columns added programmatically */
+    );
+
+    CREATE TABLE main.quantity(
+        quantity_id INTEGER PRIMARY KEY,
+        _location_id INTEGER,
+        attributes TEXT_ATTRIBUTES NOT NULL,
+        value NUMERIC NOT NULL,
+        FOREIGN KEY(_location_id) REFERENCES location(_location_id)
+    );
+
+    CREATE TABLE main.weighting(
+        weighting_id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        selectors TEXT_SELECTORS,
+        is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
+        UNIQUE (name)
+    );
+
+    CREATE TABLE main.weight(
+        weight_id INTEGER PRIMARY KEY,
+        weighting_id INTEGER,
+        element_id INTEGER,
+        value REAL NOT NULL,
+        FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
+        FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
+        UNIQUE (element_id, weighting_id)
+    );
+
+    CREATE TABLE main.property(
+        key TEXT PRIMARY KEY NOT NULL,
+        value TEXT_JSON
+    );
+
+    INSERT INTO main.property VALUES ('schema_version', '1');
+"""
+
+
+# Check if SQLite implementation includes JSON1 extension and assign
+# SQLITE_JSON1_ENABLED.
+#
+# The inclusion of JSON functions is optional when compiling SQLite.
+# In versions 3.38.0 (2022-02-22) and newer, JSON functions are
+# included by default but can be disabled (opt-out policy). For older
+# versions of SQLite, JSON functions are available on an opt-in basis.
+# It is necessary to test for their presence rathern than referencing
+# the SQLite version number.
+#
+# For more information, see:
+#     https://www.sqlite.org/json1.html#compiling_in_json_support
+try:
+    _con = sqlite3.connect(':memory:')
+    _con.execute("SELECT json_valid('123')")
+    SQLITE_JSON1_ENABLED = True
+except sqlite3.OperationalError:
+    SQLITE_JSON1_ENABLED = False
+finally:
+    _con.close()
+    del _con
+
+
 sqlite3.register_converter('TEXT_JSON', _loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
 sqlite3.register_converter('TEXT_SELECTORS', convert_text_selectors)
@@ -144,108 +246,6 @@ class BitList(UserList):
 
 sqlite3.register_adapter(BitList, bytes)
 sqlite3.register_converter('BLOB_BITLIST', BitList.from_bytes)
-
-
-# Check if SQLite implementation includes JSON1 extension and assign
-# SQLITE_JSON1_ENABLED.
-#
-# The inclusion of JSON functions is optional when compiling SQLite.
-# In versions 3.38.0 (2022-02-22) and newer, JSON functions are
-# included by default but can be disabled (opt-out policy). For older
-# versions of SQLite, JSON functions are available on an opt-in basis.
-# It is necessary to test for their presence rathern than referencing
-# the SQLite version number.
-#
-# For more information, see:
-#     https://www.sqlite.org/json1.html#compiling_in_json_support
-try:
-    _con = sqlite3.connect(':memory:')
-    _con.execute("SELECT json_valid('123')")
-    SQLITE_JSON1_ENABLED = True
-except sqlite3.OperationalError:
-    SQLITE_JSON1_ENABLED = False
-finally:
-    _con.close()
-    del _con
-
-
-_schema_script = """
-    PRAGMA foreign_keys = ON;
-
-    CREATE TABLE main.edge(
-        edge_id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        selectors TEXT_SELECTORS,
-        user_properties TEXT_USERPROPERTIES,
-        other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
-        other_filename_hint TEXT NOT NULL,
-        other_element_hash TEXT,
-        is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
-        UNIQUE (name, other_uuid)
-    );
-
-    CREATE TABLE main.relation(
-        relation_id INTEGER PRIMARY KEY,
-        edge_id INTEGER,
-        other_element_id INTEGER NOT NULL,
-        element_id INTEGER,
-        proportion REAL NOT NULL CHECK (0.0 <= proportion AND proportion <= 1.0),
-        mapping_level BLOB_BITLIST NOT NULL,
-        FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
-        FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
-        UNIQUE (edge_id, other_element_id, element_id)
-    );
-
-    CREATE TABLE main.element(
-        element_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
-        /* label columns added programmatically */
-    );
-
-    CREATE TABLE main.location(
-        _location_id INTEGER PRIMARY KEY
-        /* label columns added programmatically */
-    );
-
-    CREATE TABLE main.structure(
-        _structure_id INTEGER PRIMARY KEY
-        /* label columns added programmatically */
-    );
-
-    CREATE TABLE main.quantity(
-        quantity_id INTEGER PRIMARY KEY,
-        _location_id INTEGER,
-        attributes TEXT_ATTRIBUTES NOT NULL,
-        value NUMERIC NOT NULL,
-        FOREIGN KEY(_location_id) REFERENCES location(_location_id)
-    );
-
-    CREATE TABLE main.weighting(
-        weighting_id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        selectors TEXT_SELECTORS,
-        is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
-        UNIQUE (name)
-    );
-
-    CREATE TABLE main.weight(
-        weight_id INTEGER PRIMARY KEY,
-        weighting_id INTEGER,
-        element_id INTEGER,
-        value REAL NOT NULL,
-        FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
-        FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
-        UNIQUE (element_id, weighting_id)
-    );
-
-    CREATE TABLE main.property(
-        key TEXT PRIMARY KEY NOT NULL,
-        value TEXT_JSON
-    );
-
-    INSERT INTO main.property VALUES ('schema_version', '1');
-"""
 
 
 def normalize_identifier(value: str) -> str:
