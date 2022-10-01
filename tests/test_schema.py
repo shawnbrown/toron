@@ -1,6 +1,7 @@
 """Tests for toron._schema module."""
 
 import gc
+import itertools
 import os
 import sqlite3
 import sys
@@ -623,12 +624,20 @@ class TestTriggerCoverage(unittest.TestCase):
 
     def get_expected_trigger_names(self):
         """Helper function to return list of expected trigger names."""
-        expected_triggers = []
+        custom_type_columns = []
         for table in self.get_table_names():
             column_names = self.get_custom_type_columns(table)
             for column in column_names:
-                expected_triggers.append(self.make_trigger_name('insert', table, column))
-                expected_triggers.append(self.make_trigger_name('update', table, column))
+                custom_type_columns.append((table, column))
+
+        # Remove "relation.mapping_level" (a BLOB_BITLIST type) because
+        # it doesn't need any associated SQL triggers.
+        custom_type_columns.remove(('relation', 'mapping_level'))
+
+        expected_triggers = []
+        for table, column in custom_type_columns:
+            expected_triggers.append(self.make_trigger_name('insert', table, column))
+            expected_triggers.append(self.make_trigger_name('update', table, column))
 
         return expected_triggers
 
@@ -900,6 +909,48 @@ class TestConnectDb(TempDirTestCase):
                  f"or None; got 'badpermissions'")
         with self.assertRaisesRegex(ToronError, regex):
             get_connection(path, required_permissions='badpermissions')
+
+
+class TestBitListConversionAndAdaptation(unittest.TestCase):
+    def setUp(self):
+        self.con = get_connection(':memory:', None)
+        self.cur = self.con.cursor()
+        self.addCleanup(self.con.close)
+        self.addCleanup(self.cur.close)
+        self.cur.execute(
+            'INSERT INTO edge (edge_id, name, other_uuid, other_filename_hint) VALUES (?, ?, ?, ?)',
+            (1, 'myedge', '00000000-0000-0000-0000-000000000000', 'mynode.toron')
+        )
+        self.other_element_id_generator = itertools.count(42)  # Start at 42.
+
+    def insert_mapping_level(self, mapping_level):
+        """Helper function to insert a relation and mapping_level."""
+        other_element_id = next(self.other_element_id_generator)
+        self.cur.execute(
+            'INSERT INTO relation (edge_id, other_element_id, element_id, proportion, mapping_level) VALUES (?, ?, ?, ?, ?)',
+            (1, other_element_id, None, 1.0, mapping_level)
+        )
+
+    def get_mapping_levels(self):
+        """Helper function to get all mapping_level values."""
+        self.cur.execute('SELECT mapping_level FROM relation WHERE edge_id=1')
+        return [row[0] for row in self.cur.fetchall()]
+
+    def test_basic_roundtrip(self):
+        bit_list = BitList([0, 1, 0, 0, 0, 1, 0, 1])
+        self.insert_mapping_level(bit_list)  # <- Store BitList as bytes.
+        result = self.get_mapping_levels()  # <- Retrieve BitList from bytes.
+
+        self.assertIsInstance(result[0], BitList)
+        self.assertEqual(result, [bit_list])
+
+    def test_raw_bytes(self):
+        raw_bytes = b'\x45'
+        self.insert_mapping_level(raw_bytes)  # <- Store raw bytes (as bytes).
+        result = self.get_mapping_levels()  # <- Retrieve BitList from bytes.
+
+        self.assertIsInstance(result[0], BitList)
+        self.assertEqual(result, [BitList.from_bytes(raw_bytes)])
 
 
 class TestJsonConversion(unittest.TestCase):

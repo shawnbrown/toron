@@ -142,6 +142,10 @@ class BitList(UserList):
         return b''.join(int(x, 2).to_bytes(1, 'big') for x in eight_bit_chunks)
 
 
+sqlite3.register_adapter(BitList, bytes)
+sqlite3.register_converter('BLOB_BITLIST', BitList.from_bytes)
+
+
 # Check if SQLite implementation includes JSON1 extension and assign
 # SQLITE_JSON1_ENABLED.
 #
@@ -187,7 +191,7 @@ _schema_script = """
         other_element_id INTEGER NOT NULL,
         element_id INTEGER,
         proportion REAL NOT NULL CHECK (0.0 <= proportion AND proportion <= 1.0),
-        mapping_level INTEGER NOT NULL,
+        mapping_level BLOB_BITLIST NOT NULL,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
         FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (edge_id, other_element_id, element_id)
