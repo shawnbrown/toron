@@ -520,9 +520,9 @@ class DataAccessLayer(object):
 
         return sql_stmnts
 
-    @classmethod
+    @staticmethod
     def _coarsen_records_make_sql(
-        cls, cursor: sqlite3.Cursor, remaining_columns: Iterable[str]
+        remaining_columns: Iterable[str]
     ) -> List[str]:
         """Return a list of SQL statements to coarsen the dataset."""
         quoted_names = (_schema.normalize_identifier(col) for col in remaining_columns)
@@ -713,7 +713,7 @@ class DataAccessLayer(object):
                 msg = 'cannot remove, columns are needed to preserve granularity'
                 raise ToronError(msg)
 
-            for stmnt in cls._coarsen_records_make_sql(cursor, names_remaining):
+            for stmnt in cls._coarsen_records_make_sql(names_remaining):
                 cursor.execute(stmnt)
 
         # Clear `structure` table to prevent duplicates when removing columns.
