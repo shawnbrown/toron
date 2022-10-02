@@ -209,7 +209,7 @@ class DataAccessLayer(object):
 
         return obj
 
-    def to_file(self, path: PathType, fsync: bool = True):
+    def to_file(self, path: PathType, fsync: bool = True) -> None:
         """Write node data to a file.
 
         .. code-block::
@@ -390,13 +390,15 @@ class DataAccessLayer(object):
                 raise RuntimeError(msg)
 
     @staticmethod
-    def _get_column_names(cursor, table):
+    def _get_column_names(cursor: sqlite3.Cursor, table: str) -> List[str]:
         """Return a list of column names from the given table."""
         cursor.execute(f"PRAGMA main.table_info('{table}')")
         return [row[1] for row in cursor.fetchall()]
 
     @classmethod
-    def _add_columns_make_sql(cls, cursor, columns):
+    def _add_columns_make_sql(
+        cls, cursor: sqlite3.Cursor, columns: Iterable[str]
+    ) -> List[str]:
         """Return a list of SQL statements for adding new label columns."""
         if isinstance(columns, str):
             columns = [columns]
@@ -436,7 +438,11 @@ class DataAccessLayer(object):
         return sql_stmnts
 
     @classmethod
-    def _rename_columns_apply_mapper(cls, cursor, mapper):
+    def _rename_columns_apply_mapper(
+        cls,
+        cursor: sqlite3.Cursor,
+        mapper: Union[Callable[[str], str], Mapping[str, str]],
+    ) -> Tuple[List[str], List[str]]:
         column_names = cls._get_column_names(cursor, 'element')
         column_names = column_names[1:]  # Slice-off 'element_id'.
 
@@ -455,14 +461,16 @@ class DataAccessLayer(object):
         if dupes:
             zipped = zip(column_names, new_column_names)
             value_pairs = [(col, new) for col, new in zipped if new in dupes]
-            value_pairs = [f'{col}->{new}' for col, new in value_pairs]
-            msg = f'column name collisions: {", ".join(value_pairs)}'
+            formatted = [f'{col}->{new}' for col, new in value_pairs]
+            msg = f'column name collisions: {", ".join(formatted)}'
             raise ValueError(msg)
 
         return column_names, new_column_names
 
     @staticmethod
-    def _rename_columns_make_sql(column_names, new_column_names):
+    def _rename_columns_make_sql(
+        column_names: Sequence[str], new_column_names: Sequence[str]
+    ) -> List[str]:
         # The RENAME COLUMN command was added in SQLite 3.25.0 (2018-09-15).
         zipped = zip(column_names, new_column_names)
         rename_pairs = [(a, b) for a, b in zipped if a != b]
@@ -476,7 +484,9 @@ class DataAccessLayer(object):
             ])
         return sql_stmnts
 
-    def rename_columns(self, mapper):
+    def rename_columns(
+        self, mapper: Union[Callable[[str], str], Mapping[str, str]]
+    ) -> None:
         # Rename columns using native RENAME COLUMN command (only for
         # SQLite 3.25.0 or newer).
         with self._transaction() as cur:
@@ -485,7 +495,9 @@ class DataAccessLayer(object):
                 cur.execute(stmnt)
 
     @staticmethod
-    def _remove_columns_make_sql(column_names, names_to_remove):
+    def _remove_columns_make_sql(
+        column_names: Sequence[str], names_to_remove: Sequence[str]
+    ) -> List[str]:
         """Return a list of SQL statements for removing label columns."""
         names_to_remove = [col for col in names_to_remove if col in column_names]
 
@@ -509,7 +521,9 @@ class DataAccessLayer(object):
         return sql_stmnts
 
     @classmethod
-    def _coarsen_records_make_sql(cls, cursor, remaining_columns):
+    def _coarsen_records_make_sql(
+        cls, cursor: sqlite3.Cursor, remaining_columns: Iterable[str]
+    ) -> List[str]:
         """Return a list of SQL statements to coarsen the dataset."""
         quoted_names = (_schema.normalize_identifier(col) for col in remaining_columns)
         formatted_names = ', '.join(quoted_names)
@@ -653,7 +667,10 @@ class DataAccessLayer(object):
 
     @classmethod
     def _remove_columns_execute_sql(
-        cls, cursor, columns, strategy: Strategy ='preserve'
+        cls,
+        cursor: sqlite3.Cursor,
+        columns: Iterable[str],
+        strategy: Strategy = 'preserve',
     ) -> None:
         column_names = cls._get_column_names(cursor, 'element')
         column_names = column_names[1:]  # Slice-off 'element_id'.
@@ -711,12 +728,16 @@ class DataAccessLayer(object):
 
         # TODO: Recalculate node_hash for `properties` table.
 
-    def remove_columns(self, columns, strategy: Strategy = 'preserve'):
+    def remove_columns(
+        self, columns: Iterable[str], strategy: Strategy = 'preserve'
+    ) -> None:
         with self._transaction() as cur:
             self._remove_columns_execute_sql(cur, columns, strategy)
 
     @classmethod
-    def _add_elements_make_sql(cls, cursor, columns):
+    def _add_elements_make_sql(
+        cls, cursor: sqlite3.Cursor, columns: Iterable[str]
+    ) -> str:
         """Return a SQL statement adding new element records (for use
         with an executemany() call.
 
@@ -741,7 +762,10 @@ class DataAccessLayer(object):
         values_clause = ', '.join('?' * len(columns))
         return f'INSERT INTO main.element ({columns_clause}) VALUES ({values_clause})'
 
-    def add_elements(self, iterable, columns=None):
+    def add_elements(
+        self, iterable: Iterable[Sequence[str]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
         iterator = iter(iterable)
         if not columns:
             columns = next(iterator)
@@ -752,14 +776,19 @@ class DataAccessLayer(object):
             selectors = tuple((col in allowed_columns) for col in columns)
 
             # Filter column names and iterator rows to allowed columns.
-            columns = compress(columns, selectors)
+            columns = tuple(compress(columns, selectors))
             iterator = (tuple(compress(row, selectors)) for row in iterator)
 
             sql = self._add_elements_make_sql(cur, columns)
             cur.executemany(sql, iterator)
 
     @staticmethod
-    def _add_weights_get_new_id(cursor, name, selectors=None, description=None):
+    def _add_weights_get_new_id(
+        cursor: sqlite3.Cursor,
+        name: str,
+        selectors: Optional[Iterable[str]] = None,
+        description: Optional[str] = None,
+    ) -> int:
         # This method uses the RETURNING clause which was introduced
         # in SQLite 3.35.0 (2021-03-12).
         if selectors:
@@ -776,7 +805,9 @@ class DataAccessLayer(object):
         return cursor.fetchone()[0]
 
     @classmethod
-    def _add_weights_make_sql(cls, cursor, columns):
+    def _add_weights_make_sql(
+        cls, cursor: sqlite3.Cursor, columns: Sequence[str]
+    ) -> str:
         """Return a SQL statement adding new weight value (for
         use with an executemany() call.
         """
@@ -804,7 +835,9 @@ class DataAccessLayer(object):
         return sql
 
     @staticmethod
-    def _add_weights_set_is_complete(cursor, weighting_id):
+    def _add_weights_set_is_complete(
+        cursor: sqlite3.Cursor, weighting_id: int
+    ) -> None:
         """Set the 'weighting.is_complete' value to 1 or 0 (True/False)."""
         sql = """
             UPDATE main.weighting
@@ -816,10 +849,21 @@ class DataAccessLayer(object):
         """
         cursor.execute(sql, (weighting_id, weighting_id))
 
-    def add_weights(self, iterable, columns=None, *, name, selectors, description=None):
+    def add_weights(
+        self,
+        iterable: Iterable[Sequence[Union[str, float, int]]],
+        columns: Optional[Sequence[str]] = None,
+        *,
+        name: str,
+        selectors: Optional[Sequence[str]],
+        description: Optional[str] = None,
+    ) -> None:
         iterator = iter(iterable)
         if not columns:
-            columns = tuple(next(iterator))
+            columns = tuple(next(iterator))  # type: ignore [arg-type]
+            if not all(isinstance(x, str) for x in columns):
+                msg = ''
+                raise TypeError(msg)
 
         try:
             weight_pos = columns.index(name)  # Get position of weight column.
@@ -831,15 +875,15 @@ class DataAccessLayer(object):
         with self._transaction() as cur:
             weighting_id = self._add_weights_get_new_id(cur, name, selectors, description)
 
-            # Get allowed columns and build selectors values.
+            # Get allowed columns and build bitmask selectors values.
             allowed_columns = self._get_column_names(cur, 'element')
-            selectors = tuple((col in allowed_columns) for col in columns)
+            bitmask_selectors = tuple((col in allowed_columns) for col in columns)
 
             # Filter column names and iterator rows to allowed columns.
-            columns = compress(columns, selectors)
+            columns = tuple(compress(columns, bitmask_selectors))
             def mkrow(row):
                 weightid_and_value = (weighting_id, row[weight_pos])
-                element_labels = tuple(compress(row, selectors))
+                element_labels = tuple(compress(row, bitmask_selectors))
                 return weightid_and_value + element_labels
             iterator = (mkrow(row) for row in iterator)
 
@@ -1157,13 +1201,13 @@ class DataAccessLayer(object):
             self._delete_raw_quantities_execute(cur, where_items, parameters)
 
     @staticmethod
-    def _get_data_property(cursor, key):
+    def _get_data_property(cursor: sqlite3.Cursor, key: str) -> Any:
         sql = 'SELECT value FROM main.property WHERE key=?'
         cursor.execute(sql, (key,))
         result = cursor.fetchone()
         return result[0] if result else None
 
-    def get_data(self, keys):
+    def get_data(self, keys: Iterable[str]) -> Mapping[str, Any]:
         data = {}
         with self._transaction() as cur:
             for key in keys:
@@ -1179,7 +1223,10 @@ class DataAccessLayer(object):
         return data
 
     @staticmethod
-    def _set_data_property(cursor, key, value):
+    def _set_data_property(
+        cursor: sqlite3.Cursor, key: str, value: Any
+    ) -> None:
+        parameters: Tuple[str, ...]
         if value is not None:
             # Insert or update property with JSON string.
             sql = '''
@@ -1196,7 +1243,9 @@ class DataAccessLayer(object):
         cursor.execute(sql, parameters)
 
     @classmethod
-    def _set_data_structure(cls, cursor, structure):
+    def _set_data_structure(
+        cls, cursor: sqlite3.Cursor, structure: Iterable[Set[str]]
+    ) -> None:
         """Populates 'structure' table with bitmask made from *structure*."""
         cursor.execute('DELETE FROM main.structure')  # Delete all table records.
         if not structure:
@@ -1217,7 +1266,13 @@ class DataAccessLayer(object):
         cursor.executemany(sql, parameters)
 
     @classmethod
-    def _update_categories_and_structure(cls, cursor, categories=None, *, minimize=True):
+    def _update_categories_and_structure(
+        cls,
+        cursor: sqlite3.Cursor,
+        categories: Optional[List[Set[str]]] = None,
+        *,
+        minimize: bool = True,
+    ) -> None:
         """Update `discrete_categories` property and `structure` table.
 
         Set new categories and rebuild structure table::
@@ -1246,13 +1301,17 @@ class DataAccessLayer(object):
             whole_space = set(cls._get_column_names(cursor, 'element')[1:])
             categories = minimize_discrete_categories(categories, [whole_space])
 
-        list_of_lists = [list(cat) for cat in categories]
+        list_of_lists = [list(cat) for cat in categories]  # type: ignore [union-attr]
         cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
 
         structure = make_structure(categories)
         cls._set_data_structure(cursor, structure)
 
-    def set_data(self, mapping_or_items):
+    def set_data(
+        self,
+        mapping_or_items: Union[Mapping[str, Any], Iterable[Tuple[str, Any]]],
+    ) -> None:
+        items: Iterable[Tuple[str, Any]]
         if isinstance(mapping_or_items, Mapping):
             items = mapping_or_items.items()
         else:
@@ -1276,7 +1335,9 @@ class DataAccessLayer(object):
                     msg = f"can't set value for {key!r}"
                     raise ToronError(msg)
 
-    def add_discrete_categories(self, discrete_categories):
+    def add_discrete_categories(
+        self, discrete_categories: Iterable[Set[str]]
+    ) -> None:
         data = self.get_data(['discrete_categories', 'column_names'])
         minimized = minimize_discrete_categories(
             data['discrete_categories'],
@@ -1294,7 +1355,9 @@ class DataAccessLayer(object):
         with self._transaction() as cur:
             self._update_categories_and_structure(cur, minimized, minimize=False)
 
-    def remove_discrete_categories(self, discrete_categories):
+    def remove_discrete_categories(
+        self, discrete_categories: List[Set[str]]
+    ) -> None:
         data = self.get_data(['discrete_categories', 'column_names'])
         current_cats = data['discrete_categories']
         mandatory_cat = set(data['column_names'])
@@ -1331,7 +1394,12 @@ class DataAccessLayerPre35(DataAccessLayer):
     For full documentation, see DataAccessLayer.
     """
     @staticmethod
-    def _add_weights_get_new_id(cursor, name, selectors, description=None):
+    def _add_weights_get_new_id(
+        cursor: sqlite3.Cursor,
+        name: str,
+        selectors: Optional[Iterable[str]] = None,
+        description: Optional[str] = None,
+    ) -> int:
         # Since the `RETURNING` clause is not available before version
         # 3.35.0, this method executes a second statement using the
         # last_insert_rowid() SQLite function.
@@ -1349,7 +1417,9 @@ class DataAccessLayerPre35(DataAccessLayer):
         return cursor.fetchone()[0]
 
     @staticmethod
-    def _remove_columns_make_sql(column_names, names_to_remove):
+    def _remove_columns_make_sql(
+        column_names: Sequence[str], names_to_remove: Sequence[str]
+    ) -> List[str]:
         """Return a list of SQL statements for removing label columns."""
         # In SQLite versions before 3.35.0, there is no native support for the
         # DROP COLUMN command. In these older versions of SQLite the tables
@@ -1390,7 +1460,9 @@ class DataAccessLayerPre35(DataAccessLayer):
 
         return statements
 
-    def remove_columns(self, columns, strategy: Strategy ='preserve'):
+    def remove_columns(
+        self, columns: Iterable[str], strategy: Strategy = 'preserve'
+    ) -> None:
         # In versions earlier than SQLite 3.35.0, there was no support for
         # the DROP COLUMN command. This method (and other related methods
         # in the class) should implement the recommended, 12-step, ALTER
@@ -1422,7 +1494,9 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
     For full documentation, see DataAccessLayer.
     """
     @staticmethod
-    def _rename_columns_make_sql(column_names, new_column_names):
+    def _rename_columns_make_sql(
+        column_names: Sequence[str], new_column_names: Sequence[str]
+    ) -> List[str]:
         # In SQLite versions before 3.25.0, there is no native support for the
         # RENAME COLUMN command. In these older versions of SQLite the tables
         # must be rebuilt. This method prepares a sequence of operations to
@@ -1456,11 +1530,15 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         ]
 
         # Reconstruct associated indexes.
-        statements.extend(_schema.sql_create_label_indexes(new_column_names))
+        statements.extend(
+            _schema.sql_create_label_indexes(list(new_column_names))
+        )
 
         return statements
 
-    def rename_columns(self, mapper):
+    def rename_columns(
+        self, mapper: Union[Callable[[str], str], Mapping[str, str]]
+    ) -> None:
         # These related methods should implement the recommended, 12-step,
         # ALTER TABLE procedure detailed in the SQLite documentation:
         #     https://www.sqlite.org/lang_altertable.html#otheralter
@@ -1492,7 +1570,10 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
     For full documentation, see DataAccessLayer.
     """
     @staticmethod
-    def _set_data_property(cursor, key, value):
+    def _set_data_property(
+        cursor: sqlite3.Cursor, key: str, value: Any
+    ) -> None:
+        parameters: Tuple[str, ...]
         if value is not None:
             sql = 'INSERT OR REPLACE INTO main.property(key, value) VALUES (?, ?)'
             parameters = (key, _dumps(value, sort_keys=True))
