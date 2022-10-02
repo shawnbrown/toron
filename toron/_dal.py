@@ -219,7 +219,7 @@ class DataAccessLayer(object):
             >>> ...
             >>> dal.to_file('mynode.toron')
 
-        On Unix systems (e.g., Linux, macOS), calling with
+        On Unix-like systems (e.g., Linux, macOS), calling with
         ``fsync=True`` (the default) tells the filesystem to
         immediately flush buffered data to permanent storage. This
         could cause a delay while data is being synchronized. If you
