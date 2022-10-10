@@ -1883,6 +1883,36 @@ class TestDisaggregate(unittest.TestCase):
         with self.assertRaises(ValueError, msg='final "1" does not match any column'):
             dal_class._disaggregate_make_sql_parts(columns, bad_bitmask)
 
+    def test_disaggregate_make_sql(self):
+        columns = ['A', 'B', 'C', 'D']
+        bitmask = [1, 0, 1, 0]
+        match_selector_func = 'USER_FUNC_NAME'
+        result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
+        expected = """
+            SELECT
+                t3.element_id,
+                t3."A", t3."B", t3."C", t3."D",
+                t2.attributes,
+                t2.value * IFNULL(
+                    (t4.value / SUM(t4.value) OVER (PARTITION BY t2.quantity_id)),
+                    (1.0 / COUNT(1) OVER (PARTITION BY t2.quantity_id))
+                ) AS value
+            FROM main.location t1
+            JOIN main.quantity t2 USING (_location_id)
+            JOIN main.element t3 USING ("A", "C")
+            JOIN main.weight t4 ON (
+                t3.element_id=t4.element_id
+                AND t4.weighting_id=USER_FUNC_NAME(t2.attributes)
+            )
+            WHERE t1."A"!='' AND t1."B"='' AND t1."C"!='' AND t1."D"=''
+        """
+        self.assertEqual(result, expected)
+
+        bitmask = [0, 0, 0, 0]  # <- Bitmask is all 0s.
+        result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
+        self.assertIn('JOIN main.element t3 ON TRUE', result)
+        self.assertIn("""WHERE t1."A"='' AND t1."B"='' AND t1."C"='' AND t1."D"=''""", result)
+
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.

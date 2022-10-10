@@ -1255,6 +1255,42 @@ class DataAccessLayer(object):
         where_clause_items = [f"{a}{'!=' if b else '='}''" for a, b in zipped]
         return (select_items, join_using_items, where_clause_items)
 
+    @classmethod
+    def _disaggregate_make_sql(
+        cls,
+        columns: Sequence[str],
+        bitmask: Sequence[Literal[0, 1]],
+        match_selector_func: str,
+    ) -> str:
+        """Return SQL to disaggregate data."""
+        select_items, join_using_items, where_clause_items = \
+            cls._disaggregate_make_sql_parts(columns, bitmask)
+
+        if join_using_items:
+            element_join_constraint = f"USING ({', '.join(join_using_items)})"
+        else:
+            element_join_constraint = 'ON TRUE'
+
+        statement = f"""
+            SELECT
+                t3.element_id,
+                {', '.join(f't3.{x}' for x in select_items)},
+                t2.attributes,
+                t2.value * IFNULL(
+                    (t4.value / SUM(t4.value) OVER (PARTITION BY t2.quantity_id)),
+                    (1.0 / COUNT(1) OVER (PARTITION BY t2.quantity_id))
+                ) AS value
+            FROM main.location t1
+            JOIN main.quantity t2 USING (_location_id)
+            JOIN main.element t3 {element_join_constraint}
+            JOIN main.weight t4 ON (
+                t3.element_id=t4.element_id
+                AND t4.weighting_id={match_selector_func}(t2.attributes)
+            )
+            WHERE {' AND '.join(f't1.{x}' for x in where_clause_items)}
+        """
+        return statement
+
     @staticmethod
     def _get_data_property(cursor: sqlite3.Cursor, key: str) -> Any:
         sql = 'SELECT value FROM main.property WHERE key=?'
