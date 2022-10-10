@@ -1858,6 +1858,32 @@ class TestDeleteRawQuantities(unittest.TestCase):
             self.dal.delete_raw_quantities()
 
 
+class TestDisaggregate(unittest.TestCase):
+    def test_disaggregate_make_sql_parts(self):
+        columns = ['A', 'B', 'C', 'D']
+        expected = (
+            ['"A"', '"B"', '"C"', '"D"'],
+            ['"A"', '"C"'],
+            ['"A"!=\'\'', '"B"=\'\'', '"C"!=\'\'', '"D"=\'\''],
+        )
+
+        bitmask = [1, 0, 1, 0]
+        result = dal_class._disaggregate_make_sql_parts(columns, bitmask)
+        self.assertEqual(result, expected)
+
+        bitmask_trailing_zeros = [1, 0, 1, 0, 0, 0]
+        result = dal_class._disaggregate_make_sql_parts(columns, bitmask_trailing_zeros)
+        self.assertEqual(result, expected, msg='extra trailing zeros are OK')
+
+        bitmask_truncated = [1, 0, 1]
+        result = dal_class._disaggregate_make_sql_parts(columns, bitmask_truncated)
+        self.assertEqual(result, expected, msg='bitmask shorter than columns is OK')
+
+        bad_bitmask = [1, 0, 1, 0, 1]
+        with self.assertRaises(ValueError, msg='final "1" does not match any column'):
+            dal_class._disaggregate_make_sql_parts(columns, bad_bitmask)
+
+
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
 

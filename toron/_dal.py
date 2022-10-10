@@ -11,6 +11,7 @@ from itertools import (
     chain,
     compress,
     groupby,
+    zip_longest,
 )
 from json import dumps as _dumps
 from json import loads as _loads
@@ -1199,6 +1200,60 @@ class DataAccessLayer(object):
                 where_items.append(f'{func_name}(attributes)=1')
 
             self._delete_raw_quantities_execute(cur, where_items, parameters)
+
+    @staticmethod
+    def _disaggregate_make_sql_parts(
+        columns: Sequence[str],
+        bitmask: Sequence[Literal[0, 1]],
+    ) -> Tuple[Sequence[str], Sequence[str], Sequence[str]]:
+        """Make SQL parts used in _disaggregate_make_sql() function.
+
+        Returns a 3-tuple containing select items, join-using items,
+        and where-clause items.
+
+        The first item in the tuple should contain all of the label
+        columns used in the element/location/structure tables.
+
+        The second item in the tuple should contain only those labels
+        that are selected by the bitmask.
+
+        The third item in the tuple should contain WHERE clause
+        conditions. The labels selected by the bitmask should be
+        not-equal-to empty string and the items *not* selected by
+        the bitmask should be equal-to empty string.
+
+        .. code-block::
+
+            >>> columns = ['A', 'B', 'C', 'D']
+            >>> bitmask = [1, 0, 1, 0]
+            >>> dal._disaggregate_make_sql_parts(columns, bitmask)
+            (['"A"', '"B"', '"C"', '"D"'],
+             ['"A"', '"C"'],
+             ['"A"!=\'\'', '"B"=\'\'', '"C"!=\'\'', '"D"=\'\''])
+        """
+        # Strip trailing 0s from bitmask.
+        bitmask = list(bitmask)
+        try:
+            while bitmask[-1] == 0:
+                bitmask.pop()
+        except IndexError:
+            pass
+
+        # Check that bitmask does not exceed columns.
+        if len(bitmask) > len(columns):
+            msg = (
+                f'incompatible bitmask:\n'
+                f'  columns = {columns}\n'
+                f'  bitmask = {bitmask}'
+            )
+            raise ValueError(msg)
+
+        # Build and return SQL parts for disaggregate query.
+        select_items = [_schema.normalize_identifier(col) for col in columns]
+        join_using_items = list(compress(select_items, bitmask))
+        zipped = zip_longest(select_items, bitmask, fillvalue=0)
+        where_clause_items = [f"{a}{'!=' if b else '='}''" for a, b in zipped]
+        return (select_items, join_using_items, where_clause_items)
 
     @staticmethod
     def _get_data_property(cursor: sqlite3.Cursor, key: str) -> Any:
