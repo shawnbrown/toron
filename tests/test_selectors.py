@@ -15,6 +15,7 @@ from toron._selectors import (
     parse_selector,
     convert_text_selectors,
     SelectorSyntaxError,
+    GetMatchingKey,
 )
 
 
@@ -838,4 +839,16 @@ class TestParserSelectorIntegration(unittest.TestCase):
             {selector1: 'y'},
             msg='selector2 should be indistinguishable',
         )
+
+
+class TestGetMatchingKey(unittest.TestCase):
+    def test_simple_match(self):
+        selector_dict = {
+            1: [SimpleSelector('A', '=', 'xxx')],
+            2: [SimpleSelector('B', '=', 'yyy')],
+        }
+        get_matching_key = GetMatchingKey(selector_dict, default=1)
+        self.assertEqual(get_matching_key({'A': 'xxx'}), 1)
+        self.assertEqual(get_matching_key({'B': 'yyy'}), 2)
+        self.assertEqual(get_matching_key({'C': 'zzz'}), 1, msg='should get default')
 

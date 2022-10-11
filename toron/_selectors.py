@@ -519,3 +519,38 @@ def convert_text_selectors(selector_json: AnyStr) -> List[CompoundSelector]:
         selector_error = SelectorSyntaxError(err)
         raise selector_error from None
 
+
+class GetMatchingKey(object):
+    """A callable object to get keys for matching selectors.
+
+    .. code-block::
+
+        >>> get_matching_key = GetMatchingKey(
+        ...     selector_dict={
+        ...         1: [SimpleSelector('A', '=', 'xxx')],
+        ...         2: [SimpleSelector('B', '=', 'yyy')],
+        ...     },
+        ...     default=1,
+        ... )
+        >>> get_matching_key({'A': 'xxx'})
+        1
+        >>> get_matching_key({'B': 'yyy'})
+        2
+        >>> get_matching_key({'C': 'zzz'})  # Gets default.
+        1
+    """
+    def __init__(
+        self,
+        selector_dict: Mapping[Any, List[SelectorBase]],
+        default: Any,
+    ):
+        self._selector_items = tuple(selector_dict.items())
+        self._default = default
+
+    def __call__(self, row_dict: Mapping[str, str]) -> Any:
+        for key, selector_list in self._selector_items:
+            for selector in selector_list:
+                if selector(row_dict):
+                    return key
+        return self._default
+
