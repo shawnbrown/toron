@@ -3,17 +3,19 @@
 import json
 import unittest
 
-from toron._selectors import SelectorBase
-from toron._selectors import SimpleSelector
-from toron._selectors import MatchesAnySelector
-from toron._selectors import NegationSelector
-from toron._selectors import SpecificityAdjustmentSelector
-from toron._selectors import CompoundSelector
-from toron._selectors import _get_comparison_key
-from toron._selectors import accepts_json_input
-from toron._selectors import parse_selector
-from toron._selectors import convert_text_selectors
-from toron._selectors import SelectorSyntaxError
+from toron._selectors import (
+    SelectorBase,
+    SimpleSelector,
+    MatchesAnySelector,
+    NegationSelector,
+    SpecificityAdjustmentSelector,
+    CompoundSelector,
+    _get_comparison_key,
+    accepts_json_input,
+    parse_selector,
+    convert_text_selectors,
+    SelectorSyntaxError,
+)
 
 
 class TestSimpleSelector(unittest.TestCase):
