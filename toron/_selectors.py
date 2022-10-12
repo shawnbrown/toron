@@ -555,7 +555,8 @@ class GetMatchingKey(object):
         selector_dict: Mapping[Any, List[SelectorBase]],
         default: Any,
     ):
-        self._selector_items = tuple(selector_dict.items())
+        self._selector_items = \
+            frozenset((k, frozenset(v)) for k, v in selector_dict.items())
         self._default = default
 
     def __call__(self, row_dict: Mapping[str, str]) -> Any:
@@ -587,4 +588,13 @@ class GetMatchingKey(object):
                 return dict_key    # If it is unique, then return the key.
 
         return self._default
+
+    def __hash__(self) -> int:
+        return hash((self.__class__, self._selector_items, self._default))
+
+    def __eq__(self, other: Any) -> bool:
+        try:
+            return hash(self) == hash(other)
+        except TypeError:
+            return False
 

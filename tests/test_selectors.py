@@ -902,3 +902,53 @@ class TestGetMatchingKey(unittest.TestCase):
         row_dict = {'D': 'qqq', 'B': 'yyy', 'C': 'zzz'}
         self.assertEqual(get_matching_key(row_dict), 1, msg=msg)
 
+    def test_hash_and_eq_equal(self):
+        """Check when hashes and objects should test as equal."""
+        # Same arguments, different objects.
+        matcher1 = GetMatchingKey({1: [SimpleSelector('A')]}, default=1)
+        matcher2 = GetMatchingKey({1: [SimpleSelector('A')]}, default=1)
+        self.assertEqual(hash(matcher1), hash(matcher2))
+        self.assertEqual(matcher1, matcher2)
+
+        # Same arguments, but list is ordered differently.
+        matcher1 = GetMatchingKey(
+            {1: [SimpleSelector('A'), SimpleSelector('B')]},
+            default=1,
+        )
+        matcher2 = GetMatchingKey(
+            {1: [SimpleSelector('B'), SimpleSelector('A')]},
+            default=1,
+        )
+        self.assertEqual(hash(matcher1), hash(matcher2))
+        self.assertEqual(matcher1, matcher2)
+
+    def test_hash_and_eq_not_equal(self):
+        """Check when hashes and objects should not be equal."""
+        # Different default argument.
+        matcher1 = GetMatchingKey(
+            {1: [SimpleSelector('A')], 2: [SimpleSelector('B')]},
+            default=1,
+        )
+        matcher2 = GetMatchingKey(
+            {1: [SimpleSelector('A')], 2: [SimpleSelector('B')]},
+            default=2,
+        )
+        self.assertNotEqual(hash(matcher1), hash(matcher2))
+        self.assertNotEqual(matcher1, matcher2)
+
+        # Swapped key-and-selector associations.
+        matcher1 = GetMatchingKey(
+            {1: [SimpleSelector('A')], 2: [SimpleSelector('B')]},
+            default=1,
+        )
+        matcher2 = GetMatchingKey(
+            {1: [SimpleSelector('B')], 2: [SimpleSelector('A')]},
+            default=1,
+        )
+        self.assertNotEqual(hash(matcher1), hash(matcher2))
+        self.assertNotEqual(matcher1, matcher2)
+
+        # Check for equality against non-hashable object.
+        matcher = GetMatchingKey({1: [SimpleSelector('A')]}, default=1)
+        self.assertNotEqual(matcher, [1, 2, 3])
+
