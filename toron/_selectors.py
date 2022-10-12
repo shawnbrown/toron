@@ -6,6 +6,7 @@ from json import loads
 from ._typing import (
     Any,
     AnyStr,
+    Dict,
     List,
     Literal,
     Mapping,
@@ -558,7 +559,7 @@ class GetMatchingKey(object):
         self._default = default
 
     def __call__(self, row_dict: Mapping[str, str]) -> Any:
-        matched = {}
+        matched: Dict[Any, Tuple[int, int]] = {}
         for key, selector_list in self._selector_items:
             for selector in selector_list:
                 if selector(row_dict):
