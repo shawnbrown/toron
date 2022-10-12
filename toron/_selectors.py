@@ -3,7 +3,16 @@
 from abc import ABC, abstractmethod
 from itertools import groupby
 from json import loads
-from ._typing import Any, AnyStr, List, Literal, Mapping, Optional, Tuple, Union
+from ._typing import (
+    Any,
+    AnyStr,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from lark import Lark, Transformer, UnexpectedInput, v_args
 
