@@ -852,3 +852,53 @@ class TestGetMatchingKey(unittest.TestCase):
         self.assertEqual(get_matching_key({'B': 'yyy'}), 2)
         self.assertEqual(get_matching_key({'C': 'zzz'}), 1, msg='should get default')
 
+    def test_max_specificity(self):
+        selector_dict = {
+            1: [SimpleSelector('A')],
+            2: [SimpleSelector('A', '=', 'xxx')],
+            3: [SimpleSelector('B')],
+            4: [SimpleSelector('B', '=', 'yyy')],
+        }
+        get_matching_key = GetMatchingKey(selector_dict, default=1)
+        self.assertEqual(get_matching_key({'A': 'qqq'}), 1, msg='specificity: (0, 1)')
+        self.assertEqual(get_matching_key({'A': 'xxx'}), 2, msg='specificity: (1, 1)')
+        self.assertEqual(get_matching_key({'B': 'qqq'}), 3, msg='specificity: (0, 1)')
+        self.assertEqual(get_matching_key({'B': 'yyy'}), 4, msg='specificity: (1, 1)')
+
+    def test_greatest_unique_specificity(self):
+        selector_dict = {
+            1: [SimpleSelector('A')],
+            2: [SimpleSelector('A', '=', 'xxx')],
+            3: [CompoundSelector([SimpleSelector('B', '=', 'yyy'), SimpleSelector('C')])],
+            4: [CompoundSelector([SimpleSelector('B'), SimpleSelector('C', '=', 'zzz')])],
+        }
+        get_matching_key = GetMatchingKey(selector_dict, default=1)
+
+        # Check basic matches and default.
+        self.assertEqual(get_matching_key({'A': 'qqq'}), 1)
+        self.assertEqual(get_matching_key({'A': 'xxx'}), 2)
+        self.assertEqual(get_matching_key({'A': 'xxx', 'B': 'yyy', 'C': 'qqq'}), 3)
+        self.assertEqual(get_matching_key({'A': 'xxx', 'B': 'qqq', 'C': 'zzz'}), 4)
+        self.assertEqual(get_matching_key({'D': 'qqq'}), 1, msg='default')
+
+        # Check greatest-unique specificity.
+        msg = (
+            'The `row_dict` matches both 3 and 4 with a specificity '
+            'of `(2, 1)` so they are not unique. But 2 matches with '
+            'a specificity of `(1, 1)` and it *is* unique, therefore '
+            'get_matching_key() should return 2.'
+        )
+        row_dict = {'A': 'xxx', 'B': 'yyy', 'C': 'zzz'}
+        self.assertEqual(get_matching_key(row_dict), 2, msg=msg)
+
+        # Check fall-back to default.
+        get_matching_key = GetMatchingKey(selector_dict, default=1)
+        msg = (
+            'The `row_dict` matches both 3 and 4 with a specificity '
+            'of `(2, 1)` so they are not unique. And since there is '
+            'no other matching selector, get_matching_key() should '
+            'return 1 (the default key).'
+        )
+        row_dict = {'D': 'qqq', 'B': 'yyy', 'C': 'zzz'}
+        self.assertEqual(get_matching_key(row_dict), 1, msg=msg)
+
