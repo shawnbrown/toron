@@ -560,24 +560,24 @@ class GetMatchingKey(object):
 
     def __call__(self, row_dict: Mapping[str, str]) -> Any:
         matched: Dict[Any, Tuple[int, int]] = {}
-        for key, selector_list in self._selector_items:
-            for selector in selector_list:
+        for dict_key, selector_set in self._selector_items:
+            for selector in selector_set:
                 if selector(row_dict):
                     specificity = max(
-                        matched.get(key, (0, 0)),
+                        matched.get(dict_key, (0, 0)),
                         selector.specificity,
                     )
-                    matched[key] = specificity
+                    matched[dict_key] = specificity
 
         # Swap positions so tuples contain `(specificity, dict_key)`.
         matched_items = ((b, a) for a, b in matched.items())
 
         # Sort from greatest to least specificity.
-        keyfunc = lambda x: x[0]
-        sorted_items = sorted(matched_items, key=keyfunc, reverse=True)
+        get_specificity = lambda x: x[0]
+        sorted_items = sorted(matched_items, key=get_specificity, reverse=True)
 
         # Return `dict_key` with the greatest unique specificity.
-        for _, group in groupby(sorted_items, key=keyfunc):
+        for _, group in groupby(sorted_items, key=get_specificity):
             _, dict_key = next(group)  # Get the first item from group.
 
             try:                   # If group contains a second item, then
