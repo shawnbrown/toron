@@ -855,9 +855,25 @@ class TestGetMatchingKey(unittest.TestCase):
             2: [SimpleSelector('B', '=', 'yyy')],
         }
         get_matching_key = GetMatchingKey(selector_dict, default=1)
+
+        # Check JSON strings.
+        self.assertEqual(get_matching_key('{"A": "xxx"}'), 1)
+        self.assertEqual(get_matching_key('{"B": "yyy"}'), 2)
+        self.assertEqual(get_matching_key('{"C": "zzz"}'), 1, msg='should get default')
+
+        # Check Python dict.
         self.assertEqual(get_matching_key({'A': 'xxx'}), 1)
         self.assertEqual(get_matching_key({'B': 'yyy'}), 2)
         self.assertEqual(get_matching_key({'C': 'zzz'}), 1, msg='should get default')
+
+        with self.assertRaises(TypeError, msg='string must be valid JSON'):
+            get_matching_key('xyz')
+
+        with self.assertRaises(TypeError, msg='string should be a JSON Object type'):
+            get_matching_key('["xxx", "yyy"]')
+
+        with self.assertRaises(TypeError, msg='value should be a dict object'):
+            get_matching_key(['xxx', 'yyy'])
 
     def test_max_specificity(self):
         selector_dict = {

@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from itertools import groupby
-from json import loads
+from json import loads, JSONDecodeError
 from ._typing import (
     Any,
     AnyStr,
@@ -564,11 +564,20 @@ class GetMatchingKey(object):
             frozenset((k, frozenset(v)) for k, v in selector_dict.items())
         self._default = default
 
-    def __call__(self, row_dict: Mapping[str, str]) -> Any:
+    def __call__(self, row_dict: Union[AnyStr, Mapping[str, str]]) -> Any:
+        try:
+            # Try to load it as JSON string.
+            row_dict = loads(row_dict)  # type: ignore[arg-type]
+        except TypeError:
+            pass  # If not a string, use it as-is.
+        except JSONDecodeError as err:
+            msg = f'String must be valid JSON, got {row_dict!r}: {err}'
+            raise TypeError(msg) from None
+
         matched: Dict[Any, Tuple[int, int]] = {}
         for dict_key, selector_set in self._selector_items:
             for selector in selector_set:
-                if selector(row_dict):
+                if selector(row_dict):  # type: ignore[arg-type]
                     specificity = max(
                         matched.get(dict_key, (0, 0)),
                         selector.specificity,
