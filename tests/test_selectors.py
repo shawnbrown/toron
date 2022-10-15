@@ -195,6 +195,13 @@ class TestSimpleSelector(unittest.TestCase):
         selector = SimpleSelector('aaa', '=', 'xxx', ignore_case=True)
         self.assertEqual(selector.specificity, (1, 1))
 
+    def test_bad_input(self):
+        selector = SimpleSelector('aaa', '=', 'xxx')
+
+        regex = r"expected mapping, got <class 'list'>: \['xxx', 'yyy'\]"
+        with self.assertRaisesRegex(TypeError, regex):
+            selector(['xxx', 'yyy'])  # <- Expects dict type, gets list instead.
+
 
 class TestGetComparisonKey(unittest.TestCase):
     def test_simple_key(self):

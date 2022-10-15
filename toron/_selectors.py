@@ -183,7 +183,12 @@ class SimpleSelector(SelectorBase):
 
     def __call__(self, dict_row: Mapping[str, str]) -> bool:
         """Return True if selector matches values in *dict_row*."""
-        return self._match_func(self._val, dict_row.get(self._attr, ''))
+        try:
+            value = dict_row.get(self._attr, '')
+        except AttributeError as err:
+            msg = f'expected mapping, got {dict_row.__class__}: {dict_row}'
+            raise TypeError(msg) from None
+        return self._match_func(self._val, value)
 
     def __repr__(self) -> str:
         """Return eval-able string representation of selector.
