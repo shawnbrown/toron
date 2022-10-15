@@ -7,6 +7,7 @@ from ._typing import (
     Any,
     AnyStr,
     Dict,
+    Iterable,
     List,
     Literal,
     Mapping,
@@ -542,7 +543,7 @@ class GetMatchingKey(object):
     .. code-block::
 
         >>> get_matching_key = GetMatchingKey(
-        ...     selector_dict={
+        ...     selectors={
         ...         1: [SimpleSelector('A', '=', 'xxx')],
         ...         2: [SimpleSelector('B', '=', 'yyy')],
         ...     },
@@ -557,11 +558,14 @@ class GetMatchingKey(object):
     """
     def __init__(
         self,
-        selector_dict: Mapping[Any, List[SelectorBase]],
+        selectors: Union[Mapping[Any, List[SelectorBase]],
+                         Iterable[Tuple[Any, List[SelectorBase]]]],
         default: Any,
     ):
-        self._selector_items = \
-            frozenset((k, frozenset(v)) for k, v in selector_dict.items())
+        if isinstance(selectors, Mapping):
+            selectors = selectors.items()  # Normalize as key-value item pairs.
+
+        self._selector_items = frozenset((k, frozenset(v)) for k, v in selectors)
         self._default = default
 
     def __call__(self, row_dict: Union[AnyStr, Mapping[str, str]]) -> Any:

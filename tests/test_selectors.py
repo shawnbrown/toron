@@ -849,6 +849,20 @@ class TestParserSelectorIntegration(unittest.TestCase):
 
 
 class TestGetMatchingKey(unittest.TestCase):
+    def test_instantiation(self):
+        """Should accept dict or item-pairs/2-tuples as input."""
+        key_selector_dict = {
+            1: [SimpleSelector('A', '=', 'xxx')],
+            2: [SimpleSelector('B', '=', 'yyy')],
+        }
+        get_matching_key = GetMatchingKey(key_selector_dict, default=1)
+
+        key_selector_tuples = iter([
+            (1, [SimpleSelector('A', '=', 'xxx')]),
+            (2, [SimpleSelector('B', '=', 'yyy')]),
+        ])
+        get_matching_key = GetMatchingKey(key_selector_tuples, default=1)
+
     def test_simple_match(self):
         selector_dict = {
             1: [SimpleSelector('A', '=', 'xxx')],
