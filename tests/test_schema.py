@@ -1166,6 +1166,11 @@ class TestGetUserfunc(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def test_sql_function_exists(self):
+        if sqlite3.sqlite_version_info < (3, 30, 0):
+            # The _sql_function_exists() function is not supported in
+            # versions of SQLite before 3.30.0.
+            return
+
         newfunc_name = 'new_userfunc'
         self.assertFalse(
             _sql_function_exists(self.cursor, newfunc_name),
