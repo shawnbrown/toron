@@ -1684,6 +1684,57 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             if con is not getattr(self, '_connection', None):
                 con.close()
 
+    @classmethod
+    def _disaggregate_make_sql(
+        cls,
+        columns: Sequence[str],
+        bitmask: Sequence[Literal[0, 1]],
+        match_selector_func: str,
+    ) -> str:
+        # In SQLite versions before 3.25.0, there is no support for "window
+        # functions". Instead of using the "SUM(...) OVER (PARTITION BY ...)"
+        # syntax, this implementation uses a correlated subquery to achieve
+        # the same result.
+        select_items, join_using_items, where_clause_items = \
+            cls._disaggregate_make_sql_parts(columns, bitmask)
+
+        if join_using_items:
+            element_join_constraint = f"USING ({', '.join(join_using_items)})"
+        else:
+            element_join_constraint = 'ON 1'
+
+        statement = f"""
+            SELECT
+                t3.element_id,
+                {', '.join(f't3.{x}' for x in select_items)},
+                t1.attributes,
+                t1.value * IFNULL(
+                    (t4.value / (SELECT SUM(sub4.value)
+                                 FROM main.quantity sub1
+                                 JOIN main.location sub2 USING (_location_id)
+                                 JOIN main.element sub3 {element_join_constraint}
+                                 JOIN main.weight sub4 USING (element_id)
+                                 WHERE sub1.quantity_id=t1.quantity_id
+                                       AND sub4.weighting_id=t4.weighting_id)),
+                    (1.0 / (SELECT COUNT(1)
+                            FROM main.quantity sub1
+                            JOIN main.location sub2 USING (_location_id)
+                            JOIN main.element sub3 {element_join_constraint}
+                            JOIN main.weight sub4 USING (element_id)
+                            WHERE sub1.quantity_id=t1.quantity_id
+                                  AND sub4.weighting_id=t4.weighting_id))
+                ) AS value
+            FROM main.quantity t1
+            JOIN main.location t2 USING (_location_id)
+            JOIN main.element t3 {element_join_constraint}
+            JOIN main.weight t4 ON (
+                t3.element_id=t4.element_id
+                AND t4.weighting_id={match_selector_func}(t1.attributes)
+            )
+            WHERE {' AND '.join(f't2.{x}' for x in where_clause_items)}
+        """
+        return statement
+
 
 class DataAccessLayerPre24(DataAccessLayerPre25):
     """This is a subclass of DataAccessLayer that supports SQLite
