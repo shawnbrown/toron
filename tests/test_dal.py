@@ -1858,7 +1858,7 @@ class TestDeleteRawQuantities(unittest.TestCase):
             self.dal.delete_raw_quantities()
 
 
-class TestDisaggregate(unittest.TestCase):
+class TestDisaggregateHelpers(unittest.TestCase):
     def test_disaggregate_make_sql_parts(self):
         columns = ['A', 'B', 'C', 'D']
         expected = (
@@ -1912,6 +1912,75 @@ class TestDisaggregate(unittest.TestCase):
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
         self.assertIn('JOIN main.element t3 ON TRUE', result)
         self.assertIn("""WHERE t1."A"='' AND t1."B"='' AND t1."C"='' AND t1."D"=''""", result)
+
+
+class TestDisaggregate(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        connection = self.dal._get_connection()
+        self.addCleanup(connection.close)
+
+        self.cursor = connection.cursor()
+        self.addCleanup(self.cursor.close)
+
+        columns = ['col1', 'col2']
+        self.dal.set_data({'add_columns': columns})
+
+        categories = [{'col1'}]
+        self.dal.add_discrete_categories(categories)
+
+        elements = [
+            ('col1', 'col2'),
+            ('A',    'x'),
+            ('A',    'y'),
+            ('B',    'x'),
+            ('B',    'y'),
+        ]
+        self.dal.add_elements(elements)
+
+        weighting = [
+            ('col1', 'col2', 'weight'),
+            ('A',    'x',    20),
+            ('A',    'y',    30),
+            ('B',    'x',    15),
+            ('B',    'y',    60),
+        ]
+        self.dal.add_weights(weighting, name='weight', selectors=['[attr1]'])
+
+        data = [
+            ('col1', 'col2', 'attr1', 'value'),
+            ('A',    'x',    'foo',   18),
+            ('A',    'y',    'foo',   29),
+            ('B',    'x',    'foo',   22),
+            ('B',    'y',    'foo',   70),
+
+            ('A',    '',     'bar',   15),
+            ('B',    '',     'bar',   20),
+
+            ('',     '',     'baz',   25),
+        ]
+        self.dal.add_quantities(data, 'value')
+
+    def test_disaggregate(self):
+        results = self.dal.disaggregate()
+        expected = [
+            (1, 'A', 'x', {'attr1': 'baz'}, 4.0),
+            (2, 'A', 'y', {'attr1': 'baz'}, 6.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+
+            (1, 'A', 'x', {'attr1': 'bar'}, 6.0),
+            (2, 'A', 'y', {'attr1': 'bar'}, 9.0),
+            (3, 'B', 'x', {'attr1': 'bar'}, 4.0),
+            (4, 'B', 'y', {'attr1': 'bar'}, 16.0),
+
+            (1, 'A', 'x', {'attr1': 'foo'}, 18.0),
+            (2, 'A', 'y', {'attr1': 'foo'}, 29.0),
+            (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
+            (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
+        ]
+        self.assertEqual(list(results), expected)
 
 
 class TestGetAndSetDataProperty(unittest.TestCase):

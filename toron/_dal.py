@@ -19,6 +19,7 @@ from ._selectors import (
     CompoundSelector,
     SimpleSelector,
     accepts_json_input,
+    GetMatchingKey,
 )
 from ._typing import (
     Any,
@@ -1290,6 +1291,36 @@ class DataAccessLayer(object):
             WHERE {' AND '.join(f't1.{x}' for x in where_clause_items)}
         """
         return statement
+
+    def disaggregate(self) -> Generator[Dict[str, Union[str, float]], None, None]:
+        """Return a generator that yields disaggregated quantities."""
+        with self._transaction(method=None) as cur:
+            # Prepare weighting_id matcher function.
+            cur.execute("""
+                SELECT weighting_id, selectors
+                FROM main.weighting
+                WHERE is_complete=1
+            """)
+            match_weighting_id = GetMatchingKey(cur.fetchall(), default=1)
+            func_name = _schema.get_userfunc(cur, match_weighting_id)
+
+            # Get bitmask levels from structure table.
+            columns = self._get_column_names(cur, 'location')[1:]
+            bitmasks = cur.execute('SELECT * FROM main.structure').fetchall()
+
+            # Build SQL statement.
+            sql_statements = []
+            for row in bitmasks:
+                bitmask = row[1:]  # Slice-off the id value.
+                sql = self._disaggregate_make_sql(columns, bitmask, func_name)
+                sql_statements.append(sql)
+
+            final_sql = '\n            UNION ALL\n'.join(sql_statements)
+
+            # Execute SQL and yield result rows.
+            cur.execute(final_sql)
+            for row in cur:
+                yield row
 
     @staticmethod
     def _get_data_property(cursor: sqlite3.Cursor, key: str) -> Any:
