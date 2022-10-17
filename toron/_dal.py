@@ -1134,7 +1134,7 @@ class DataAccessLayer(object):
 
     def get_raw_quantities(
         self, **where: str
-    ) -> Iterable[Dict[str, Union[str, float]]]:
+    ) -> Generator[Dict[str, Union[str, float]], None, None]:
         """Get raw data quantities."""
         with self._transaction(method=None) as cur:
             location_cols = self._get_column_names(cur, 'location')[1:]
@@ -1205,7 +1205,7 @@ class DataAccessLayer(object):
     def _disaggregate_make_sql_parts(
         columns: Sequence[str],
         bitmask: Sequence[Literal[0, 1]],
-    ) -> Tuple[Sequence[str], Sequence[str], Sequence[str]]:
+    ) -> Tuple[List[str], List[str], List[str]]:
         """Make SQL parts used in _disaggregate_make_sql() function.
 
         Returns a 3-tuple containing select items, join-using items,
