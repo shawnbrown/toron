@@ -136,8 +136,8 @@ class Node(object):
         label is "California" so the labels are not unique despite the
         category being discrete.
 
-        Even when a field's labels *are* unique, we cannot know for
-        certain if it represents a discrete category. A category's
+        Even when a field's labels *are* unique, there is no guarantee
+        that the field represents a discrete category. A category's
         discreteness is a property of the relationsip between the
         dataset and the domain it models. It's not a property that
         can be derived with certainty from the dataset alone.
