@@ -1910,7 +1910,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
 
         bitmask = [0, 0, 0, 0]  # <- Bitmask is all 0s.
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
-        self.assertIn('JOIN main.element t3 ON TRUE', result)
+        self.assertIn('JOIN main.element t3 ON 1', result)
         self.assertIn("""WHERE t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"=''""", result)
 
 

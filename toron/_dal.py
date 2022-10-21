@@ -1270,7 +1270,7 @@ class DataAccessLayer(object):
         if join_using_items:
             element_join_constraint = f"USING ({', '.join(join_using_items)})"
         else:
-            element_join_constraint = 'ON TRUE'
+            element_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
 
         statement = f"""
             SELECT
@@ -1701,7 +1701,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         if join_using_items:
             element_join_constraint = f"USING ({', '.join(join_using_items)})"
         else:
-            element_join_constraint = 'ON 1'
+            element_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
 
         statement = f"""
             SELECT
