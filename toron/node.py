@@ -58,27 +58,26 @@ class Node(object):
         +--------------------------+----------------------------------+
         | Value                    | Meaning                          |
         +==========================+==================================+
-        | ``'preserve'``           | Remove columns if the node's     |
+        | ``'preserve'``           | Cancel the operation and Raise   |
+        |                          | a ToronError if the node's       |
         |                          | granularity and category         |
-        |                          | structure can be preserved or    |
-        |                          | raise a ToronError if they       |
-        |                          | cannot.                          |
+        |                          | structure cannot be preserved.   |
         +--------------------------+----------------------------------+
-        | ``'restructure'``        | Remove columns and restructure   |
-        |                          | existing categories as necessary |
-        |                          | or raise a ToronError if its     |
-        |                          | granularity cannot be preserved. |
+        | ``'restructure'``        | Restructure existing categories  |
+        |                          | as necessary or cancel the       |
+        |                          | operation and raise a ToronError |
+        |                          | if the node's granularity cannot |
+        |                          | be preserved.                    |
         +--------------------------+----------------------------------+
-        | ``'coarsen'``            | Remove columns and coarsen       |
-        |                          | the node's granularity as        |
-        |                          | necessary or raise a ToronError  |
+        | ``'coarsen'``            | Coarsen the node's granularity   |
+        |                          | as necessary or cancel the       |
+        |                          | operation and raise a ToronError |
         |                          | if its category structure cannot |
         |                          | be preserved.                    |
         +--------------------------+----------------------------------+
-        | ``'coarsenrestructure'`` | Remove columns, coarsen the      |
-        |                          | node's granularity, and rebuild  |
-        |                          | existing categories as           |
-        |                          | necessary.                       |
+        | ``'coarsenrestructure'`` | Coarsen the node's granularity   |
+        |                          | and restructure its existing     |
+        |                          | categories as necessary.         |
         +--------------------------+----------------------------------+
         """
         self._dal.remove_columns(columns, strategy=strategy)
