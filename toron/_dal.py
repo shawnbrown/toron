@@ -1276,19 +1276,19 @@ class DataAccessLayer(object):
             SELECT
                 t3.element_id,
                 {', '.join(f't3.{x}' for x in select_items)},
-                t2.attributes,
-                t2.value * IFNULL(
-                    (t4.value / SUM(t4.value) OVER (PARTITION BY t2.quantity_id)),
-                    (1.0 / COUNT(1) OVER (PARTITION BY t2.quantity_id))
+                t1.attributes,
+                t1.value * IFNULL(
+                    (t4.value / SUM(t4.value) OVER (PARTITION BY t1.quantity_id)),
+                    (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS value
-            FROM main.location t1
-            JOIN main.quantity t2 USING (_location_id)
+            FROM main.quantity t1
+            JOIN main.location t2 USING (_location_id)
             JOIN main.element t3 {element_join_constraint}
             JOIN main.weight t4 ON (
                 t3.element_id=t4.element_id
-                AND t4.weighting_id={match_selector_func}(t2.attributes)
+                AND t4.weighting_id={match_selector_func}(t1.attributes)
             )
-            WHERE {' AND '.join(f't1.{x}' for x in where_clause_items)}
+            WHERE {' AND '.join(f't2.{x}' for x in where_clause_items)}
         """
         return statement
 

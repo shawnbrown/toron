@@ -1892,26 +1892,26 @@ class TestDisaggregateHelpers(unittest.TestCase):
             SELECT
                 t3.element_id,
                 t3."A", t3."B", t3."C", t3."D",
-                t2.attributes,
-                t2.value * IFNULL(
-                    (t4.value / SUM(t4.value) OVER (PARTITION BY t2.quantity_id)),
-                    (1.0 / COUNT(1) OVER (PARTITION BY t2.quantity_id))
+                t1.attributes,
+                t1.value * IFNULL(
+                    (t4.value / SUM(t4.value) OVER (PARTITION BY t1.quantity_id)),
+                    (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS value
-            FROM main.location t1
-            JOIN main.quantity t2 USING (_location_id)
+            FROM main.quantity t1
+            JOIN main.location t2 USING (_location_id)
             JOIN main.element t3 USING ("A", "C")
             JOIN main.weight t4 ON (
                 t3.element_id=t4.element_id
-                AND t4.weighting_id=USER_FUNC_NAME(t2.attributes)
+                AND t4.weighting_id=USER_FUNC_NAME(t1.attributes)
             )
-            WHERE t1."A"!='' AND t1."B"='' AND t1."C"!='' AND t1."D"=''
+            WHERE t2."A"!='' AND t2."B"='' AND t2."C"!='' AND t2."D"=''
         """
         self.assertEqual(result, expected)
 
         bitmask = [0, 0, 0, 0]  # <- Bitmask is all 0s.
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
         self.assertIn('JOIN main.element t3 ON TRUE', result)
-        self.assertIn("""WHERE t1."A"='' AND t1."B"='' AND t1."C"='' AND t1."D"=''""", result)
+        self.assertIn("""WHERE t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"=''""", result)
 
 
 class TestDisaggregate(unittest.TestCase):
