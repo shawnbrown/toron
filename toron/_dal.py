@@ -544,7 +544,11 @@ class DataAccessLayer(object):
             USING ({formatted_names})
         ''')
 
-        # Add missing `weight.element_id` values needed for aggregation.
+        # Add any missing `element_id` values, needed for aggregation,
+        # to the `weight` table. This is necessary because weightings
+        # can be incomplete and the coarsening process may aggregate
+        # records using an `element_id` that is not currently defined
+        # for a particular weighting.
         sql_statements.append('''
             WITH
                 MatchingRecords AS (
