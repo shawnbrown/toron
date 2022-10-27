@@ -24,7 +24,7 @@ the application layer:
  +---------------------+            |                    |  +----------------+
                                     |                    |
                     +------------+  |  +--------------+  |  +---------------+
-                    | element    |  |  | location     |  |  | structure     |
+                    | indextable |  |  | location     |  |  | structure     |
                     +------------+  |  +--------------+  |  +---------------+
                  +--| element_id |--+  | _location_id |--+  | _structure_id |
                  |  | label_a    |••••>| label_a      |<••••| label_a       |
@@ -83,11 +83,11 @@ _schema_script = """
         proportion REAL NOT NULL CHECK (0.0 <= proportion AND proportion <= 1.0),
         mapping_level BLOB_BITLIST NOT NULL,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
-        FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
+        FOREIGN KEY(element_id) REFERENCES indextable(element_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (edge_id, other_element_id, element_id)
     );
 
-    CREATE TABLE main.element(
+    CREATE TABLE main.indextable(
         element_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
         /* label columns added programmatically */
     );
@@ -125,7 +125,7 @@ _schema_script = """
         element_id INTEGER,
         weight_value REAL NOT NULL,
         FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
-        FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
+        FOREIGN KEY(element_id) REFERENCES indextable(element_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (element_id, weighting_id)
     );
 
@@ -294,7 +294,7 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
     """Return list of SQL statements to create unique label indexes."""
     formatted = ', '.join(normalize_identifier(x) for x in columns)
     return [
-        f'CREATE UNIQUE INDEX main.unique_element_index ON element({formatted})',
+        f'CREATE UNIQUE INDEX main.unique_element_index ON indextable({formatted})',
         f'CREATE UNIQUE INDEX main.unique_location_index ON location({formatted})',
         f'CREATE UNIQUE INDEX main.unique_structure_index ON structure({formatted})',
     ]

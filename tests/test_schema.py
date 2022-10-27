@@ -783,7 +783,7 @@ class TestConnectDb(TempDirTestCase):
 
         expected = {
             'edge',
-            'element',
+            'indextable',
             'location',
             'property',
             'quantity',

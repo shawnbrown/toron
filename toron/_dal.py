@@ -411,7 +411,7 @@ class DataAccessLayer(object):
             msg = f"label name not allowed: {', '.join(not_allowed)}"
             raise ValueError(msg)
 
-        current_cols = cls._get_column_names(cursor, 'element')
+        current_cols = cls._get_column_names(cursor, 'indextable')
         current_cols = [_schema.normalize_identifier(col) for col in current_cols]
         new_cols = [col for col in columns if col not in current_cols]
 
@@ -429,7 +429,7 @@ class DataAccessLayer(object):
 
         for col in new_cols:
             sql_stmnts.extend([
-                f"ALTER TABLE main.element ADD COLUMN {_schema.sql_column_def_element_label(col)}",
+                f"ALTER TABLE main.indextable ADD COLUMN {_schema.sql_column_def_element_label(col)}",
                 f"ALTER TABLE main.location ADD COLUMN {_schema.sql_column_def_location_label(col)}",
                 f"ALTER TABLE main.structure ADD COLUMN {_schema.sql_column_def_structure_label(col)}",
             ])
@@ -445,7 +445,7 @@ class DataAccessLayer(object):
         cursor: sqlite3.Cursor,
         mapper: Union[Callable[[str], str], Mapping[str, str]],
     ) -> Tuple[List[str], List[str]]:
-        column_names = cls._get_column_names(cursor, 'element')
+        column_names = cls._get_column_names(cursor, 'indextable')
         column_names = column_names[1:]  # Slice-off 'element_id'.
 
         if callable(mapper):
@@ -480,7 +480,7 @@ class DataAccessLayer(object):
         sql_stmnts = []
         for name, new_name in rename_pairs:
             sql_stmnts.extend([
-                f'ALTER TABLE main.element RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE main.indextable RENAME COLUMN {name} TO {new_name}',
                 f'ALTER TABLE main.location RENAME COLUMN {name} TO {new_name}',
                 f'ALTER TABLE main.structure RENAME COLUMN {name} TO {new_name}',
             ])
@@ -512,7 +512,7 @@ class DataAccessLayer(object):
 
         for col in names_to_remove:
             sql_stmnts.extend([
-                f'ALTER TABLE main.element DROP COLUMN {col}',
+                f'ALTER TABLE main.indextable DROP COLUMN {col}',
                 f'ALTER TABLE main.location DROP COLUMN {col}',
                 f'ALTER TABLE main.structure DROP COLUMN {col}',
             ])
@@ -536,9 +536,9 @@ class DataAccessLayer(object):
         sql_statements.append(f'''
             CREATE TEMPORARY TABLE old_to_new_element_id
             AS SELECT element_id, new_element_id
-            FROM main.element
+            FROM main.indextable
             JOIN (SELECT MIN(element_id) AS new_element_id, {formatted_names}
-                  FROM main.element
+                  FROM main.indextable
                   GROUP BY {formatted_names}
                   HAVING COUNT(*) > 1)
             USING ({formatted_names})
@@ -621,7 +621,7 @@ class DataAccessLayer(object):
 
         # Discard old `element` records.
         sql_statements.append('''
-            DELETE FROM main.element
+            DELETE FROM main.indextable
             WHERE element_id IN (
                 SELECT element_id
                 FROM temp.old_to_new_element_id
@@ -640,7 +640,7 @@ class DataAccessLayer(object):
                     GROUP BY weighting_id
                 ),
                 ElementCounts AS (
-                    SELECT COUNT(*) AS element_count FROM main.element
+                    SELECT COUNT(*) AS element_count FROM main.indextable
                 ),
                 NewStatus AS (
                     SELECT
@@ -678,7 +678,7 @@ class DataAccessLayer(object):
         columns: Iterable[str],
         strategy: Strategy = 'preserve',
     ) -> None:
-        column_names = cls._get_column_names(cursor, 'element')
+        column_names = cls._get_column_names(cursor, 'indextable')
         column_names = column_names[1:]  # Slice-off 'element_id'.
 
         names_to_remove = sorted(set(columns).intersection(column_names))
@@ -710,7 +710,7 @@ class DataAccessLayer(object):
         # Check for a loss of granularity.
         cursor.execute(f'''
             SELECT 1
-            FROM main.element
+            FROM main.indextable
             GROUP BY {", ".join(names_remaining)}
             HAVING COUNT(*) > 1
         ''')
@@ -751,11 +751,11 @@ class DataAccessLayer(object):
 
             >>> dal = DataAccessLayer(...)
             >>> dal._make_sql_new_elements(cursor, ['state', 'county'])
-            'INSERT INTO element ("state", "county") VALUES (?, ?)'
+            'INSERT INTO indextable ("state", "county") VALUES (?, ?)'
         """
         columns = [_schema.normalize_identifier(col) for col in columns]
 
-        existing_columns = cls._get_column_names(cursor, 'element')
+        existing_columns = cls._get_column_names(cursor, 'indextable')
         existing_columns = existing_columns[1:]  # Slice-off "element_id" column.
         existing_columns = [_schema.normalize_identifier(col) for col in existing_columns]
 
@@ -766,7 +766,7 @@ class DataAccessLayer(object):
 
         columns_clause = ', '.join(columns)
         values_clause = ', '.join('?' * len(columns))
-        return f'INSERT INTO main.element ({columns_clause}) VALUES ({values_clause})'
+        return f'INSERT INTO main.indextable ({columns_clause}) VALUES ({values_clause})'
 
     def add_elements(
         self, iterable: Iterable[Sequence[str]],
@@ -778,7 +778,7 @@ class DataAccessLayer(object):
 
         with self._transaction() as cur:
             # Get allowed columns and build selectors values.
-            allowed_columns = self._get_column_names(cur, 'element')
+            allowed_columns = self._get_column_names(cur, 'indextable')
             selectors = tuple((col in allowed_columns) for col in columns)
 
             # Filter column names and iterator rows to allowed columns.
@@ -819,7 +819,7 @@ class DataAccessLayer(object):
         """
         columns = [_schema.normalize_identifier(col) for col in columns]
 
-        existing_columns = cls._get_column_names(cursor, 'element')
+        existing_columns = cls._get_column_names(cursor, 'indextable')
         existing_columns = [_schema.normalize_identifier(col) for col in existing_columns]
 
         invalid_columns = set(columns).difference(existing_columns)
@@ -833,7 +833,7 @@ class DataAccessLayer(object):
         sql = f"""
             INSERT INTO main.weight (weighting_id, element_id, weight_value)
             SELECT ? AS weighting_id, element_id, ? AS weight_value
-            FROM main.element
+            FROM main.indextable
             WHERE {where_clause}
             GROUP BY {groupby_clause}
             HAVING COUNT(*)=1
@@ -850,7 +850,7 @@ class DataAccessLayer(object):
             SET is_complete=((SELECT COUNT(*)
                               FROM main.weight
                               WHERE weighting_id=?) = (SELECT COUNT(*)
-                                                       FROM main.element))
+                                                       FROM main.indextable))
             WHERE weighting_id=?
         """
         cursor.execute(sql, (weighting_id, weighting_id))
@@ -882,7 +882,7 @@ class DataAccessLayer(object):
             weighting_id = self._add_weights_get_new_id(cur, name, selectors, description)
 
             # Get allowed columns and build bitmask selectors values.
-            allowed_columns = self._get_column_names(cur, 'element')
+            allowed_columns = self._get_column_names(cur, 'indextable')
             bitmask_selectors = tuple((col in allowed_columns) for col in columns)
 
             # Filter column names and iterator rows to allowed columns.
@@ -970,19 +970,19 @@ class DataAccessLayer(object):
         columns: Optional[Sequence[str]] = None,
     ) -> None:
         """Add quantities and associated attributes. Quantity values
-        are automatically associated with matching element labels.
+        are automatically associated with matching index labels.
 
         Parameters
         ----------
         data : Iterable[Mapping] | Iterable[Sequence]
-            Iterable of rows or dict-rows that contain the data to be
-            loaded. Must contain one or more `element` columns, one or
-            more `attribute` columns, and a single `value` column.
+            Iterable of rows or dict-rows that contain the data to
+            be loaded. Must contain one or more index columns, one
+            or more `attribute` columns, and a single `value` column.
         value : str
             Name of column which contains the quantity values.
         attributes : Iterable[str], optional
             Name of columns which contain attributes. If not given,
-            attributes will default to all non-element, non-value
+            attributes will default to all non-index, non-value
             columns that don't begin with an underscore ('_').
         columns : Sequence[str], optional
             Optional sequence of data column names--must be given when
@@ -1217,7 +1217,7 @@ class DataAccessLayer(object):
         and where-clause items.
 
         The first item in the tuple should contain all of the label
-        columns used in the element/location/structure tables.
+        columns used in the indextable/location/structure tables.
 
         The second item in the tuple should contain only those labels
         that are selected by the bitmask.
@@ -1287,7 +1287,7 @@ class DataAccessLayer(object):
                 ) AS value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.element t3 {element_join_constraint}
+            JOIN main.indextable t3 {element_join_constraint}
             JOIN main.weight t4 ON (
                 t3.element_id=t4.element_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
@@ -1338,7 +1338,7 @@ class DataAccessLayer(object):
         with self._transaction() as cur:
             for key in keys:
                 if key == 'column_names':
-                    cur.execute("PRAGMA main.table_info('element')")
+                    cur.execute("PRAGMA main.table_info('indextable')")
                     names = [row[1] for row in cur.fetchall()]
                     data[key] = names[1:]  # Slice-off element_id.
                 elif key == 'discrete_categories':
@@ -1424,7 +1424,7 @@ class DataAccessLayer(object):
             categories = [set(x) for x in categories]
 
         if minimize:
-            whole_space = set(cls._get_column_names(cursor, 'element')[1:])
+            whole_space = set(cls._get_column_names(cursor, 'indextable')[1:])
             categories = minimize_discrete_categories(categories, [whole_space])
 
         list_of_lists = [list(cat) for cat in categories]  # type: ignore [union-attr]
@@ -1557,12 +1557,12 @@ class DataAccessLayerPre35(DataAccessLayer):
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in columns_to_keep]
 
         statements = [
-            # Rebuild 'element' table.
-            f'CREATE TABLE main.new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+            # Rebuild 'indextable'.
+            f'CREATE TABLE main.new_indextable(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
                 f'{", ".join(new_element_cols)})',
-            f'INSERT INTO main.new_element SELECT element_id, {", ".join(columns_to_keep)} FROM main.element',
-            'DROP TABLE main.element',
-            'ALTER TABLE main.new_element RENAME TO element',
+            f'INSERT INTO main.new_indextable SELECT element_id, {", ".join(columns_to_keep)} FROM main.indextable',
+            'DROP TABLE main.indextable',
+            'ALTER TABLE main.new_indextable RENAME TO indextable',
 
             # Rebuild 'location' table.
             f'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, ' \
@@ -1631,12 +1631,12 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         new_location_cols = [_schema.sql_column_def_location_label(col) for col in new_column_names]
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in new_column_names]
         statements = [
-            # Rebuild 'element' table.
-            f'CREATE TABLE main.new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+            # Rebuild 'indextable'.
+            f'CREATE TABLE main.new_indextable(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
                 f'{", ".join(new_element_cols)})',
-            f'INSERT INTO main.new_element SELECT element_id, {", ".join(column_names)} FROM main.element',
-            'DROP TABLE main.element',
-            'ALTER TABLE main.new_element RENAME TO element',
+            f'INSERT INTO main.new_indextable SELECT element_id, {", ".join(column_names)} FROM main.indextable',
+            'DROP TABLE main.indextable',
+            'ALTER TABLE main.new_indextable RENAME TO indextable',
 
             # Rebuild 'location' table.
             f'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, ' \
@@ -1716,21 +1716,21 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                     (t4.weight_value / (SELECT SUM(sub4.weight_value)
                                  FROM main.quantity sub1
                                  JOIN main.location sub2 USING (_location_id)
-                                 JOIN main.element sub3 {element_join_constraint}
+                                 JOIN main.indextable sub3 {element_join_constraint}
                                  JOIN main.weight sub4 USING (element_id)
                                  WHERE sub1.quantity_id=t1.quantity_id
                                        AND sub4.weighting_id=t4.weighting_id)),
                     (1.0 / (SELECT COUNT(1)
                             FROM main.quantity sub1
                             JOIN main.location sub2 USING (_location_id)
-                            JOIN main.element sub3 {element_join_constraint}
+                            JOIN main.indextable sub3 {element_join_constraint}
                             JOIN main.weight sub4 USING (element_id)
                             WHERE sub1.quantity_id=t1.quantity_id
                                   AND sub4.weighting_id=t4.weighting_id))
                 ) AS value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.element t3 {element_join_constraint}
+            JOIN main.indextable t3 {element_join_constraint}
             JOIN main.weight t4 ON (
                 t3.element_id=t4.element_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)

@@ -414,13 +414,13 @@ class TestAddColumnsMakeSql(unittest.TestCase):
             'DROP INDEX IF EXISTS main.unique_element_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
-            'ALTER TABLE main.element ADD COLUMN "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.indextable ADD COLUMN "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "state" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "state" INTEGER CHECK ("state" IN (0, 1)) DEFAULT 0',
-            'ALTER TABLE main.element ADD COLUMN "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.indextable ADD COLUMN "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "county" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_element_index ON element("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -439,13 +439,13 @@ class TestAddColumnsMakeSql(unittest.TestCase):
             'DROP INDEX IF EXISTS main.unique_element_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
-            'ALTER TABLE main.element ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.indextable ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "tract" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "tract" INTEGER CHECK ("tract" IN (0, 1)) DEFAULT 0',
-            'ALTER TABLE main.element ADD COLUMN "block" TEXT NOT NULL CHECK ("block" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.indextable ADD COLUMN "block" TEXT NOT NULL CHECK ("block" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "block" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "block" INTEGER CHECK ("block" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_element_index ON element("state", "county", "tract", "block")',
+            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county", "tract", "block")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county", "tract", "block")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county", "tract", "block")',
         ]
@@ -495,10 +495,10 @@ class TestAddColumnsMakeSql(unittest.TestCase):
             'DROP INDEX IF EXISTS main.unique_element_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
-            'ALTER TABLE main.element ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.indextable ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "tract" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "tract" INTEGER CHECK ("tract" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_element_index ON element("state", "county", "tract")',
+            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county", "tract")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county", "tract")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county", "tract")',
         ]
@@ -519,7 +519,7 @@ class TestAddColumns(unittest.TestCase):
 
         con = dal._connection
 
-        columns = get_column_names(con, 'element')
+        columns = get_column_names(con, 'indextable')
         self.assertEqual(columns, ['element_id', 'state', 'county'])
 
         columns = get_column_names(con, 'location')
@@ -601,10 +601,10 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
         """Test native RENAME COLUMN statements."""
         sql = DataAccessLayer._rename_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
-            'ALTER TABLE main.element RENAME COLUMN "state" TO "stusab"',
+            'ALTER TABLE main.indextable RENAME COLUMN "state" TO "stusab"',
             'ALTER TABLE main.location RENAME COLUMN "state" TO "stusab"',
             'ALTER TABLE main.structure RENAME COLUMN "state" TO "stusab"',
-            'ALTER TABLE main.element RENAME COLUMN "town" TO "place"',
+            'ALTER TABLE main.indextable RENAME COLUMN "town" TO "place"',
             'ALTER TABLE main.location RENAME COLUMN "town" TO "place"',
             'ALTER TABLE main.structure RENAME COLUMN "town" TO "place"',
         ]
@@ -614,10 +614,10 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
         """Test legacy column-rename statements for workaround procedure."""
         sql = DataAccessLayerPre25._rename_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
-            'CREATE TABLE main.new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT NOT NULL CHECK ("stusab" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\', "place" TEXT NOT NULL CHECK ("place" != \'\') DEFAULT \'-\')',
-            'INSERT INTO main.new_element SELECT element_id, "state", "county", "town" FROM main.element',
-            'DROP TABLE main.element',
-            'ALTER TABLE main.new_element RENAME TO element',
+            'CREATE TABLE main.new_indextable(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT NOT NULL CHECK ("stusab" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\', "place" TEXT NOT NULL CHECK ("place" != \'\') DEFAULT \'-\')',
+            'INSERT INTO main.new_indextable SELECT element_id, "state", "county", "town" FROM main.indextable',
+            'DROP TABLE main.indextable',
+            'ALTER TABLE main.new_indextable RENAME TO indextable',
             'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, "stusab" TEXT NOT NULL DEFAULT \'\', "county" TEXT NOT NULL DEFAULT \'\', "place" TEXT NOT NULL DEFAULT \'\')',
             'INSERT INTO main.new_location SELECT _location_id, "state", "county", "town" FROM main.location',
             'DROP TABLE main.location',
@@ -626,7 +626,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_structure SELECT _structure_id, "state", "county", "town" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
-            'CREATE UNIQUE INDEX main.unique_element_index ON element("stusab", "county", "place")',
+            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("stusab", "county", "place")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("stusab", "county", "place")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("stusab", "county", "place")',
         ]
@@ -652,20 +652,20 @@ class TestRenameColumns(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def run_rename_test(self, rename_columns_func):
-        columns_before_rename = get_column_names(self.cur, 'element')
+        columns_before_rename = get_column_names(self.cur, 'indextable')
         self.assertEqual(columns_before_rename, ['element_id', 'state', 'county', 'town'])
 
         data_before_rename = \
-            self.cur.execute('SELECT state, county, town from element').fetchall()
+            self.cur.execute('SELECT state, county, town FROM indextable').fetchall()
 
         mapper = {'state': 'stusab', 'town': 'place'}
         rename_columns_func(self.dal, mapper)  # <- Rename columns!
 
-        columns_after_rename = get_column_names(self.cur, 'element')
+        columns_after_rename = get_column_names(self.cur, 'indextable')
         self.assertEqual(columns_after_rename, ['element_id', 'stusab', 'county', 'place'])
 
         data_after_rename = \
-            self.cur.execute('SELECT stusab, county, place from element').fetchall()
+            self.cur.execute('SELECT stusab, county, place FROM indextable').fetchall()
 
         self.assertEqual(data_before_rename, data_after_rename)
 
@@ -695,13 +695,13 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
             'DROP INDEX IF EXISTS main.unique_element_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
-            'ALTER TABLE main.element DROP COLUMN "mcd"',
+            'ALTER TABLE main.indextable DROP COLUMN "mcd"',
             'ALTER TABLE main.location DROP COLUMN "mcd"',
             'ALTER TABLE main.structure DROP COLUMN "mcd"',
-            'ALTER TABLE main.element DROP COLUMN "place"',
+            'ALTER TABLE main.indextable DROP COLUMN "place"',
             'ALTER TABLE main.location DROP COLUMN "place"',
             'ALTER TABLE main.structure DROP COLUMN "place"',
-            'CREATE UNIQUE INDEX main.unique_element_index ON element("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -711,10 +711,10 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
         """Check SQL of column removal procedure for legacy SQLite."""
         sql_stmnts = DataAccessLayerPre35._remove_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
-            'CREATE TABLE main.new_element(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\')',
-            'INSERT INTO main.new_element SELECT element_id, "state", "county" FROM main.element',
-            'DROP TABLE main.element',
-            'ALTER TABLE main.new_element RENAME TO element',
+            'CREATE TABLE main.new_indextable(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\')',
+            'INSERT INTO main.new_indextable SELECT element_id, "state", "county" FROM main.indextable',
+            'DROP TABLE main.indextable',
+            'ALTER TABLE main.new_indextable RENAME TO indextable',
             'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, "state" TEXT NOT NULL DEFAULT \'\', "county" TEXT NOT NULL DEFAULT \'\')',
             'INSERT INTO main.new_location SELECT _location_id, "state", "county" FROM main.location',
             'DROP TABLE main.location',
@@ -723,7 +723,7 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_structure SELECT _structure_id, "state", "county" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
-            'CREATE UNIQUE INDEX main.unique_element_index ON element("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -803,7 +803,7 @@ class TestRemoveColumnsMixin(object):
         # Check elements and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM element a
+            FROM indextable a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
@@ -867,7 +867,7 @@ class TestRemoveColumnsMixin(object):
         # Check elements and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM element a
+            FROM indextable a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
@@ -893,7 +893,7 @@ class TestRemoveColumnsMixin(object):
 
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM element a
+            FROM indextable a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
@@ -921,7 +921,7 @@ class TestRemoveColumnsMixin(object):
 
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM element a
+            FROM indextable a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
@@ -971,7 +971,7 @@ class TestRemoveColumnsMixin(object):
 
         actual = set(self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM element a
+            FROM indextable a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='new_count'
@@ -1016,21 +1016,21 @@ class TestAddElementsMakeSql(unittest.TestCase):
         """Insert columns that match element table."""
         columns = ['state', 'county', 'town']
         sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
-        expected = 'INSERT INTO main.element ("state", "county", "town") VALUES (?, ?, ?)'
+        expected = 'INSERT INTO main.indextable ("state", "county", "town") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_differently_ordered_columns(self):
         """Order should reflect given *columns* not table order."""
         columns = ['town', 'county', 'state']  # <- Reverse order from table cols.
         sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
-        expected = 'INSERT INTO main.element ("town", "county", "state") VALUES (?, ?, ?)'
+        expected = 'INSERT INTO main.indextable ("town", "county", "state") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_subset_of_columns(self):
         """Insert fewer column that exist in the element table."""
         columns = ['state', 'county']  # <- Does not include "town", and that's OK.
         sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
-        expected = 'INSERT INTO main.element ("state", "county") VALUES (?, ?)'
+        expected = 'INSERT INTO main.indextable ("state", "county") VALUES (?, ?)'
         self.assertEqual(sql, expected)
 
     def test_bad_column_value(self):
@@ -1052,7 +1052,7 @@ class TestAddElements(unittest.TestCase):
         dal.add_elements(elements, columns=['state', 'county'])
 
         con = dal._connection
-        result = con.execute('SELECT * FROM element').fetchall()
+        result = con.execute('SELECT * FROM indextable').fetchall()
         expected = [
             (1, 'IA', 'POLK'),
             (2, 'IN', 'LA PORTE'),
@@ -1073,7 +1073,7 @@ class TestAddElements(unittest.TestCase):
         dal.add_elements(elements) # <- No *columns* argument given.
 
         con = dal._connection
-        result = con.execute('SELECT * FROM element').fetchall()
+        result = con.execute('SELECT * FROM indextable').fetchall()
         expected = [
             (1, 'IA', 'POLK'),
             (2, 'IN', 'LA PORTE'),
@@ -1096,7 +1096,7 @@ class TestAddElements(unittest.TestCase):
         dal.add_elements(elements) # <- No *columns* argument given.
 
         con = dal._connection
-        result = con.execute('SELECT * FROM element').fetchall()
+        result = con.execute('SELECT * FROM indextable').fetchall()
         expected = [
             (1, 'IA', '-'),  # <- "county" gets default '-'
             (2, 'IN', '-'),  # <- "county" gets default '-'
@@ -1119,7 +1119,7 @@ class TestAddElements(unittest.TestCase):
         dal.add_elements(elements) # <- No *columns* argument given.
 
         con = dal._connection
-        result = con.execute('SELECT * FROM element').fetchall()
+        result = con.execute('SELECT * FROM indextable').fetchall()
         expected = [
             (1, 'IA', 'POLK'),
             (2, 'IN', 'LA PORTE'),
@@ -1182,7 +1182,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         expected = """
             INSERT INTO main.weight (weighting_id, element_id, weight_value)
             SELECT ? AS weighting_id, element_id, ? AS weight_value
-            FROM main.element
+            FROM main.indextable
             WHERE "state"=? AND "county"=? AND "town"=?
             GROUP BY "state", "county", "town"
             HAVING COUNT(*)=1
@@ -1198,7 +1198,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         expected = """
             INSERT INTO main.weight (weighting_id, element_id, weight_value)
             SELECT ? AS weighting_id, element_id, ? AS weight_value
-            FROM main.element
+            FROM main.indextable
             WHERE "state"=? AND "county"=?
             GROUP BY "state", "county"
             HAVING COUNT(*)=1
@@ -1320,7 +1320,7 @@ class TestAddWeights(unittest.TestCase):
 
         self.cursor.execute("""
             SELECT state, county, tract, weight_value
-            FROM element
+            FROM indextable
             NATURAL JOIN weight
             WHERE weighting_id=1
         """)
@@ -1349,7 +1349,7 @@ class TestAddWeights(unittest.TestCase):
         # Get loaded weights.
         self.cursor.execute("""
             SELECT state, county, weight_value
-            FROM element
+            FROM indextable
             JOIN weight USING (element_id)
             WHERE weighting_id=1
         """)
@@ -1899,7 +1899,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
                 ) AS value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.element t3 USING ("A", "C")
+            JOIN main.indextable t3 USING ("A", "C")
             JOIN main.weight t4 ON (
                 t3.element_id=t4.element_id
                 AND t4.weighting_id=USER_FUNC_NAME(t1.attributes)
@@ -1910,7 +1910,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
 
         bitmask = [0, 0, 0, 0]  # <- Bitmask is all 0s.
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
-        self.assertIn('JOIN main.element t3 ON 1', result)
+        self.assertIn('JOIN main.indextable t3 ON 1', result)
         self.assertIn("""WHERE t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"=''""", result)
 
 
