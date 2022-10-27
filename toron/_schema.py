@@ -39,7 +39,7 @@ the application layer:
                  |  | weight_id    |     +--------------+     | key      |
                  |  | weighting_id |<----| weighting_id |     | value    |
                  +->| element_id   |•••  | name         |     +----------+
-                    | value        |  •  | description  |
+                    | weight_value |  •  | description  |
                     +--------------+  •  | selectors    |
                                       ••>| is_complete  |
                                          +--------------+
@@ -123,7 +123,7 @@ _schema_script = """
         weight_id INTEGER PRIMARY KEY,
         weighting_id INTEGER,
         element_id INTEGER,
-        value REAL NOT NULL,
+        weight_value REAL NOT NULL,
         FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
         FOREIGN KEY(element_id) REFERENCES element(element_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (element_id, weighting_id)

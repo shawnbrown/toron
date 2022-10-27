@@ -561,20 +561,20 @@ class DataAccessLayer(object):
                     EXCEPT
                     SELECT DISTINCT weighting_id, element_id FROM MatchingRecords
                 )
-            INSERT INTO main.weight (weighting_id, element_id, value)
+            INSERT INTO main.weight (weighting_id, element_id, weight_value)
             SELECT weighting_id, new_element_id, 0
             FROM MissingElements
         ''')
 
-        # Assign summed `value` to `weight` records being kept.
+        # Assign summed `weight_value` to `weight` records being kept.
         if _SQLITE_VERSION_INFO >= (3, 33, 0):
             # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
             sql_statements.append('''
                 UPDATE main.weight
-                SET value=summed_value
+                SET weight_value=summed_value
                 FROM (SELECT weighting_id AS old_weighting_id,
                              new_element_id,
-                             SUM(value) AS summed_value
+                             SUM(weight_value) AS summed_value
                       FROM main.weight
                       JOIN temp.old_to_new_element_id USING (element_id)
                       GROUP BY weighting_id, new_element_id)
@@ -584,7 +584,7 @@ class DataAccessLayer(object):
             sql_statements.append('''
                 WITH
                     SummedValues AS (
-                        SELECT weighting_id, new_element_id, SUM(value) AS summed_value
+                        SELECT weighting_id, new_element_id, SUM(weight_value) AS summed_value
                         FROM main.weight
                         JOIN temp.old_to_new_element_id USING (element_id)
                         GROUP BY weighting_id, new_element_id
@@ -596,7 +596,7 @@ class DataAccessLayer(object):
                         ON (a.weighting_id=b.weighting_id AND a.element_id=b.new_element_id)
                     )
                 UPDATE main.weight
-                SET value = (
+                SET weight_value = (
                     SELECT summed_value
                     FROM RecordsToUpdate
                     WHERE weight_id=record_id
@@ -831,8 +831,8 @@ class DataAccessLayer(object):
         groupby_clause = ', '.join(columns)
 
         sql = f"""
-            INSERT INTO main.weight (weighting_id, element_id, value)
-            SELECT ? AS weighting_id, element_id, ? AS value
+            INSERT INTO main.weight (weighting_id, element_id, weight_value)
+            SELECT ? AS weighting_id, element_id, ? AS weight_value
             FROM main.element
             WHERE {where_clause}
             GROUP BY {groupby_clause}
@@ -1282,7 +1282,7 @@ class DataAccessLayer(object):
                 {', '.join(f't3.{x}' for x in select_items)},
                 t1.attributes,
                 t1.quantity_value * IFNULL(
-                    (t4.value / SUM(t4.value) OVER (PARTITION BY t1.quantity_id)),
+                    (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS value
             FROM main.quantity t1
@@ -1713,7 +1713,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                 {', '.join(f't3.{x}' for x in select_items)},
                 t1.attributes,
                 t1.quantity_value * IFNULL(
-                    (t4.value / (SELECT SUM(sub4.value)
+                    (t4.weight_value / (SELECT SUM(sub4.weight_value)
                                  FROM main.quantity sub1
                                  JOIN main.location sub2 USING (_location_id)
                                  JOIN main.element sub3 {element_join_constraint}

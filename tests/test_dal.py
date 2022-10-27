@@ -802,7 +802,7 @@ class TestRemoveColumnsMixin(object):
 
         # Check elements and weights.
         actual = self.cur.execute('''
-            SELECT a.*, b.value
+            SELECT a.*, b.weight_value
             FROM element a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
@@ -866,7 +866,7 @@ class TestRemoveColumnsMixin(object):
 
         # Check elements and weights.
         actual = self.cur.execute('''
-            SELECT a.*, b.value
+            SELECT a.*, b.weight_value
             FROM element a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
@@ -892,7 +892,7 @@ class TestRemoveColumnsMixin(object):
         self.dal.remove_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
 
         actual = self.cur.execute('''
-            SELECT a.*, b.value
+            SELECT a.*, b.weight_value
             FROM element a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
@@ -920,7 +920,7 @@ class TestRemoveColumnsMixin(object):
         self.dal.remove_columns(['state', 'mcd', 'place'], strategy='coarsenrestructure')  # <- Method under test.
 
         actual = self.cur.execute('''
-            SELECT a.*, b.value
+            SELECT a.*, b.weight_value
             FROM element a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
@@ -970,7 +970,7 @@ class TestRemoveColumnsMixin(object):
         self.assertEqual(actual, True, msg=msg)
 
         actual = set(self.cur.execute('''
-            SELECT a.*, b.value
+            SELECT a.*, b.weight_value
             FROM element a
             JOIN weight b USING (element_id)
             JOIN weighting c USING (weighting_id)
@@ -1180,8 +1180,8 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         columns = ['state', 'county', 'town']
         sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
-            INSERT INTO main.weight (weighting_id, element_id, value)
-            SELECT ? AS weighting_id, element_id, ? AS value
+            INSERT INTO main.weight (weighting_id, element_id, weight_value)
+            SELECT ? AS weighting_id, element_id, ? AS weight_value
             FROM main.element
             WHERE "state"=? AND "county"=? AND "town"=?
             GROUP BY "state", "county", "town"
@@ -1196,8 +1196,8 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         columns = ['state', 'county']
         sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
-            INSERT INTO main.weight (weighting_id, element_id, value)
-            SELECT ? AS weighting_id, element_id, ? AS value
+            INSERT INTO main.weight (weighting_id, element_id, weight_value)
+            SELECT ? AS weighting_id, element_id, ? AS weight_value
             FROM main.element
             WHERE "state"=? AND "county"=?
             GROUP BY "state", "county"
@@ -1319,7 +1319,7 @@ class TestAddWeights(unittest.TestCase):
         )
 
         self.cursor.execute("""
-            SELECT state, county, tract, value
+            SELECT state, county, tract, weight_value
             FROM element
             NATURAL JOIN weight
             WHERE weighting_id=1
@@ -1348,7 +1348,7 @@ class TestAddWeights(unittest.TestCase):
 
         # Get loaded weights.
         self.cursor.execute("""
-            SELECT state, county, value
+            SELECT state, county, weight_value
             FROM element
             JOIN weight USING (element_id)
             WHERE weighting_id=1
@@ -1894,7 +1894,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
                 t3."A", t3."B", t3."C", t3."D",
                 t1.attributes,
                 t1.quantity_value * IFNULL(
-                    (t4.value / SUM(t4.value) OVER (PARTITION BY t1.quantity_id)),
+                    (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS value
             FROM main.quantity t1
