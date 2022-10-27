@@ -323,7 +323,7 @@ class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
             value,                     # user_properties
             '00000000-0000-0000-0000-000000000000',  # other_uuid
             f'other{index}.toron',     # other_filename_hint
-            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',  # other_element_hash
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',  # other_index_hash
             0,                         # is_complete
         )
 
@@ -921,14 +921,14 @@ class TestBitListConversionAndAdaptation(unittest.TestCase):
             'INSERT INTO edge (edge_id, name, other_uuid, other_filename_hint) VALUES (?, ?, ?, ?)',
             (1, 'myedge', '00000000-0000-0000-0000-000000000000', 'mynode.toron')
         )
-        self.other_element_id_generator = itertools.count(42)  # Start at 42.
+        self.other_index_id_generator = itertools.count(42)  # Start at 42.
 
     def insert_mapping_level(self, mapping_level):
         """Helper function to insert a relation and mapping_level."""
-        other_element_id = next(self.other_element_id_generator)
+        other_index_id = next(self.other_index_id_generator)
         self.cur.execute(
-            'INSERT INTO relation (edge_id, other_element_id, element_id, proportion, mapping_level) VALUES (?, ?, ?, ?, ?)',
-            (1, other_element_id, None, 1.0, mapping_level)
+            'INSERT INTO relation (edge_id, other_index_id, index_id, proportion, mapping_level) VALUES (?, ?, ?, ?, ?)',
+            (1, other_index_id, None, 1.0, mapping_level)
         )
 
     def get_mapping_levels(self):

@@ -520,7 +520,7 @@ class TestAddColumns(unittest.TestCase):
         con = dal._connection
 
         columns = get_column_names(con, 'indextable')
-        self.assertEqual(columns, ['element_id', 'state', 'county'])
+        self.assertEqual(columns, ['index_id', 'state', 'county'])
 
         columns = get_column_names(con, 'location')
         self.assertEqual(columns, ['_location_id', 'state', 'county'])
@@ -614,8 +614,8 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
         """Test legacy column-rename statements for workaround procedure."""
         sql = DataAccessLayerPre25._rename_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
-            'CREATE TABLE main.new_indextable(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT NOT NULL CHECK ("stusab" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\', "place" TEXT NOT NULL CHECK ("place" != \'\') DEFAULT \'-\')',
-            'INSERT INTO main.new_indextable SELECT element_id, "state", "county", "town" FROM main.indextable',
+            'CREATE TABLE main.new_indextable(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT NOT NULL CHECK ("stusab" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\', "place" TEXT NOT NULL CHECK ("place" != \'\') DEFAULT \'-\')',
+            'INSERT INTO main.new_indextable SELECT index_id, "state", "county", "town" FROM main.indextable',
             'DROP TABLE main.indextable',
             'ALTER TABLE main.new_indextable RENAME TO indextable',
             'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, "stusab" TEXT NOT NULL DEFAULT \'\', "county" TEXT NOT NULL DEFAULT \'\', "place" TEXT NOT NULL DEFAULT \'\')',
@@ -653,7 +653,7 @@ class TestRenameColumns(unittest.TestCase):
 
     def run_rename_test(self, rename_columns_func):
         columns_before_rename = get_column_names(self.cur, 'indextable')
-        self.assertEqual(columns_before_rename, ['element_id', 'state', 'county', 'town'])
+        self.assertEqual(columns_before_rename, ['index_id', 'state', 'county', 'town'])
 
         data_before_rename = \
             self.cur.execute('SELECT state, county, town FROM indextable').fetchall()
@@ -662,7 +662,7 @@ class TestRenameColumns(unittest.TestCase):
         rename_columns_func(self.dal, mapper)  # <- Rename columns!
 
         columns_after_rename = get_column_names(self.cur, 'indextable')
-        self.assertEqual(columns_after_rename, ['element_id', 'stusab', 'county', 'place'])
+        self.assertEqual(columns_after_rename, ['index_id', 'stusab', 'county', 'place'])
 
         data_after_rename = \
             self.cur.execute('SELECT stusab, county, place FROM indextable').fetchall()
@@ -711,8 +711,8 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
         """Check SQL of column removal procedure for legacy SQLite."""
         sql_stmnts = DataAccessLayerPre35._remove_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
-            'CREATE TABLE main.new_indextable(element_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\')',
-            'INSERT INTO main.new_indextable SELECT element_id, "state", "county" FROM main.indextable',
+            'CREATE TABLE main.new_indextable(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\')',
+            'INSERT INTO main.new_indextable SELECT index_id, "state", "county" FROM main.indextable',
             'DROP TABLE main.indextable',
             'ALTER TABLE main.new_indextable RENAME TO indextable',
             'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, "state" TEXT NOT NULL DEFAULT \'\', "county" TEXT NOT NULL DEFAULT \'\')',
@@ -804,7 +804,7 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM indextable a
-            JOIN weight b USING (element_id)
+            JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
@@ -868,7 +868,7 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM indextable a
-            JOIN weight b USING (element_id)
+            JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
@@ -894,7 +894,7 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM indextable a
-            JOIN weight b USING (element_id)
+            JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
@@ -922,7 +922,7 @@ class TestRemoveColumnsMixin(object):
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM indextable a
-            JOIN weight b USING (element_id)
+            JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
@@ -943,7 +943,7 @@ class TestRemoveColumnsMixin(object):
 
     def test_coarsening_incomplete_weight(self):
         data = [
-            ('element_id', 'state', 'new_count'),
+            ('index_id', 'state', 'new_count'),
             (1, 'AZ', 253),
             # 2 missing.
             # 3 missing.
@@ -972,21 +972,21 @@ class TestRemoveColumnsMixin(object):
         actual = set(self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM indextable a
-            JOIN weight b USING (element_id)
+            JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='new_count'
         ''').fetchall())
 
         expected = {
             (1, 'AZ', 253),
-            (2, 'CA', 121),  # <- Remaining record uses `element_id` 2.
+            (2, 'CA', 121),  # <- Remaining record uses `index_id` 2.
             # 3 aggregated together with 2.
             # 4 aggregated together with 2.
             (5, 'IN', 25),
             (6, 'MO', 528),
             (7, 'OH', 7033),
             (8, 'PA', 407),
-            (9, 'TX', 6214),  # <- Remaining record uses `element_id` 9.
+            (9, 'TX', 6214),  # <- Remaining record uses `index_id` 9.
             # 10 aggregated together with 9.
         }
         self.assertEqual(actual, expected)
@@ -1180,8 +1180,8 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         columns = ['state', 'county', 'town']
         sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
-            INSERT INTO main.weight (weighting_id, element_id, weight_value)
-            SELECT ? AS weighting_id, element_id, ? AS weight_value
+            INSERT INTO main.weight (weighting_id, index_id, weight_value)
+            SELECT ? AS weighting_id, index_id, ? AS weight_value
             FROM main.indextable
             WHERE "state"=? AND "county"=? AND "town"=?
             GROUP BY "state", "county", "town"
@@ -1196,8 +1196,8 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         columns = ['state', 'county']
         sql = DataAccessLayer._add_weights_make_sql(self.cur, columns)
         expected = """
-            INSERT INTO main.weight (weighting_id, element_id, weight_value)
-            SELECT ? AS weighting_id, element_id, ? AS weight_value
+            INSERT INTO main.weight (weighting_id, index_id, weight_value)
+            SELECT ? AS weighting_id, index_id, ? AS weight_value
             FROM main.indextable
             WHERE "state"=? AND "county"=?
             GROUP BY "state", "county"
@@ -1350,7 +1350,7 @@ class TestAddWeights(unittest.TestCase):
         self.cursor.execute("""
             SELECT state, county, weight_value
             FROM indextable
-            JOIN weight USING (element_id)
+            JOIN weight USING (index_id)
             WHERE weighting_id=1
         """)
         result = self.cursor.fetchall()
@@ -1367,11 +1367,11 @@ class TestAddWeights(unittest.TestCase):
         self.assertEqual(set(result), set(expected))
 
     @unittest.expectedFailure
-    def test_match_by_element_id(self):
+    def test_match_by_index_id(self):
         raise NotImplementedError
 
     @unittest.expectedFailure
-    def test_mismatched_labels_and_element_id(self):
+    def test_mismatched_labels_and_index_id(self):
         raise NotImplementedError
 
 
@@ -1890,7 +1890,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
         expected = """
             SELECT
-                t3.element_id,
+                t3.index_id,
                 t3."A", t3."B", t3."C", t3."D",
                 t1.attributes,
                 t1.quantity_value * IFNULL(
@@ -1901,7 +1901,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
             JOIN main.location t2 USING (_location_id)
             JOIN main.indextable t3 USING ("A", "C")
             JOIN main.weight t4 ON (
-                t3.element_id=t4.element_id
+                t3.index_id=t4.index_id
                 AND t4.weighting_id=USER_FUNC_NAME(t1.attributes)
             )
             WHERE t2."A"!='' AND t2."B"='' AND t2."C"!='' AND t2."D"=''

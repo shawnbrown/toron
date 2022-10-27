@@ -406,7 +406,7 @@ class DataAccessLayer(object):
             columns = [columns]
         columns = [_schema.normalize_identifier(col) for col in columns]
 
-        not_allowed = {'"element_id"', '"_location_id"', '"_structure_id"'}.intersection(columns)
+        not_allowed = {'"index_id"', '"_location_id"', '"_structure_id"'}.intersection(columns)
         if not_allowed:
             msg = f"label name not allowed: {', '.join(not_allowed)}"
             raise ValueError(msg)
@@ -446,7 +446,7 @@ class DataAccessLayer(object):
         mapper: Union[Callable[[str], str], Mapping[str, str]],
     ) -> Tuple[List[str], List[str]]:
         column_names = cls._get_column_names(cursor, 'indextable')
-        column_names = column_names[1:]  # Slice-off 'element_id'.
+        column_names = column_names[1:]  # Slice-off 'index_id'.
 
         if callable(mapper):
             new_column_names = [mapper(col) for col in column_names]
@@ -532,38 +532,38 @@ class DataAccessLayer(object):
 
         sql_statements = []
 
-        # Build a temporary table with old-to-new `element_id` mapping.
+        # Build a temporary table with old-to-new `index_id` mapping.
         sql_statements.append(f'''
-            CREATE TEMPORARY TABLE old_to_new_element_id
-            AS SELECT element_id, new_element_id
+            CREATE TEMPORARY TABLE old_to_new_index_id
+            AS SELECT index_id, new_index_id
             FROM main.indextable
-            JOIN (SELECT MIN(element_id) AS new_element_id, {formatted_names}
+            JOIN (SELECT MIN(index_id) AS new_index_id, {formatted_names}
                   FROM main.indextable
                   GROUP BY {formatted_names}
                   HAVING COUNT(*) > 1)
             USING ({formatted_names})
         ''')
 
-        # Add any missing `element_id` values, needed for aggregation,
+        # Add any missing `index_id` values, needed for aggregation,
         # to the `weight` table. This is necessary because weightings
         # can be incomplete and the coarsening process may aggregate
-        # records using an `element_id` that is not currently defined
+        # records using an `index_id` that is not currently defined
         # for a particular weighting.
         sql_statements.append('''
             WITH
                 MatchingRecords AS (
-                    SELECT weighting_id, element_id, new_element_id
+                    SELECT weighting_id, index_id, new_index_id
                     FROM main.weight
-                    JOIN temp.old_to_new_element_id USING (element_id)
+                    JOIN temp.old_to_new_index_id USING (index_id)
                 ),
-                MissingElements AS (
-                    SELECT DISTINCT weighting_id, new_element_id FROM MatchingRecords
+                MissingIDs AS (
+                    SELECT DISTINCT weighting_id, new_index_id FROM MatchingRecords
                     EXCEPT
-                    SELECT DISTINCT weighting_id, element_id FROM MatchingRecords
+                    SELECT DISTINCT weighting_id, index_id FROM MatchingRecords
                 )
-            INSERT INTO main.weight (weighting_id, element_id, weight_value)
-            SELECT weighting_id, new_element_id, 0
-            FROM MissingElements
+            INSERT INTO main.weight (weighting_id, index_id, weight_value)
+            SELECT weighting_id, new_index_id, 0
+            FROM MissingIDs
         ''')
 
         # Assign summed `weight_value` to `weight` records being kept.
@@ -573,27 +573,27 @@ class DataAccessLayer(object):
                 UPDATE main.weight
                 SET weight_value=summed_value
                 FROM (SELECT weighting_id AS old_weighting_id,
-                             new_element_id,
+                             new_index_id,
                              SUM(weight_value) AS summed_value
                       FROM main.weight
-                      JOIN temp.old_to_new_element_id USING (element_id)
-                      GROUP BY weighting_id, new_element_id)
-                WHERE weighting_id=old_weighting_id AND element_id=new_element_id
+                      JOIN temp.old_to_new_index_id USING (index_id)
+                      GROUP BY weighting_id, new_index_id)
+                WHERE weighting_id=old_weighting_id AND index_id=new_index_id
             ''')
         else:
             sql_statements.append('''
                 WITH
                     SummedValues AS (
-                        SELECT weighting_id, new_element_id, SUM(weight_value) AS summed_value
+                        SELECT weighting_id, new_index_id, SUM(weight_value) AS summed_value
                         FROM main.weight
-                        JOIN temp.old_to_new_element_id USING (element_id)
-                        GROUP BY weighting_id, new_element_id
+                        JOIN temp.old_to_new_index_id USING (index_id)
+                        GROUP BY weighting_id, new_index_id
                     ),
                     RecordsToUpdate AS (
                         SELECT weight_id AS record_id, summed_value
                         FROM main.weight a
                         JOIN SummedValues b
-                        ON (a.weighting_id=b.weighting_id AND a.element_id=b.new_element_id)
+                        ON (a.weighting_id=b.weighting_id AND a.index_id=b.new_index_id)
                     )
                 UPDATE main.weight
                 SET weight_value = (
@@ -607,25 +607,25 @@ class DataAccessLayer(object):
         # Discard old `weight` records.
         sql_statements.append('''
             DELETE FROM main.weight
-            WHERE element_id IN (
-                SELECT element_id
-                FROM temp.old_to_new_element_id
-                WHERE element_id != new_element_id
+            WHERE index_id IN (
+                SELECT index_id
+                FROM temp.old_to_new_index_id
+                WHERE index_id != new_index_id
             )
         ''')
 
-        # TODO: Add missing `relation.element_id` values needed for aggregation.
+        # TODO: Add missing `relation.index_id` values needed for aggregation.
         # TODO: Assign summed `proportion` to `relation` records being kept.
         # TODO: Discard old `relation` records.
         # TODO: Update `relation.mapping_level` codes.
 
-        # Discard old `element` records.
+        # Discard old `indextable` records.
         sql_statements.append('''
             DELETE FROM main.indextable
-            WHERE element_id IN (
-                SELECT element_id
-                FROM temp.old_to_new_element_id
-                WHERE element_id != new_element_id
+            WHERE index_id IN (
+                SELECT index_id
+                FROM temp.old_to_new_index_id
+                WHERE index_id != new_index_id
             )
         ''')
 
@@ -639,15 +639,15 @@ class DataAccessLayer(object):
                     WHERE is_complete=0
                     GROUP BY weighting_id
                 ),
-                ElementCounts AS (
-                    SELECT COUNT(*) AS element_count FROM main.indextable
+                IndexCounts AS (
+                    SELECT COUNT(*) AS index_count FROM main.indextable
                 ),
                 NewStatus AS (
                     SELECT
                         weighting_id AS record_id,
-                        weight_count=element_count AS is_complete
+                        weight_count=index_count AS is_complete
                     FROM WeightCounts
-                    CROSS JOIN ElementCounts
+                    CROSS JOIN IndexCounts
                 )
             UPDATE main.weighting
             SET is_complete = (
@@ -660,8 +660,8 @@ class DataAccessLayer(object):
 
         # TODO: Update `is_complete` for incomplete `edge` records.
 
-        # Remove old-to-new temporary table for `element_id` mapping.
-        sql_statements.append('DROP TABLE temp.old_to_new_element_id')
+        # Remove old-to-new temporary table for `index_id` mapping.
+        sql_statements.append('DROP TABLE temp.old_to_new_index_id')
 
         # TODO: Build a temporary table with old-to-new `location_id` mapping.
         # TODO: Add missing `quantity._location_id` values needed for aggregation.
@@ -679,7 +679,7 @@ class DataAccessLayer(object):
         strategy: Strategy = 'preserve',
     ) -> None:
         column_names = cls._get_column_names(cursor, 'indextable')
-        column_names = column_names[1:]  # Slice-off 'element_id'.
+        column_names = column_names[1:]  # Slice-off 'index_id'.
 
         names_to_remove = sorted(set(columns).intersection(column_names))
         if not names_to_remove:
@@ -744,7 +744,7 @@ class DataAccessLayer(object):
     def _add_elements_make_sql(
         cls, cursor: sqlite3.Cursor, columns: Iterable[str]
     ) -> str:
-        """Return a SQL statement adding new element records (for use
+        """Return a SQL statement adding new index records (for use
         with an executemany() call.
 
         Example:
@@ -756,7 +756,7 @@ class DataAccessLayer(object):
         columns = [_schema.normalize_identifier(col) for col in columns]
 
         existing_columns = cls._get_column_names(cursor, 'indextable')
-        existing_columns = existing_columns[1:]  # Slice-off "element_id" column.
+        existing_columns = existing_columns[1:]  # Slice-off "index_id" column.
         existing_columns = [_schema.normalize_identifier(col) for col in existing_columns]
 
         invalid_columns = set(columns).difference(existing_columns)
@@ -831,8 +831,8 @@ class DataAccessLayer(object):
         groupby_clause = ', '.join(columns)
 
         sql = f"""
-            INSERT INTO main.weight (weighting_id, element_id, weight_value)
-            SELECT ? AS weighting_id, element_id, ? AS weight_value
+            INSERT INTO main.weight (weighting_id, index_id, weight_value)
+            SELECT ? AS weighting_id, index_id, ? AS weight_value
             FROM main.indextable
             WHERE {where_clause}
             GROUP BY {groupby_clause}
@@ -1272,13 +1272,13 @@ class DataAccessLayer(object):
             cls._disaggregate_make_sql_parts(columns, bitmask)
 
         if join_using_items:
-            element_join_constraint = f"USING ({', '.join(join_using_items)})"
+            indextable_join_constraint = f"USING ({', '.join(join_using_items)})"
         else:
-            element_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
+            indextable_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
 
         statement = f"""
             SELECT
-                t3.element_id,
+                t3.index_id,
                 {', '.join(f't3.{x}' for x in select_items)},
                 t1.attributes,
                 t1.quantity_value * IFNULL(
@@ -1287,9 +1287,9 @@ class DataAccessLayer(object):
                 ) AS value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.indextable t3 {element_join_constraint}
+            JOIN main.indextable t3 {indextable_join_constraint}
             JOIN main.weight t4 ON (
-                t3.element_id=t4.element_id
+                t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
             )
             WHERE {' AND '.join(f't2.{x}' for x in where_clause_items)}
@@ -1340,7 +1340,7 @@ class DataAccessLayer(object):
                 if key == 'column_names':
                     cur.execute("PRAGMA main.table_info('indextable')")
                     names = [row[1] for row in cur.fetchall()]
-                    data[key] = names[1:]  # Slice-off element_id.
+                    data[key] = names[1:]  # Slice-off index_id.
                 elif key == 'discrete_categories':
                     categories = self._get_data_property(cur, key) or []
                     data[key] = [set(x) for x in categories]
@@ -1552,15 +1552,15 @@ class DataAccessLayerPre35(DataAccessLayer):
         # must be rebuilt. This method prepares a sequence of operations to
         # rebuild the table structures.
         columns_to_keep = [col for col in column_names if col not in names_to_remove]
-        new_element_cols = [_schema.sql_column_def_element_label(col) for col in columns_to_keep]
+        new_indextable_cols = [_schema.sql_column_def_element_label(col) for col in columns_to_keep]
         new_location_cols = [_schema.sql_column_def_location_label(col) for col in columns_to_keep]
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in columns_to_keep]
 
         statements = [
             # Rebuild 'indextable'.
-            f'CREATE TABLE main.new_indextable(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
-                f'{", ".join(new_element_cols)})',
-            f'INSERT INTO main.new_indextable SELECT element_id, {", ".join(columns_to_keep)} FROM main.indextable',
+            f'CREATE TABLE main.new_indextable(index_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+                f'{", ".join(new_indextable_cols)})',
+            f'INSERT INTO main.new_indextable SELECT index_id, {", ".join(columns_to_keep)} FROM main.indextable',
             'DROP TABLE main.indextable',
             'ALTER TABLE main.new_indextable RENAME TO indextable',
 
@@ -1627,14 +1627,14 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         # RENAME COLUMN command. In these older versions of SQLite the tables
         # must be rebuilt. This method prepares a sequence of operations to
         # rebuild the table structures.
-        new_element_cols = [_schema.sql_column_def_element_label(col) for col in new_column_names]
+        new_indextable_cols = [_schema.sql_column_def_element_label(col) for col in new_column_names]
         new_location_cols = [_schema.sql_column_def_location_label(col) for col in new_column_names]
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in new_column_names]
         statements = [
             # Rebuild 'indextable'.
-            f'CREATE TABLE main.new_indextable(element_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
-                f'{", ".join(new_element_cols)})',
-            f'INSERT INTO main.new_indextable SELECT element_id, {", ".join(column_names)} FROM main.indextable',
+            f'CREATE TABLE main.new_indextable(index_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+                f'{", ".join(new_indextable_cols)})',
+            f'INSERT INTO main.new_indextable SELECT index_id, {", ".join(column_names)} FROM main.indextable',
             'DROP TABLE main.indextable',
             'ALTER TABLE main.new_indextable RENAME TO indextable',
 
@@ -1703,36 +1703,36 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             cls._disaggregate_make_sql_parts(columns, bitmask)
 
         if join_using_items:
-            element_join_constraint = f"USING ({', '.join(join_using_items)})"
+            indextable_join_constraint = f"USING ({', '.join(join_using_items)})"
         else:
-            element_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
+            indextable_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
 
         statement = f"""
             SELECT
-                t3.element_id,
+                t3.index_id,
                 {', '.join(f't3.{x}' for x in select_items)},
                 t1.attributes,
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / (SELECT SUM(sub4.weight_value)
                                  FROM main.quantity sub1
                                  JOIN main.location sub2 USING (_location_id)
-                                 JOIN main.indextable sub3 {element_join_constraint}
-                                 JOIN main.weight sub4 USING (element_id)
+                                 JOIN main.indextable sub3 {indextable_join_constraint}
+                                 JOIN main.weight sub4 USING (index_id)
                                  WHERE sub1.quantity_id=t1.quantity_id
                                        AND sub4.weighting_id=t4.weighting_id)),
                     (1.0 / (SELECT COUNT(1)
                             FROM main.quantity sub1
                             JOIN main.location sub2 USING (_location_id)
-                            JOIN main.indextable sub3 {element_join_constraint}
-                            JOIN main.weight sub4 USING (element_id)
+                            JOIN main.indextable sub3 {indextable_join_constraint}
+                            JOIN main.weight sub4 USING (index_id)
                             WHERE sub1.quantity_id=t1.quantity_id
                                   AND sub4.weighting_id=t4.weighting_id))
                 ) AS value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.indextable t3 {element_join_constraint}
+            JOIN main.indextable t3 {indextable_join_constraint}
             JOIN main.weight t4 ON (
-                t3.element_id=t4.element_id
+                t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
             )
             WHERE {' AND '.join(f't2.{x}' for x in where_clause_items)}

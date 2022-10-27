@@ -8,41 +8,41 @@ and pipe characters ('-' and '|'). Other, more complex relationships
 are represented with bullet points ('•') and these are enforced at
 the application layer:
 
-                                +------------------+
- +---------------------+        | relation         |
- | edge                |        +------------------+
- +---------------------+        | relation_id      |     •••• <Other Node>
- | edge_id             |------->| edge_id          |     •
- | name                |  ••••••| other_element_id |<•••••
- | description         |  •  •••| element_id       |<-+     +----------------+
- | selectors           |  •  •  | proportion       |  |     | quantity       |
- | user_properties     |  •  •  | mapping_level    |  |     +----------------+
- | other_uuid          |  •  •  +------------------+  |     | quantity_id    |
- | other_filename_hint |  •  •                        |  +->| _location_id   |
- | other_element_hash  |<••  •                        |  |  | attributes     |
- | is_complete         |<•••••      +-----------------+  |  | quantity_value |
- +---------------------+            |                    |  +----------------+
-                                    |                    |
-                    +------------+  |  +--------------+  |  +---------------+
-                    | indextable |  |  | location     |  |  | structure     |
-                    +------------+  |  +--------------+  |  +---------------+
-                 +--| element_id |--+  | _location_id |--+  | _structure_id |
-                 |  | label_a    |••••>| label_a      |<••••| label_a       |
-                 |  | label_b    |••••>| label_b      |<••••| label_b       |
-                 |  | label_c    |••••>| label_c      |<••••| label_c       |
-                 |  | ...        |••••>| ...          |<••••| ...           |
-                 |  +------------+     +--------------+     +---------------+
-                 |
-                 |  +--------------+                          +----------+
-                 |  | weight       |     +--------------+     | property |
-                 |  +--------------+     | weighting    |     +----------+
-                 |  | weight_id    |     +--------------+     | key      |
-                 |  | weighting_id |<----| weighting_id |     | value    |
-                 +->| element_id   |•••  | name         |     +----------+
-                    | weight_value |  •  | description  |
-                    +--------------+  •  | selectors    |
-                                      ••>| is_complete  |
-                                         +--------------+
+                                 +----------------+
+  +---------------------+        | relation       |
+  | edge                |        +----------------+
+  +---------------------+        | relation_id    |     •••• <Other Node>
+  | edge_id             |------->| edge_id        |     •
+  | name                |  ••••••| other_index_id |<•••••
+  | description         |  •  •••| index_id       |<-+     +----------------+
+  | selectors           |  •  •  | proportion     |  |     | quantity       |
+  | user_properties     |  •  •  | mapping_level  |  |     +----------------+
+  | other_uuid          |  •  •  +----------------+  |     | quantity_id    |
+  | other_filename_hint |  •  •                      |  +->| _location_id   |
+  | other_index_hash    |<••  •                      |  |  | attributes     |
+  | is_complete         |<•••••    +-----------------+  |  | quantity_value |
+  +---------------------+          |                    |  +----------------+
+                                   |                    |
+                   +------------+  |  +--------------+  |  +---------------+
+                   | indextable |  |  | location     |  |  | structure     |
+                   +------------+  |  +--------------+  |  +---------------+
+                +--| index_id   |--+  | _location_id |--+  | _structure_id |
+                |  | label_a    |••••>| label_a      |<••••| label_a       |
+                |  | label_b    |••••>| label_b      |<••••| label_b       |
+                |  | label_c    |••••>| label_c      |<••••| label_c       |
+                |  | ...        |••••>| ...          |<••••| ...           |
+                |  +------------+     +--------------+     +---------------+
+                |
+                |  +--------------+                          +----------+
+                |  | weight       |     +--------------+     | property |
+                |  +--------------+     | weighting    |     +----------+
+                |  | weight_id    |     +--------------+     | key      |
+                |  | weighting_id |<----| weighting_id |     | value    |
+                +->| index_id     |•••  | name         |     +----------+
+                   | weight_value |  •  | description  |
+                   +--------------+  •  | selectors    |
+                                     ••>| is_complete  |
+                                        +--------------+
 """
 
 import itertools
@@ -70,7 +70,7 @@ _schema_script = """
         user_properties TEXT_USERPROPERTIES,
         other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
         other_filename_hint TEXT NOT NULL,
-        other_element_hash TEXT,
+        other_index_hash TEXT,
         is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
         UNIQUE (name, other_uuid)
     );
@@ -78,17 +78,17 @@ _schema_script = """
     CREATE TABLE main.relation(
         relation_id INTEGER PRIMARY KEY,
         edge_id INTEGER,
-        other_element_id INTEGER NOT NULL,
-        element_id INTEGER,
+        other_index_id INTEGER NOT NULL,
+        index_id INTEGER,
         proportion REAL NOT NULL CHECK (0.0 <= proportion AND proportion <= 1.0),
         mapping_level BLOB_BITLIST NOT NULL,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
-        FOREIGN KEY(element_id) REFERENCES indextable(element_id) DEFERRABLE INITIALLY DEFERRED,
-        UNIQUE (edge_id, other_element_id, element_id)
+        FOREIGN KEY(index_id) REFERENCES indextable(index_id) DEFERRABLE INITIALLY DEFERRED,
+        UNIQUE (edge_id, other_index_id, index_id)
     );
 
     CREATE TABLE main.indextable(
-        element_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
+        index_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
         /* label columns added programmatically */
     );
 
@@ -122,11 +122,11 @@ _schema_script = """
     CREATE TABLE main.weight(
         weight_id INTEGER PRIMARY KEY,
         weighting_id INTEGER,
-        element_id INTEGER,
+        index_id INTEGER,
         weight_value REAL NOT NULL,
         FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
-        FOREIGN KEY(element_id) REFERENCES indextable(element_id) DEFERRABLE INITIALLY DEFERRED,
-        UNIQUE (element_id, weighting_id)
+        FOREIGN KEY(index_id) REFERENCES indextable(index_id) DEFERRABLE INITIALLY DEFERRED,
+        UNIQUE (index_id, weighting_id)
     );
 
     CREATE TABLE main.property(
@@ -310,7 +310,7 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
 
 
 def sql_column_def_element_label(name: str) -> str:
-    """Return an `element` table column-def for a label column."""
+    """Return an `indextable` column-def for a label column."""
     return f"{name} TEXT NOT NULL CHECK ({name} != '') DEFAULT '-'"
 
 
