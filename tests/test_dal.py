@@ -1893,7 +1893,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
                 t3.element_id,
                 t3."A", t3."B", t3."C", t3."D",
                 t1.attributes,
-                t1.value * IFNULL(
+                t1.quantity_value * IFNULL(
                     (t4.value / SUM(t4.value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS value

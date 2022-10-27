@@ -8,41 +8,41 @@ and pipe characters ('-' and '|'). Other, more complex relationships
 are represented with bullet points ('•') and these are enforced at
 the application layer:
 
-                                 +------------------+
-  +---------------------+        | relation         |
-  | edge                |        +------------------+
-  +---------------------+        | relation_id      |     •••• <Other Node>
-  | edge_id             |------->| edge_id          |     •
-  | name                |  ••••••| other_element_id |<•••••
-  | description         |  •  •••| element_id       |<-+     +--------------+
-  | selectors           |  •  •  | proportion       |  |     | quantity     |
-  | user_properties     |  •  •  | mapping_level    |  |     +--------------+
-  | other_uuid          |  •  •  +------------------+  |     | quantity_id  |
-  | other_filename_hint |  •  •                        |  +->| _location_id |
-  | other_element_hash  |<••  •                        |  |  | attributes   |
-  | is_complete         |<•••••      +-----------------+  |  | value        |
-  +---------------------+            |                    |  +--------------+
-                                     |                    |
-                     +------------+  |  +--------------+  |  +---------------+
-                     | element    |  |  | location     |  |  | structure     |
-                     +------------+  |  +--------------+  |  +---------------+
-                  +--| element_id |--+  | _location_id |--+  | _structure_id |
-                  |  | label_a    |••••>| label_a      |<••••| label_a       |
-                  |  | label_b    |••••>| label_b      |<••••| label_b       |
-                  |  | label_c    |••••>| label_c      |<••••| label_c       |
-                  |  | ...        |••••>| ...          |<••••| ...           |
-                  |  +------------+     +--------------+     +---------------+
-                  |
-                  |  +--------------+                          +----------+
-                  |  | weight       |     +--------------+     | property |
-                  |  +--------------+     | weighting    |     +----------+
-                  |  | weight_id    |     +--------------+     | key      |
-                  |  | weighting_id |<----| weighting_id |     | value    |
-                  +->| element_id   |•••  | name         |     +----------+
-                     | value        |  •  | description  |
-                     +--------------+  •  | selectors    |
-                                       ••>| is_complete  |
-                                          +--------------+
+                                +------------------+
+ +---------------------+        | relation         |
+ | edge                |        +------------------+
+ +---------------------+        | relation_id      |     •••• <Other Node>
+ | edge_id             |------->| edge_id          |     •
+ | name                |  ••••••| other_element_id |<•••••
+ | description         |  •  •••| element_id       |<-+     +----------------+
+ | selectors           |  •  •  | proportion       |  |     | quantity       |
+ | user_properties     |  •  •  | mapping_level    |  |     +----------------+
+ | other_uuid          |  •  •  +------------------+  |     | quantity_id    |
+ | other_filename_hint |  •  •                        |  +->| _location_id   |
+ | other_element_hash  |<••  •                        |  |  | attributes     |
+ | is_complete         |<•••••      +-----------------+  |  | quantity_value |
+ +---------------------+            |                    |  +----------------+
+                                    |                    |
+                    +------------+  |  +--------------+  |  +---------------+
+                    | element    |  |  | location     |  |  | structure     |
+                    +------------+  |  +--------------+  |  +---------------+
+                 +--| element_id |--+  | _location_id |--+  | _structure_id |
+                 |  | label_a    |••••>| label_a      |<••••| label_a       |
+                 |  | label_b    |••••>| label_b      |<••••| label_b       |
+                 |  | label_c    |••••>| label_c      |<••••| label_c       |
+                 |  | ...        |••••>| ...          |<••••| ...           |
+                 |  +------------+     +--------------+     +---------------+
+                 |
+                 |  +--------------+                          +----------+
+                 |  | weight       |     +--------------+     | property |
+                 |  +--------------+     | weighting    |     +----------+
+                 |  | weight_id    |     +--------------+     | key      |
+                 |  | weighting_id |<----| weighting_id |     | value    |
+                 +->| element_id   |•••  | name         |     +----------+
+                    | value        |  •  | description  |
+                    +--------------+  •  | selectors    |
+                                      ••>| is_complete  |
+                                         +--------------+
 """
 
 import itertools
@@ -106,7 +106,7 @@ _schema_script = """
         quantity_id INTEGER PRIMARY KEY,
         _location_id INTEGER,
         attributes TEXT_ATTRIBUTES NOT NULL,
-        value NUMERIC NOT NULL,
+        quantity_value NUMERIC NOT NULL,
         FOREIGN KEY(_location_id) REFERENCES location(_location_id)
     );
 

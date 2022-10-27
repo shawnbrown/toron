@@ -1065,7 +1065,7 @@ class DataAccessLayer(object):
                         continue
 
                     statement = """
-                        INSERT INTO main.quantity (_location_id, attributes, value)
+                        INSERT INTO main.quantity (_location_id, attributes, quantity_value)
                             VALUES(?, ?, ?)
                     """
                     cur.execute(statement, (loc_id, attr, val))
@@ -1122,7 +1122,7 @@ class DataAccessLayer(object):
         # Build SQL query.
         normalized = [_schema.normalize_identifier(x) for x in location_cols]
         statement = f"""
-            SELECT {', '.join(normalized)}, attributes, value
+            SELECT {', '.join(normalized)}, attributes, quantity_value
             FROM main.quantity
             JOIN main.location USING (_location_id)
             {'WHERE ' if where_items else ''}{' AND '.join(where_items)}
@@ -1281,7 +1281,7 @@ class DataAccessLayer(object):
                 t3.element_id,
                 {', '.join(f't3.{x}' for x in select_items)},
                 t1.attributes,
-                t1.value * IFNULL(
+                t1.quantity_value * IFNULL(
                     (t4.value / SUM(t4.value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS value
@@ -1712,7 +1712,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                 t3.element_id,
                 {', '.join(f't3.{x}' for x in select_items)},
                 t1.attributes,
-                t1.value * IFNULL(
+                t1.quantity_value * IFNULL(
                     (t4.value / (SELECT SUM(sub4.value)
                                  FROM main.quantity sub1
                                  JOIN main.location sub2 USING (_location_id)

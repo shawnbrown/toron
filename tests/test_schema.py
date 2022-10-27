@@ -417,7 +417,7 @@ class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
-        self.sql_insert = 'INSERT INTO quantity (_location_id, attributes, value) VALUES (?, ?, ?)'
+        self.sql_insert = 'INSERT INTO quantity (_location_id, attributes, quantity_value) VALUES (?, ?, ?)'
 
     def test_valid_values(self):
         for attributes in self.valid_values:
