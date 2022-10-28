@@ -85,8 +85,8 @@ class Node(object):
     def rename_index_columns(self, mapper):
         self._dal.rename_index_columns(mapper)
 
-    def add_elements(self, iterable, columns=None):
-        self._dal.add_elements(iterable, columns)
+    def add_index_labels(self, iterable, columns=None):
+        self._dal.add_index_labels(iterable, columns)
 
     def add_weights(self, iterable, columns=None, *, name, selectors, description=None):
         self._dal.add_weights(iterable, columns,

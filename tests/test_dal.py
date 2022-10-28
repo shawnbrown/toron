@@ -637,7 +637,7 @@ class TestRenameIndexColumns(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
         self.dal.set_data({'add_index_columns': ['state', 'county', 'town']})
-        self.dal.add_elements([
+        self.dal.add_index_labels([
             ('state', 'county', 'town'),
             ('CA', 'SAN DIEGO', 'CORONADO'),
             ('IN', 'GRANT', 'MARION'),
@@ -762,7 +762,7 @@ class TestRemoveIndexColumnsMixin(object):
             ('TX', 'Denton', 'Denton', 'Denton', 102631),
             ('TX', 'Cass', 'Atlanta', 'Queen City', 1397),
         ]
-        self.dal.add_elements(data)
+        self.dal.add_index_labels(data)
         self.dal.add_weights(data, name='population', selectors=None)
 
     def test_initial_fixture_state(self):
@@ -800,7 +800,7 @@ class TestRemoveIndexColumnsMixin(object):
         actual = {row[1:] for row in self.cur.fetchall()}
         self.assertEqual(actual, {(0, 0), (1, 0), (1, 1)})
 
-        # Check elements and weights.
+        # Check index labels and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM indextable a
@@ -864,7 +864,7 @@ class TestRemoveIndexColumnsMixin(object):
         }
         self.assertEqual(actual, expected)
 
-        # Check elements and weights.
+        # Check index labels and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM indextable a
@@ -1001,7 +1001,7 @@ class TestRemoveIndexColumnsLegacy(TestRemoveIndexColumnsMixin, unittest.TestCas
     class_under_test = DataAccessLayerPre24
 
 
-class TestAddElementsMakeSql(unittest.TestCase):
+class TestAddIndexLabelsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
@@ -1013,43 +1013,43 @@ class TestAddElementsMakeSql(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def test_simple_case(self):
-        """Insert columns that match element table."""
+        """Insert columns that match index columns."""
         columns = ['state', 'county', 'town']
-        sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
+        sql = DataAccessLayer._add_index_labels_make_sql(self.cur, columns)
         expected = 'INSERT INTO main.indextable ("state", "county", "town") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_differently_ordered_columns(self):
         """Order should reflect given *columns* not table order."""
         columns = ['town', 'county', 'state']  # <- Reverse order from table cols.
-        sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
+        sql = DataAccessLayer._add_index_labels_make_sql(self.cur, columns)
         expected = 'INSERT INTO main.indextable ("town", "county", "state") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_subset_of_columns(self):
-        """Insert fewer column that exist in the element table."""
+        """Insert fewer columns than exist in the index table."""
         columns = ['state', 'county']  # <- Does not include "town", and that's OK.
-        sql = DataAccessLayer._add_elements_make_sql(self.cur, columns)
+        sql = DataAccessLayer._add_index_labels_make_sql(self.cur, columns)
         expected = 'INSERT INTO main.indextable ("state", "county") VALUES (?, ?)'
         self.assertEqual(sql, expected)
 
     def test_bad_column_value(self):
         regex = 'invalid column name: "region"'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
-            DataAccessLayer._add_elements_make_sql(self.cur, ['state', 'region'])
+            DataAccessLayer._add_index_labels_make_sql(self.cur, ['state', 'region'])
 
 
-class TestAddElements(unittest.TestCase):
-    def test_add_elements(self):
+class TestAddIndexLabels(unittest.TestCase):
+    def test_add_index_labels(self):
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
-        elements = [
+        labels = [
             ('IA', 'POLK'),
             ('IN', 'LA PORTE'),
             ('MN', 'HENNEPIN '),
         ]
-        dal.add_elements(elements, columns=['state', 'county'])
+        dal.add_index_labels(labels, columns=['state', 'county'])
 
         con = dal._connection
         result = con.execute('SELECT * FROM indextable').fetchall()
@@ -1060,17 +1060,17 @@ class TestAddElements(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_add_elements_no_column_arg(self):
+    def test_add_index_labels_no_column_arg(self):
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
-        elements = [
+        labels = [
             ('state', 'county'),  # <- Header row.
             ('IA', 'POLK'),
             ('IN', 'LA PORTE'),
             ('MN', 'HENNEPIN '),
         ]
-        dal.add_elements(elements) # <- No *columns* argument given.
+        dal.add_index_labels(labels) # <- No *columns* argument given.
 
         con = dal._connection
         result = con.execute('SELECT * FROM indextable').fetchall()
@@ -1081,19 +1081,19 @@ class TestAddElements(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_add_elements_column_subset(self):
+    def test_add_index_labels_column_subset(self):
         """Omitted columns should get default value ('-')."""
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
-        # Element rows include "state" but not "county".
-        elements = [
+        # Labels rows include "state" but not "county".
+        labels = [
             ('state',),  # <- Header row.
             ('IA',),
             ('IN',),
             ('MN',),
         ]
-        dal.add_elements(elements) # <- No *columns* argument given.
+        dal.add_index_labels(labels) # <- No *columns* argument given.
 
         con = dal._connection
         result = con.execute('SELECT * FROM indextable').fetchall()
@@ -1104,19 +1104,19 @@ class TestAddElements(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_add_elements_column_superset(self):
+    def test_add_index_labels_column_superset(self):
         """Surplus columns should be filtered-out before loading."""
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
-        # Element rows include unknown columns "region" and "group".
-        elements = [
+        # Lable rows include unknown columns "region" and "group".
+        labels = [
             ('region', 'state', 'group',  'county'),  # <- Header row.
             ('WNC',    'IA',    'GROUP2', 'POLK'),
             ('ENC',    'IN',    'GROUP7', 'LA PORTE'),
             ('WNC',    'MN',    'GROUP1', 'HENNEPIN '),
         ]
-        dal.add_elements(elements) # <- No *columns* argument given.
+        dal.add_index_labels(labels) # <- No *columns* argument given.
 
         con = dal._connection
         result = con.execute('SELECT * FROM indextable').fetchall()
@@ -1129,8 +1129,8 @@ class TestAddElements(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_no_columns_added(self):
-        """Specify behavior when attempting to add elements before
-        columns have been added.
+        """Specify behavior when attempting to add labels before
+        index columns have been added.
         """
         raise NotImplementedError
 
@@ -1225,7 +1225,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.columns = ['label_a', 'label_b']
         for stmnt in dal_class._add_index_columns_make_sql(self.cur, self.columns):
             self.cur.execute(stmnt)
-        sql = dal_class._add_elements_make_sql(self.cur, self.columns)
+        sql = dal_class._add_index_labels_make_sql(self.cur, self.columns)
         iterator = [
             ('X', '001'),
             ('Y', '001'),
@@ -1279,7 +1279,7 @@ class TestAddWeights(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
         self.dal.set_data({'add_index_columns': ['state', 'county', 'tract']})
-        self.dal.add_elements([
+        self.dal.add_index_labels([
             ('state', 'county', 'tract'),
             ('12', '001', '000200'),
             ('12', '003', '040101'),
@@ -1327,14 +1327,14 @@ class TestAddWeights(unittest.TestCase):
         self.assertEqual(set(self.cursor.fetchall()), set(weights))
 
     def test_skip_non_unique_matches(self):
-        """Should only insert weights that match to a single element."""
+        """Should only insert weights that match to a single record."""
         weights = [
             ('state', 'county', 'pop10'),
             ('12', '001', 110),
-            ('12', '003', 229),  # <- Matches multiple elements.
+            ('12', '003', 229),  # <- Matches multiple records.
             ('12', '005', 10),
             ('12', '007', 414),
-            ('12', '011', 364),  # <- Matches multiple elements.
+            ('12', '011', 364),  # <- Matches multiple records.
             ('12', '017', 183),
             ('12', '019', 62),
         ]
@@ -1930,14 +1930,14 @@ class TestDisaggregate(unittest.TestCase):
         categories = [{'col1'}]
         self.dal.add_discrete_categories(categories)
 
-        elements = [
+        labels = [
             ('col1', 'col2'),
             ('A',    'x'),
             ('A',    'y'),
             ('B',    'x'),
             ('B',    'y'),
         ]
-        self.dal.add_elements(elements)
+        self.dal.add_index_labels(labels)
 
         weighting = [
             ('col1', 'col2', 'weight'),
