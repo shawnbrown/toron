@@ -411,7 +411,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
         """Add columns to new/empty node database."""
         statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])
         expected = [
-            'DROP INDEX IF EXISTS main.unique_element_index',
+            'DROP INDEX IF EXISTS main.unique_indextable_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
             'ALTER TABLE main.indextable ADD COLUMN "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\'',
@@ -420,7 +420,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
             'ALTER TABLE main.indextable ADD COLUMN "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "county" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_indextable_index ON indextable("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -436,7 +436,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
         # Add attitional label columns.
         statements = DataAccessLayer._add_columns_make_sql(self.cur, ['tract', 'block'])
         expected = [
-            'DROP INDEX IF EXISTS main.unique_element_index',
+            'DROP INDEX IF EXISTS main.unique_indextable_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
             'ALTER TABLE main.indextable ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
@@ -445,7 +445,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
             'ALTER TABLE main.indextable ADD COLUMN "block" TEXT NOT NULL CHECK ("block" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "block" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "block" INTEGER CHECK ("block" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county", "tract", "block")',
+            'CREATE UNIQUE INDEX main.unique_indextable_index ON indextable("state", "county", "tract", "block")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county", "tract", "block")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county", "tract", "block")',
         ]
@@ -492,13 +492,13 @@ class TestAddColumnsMakeSql(unittest.TestCase):
         statements = DataAccessLayer._add_columns_make_sql(self.cur, columns)
 
         expected = [
-            'DROP INDEX IF EXISTS main.unique_element_index',
+            'DROP INDEX IF EXISTS main.unique_indextable_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
             'ALTER TABLE main.indextable ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "tract" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "tract" INTEGER CHECK ("tract" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county", "tract")',
+            'CREATE UNIQUE INDEX main.unique_indextable_index ON indextable("state", "county", "tract")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county", "tract")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county", "tract")',
         ]
@@ -626,7 +626,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_structure SELECT _structure_id, "state", "county", "town" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
-            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("stusab", "county", "place")',
+            'CREATE UNIQUE INDEX main.unique_indextable_index ON indextable("stusab", "county", "place")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("stusab", "county", "place")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("stusab", "county", "place")',
         ]
@@ -692,7 +692,7 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
     def test_native_delete_column_support(self):
         sql_stmnts = DataAccessLayer._remove_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
-            'DROP INDEX IF EXISTS main.unique_element_index',
+            'DROP INDEX IF EXISTS main.unique_indextable_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
             'ALTER TABLE main.indextable DROP COLUMN "mcd"',
@@ -701,7 +701,7 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
             'ALTER TABLE main.indextable DROP COLUMN "place"',
             'ALTER TABLE main.location DROP COLUMN "place"',
             'ALTER TABLE main.structure DROP COLUMN "place"',
-            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_indextable_index ON indextable("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -723,7 +723,7 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_structure SELECT _structure_id, "state", "county" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
-            'CREATE UNIQUE INDEX main.unique_element_index ON indextable("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_indextable_index ON indextable("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]

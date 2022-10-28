@@ -429,7 +429,7 @@ class DataAccessLayer(object):
 
         for col in new_cols:
             sql_stmnts.extend([
-                f"ALTER TABLE main.indextable ADD COLUMN {_schema.sql_column_def_element_label(col)}",
+                f"ALTER TABLE main.indextable ADD COLUMN {_schema.sql_column_def_indextable_label(col)}",
                 f"ALTER TABLE main.location ADD COLUMN {_schema.sql_column_def_location_label(col)}",
                 f"ALTER TABLE main.structure ADD COLUMN {_schema.sql_column_def_structure_label(col)}",
             ])
@@ -1552,7 +1552,7 @@ class DataAccessLayerPre35(DataAccessLayer):
         # must be rebuilt. This method prepares a sequence of operations to
         # rebuild the table structures.
         columns_to_keep = [col for col in column_names if col not in names_to_remove]
-        new_indextable_cols = [_schema.sql_column_def_element_label(col) for col in columns_to_keep]
+        new_indextable_cols = [_schema.sql_column_def_indextable_label(col) for col in columns_to_keep]
         new_location_cols = [_schema.sql_column_def_location_label(col) for col in columns_to_keep]
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in columns_to_keep]
 
@@ -1627,7 +1627,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         # RENAME COLUMN command. In these older versions of SQLite the tables
         # must be rebuilt. This method prepares a sequence of operations to
         # rebuild the table structures.
-        new_indextable_cols = [_schema.sql_column_def_element_label(col) for col in new_column_names]
+        new_indextable_cols = [_schema.sql_column_def_indextable_label(col) for col in new_column_names]
         new_location_cols = [_schema.sql_column_def_location_label(col) for col in new_column_names]
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in new_column_names]
         statements = [

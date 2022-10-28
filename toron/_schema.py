@@ -284,7 +284,7 @@ def normalize_identifier(value: str) -> str:
 def sql_drop_label_indexes() -> List[str]:
     """Return list of SQL statements to drop unique label indexes."""
     return [
-        'DROP INDEX IF EXISTS main.unique_element_index',
+        'DROP INDEX IF EXISTS main.unique_indextable_index',
         'DROP INDEX IF EXISTS main.unique_location_index',
         'DROP INDEX IF EXISTS main.unique_structure_index',
     ]
@@ -294,7 +294,7 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
     """Return list of SQL statements to create unique label indexes."""
     formatted = ', '.join(normalize_identifier(x) for x in columns)
     return [
-        f'CREATE UNIQUE INDEX main.unique_element_index ON indextable({formatted})',
+        f'CREATE UNIQUE INDEX main.unique_indextable_index ON indextable({formatted})',
         f'CREATE UNIQUE INDEX main.unique_location_index ON location({formatted})',
         f'CREATE UNIQUE INDEX main.unique_structure_index ON structure({formatted})',
     ]
@@ -309,7 +309,7 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
 # CREATE TABLE statements.
 
 
-def sql_column_def_element_label(name: str) -> str:
+def sql_column_def_indextable_label(name: str) -> str:
     """Return an `indextable` column-def for a label column."""
     return f"{name} TEXT NOT NULL CHECK ({name} != '') DEFAULT '-'"
 
