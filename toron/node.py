@@ -82,6 +82,9 @@ class Node(object):
         """
         self._dal.remove_columns(columns, strategy=strategy)
 
+    def rename_columns(self, mapper):
+        self._dal.rename_columns(mapper)
+
     def add_elements(self, iterable, columns=None):
         self._dal.add_elements(iterable, columns)
 
@@ -90,9 +93,6 @@ class Node(object):
                               name=name,
                               selectors=selectors,
                               description=description)
-
-    def rename_columns(self, mapper):
-        self._dal.rename_columns(mapper)
 
     def add_discrete_categories(self, discrete_categories):
         """Add discrete categories to the node's internal structure.
