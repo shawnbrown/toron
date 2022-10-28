@@ -398,7 +398,7 @@ class DataAccessLayer(object):
         return [row[1] for row in cursor.fetchall()]
 
     @classmethod
-    def _add_columns_make_sql(
+    def _add_index_columns_make_sql(
         cls, cursor: sqlite3.Cursor, columns: Iterable[str]
     ) -> List[str]:
         """Return a list of SQL statements for adding new label columns."""
@@ -1443,9 +1443,9 @@ class DataAccessLayer(object):
         else:
             items = mapping_or_items
 
-        # Bring 'add_columns' action to the front of the list (it
+        # Bring 'add_index_columns' action to the front of the list (it
         # should be processed first).
-        items = sorted(items, key=lambda item: item[0] != 'add_columns')
+        items = sorted(items, key=lambda item: item[0] != 'add_index_columns')
 
         with self._transaction() as cur:
             for key, value in items:
@@ -1453,8 +1453,8 @@ class DataAccessLayer(object):
                     self._set_data_property(cur, key, [list(cat) for cat in value])
                 elif key == 'structure':
                     self._set_data_structure(cur, value)
-                elif key == 'add_columns':
-                    for stmnt in self._add_columns_make_sql(cur, value):
+                elif key == 'add_index_columns':
+                    for stmnt in self._add_index_columns_make_sql(cur, value):
                         cur.execute(stmnt)
                     self._update_categories_and_structure(cur)
                 else:

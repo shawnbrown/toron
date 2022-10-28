@@ -21,13 +21,13 @@ class Node(object):
     def mode(self):
         return self._dal.mode
 
-    def add_columns(self, columns: List[str]) -> None:
+    def add_index_columns(self, columns: List[str]) -> None:
         """Add columns to node.
 
         .. code-block::
 
             >>> node = toron.Node()
-            >>> node.add_columns(['state', 'county', 'mcd'])
+            >>> node.add_index_columns(['state', 'county', 'mcd'])
         """
         data = self._dal.get_data(['discrete_categories', 'column_names'])
 
@@ -38,7 +38,7 @@ class Node(object):
         structure = make_structure(minimized)
 
         self._dal.set_data({
-            'add_columns': columns,
+            'add_index_columns': columns,
             'structure': structure,
         })
 
@@ -100,7 +100,7 @@ class Node(object):
         .. code-block::
 
             >>> node = Node(...)
-            >>> node.add_columns(['state', 'county', 'mcd'])
+            >>> node.add_index_columns(['state', 'county', 'mcd'])
             >>> node.add_discrete_categories([{'state'}, {'state', 'county'}])
 
         **Understanding Discrete Categories**

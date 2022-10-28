@@ -398,7 +398,7 @@ class TestTransaction(TempDirTestCase):
         self.assertConnectionOpen(con, msg='connection should remain open')
 
 
-class TestAddColumnsMakeSql(unittest.TestCase):
+class TestAddIndexColumnsMakeSql(unittest.TestCase):
     maxDiff = None
 
     def setUp(self):
@@ -407,9 +407,9 @@ class TestAddColumnsMakeSql(unittest.TestCase):
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
-    def test_add_columns_to_new(self):
+    def test_add_index_columns_to_new(self):
         """Add columns to new/empty node database."""
-        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])
+        statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county'])
         expected = [
             'DROP INDEX IF EXISTS main.unique_indextable_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
@@ -426,15 +426,15 @@ class TestAddColumnsMakeSql(unittest.TestCase):
         ]
         self.assertEqual(statements, expected)
 
-    def test_add_columns_to_exsting(self):
+    def test_add_index_columns_to_exsting(self):
         """Add columns to database with existing label columns."""
         # Add initial label columns.
-        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])
+        statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county'])
         for stmnt in statements:
             self.cur.execute(stmnt)
 
         # Add attitional label columns.
-        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['tract', 'block'])
+        statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['tract', 'block'])
         expected = [
             'DROP INDEX IF EXISTS main.unique_indextable_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
@@ -454,18 +454,18 @@ class TestAddColumnsMakeSql(unittest.TestCase):
     def test_no_columns_to_add(self):
         """When there are no new columns to add, should return empty list."""
         # Add initial label columns.
-        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])
+        statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county'])
         for stmnt in statements:
             self.cur.execute(stmnt)
 
         # When there are no new columns to add, should return empty list.
-        statements = DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county'])  # <- Columns already exist.
+        statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county'])  # <- Columns already exist.
         self.assertEqual(statements, [])
 
     def test_duplicate_column_input(self):
         regex = 'duplicate column name: "county"'
         with self.assertRaisesRegex(ValueError, regex):
-            DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'county'])
+            DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county', 'county'])
 
     def test_normalization_duplicate_column_input(self):
         regex = 'duplicate column name: "county"'
@@ -475,12 +475,12 @@ class TestAddColumnsMakeSql(unittest.TestCase):
                 'county    ',  # <- Normalized to "county", collides with duplicate.
                 'county',
             ]
-            DataAccessLayer._add_columns_make_sql(self.cur, columns)
+            DataAccessLayer._add_index_columns_make_sql(self.cur, columns)
 
     def test_normalization_collision_with_existing(self):
         """Columns should be checked for collisions after normalizing."""
         # Add initial label columns.
-        for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county']):
+        for stmnt in DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county']):
             self.cur.execute(stmnt)
 
         # Prepare attitional label columns.
@@ -489,7 +489,7 @@ class TestAddColumnsMakeSql(unittest.TestCase):
             'county    ',  # <- Normalized to "county", which then gets skipped.
             'tract     ',
         ]
-        statements = DataAccessLayer._add_columns_make_sql(self.cur, columns)
+        statements = DataAccessLayer._add_index_columns_make_sql(self.cur, columns)
 
         expected = [
             'DROP INDEX IF EXISTS main.unique_indextable_index',
@@ -508,14 +508,14 @@ class TestAddColumnsMakeSql(unittest.TestCase):
     def test_column_id_collision(self):
         regex = 'label name not allowed: "_location_id"'
         with self.assertRaisesRegex(ValueError, regex):
-            DataAccessLayer._add_columns_make_sql(self.cur, ['state', '_location_id'])
+            DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', '_location_id'])
 
 
 class TestAddColumns(unittest.TestCase):
-    def test_add_columns(self):
+    def test_add_index_columns(self):
         """Check that columns are added to appropriate tables."""
         dal = dal_class()
-        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
+        dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
         con = dal._connection
 
@@ -534,12 +534,12 @@ class TestAddColumns(unittest.TestCase):
         self.assertEqual(actual, {(0, 0), (1, 1)})
 
     def test_set_data_order(self):
-        """The set_data() method should run 'add_columns' items first."""
+        """The set_data() method should run 'add_index_columns' items first."""
         dal = dal_class()
 
         mapping = OrderedDict([
             ('structure', [{'state'}, {'county'}, {'state', 'county'}]),
-            ('add_columns', ['state', 'county']),
+            ('add_index_columns', ['state', 'county']),
         ])
 
         try:
@@ -547,14 +547,14 @@ class TestAddColumns(unittest.TestCase):
         except ToronError as err:
             if 'must first add columns' not in str(err):
                 raise
-            msg = "should run 'add_columns' first, regardless of mapping order"
+            msg = "should run 'add_index_columns' first, regardless of mapping order"
             self.fail(msg)
 
 
 class TestRenameColumnsApplyMapper(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
-        self.dal.set_data({'add_columns': ['state', 'county', 'town']})
+        self.dal.set_data({'add_index_columns': ['state', 'county', 'town']})
         self.con = self.dal._connection
         self.cur = self.con.cursor()
         self.addCleanup(self.cur.close)
@@ -636,7 +636,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
 class TestRenameColumns(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
-        self.dal.set_data({'add_columns': ['state', 'county', 'town']})
+        self.dal.set_data({'add_index_columns': ['state', 'county', 'town']})
         self.dal.add_elements([
             ('state', 'county', 'town'),
             ('CA', 'SAN DIEGO', 'CORONADO'),
@@ -742,7 +742,7 @@ class TestRemoveColumnsMixin(object):
         self.cur = con.cursor()
         self.addCleanup(self.cur.close)
 
-        self.dal.set_data({'add_columns': ['state', 'county', 'mcd', 'place']})
+        self.dal.set_data({'add_index_columns': ['state', 'county', 'mcd', 'place']})
         self.dal.add_discrete_categories([
             {'state'},
             {'state', 'county'},
@@ -1006,7 +1006,7 @@ class TestAddElementsMakeSql(unittest.TestCase):
         self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
 
-        for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'town']):
+        for stmnt in DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county', 'town']):
             self.cur.execute(stmnt)
 
         self.addCleanup(self.con.close)
@@ -1042,7 +1042,7 @@ class TestAddElementsMakeSql(unittest.TestCase):
 class TestAddElements(unittest.TestCase):
     def test_add_elements(self):
         dal = dal_class()
-        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
+        dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
             ('IA', 'POLK'),
@@ -1062,7 +1062,7 @@ class TestAddElements(unittest.TestCase):
 
     def test_add_elements_no_column_arg(self):
         dal = dal_class()
-        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
+        dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
         elements = [
             ('state', 'county'),  # <- Header row.
@@ -1084,7 +1084,7 @@ class TestAddElements(unittest.TestCase):
     def test_add_elements_column_subset(self):
         """Omitted columns should get default value ('-')."""
         dal = dal_class()
-        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
+        dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include "state" but not "county".
         elements = [
@@ -1107,7 +1107,7 @@ class TestAddElements(unittest.TestCase):
     def test_add_elements_column_superset(self):
         """Surplus columns should be filtered-out before loading."""
         dal = dal_class()
-        dal.set_data({'add_columns': ['state', 'county']})  # <- Add columns.
+        dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
         # Element rows include unknown columns "region" and "group".
         elements = [
@@ -1170,7 +1170,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
 
-        for stmnt in DataAccessLayer._add_columns_make_sql(self.cur, ['state', 'county', 'town']):
+        for stmnt in DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county', 'town']):
             self.cur.execute(stmnt)
 
         self.addCleanup(self.con.close)
@@ -1223,7 +1223,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.cur = self.con.cursor()
 
         self.columns = ['label_a', 'label_b']
-        for stmnt in dal_class._add_columns_make_sql(self.cur, self.columns):
+        for stmnt in dal_class._add_index_columns_make_sql(self.cur, self.columns):
             self.cur.execute(stmnt)
         sql = dal_class._add_elements_make_sql(self.cur, self.columns)
         iterator = [
@@ -1278,7 +1278,7 @@ class TestAddWeights(unittest.TestCase):
     """Tests for dal.add_weights() method."""
     def setUp(self):
         self.dal = dal_class()
-        self.dal.set_data({'add_columns': ['state', 'county', 'tract']})
+        self.dal.set_data({'add_index_columns': ['state', 'county', 'tract']})
         self.dal.add_elements([
             ('state', 'county', 'tract'),
             ('12', '001', '000200'),
@@ -1378,7 +1378,7 @@ class TestAddWeights(unittest.TestCase):
 class TestAddQuantitiesGetLocationId(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
-        self.dal.set_data({'add_columns': ['state', 'county', 'tract']})
+        self.dal.set_data({'add_index_columns': ['state', 'county', 'tract']})
         con = self.dal._connection
         self.cursor = con.cursor()
         self.addCleanup(con.close)
@@ -1448,7 +1448,7 @@ class TestAddQuantitiesGetLocationId(unittest.TestCase):
 class TestAddQuantities(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
-        self.dal.set_data({'add_columns': ['state', 'county']})
+        self.dal.set_data({'add_index_columns': ['state', 'county']})
         con = self.dal._connection
         self.cursor = con.cursor()
         self.addCleanup(con.close)
@@ -1639,7 +1639,7 @@ class TestAddQuantities(unittest.TestCase):
 class TestGetRawQuantities(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
-        self.dal.set_data({'add_columns': ['state', 'county']})
+        self.dal.set_data({'add_index_columns': ['state', 'county']})
         con = self.dal._connection
         self.cursor = con.cursor()
         self.addCleanup(con.close)
@@ -1748,7 +1748,7 @@ class TestGetRawQuantities(unittest.TestCase):
 class TestDeleteRawQuantities(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
-        self.dal.set_data({'add_columns': ['state', 'county']})
+        self.dal.set_data({'add_index_columns': ['state', 'county']})
         con = self.dal._connection
         self.cursor = con.cursor()
         self.addCleanup(con.close)
@@ -1925,7 +1925,7 @@ class TestDisaggregate(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
         columns = ['col1', 'col2']
-        self.dal.set_data({'add_columns': columns})
+        self.dal.set_data({'add_index_columns': columns})
 
         categories = [{'col1'}]
         self.dal.add_discrete_categories(categories)
@@ -2068,7 +2068,7 @@ class TestGetColumnNames(unittest.TestCase):
         self.dal = dal_class()
 
     def test_get_names(self):
-        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
         data = self.dal.get_data(['column_names'])  # <- Method under test.
         self.assertEqual(data, {'column_names': ['A', 'B', 'C']})
 
@@ -2104,7 +2104,7 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.assertEqual(data, {'discrete_categories': []})
 
     def test_set_categories(self):
-        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
 
         categories = [{'A'}, {'B'}, {'C'}]
         self.dal.add_discrete_categories(categories)  # <- Method under test.
@@ -2125,7 +2125,7 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         """The "whole space" category should be added if not covered
         by a union of existing categories.
         """
-        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
 
         categories = [{'A'}, {'B'}]
         self.dal.add_discrete_categories(categories)  # <- Method under test.
@@ -2140,7 +2140,7 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_get_and_set_categories(self):
-        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
 
         categories = [{'A'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
@@ -2187,7 +2187,7 @@ class TestSetStructure(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def test_insert_structure(self):
-        self.dal.set_data({'add_columns': ['state', 'county', 'town']})
+        self.dal.set_data({'add_index_columns': ['state', 'county', 'town']})
         structure = [set(),
                      {'state'},
                      {'state', 'county'},
@@ -2204,7 +2204,7 @@ class TestSetStructure(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_replace_existing(self):
-        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
         structure = [set(), {'A', 'B'}, {'A', 'B', 'C'}]
         DataAccessLayer._set_data_structure(self.cursor, structure)
 

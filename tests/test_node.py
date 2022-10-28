@@ -8,14 +8,14 @@ from toron.node import Node
 from toron._utils import ToronWarning
 
 
-class TestNodeAddColumns(unittest.TestCase):
+class TestNodeAddIndexColumns(unittest.TestCase):
     def setUp(self):
         self.node = Node()
         self.dal = self.node._dal
         self.cursor = self.dal._get_connection().cursor()
 
-    def test_add_columns(self):
-        self.node.add_columns(['A', 'B', 'C'])
+    def test_add_index_columns(self):
+        self.node.add_index_columns(['A', 'B', 'C'])
 
         columns = get_column_names(self.cursor, 'indextable')
         self.assertEqual(columns, ['index_id', 'A', 'B', 'C'])
@@ -25,8 +25,8 @@ class TestNodeAddColumns(unittest.TestCase):
         expected = {(0, 0, 0), (1, 1, 1)}  # The trivial topology.
         self.assertEqual(actual, expected)
 
-    def test_add_columns_in_two_parts(self):
-        self.node.add_columns(['A', 'B'])  # <- Method under test.
+    def test_add_index_columns_in_two_parts(self):
+        self.node.add_index_columns(['A', 'B'])  # <- Method under test.
 
         columns = get_column_names(self.cursor, 'indextable')
         self.assertEqual(columns, ['index_id', 'A', 'B'])
@@ -36,7 +36,7 @@ class TestNodeAddColumns(unittest.TestCase):
         expected = {(0, 0), (1, 1)}  # The trivial topology.
         self.assertEqual(actual, expected)
 
-        self.node.add_columns(['C', 'D'])  # <- Method under test.
+        self.node.add_index_columns(['C', 'D'])  # <- Method under test.
 
         columns = get_column_names(self.cursor, 'indextable')
         self.assertEqual(columns, ['index_id', 'A', 'B', 'C', 'D'])
@@ -54,7 +54,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.cursor = self.dal._get_connection().cursor()
 
     def test_add_categories_when_none_exist(self):
-        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
         self.dal.set_data({'discrete_categories': []})  # <- Erase any existing categories.
 
         categories = [{'A'}, {'B'}, {'C'}]
@@ -77,7 +77,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         columns = ['A', 'B', 'C']
         categories = [{'A'}, {'A', 'B'}]
         structure = [set(), {'A'}, {'B', 'A'}]
-        self.dal.set_data({'add_columns': columns})
+        self.dal.set_data({'add_index_columns': columns})
         self.dal.set_data({'discrete_categories': categories})
 
         self.node.add_discrete_categories([{'B'}, {'A', 'B', 'C'}])  # <- Method under test.
@@ -97,7 +97,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         columns = ['A', 'B', 'C']
         categories = [{'A'}, {'B'}, {'A', 'B', 'C'}]
         structure = [set(), {'A'}, {'B'}, {'A', 'B'}, {'A', 'B', 'C'}]
-        self.dal.set_data({'add_columns': columns})
+        self.dal.set_data({'add_index_columns': columns})
         self.dal.set_data({'discrete_categories': categories})
 
         regex = "omitting categories already covered: {('A', 'B'|'B', 'A')}"
@@ -124,7 +124,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         one where the only open sets are the empty set (all zeros) and
         the entire space (all ones).
         """
-        self.dal.set_data({'add_columns': ['A', 'B', 'C']})
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
 
         self.node.add_discrete_categories([])  # <- Method under test.
 
@@ -146,7 +146,7 @@ class TestNodeRemoveDiscreteCategories(unittest.TestCase):
         self.cursor = self.dal._get_connection().cursor()
 
     def test_remove_categories(self):
-        self.node.add_columns(['A', 'B', 'C'])
+        self.node.add_index_columns(['A', 'B', 'C'])
         categories = [{'A'}, {'B'}, {'C'}]
         self.node.add_discrete_categories(categories)
 
