@@ -750,7 +750,7 @@ class DataAccessLayer(object):
         Example:
 
             >>> dal = DataAccessLayer(...)
-            >>> dal._make_sql_new_elements(cursor, ['state', 'county'])
+            >>> dal._add_elements_make_sql(cursor, ['state', 'county'])
             'INSERT INTO indextable ("state", "county") VALUES (?, ?)'
         """
         columns = [_schema.normalize_identifier(col) for col in columns]
