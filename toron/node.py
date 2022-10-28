@@ -82,8 +82,8 @@ class Node(object):
         """
         self._dal.remove_index_columns(columns, strategy=strategy)
 
-    def rename_columns(self, mapper):
-        self._dal.rename_columns(mapper)
+    def rename_index_columns(self, mapper):
+        self._dal.rename_index_columns(mapper)
 
     def add_elements(self, iterable, columns=None):
         self._dal.add_elements(iterable, columns)

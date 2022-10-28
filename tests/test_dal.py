@@ -551,7 +551,7 @@ class TestAddColumns(unittest.TestCase):
             self.fail(msg)
 
 
-class TestRenameColumnsApplyMapper(unittest.TestCase):
+class TestRenameIndexColumnsApplyMapper(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
         self.dal.set_data({'add_index_columns': ['state', 'county', 'town']})
@@ -561,14 +561,14 @@ class TestRenameColumnsApplyMapper(unittest.TestCase):
 
     def test_mapper_callable(self):
         mapper = str.upper  # <- Callable mapper.
-        result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+        result = self.dal._rename_index_columns_apply_mapper(self.cur, mapper)
         column_names, new_column_names = result  # Unpack result tuple
         self.assertEqual(column_names, ['"state"', '"county"', '"town"'])
         self.assertEqual(new_column_names, ['"STATE"', '"COUNTY"', '"TOWN"'])
 
     def test_mapper_dict(self):
         mapper = {'state': 'stusab', 'town': 'place'}  # <- Dict mapper.
-        result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+        result = self.dal._rename_index_columns_apply_mapper(self.cur, mapper)
         column_names, new_column_names = result  # Unpack result tuple
         self.assertEqual(column_names, ['"state"', '"county"', '"town"'])
         self.assertEqual(new_column_names, ['"stusab"', '"county"', '"place"'])
@@ -576,30 +576,30 @@ class TestRenameColumnsApplyMapper(unittest.TestCase):
     def test_mapper_bad_type(self):
         mapper = ['state', 'stusab']  # <- Bad mapper type.
         with self.assertRaises(ValueError):
-            result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+            result = self.dal._rename_index_columns_apply_mapper(self.cur, mapper)
 
     def test_name_collision(self):
         regex = 'column name collisions: "(state|town)"->"XXXX", "(town|state)"->"XXXX"'
         with self.assertRaisesRegex(ValueError, regex):
             mapper = {'state': 'XXXX', 'county': 'COUNTY', 'town': 'XXXX'}
-            result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+            result = self.dal._rename_index_columns_apply_mapper(self.cur, mapper)
 
     def test_name_collision_from_normalization(self):
         regex = 'column name collisions: "(state|town)"->"A B", "(town|state)"->"A B"'
         with self.assertRaisesRegex(ValueError, regex):
             mapper = {'state': 'A\t\tB', 'town': 'A    B    '}  # <- Gets normalized.
-            result = self.dal._rename_columns_apply_mapper(self.cur, mapper)
+            result = self.dal._rename_index_columns_apply_mapper(self.cur, mapper)
 
 
-class TestRenameColumnsMakeSql(unittest.TestCase):
+class TestRenameIndexColumnsMakeSql(unittest.TestCase):
     def setUp(self):
         self.column_names = ['"state"', '"county"', '"town"']
         self.new_column_names = ['"stusab"', '"county"', '"place"']
 
     @unittest.skipIf(SQLITE_VERSION_INFO < (3, 25, 0), 'requires 3.25.0 or newer')
-    def test_native_rename_column_support(self):
+    def test_native_rename_index_column_support(self):
         """Test native RENAME COLUMN statements."""
-        sql = DataAccessLayer._rename_columns_make_sql(self.column_names, self.new_column_names)
+        sql = DataAccessLayer._rename_index_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
             'ALTER TABLE main.indextable RENAME COLUMN "state" TO "stusab"',
             'ALTER TABLE main.location RENAME COLUMN "state" TO "stusab"',
@@ -612,7 +612,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
 
     def test_pre25_without_native_rename(self):
         """Test legacy column-rename statements for workaround procedure."""
-        sql = DataAccessLayerPre25._rename_columns_make_sql(self.column_names, self.new_column_names)
+        sql = DataAccessLayerPre25._rename_index_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
             'CREATE TABLE main.new_indextable(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT NOT NULL CHECK ("stusab" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\', "place" TEXT NOT NULL CHECK ("place" != \'\') DEFAULT \'-\')',
             'INSERT INTO main.new_indextable SELECT index_id, "state", "county", "town" FROM main.indextable',
@@ -633,7 +633,7 @@ class TestRenameColumnsMakeSql(unittest.TestCase):
         self.assertEqual(sql, expected)
 
 
-class TestRenameColumns(unittest.TestCase):
+class TestRenameIndexColumns(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
         self.dal.set_data({'add_index_columns': ['state', 'county', 'town']})
@@ -651,7 +651,7 @@ class TestRenameColumns(unittest.TestCase):
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
-    def run_rename_test(self, rename_columns_func):
+    def run_rename_test(self, rename_index_columns_func):
         columns_before_rename = get_column_names(self.cur, 'indextable')
         self.assertEqual(columns_before_rename, ['index_id', 'state', 'county', 'town'])
 
@@ -659,7 +659,7 @@ class TestRenameColumns(unittest.TestCase):
             self.cur.execute('SELECT state, county, town FROM indextable').fetchall()
 
         mapper = {'state': 'stusab', 'town': 'place'}
-        rename_columns_func(self.dal, mapper)  # <- Rename columns!
+        rename_index_columns_func(self.dal, mapper)  # <- Rename columns!
 
         columns_after_rename = get_column_names(self.cur, 'indextable')
         self.assertEqual(columns_after_rename, ['index_id', 'stusab', 'county', 'place'])
@@ -670,17 +670,17 @@ class TestRenameColumns(unittest.TestCase):
         self.assertEqual(data_before_rename, data_after_rename)
 
     @unittest.skipIf(SQLITE_VERSION_INFO < (3, 25, 0), 'requires 3.25.0 or newer')
-    def test_rename_columns(self):
+    def test_rename_index_columns(self):
         """Test the native RENAME COLUMN implementation."""
-        self.run_rename_test(DataAccessLayer.rename_columns)
+        self.run_rename_test(DataAccessLayer.rename_index_columns)
 
-    def test_legacy_rename_columns(self):
+    def test_legacy_rename_index_columns(self):
         """Test the alternate legacy implementation."""
-        self.run_rename_test(DataAccessLayerPre25.rename_columns)
+        self.run_rename_test(DataAccessLayerPre25.rename_index_columns)
 
-    def test_data_access_layer_rename_columns(self):
+    def test_data_access_layer_rename_index_columns(self):
         """Test the assigned 'dal_class' class."""
-        self.run_rename_test(dal_class.rename_columns)
+        self.run_rename_test(dal_class.rename_index_columns)
 
 
 class TestRemoveIndexColumnsMakeSql(unittest.TestCase):

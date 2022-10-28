@@ -440,7 +440,7 @@ class DataAccessLayer(object):
         return sql_stmnts
 
     @classmethod
-    def _rename_columns_apply_mapper(
+    def _rename_index_columns_apply_mapper(
         cls,
         cursor: sqlite3.Cursor,
         mapper: Union[Callable[[str], str], Mapping[str, str]],
@@ -470,7 +470,7 @@ class DataAccessLayer(object):
         return column_names, new_column_names
 
     @staticmethod
-    def _rename_columns_make_sql(
+    def _rename_index_columns_make_sql(
         column_names: Sequence[str], new_column_names: Sequence[str]
     ) -> List[str]:
         # The RENAME COLUMN command was added in SQLite 3.25.0 (2018-09-15).
@@ -486,14 +486,14 @@ class DataAccessLayer(object):
             ])
         return sql_stmnts
 
-    def rename_columns(
+    def rename_index_columns(
         self, mapper: Union[Callable[[str], str], Mapping[str, str]]
     ) -> None:
         # Rename columns using native RENAME COLUMN command (only for
         # SQLite 3.25.0 or newer).
         with self._transaction() as cur:
-            names, new_names = self._rename_columns_apply_mapper(cur, mapper)
-            for stmnt in self._rename_columns_make_sql(names, new_names):
+            names, new_names = self._rename_index_columns_apply_mapper(cur, mapper)
+            for stmnt in self._rename_index_columns_make_sql(names, new_names):
                 cur.execute(stmnt)
 
     @staticmethod
@@ -1620,7 +1620,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
     For full documentation, see DataAccessLayer.
     """
     @staticmethod
-    def _rename_columns_make_sql(
+    def _rename_index_columns_make_sql(
         column_names: Sequence[str], new_column_names: Sequence[str]
     ) -> List[str]:
         # In SQLite versions before 3.25.0, there is no native support for the
@@ -1662,7 +1662,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
 
         return statements
 
-    def rename_columns(
+    def rename_index_columns(
         self, mapper: Union[Callable[[str], str], Mapping[str, str]]
     ) -> None:
         # These related methods should implement the recommended, 12-step,
@@ -1673,8 +1673,8 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             con.execute('PRAGMA foreign_keys=OFF')
             cur = con.cursor()
             with _schema.savepoint(cur):
-                names, new_names = self._rename_columns_apply_mapper(cur, mapper)
-                for stmnt in self._rename_columns_make_sql(names, new_names):
+                names, new_names = self._rename_index_columns_apply_mapper(cur, mapper)
+                for stmnt in self._rename_index_columns_make_sql(names, new_names):
                     cur.execute(stmnt)
 
                 cur.execute('PRAGMA main.foreign_key_check')
