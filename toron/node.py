@@ -42,7 +42,7 @@ class Node(object):
             'structure': structure,
         })
 
-    def remove_columns(
+    def remove_index_columns(
         self, columns: List[str], strategy: _Strategy = 'preserve'
     ) -> None:
         """Remove columns from node.
@@ -50,7 +50,7 @@ class Node(object):
         .. code-block::
 
             >>> node = toron.Node.from_file(...)
-            >>> node.remove_columns(['C', 'D'])
+            >>> node.remove_index_columns(['C', 'D'])
 
         The following *strategy* values can be used when deleting
         columns:
@@ -80,7 +80,7 @@ class Node(object):
         |                          | categories as necessary.         |
         +--------------------------+----------------------------------+
         """
-        self._dal.remove_columns(columns, strategy=strategy)
+        self._dal.remove_index_columns(columns, strategy=strategy)
 
     def rename_columns(self, mapper):
         self._dal.rename_columns(mapper)

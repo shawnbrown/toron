@@ -683,14 +683,14 @@ class TestRenameColumns(unittest.TestCase):
         self.run_rename_test(dal_class.rename_columns)
 
 
-class TestRemoveColumnsMakeSql(unittest.TestCase):
+class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
     def setUp(self):
         self.column_names = ['"state"', '"county"', '"mcd"', '"place"']
         self.columns_to_remove = ['"mcd"', '"place"']
 
     @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
     def test_native_delete_column_support(self):
-        sql_stmnts = DataAccessLayer._remove_columns_make_sql(self.column_names, self.columns_to_remove)
+        sql_stmnts = DataAccessLayer._remove_index_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
             'DROP INDEX IF EXISTS main.unique_indextable_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
@@ -709,7 +709,7 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
 
     def test_pre35_without_native_drop(self):
         """Check SQL of column removal procedure for legacy SQLite."""
-        sql_stmnts = DataAccessLayerPre35._remove_columns_make_sql(self.column_names, self.columns_to_remove)
+        sql_stmnts = DataAccessLayerPre35._remove_index_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
             'CREATE TABLE main.new_indextable(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\')',
             'INSERT INTO main.new_indextable SELECT index_id, "state", "county" FROM main.indextable',
@@ -730,7 +730,7 @@ class TestRemoveColumnsMakeSql(unittest.TestCase):
         self.assertEqual(sql_stmnts, expected)
 
 
-class TestRemoveColumnsMixin(object):
+class TestRemoveIndexColumnsMixin(object):
     class_under_test = None  # When subclassing, assign DAL class to test.
 
     def setUp(self):
@@ -788,8 +788,8 @@ class TestRemoveColumnsMixin(object):
         }
         self.assertEqual(actual, expected)
 
-    def test_remove_columns(self):
-        self.dal.remove_columns(['mcd', 'place'])  # <- Method under test.
+    def test_remove_index_columns(self):
+        self.dal.remove_index_columns(['mcd', 'place'])  # <- Method under test.
 
         # Check rebuilt categories.
         data = self.dal.get_data(['discrete_categories'])
@@ -826,25 +826,25 @@ class TestRemoveColumnsMixin(object):
 
     def test_nonmatching_names(self):
         """Non-matching column names should be ignored."""
-        self.dal.remove_columns(['nomatch1', 'nomatch2'])  # <- Method under test.
+        self.dal.remove_index_columns(['nomatch1', 'nomatch2'])  # <- Method under test.
 
     def test_category_violation(self):
         regex = "cannot remove, categories are undefined for remaining columns: 'place'"
         with self.assertRaisesRegex(ToronError, regex):
-            self.dal.remove_columns(['mcd'])  # <- Method under test.
+            self.dal.remove_index_columns(['mcd'])  # <- Method under test.
 
         regex = "cannot remove, categories are undefined for remaining columns: 'mcd', 'place'"
         with self.assertRaisesRegex(ToronError, regex):
-            self.dal.remove_columns(['county'])  # <- Method under test.
+            self.dal.remove_index_columns(['county'])  # <- Method under test.
 
     def test_granularity_violation(self):
         regex = 'cannot remove, columns are needed to preserve granularity'
         with self.assertRaisesRegex(ToronError, regex):
-            self.dal.remove_columns(['county', 'mcd', 'place'])  # <- Method under test.
+            self.dal.remove_index_columns(['county', 'mcd', 'place'])  # <- Method under test.
 
     def test_strategy_restructure(self):
         """The 'restructure' strategy should override category error."""
-        self.dal.remove_columns(['mcd'], strategy='restructure')  # <- Method under test.
+        self.dal.remove_index_columns(['mcd'], strategy='restructure')  # <- Method under test.
 
         # Check rebuilt categories.
         data = self.dal.get_data(['discrete_categories'])
@@ -889,7 +889,7 @@ class TestRemoveColumnsMixin(object):
 
     def test_strategy_coarsen(self):
         """The 'coarsen' strategy should override granularity error."""
-        self.dal.remove_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
+        self.dal.remove_index_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
 
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
@@ -917,7 +917,7 @@ class TestRemoveColumnsMixin(object):
         Note: The example result used in this test is nonsensical but
         it does serve to validate the strategy behavior.
         """
-        self.dal.remove_columns(['state', 'mcd', 'place'], strategy='coarsenrestructure')  # <- Method under test.
+        self.dal.remove_index_columns(['state', 'mcd', 'place'], strategy='coarsenrestructure')  # <- Method under test.
 
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
@@ -962,7 +962,7 @@ class TestRemoveColumnsMixin(object):
         msg = "should be False/0 because it's incomplete"
         self.assertEqual(actual, False, msg=msg)
 
-        self.dal.remove_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
+        self.dal.remove_index_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
 
         self.cur.execute("SELECT is_complete FROM weighting WHERE name='new_count'")
         actual = self.cur.fetchone()[0]
@@ -993,11 +993,11 @@ class TestRemoveColumnsMixin(object):
 
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
-class TestRemoveColumns(TestRemoveColumnsMixin, unittest.TestCase):
+class TestRemoveIndexColumns(TestRemoveIndexColumnsMixin, unittest.TestCase):
     class_under_test = DataAccessLayer
 
 
-class TestRemoveColumnsLegacy(TestRemoveColumnsMixin, unittest.TestCase):
+class TestRemoveIndexColumnsLegacy(TestRemoveIndexColumnsMixin, unittest.TestCase):
     class_under_test = DataAccessLayerPre24
 
 

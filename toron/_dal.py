@@ -497,7 +497,7 @@ class DataAccessLayer(object):
                 cur.execute(stmnt)
 
     @staticmethod
-    def _remove_columns_make_sql(
+    def _remove_index_columns_make_sql(
         column_names: Sequence[str], names_to_remove: Sequence[str]
     ) -> List[str]:
         """Return a list of SQL statements for removing label columns."""
@@ -672,7 +672,7 @@ class DataAccessLayer(object):
         return sql_statements
 
     @classmethod
-    def _remove_columns_execute_sql(
+    def _remove_index_columns_execute_sql(
         cls,
         cursor: sqlite3.Cursor,
         columns: Iterable[str],
@@ -726,7 +726,7 @@ class DataAccessLayer(object):
         cursor.execute('DELETE FROM main.structure')
 
         # Remove specified columns.
-        for stmnt in cls._remove_columns_make_sql(column_names, names_to_remove):
+        for stmnt in cls._remove_index_columns_make_sql(column_names, names_to_remove):
             cursor.execute(stmnt)
 
         # Rebuild categories property and structure table.
@@ -734,11 +734,11 @@ class DataAccessLayer(object):
 
         # TODO: Recalculate node_hash for `properties` table.
 
-    def remove_columns(
+    def remove_index_columns(
         self, columns: Iterable[str], strategy: Strategy = 'preserve'
     ) -> None:
         with self._transaction() as cur:
-            self._remove_columns_execute_sql(cur, columns, strategy)
+            self._remove_index_columns_execute_sql(cur, columns, strategy)
 
     @classmethod
     def _add_elements_make_sql(
@@ -1543,7 +1543,7 @@ class DataAccessLayerPre35(DataAccessLayer):
         return cursor.fetchone()[0]
 
     @staticmethod
-    def _remove_columns_make_sql(
+    def _remove_index_columns_make_sql(
         column_names: Sequence[str], names_to_remove: Sequence[str]
     ) -> List[str]:
         """Return a list of SQL statements for removing label columns."""
@@ -1586,7 +1586,7 @@ class DataAccessLayerPre35(DataAccessLayer):
 
         return statements
 
-    def remove_columns(
+    def remove_index_columns(
         self, columns: Iterable[str], strategy: Strategy = 'preserve'
     ) -> None:
         # In versions earlier than SQLite 3.35.0, there was no support for
@@ -1599,7 +1599,7 @@ class DataAccessLayerPre35(DataAccessLayer):
             con.execute('PRAGMA foreign_keys=OFF')
             cur = con.cursor()
             with _schema.savepoint(cur):
-                self._remove_columns_execute_sql(cur, columns, strategy)
+                self._remove_index_columns_execute_sql(cur, columns, strategy)
 
                 cur.execute('PRAGMA main.foreign_key_check')
                 one_result = cur.fetchone()
