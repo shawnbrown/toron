@@ -17,7 +17,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
     def test_add_index_columns(self):
         self.node.add_index_columns(['A', 'B', 'C'])
 
-        columns = get_column_names(self.cursor, 'indextable')
+        columns = get_column_names(self.cursor, 'label_index')
         self.assertEqual(columns, ['index_id', 'A', 'B', 'C'])
 
         self.cursor.execute('SELECT * FROM main.structure')
@@ -28,7 +28,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
     def test_add_index_columns_in_two_parts(self):
         self.node.add_index_columns(['A', 'B'])  # <- Method under test.
 
-        columns = get_column_names(self.cursor, 'indextable')
+        columns = get_column_names(self.cursor, 'label_index')
         self.assertEqual(columns, ['index_id', 'A', 'B'])
 
         self.cursor.execute('SELECT * FROM main.structure')
@@ -38,7 +38,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
 
         self.node.add_index_columns(['C', 'D'])  # <- Method under test.
 
-        columns = get_column_names(self.cursor, 'indextable')
+        columns = get_column_names(self.cursor, 'label_index')
         self.assertEqual(columns, ['index_id', 'A', 'B', 'C', 'D'])
 
         self.cursor.execute('SELECT * FROM main.structure')

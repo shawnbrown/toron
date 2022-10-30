@@ -23,26 +23,26 @@ the application layer:
   | is_complete         |<•••••    +-----------------+  |  | quantity_value |
   +---------------------+          |                    |  +----------------+
                                    |                    |
-                   +------------+  |  +--------------+  |  +---------------+
-                   | indextable |  |  | location     |  |  | structure     |
-                   +------------+  |  +--------------+  |  +---------------+
-                +--| index_id   |--+  | _location_id |--+  | _structure_id |
-                |  | label_a    |••••>| label_a      |<••••| label_a       |
-                |  | label_b    |••••>| label_b      |<••••| label_b       |
-                |  | label_c    |••••>| label_c      |<••••| label_c       |
-                |  | ...        |••••>| ...          |<••••| ...           |
-                |  +------------+     +--------------+     +---------------+
-                |
-                |  +--------------+                          +----------+
-                |  | weight       |     +--------------+     | property |
-                |  +--------------+     | weighting    |     +----------+
-                |  | weight_id    |     +--------------+     | key      |
-                |  | weighting_id |<----| weighting_id |     | value    |
-                +->| index_id     |•••  | name         |     +----------+
-                   | weight_value |  •  | description  |
-                   +--------------+  •  | selectors    |
-                                     ••>| is_complete  |
-                                        +--------------+
+                  +-------------+  |  +--------------+  |  +---------------+
+                  | label_index |  |  | location     |  |  | structure     |
+                  +-------------+  |  +--------------+  |  +---------------+
+               +--| index_id    |--+  | _location_id |--+  | _structure_id |
+               |  | label_a     |••••>| label_a      |<••••| label_a       |
+               |  | label_b     |••••>| label_b      |<••••| label_b       |
+               |  | label_c     |••••>| label_c      |<••••| label_c       |
+               |  | ...         |••••>| ...          |<••••| ...           |
+               |  +-------------+     +--------------+     +---------------+
+               |
+               |  +--------------+                           +----------+
+               |  | weight       |     +--------------+      | property |
+               |  +--------------+     | weighting    |      +----------+
+               |  | weight_id    |     +--------------+      | key      |
+               |  | weighting_id |<----| weighting_id |      | value    |
+               +->| index_id     |•••  | name         |      +----------+
+                  | weight_value |  •  | description  |
+                  +--------------+  •  | selectors    |
+                                    ••>| is_complete  |
+                                       +--------------+
 """
 
 import itertools
@@ -83,11 +83,11 @@ _schema_script = """
         proportion REAL NOT NULL CHECK (0.0 <= proportion AND proportion <= 1.0),
         mapping_level BLOB_BITLIST NOT NULL,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
-        FOREIGN KEY(index_id) REFERENCES indextable(index_id) DEFERRABLE INITIALLY DEFERRED,
+        FOREIGN KEY(index_id) REFERENCES label_index(index_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (edge_id, other_index_id, index_id)
     );
 
-    CREATE TABLE main.indextable(
+    CREATE TABLE main.label_index(
         index_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
         /* label columns added programmatically */
     );
@@ -125,7 +125,7 @@ _schema_script = """
         index_id INTEGER,
         weight_value REAL NOT NULL,
         FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
-        FOREIGN KEY(index_id) REFERENCES indextable(index_id) DEFERRABLE INITIALLY DEFERRED,
+        FOREIGN KEY(index_id) REFERENCES label_index(index_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (index_id, weighting_id)
     );
 
@@ -284,7 +284,7 @@ def normalize_identifier(value: str) -> str:
 def sql_drop_label_indexes() -> List[str]:
     """Return list of SQL statements to drop unique label indexes."""
     return [
-        'DROP INDEX IF EXISTS main.unique_indextable_index',
+        'DROP INDEX IF EXISTS main.unique_labelindex_index',
         'DROP INDEX IF EXISTS main.unique_location_index',
         'DROP INDEX IF EXISTS main.unique_structure_index',
     ]
@@ -294,7 +294,7 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
     """Return list of SQL statements to create unique label indexes."""
     formatted = ', '.join(normalize_identifier(x) for x in columns)
     return [
-        f'CREATE UNIQUE INDEX main.unique_indextable_index ON indextable({formatted})',
+        f'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index({formatted})',
         f'CREATE UNIQUE INDEX main.unique_location_index ON location({formatted})',
         f'CREATE UNIQUE INDEX main.unique_structure_index ON structure({formatted})',
     ]
@@ -309,8 +309,8 @@ def sql_create_label_indexes(columns: List[str]) -> List[str]:
 # CREATE TABLE statements.
 
 
-def sql_column_def_indextable_label(name: str) -> str:
-    """Return an `indextable` column-def for a label column."""
+def sql_column_def_labelindex_label(name: str) -> str:
+    """Return a `label_index` column-def for a label column."""
     return f"{name} TEXT NOT NULL CHECK ({name} != '') DEFAULT '-'"
 
 
