@@ -1860,9 +1860,8 @@ class TestDeleteRawQuantities(unittest.TestCase):
 
 class TestDisaggregateHelpers(unittest.TestCase):
     def test_disaggregate_make_sql_parts(self):
-        columns = ['A', 'B', 'C', 'D']
+        columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
         expected = (
-            ['"A"', '"B"', '"C"', '"D"'],
             ['"A"', '"C"'],
             ['"A"!=\'\'', '"B"=\'\'', '"C"!=\'\'', '"D"=\'\''],
         )
@@ -1884,7 +1883,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
             dal_class._disaggregate_make_sql_parts(columns, bad_bitmask)
 
     def test_disaggregate_make_sql(self):
-        columns = ['A', 'B', 'C', 'D']
+        columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
         bitmask = [1, 0, 1, 0]
         match_selector_func = 'USER_FUNC_NAME'
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)

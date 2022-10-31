@@ -1208,13 +1208,13 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _disaggregate_make_sql_parts(
-        columns: Sequence[str],
+        normalized_columns: Sequence[str],
         bitmask: Sequence[Literal[0, 1]],
-    ) -> Tuple[List[str], List[str], List[str]]:
+    ) -> Tuple[List[str], List[str]]:
         """Make SQL parts used in _disaggregate_make_sql() function.
 
-        Returns a 3-tuple containing select items, join-using items,
-        and where-clause items.
+        Returns a 2-tuple containing join-constraint and where-clause
+        items.
 
         The first item in the tuple should contain all of the label
         columns used in the label_index/location/structure tables.
@@ -1229,11 +1229,10 @@ class DataAccessLayer(object):
 
         .. code-block::
 
-            >>> columns = ['A', 'B', 'C', 'D']
+            >>> normalized_columns = ['"A"', '"B"', '"C"', '"D"']
             >>> bitmask = [1, 0, 1, 0]
-            >>> dal._disaggregate_make_sql_parts(columns, bitmask)
-            (['"A"', '"B"', '"C"', '"D"'],
-             ['"A"', '"C"'],
+            >>> dal._disaggregate_make_sql_parts(normalized_columns, bitmask)
+            (['"A"', '"C"'],
              ['"A"!=\'\'', '"B"=\'\'', '"C"!=\'\'', '"D"=\'\''])
         """
         # Strip trailing 0s from bitmask.
@@ -1245,34 +1244,33 @@ class DataAccessLayer(object):
             pass
 
         # Check that bitmask does not exceed columns.
-        if len(bitmask) > len(columns):
+        if len(bitmask) > len(normalized_columns):
             msg = (
                 f'incompatible bitmask:\n'
-                f'  columns = {columns}\n'
+                f'  columns = {normalized_columns}\n'
                 f'  bitmask = {bitmask}'
             )
             raise ValueError(msg)
 
         # Build and return SQL parts for disaggregate query.
-        select_items = [_schema.normalize_identifier(col) for col in columns]
-        join_using_items = list(compress(select_items, bitmask))
-        zipped = zip_longest(select_items, bitmask, fillvalue=0)
+        join_constraint_items = list(compress(normalized_columns, bitmask))
+        zipped = zip_longest(normalized_columns, bitmask, fillvalue=0)
         where_clause_items = [f"{a}{'!=' if b else '='}''" for a, b in zipped]
-        return (select_items, join_using_items, where_clause_items)
+        return (join_constraint_items, where_clause_items)
 
     @classmethod
     def _disaggregate_make_sql(
         cls,
-        columns: Sequence[str],
+        normalized_columns: Sequence[str],
         bitmask: Sequence[Literal[0, 1]],
         match_selector_func: str,
     ) -> str:
         """Return SQL to disaggregate data."""
-        _, join_using_items, where_clause_items = \
-            cls._disaggregate_make_sql_parts(columns, bitmask)
+        join_constraints, where_clause_items = \
+            cls._disaggregate_make_sql_parts(normalized_columns, bitmask)
 
-        if join_using_items:
-            labelindex_join_constraint = f"USING ({', '.join(join_using_items)})"
+        if join_constraints:
+            labelindex_join_constraint = f"USING ({', '.join(join_constraints)})"
         else:
             labelindex_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
 
@@ -1309,16 +1307,15 @@ class DataAccessLayer(object):
 
             # Get bitmask levels from structure table.
             columns = self._get_column_names(cur, 'location')[1:]
+            normalized_cols = [_schema.normalize_identifier(col) for col in columns]
             bitmasks = cur.execute('SELECT * FROM main.structure').fetchall()
 
             # Build SQL statement.
             sql_statements = []
             for row in bitmasks:
                 bitmask = row[1:]  # Slice-off the id value.
-                sql = self._disaggregate_make_sql(columns, bitmask, func_name)
+                sql = self._disaggregate_make_sql(normalized_cols, bitmask, func_name)
                 sql_statements.append(sql)
-
-            normalized_cols = [_schema.normalize_identifier(col) for col in columns]
 
             # Build SQL to get disaggregated quantities.
             disaggregated_quantities = \
@@ -1705,7 +1702,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
     @classmethod
     def _disaggregate_make_sql(
         cls,
-        columns: Sequence[str],
+        normalized_columns: Sequence[str],
         bitmask: Sequence[Literal[0, 1]],
         match_selector_func: str,
     ) -> str:
@@ -1713,8 +1710,8 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         # functions". Instead of using the "SUM(...) OVER (PARTITION BY ...)"
         # syntax, this implementation uses a correlated subquery to achieve
         # the same result.
-        _, join_using_items, where_clause_items = \
-            cls._disaggregate_make_sql_parts(columns, bitmask)
+        join_using_items, where_clause_items = \
+            cls._disaggregate_make_sql_parts(normalized_columns, bitmask)
 
         if join_using_items:
             labelindex_join_constraint = f"USING ({', '.join(join_using_items)})"
