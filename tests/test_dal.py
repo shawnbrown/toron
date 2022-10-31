@@ -1891,7 +1891,6 @@ class TestDisaggregateHelpers(unittest.TestCase):
         expected = """
             SELECT
                 t3.index_id,
-                t3."A", t3."B", t3."C", t3."D",
                 t1.attributes,
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
@@ -1948,6 +1947,14 @@ class TestDisaggregate(unittest.TestCase):
         ]
         self.dal.add_weights(weighting, name='weight', selectors=['[attr1]'])
 
+    @staticmethod
+    def make_hashable(iterable):
+        """Helper function to make disaggregation rows hashable."""
+        func = lambda a, b, c, d, e: (a, b, c, frozenset(d.items()), e)
+        return {func(*x) for x in iterable}
+
+    def test_disaggregate(self):
+        # Add data for test.
         data = [
             ('col1', 'col2', 'attr1', 'value'),
             ('A',    'x',    'foo',   18),
@@ -1961,26 +1968,62 @@ class TestDisaggregate(unittest.TestCase):
             ('',     '',     'baz',   25),
         ]
         self.dal.add_quantities(data, 'value')
+        # Remove data on test completion.
+        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
+        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='bar'))
+        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='baz'))
 
-    def test_disaggregate(self):
         results = self.dal.disaggregate()
         expected = [
-            (1, 'A', 'x', {'attr1': 'baz'}, 4.0),
-            (2, 'A', 'y', {'attr1': 'baz'}, 6.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+            (1, 'A', 'x', {'attr1': 'foo'}, 18.0),
+            (2, 'A', 'y', {'attr1': 'foo'}, 29.0),
+            (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
+            (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
 
             (1, 'A', 'x', {'attr1': 'bar'}, 6.0),
             (2, 'A', 'y', {'attr1': 'bar'}, 9.0),
             (3, 'B', 'x', {'attr1': 'bar'}, 4.0),
             (4, 'B', 'y', {'attr1': 'bar'}, 16.0),
 
-            (1, 'A', 'x', {'attr1': 'foo'}, 18.0),
-            (2, 'A', 'y', {'attr1': 'foo'}, 29.0),
-            (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
-            (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
+            (1, 'A', 'x', {'attr1': 'baz'}, 4.0),
+            (2, 'A', 'y', {'attr1': 'baz'}, 6.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
         ]
-        self.assertEqual(list(results), expected)
+
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+    def test_disaggregate2(self):
+        # Add data for test.
+        data = [
+            ('col1', 'col2', 'attr1', 'value'),
+            ('A',    'x',    'foo',   18),
+            ('A',    'y',    'foo',   29),
+            ('B',    'x',    'foo',   22),
+            ('B',    'y',    'foo',   70),
+
+            ('A',    '',     'foo',   15),
+            ('B',    '',     'foo',   20),
+
+            ('',     '',     'foo',   25),
+        ]
+        self.dal.add_quantities(data, 'value')
+        # Remove data on test completion.
+        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
+
+        results = self.dal.disaggregate()
+        expected = [
+            (1, 'A', 'x', {'attr1': 'foo'}, 28.0),  # <- 18 + 6 + 4
+            (2, 'A', 'y', {'attr1': 'foo'}, 44.0),  # <- 29 + 9 + 6
+            (3, 'B', 'x', {'attr1': 'foo'}, 29.0),  # <- 22 + 4 + 3
+            (4, 'B', 'y', {'attr1': 'foo'}, 98.0),  # <- 70 + 16 + 12
+        ]
+
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
 
 
 class TestGetAndSetDataProperty(unittest.TestCase):

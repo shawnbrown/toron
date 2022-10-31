@@ -1268,7 +1268,7 @@ class DataAccessLayer(object):
         match_selector_func: str,
     ) -> str:
         """Return SQL to disaggregate data."""
-        select_items, join_using_items, where_clause_items = \
+        _, join_using_items, where_clause_items = \
             cls._disaggregate_make_sql_parts(columns, bitmask)
 
         if join_using_items:
@@ -1279,7 +1279,6 @@ class DataAccessLayer(object):
         statement = f"""
             SELECT
                 t3.index_id,
-                {', '.join(f't3.{x}' for x in select_items)},
                 t1.attributes,
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
@@ -1319,7 +1318,22 @@ class DataAccessLayer(object):
                 sql = self._disaggregate_make_sql(columns, bitmask, func_name)
                 sql_statements.append(sql)
 
-            final_sql = '\n            UNION ALL\n'.join(sql_statements)
+            normalized_cols = [_schema.normalize_identifier(col) for col in columns]
+
+            # Build SQL to get disaggregated quantities.
+            disaggregated_quantities = \
+                '\n            UNION ALL\n'.join(sql_statements)
+
+            final_sql = f"""
+                WITH
+                    all_quantities AS (
+                        {disaggregated_quantities}
+                    )
+                SELECT t1.*, t2.attributes, SUM(t2.value) AS value
+                FROM main.label_index t1
+                JOIN all_quantities t2 USING (index_id)
+                GROUP BY {', '.join(f't1.{x}' for x in normalized_cols)}, t2.attributes
+            """
 
             # Execute SQL and yield result rows.
             cur.execute(final_sql)
@@ -1699,7 +1713,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         # functions". Instead of using the "SUM(...) OVER (PARTITION BY ...)"
         # syntax, this implementation uses a correlated subquery to achieve
         # the same result.
-        select_items, join_using_items, where_clause_items = \
+        _, join_using_items, where_clause_items = \
             cls._disaggregate_make_sql_parts(columns, bitmask)
 
         if join_using_items:
@@ -1710,7 +1724,6 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         statement = f"""
             SELECT
                 t3.index_id,
-                {', '.join(f't3.{x}' for x in select_items)},
                 t1.attributes,
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / (SELECT SUM(sub4.weight_value)
