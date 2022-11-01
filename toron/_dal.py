@@ -1210,30 +1210,23 @@ class DataAccessLayer(object):
     def _disaggregate_make_sql_parts(
         normalized_columns: Sequence[str],
         bitmask: Sequence[Literal[0, 1]],
-    ) -> Tuple[List[str], List[str]]:
-        """Make SQL parts used in _disaggregate_make_sql() function.
+        location_table_alias: str,
+        index_table_alias: str,
+    ) -> str:
+        """Build a string of join constraints used to join the
+        `location` and `label_index` tables for disaggregation.
 
-        Returns a 2-tuple containing join-constraint and where-clause
-        items.
-
-        The first item in the tuple should contain all of the label
-        columns used in the label_index/location/structure tables.
-
-        The second item in the tuple should contain only those labels
-        that are selected by the bitmask.
-
-        The third item in the tuple should contain WHERE clause
-        conditions. The labels selected by the bitmask should be
-        not-equal-to empty string and the items *not* selected by
-        the bitmask should be equal-to empty string.
+        If a column is associated with a bitmask value of 1, then
+        its condition should be `loc.COLNAME=idx.COLNAME`. But if
+        a column is associated with a bitmask value of 0, then the
+        condition should be `loc.COLNAME=''`.
 
         .. code-block::
 
-            >>> normalized_columns = ['"A"', '"B"', '"C"', '"D"']
-            >>> bitmask = [1, 0, 1, 0]
-            >>> dal._disaggregate_make_sql_parts(normalized_columns, bitmask)
-            (['"A"', '"C"'],
-             ['"A"!=\'\'', '"B"=\'\'', '"C"!=\'\'', '"D"=\'\''])
+            >>> normalized_columns = ['"A"', '"B"', '"C"']
+            >>> bitmask = [1, 0, 1]
+            >>> dal._disaggregate_make_sql_parts(normalized_columns, bitmask, 't2', 't3')
+            't2."A"=t3."A" AND t2."B"=\'\' AND t2."C"=t3."C"'
         """
         # Strip trailing 0s from bitmask.
         bitmask = list(bitmask)
@@ -1247,16 +1240,20 @@ class DataAccessLayer(object):
         if len(bitmask) > len(normalized_columns):
             msg = (
                 f'incompatible bitmask:\n'
-                f'  columns = {normalized_columns}\n'
-                f'  bitmask = {bitmask}'
+                f'  columns = {", ".join(normalized_columns)}\n'
+                f'  bitmask = {", ".join(str(x) for x in bitmask)}'
             )
             raise ValueError(msg)
 
-        # Build and return SQL parts for disaggregate query.
-        join_constraint_items = list(compress(normalized_columns, bitmask))
-        zipped = zip_longest(normalized_columns, bitmask, fillvalue=0)
-        where_clause_items = [f"{a}{'!=' if b else '='}''" for a, b in zipped]
-        return (join_constraint_items, where_clause_items)
+        join_constraints = []
+        for col, bit in zip_longest(normalized_columns, bitmask, fillvalue=0):
+            if bit:
+                constraint = f'{location_table_alias}.{col}={index_table_alias}.{col}'
+            else:
+                constraint = f'{location_table_alias}.{col}=\'\''
+            join_constraints.append(constraint)
+
+        return ' AND '.join(join_constraints)
 
     @classmethod
     def _disaggregate_make_sql(
@@ -1266,13 +1263,12 @@ class DataAccessLayer(object):
         match_selector_func: str,
     ) -> str:
         """Return SQL to disaggregate data."""
-        join_constraints, where_clause_items = \
-            cls._disaggregate_make_sql_parts(normalized_columns, bitmask)
-
-        if join_constraints:
-            labelindex_join_constraint = f"USING ({', '.join(join_constraints)})"
-        else:
-            labelindex_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
+        join_constraints = cls._disaggregate_make_sql_parts(
+            normalized_columns,
+            bitmask,
+            location_table_alias='t2',
+            index_table_alias='t3',
+        )
 
         statement = f"""
             SELECT
@@ -1284,12 +1280,11 @@ class DataAccessLayer(object):
                 ) AS value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 {labelindex_join_constraint}
+            JOIN main.label_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
             )
-            WHERE {' AND '.join(f't2.{x}' for x in where_clause_items)}
         """
         return statement
 
@@ -1710,13 +1705,19 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         # functions". Instead of using the "SUM(...) OVER (PARTITION BY ...)"
         # syntax, this implementation uses a correlated subquery to achieve
         # the same result.
-        join_using_items, where_clause_items = \
-            cls._disaggregate_make_sql_parts(normalized_columns, bitmask)
+        join_constraints = cls._disaggregate_make_sql_parts(
+            normalized_columns,
+            bitmask,
+            location_table_alias='t2',
+            index_table_alias='t3',
+        )
 
-        if join_using_items:
-            labelindex_join_constraint = f"USING ({', '.join(join_using_items)})"
-        else:
-            labelindex_join_constraint = 'ON 1'  # <- Imitates CROSS JOIN.
+        subquery_join_constraints = cls._disaggregate_make_sql_parts(
+            normalized_columns,
+            bitmask,
+            location_table_alias='sub2',
+            index_table_alias='sub3',
+        )
 
         statement = f"""
             SELECT
@@ -1726,26 +1727,25 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                     (t4.weight_value / (SELECT SUM(sub4.weight_value)
                                  FROM main.quantity sub1
                                  JOIN main.location sub2 USING (_location_id)
-                                 JOIN main.label_index sub3 {labelindex_join_constraint}
+                                 JOIN main.label_index sub3 {subquery_join_constraints}
                                  JOIN main.weight sub4 USING (index_id)
                                  WHERE sub1.quantity_id=t1.quantity_id
                                        AND sub4.weighting_id=t4.weighting_id)),
                     (1.0 / (SELECT COUNT(1)
                             FROM main.quantity sub1
                             JOIN main.location sub2 USING (_location_id)
-                            JOIN main.label_index sub3 {labelindex_join_constraint}
+                            JOIN main.label_index sub3 {subquery_join_constraints}
                             JOIN main.weight sub4 USING (index_id)
                             WHERE sub1.quantity_id=t1.quantity_id
                                   AND sub4.weighting_id=t4.weighting_id))
                 ) AS value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 {labelindex_join_constraint}
+            JOIN main.label_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
             )
-            WHERE {' AND '.join(f't2.{x}' for x in where_clause_items)}
         """
         return statement
 

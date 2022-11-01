@@ -1861,26 +1861,23 @@ class TestDeleteRawQuantities(unittest.TestCase):
 class TestDisaggregateHelpers(unittest.TestCase):
     def test_disaggregate_make_sql_parts(self):
         columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
-        expected = (
-            ['"A"', '"C"'],
-            ['"A"!=\'\'', '"B"=\'\'', '"C"!=\'\'', '"D"=\'\''],
-        )
+        expected = """t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"=''"""
 
         bitmask = [1, 0, 1, 0]
-        result = dal_class._disaggregate_make_sql_parts(columns, bitmask)
+        result = dal_class._disaggregate_make_sql_parts(columns, bitmask, 't2', 't3')
         self.assertEqual(result, expected)
 
         bitmask_trailing_zeros = [1, 0, 1, 0, 0, 0]
-        result = dal_class._disaggregate_make_sql_parts(columns, bitmask_trailing_zeros)
+        result = dal_class._disaggregate_make_sql_parts(columns, bitmask_trailing_zeros, 't2', 't3')
         self.assertEqual(result, expected, msg='extra trailing zeros are OK')
 
         bitmask_truncated = [1, 0, 1]
-        result = dal_class._disaggregate_make_sql_parts(columns, bitmask_truncated)
+        result = dal_class._disaggregate_make_sql_parts(columns, bitmask_truncated, 't2', 't3')
         self.assertEqual(result, expected, msg='bitmask shorter than columns is OK')
 
         bad_bitmask = [1, 0, 1, 0, 1]
         with self.assertRaises(ValueError, msg='final "1" does not match any column'):
-            dal_class._disaggregate_make_sql_parts(columns, bad_bitmask)
+            dal_class._disaggregate_make_sql_parts(columns, bad_bitmask, 't2', 't3')
 
     def test_disaggregate_make_sql(self):
         columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
@@ -1897,19 +1894,17 @@ class TestDisaggregateHelpers(unittest.TestCase):
                 ) AS value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 USING ("A", "C")
+            JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id=USER_FUNC_NAME(t1.attributes)
             )
-            WHERE t2."A"!='' AND t2."B"='' AND t2."C"!='' AND t2."D"=''
         """
         self.assertEqual(result, expected)
 
         bitmask = [0, 0, 0, 0]  # <- Bitmask is all 0s.
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
-        self.assertIn('JOIN main.label_index t3 ON 1', result)
-        self.assertIn("""WHERE t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"=''""", result)
+        self.assertIn("""JOIN main.label_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
 
 
 class TestDisaggregate(unittest.TestCase):
