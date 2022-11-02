@@ -1207,13 +1207,13 @@ class DataAccessLayer(object):
             self._delete_raw_quantities_execute(cur, where_items, parameters)
 
     @staticmethod
-    def _disaggregate_make_sql_parts(
+    def _disaggregate_make_sql_constraints(
         normalized_columns: Sequence[str],
         bitmask: Sequence[Literal[0, 1]],
         location_table_alias: str,
         index_table_alias: str,
     ) -> str:
-        """Build a string of join constraints used to join the
+        """Build a string of constraints on which to join the
         `location` and `label_index` tables for disaggregation.
 
         If a column is associated with a bitmask value of 1, then
@@ -1225,7 +1225,12 @@ class DataAccessLayer(object):
 
             >>> normalized_columns = ['"A"', '"B"', '"C"']
             >>> bitmask = [1, 0, 1]
-            >>> dal._disaggregate_make_sql_parts(normalized_columns, bitmask, 't2', 't3')
+            >>> dal._disaggregate_make_sql_constraints(
+            ...     normalized_columns,
+            ...     bitmask,
+            ...     location_table_alias='t2',
+            ...     index_table_alias='t3',
+            ... )
             't2."A"=t3."A" AND t2."B"=\'\' AND t2."C"=t3."C"'
         """
         # Strip trailing 0s from bitmask.
@@ -1263,7 +1268,7 @@ class DataAccessLayer(object):
         match_selector_func: str,
     ) -> str:
         """Return SQL to disaggregate data."""
-        join_constraints = cls._disaggregate_make_sql_parts(
+        join_constraints = cls._disaggregate_make_sql_constraints(
             normalized_columns,
             bitmask,
             location_table_alias='t2',
@@ -1703,16 +1708,16 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
     ) -> str:
         # In SQLite versions before 3.25.0, there is no support for "window
         # functions". Instead of using the "SUM(...) OVER (PARTITION BY ...)"
-        # syntax, this implementation uses a correlated subquery to achieve
+        # syntax, this implementation uses correlated subqueries to achieve
         # the same result.
-        join_constraints = cls._disaggregate_make_sql_parts(
+        join_constraints = cls._disaggregate_make_sql_constraints(
             normalized_columns,
             bitmask,
             location_table_alias='t2',
             index_table_alias='t3',
         )
 
-        subquery_join_constraints = cls._disaggregate_make_sql_parts(
+        subquery_join_constraints = cls._disaggregate_make_sql_constraints(
             normalized_columns,
             bitmask,
             location_table_alias='sub2',

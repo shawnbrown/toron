@@ -1859,25 +1859,25 @@ class TestDeleteRawQuantities(unittest.TestCase):
 
 
 class TestDisaggregateHelpers(unittest.TestCase):
-    def test_disaggregate_make_sql_parts(self):
+    def test_disaggregate_make_sql_constraints(self):
         columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
         expected = """t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"=''"""
 
         bitmask = [1, 0, 1, 0]
-        result = dal_class._disaggregate_make_sql_parts(columns, bitmask, 't2', 't3')
+        result = dal_class._disaggregate_make_sql_constraints(columns, bitmask, 't2', 't3')
         self.assertEqual(result, expected)
 
         bitmask_trailing_zeros = [1, 0, 1, 0, 0, 0]
-        result = dal_class._disaggregate_make_sql_parts(columns, bitmask_trailing_zeros, 't2', 't3')
+        result = dal_class._disaggregate_make_sql_constraints(columns, bitmask_trailing_zeros, 't2', 't3')
         self.assertEqual(result, expected, msg='extra trailing zeros are OK')
 
         bitmask_truncated = [1, 0, 1]
-        result = dal_class._disaggregate_make_sql_parts(columns, bitmask_truncated, 't2', 't3')
+        result = dal_class._disaggregate_make_sql_constraints(columns, bitmask_truncated, 't2', 't3')
         self.assertEqual(result, expected, msg='bitmask shorter than columns is OK')
 
         bad_bitmask = [1, 0, 1, 0, 1]
         with self.assertRaises(ValueError, msg='final "1" does not match any column'):
-            dal_class._disaggregate_make_sql_parts(columns, bad_bitmask, 't2', 't3')
+            dal_class._disaggregate_make_sql_constraints(columns, bad_bitmask, 't2', 't3')
 
     def test_disaggregate_make_sql(self):
         columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
