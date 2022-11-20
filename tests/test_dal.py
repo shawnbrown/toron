@@ -2076,7 +2076,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
                 t3.index_id,
                 t1.attributes,
                 t1.quantity_value * COALESCE(
-                    (t5.weight_value / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (COALESCE(t5.weight_value, 0.0) / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS quantity_value
@@ -2137,6 +2137,33 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         expected = self.make_hashable(expected)
         self.assertEqual(results, expected)
 
+    def test_partial_coverage_for_adaptive_weights(self):
+        # Add data for test.
+        data = [
+            ('col1', 'col2', 'attr1', 'value'),
+            #('A',    'x',    ...,     ...),  <- Not included!
+            ('A',    'y',    'foo',   30),
+            ('B',    'x',    'foo',   15),
+            #('B',    'y',    ...,     ...),  <- Not included!
+            ('A',    '',     'foo',   20),
+            ('B',    '',     'foo',   15),
+            ('',     '',     'foo',   25),
+        ]
+        self.dal.add_quantities(data, 'value')
+
+        # Remove data on test completion.
+        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
+
+        results = self.dal.adaptive_disaggregate()
+        expected = [
+            (1, 'A', 'x', {"attr1": "foo"}, 0.0),  # <- Adaptive weight is 0 here.
+            (2, 'A', 'y', {"attr1": "foo"}, 65.625),
+            (3, 'B', 'x', {"attr1": "foo"}, 39.375),
+            (4, 'B', 'y', {"attr1": "foo"}, 0.0),  # <- Adaptive weight is 0 here.
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.

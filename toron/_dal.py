@@ -1357,7 +1357,7 @@ class DataAccessLayer(object):
                 t3.index_id,
                 t1.attributes,
                 t1.quantity_value * COALESCE(
-                    (t5.weight_value / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (COALESCE(t5.weight_value, 0.0) / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS quantity_value
