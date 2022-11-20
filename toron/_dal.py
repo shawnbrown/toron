@@ -1847,7 +1847,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                             JOIN main.weight sub4 USING (index_id)
                             WHERE sub1.quantity_id=t1.quantity_id
                                   AND sub4.weighting_id=t4.weighting_id))
-                ) AS value
+                ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
             JOIN main.label_index t3 ON ({join_constraints})
