@@ -1337,6 +1337,110 @@ class DataAccessLayer(object):
             for row in cur:
                 yield row
 
+    @classmethod
+    def _adaptive_disaggregate_make_sql(
+        cls,
+        normalized_columns: Sequence[str],
+        bitmask: Sequence[Literal[0, 1]],
+        match_selector_func: str,
+        adaptive_weight_table: str,
+    ) -> str:
+        """Return SQL CTE statement to adaptively disaggregate data."""
+        join_constraints = cls._disaggregate_make_sql_constraints(
+            normalized_columns,
+            bitmask,
+            location_table_alias='t2',
+            index_table_alias='t3',
+        )
+        statement = f"""
+            SELECT
+                t3.index_id,
+                t1.attributes,
+                t1.quantity_value * COALESCE(
+                    (t5.weight_value / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
+                ) AS quantity_value
+            FROM main.quantity t1
+            JOIN main.location t2 USING (_location_id)
+            JOIN main.label_index t3 ON ({join_constraints})
+            JOIN main.weight t4 ON (
+                t3.index_id=t4.index_id
+                AND t4.weighting_id={match_selector_func}(t1.attributes)
+            )
+            LEFT JOIN (
+                SELECT
+                    sub2.index_id,
+                    sub2.attributes,
+                    SUM(sub2.quantity_value) AS weight_value
+                FROM {adaptive_weight_table} sub2
+                GROUP BY sub2.index_id, sub2.attributes
+            ) t5 ON (
+                t3.index_id=t5.index_id
+                AND t5.attributes=t1.attributes
+            )
+            UNION ALL
+            SELECT index_id, attributes, quantity_value FROM {adaptive_weight_table}
+        """
+        return statement
+
+    def adaptive_disaggregate(self) -> Generator[Dict[str, Union[str, float]], None, None]:
+        """Return a generator that yields adaptively disaggregated quantities."""
+        with self._transaction(method=None) as cur:
+            # Prepare weighting_id matcher function.
+            cur.execute("""
+                SELECT weighting_id, selectors
+                FROM main.weighting
+                WHERE is_complete=1
+            """)
+            match_weighting_id = GetMatchingKey(cur.fetchall(), default=1)
+            func_name = _schema.get_userfunc(cur, match_weighting_id)
+
+            # Get bitmask levels from structure table.
+            columns = self._get_column_names(cur, 'location')[1:]
+            normalized_cols = [_schema.normalize_identifier(col) for col in columns]
+            cur.execute('SELECT * FROM main.structure')
+            bitmasks = [row[1:] for row in cur]  # Slice-off the id value.
+            bitmasks.reverse()  # <- Temporary until granularity measure is implemented.
+
+            sql_statements = []
+            cte_names_and_bitmask = \
+                ((f'cte{i}', bitmask) for i, bitmask in enumerate(bitmasks, start=1))
+
+            current_cte_name, bitmask = next(cte_names_and_bitmask)
+            sql = self._disaggregate_make_sql(normalized_cols, bitmask, func_name)
+            cte_statement = f'{current_cte_name} AS ({sql})'.strip()
+            sql_statements.append(cte_statement)
+            last_cte_name = current_cte_name
+
+            # Generate CTE SQL statements for adaptive disaggregation.
+            for current_cte_name, bitmask in cte_names_and_bitmask:
+                sql = self._adaptive_disaggregate_make_sql(
+                    normalized_cols,
+                    bitmask,
+                    func_name,
+                    adaptive_weight_table=last_cte_name,
+                )
+                cte_statement = f'{current_cte_name} AS ({sql})'.strip()
+                sql_statements.append(cte_statement)
+                last_cte_name = current_cte_name
+
+            # Prepare final SQL statement.
+            all_cte_statements = ',\n        '.join(sql_statements)
+            final_sql = f"""
+                WITH
+                    {all_cte_statements}
+                SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
+                FROM main.label_index t1
+                JOIN {last_cte_name} t2 USING (index_id)
+                GROUP BY t2.index_id, t2.attributes
+            """
+
+            # Execute SQL and yield result rows.
+            cur.execute(final_sql)
+            for row in cur:
+                yield row
+
     @staticmethod
     def _get_data_property(cursor: sqlite3.Cursor, key: str) -> Any:
         sql = 'SELECT value FROM main.property WHERE key=?'

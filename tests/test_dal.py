@@ -2020,6 +2020,124 @@ class TestDisaggregate(unittest.TestCase):
         self.assertEqual(results, expected)
 
 
+class TestAdaptiveDisaggregate(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        connection = self.dal._get_connection()
+        self.addCleanup(connection.close)
+
+        self.cursor = connection.cursor()
+        self.addCleanup(self.cursor.close)
+
+        columns = ['col1', 'col2']
+        self.dal.set_data({'add_index_columns': columns})
+
+        categories = [{'col1'}]
+        self.dal.add_discrete_categories(categories)
+
+        labels = [
+            ('col1', 'col2'),
+            ('A',    'x'),
+            ('A',    'y'),
+            ('B',    'x'),
+            ('B',    'y'),
+        ]
+        self.dal.add_index_labels(labels)
+
+        weighting = [
+            ('col1', 'col2', 'weight'),
+            ('A',    'x',     1),
+            ('A',    'y',     1),
+            ('B',    'x',     1),
+            ('B',    'y',     1),
+        ]
+        self.dal.add_weights(weighting, name='weight', selectors=['[attr1]'])
+
+    @staticmethod
+    def make_hashable(iterable):
+        """Helper function to make disaggregation rows hashable."""
+        func = lambda a, b, c, d, e: (a, b, c, frozenset(d.items()), e)
+        return {func(*x) for x in iterable}
+
+    def test_adaptive_disaggregate_make_sql(self):
+        columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
+        bitmask = [1, 0, 1, 0]
+        match_selector_func = 'UserFuncName'
+        adaptive_weight_table = 'AdaptiveWeightTable'
+        result = DataAccessLayer._adaptive_disaggregate_make_sql(
+            columns,
+            bitmask,
+            match_selector_func,
+            adaptive_weight_table,
+        )
+        expected = """
+            SELECT
+                t3.index_id,
+                t1.attributes,
+                t1.quantity_value * COALESCE(
+                    (t5.weight_value / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
+                ) AS quantity_value
+            FROM main.quantity t1
+            JOIN main.location t2 USING (_location_id)
+            JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
+            JOIN main.weight t4 ON (
+                t3.index_id=t4.index_id
+                AND t4.weighting_id=UserFuncName(t1.attributes)
+            )
+            LEFT JOIN (
+                SELECT
+                    sub2.index_id,
+                    sub2.attributes,
+                    SUM(sub2.quantity_value) AS weight_value
+                FROM AdaptiveWeightTable sub2
+                GROUP BY sub2.index_id, sub2.attributes
+            ) t5 ON (
+                t3.index_id=t5.index_id
+                AND t5.attributes=t1.attributes
+            )
+            UNION ALL
+            SELECT index_id, attributes, quantity_value FROM AdaptiveWeightTable
+        """
+        self.assertEqual(result.strip(), expected.strip())
+
+        bitmask = [0, 0, 0, 0]  # <- Bitmask is all 0s.
+        result = DataAccessLayer._adaptive_disaggregate_make_sql(columns, bitmask, match_selector_func, adaptive_weight_table)
+        self.assertIn("""JOIN main.label_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
+
+    def test_adaptive_disaggregate(self):
+        # Add data for test.
+        data = [
+            ('col1', 'col2', 'attr1', 'value'),
+            ('A',    'x',    'foo',   20),  # <- 1st group: uses weights from weight table.
+            ('A',    'y',    'foo',   30),  # <- 1st group: uses weights from weight table.
+            ('B',    'x',    'foo',   15),  # <- 1st group: uses weights from weight table.
+            ('B',    'y',    'foo',   60),  # <- 1st group: uses weights from weight table.
+
+            ('A',    '',     'foo',   20),  # <- 2nd group: uses 1st group as weighting layer.
+            ('B',    '',     'foo',   15),  # <- 2nd group: uses 1st group as weighting layer.
+
+            ('',     '',     'foo',   25),  # <- 3rd group: uses 1st group + 2nd group as weighting layer.
+        ]
+        self.dal.add_quantities(data, 'value')
+
+        # Remove data on test completion.
+        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
+
+        results = self.dal.adaptive_disaggregate()
+        expected = [
+            (1, 'A', 'x', {"attr1": "foo"}, 32.375),
+            (2, 'A', 'y', {"attr1": "foo"}, 48.5625),
+            (3, 'B', 'x', {"attr1": "foo"}, 20.8125),
+            (4, 'B', 'y', {"attr1": "foo"}, 83.25),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
 
