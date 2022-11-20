@@ -1404,26 +1404,26 @@ class DataAccessLayer(object):
             bitmasks.reverse()  # <- Temporary until granularity measure is implemented.
 
             sql_statements = []
-            cte_names_and_bitmask = \
-                ((f'cte{i}', bitmask) for i, bitmask in enumerate(bitmasks, start=1))
+            prev_curr_and_bitmask = \
+                ((f'cte{i}', f'cte{i+1}', bits) for i, bits in enumerate(bitmasks))
 
-            current_cte_name, bitmask = next(cte_names_and_bitmask)
+            # Generate first CTE--which must use static weighting.
+            _, current_cte, bitmask = next(prev_curr_and_bitmask)
             sql = self._disaggregate_make_sql(normalized_cols, bitmask, func_name)
-            cte_statement = f'{current_cte_name} AS ({sql})'.strip()
+            cte_statement = f'{current_cte} AS ({sql})'.strip()
             sql_statements.append(cte_statement)
-            last_cte_name = current_cte_name
 
-            # Generate CTE SQL statements for adaptive disaggregation.
-            for current_cte_name, bitmask in cte_names_and_bitmask:
+            # Generate additional CTEs using adaptive weighting derived
+            # from the values in previous CTEs.
+            for previous_cte, current_cte, bitmask in prev_curr_and_bitmask:
                 sql = self._adaptive_disaggregate_make_sql(
                     normalized_cols,
                     bitmask,
                     func_name,
-                    adaptive_weight_table=last_cte_name,
+                    adaptive_weight_table=previous_cte,
                 )
-                cte_statement = f'{current_cte_name} AS ({sql})'.strip()
+                cte_statement = f'{current_cte} AS ({sql})'.strip()
                 sql_statements.append(cte_statement)
-                last_cte_name = current_cte_name
 
             # Prepare final SQL statement.
             all_cte_statements = ',\n        '.join(sql_statements)
@@ -1432,7 +1432,7 @@ class DataAccessLayer(object):
                     {all_cte_statements}
                 SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
                 FROM main.label_index t1
-                JOIN {last_cte_name} t2 USING (index_id)
+                JOIN {current_cte} t2 USING (index_id)
                 GROUP BY t2.index_id, t2.attributes
             """
 
