@@ -1282,7 +1282,7 @@ class DataAccessLayer(object):
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
-                ) AS value
+                ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
             JOIN main.label_index t3 ON ({join_constraints})
@@ -1326,7 +1326,7 @@ class DataAccessLayer(object):
                     all_quantities AS (
                         {disaggregated_quantities}
                     )
-                SELECT t1.*, t2.attributes, SUM(t2.value) AS value
+                SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
                 FROM main.label_index t1
                 JOIN all_quantities t2 USING (index_id)
                 GROUP BY {', '.join(f't1.{x}' for x in normalized_cols)}, t2.attributes

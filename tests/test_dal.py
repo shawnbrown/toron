@@ -1891,7 +1891,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
-                ) AS value
+                ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
             JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
