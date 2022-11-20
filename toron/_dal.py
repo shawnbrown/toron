@@ -1833,20 +1833,24 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                 t3.index_id,
                 t1.attributes,
                 t1.quantity_value * IFNULL(
-                    (t4.weight_value / (SELECT SUM(sub4.weight_value)
-                                 FROM main.quantity sub1
-                                 JOIN main.location sub2 USING (_location_id)
-                                 JOIN main.label_index sub3 ON ({subquery_join_constraints})
-                                 JOIN main.weight sub4 USING (index_id)
-                                 WHERE sub1.quantity_id=t1.quantity_id
-                                       AND sub4.weighting_id=t4.weighting_id)),
-                    (1.0 / (SELECT COUNT(1)
-                            FROM main.quantity sub1
-                            JOIN main.location sub2 USING (_location_id)
-                            JOIN main.label_index sub3 ON ({subquery_join_constraints})
-                            JOIN main.weight sub4 USING (index_id)
-                            WHERE sub1.quantity_id=t1.quantity_id
-                                  AND sub4.weighting_id=t4.weighting_id))
+                    (t4.weight_value / (
+                        SELECT SUM(sub4.weight_value)
+                        FROM main.quantity sub1
+                        JOIN main.location sub2 USING (_location_id)
+                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.weight sub4 USING (index_id)
+                        WHERE sub1.quantity_id=t1.quantity_id
+                            AND sub4.weighting_id=t4.weighting_id
+                    )),
+                    (1.0 / (
+                        SELECT COUNT(1)
+                        FROM main.quantity sub1
+                        JOIN main.location sub2 USING (_location_id)
+                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.weight sub4 USING (index_id)
+                        WHERE sub1.quantity_id=t1.quantity_id
+                            AND sub4.weighting_id=t4.weighting_id
+                    ))
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
