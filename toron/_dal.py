@@ -1862,6 +1862,96 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         """
         return statement
 
+    @classmethod
+    def _adaptive_disaggregate_make_sql(
+        cls,
+        normalized_columns: Sequence[str],
+        bitmask: Sequence[Literal[0, 1]],
+        match_selector_func: str,
+        adaptive_weight_table: str,
+    ) -> str:
+        """Return SQL CTE statement to adaptively disaggregate data."""
+        join_constraints = cls._disaggregate_make_sql_constraints(
+            normalized_columns,
+            bitmask,
+            location_table_alias='t2',
+            index_table_alias='t3',
+        )
+
+        subquery_join_constraints = cls._disaggregate_make_sql_constraints(
+            normalized_columns,
+            bitmask,
+            location_table_alias='sub2',
+            index_table_alias='sub3',
+        )
+
+        statement = f"""
+            SELECT
+                t3.index_id,
+                t1.attributes,
+                t1.quantity_value * COALESCE(
+                    (COALESCE(t5.weight_value, 0.0) / (
+                        SELECT SUM(sub5.weight_value)
+                        FROM main.quantity sub1
+                        JOIN main.location sub2 USING (_location_id)
+                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.weight sub4 USING (index_id)
+                        LEFT JOIN (
+                            SELECT
+                                sub5a.index_id,
+                                sub5a.attributes,
+                                SUM(sub5a.quantity_value) AS weight_value
+                            FROM {adaptive_weight_table} sub5a
+                            GROUP BY sub5a.index_id, sub5a.attributes
+                        ) sub5 ON (
+                            sub4.index_id=sub5.index_id
+                            AND sub5.attributes=sub1.attributes
+                        )
+                        WHERE sub1.quantity_id=t1.quantity_id
+                            AND sub4.weighting_id=t4.weighting_id
+                    )),
+                    (t4.weight_value / (
+                        SELECT SUM(sub4.weight_value)
+                        FROM main.quantity sub1
+                        JOIN main.location sub2 USING (_location_id)
+                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.weight sub4 USING (index_id)
+                        WHERE sub1.quantity_id=t1.quantity_id
+                            AND sub4.weighting_id=t4.weighting_id
+                    )),
+                    (1.0 / (
+                        SELECT COUNT(1)
+                        FROM main.quantity sub1
+                        JOIN main.location sub2 USING (_location_id)
+                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.weight sub4 USING (index_id)
+                        WHERE sub1.quantity_id=t1.quantity_id
+                            AND sub4.weighting_id=t4.weighting_id
+                    ))
+                ) AS quantity_value
+            FROM main.quantity t1
+            JOIN main.location t2 USING (_location_id)
+            JOIN main.label_index t3 ON ({join_constraints})
+            JOIN main.weight t4 ON (
+                t3.index_id=t4.index_id
+                AND t4.weighting_id={match_selector_func}(t1.attributes)
+            )
+            LEFT JOIN (
+                SELECT
+                    sub2.index_id,
+                    sub2.attributes,
+                    SUM(sub2.quantity_value) AS weight_value
+                FROM {adaptive_weight_table} sub2
+                GROUP BY sub2.index_id, sub2.attributes
+            ) t5 ON (
+                t3.index_id=t5.index_id
+                AND t5.attributes=t1.attributes
+            )
+            UNION ALL
+            SELECT index_id, attributes, quantity_value FROM {adaptive_weight_table}
+        """
+        return statement
+
 
 class DataAccessLayerPre24(DataAccessLayerPre25):
     """This is a subclass of DataAccessLayer that supports SQLite
