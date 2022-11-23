@@ -1898,11 +1898,11 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                         JOIN main.weight sub4 USING (index_id)
                         LEFT JOIN (
                             SELECT
-                                sub5a.index_id,
-                                sub5a.attributes,
-                                SUM(sub5a.quantity_value) AS weight_value
-                            FROM {adaptive_weight_table} sub5a
-                            GROUP BY sub5a.index_id, sub5a.attributes
+                                sub5sub.index_id,
+                                sub5sub.attributes,
+                                SUM(sub5sub.quantity_value) AS weight_value
+                            FROM {adaptive_weight_table} sub5sub
+                            GROUP BY sub5sub.index_id, sub5sub.attributes
                         ) sub5 ON (
                             sub4.index_id=sub5.index_id
                             AND sub5.attributes=sub1.attributes
