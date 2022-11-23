@@ -2089,11 +2089,11 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             )
             LEFT JOIN (
                 SELECT
-                    sub2.index_id,
-                    sub2.attributes,
-                    SUM(sub2.quantity_value) AS weight_value
-                FROM AdaptiveWeightTable sub2
-                GROUP BY sub2.index_id, sub2.attributes
+                    t5sub.index_id,
+                    t5sub.attributes,
+                    SUM(t5sub.quantity_value) AS weight_value
+                FROM AdaptiveWeightTable t5sub
+                GROUP BY t5sub.index_id, t5sub.attributes
             ) t5 ON (
                 t3.index_id=t5.index_id
                 AND t5.attributes=t1.attributes
