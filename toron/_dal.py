@@ -1891,24 +1891,22 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                 t1.attributes,
                 t1.quantity_value * COALESCE(
                     (COALESCE(t5.weight_value, 0.0) / (
-                        SELECT SUM(sub5.weight_value)
+                        SELECT SUM(sub4.weight_value)
                         FROM main.quantity sub1
                         JOIN main.location sub2 USING (_location_id)
                         JOIN main.label_index sub3 ON ({subquery_join_constraints})
-                        JOIN main.weight sub4 USING (index_id)
                         LEFT JOIN (
                             SELECT
-                                sub5sub.index_id,
-                                sub5sub.attributes,
-                                SUM(sub5sub.quantity_value) AS weight_value
-                            FROM {adaptive_weight_table} sub5sub
-                            GROUP BY sub5sub.index_id, sub5sub.attributes
-                        ) sub5 ON (
-                            sub4.index_id=sub5.index_id
-                            AND sub5.attributes=sub1.attributes
+                                sub4sub.index_id,
+                                sub4sub.attributes,
+                                SUM(sub4sub.quantity_value) AS weight_value
+                            FROM {adaptive_weight_table} sub4sub
+                            GROUP BY sub4sub.index_id, sub4sub.attributes
+                        ) sub4 ON (
+                            sub3.index_id=sub4.index_id
+                            AND sub4.attributes=sub1.attributes
                         )
                         WHERE sub1.quantity_id=t1.quantity_id
-                            AND sub4.weighting_id=t4.weighting_id
                     )),
                     (t4.weight_value / (
                         SELECT SUM(sub4.weight_value)
@@ -1924,9 +1922,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                         FROM main.quantity sub1
                         JOIN main.location sub2 USING (_location_id)
                         JOIN main.label_index sub3 ON ({subquery_join_constraints})
-                        JOIN main.weight sub4 USING (index_id)
                         WHERE sub1.quantity_id=t1.quantity_id
-                            AND sub4.weighting_id=t4.weighting_id
                     ))
                 ) AS quantity_value
             FROM main.quantity t1
