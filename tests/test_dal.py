@@ -2177,6 +2177,58 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         expected = self.make_hashable(expected)
         self.assertEqual(results, expected)
 
+    def test_fallback_behavior(self):
+        """Check weighting fallback behavior--first try adaptive weighting,
+        when not available use static weighting, and when static weighting
+        is zero use uniform distribution.
+        """
+        # Add data for test.
+        data = [
+            ('col1', 'col2', 'attr1', 'value'),
+            ('A',    'x',    'foo',   4),     # <- Should use static weight (1-to-1 no disaggregation).
+            ('A',    'y',    'foo',   12),    # <- Should use static weight (1-to-1 no disaggregation).
+
+            ('A',    '',     'foo',   8),     # <- Should use adaptive weight (from 1st group).
+            ('A',    '',     'bar',   12),    # <- Should use static weighting (no 'bar' in 1st group).
+            ('B',    '',     'foo',   12),    # <- Should use static weighting (no 'B' in 1st group).
+            ('C',    '',     'foo',   9),     # <- Should use uniform weighting (weights for 'C' are all zero).
+
+            ('',     '',     'bar',   18),    # <- Should use adaptive weighting (to other areas with 'bar' weights).
+            ('',     '',     'baz',   9.75),  # <- Should use static weighting (no 'baz' in 1st or 2nd groups).
+        ]
+        self.dal.add_quantities(data, 'value')
+
+        # Remove data on test completion.
+        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
+
+        results = self.dal.adaptive_disaggregate()
+        expected = [
+            (1, 'A', 'x', {'attr1': 'foo'}, 6.0),
+            (1, 'A', 'x', {'attr1': 'bar'}, 10.0),
+            (1, 'A', 'x', {'attr1': 'baz'}, 2.0),
+            (2, 'A', 'y', {'attr1': 'foo'}, 18.0),
+            (2, 'A', 'y', {'attr1': 'bar'}, 20.0),
+            (2, 'A', 'y', {'attr1': 'baz'}, 4.0),
+            (3, 'B', 'x', {'attr1': 'foo'}, 4.0),
+            (3, 'B', 'x', {'attr1': 'bar'}, 0.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
+            (4, 'B', 'y', {'attr1': 'foo'}, 8.0),
+            (4, 'B', 'y', {'attr1': 'bar'}, 0.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
+            (5, 'C', 'x', {'attr1': 'foo'}, 3.0),
+            (5, 'C', 'x', {'attr1': 'bar'}, 0.0),
+            (5, 'C', 'x', {'attr1': 'baz'}, 0.0),
+            (6, 'C', 'y', {'attr1': 'foo'}, 3.0),
+            (6, 'C', 'y', {'attr1': 'bar'}, 0.0),
+            (6, 'C', 'y', {'attr1': 'baz'}, 0.0),
+            (7, 'C', 'z', {'attr1': 'foo'}, 3.0),
+            (7, 'C', 'z', {'attr1': 'bar'}, 0.0),
+            (7, 'C', 'z', {'attr1': 'baz'}, 0.0),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
