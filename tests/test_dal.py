@@ -2042,15 +2042,21 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             ('A',    'y'),
             ('B',    'x'),
             ('B',    'y'),
+            ('C',    'x'),
+            ('C',    'y'),
+            ('C',    'z'),
         ]
         self.dal.add_index_labels(labels)
 
         weighting = [
             ('col1', 'col2', 'weight'),
-            ('A',    'x',     1),
-            ('A',    'y',     1),
-            ('B',    'x',     1),
-            ('B',    'y',     1),
+            ('A',    'x',     8),
+            ('A',    'y',     16),
+            ('B',    'x',     5),
+            ('B',    'y',     10),
+            ('C',    'x',     0),
+            ('C',    'y',     0),
+            ('C',    'z',     0),
         ]
         self.dal.add_weights(weighting, name='weight', selectors=['[attr1]'])
 
@@ -2132,6 +2138,9 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             (2, 'A', 'y', {"attr1": "foo"}, 48.5625),
             (3, 'B', 'x', {"attr1": "foo"}, 20.8125),
             (4, 'B', 'y', {"attr1": "foo"}, 83.25),
+            (5, 'C', 'x', {"attr1": "foo"}, 0.0),
+            (6, 'C', 'y', {"attr1": "foo"}, 0.0),
+            (7, 'C', 'z', {"attr1": "foo"}, 0.0),
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2160,10 +2169,14 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             (2, 'A', 'y', {"attr1": "foo"}, 65.625),
             (3, 'B', 'x', {"attr1": "foo"}, 39.375),
             (4, 'B', 'y', {"attr1": "foo"}, 0.0),  # <- Adaptive weight is 0 here.
+            (5, 'C', 'x', {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
+            (6, 'C', 'y', {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
+            (7, 'C', 'z', {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
         self.assertEqual(results, expected)
+
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
