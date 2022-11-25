@@ -1968,10 +1968,6 @@ class TestDisaggregate(unittest.TestCase):
             ('',     '',     'baz',   25),
         ]
         self.dal.add_quantities(data, 'value')
-        # Remove data on test completion.
-        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
-        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='bar'))
-        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='baz'))
 
         results = self.dal.disaggregate()
         expected = [
@@ -2013,8 +2009,6 @@ class TestDisaggregate(unittest.TestCase):
             ('',     '',     'foo',   25),
         ]
         self.dal.add_quantities(data, 'value')
-        # Remove data on test completion.
-        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
 
         results = self.dal.disaggregate()
         expected = [
@@ -2050,9 +2044,6 @@ class TestDisaggregate(unittest.TestCase):
             ('',     '',     'bar',   25),      # <- Should use static weighting.
         ]
         self.dal.add_quantities(data, 'value')
-
-        # Remove data on test completion.
-        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
 
         results = self.dal.disaggregate()
         expected = [
@@ -2183,9 +2174,6 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         ]
         self.dal.add_quantities(data, 'value')
 
-        # Remove data on test completion.
-        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
-
         results = self.dal.adaptive_disaggregate()
         expected = [
             (1, 'A', 'x', {"attr1": "foo"}, 32.375),
@@ -2213,9 +2201,6 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             ('',     '',     'foo',   25),
         ]
         self.dal.add_quantities(data, 'value')
-
-        # Remove data on test completion.
-        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
 
         results = self.dal.adaptive_disaggregate()
         expected = [
@@ -2251,9 +2236,6 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             ('',     '',     'baz',   9.75),  # <- Should use static weighting (no 'baz' in 1st or 2nd groups).
         ]
         self.dal.add_quantities(data, 'value')
-
-        # Remove data on test completion.
-        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
 
         results = self.dal.adaptive_disaggregate()
         expected = [
