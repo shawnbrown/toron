@@ -2032,9 +2032,9 @@ class TestDisaggregate(unittest.TestCase):
         self.assertEqual(results, expected)
 
     def test_fallback_behavior(self):
-        """Check weighting fallback behavior--first try adaptive weighting,
-        when not available use static weighting, and when static weighting
-        is zero use uniform distribution.
+        """Check weighting fallback behavior--first try static
+        weighting but when static weighting for group is zero,
+        use uniform distribution.
         """
         # Add data for test.
         data = [
