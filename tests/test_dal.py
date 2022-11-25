@@ -1929,6 +1929,9 @@ class TestDisaggregate(unittest.TestCase):
             ('A',    'y'),
             ('B',    'x'),
             ('B',    'y'),
+            ('C',    'x'),
+            ('C',    'y'),
+            ('C',    'z'),
         ]
         self.dal.add_index_labels(labels)
 
@@ -1938,6 +1941,9 @@ class TestDisaggregate(unittest.TestCase):
             ('A',    'y',    30),
             ('B',    'x',    15),
             ('B',    'y',    60),
+            ('C',    'x',    0),
+            ('C',    'y',    0),
+            ('C',    'z',    0),
         ]
         self.dal.add_weights(weighting, name='weight', selectors=['[attr1]'])
 
@@ -1983,6 +1989,9 @@ class TestDisaggregate(unittest.TestCase):
             (2, 'A', 'y', {'attr1': 'baz'}, 6.0),
             (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
             (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+            (5, 'C', 'x', {'attr1': 'baz'}, 0),
+            (6, 'C', 'y', {'attr1': 'baz'}, 0),
+            (7, 'C', 'z', {'attr1': 'baz'}, 0),
         ]
 
         results = self.make_hashable(results)
@@ -2013,8 +2022,53 @@ class TestDisaggregate(unittest.TestCase):
             (2, 'A', 'y', {'attr1': 'foo'}, 44.0),  # <- 29 + 9 + 6
             (3, 'B', 'x', {'attr1': 'foo'}, 29.0),  # <- 22 + 4 + 3
             (4, 'B', 'y', {'attr1': 'foo'}, 98.0),  # <- 70 + 16 + 12
+            (5, 'C', 'x', {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
+            (6, 'C', 'y', {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
+            (7, 'C', 'z', {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
         ]
 
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+    def test_fallback_behavior(self):
+        """Check weighting fallback behavior--first try adaptive weighting,
+        when not available use static weighting, and when static weighting
+        is zero use uniform distribution.
+        """
+        # Add data for test.
+        data = [
+            ('col1', 'col2', 'attr1', 'value'),
+            ('A',    'x',    'foo',   4),       # <- Should use static weight (1-to-1 no disaggregation).
+            ('A',    'y',    'foo',   12),      # <- Should use static weight (1-to-1 no disaggregation).
+
+            ('A',    '',     'foo',   15),      # <- Should use static weighting.
+            ('A',    '',     'bar',   20),      # <- Should use static weighting.
+            ('B',    '',     'bar',   18.75),   # <- Should use static weighting.
+            ('C',    '',     'baz',   9),       # <- Should use uniform weighting (weights for 'C' are all zero).
+
+            ('',     '',     'bar',   25),      # <- Should use static weighting.
+        ]
+        self.dal.add_quantities(data, 'value')
+
+        # Remove data on test completion.
+        self.addCleanup(lambda: self.dal.delete_raw_quantities(attr1='foo'))
+
+        results = self.dal.disaggregate()
+        expected = [
+            (1, 'A', 'x', {'attr1': 'foo'}, 10.0),
+            (1, 'A', 'x', {'attr1': 'bar'}, 12.0),
+            (2, 'A', 'y', {'attr1': 'foo'}, 21.0),
+            (2, 'A', 'y', {'attr1': 'bar'}, 18.0),
+            (3, 'B', 'x', {'attr1': 'bar'}, 6.75),
+            (4, 'B', 'y', {'attr1': 'bar'}, 27.0),
+            (5, 'C', 'x', {'attr1': 'bar'}, 0.0),
+            (5, 'C', 'x', {'attr1': 'baz'}, 3.0),
+            (6, 'C', 'y', {'attr1': 'bar'}, 0.0),
+            (6, 'C', 'y', {'attr1': 'baz'}, 3.0),
+            (7, 'C', 'z', {'attr1': 'bar'}, 0.0),
+            (7, 'C', 'z', {'attr1': 'baz'}, 3.0),
+        ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
         self.assertEqual(results, expected)
