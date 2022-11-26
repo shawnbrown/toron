@@ -1079,12 +1079,40 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _get_raw_quantities_format_args(
-        location_cols: List[str], where: Dict[str, str]
+        index_cols: List[str], where: Dict[str, str]
     ) -> Tuple[List[str], Tuple[str, ...], Optional[Callable[[Any], bool]]]:
         """Format arguments for get_raw_quantities() and
         delete_raw_quantities() methods.
+
+        :param List index_cols:
+            A list of all index column names defined in the
+            `label_index` table.
+        :param Dict where:
+            A dictionary of column and value requirements that will be
+            used to prepare a WHERE expression and *parameters* for a
+            call to `con.execute(..., parameters)`.
+        :returns Tuple:
+            Returns a three-tuple containing a *where-expression*
+            list, an *execute-paremeters* tuple, and an optional
+            *attribute-selector* function.
+
+        .. code-block::
+
+            >>> index_cols = ['state', 'county']
+            >>> where = {'state': 'OH'}
+            >>> dal._get_raw_quantities_format_args(index_cols, where)
+            (['"state"=?'], ('OH',), None)
+
+        .. code-block::
+
+            >>> index_cols = ['state', 'county']
+            >>> where = {'county': 'FRANKLIN', 'census': 'TOT_MALE'}
+            >>> dal._get_raw_quantities_format_args(index_cols, where)
+            (['"county"=?'],
+             ('FRANKLIN',),
+             accepts_json_input(SimpleSelector('census', '=', 'TOT_MALE')))
         """
-        normalized = [_schema.normalize_identifier(x) for x in location_cols]
+        normalized = [_schema.normalize_identifier(x) for x in index_cols]
 
         # Partition location and atttribute keys into separate dicts.
         loc_dict = {}
