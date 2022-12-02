@@ -1093,7 +1093,7 @@ class DataAccessLayer(object):
             call to `con.execute(..., parameters)`.
         :returns Tuple:
             Returns a three-tuple containing a *where-expression*
-            list, an *execute-paremeters* tuple, and an optional
+            list, an *execute-parameters* tuple, and an optional
             *attribute-selector* function.
 
         .. code-block::
