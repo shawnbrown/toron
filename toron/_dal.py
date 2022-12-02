@@ -1890,6 +1890,12 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             index_table_alias='sub3',
         )
 
+        # Build WHERE clause if *filter_attrs_func* was given.
+        if filter_attrs_func:
+            where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
+        else:
+            where_clause = ''
+
         statement = f"""
             SELECT
                 t3.index_id,
@@ -1918,7 +1924,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
-            )
+            ){where_clause}
         """
         return statement
 
