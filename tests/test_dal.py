@@ -1906,6 +1906,33 @@ class TestDisaggregateHelpers(unittest.TestCase):
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
         self.assertIn("""JOIN main.label_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
 
+    def test_disaggregate_make_sql_filter_attrs_func(self):
+        """Providing a *filter_attrs_func* argument adds a WHERE clause."""
+        columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
+        bitmask = [1, 0, 1, 0]
+        match_selector_func = 'USER_FUNC_NAME1'
+        filter_attrs_func = 'USER_FUNC_NAME2'
+        result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func, filter_attrs_func)
+        expected = """
+            SELECT
+                t3.index_id,
+                t1.attributes,
+                t1.quantity_value * IFNULL(
+                    (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
+                ) AS quantity_value
+            FROM main.quantity t1
+            JOIN main.location t2 USING (_location_id)
+            JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
+            JOIN main.weight t4 ON (
+                t3.index_id=t4.index_id
+                AND t4.weighting_id=USER_FUNC_NAME1(t1.attributes)
+            )
+            WHERE USER_FUNC_NAME2(t1.attributes)=1
+        """
+        self.maxDiff = None
+        self.assertEqual(result, expected)
+
 
 class TestDisaggregate(unittest.TestCase):
     def setUp(self):

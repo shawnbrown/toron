@@ -1294,6 +1294,7 @@ class DataAccessLayer(object):
         normalized_columns: Sequence[str],
         bitmask: Sequence[Literal[0, 1]],
         match_selector_func: str,
+        filter_attrs_func: Optional[str] = None,
     ) -> str:
         """Return SQL to disaggregate data."""
         join_constraints = cls._disaggregate_make_sql_constraints(
@@ -1303,6 +1304,13 @@ class DataAccessLayer(object):
             index_table_alias='t3',
         )
 
+        # Build WHERE clause if *filter_attrs_func* was given.
+        if filter_attrs_func:
+            where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
+        else:
+            where_clause = ''
+
+        # Build final SELECT statement.
         statement = f"""
             SELECT
                 t3.index_id,
@@ -1317,7 +1325,7 @@ class DataAccessLayer(object):
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
-            )
+            ){where_clause}
         """
         return statement
 
