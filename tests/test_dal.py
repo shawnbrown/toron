@@ -2091,6 +2091,58 @@ class TestDisaggregate(unittest.TestCase):
         expected = self.make_hashable(expected)
         self.assertEqual(results, expected)
 
+    def test_disaggregate_where_kwds(self):
+        # Add data for test.
+        data = [
+            ('col1', 'col2', 'attr1', 'value'),
+            ('A',    'x',    'foo',   18),
+            ('A',    'y',    'foo',   29),
+            ('B',    'x',    'foo',   22),
+            ('B',    'y',    'foo',   70),
+
+            ('A',    '',     'bar',   15),
+            ('B',    '',     'bar',   20),
+
+            ('',     '',     'baz',   25),
+        ]
+        self.dal.add_quantities(data, 'value')
+
+        results = self.dal.disaggregate(attr1='baz')
+        expected = [
+            (1, 'A', 'x', {'attr1': 'baz'}, 4.0),
+            (2, 'A', 'y', {'attr1': 'baz'}, 6.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+            (5, 'C', 'x', {'attr1': 'baz'}, 0),
+            (6, 'C', 'y', {'attr1': 'baz'}, 0),
+            (7, 'C', 'z', {'attr1': 'baz'}, 0),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+        results = self.dal.disaggregate(col1='B')
+        expected = [
+            (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
+            (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
+            (3, 'B', 'x', {'attr1': 'bar'}, 4.0),
+            (4, 'B', 'y', {'attr1': 'bar'}, 16.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+        results = self.dal.disaggregate(col1='B', attr1='baz')
+        expected = [
+            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
 
 class TestAdaptiveDisaggregate(unittest.TestCase):
     def setUp(self):

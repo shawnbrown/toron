@@ -1329,7 +1329,9 @@ class DataAccessLayer(object):
         """
         return statement
 
-    def disaggregate(self) -> Generator[Dict[str, Union[str, float]], None, None]:
+    def disaggregate(
+        self, **where: str
+    ) -> Generator[Dict[str, Union[str, float]], None, None]:
         """Return a generator that yields disaggregated quantities."""
         with self._transaction(method=None) as cur:
             # Prepare weighting_id matcher function.
@@ -1339,23 +1341,46 @@ class DataAccessLayer(object):
                 WHERE is_complete=1
             """)
             match_weighting_id = GetMatchingKey(cur.fetchall(), default=1)
-            func_name = _schema.get_userfunc(cur, match_weighting_id)
+            weighting_func_name = _schema.get_userfunc(cur, match_weighting_id)
 
             # Get bitmask levels from structure table.
             columns = self._get_column_names(cur, 'location')[1:]
             normalized_cols = [_schema.normalize_identifier(col) for col in columns]
             bitmasks = cur.execute('SELECT * FROM main.structure').fetchall()
 
+            # Prepare WHERE clause items, parameters, and optional function.
+            where_items, parameters, attr_func = \
+                self._get_raw_quantities_format_args(columns, where)
+
+            # If attribute selector function is given, get an SQL user function
+            # name for it.
+            if attr_func:
+                attr_func_name = _schema.get_userfunc(cur, attr_func)
+            else:
+                attr_func_name = None
+
             # Build SQL statement.
             sql_statements = []
             for row in bitmasks:
                 bitmask = row[1:]  # Slice-off the id value.
-                sql = self._disaggregate_make_sql(normalized_cols, bitmask, func_name)
+                sql = self._disaggregate_make_sql(
+                    normalized_cols,
+                    bitmask,
+                    weighting_func_name,
+                    attr_func_name,
+                )
                 sql_statements.append(sql)
 
-            # Build SQL to get disaggregated quantities.
+            # Build a UNION of all disaggregation queries.
             disaggregated_quantities = \
                 '\n            UNION ALL\n'.join(sql_statements)
+
+            # Build a WHERE clause for final statement.
+            if where_items:
+                joined_items = ' AND '.join(f't1.{x}' for x in where_items)
+                where_clause = f'\n                WHERE {joined_items}'
+            else:
+                where_clause = ''
 
             final_sql = f"""
                 WITH
@@ -1364,12 +1389,12 @@ class DataAccessLayer(object):
                     )
                 SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
                 FROM main.label_index t1
-                JOIN all_quantities t2 USING (index_id)
+                JOIN all_quantities t2 USING (index_id){where_clause}
                 GROUP BY {', '.join(f't1.{x}' for x in normalized_cols)}, t2.attributes
             """
 
             # Execute SQL and yield result rows.
-            cur.execute(final_sql)
+            cur.execute(final_sql, parameters)
             for row in cur:
                 yield row
 
@@ -1845,6 +1870,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         normalized_columns: Sequence[str],
         bitmask: Sequence[Literal[0, 1]],
         match_selector_func: str,
+        filter_attrs_func: Optional[str] = None,
     ) -> str:
         # In SQLite versions before 3.25.0, there is no support for "window
         # functions". Instead of using the "SUM(...) OVER (PARTITION BY ...)"
