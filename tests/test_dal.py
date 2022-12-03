@@ -2107,6 +2107,21 @@ class TestDisaggregate(unittest.TestCase):
         ]
         self.dal.add_quantities(data, 'value')
 
+        # Filter by index value.
+        results = self.dal.disaggregate(col1='B')
+        expected = [
+            (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
+            (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
+            (3, 'B', 'x', {'attr1': 'bar'}, 4.0),
+            (4, 'B', 'y', {'attr1': 'bar'}, 16.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+        # Filter by attribute value.
         results = self.dal.disaggregate(attr1='baz')
         expected = [
             (1, 'A', 'x', {'attr1': 'baz'}, 4.0),
@@ -2121,19 +2136,7 @@ class TestDisaggregate(unittest.TestCase):
         expected = self.make_hashable(expected)
         self.assertEqual(results, expected)
 
-        results = self.dal.disaggregate(col1='B')
-        expected = [
-            (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
-            (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
-            (3, 'B', 'x', {'attr1': 'bar'}, 4.0),
-            (4, 'B', 'y', {'attr1': 'bar'}, 16.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
-        ]
-        results = self.make_hashable(results)
-        expected = self.make_hashable(expected)
-        self.assertEqual(results, expected)
-
+        # Filter by index and attribute values.
         results = self.dal.disaggregate(col1='B', attr1='baz')
         expected = [
             (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
@@ -2403,6 +2406,21 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         ]
         self.dal.add_quantities(data, 'value')
 
+        # Filter by index value.
+        results = self.dal.adaptive_disaggregate(col1='B')
+        expected = [
+            (3, 'B', 'x', {'attr1': 'foo'}, 4.0),
+            (3, 'B', 'x', {'attr1': 'bar'}, 0.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
+            (4, 'B', 'y', {'attr1': 'foo'}, 8.0),
+            (4, 'B', 'y', {'attr1': 'bar'}, 0.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+        # Filter by attribute value.
         results = self.dal.adaptive_disaggregate(attr1='baz')
         expected = [
             (1, 'A', 'x', {'attr1': 'baz'}, 2.0),
@@ -2417,19 +2435,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         expected = self.make_hashable(expected)
         self.assertEqual(results, expected)
 
-        results = self.dal.adaptive_disaggregate(col1='B')
-        expected = [
-            (3, 'B', 'x', {'attr1': 'foo'}, 4.0),
-            (3, 'B', 'x', {'attr1': 'bar'}, 0.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
-            (4, 'B', 'y', {'attr1': 'foo'}, 8.0),
-            (4, 'B', 'y', {'attr1': 'bar'}, 0.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
-        ]
-        results = self.make_hashable(results)
-        expected = self.make_hashable(expected)
-        self.assertEqual(results, expected)
-
+        # Filter by index and attribute values.
         results = self.dal.adaptive_disaggregate(col1='B', attr1='baz')
         expected = [
             (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
