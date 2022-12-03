@@ -2237,6 +2237,48 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         result = DataAccessLayer._adaptive_disaggregate_make_sql(columns, bitmask, match_selector_func, adaptive_weight_table)
         self.assertIn("""JOIN main.label_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
 
+    def test_adaptive_disaggregate_make_sql_filter_attrs_func(self):
+        result = DataAccessLayer._adaptive_disaggregate_make_sql(
+            normalized_columns=['"A"', '"B"', '"C"', '"D"'],
+            bitmask=[1, 0, 1, 0],
+            match_selector_func='UserFuncName',
+            adaptive_weight_table='AdaptiveWeightTable',
+            filter_attrs_func='USER_FUNC_NAME2',
+        )
+        expected = """
+            SELECT
+                t3.index_id,
+                t1.attributes,
+                t1.quantity_value * COALESCE(
+                    (COALESCE(t5.weight_value, 0.0) / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
+                    (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
+                ) AS quantity_value
+            FROM main.quantity t1
+            JOIN main.location t2 USING (_location_id)
+            JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
+            JOIN main.weight t4 ON (
+                t3.index_id=t4.index_id
+                AND t4.weighting_id=UserFuncName(t1.attributes)
+            )
+            LEFT JOIN (
+                SELECT
+                    t5sub.index_id,
+                    t5sub.attributes,
+                    SUM(t5sub.quantity_value) AS weight_value
+                FROM AdaptiveWeightTable t5sub
+                GROUP BY t5sub.index_id, t5sub.attributes
+            ) t5 ON (
+                t3.index_id=t5.index_id
+                AND t5.attributes=t1.attributes
+            )
+            WHERE USER_FUNC_NAME2(t1.attributes)=1
+            UNION ALL
+            SELECT index_id, attributes, quantity_value FROM AdaptiveWeightTable
+        """
+        self.maxDiff = None
+        self.assertEqual(result.strip(), expected.strip())
+
     def test_adaptive_disaggregate(self):
         # Add data for test.
         data = [
@@ -2361,6 +2403,20 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         ]
         self.dal.add_quantities(data, 'value')
 
+        results = self.dal.adaptive_disaggregate(attr1='baz')
+        expected = [
+            (1, 'A', 'x', {'attr1': 'baz'}, 2.0),
+            (2, 'A', 'y', {'attr1': 'baz'}, 4.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
+            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
+            (5, 'C', 'x', {'attr1': 'baz'}, 0.0),
+            (6, 'C', 'y', {'attr1': 'baz'}, 0.0),
+            (7, 'C', 'z', {'attr1': 'baz'}, 0.0),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
         results = self.dal.adaptive_disaggregate(col1='B')
         expected = [
             (3, 'B', 'x', {'attr1': 'foo'}, 4.0),
@@ -2368,6 +2424,15 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
             (4, 'B', 'y', {'attr1': 'foo'}, 8.0),
             (4, 'B', 'y', {'attr1': 'bar'}, 0.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+        results = self.dal.adaptive_disaggregate(col1='B', attr1='baz')
+        expected = [
+            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
             (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
         ]
         results = self.make_hashable(results)

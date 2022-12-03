@@ -1405,6 +1405,7 @@ class DataAccessLayer(object):
         bitmask: Sequence[Literal[0, 1]],
         match_selector_func: str,
         adaptive_weight_table: str,
+        filter_attrs_func: Optional[str] = None,
     ) -> str:
         """Return SQL CTE statement to adaptively disaggregate data."""
         join_constraints = cls._disaggregate_make_sql_constraints(
@@ -1413,6 +1414,14 @@ class DataAccessLayer(object):
             location_table_alias='t2',
             index_table_alias='t3',
         )
+
+        # Build WHERE clause if *filter_attrs_func* was given.
+        if filter_attrs_func:
+            where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
+        else:
+            where_clause = ''
+
+        # Build final SELECT statement.
         statement = f"""
             SELECT
                 t3.index_id,
@@ -1439,7 +1448,7 @@ class DataAccessLayer(object):
             ) t5 ON (
                 t3.index_id=t5.index_id
                 AND t5.attributes=t1.attributes
-            )
+            ){where_clause}
             UNION ALL
             SELECT index_id, attributes, quantity_value FROM {adaptive_weight_table}
         """
@@ -1457,7 +1466,7 @@ class DataAccessLayer(object):
                 WHERE is_complete=1
             """)
             match_weighting_id = GetMatchingKey(cur.fetchall(), default=1)
-            func_name = _schema.get_userfunc(cur, match_weighting_id)
+            weighting_func_name = _schema.get_userfunc(cur, match_weighting_id)
 
             # Get bitmask levels from structure table.
             columns = self._get_column_names(cur, 'location')[1:]
@@ -1467,8 +1476,15 @@ class DataAccessLayer(object):
             bitmasks.reverse()  # <- Temporary until granularity measure is implemented.
 
             # Prepare WHERE clause items and parameters.
-            where_items, parameters, _ = \
+            where_items, parameters, attr_func = \
                 self._get_raw_quantities_format_args(columns, where)
+
+            # If attribute selector function is given, get an SQL user function
+            # name for it.
+            if attr_func:
+                attr_func_name = _schema.get_userfunc(cur, attr_func)
+            else:
+                attr_func_name = None
 
             # Prepare to build SQL statement.
             sql_statements = []
@@ -1477,7 +1493,13 @@ class DataAccessLayer(object):
 
             # Generate first CTE--which must use static weighting.
             _, current_cte, bitmask = next(prev_curr_and_bitmask)
-            sql = self._disaggregate_make_sql(normalized_cols, bitmask, func_name)
+            sql = self._disaggregate_make_sql(
+                normalized_cols,
+                bitmask,
+                weighting_func_name,
+                attr_func_name,
+            )
+
             cte_statement = f'{current_cte} AS ({sql})'.strip()
             sql_statements.append(cte_statement)
 
@@ -1487,8 +1509,9 @@ class DataAccessLayer(object):
                 sql = self._adaptive_disaggregate_make_sql(
                     normalized_cols,
                     bitmask,
-                    func_name,
+                    weighting_func_name,
                     adaptive_weight_table=previous_cte,
+                    filter_attrs_func=attr_func_name,
                 )
                 cte_statement = f'{current_cte} AS ({sql})'.strip()
                 sql_statements.append(cte_statement)
