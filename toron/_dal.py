@@ -1445,7 +1445,9 @@ class DataAccessLayer(object):
         """
         return statement
 
-    def adaptive_disaggregate(self) -> Generator[Dict[str, Union[str, float]], None, None]:
+    def adaptive_disaggregate(
+        self, **where: str
+    ) -> Generator[Dict[str, Union[str, float]], None, None]:
         """Return a generator that yields adaptively disaggregated quantities."""
         with self._transaction(method=None) as cur:
             # Prepare weighting_id matcher function.
@@ -1464,6 +1466,11 @@ class DataAccessLayer(object):
             bitmasks = [row[1:] for row in cur]  # Slice-off the id value.
             bitmasks.reverse()  # <- Temporary until granularity measure is implemented.
 
+            # Prepare WHERE clause items and parameters.
+            where_items, parameters, _ = \
+                self._get_raw_quantities_format_args(columns, where)
+
+            # Prepare to build SQL statement.
             sql_statements = []
             prev_curr_and_bitmask = \
                 ((f'cte{i}', f'cte{i+1}', bits) for i, bits in enumerate(bitmasks))
@@ -1486,19 +1493,27 @@ class DataAccessLayer(object):
                 cte_statement = f'{current_cte} AS ({sql})'.strip()
                 sql_statements.append(cte_statement)
 
-            # Prepare final SQL statement.
             all_cte_statements = ',\n        '.join(sql_statements)
+
+            # Build a WHERE clause for final statement.
+            if where_items:
+                joined_items = ' AND '.join(f't1.{x}' for x in where_items)
+                where_clause = f'\n                WHERE {joined_items}'
+            else:
+                where_clause = ''
+
+            # Prepare final SQL statement.
             final_sql = f"""
                 WITH
                     {all_cte_statements}
                 SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
                 FROM main.label_index t1
-                JOIN {current_cte} t2 USING (index_id)
+                JOIN {current_cte} t2 USING (index_id){where_clause}
                 GROUP BY t2.index_id, t2.attributes
             """
 
             # Execute SQL and yield result rows.
-            cur.execute(final_sql)
+            cur.execute(final_sql, parameters)
             for row in cur:
                 yield row
 

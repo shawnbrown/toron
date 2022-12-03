@@ -2344,6 +2344,36 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         expected = self.make_hashable(expected)
         self.assertEqual(results, expected)
 
+    def test_disaggregate_where_kwds(self):
+        # Add data for test.
+        data = [
+            ('col1', 'col2', 'attr1', 'value'),
+            ('A',    'x',    'foo',   4),
+            ('A',    'y',    'foo',   12),
+
+            ('A',    '',     'foo',   8),
+            ('A',    '',     'bar',   12),
+            ('B',    '',     'foo',   12),
+            ('C',    '',     'foo',   9),
+
+            ('',     '',     'bar',   18),
+            ('',     '',     'baz',   9.75),
+        ]
+        self.dal.add_quantities(data, 'value')
+
+        results = self.dal.adaptive_disaggregate(col1='B')
+        expected = [
+            (3, 'B', 'x', {'attr1': 'foo'}, 4.0),
+            (3, 'B', 'x', {'attr1': 'bar'}, 0.0),
+            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
+            (4, 'B', 'y', {'attr1': 'foo'}, 8.0),
+            (4, 'B', 'y', {'attr1': 'bar'}, 0.0),
+            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
 
 class TestGetAndSetDataProperty(unittest.TestCase):
     class_under_test = dal_class  # Use auto-assigned DAL class.
