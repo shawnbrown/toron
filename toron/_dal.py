@@ -1973,6 +1973,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         bitmask: Sequence[Literal[0, 1]],
         match_selector_func: str,
         adaptive_weight_table: str,
+        filter_attrs_func: Optional[str] = None,
     ) -> str:
         """Return SQL CTE statement to adaptively disaggregate data."""
         join_constraints = cls._disaggregate_make_sql_constraints(
@@ -1989,6 +1990,13 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             index_table_alias='sub3',
         )
 
+        # Build WHERE clause if *filter_attrs_func* was given.
+        if filter_attrs_func:
+            where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
+        else:
+            where_clause = ''
+
+        # Build final SELECT statement.
         statement = f"""
             SELECT
                 t3.index_id,
@@ -2046,7 +2054,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             ) t5 ON (
                 t3.index_id=t5.index_id
                 AND t5.attributes=t1.attributes
-            )
+            ){where_clause}
             UNION ALL
             SELECT index_id, attributes, quantity_value FROM {adaptive_weight_table}
         """
