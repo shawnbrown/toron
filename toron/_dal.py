@@ -1987,6 +1987,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         match_selector_func: str,
         adaptive_weight_table: str,
         filter_attrs_func: Optional[str] = None,
+        match_attrs_keys: Optional[Sequence[str]] = None,
     ) -> str:
         """Return SQL CTE statement to adaptively disaggregate data."""
         join_constraints = cls._disaggregate_make_sql_constraints(
@@ -2009,6 +2010,15 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         else:
             where_clause = ''
 
+        # Build string of args to use in the application-defined
+        # user_json_object_keep() SQL statement.
+        if match_attrs_keys:
+            # Note: The leading comma is always needed for proper syntax.
+            func = lambda x: f', {_schema.sql_string_literal(x)}'
+            keys_to_keep = ''.join(func(x) for x in match_attrs_keys)
+        else:
+            keys_to_keep = ''
+
         # Build final SELECT statement.
         statement = f"""
             SELECT
@@ -2023,13 +2033,13 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                         LEFT JOIN (
                             SELECT
                                 sub4sub.index_id,
-                                sub4sub.attributes,
+                                user_json_object_keep(sub4sub.attributes{keys_to_keep}) AS attrs_subset,
                                 SUM(sub4sub.quantity_value) AS weight_value
                             FROM {adaptive_weight_table} sub4sub
-                            GROUP BY sub4sub.index_id, sub4sub.attributes
+                            GROUP BY sub4sub.index_id, user_json_object_keep(sub4sub.attributes{keys_to_keep})
                         ) sub4 ON (
                             sub3.index_id=sub4.index_id
-                            AND sub4.attributes=sub1.attributes
+                            AND sub4.attrs_subset=user_json_object_keep(sub1.attributes{keys_to_keep})
                         )
                         WHERE sub1.quantity_id=t1.quantity_id
                     )),
@@ -2060,13 +2070,13 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             LEFT JOIN (
                 SELECT
                     t5sub.index_id,
-                    t5sub.attributes,
+                    user_json_object_keep(t5sub.attributes{keys_to_keep}) AS attrs_subset,
                     SUM(t5sub.quantity_value) AS weight_value
                 FROM {adaptive_weight_table} t5sub
-                GROUP BY t5sub.index_id, t5sub.attributes
+                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attributes{keys_to_keep})
             ) t5 ON (
                 t3.index_id=t5.index_id
-                AND t5.attributes=t1.attributes
+                AND t5.attrs_subset=user_json_object_keep(t1.attributes{keys_to_keep})
             ){where_clause}
             UNION ALL
             SELECT index_id, attributes, quantity_value FROM {adaptive_weight_table}
