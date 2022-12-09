@@ -281,6 +281,53 @@ def normalize_identifier(value: str) -> str:
     return f'"{value}"'
 
 
+def sql_string_literal(value: str)-> str:
+    """Return *value* as a single-quoted SQL string literal.
+
+    .. code-block::
+
+        >>> sql_string_literal("A")
+        "'A'"
+        >>> sql_string_literal("   A   B")
+        "'   A   B'"
+        >>> sql_string_literal("O'Connell")
+        "'O''Connell'"
+
+    NOTE: IN MOST CASES, THIS FUNCTION SHOULD NOT BE USED.
+    Instead, follow best practice and make a parameterized
+    SQL statement using the built-in placeholder syntax and
+    the execute() method's *parameters* argument. For more
+    details, see "How to use placeholders to bind values
+    in SQL queries" in the sqlite3 documentation:
+
+        https://docs.python.org/3/library/sqlite3.html
+
+    This function should only by used when the management
+    of placeholders and parameters will lead to functions
+    that are too-strongly coupled to be easily reasoned
+    about, tested, and maintained.
+
+    Shortly, there will be a handful of functions in Toron's
+    data access layer that will suffer from added complexity
+    if they do not use this function. Perhaps this function
+    can be removed with future refactoring.
+    """
+    value.encode('utf-8', errors='strict')  # Raises error on surrogate codes.
+
+    nul_pos = value.find('\x00')
+    if nul_pos != -1:
+        raise UnicodeEncodeError(
+            'utf-8',            # encoding
+            value,              # object
+            nul_pos,            # start position
+            nul_pos + 1,        # end position
+            'NUL not allowed',  # reason
+        )
+
+    value = value.replace("'", "''")
+    return f"'{value}'"
+
+
 def sql_drop_label_indexes() -> List[str]:
     """Return list of SQL statements to drop unique label indexes."""
     return [

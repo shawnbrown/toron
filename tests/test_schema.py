@@ -28,6 +28,7 @@ from toron._schema import (
     _make_sqlite_uri_filepath,
     get_connection,
     normalize_identifier,
+    sql_string_literal,
     savepoint,
     begin,
     _USERFUNC_NAME_REGISTRY,
@@ -187,6 +188,61 @@ class TestNormalizeIdentifier(unittest.TestCase):
 
         with self.assertRaises(UnicodeEncodeError):
             normalize_identifier(contains_nul)
+
+
+class TestSqlStringLiteral(unittest.TestCase):
+    def test_normalization(self):
+        """Check SQL string literal formatting."""
+        # The result values given below were generated with SQLite's
+        # built-in quote() function. For example:
+        #
+        #     >>> import sqlite3
+        #     >>> con = sqlite3.connection(":memory:")
+        #     >>> con.execute("SELECT quote(?)", ("abc",)).fetchone()[0]
+        #     "'abc'"
+        values = [
+            ("abc",       "'abc'"),
+            ("a b c",     "'a b c'"),       # whitepsace
+            ("  abc",     "'  abc'"),       # leading/trailing whitespace
+            ('"abc"',     '\'"abc"\''),     # double quotes
+            (' "abc" ',   '\' "abc" \''),   # double quotes and whitespace
+            ("O'Connell", "'O''Connell'"),  # single quotes
+            ("abc\nabc",  "'abc\nabc'"),    # linebreaks
+            ("abc\\abc",  "'abc\\abc'"),    # escaped slash
+            ("abc%%%abc", "'abc%%%abc'"),   # percent signs
+            ("'a b'c'",   "'''a b''c'''"),  # dubious quoting escaped as-is
+        ]
+        for input_value, result in values:
+            with self.subTest(input_value=input_value, expected_output=result):
+                self.assertEqual(sql_string_literal(input_value), result)
+
+    def test_non_idempotence(self):
+        """This function should NOT be idempotent--applying the function
+        multiple times should return successively different results.
+        """
+        value = "abc"
+        applied_once = sql_string_literal(value)
+        applied_twice = sql_string_literal(applied_once)
+        applied_thrice = sql_string_literal(applied_twice)
+
+        self.assertEqual(applied_once, "'abc'")
+        self.assertEqual(applied_twice, "'''abc'''")
+        self.assertEqual(applied_thrice, "'''''''abc'''''''")
+
+    def test_surrogate_codes(self):
+        """Should only allow clean UTF-8 (no surrogate codes)."""
+        column_bytes = b'tama\xf1o'  # "tamaño" is Spanish for "size"
+        string_with_surrogate = column_bytes.decode('utf-8', 'surrogateescape')
+
+        with self.assertRaises(UnicodeEncodeError):
+            sql_string_literal(string_with_surrogate)
+
+    def test_nul_byte(self):
+        """Strings with NUL bytes should raise an error."""
+        contains_nul = 'zip\x00 code'
+
+        with self.assertRaises(UnicodeEncodeError):
+            sql_string_literal(contains_nul)
 
 
 class CheckJsonMixin(object):
