@@ -52,7 +52,8 @@ import sqlite3
 from collections import UserList
 from contextlib import contextmanager
 from json import loads as _loads
-from ._typing import Callable, Dict, Iterable, List, Literal, Sequence, TypeAlias, Union
+from json import dumps as _dumps
+from ._typing import Callable, Dict, Iterable, List, Literal, Optional, Sequence, TypeAlias, Union
 from urllib.parse import quote as urllib_parse_quote
 
 from ._utils import ToronError
@@ -369,6 +370,64 @@ def sql_column_def_location_label(name: str) -> str:
 def sql_column_def_structure_label(name: str) -> str:
     """Return a `structure` table column-def for a label column."""
     return f"{name} INTEGER CHECK ({name} IN (0, 1)) DEFAULT 0"
+
+
+def _user_json_object_keep(
+    json_obj: str, *keys: str
+) -> Optional[str]:
+    """Return a JSON object keeping only the given *keys*.
+
+    .. code-block::
+
+        >>> json_obj = '{"a": "one", "b": "two", "c": "three"}'
+        >>> _user_json_object_keep(json_obj, 'a', 'b')
+        '{"a": "one", "b": "two"}'
+
+    If no *keys* are given, returns a complete and normalized JSON
+    object::
+
+        >>> _user_json_object_keep(json_obj)
+        '{"a": "one", "b": "two", "c": "three"}'
+
+    If *keys* are given but none of them match the keys in the JSON
+    object, then None is returned::
+
+        >>> print(_user_json_object_keep(json_obj, 'x', 'y', 'z'))
+        None
+
+    Register with SQLite using::
+
+        >>> con = sqlite3.connect(...)
+        >>> con.create_function(
+        ...     'user_json_object_keep',
+        ...     -1,
+        ...     _user_json_object_keep,
+        ...     deterministic=True,
+        ... )
+    """
+    obj = _loads(json_obj)
+
+    if not isinstance(obj, dict):
+        class_name = obj.__class__.__name__
+        msg = f'expected JSON object/dict type, got {class_name}: {json_obj}'
+        raise ValueError(msg)
+
+    if not keys:
+        return _dumps(obj, sort_keys=True)
+
+    try:
+        obj_subset = {k: obj[k] for k in keys if k in obj}
+    except TypeError:
+        for key in keys:
+            if not isinstance(key, str):
+                class_name = key.__class__.__name__
+                msg = f'given keys should be str objects, got {class_name}: {key!r}'
+                raise TypeError(msg)
+        raise  # If no error in *keys*, reraise original TypeError.
+
+    if obj_subset:
+        return _dumps(obj_subset, sort_keys=True)
+    return None
 
 
 def _user_json_valid(x: str) -> bool:

@@ -2,6 +2,7 @@
 
 import gc
 import itertools
+import json
 import os
 import sqlite3
 import sys
@@ -17,6 +18,7 @@ from toron._selectors import SimpleSelector
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
     BitList,
+    _user_json_object_keep,
     _user_json_valid,
     _user_userproperties_valid,
     _user_attributes_valid,
@@ -243,6 +245,54 @@ class TestSqlStringLiteral(unittest.TestCase):
 
         with self.assertRaises(UnicodeEncodeError):
             sql_string_literal(contains_nul)
+
+
+class TestUserJsonObjectKeep(unittest.TestCase):
+    def setUp(self):
+        # Define JSON object (keys not in alpha order).
+        self.json_obj = '{"b": "two", "c": "three", "a": "one"}'
+
+    def test_matching_keys(self):
+        """Should keep given keys and return a new obj in alpha order."""
+        actual = _user_json_object_keep(self.json_obj, 'b', 'a')  # <- Args not in alpha order.
+        expected = '{"a": "one", "b": "two"}'  # <- Keys in alpha order.
+        self.assertEqual(actual, expected)
+
+    def test_matching_and_nonmatching_keys(self):
+        """As long as at least one key matches, a result is returned."""
+        actual = _user_json_object_keep(self.json_obj, 'x', 'c', 'y')
+        expected = '{"c": "three"}'  # <- Only "c", no "x" or "y" in json_obj.
+        self.assertEqual(actual, expected)
+
+    def test_no_matching_keys(self):
+        """When keys are given but none of them match keys in the
+        json_obj, then None should be returned.
+        """
+        actual = _user_json_object_keep(self.json_obj, 'x', 'y', 'z')
+        self.assertIsNone(actual)
+
+    def test_no_keys_given(self):
+        """When no keys are given, a normalized verison of the complete
+        JSON object should be returned.
+        """
+        actual = _user_json_object_keep(self.json_obj)  # <- No keys given!
+        expected = '{"a": "one", "b": "two", "c": "three"}'  # <- Full obj with keys in alpha order.
+        self.assertEqual(actual, expected)
+
+    def test_unsupported_json_type(self):
+        bad_json_type = '"a string value"'  # <- JSON should be object, not string.
+        with self.assertRaises(ValueError):
+            _user_json_object_keep(bad_json_type, 'a', 'b')
+
+    def test_bad_keys(self):
+        with self.assertRaises(TypeError):
+            _user_json_object_keep(self.json_obj, [1, 2], 'c')  # <- Keys should be strings.
+
+    def test_malformed_json(self):
+        """JSON decode errors should be raised as normal."""
+        malformed_json = '{"a": "one}'  # <- No closing quote.
+        with self.assertRaises(json.JSONDecodeError):
+            _user_json_object_keep(malformed_json, 'a', 'b')
 
 
 class CheckJsonMixin(object):
