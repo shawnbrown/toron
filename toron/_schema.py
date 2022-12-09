@@ -282,7 +282,7 @@ def normalize_identifier(value: str) -> str:
     return f'"{value}"'
 
 
-def sql_string_literal(value: str)-> str:
+def sql_string_literal(value: str) -> str:
     """Return *value* as a single-quoted SQL string literal.
 
     .. code-block::
