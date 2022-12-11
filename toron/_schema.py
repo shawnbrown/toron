@@ -53,7 +53,17 @@ from collections import UserList
 from contextlib import contextmanager
 from json import loads as _loads
 from json import dumps as _dumps
-from ._typing import Callable, Dict, Iterable, List, Literal, Optional, Sequence, TypeAlias, Union
+from ._typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    TypeAlias,
+    Union,
+)
 from urllib.parse import quote as urllib_parse_quote
 
 from ._utils import ToronError
