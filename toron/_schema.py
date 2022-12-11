@@ -308,9 +308,9 @@ def sql_string_literal(value: str) -> str:
     that are too-strongly coupled to be easily reasoned
     about, tested, and maintained.
 
-    Shortly, there will be a handful of functions in Toron's
-    data access layer that will suffer from added complexity
-    if they do not use this function. Perhaps this function
+    Currently, there are a few functions in Toron's data
+    access layer that would suffer from added complexity if
+    they did not use this function. Perhaps this function
     can be removed with future refactoring.
     """
     value.encode('utf-8', errors='strict')  # Raises error on surrogate codes.
