@@ -1423,7 +1423,7 @@ class DataAccessLayer(object):
             where_clause = ''
 
         # Build string of args to use in the application-defined
-        # user_json_object_keep() SQL statement.
+        # user_json_object_keep() SQL function.
         if match_attrs_keys:
             # Note: The leading comma is always needed for proper syntax.
             func = lambda x: f', {_schema.sql_string_literal(x)}'
@@ -2011,7 +2011,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             where_clause = ''
 
         # Build string of args to use in the application-defined
-        # user_json_object_keep() SQL statement.
+        # user_json_object_keep() SQL function.
         if match_attrs_keys:
             # Note: The leading comma is always needed for proper syntax.
             func = lambda x: f', {_schema.sql_string_literal(x)}'
