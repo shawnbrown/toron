@@ -1332,7 +1332,9 @@ class DataAccessLayer(object):
     def disaggregate(
         self, **where: str
     ) -> Generator[Dict[str, Union[str, float]], None, None]:
-        """Return a generator that yields disaggregated quantities."""
+        """Return a generator that yields disaggregated quantities
+        calculated using only pre-determined weights.
+        """
         with self._transaction(method=None) as cur:
             # Prepare weighting_id matcher function.
             cur.execute("""
@@ -1469,7 +1471,12 @@ class DataAccessLayer(object):
         match_attributes: Optional[Sequence[str]] = None,
         **filter_rows_where: str,
     ) -> Generator[Dict[str, Union[str, float]], None, None]:
-        """Return a generator that yields adaptively disaggregated quantities."""
+        """Return a generator that yields disaggregated quantities
+        calculated using previously disaggregated quantities as
+        weights (when available). And when no previously disaggregated
+        quantities are available, static disaggregation is performed
+        using pre-calculated weights.
+        """
         with self._transaction(method=None) as cur:
             # Prepare weighting_id matcher function.
             cur.execute("""
