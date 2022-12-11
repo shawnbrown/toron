@@ -1934,7 +1934,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestDisaggregate(unittest.TestCase):
+class TestStaticDisaggregate(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
 
@@ -1996,7 +1996,7 @@ class TestDisaggregate(unittest.TestCase):
         ]
         self.dal.add_quantities(data, 'value')
 
-        results = self.dal.disaggregate()
+        results = self.dal.static_disaggregate()
         expected = [
             (1, 'A', 'x', {'attr1': 'foo'}, 18.0),
             (2, 'A', 'y', {'attr1': 'foo'}, 29.0),
@@ -2037,7 +2037,7 @@ class TestDisaggregate(unittest.TestCase):
         ]
         self.dal.add_quantities(data, 'value')
 
-        results = self.dal.disaggregate()
+        results = self.dal.static_disaggregate()
         expected = [
             (1, 'A', 'x', {'attr1': 'foo'}, 28.0),  # <- 18 + 6 + 4
             (2, 'A', 'y', {'attr1': 'foo'}, 44.0),  # <- 29 + 9 + 6
@@ -2072,7 +2072,7 @@ class TestDisaggregate(unittest.TestCase):
         ]
         self.dal.add_quantities(data, 'value')
 
-        results = self.dal.disaggregate()
+        results = self.dal.static_disaggregate()
         expected = [
             (1, 'A', 'x', {'attr1': 'foo'}, 10.0),
             (1, 'A', 'x', {'attr1': 'bar'}, 12.0),
@@ -2108,7 +2108,7 @@ class TestDisaggregate(unittest.TestCase):
         self.dal.add_quantities(data, 'value')
 
         # Filter by index value.
-        results = self.dal.disaggregate(col1='B')
+        results = self.dal.static_disaggregate(col1='B')
         expected = [
             (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
             (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
@@ -2122,7 +2122,7 @@ class TestDisaggregate(unittest.TestCase):
         self.assertEqual(results, expected)
 
         # Filter by attribute value.
-        results = self.dal.disaggregate(attr1='baz')
+        results = self.dal.static_disaggregate(attr1='baz')
         expected = [
             (1, 'A', 'x', {'attr1': 'baz'}, 4.0),
             (2, 'A', 'y', {'attr1': 'baz'}, 6.0),
@@ -2137,7 +2137,7 @@ class TestDisaggregate(unittest.TestCase):
         self.assertEqual(results, expected)
 
         # Filter by index and attribute values.
-        results = self.dal.disaggregate(col1='B', attr1='baz')
+        results = self.dal.static_disaggregate(col1='B', attr1='baz')
         expected = [
             (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
             (4, 'B', 'y', {'attr1': 'baz'}, 12.0),

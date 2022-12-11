@@ -1329,7 +1329,7 @@ class DataAccessLayer(object):
         """
         return statement
 
-    def disaggregate(
+    def static_disaggregate(
         self, **where: str
     ) -> Generator[Dict[str, Union[str, float]], None, None]:
         """Return a generator that yields disaggregated quantities
