@@ -2194,12 +2194,15 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         return {func(*x) for x in iterable}
 
     def test_adaptive_disaggregate_make_sql(self):
-        columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
+        self.maxDiff = None
+
+        normalized_columns = ['"A"', '"B"', '"C"', '"D"']
         bitmask = [1, 0, 1, 0]
         match_selector_func = 'UserFuncName'
         adaptive_weight_table = 'AdaptiveWeightTable'
+
         result = DataAccessLayer._adaptive_disaggregate_make_sql(
-            columns,
+            normalized_columns,
             bitmask,
             match_selector_func,
             adaptive_weight_table,
@@ -2223,13 +2226,13 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             LEFT JOIN (
                 SELECT
                     t5sub.index_id,
-                    t5sub.attributes,
+                    user_json_object_keep(t5sub.attributes) AS attrs_subset,
                     SUM(t5sub.quantity_value) AS weight_value
                 FROM AdaptiveWeightTable t5sub
-                GROUP BY t5sub.index_id, t5sub.attributes
+                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attributes)
             ) t5 ON (
                 t3.index_id=t5.index_id
-                AND t5.attributes=t1.attributes
+                AND t5.attrs_subset=user_json_object_keep(t1.attributes)
             )
             UNION ALL
             SELECT index_id, attributes, quantity_value FROM AdaptiveWeightTable
@@ -2237,7 +2240,12 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         self.assertEqual(result.strip(), expected.strip())
 
         bitmask = [0, 0, 0, 0]  # <- Bitmask is all 0s.
-        result = DataAccessLayer._adaptive_disaggregate_make_sql(columns, bitmask, match_selector_func, adaptive_weight_table)
+        result = DataAccessLayer._adaptive_disaggregate_make_sql(
+            normalized_columns,
+            [0, 0, 0, 0],  # <- Different bitmask.
+            match_selector_func,
+            adaptive_weight_table,
+        )
         self.assertIn("""JOIN main.label_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
 
     def test_adaptive_disaggregate_make_sql_filter_attrs_func(self):
@@ -2267,13 +2275,13 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             LEFT JOIN (
                 SELECT
                     t5sub.index_id,
-                    t5sub.attributes,
+                    user_json_object_keep(t5sub.attributes) AS attrs_subset,
                     SUM(t5sub.quantity_value) AS weight_value
                 FROM AdaptiveWeightTable t5sub
-                GROUP BY t5sub.index_id, t5sub.attributes
+                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attributes)
             ) t5 ON (
                 t3.index_id=t5.index_id
-                AND t5.attributes=t1.attributes
+                AND t5.attrs_subset=user_json_object_keep(t1.attributes)
             )
             WHERE USER_FUNC_NAME2(t1.attributes)=1
             UNION ALL
@@ -2440,6 +2448,43 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         expected = [
             (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
             (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
+        ]
+        results = self.make_hashable(results)
+        expected = self.make_hashable(expected)
+        self.assertEqual(results, expected)
+
+    def test_disaggregate_match_attrs_keys(self):
+        """Adaptive disagg using `match_attrs_keys` argument."""
+        # Add data for test.
+        data = [
+            ('col1', 'col2', 'attr1', 'attr2', 'value'),
+            ('A',    'x',    'foo',   'a',     20),
+            ('A',    'y',    'foo',   'b',     30),
+            ('B',    'x',    'foo',   'c',     15),
+            ('B',    'y',    'foo',   'a',     60),
+
+            ('A',    '',     'foo',   'a',     20),
+            ('B',    '',     'foo',   'b',     15),
+
+            ('',     '',     'foo',   'a',     25),
+        ]
+        self.dal.add_quantities(data, 'value')
+
+        match_attrs_keys = ['attr1']  # <- Match using only "attr1" (ignores "attr2").
+        results = self.dal.adaptive_disaggregate(match_attrs_keys)
+
+        expected = [
+            (1, 'A', 'x', {'attr1': 'foo', 'attr2': 'a'}, 32.375),
+            (2, 'A', 'y', {'attr1': 'foo', 'attr2': 'a'}, 18.5625),
+            (2, 'A', 'y', {'attr1': 'foo', 'attr2': 'b'}, 30.0),
+            (3, 'B', 'x', {'attr1': 'foo', 'attr2': 'b'}, 3.0),
+            (3, 'B', 'x', {'attr1': 'foo', 'attr2': 'c'}, 15.0),
+            (3, 'B', 'x', {'attr1': 'foo', 'attr2': 'a'}, 2.8125),
+            (4, 'B', 'y', {'attr1': 'foo', 'attr2': 'a'}, 71.25),
+            (4, 'B', 'y', {'attr1': 'foo', 'attr2': 'b'}, 12.0),
+            (5, 'C', 'x', {'attr1': 'foo', 'attr2': 'a'}, 0.0),
+            (6, 'C', 'y', {'attr1': 'foo', 'attr2': 'a'}, 0.0),
+            (7, 'C', 'z', {'attr1': 'foo', 'attr2': 'a'}, 0.0),
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)

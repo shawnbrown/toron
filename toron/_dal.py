@@ -1406,6 +1406,7 @@ class DataAccessLayer(object):
         match_selector_func: str,
         adaptive_weight_table: str,
         filter_attrs_func: Optional[str] = None,
+        match_attrs_keys: Optional[Sequence[str]] = None,
     ) -> str:
         """Return SQL CTE statement to adaptively disaggregate data."""
         join_constraints = cls._disaggregate_make_sql_constraints(
@@ -1420,6 +1421,15 @@ class DataAccessLayer(object):
             where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
         else:
             where_clause = ''
+
+        # Build string of args to use in the application-defined
+        # user_json_object_keep() SQL statement.
+        if match_attrs_keys:
+            # Note: The leading comma is always needed for proper syntax.
+            func = lambda x: f', {_schema.sql_string_literal(x)}'
+            keys_to_keep = ''.join(func(x) for x in match_attrs_keys)
+        else:
+            keys_to_keep = ''
 
         # Build final SELECT statement.
         statement = f"""
@@ -1441,13 +1451,13 @@ class DataAccessLayer(object):
             LEFT JOIN (
                 SELECT
                     t5sub.index_id,
-                    t5sub.attributes,
+                    user_json_object_keep(t5sub.attributes{keys_to_keep}) AS attrs_subset,
                     SUM(t5sub.quantity_value) AS weight_value
                 FROM {adaptive_weight_table} t5sub
-                GROUP BY t5sub.index_id, t5sub.attributes
+                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attributes{keys_to_keep})
             ) t5 ON (
                 t3.index_id=t5.index_id
-                AND t5.attributes=t1.attributes
+                AND t5.attrs_subset=user_json_object_keep(t1.attributes{keys_to_keep})
             ){where_clause}
             UNION ALL
             SELECT index_id, attributes, quantity_value FROM {adaptive_weight_table}
@@ -1455,7 +1465,9 @@ class DataAccessLayer(object):
         return statement
 
     def adaptive_disaggregate(
-        self, **where: str
+        self,
+        match_attributes: Optional[Sequence[str]] = None,
+        **filter_rows_where: str,
     ) -> Generator[Dict[str, Union[str, float]], None, None]:
         """Return a generator that yields adaptively disaggregated quantities."""
         with self._transaction(method=None) as cur:
@@ -1477,7 +1489,7 @@ class DataAccessLayer(object):
 
             # Prepare WHERE clause items and parameters.
             where_items, parameters, attr_func = \
-                self._get_raw_quantities_format_args(columns, where)
+                self._get_raw_quantities_format_args(columns, filter_rows_where)
 
             # If attribute selector function is given, get an SQL user function
             # name for it.
@@ -1512,6 +1524,7 @@ class DataAccessLayer(object):
                     weighting_func_name,
                     adaptive_weight_table=previous_cte,
                     filter_attrs_func=attr_func_name,
+                    match_attrs_keys=match_attributes,
                 )
                 cte_statement = f'{current_cte} AS ({sql})'.strip()
                 sql_statements.append(cte_statement)

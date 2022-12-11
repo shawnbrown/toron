@@ -662,6 +662,12 @@ def _add_functions_and_triggers(connection):
     Note: This function must not be executed on an empty connection.
     The table schema must exist before triggers can be created.
     """
+    try:
+        connection.create_function(
+            'user_json_object_keep', -1, _user_json_object_keep, deterministic=True)
+    except TypeError:
+        connection.create_function('user_json_object_keep', -1, _user_json_object_keep)
+
     if not SQLITE_JSON1_ENABLED:
         try:
             connection.create_function(
