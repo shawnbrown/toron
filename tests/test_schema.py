@@ -199,7 +199,7 @@ class TestSqlStringLiteral(unittest.TestCase):
         # built-in quote() function. For example:
         #
         #     >>> import sqlite3
-        #     >>> con = sqlite3.connection(":memory:")
+        #     >>> con = sqlite3.connect(":memory:")
         #     >>> con.execute("SELECT quote(?)", ("abc",)).fetchone()[0]
         #     "'abc'"
         values = [
