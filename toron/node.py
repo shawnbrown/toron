@@ -119,7 +119,7 @@ class Node(object):
         to. For instance, every time we see the state label
         "California", we know that the record refers to the state
         of California in the United States. There are not multiple
-        states named California, so this value alone contains enough
+        states named California, so the value alone contains enough
         information to identify a single entity.
 
         On the other hand, "county" is a non-discrete category. While
@@ -131,7 +131,7 @@ class Node(object):
 
         It is important to clarify that a category's discreteness is
         not determined by the uniqueness of its labels. Our example
-        dataset would contain multiple records for which the state
+        dataset would contain multiple town records for which the state
         label is "California" so the labels are not unique despite the
         category being discrete.
 
