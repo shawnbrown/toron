@@ -658,7 +658,7 @@ class DataAccessLayer(object):
             WHERE weighting_id IN (SELECT record_id FROM NewStatus)
         ''')
 
-        # TODO: Update `is_complete` for incomplete `edge` records.
+        # TODO: Update `is_locally_complete` for incomplete `edge` records.
 
         # Remove old-to-new temporary table for `index_id` mapping.
         sql_statements.append('DROP TABLE temp.old_to_new_index_id')

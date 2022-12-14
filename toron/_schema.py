@@ -20,7 +20,7 @@ the application layer:
   | other_uuid          |  •  •  +----------------+  |     | quantity_id    |
   | other_filename_hint |  •  •                      |  +->| _location_id   |
   | other_index_hash    |<••  •                      |  |  | attributes     |
-  | is_complete         |<•••••    +-----------------+  |  | quantity_value |
+  | is_locally_complete |<•••••    +-----------------+  |  | quantity_value |
   +---------------------+          |                    |  +----------------+
                                    |                    |
                   +-------------+  |  +--------------+  |  +---------------+
@@ -82,7 +82,7 @@ _schema_script = """
         other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
         other_filename_hint TEXT NOT NULL,
         other_index_hash TEXT,
-        is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
+        is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
         UNIQUE (name, other_uuid)
     );
 
