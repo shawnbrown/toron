@@ -1330,7 +1330,7 @@ class DataAccessLayer(object):
         return statement
 
     def static_disaggregate(
-        self, **where: str
+        self, **filter_rows_where: str
     ) -> Generator[Dict[str, Union[str, float]], None, None]:
         """Return a generator that yields disaggregated quantities
         calculated using only pre-determined weights.
@@ -1352,7 +1352,7 @@ class DataAccessLayer(object):
 
             # Prepare WHERE clause items, parameters, and optional function.
             where_items, parameters, attr_func = \
-                self._get_raw_quantities_format_args(columns, where)
+                self._get_raw_quantities_format_args(columns, filter_rows_where)
 
             # If attribute selector function is given, get an SQL user function
             # name for it.
