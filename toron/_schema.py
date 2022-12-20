@@ -9,27 +9,27 @@ are represented with bullet points ('•') and these are enforced at
 the application layer:
 
                                  +----------------+
-  +---------------------+        | relation       |
-  | edge                |        +----------------+
-  +---------------------+        | relation_id    |     •••• <Other Node>
-  | edge_id             |------->| edge_id        |     •
-  | name                |  ••••••| other_index_id |<•••••
-  | description         |  •  •••| index_id       |<-+     +----------------+
-  | selectors           |  •  •  | proportion     |  |     | quantity       |
-  | user_properties     |  •  •  | mapping_level  |  |     +----------------+
-  | other_uuid          |  •  •  +----------------+  |     | quantity_id    |
-  | other_filename_hint |  •  •                      |  +->| _location_id   |
-  | other_index_hash    |<••  •                      |  |  | attributes     |
-  | is_locally_complete |<•••••    +-----------------+  |  | quantity_value |
-  +---------------------+          |                    |  +----------------+
+ +----------------------+        | relation       |
+ | edge                 |        +----------------+
+ +----------------------+        | relation_id    |     •••• <Other Node>
+ | edge_id              |------->| edge_id        |     •
+ | name                 |  ••••••| other_index_id |<•••••
+ | description          |  •  •••| index_id       |<-+     +----------------+
+ | selectors            |  •  •  | proportion     |  |     | quantity       |
+ | user_properties      |  •  •  | mapping_level* |  |     +----------------+
+ | other_uuid           |  •  •  +----------------+  |     | quantity_id    |
+ | other_filename_hint  |  •  •                      |  +->| _location_id   |
+ | other_index_hash*    |<••  •                      |  |  | attributes     |
+ | is_locally_complete* |<•••••    +-----------------+  |  | quantity_value |
+ +----------------------+          |                    |  +----------------+
                                    |                    |
                   +-------------+  |  +--------------+  |  +---------------+
                   | label_index |  |  | location     |  |  | structure     |
                   +-------------+  |  +--------------+  |  +---------------+
                +--| index_id    |--+  | _location_id |--+  | _structure_id |
-               |  | label_a     |••••>| label_a      |<••••| label_a       |
-               |  | label_b     |••••>| label_b      |<••••| label_b       |
-               |  | label_c     |••••>| label_c      |<••••| label_c       |
+               |  | label_a     |••••>| label_a      |<••••| label_a*      |
+               |  | label_b     |••••>| label_b      |<••••| label_b*      |
+               |  | label_c     |••••>| label_c      |<••••| label_c*      |
                |  | ...         |••••>| ...          |<••••| ...           |
                |  +-------------+     +--------------+     +---------------+
                |
@@ -41,8 +41,13 @@ the application layer:
                +->| index_id     |•••  | name         |      +----------+
                   | weight_value |  •  | description  |
                   +--------------+  •  | selectors    |
-                                    ••>| is_complete  |
+                                    ••>| is_complete* |
                                        +--------------+
+
+Asterisks (*) denote values that are computed at the application layer
+using data from elsewhere in the schema. Toron may automatically
+recompute these values as records and columns are added or removed
+from certain tables.
 """
 
 import itertools
