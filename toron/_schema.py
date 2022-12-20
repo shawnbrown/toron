@@ -181,7 +181,7 @@ sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 class BitList(UserList):
     """List of integer bits used to encode mapping_level.
 
-    Create a BitList from a list of strings and convert it to bytes::
+    Create a BitList from a list of integers and convert it to bytes::
 
         >>> bits = BitList([1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1])
         >>> bytes(bits)
