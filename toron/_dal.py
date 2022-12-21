@@ -711,7 +711,7 @@ class DataAccessLayer(object):
         ''')
 
         # Assign summed `quantity_value` to `quantity` records being kept.
-        if True and _SQLITE_VERSION_INFO >= (3, 33, 0):
+        if _SQLITE_VERSION_INFO >= (3, 33, 0):
             # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
             sql_statements.append('''
                 UPDATE main.quantity
