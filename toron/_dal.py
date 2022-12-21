@@ -734,7 +734,7 @@ class DataAccessLayer(object):
                         GROUP BY attributes, new_location_id
                     ),
                     RecordsToUpdate AS (
-                        SELECT _location_id AS record_id, summed_value
+                        SELECT a.attributes AS old_attributes, a._location_id AS record_id, b.summed_value
                         FROM main.quantity a
                         JOIN SummedValues b
                         ON (a.attributes=b.attributes AND a._location_id=b.new_location_id)
@@ -743,7 +743,7 @@ class DataAccessLayer(object):
                 SET quantity_value = (
                     SELECT summed_value
                     FROM RecordsToUpdate
-                    WHERE _location_id=record_id
+                    WHERE _location_id=record_id AND attributes=old_attributes
                 )
                 WHERE _location_id IN (SELECT record_id FROM RecordsToUpdate)
             ''')
