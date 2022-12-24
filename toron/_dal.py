@@ -535,6 +535,10 @@ class DataAccessLayer(object):
 
         sql_statements = []
 
+        ################################################################
+        # Consolidate records in `label_index` and `weight` tables.
+        ################################################################
+
         # Build a temporary table with old-to-new `index_id` mapping.
         sql_statements.append(f'''
             CREATE TEMPORARY TABLE old_to_new_index_id

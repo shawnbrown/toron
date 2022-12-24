@@ -887,7 +887,7 @@ class TestRemoveIndexColumnsMixin(object):
         ]
         self.assertEqual(actual, expected)
 
-    def test_strategy_coarsen(self):
+    def test_strategy_coarsen_weights(self):
         """The 'coarsen' strategy should override granularity error."""
         self.dal.remove_index_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
 
