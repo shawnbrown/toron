@@ -54,6 +54,8 @@ from ._utils import (
 
 
 if sys.platform != 'win32' and hasattr(fcntl, 'F_FULLFSYNC'):
+    # If running on macOS, try to fsync using F_FULLFSYNC.
+    #
     # From the macOS man page for FSYNC(2):
     #   For applications that require tighter guarantees about the integrity of
     #   their data, Mac OS X provides the F_FULLFSYNC fcntl.  The F_FULLFSYNC
@@ -69,6 +71,7 @@ if sys.platform != 'win32' and hasattr(fcntl, 'F_FULLFSYNC'):
         if r != 0:  # If F_FULLFSYNC is not working or failed.
             os.fsync(fd)  # <- fall back to os.fsync().
 else:
+    # Else if running on Linux or other OS, use standard fsync.
     _best_effort_fsync = os.fsync
 
 
@@ -246,8 +249,8 @@ class DataAccessLayer(object):
         tmp_f = tempfile.NamedTemporaryFile(
             suffix='.temp',
             prefix=f'{os.path.splitext(os.path.basename(dst_path))[0]}-',
-            dir=dst_dirname,
-            delete=False,
+            dir=dst_dirname,  # <- Use same dir as dst_path to assure that
+            delete=False,     #    tmp and dst are on the same filesystem.
         )
         tmp_f.close()
         tmp_path = tmp_f.name
@@ -271,7 +274,7 @@ class DataAccessLayer(object):
             msg = f'The file {dst_path!r} is read-only.'
             raise PermissionError(msg)
 
-        # Move file to final path.
+        # Move file to final path (tmp and dst should be on same filesystem).
         os.replace(tmp_path, dst_path)
 
         # Exit early when running Windows--skips fsync.
