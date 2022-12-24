@@ -670,11 +670,106 @@ class DataAccessLayer(object):
         # Remove old-to-new temporary table for `index_id` mapping.
         sql_statements.append('DROP TABLE temp.old_to_new_index_id')
 
-        # TODO: Build a temporary table with old-to-new `location_id` mapping.
-        # TODO: Add missing `quantity._location_id` values needed for aggregation.
-        # TODO: Assign summed `value` to `quantity` records being kept.
-        # TODO: Discard old `location` records.
-        # TODO: Remove old-to-new temporary table for `location_id` mapping.
+        ################################################################
+        # Consolidate records in `location` and `quantity` tables.
+        ################################################################
+
+        # Build a temporary table with old-to-new `location_id` mapping.
+        sql_statements.append(f'''
+            CREATE TEMPORARY TABLE old_to_new_location_id
+            AS SELECT _location_id, new_location_id
+            FROM main.location
+            JOIN (SELECT MIN(_location_id) AS new_location_id, {formatted_names}
+                  FROM main.location
+                  GROUP BY {formatted_names}
+                  HAVING COUNT(*) > 1)
+            USING ({formatted_names})
+        ''')
+
+        # Add any missing `_location_id` and `attributes` pairs,
+        # needed for aggregation, to the `quantity` table. This is
+        # necessary because not every `_location_id` is guaranteed
+        # to have every possible combination of `attributes` values.
+        # And the coarsening process may aggregate records using a
+        # combination of `_location_id` and `attributes` values that
+        # are not currently defined in the `quantity` table.
+        sql_statements.append('''
+            WITH
+                MatchingRecords AS (
+                    SELECT attributes, _location_id, new_location_id
+                    FROM main.quantity
+                    JOIN temp.old_to_new_location_id USING (_location_id)
+                ),
+                MissingAttributes AS (
+                    SELECT DISTINCT attributes, new_location_id FROM MatchingRecords
+                    EXCEPT
+                    SELECT DISTINCT attributes, _location_id FROM MatchingRecords
+                )
+            INSERT INTO main.quantity (attributes, _location_id, quantity_value)
+            SELECT attributes, new_location_id, 0
+            FROM MissingAttributes;
+        ''')
+
+        # Assign summed `quantity_value` to `quantity` records being kept.
+        if True and _SQLITE_VERSION_INFO >= (3, 33, 0):
+            # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
+            sql_statements.append('''
+                UPDATE main.quantity
+                SET quantity_value=summed_value
+                FROM (SELECT attributes AS old_attributes,
+                             new_location_id,
+                             SUM(quantity_value) AS summed_value
+                      FROM main.quantity
+                      JOIN temp.old_to_new_location_id USING (_location_id)
+                      GROUP BY attributes, new_location_id)
+                WHERE attributes=old_attributes AND _location_id=new_location_id
+            ''')
+        else:
+            sql_statements.append('''
+                WITH
+                    SummedValues AS (
+                        SELECT attributes, new_location_id, SUM(quantity_value) AS summed_value
+                        FROM main.quantity
+                        JOIN temp.old_to_new_location_id USING (_location_id)
+                        GROUP BY attributes, new_location_id
+                    ),
+                    RecordsToUpdate AS (
+                        SELECT _location_id AS record_id, summed_value
+                        FROM main.quantity a
+                        JOIN SummedValues b
+                        ON (a.attributes=b.attributes AND a._location_id=b.new_location_id)
+                    )
+                UPDATE main.quantity
+                SET quantity_value = (
+                    SELECT summed_value
+                    FROM RecordsToUpdate
+                    WHERE _location_id=record_id
+                )
+                WHERE _location_id IN (SELECT record_id FROM RecordsToUpdate)
+            ''')
+
+        # Discard old `quantity` records.
+        sql_statements.append('''
+            DELETE FROM main.quantity
+            WHERE _location_id IN (
+                SELECT _location_id
+                FROM temp.old_to_new_location_id
+                WHERE _location_id != new_location_id
+            )
+        ''')
+
+        # Discard old `location` records.
+        sql_statements.append('''
+            DELETE FROM main.location
+            WHERE _location_id IN (
+                SELECT _location_id
+                FROM temp.old_to_new_location_id
+                WHERE _location_id != new_location_id
+            )
+        ''')
+
+        # Remove old-to-new temporary table for `location_id` mapping.
+        sql_statements.append('DROP TABLE temp.old_to_new_location_id')
 
         return sql_statements
 

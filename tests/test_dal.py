@@ -910,6 +910,46 @@ class TestRemoveIndexColumnsMixin(object):
         ]
         self.assertEqual(actual, expected)
 
+    def test_strategy_coarsen_weights_and_quantities(self):
+        """The 'coarsen' strategy should override granularity error."""
+        data = [
+            ('state', 'county', 'mcd', 'place', 'attr', 'count'),
+            ('AZ', 'Graham', 'Safford', 'Cactus Flats', 'foo', 1000),
+            ('CA', 'Los Angeles', 'Newhall', 'Val Verde', 'foo', 2000),
+            ('CA', 'Riverside', 'Corona', 'Coronita', 'bar', 2000),
+            ('CA', 'San Benito', 'Hollister', 'Ridgemark', 'foo', 3000),
+            ('IN', 'LaPorte', 'Kankakee', 'Rolling Prairie', 'foo', 500),
+            ('MO', 'Cass', 'Raymore', 'Belton', 'foo', 6000),
+            ('OH', 'Franklin', 'Washington', 'Dublin', 'foo', 40000),
+            ('PA', 'Somerset', 'Somerset', 'Somerset', 'foo', 6000),
+            ('TX', 'Denton', 'Denton', 'Denton', 'foo', 100000),
+            ('TX', 'Cass', 'Atlanta', 'Queen City', 'foo', 1000),
+        ]
+        self.dal.add_quantities(data, 'count')
+
+        self.dal.remove_index_columns(    # <- Method under test.
+            ['county', 'mcd', 'place'],
+            strategy='coarsen',
+        )
+
+        actual = self.cur.execute('''
+            SELECT a.*, b.attributes, b.quantity_value
+            FROM location a
+            JOIN quantity b USING (_location_id)
+            ORDER BY a._location_id, b.attributes
+        ''').fetchall()
+        expected = [
+            (1, 'AZ', {'attr': 'foo'}, 1000),
+            (2, 'CA', {'attr': 'bar'}, 2000),  # <- Gets new _location_id.
+            (2, 'CA', {'attr': 'foo'}, 5000),  # <- Combined (2000 + 3000)
+            (5, 'IN', {'attr': 'foo'}, 500),
+            (6, 'MO', {'attr': 'foo'}, 6000),
+            (7, 'OH', {'attr': 'foo'}, 40000),
+            (8, 'PA', {'attr': 'foo'}, 6000),
+            (9, 'TX', {'attr': 'foo'}, 101000),  # <- Combined (100000 + 1000)
+        ]
+        self.assertEqual(expected, actual)
+
     def test_strategy_coarsenrestructure(self):
         """The 'coarsenrestructure' strategy should override both
         granularity and category errors.
