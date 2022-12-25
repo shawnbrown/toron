@@ -913,17 +913,17 @@ class TestRemoveIndexColumnsMixin(object):
     def test_strategy_coarsen_weights_and_quantities(self):
         """The 'coarsen' strategy should override granularity error."""
         data = [
-            ('state', 'county', 'mcd', 'place', 'attr', 'count'),
-            ('AZ', 'Graham', 'Safford', 'Cactus Flats', 'foo', 1000),
-            ('CA', 'Los Angeles', 'Newhall', 'Val Verde', 'foo', 2000),
-            ('CA', 'Riverside', 'Corona', 'Coronita', 'bar', 2000),
-            ('CA', 'San Benito', 'Hollister', 'Ridgemark', 'foo', 3000),
-            ('IN', 'LaPorte', 'Kankakee', 'Rolling Prairie', 'foo', 500),
-            ('MO', 'Cass', 'Raymore', 'Belton', 'foo', 6000),
-            ('OH', 'Franklin', 'Washington', 'Dublin', 'foo', 40000),
-            ('PA', 'Somerset', 'Somerset', 'Somerset', 'foo', 6000),
-            ('TX', 'Denton', 'Denton', 'Denton', 'foo', 100000),
-            ('TX', 'Cass', 'Atlanta', 'Queen City', 'foo', 1000),
+            ('state', 'county',      'attr', 'count'),
+            ('AZ',    'Graham',      'foo',  1000),
+            ('CA',    'Los Angeles', 'foo',  2000),
+            ('CA',    'Riverside',   'bar',  2000),
+            ('CA',    'San Benito',  'foo',  3000),
+            ('IN',    'LaPorte',     'bar',  500),
+            ('MO',    'Cass',        'foo',  6000),
+            ('OH',    'Franklin',    'bar',  40000),
+            ('PA',    'Somerset',    'baz',  6000),
+            ('TX',    'Denton',      'baz',  100000),
+            ('TX',    'Cass',        'baz',  1000),
         ]
         self.dal.add_quantities(data, 'count')
 
@@ -942,11 +942,11 @@ class TestRemoveIndexColumnsMixin(object):
             (1, 'AZ', {'attr': 'foo'}, 1000),
             (2, 'CA', {'attr': 'bar'}, 2000),  # <- Gets new _location_id.
             (2, 'CA', {'attr': 'foo'}, 5000),  # <- Combined (2000 + 3000)
-            (5, 'IN', {'attr': 'foo'}, 500),
+            (5, 'IN', {'attr': 'bar'}, 500),
             (6, 'MO', {'attr': 'foo'}, 6000),
-            (7, 'OH', {'attr': 'foo'}, 40000),
-            (8, 'PA', {'attr': 'foo'}, 6000),
-            (9, 'TX', {'attr': 'foo'}, 101000),  # <- Combined (100000 + 1000)
+            (7, 'OH', {'attr': 'bar'}, 40000),
+            (8, 'PA', {'attr': 'baz'}, 6000),
+            (9, 'TX', {'attr': 'baz'}, 101000),  # <- Combined (100000 + 1000)
         ]
         self.assertEqual(expected, actual)
 
