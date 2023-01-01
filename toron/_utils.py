@@ -93,32 +93,30 @@ def wide_to_long(
         >>> from toron import wide_to_long
         >>> wide_data = [
         ...     ('A', 'B', 'C'),
-        ...     ('a', 1,   2),
-        ...     ('b', 3,   4),
-        ...     ('c', 5,   6),
+        ...     ('x', 1,   2),
+        ...     ('y', 3,   4),
+        ...     ('z', 5,   6),
         ... ]
-
-    .. code-block::
-
         >>> long_data = wide_to_long(wide_data, value_vars=['B', 'C'])
         >>> list(long_data)
-        [{'A': 'a', 'variable': 'B', 'value': 1},
-         {'A': 'a', 'variable': 'C', 'value': 2},
-         {'A': 'b', 'variable': 'B', 'value': 3},
-         {'A': 'b', 'variable': 'C', 'value': 4},
-         {'A': 'c', 'variable': 'B', 'value': 5},
-         {'A': 'c', 'variable': 'C', 'value': 6}]
+        [{'A': 'x', 'variable': 'B', 'value': 1},
+         {'A': 'x', 'variable': 'C', 'value': 2},
+         {'A': 'y', 'variable': 'B', 'value': 3},
+         {'A': 'y', 'variable': 'C', 'value': 4},
+         {'A': 'z', 'variable': 'B', 'value': 5},
+         {'A': 'z', 'variable': 'C', 'value': 6}]
 
     .. code-block::
 
+        >>> ...
         >>> long_data = wide_to_long(wide_data, value_vars=['B', 'C'], make_attrs='altname')
         >>> list(long_data)
-        [{'A': 'a', 'altname': 'B', 'value': 1},
-         {'A': 'a', 'altname': 'C', 'value': 2},
-         {'A': 'b', 'altname': 'B', 'value': 3},
-         {'A': 'b', 'altname': 'C', 'value': 4},
-         {'A': 'c', 'altname': 'B', 'value': 5},
-         {'A': 'c', 'altname': 'C', 'value': 6}]
+        [{'A': 'x', 'altname': 'B', 'value': 1},
+         {'A': 'x', 'altname': 'C', 'value': 2},
+         {'A': 'y', 'altname': 'B', 'value': 3},
+         {'A': 'y', 'altname': 'C', 'value': 4},
+         {'A': 'z', 'altname': 'B', 'value': 5},
+         {'A': 'z', 'altname': 'C', 'value': 6}]
         >>>
 
     Transform variables into multiple attribute items (with a
@@ -129,9 +127,9 @@ def wide_to_long(
         >>> from toron import wide_to_long
         >>> wide_data = [
         ...     ('A', 'B1970', 'C1980', 'D'),
-        ...     ('a', 10,      20,      30),
-        ...     ('b', 40,      50,      60),
-        ...     ('c', 70,      80,      90),
+        ...     ('x', 10,      20,      30),
+        ...     ('y', 40,      50,      60),
+        ...     ('z', 70,      80,      90),
         ... ]
 
     .. code-block::
@@ -144,15 +142,15 @@ def wide_to_long(
 
         >>> long_data = wide_to_long(wide_data, ['B1970', 'C1980', 'D'], make_attrs)
         >>> list(long_data)
-        [{'A': 'a', 'letter': 'B', 'year': '1970', 'value': 10},
-         {'A': 'a', 'letter': 'C', 'year': '1980', 'value': 20},
-         {'A': 'a', 'letter': 'D', 'year': '',     'value': 30},
-         {'A': 'b', 'letter': 'B', 'year': '1970', 'value': 40},
-         {'A': 'b', 'letter': 'C', 'year': '1980', 'value': 50},
-         {'A': 'b', 'letter': 'D', 'year': '',     'value': 60},
-         {'A': 'c', 'letter': 'B', 'year': '1970', 'value': 70},
-         {'A': 'c', 'letter': 'C', 'year': '1980', 'value': 80},
-         {'A': 'c', 'letter': 'D', 'year': '',     'value': 90}]
+        [{'A': 'x', 'letter': 'B', 'year': '1970', 'value': 10},
+         {'A': 'x', 'letter': 'C', 'year': '1980', 'value': 20},
+         {'A': 'x', 'letter': 'D', 'year': '',     'value': 30},
+         {'A': 'y', 'letter': 'B', 'year': '1970', 'value': 40},
+         {'A': 'y', 'letter': 'C', 'year': '1980', 'value': 50},
+         {'A': 'y', 'letter': 'D', 'year': '',     'value': 60},
+         {'A': 'z', 'letter': 'B', 'year': '1970', 'value': 70},
+         {'A': 'z', 'letter': 'C', 'year': '1980', 'value': 80},
+         {'A': 'z', 'letter': 'D', 'year': '',     'value': 90}]
     """
     attrs_func: Callable[[str], Mapping[str, str]]
     if isinstance(make_attrs, str):
