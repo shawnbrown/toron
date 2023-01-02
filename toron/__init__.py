@@ -12,7 +12,7 @@ from toron.connector import READ_ONLY
 from ._utils import (
     ToronError,
     ToronWarning,
-    wide_to_long,
+    wide_to_narrow,
 )
 
 ToronError.__module__ = 'toron'
@@ -24,5 +24,5 @@ __all__ = [
     'READ_ONLY',
     'ToronError',
     'ToronWarning',
-    'wide_to_long',
+    'wide_to_narrow',
 ]

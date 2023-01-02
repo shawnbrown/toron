@@ -12,8 +12,8 @@ Standard Library and may be imported.
 
 from itertools import chain
 from ._typing import (
-    Callable,
     Generator,
+    Hashable,
     Iterable,
     Mapping,
     Optional,
@@ -52,28 +52,28 @@ def _data_to_dict_rows(
     return dict_rows
 
 
-def wide_to_long(
+def wide_to_narrow(
     data: Union[Iterable[Mapping], Iterable[Sequence]],
-    value_vars: Sequence[str],
-    make_attrs: Union[str, Callable[[str], Mapping[str, str]]] = 'variable',
+    cols_to_stack: Sequence[str],
+    var_name: Hashable = 'variable',
+    value_name: Hashable = 'value',
     *,
-    value_name: str = 'value',
     columns: Optional[Sequence[str]] = None,
 ) -> Generator[Mapping, None, None]:
-    """A generator function to unpivot data from wide to long format
-    and yield dictionary rows.
+    """A generator function that takes an iterable of wide-format
+    records and yields narrow-format dictionary rows.
 
     Parameters
     ----------
 
     data : iterable of mappings (dict) or sequences
         Wide-format data.
-    value_vars : sequence of str
-        Column(s) to unpivot.
-    make_attrs : callable or str, default 'variable'
-        Function or string used to make attribute item(s).
-    value_name : str, default 'value'
-        Name to use for the 'value' column.
+    cols_to_stack : sequence of str
+        Name of column(s) to stack.
+    var_name : hashable, default 'variable'
+        Name to use for the variable column.
+    value_name : hashable, default 'value'
+        Name to use for the value column.
     columns : sequence of str, optional
         Column names to use if data is a sequence with no header row.
 
@@ -81,113 +81,82 @@ def wide_to_long(
     -------
 
     Generator
-        Unpivoted dictionary rows.
+        Narrow-format dictionary rows.
 
     Examples
     --------
 
-    Use variable as a single attribute item:
-
     .. code-block::
 
-        >>> from toron import wide_to_long
+        >>> from toron import wide_to_narrow
         >>> wide_data = [
-        ...     ('A', 'B', 'C'),
-        ...     ('x', 1,   2),
-        ...     ('y', 3,   4),
-        ...     ('z', 5,   6),
-        ... ]
-        >>> long_data = wide_to_long(wide_data, value_vars=['B', 'C'])
-        >>> list(long_data)
-        [{'A': 'x', 'variable': 'B', 'value': 1},
-         {'A': 'x', 'variable': 'C', 'value': 2},
-         {'A': 'y', 'variable': 'B', 'value': 3},
-         {'A': 'y', 'variable': 'C', 'value': 4},
-         {'A': 'z', 'variable': 'B', 'value': 5},
-         {'A': 'z', 'variable': 'C', 'value': 6}]
-
-    .. code-block::
-
-        >>> ...
-        >>> long_data = wide_to_long(wide_data, value_vars=['B', 'C'], make_attrs='altname')
-        >>> list(long_data)
-        [{'A': 'x', 'altname': 'B', 'value': 1},
-         {'A': 'x', 'altname': 'C', 'value': 2},
-         {'A': 'y', 'altname': 'B', 'value': 3},
-         {'A': 'y', 'altname': 'C', 'value': 4},
-         {'A': 'z', 'altname': 'B', 'value': 5},
-         {'A': 'z', 'altname': 'C', 'value': 6}]
-        >>>
-
-    Transform variables into multiple attribute items (with a
-    function):
-
-    .. code-block::
-
-        >>> from toron import wide_to_long
-        >>> wide_data = [
-        ...     ('A', 'B1970', 'C1980', 'D'),
-        ...     ('x', 10,      20,      30),
-        ...     ('y', 40,      50,      60),
-        ...     ('z', 70,      80,      90),
+        ...     ('A', 'B', 'C', 'D'),
+        ...     ('x', 10,  20,  30),
+        ...     ('y', 40,  50,  60),
+        ...     ('z', 70,  80,  90),
         ... ]
 
-    .. code-block::
-
-        >>> def make_attrs(var):
-        ...     return {'letter': var[:1], 'year': var[1:]}
-        ...
+    Stack columns ``'B'``, ``'C'``, and ``'D'``:
 
     .. code-block::
 
-        >>> long_data = wide_to_long(wide_data, ['B1970', 'C1980', 'D'], make_attrs)
+        >>> long_data = wide_to_narrow(wide_data, ['B', 'C', 'D'])
         >>> list(long_data)
-        [{'A': 'x', 'letter': 'B', 'year': '1970', 'value': 10},
-         {'A': 'x', 'letter': 'C', 'year': '1980', 'value': 20},
-         {'A': 'x', 'letter': 'D', 'year': '',     'value': 30},
-         {'A': 'y', 'letter': 'B', 'year': '1970', 'value': 40},
-         {'A': 'y', 'letter': 'C', 'year': '1980', 'value': 50},
-         {'A': 'y', 'letter': 'D', 'year': '',     'value': 60},
-         {'A': 'z', 'letter': 'B', 'year': '1970', 'value': 70},
-         {'A': 'z', 'letter': 'C', 'year': '1980', 'value': 80},
-         {'A': 'z', 'letter': 'D', 'year': '',     'value': 90}]
+        [{'A': 'x', 'variable': 'B', 'value': 10},
+         {'A': 'x', 'variable': 'C', 'value': 20},
+         {'A': 'x', 'variable': 'D', 'value': 30},
+         {'A': 'y', 'variable': 'B', 'value': 40},
+         {'A': 'y', 'variable': 'C', 'value': 50},
+         {'A': 'y', 'variable': 'D', 'value': 60},
+         {'A': 'x', 'variable': 'B', 'value': 70},
+         {'A': 'x', 'variable': 'C', 'value': 80},
+         {'A': 'x', 'variable': 'D', 'value': 90}]
+
+    Because column ``'A'`` (above) was left unstacked, its values are
+    repeated for each associated item.
+
+    Specify different names for the variable and value items:
+
+    .. code-block::
+
+        >>> long_data = wide_to_narrow(wide_data, ['B', 'C', 'D'], 'myvar', 'myval')
+        >>> list(long_data)
+        [{'A': 'x', 'myvar': 'B', 'myval': 10},
+         {'A': 'x', 'myvar': 'C', 'myval': 20},
+         {'A': 'x', 'myvar': 'D', 'myval': 30},
+         {'A': 'y', 'myvar': 'B', 'myval': 40},
+         {'A': 'y', 'myvar': 'C', 'myval': 50},
+         {'A': 'y', 'myvar': 'D', 'myval': 60},
+         {'A': 'x', 'myvar': 'B', 'myval': 70},
+         {'A': 'x', 'myvar': 'C', 'myval': 80},
+         {'A': 'x', 'myvar': 'D', 'myval': 90}]
     """
-    attrs_func: Callable[[str], Mapping[str, str]]
-    if isinstance(make_attrs, str):
-        attrs_func = lambda x: {make_attrs: x}  # type: ignore [dict-item]
-    elif callable(make_attrs):
-        attrs_func = make_attrs
-    else:
-        cls_name = make_attrs.__class__.__name__
-        raise TypeError(f'make_attrs type unsupported: {cls_name}')
-
     dict_rows = _data_to_dict_rows(data, columns)
 
     for input_row in dict_rows:
-        other_vars_dict = {k: v for k, v in input_row.items() if k not in value_vars}
-        for var in value_vars:
+        if var_name in input_row:
+            msg = f'must provide alternate name for variable column: ' \
+                  f'{var_name!r} already present in {input_row!r}'
+            raise ValueError(msg)
+
+        if value_name in input_row:
+            msg = f'must provide alternate name for value column: ' \
+                  f'{value_name!r} already present in {input_row!r}'
+            raise ValueError(msg)
+
+        unstacked_cols = [k for k in input_row if k not in cols_to_stack]
+
+        for var in cols_to_stack:
             try:
                 value = input_row[var]
             except KeyError:
-                msg = f'wide_to_long() got value_vars not present in data: ' \
-                      f'{var!r} not in {list(input_row.keys())!r}'
+                msg = f'wide_to_narrow column not found: {var!r} not in ' \
+                      f'{list(input_row.keys())!r}'
                 generator_error = ToronError(msg)
                 generator_error.__cause__ = None
                 raise generator_error
 
-            if value is None or value == '':
-                continue
-
-            output_row = dict(attrs_func(var))
-
-            collisions = output_row.keys() & other_vars_dict.keys()
-            if collisions:
-                import warnings
-                formatted = ', '.join(repr(k) for k in collisions)
-                msg = f'attributes cannot use the same names as other columns: {formatted}'
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
-
-            output_row.update(other_vars_dict)
+            output_row = {k: input_row[k] for k in unstacked_cols}
+            output_row[var_name] = var
             output_row[value_name] = value
             yield output_row
-
