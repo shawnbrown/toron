@@ -221,7 +221,7 @@ def parse_edge_shorthand(string):
 
     Note: This function will not match filenames that include any
     of the following characters: ``<``, ``>``, ``:``, ``"``, ``/``,
-    ``\``, ``|``, ``?``, and ``*``.
+    ``\\``, ``|``, ``?``, and ``*``.
     """
     pattern = r"""
         ^                                     # Start of string.
