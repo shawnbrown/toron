@@ -11,6 +11,7 @@ Standard Library and may be imported.
 """
 
 from itertools import chain
+import re
 from ._typing import (
     Generator,
     Hashable,
@@ -160,3 +161,90 @@ def wide_to_narrow(
             output_row[var_name] = var
             output_row[value_name] = value
             yield output_row
+
+
+def parse_edge_shorthand(string):
+    """Parse a string containing a special shorthand syntax used to
+    describe edges between nodes. If the given syntax is valid, its
+    contents are parsed and returned as a dictionary of strings. When
+    a string does not contain valid shorthand syntax, a ``None`` value
+    is returned.
+
+    Sample of the edge-description shorthand:
+
+    .. code-block:: text
+
+        edge_name: node_file1 <--> node_file2
+
+    Edge-description with an optional attribute selector:
+
+    .. code-block:: text
+
+        edge_name: node_file1 <--> node_file2 : [selector]
+
+    Code example::
+
+        >>> parse_edge_shorthand('population: mynode1 <--> mynode2')
+        {'edge_name': 'population',
+         'node_file1': 'mynode1',
+         'direction': '<-->',
+         'node_file2': 'mynode2',
+         'selector': None}
+
+    Code example with an attribute selector::
+
+        >>> parse_edge_shorthand('population: mynode1 <--> mynode2 : [age="20to34"]')
+        {'edge_name': 'population',
+         'node_file1': 'mynode1',
+         'direction': '<-->',
+         'node_file2': 'mynode2',
+         'selector': '[age="20to34"]'}
+
+    **EDGE DESCRIPTION PARTS**
+
+    edge_name:
+        Name of the edge to add.
+    node_file1:
+        Filename of the left-hand node in the mapping data. The
+        ``.toron`` suffix can be omitted in the shorthand syntax.
+    direction (``->``, ``-->``, ``<-``, ``<--``, ``<->`` or ``<-->``):
+        Indicates the direction of the edge to be added. Directions
+        can be left-to-right, right-to-left, or indicate that edges
+        should be added in both directions (left-to-right *and*
+        right-to-left).
+    node_file2:
+        Filename of the right-hand node in the mapping data. The
+        ``.toron`` suffix can be omitted in the shorthand syntax.
+    selector:
+        An optional attribute selector to associate with the
+        edge.
+
+    Note: This function will not match filenames that include any
+    of the following characters: ``<``, ``>``, ``:``, ``"``, ``/``,
+    ``\``, ``|``, ``?``, and ``*``.
+    """
+    pattern = r"""
+        ^                                     # Start of string.
+        \s*                                   # Zero or more whitespace.
+        (?P<edge_name>[^<>:"/\\|?*]+?)        # GROUP 1 (EDGE NAME)
+        \s*                                   # Zero or more whitespace.
+        :                                     # Colon/separator.
+        \s*                                   # Zero or more whitespace.
+        (?P<node_file1>[^<>:"/\\|?*]+?)       # GROUP 2 (FIRST NODE FILENAME)
+        \s+                                   # One or more whitespace.
+        (?P<direction>->|-->|<->|<-->|<-|<--) # GROUP 3 (EDGE DIRECTION)
+        \s+                                   # One or more whitespace.
+        (?P<node_file2>[^<>:"/\\|?*]+?)       # GROUP 4 (SECOND NODE FILENAME)
+        \s*                                   # Zero or more whitespace.
+        (?:                                   # Start of non-capturing group:
+        :                                     # - Colon/separator.
+        \s*                                   # - Zero or more whitespace.
+        (?P<selector>\[.*\])?                 # - GROUP 5 (AN ATTRIBUTE SELECTOR)
+        )?                                    # End of non-capturing group (zero or one).
+        \s*                                   # Zero or more whitespace.
+        $                                     # End of string.
+    """
+    matched = re.match(pattern, string, re.VERBOSE)
+    if matched:
+        return matched.groupdict()
+    return None
