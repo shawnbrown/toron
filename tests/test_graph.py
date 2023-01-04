@@ -7,7 +7,7 @@ except ImportError:
 from . import _unittest as unittest
 from .common import TempDirTestCase
 
-from toron.graph import Graph
+from toron._gpn_graph import Graph
 from toron._gpn_node import Node
 from toron import IN_MEMORY
 
