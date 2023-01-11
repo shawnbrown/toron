@@ -14,9 +14,9 @@ from .common import TempDirTestCase
 from toron._gpn_node import Node
 from toron.connector import _schema
 from toron.connector import _SharedConnection
-from toron import IN_MEMORY
-from toron import TEMP_FILE
-from toron import READ_ONLY
+from toron.connector import IN_MEMORY
+from toron.connector import TEMP_FILE
+from toron.connector import READ_ONLY
 
 
 class TestInstantiation(TempDirTestCase):

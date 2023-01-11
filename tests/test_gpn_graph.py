@@ -9,7 +9,7 @@ from .common import TempDirTestCase
 
 from toron._gpn_graph import Graph
 from toron._gpn_node import Node
-from toron import IN_MEMORY
+from toron.connector import IN_MEMORY
 
 
 class TestInstantiation(TempDirTestCase):
