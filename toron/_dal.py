@@ -79,6 +79,7 @@ _SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
 _temp_files_to_delete_atexit: Set[str] = set()
 
 
+@atexit.register  # <- Register with `atexit` module.
 def _delete_leftover_temp_files():
     """Remove temporary files left-over from `cache_to_drive` usage.
 
@@ -106,9 +107,6 @@ def _delete_leftover_temp_files():
             import warnings
             msg = f'cannot remove temporary file {path!r}, {e.__class__.__name__}'
             warnings.warn(msg, RuntimeWarning)
-
-
-atexit.register(_delete_leftover_temp_files)  # <- Register!.
 
 
 Strategy: TypeAlias = Literal['preserve', 'restructure', 'coarsen', 'coarsenrestructure']
