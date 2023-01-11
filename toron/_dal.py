@@ -300,22 +300,35 @@ class DataAccessLayer(object):
 
             >>> dal = DataAccessLayer.open('mynode.toron')
 
-        If you want to make sure the file can be modified, you can
-        require ``'readwrite'`` permissions. Use this mode with caution
-        since changes are applied immediately to the file on drive and
-        cannot be undone::
-
-            >>> dal = DataAccessLayer.open('mynode.toron', required_permissions='readwrite')
-
-        You can also open a node file without requiring any specific
-        permissions::
+        If you want to disable file permission requirements, you can
+        set *required_permissions* to ``None``::
 
             >>> dal = DataAccessLayer.open('mynode.toron', required_permissions=None)
 
-        If you need to work on files that are too large to fit into
-        memory but you don't want to risk damaging the original node,
-        you can use ``from_file()`` with the ``cache_to_drive=True``
-        option.
+        If you want to make sure the file can be modified, you can
+        require ``'readwrite'`` permissions::
+
+            >>> dal = DataAccessLayer.open('mynode.toron', required_permissions='readwrite')
+
+        If a file does not satisfy the required permissions, then a
+        :class:`PermissionError` is raised.
+
+        .. warning::
+            Use caution when writing to a node that has been opened
+            directly. Changes are applied **immediately** to the file
+            on drive and cannot be undone.
+
+        .. tip::
+            If you need to work on files that are too large to fit
+            into memory but you don't want to risk changing something
+            by accident, try one of the following:
+
+            * Using ``Node.from_file(..., cache_to_drive=True)`` to
+              load the node.
+            * Making a copy of the file and working on that instead.
+
+            Once you have verified that your changes are good, replace
+            the original with your updated version.
         """
         path = os.path.abspath(os.fsdecode(path))
         _schema.get_connection(path, required_permissions).close()  # Verify path to Toron node file.
