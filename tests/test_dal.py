@@ -637,7 +637,7 @@ class TestRenameIndexColumns(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
         self.dal.set_data({'add_index_columns': ['state', 'county', 'town']})
-        self.dal.add_index_labels([
+        self.dal.add_index_records([
             ('state', 'county', 'town'),
             ('CA', 'SAN DIEGO', 'CORONADO'),
             ('IN', 'GRANT', 'MARION'),
@@ -762,7 +762,7 @@ class TestRemoveIndexColumnsMixin(object):
             ('TX', 'Denton', 'Denton', 'Denton', 102631),
             ('TX', 'Cass', 'Atlanta', 'Queen City', 1397),
         ]
-        self.dal.add_index_labels(data)
+        self.dal.add_index_records(data)
         self.dal.add_weights(data, name='population', selectors=None)
 
     def test_initial_fixture_state(self):
@@ -1041,7 +1041,7 @@ class TestRemoveIndexColumnsLegacy(TestRemoveIndexColumnsMixin, unittest.TestCas
     class_under_test = DataAccessLayerPre24
 
 
-class TestAddIndexLabelsMakeSql(unittest.TestCase):
+class TestAddIndexRecordsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
@@ -1055,32 +1055,32 @@ class TestAddIndexLabelsMakeSql(unittest.TestCase):
     def test_simple_case(self):
         """Insert columns that match index columns."""
         columns = ['state', 'county', 'town']
-        sql = DataAccessLayer._add_index_labels_make_sql(self.cur, columns)
+        sql = DataAccessLayer._add_index_records_make_sql(self.cur, columns)
         expected = 'INSERT INTO main.label_index ("state", "county", "town") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_differently_ordered_columns(self):
         """Order should reflect given *columns* not table order."""
         columns = ['town', 'county', 'state']  # <- Reverse order from table cols.
-        sql = DataAccessLayer._add_index_labels_make_sql(self.cur, columns)
+        sql = DataAccessLayer._add_index_records_make_sql(self.cur, columns)
         expected = 'INSERT INTO main.label_index ("town", "county", "state") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_subset_of_columns(self):
         """Insert fewer columns than exist in the index table."""
         columns = ['state', 'county']  # <- Does not include "town", and that's OK.
-        sql = DataAccessLayer._add_index_labels_make_sql(self.cur, columns)
+        sql = DataAccessLayer._add_index_records_make_sql(self.cur, columns)
         expected = 'INSERT INTO main.label_index ("state", "county") VALUES (?, ?)'
         self.assertEqual(sql, expected)
 
     def test_bad_column_value(self):
         regex = 'invalid column name: "region"'
         with self.assertRaisesRegex(sqlite3.OperationalError, regex):
-            DataAccessLayer._add_index_labels_make_sql(self.cur, ['state', 'region'])
+            DataAccessLayer._add_index_records_make_sql(self.cur, ['state', 'region'])
 
 
-class TestAddIndexLabels(unittest.TestCase):
-    def test_add_index_labels(self):
+class TestAddIndexRecords(unittest.TestCase):
+    def test_add_index_records(self):
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
@@ -1089,7 +1089,7 @@ class TestAddIndexLabels(unittest.TestCase):
             ('IN', 'LA PORTE'),
             ('MN', 'HENNEPIN '),
         ]
-        dal.add_index_labels(labels, columns=['state', 'county'])
+        dal.add_index_records(labels, columns=['state', 'county'])
 
         con = dal._connection
         result = con.execute('SELECT * FROM label_index').fetchall()
@@ -1100,7 +1100,7 @@ class TestAddIndexLabels(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_add_index_labels_no_column_arg(self):
+    def test_add_index_records_no_column_arg(self):
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
@@ -1110,7 +1110,7 @@ class TestAddIndexLabels(unittest.TestCase):
             ('IN', 'LA PORTE'),
             ('MN', 'HENNEPIN '),
         ]
-        dal.add_index_labels(labels) # <- No *columns* argument given.
+        dal.add_index_records(labels) # <- No *columns* argument given.
 
         con = dal._connection
         result = con.execute('SELECT * FROM label_index').fetchall()
@@ -1121,7 +1121,7 @@ class TestAddIndexLabels(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_add_index_labels_column_subset(self):
+    def test_add_index_records_column_subset(self):
         """Omitted columns should get default value ('-')."""
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
@@ -1133,7 +1133,7 @@ class TestAddIndexLabels(unittest.TestCase):
             ('IN',),
             ('MN',),
         ]
-        dal.add_index_labels(labels) # <- No *columns* argument given.
+        dal.add_index_records(labels) # <- No *columns* argument given.
 
         con = dal._connection
         result = con.execute('SELECT * FROM label_index').fetchall()
@@ -1144,7 +1144,7 @@ class TestAddIndexLabels(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_add_index_labels_column_superset(self):
+    def test_add_index_records_column_superset(self):
         """Surplus columns should be filtered-out before loading."""
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
@@ -1156,7 +1156,7 @@ class TestAddIndexLabels(unittest.TestCase):
             ('ENC',    'IN',    'GROUP7', 'LA PORTE'),
             ('WNC',    'MN',    'GROUP1', 'HENNEPIN '),
         ]
-        dal.add_index_labels(labels) # <- No *columns* argument given.
+        dal.add_index_records(labels) # <- No *columns* argument given.
 
         con = dal._connection
         result = con.execute('SELECT * FROM label_index').fetchall()
@@ -1265,7 +1265,7 @@ class TestAddWeightsSetIsComplete(unittest.TestCase):
         self.columns = ['label_a', 'label_b']
         for stmnt in dal_class._add_index_columns_make_sql(self.cur, self.columns):
             self.cur.execute(stmnt)
-        sql = dal_class._add_index_labels_make_sql(self.cur, self.columns)
+        sql = dal_class._add_index_records_make_sql(self.cur, self.columns)
         iterator = [
             ('X', '001'),
             ('Y', '001'),
@@ -1319,7 +1319,7 @@ class TestAddWeights(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
         self.dal.set_data({'add_index_columns': ['state', 'county', 'tract']})
-        self.dal.add_index_labels([
+        self.dal.add_index_records([
             ('state', 'county', 'tract'),
             ('12', '001', '000200'),
             ('12', '003', '040101'),
@@ -2000,7 +2000,7 @@ class TestStaticDisaggregate(unittest.TestCase):
             ('C',    'y'),
             ('C',    'z'),
         ]
-        self.dal.add_index_labels(labels)
+        self.dal.add_index_records(labels)
 
         weighting = [
             ('col1', 'col2', 'weight'),
@@ -2213,7 +2213,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             ('C',    'y'),
             ('C',    'z'),
         ]
-        self.dal.add_index_labels(labels)
+        self.dal.add_index_records(labels)
 
         weighting = [
             ('col1', 'col2', 'weight'),

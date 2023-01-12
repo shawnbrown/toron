@@ -854,7 +854,7 @@ class DataAccessLayer(object):
             self._remove_index_columns_execute_sql(cur, columns, strategy)
 
     @classmethod
-    def _add_index_labels_make_sql(
+    def _add_index_records_make_sql(
         cls, cursor: sqlite3.Cursor, columns: Iterable[str]
     ) -> str:
         """Return a SQL statement adding new index records (for use
@@ -863,7 +863,7 @@ class DataAccessLayer(object):
         Example:
 
             >>> dal = DataAccessLayer(...)
-            >>> dal._add_index_labels_make_sql(cursor, ['state', 'county'])
+            >>> dal._add_index_records_make_sql(cursor, ['state', 'county'])
             'INSERT INTO label_index ("state", "county") VALUES (?, ?)'
         """
         columns = [_schema.normalize_identifier(col) for col in columns]
@@ -881,8 +881,9 @@ class DataAccessLayer(object):
         values_clause = ', '.join('?' * len(columns))
         return f'INSERT INTO main.label_index ({columns_clause}) VALUES ({values_clause})'
 
-    def add_index_labels(
-        self, iterable: Iterable[Sequence[str]],
+    def add_index_records(
+        self,
+        iterable: Iterable[Sequence[str]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
         iterator = iter(iterable)
@@ -898,7 +899,7 @@ class DataAccessLayer(object):
             columns = tuple(compress(columns, selectors))
             iterator = (tuple(compress(row, selectors)) for row in iterator)
 
-            sql = self._add_index_labels_make_sql(cur, columns)
+            sql = self._add_index_records_make_sql(cur, columns)
             cur.executemany(sql, iterator)
 
     @staticmethod
