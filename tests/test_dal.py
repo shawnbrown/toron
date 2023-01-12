@@ -2617,13 +2617,13 @@ class TestGetColumnNames(unittest.TestCase):
 
     def test_get_names(self):
         self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
-        data = self.dal.get_data(['column_names'])  # <- Method under test.
-        self.assertEqual(data, {'column_names': ['A', 'B', 'C']})
+        data = self.dal.get_data(['index_columns'])  # <- Method under test.
+        self.assertEqual(data, {'index_columns': ['A', 'B', 'C']})
 
     def test_no_columns_added(self):
         """Should return empty list when no columns have been added."""
-        data = self.dal.get_data(['column_names'])  # <- Method under test.
-        self.assertEqual(data, {'column_names': []})
+        data = self.dal.get_data(['index_columns'])  # <- Method under test.
+        self.assertEqual(data, {'index_columns': []})
 
 
 class TestGetAndSetDiscreteCategories(unittest.TestCase):

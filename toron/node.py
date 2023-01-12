@@ -29,11 +29,11 @@ class Node(object):
             >>> node = toron.Node()
             >>> node.add_index_columns(['state', 'county', 'mcd'])
         """
-        data = self._dal.get_data(['discrete_categories', 'column_names'])
+        data = self._dal.get_data(['discrete_categories', 'index_columns'])
 
         minimized = minimize_discrete_categories(
             data['discrete_categories'],
-            [set(columns).union(data['column_names'])],
+            [set(columns).union(data['index_columns'])],
         )
         structure = make_structure(minimized)
 

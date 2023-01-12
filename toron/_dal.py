@@ -1685,7 +1685,7 @@ class DataAccessLayer(object):
         data = {}
         with self._transaction() as cur:
             for key in keys:
-                if key == 'column_names':
+                if key == 'index_columns':
                     cur.execute("PRAGMA main.table_info('label_index')")
                     names = [row[1] for row in cur.fetchall()]
                     data[key] = names[1:]  # Slice-off index_id.
@@ -1812,11 +1812,11 @@ class DataAccessLayer(object):
     def add_discrete_categories(
         self, discrete_categories: Iterable[Set[str]]
     ) -> None:
-        data = self.get_data(['discrete_categories', 'column_names'])
+        data = self.get_data(['discrete_categories', 'index_columns'])
         minimized = minimize_discrete_categories(
             data['discrete_categories'],
             discrete_categories,
-            [set(data['column_names'])],
+            [set(data['index_columns'])],
         )
 
         omitted = [cat for cat in discrete_categories if (cat not in minimized)]
@@ -1832,13 +1832,13 @@ class DataAccessLayer(object):
     def remove_discrete_categories(
         self, discrete_categories: List[Set[str]]
     ) -> None:
-        data = self.get_data(['discrete_categories', 'column_names'])
+        data = self.get_data(['discrete_categories', 'index_columns'])
         current_cats = data['discrete_categories']
-        mandatory_cat = set(data['column_names'])
+        mandatory_cat = set(data['index_columns'])
 
         if mandatory_cat in discrete_categories:
             import warnings
-            formatted = ', '.join(repr(x) for x in data['column_names'])
+            formatted = ', '.join(repr(x) for x in data['index_columns'])
             msg = f'cannot remove whole space: {{{mandatory_cat}}}'
             warnings.warn(msg, category=ToronWarning, stacklevel=2)
             discrete_categories.remove(mandatory_cat)  # <- Remove and continue.
