@@ -72,13 +72,22 @@ def normalize_tabular_data(data: TabularData) -> Iterator[Sequence]:
     # Handle pandas.DataFrame() objects.
     if data.__class__.__name__ == 'DataFrame' \
             and data.__class__.__module__.partition('.')[0] == 'pandas':
-        if data.index.names == [None]:                                 # type: ignore [union-attr]
-            fieldnames = list(data.columns)                            # type: ignore [union-attr]
-            records = (list(x) for x in data.to_records(index=False))  # type: ignore [union-attr]
+        df_index = data.index            # type: ignore [union-attr]
+        df_columns = data.columns        # type: ignore [union-attr]
+        df_to_records = data.to_records  # type: ignore [union-attr]
+
+        if df_index.names == [None]:
+            fieldnames = list(df_columns)
+            records = (list(x) for x in df_to_records(index=False))
             return chain([fieldnames], records)
         else:
-            fieldnames = list(data.index.names) + list(data.columns)   # type: ignore [union-attr]
-            records = (list(x) for x in data.to_records(index=True))   # type: ignore [union-attr]
+            if any(x is None for x in df_index.names):
+                type_name = df_index.__class__.__name__
+                index_names = list(df_index.names)
+                msg = f'{type_name} names must not be None, got {index_names!r}'
+                raise ValueError(msg)
+            fieldnames = list(df_index.names) + list(df_columns)
+            records = (list(x) for x in df_to_records(index=True))
             return chain([fieldnames], records)
 
     try:

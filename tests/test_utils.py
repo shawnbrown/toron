@@ -148,7 +148,16 @@ class TestNormalizeTabularDataPandas(unittest.TestCase):
         ]
         self.assertEqual(list(normalized), expected)
 
-    def test_multiindex(self):
+    def test_multiindex_unnamed(self):
+        index_values = [('x', 'one'), ('x', 'two'), ('y', 'three')]
+        index = pandas.MultiIndex.from_tuples(index_values)
+        self.df.index = index
+
+        regex = r"MultiIndex names must not be None, got \[None, None\]"
+        with self.assertRaisesRegex(ValueError, regex):
+            normalized = normalize_tabular_data(self.df)
+
+    def test_multiindex_named(self):
         index_values = [('x', 'one'), ('x', 'two'), ('y', 'three')]
         index = pandas.MultiIndex.from_tuples(index_values, names=['A', 'B'])
         self.df.index = index
