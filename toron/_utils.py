@@ -10,17 +10,86 @@ modules (like `_typing`) are treated as if they are part of the
 Standard Library and may be imported.
 """
 
+import csv
 from itertools import chain
 import re
 from ._typing import (
     Generator,
     Hashable,
     Iterable,
+    Iterator,
     Mapping,
     Optional,
     Sequence,
+    TypeAlias,
     Union,
 )
+
+
+TabularData : TypeAlias = Union[
+    Iterable[Sequence],
+    Iterable[Mapping],
+]
+
+TabularData.__doc__ = """
+A type alias for objects that can represent tabular data.
+
+Valid tabular data sources include:
+
+* an iterable of sequences (uses first item as a "header" row)
+* an iterable of dictionary rows (expects uniform dictionaries)
+
+This includes ``csv.reader(...)`` (an iterable of sequences)
+and ``csv.DictReader`` (an iterable of dictionary rows).
+"""
+
+
+_csv_reader_type = type(csv.reader([]))
+
+
+def normalize_tabular_data(data: TabularData) -> Iterator[Sequence]:
+    """Normalize tabular data sources as an iterator of sequence rows.
+
+    If *data* is an iterable of dictionary rows, this function assumes
+    that all rows share a uniform set of keys.
+    """
+    # Return csv.reader(...) object unchanged.
+    if isinstance(data, _csv_reader_type):
+        return data
+
+    # Build rows using DictReader.fieldnames attribute.
+    if isinstance(data, csv.DictReader):
+        fieldnames = list(data.fieldnames)  # type: ignore [arg-type]
+        make_row = lambda dictrow: [dictrow.get(x, None) for x in fieldnames]
+        return chain([fieldnames], (make_row(x) for x in data))
+
+    try:
+        iterator = iter(data)
+    except TypeError:
+        cls_name = data.__class__.__name__
+        msg = f'cannot normalize object as tabular data, got {cls_name!r}: {data!r}'
+        raise TypeError(msg)
+
+    first_value = next(iterator, None)
+
+    # Empty iterable.
+    if first_value is None:
+        return iter([])
+
+    # Iterable of mappings (assumes uniform keys).
+    if isinstance(first_value, Mapping):
+        fieldnames = list(first_value.keys())
+        make_row = lambda dictrow: [dictrow.get(x, None) for x in fieldnames]
+        iterator = (make_row(x) for x in chain([first_value], iterator))
+        return chain([fieldnames], iterator)  # type: ignore [arg-type]
+
+    # Once all other cases are handled, remaining case should be
+    # an iterable of sequences.
+    if not isinstance(first_value, Sequence):
+        cls_name = first_value.__class__.__name__
+        msg = f'rows must be sequences, got {cls_name!r}: {first_value!r}'
+        raise TypeError(msg)
+    return chain([first_value], iterator)  # type: ignore [arg-type]
 
 
 class ToronError(Exception):

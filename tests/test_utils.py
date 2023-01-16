@@ -1,9 +1,96 @@
 """Tests for toron/_utils.py module."""
 
+import csv
+import io
 import unittest
 
 from toron._utils import ToronError
-from toron._utils import wide_to_narrow
+from toron._utils import (
+    normalize_tabular_data,
+    wide_to_narrow,
+)
+
+
+class TestNormalizeTabularData(unittest.TestCase):
+    def test_csv_reader(self):
+        """CSV reader() objects should be returned unchanged."""
+        reader = csv.reader(io.StringIO(
+            'col1,col2\n'
+            '1,a\n'
+            '2,b\n'
+            '3,c\n'
+        ))
+        result = normalize_tabular_data(reader)
+        self.assertIs(result, reader, msg='should be original object')
+
+        expected = [
+            ['col1', 'col2'],
+            ['1', 'a'],
+            ['2', 'b'],
+            ['3', 'c'],
+        ]
+        self.assertEqual(list(result), expected, msg='should return all values')
+
+    def test_csv_dictreader(self):
+        dictreader = csv.DictReader(io.StringIO(
+            'col1,col2\n'
+            '1,a\n'
+            '2,b\n'
+            '3,c\n'
+        ))
+        result = normalize_tabular_data(dictreader)
+
+        expected = [
+            ['col1', 'col2'],
+            ['1', 'a'],
+            ['2', 'b'],
+            ['3', 'c'],
+        ]
+        self.assertEqual(list(result), expected, msg='should return all values')
+
+    def test_sequence_unchanged(self):
+        data = [
+            ['a', 'b', 'c'],
+            [1,   2,   3],
+            [4,   5,   6],
+        ]
+        result = normalize_tabular_data(data)
+        self.assertEqual(list(result), data)
+
+    def test_dict_rows(self):
+        data = [
+            {'a': 1, 'b': 2, 'c': 3},
+            {'a': 4, 'b': 5, 'c': 6},
+        ]
+        result = normalize_tabular_data(data)
+
+        expected = [
+            ['a', 'b', 'c'],
+            [1,   2,   3],
+            [4,   5,   6],
+        ]
+        self.assertEqual(list(result), expected)
+
+    def test_empty_dataset(self):
+        data = iter([])
+        result = normalize_tabular_data(data)
+        self.assertEqual(list(result), [])
+
+    def test_bad_object(self):
+        data = 123
+        regex = "cannot normalize object as tabular data, got 'int': 123"
+        with self.assertRaisesRegex(TypeError, regex):
+            result = normalize_tabular_data(data)
+
+    def test_bad_types(self):
+        data = [
+            {'a', 'b', 'c'},
+            {1,   2,   3},
+            {4,   5,   6},
+        ]
+        regex = "rows must be sequences, got 'set': {.+}"
+        with self.assertRaisesRegex(TypeError, regex):
+            result = normalize_tabular_data(data)
 
 
 class TestWideToNarrow(unittest.TestCase):
