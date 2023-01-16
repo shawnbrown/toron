@@ -10,6 +10,8 @@
 # pip install -r requirements-dev.txt
 
 lark
+pandas
+pandas-stubs
 twine
 wheel
 

@@ -4,6 +4,8 @@ import csv
 import io
 import unittest
 
+import pandas
+
 from toron._utils import ToronError
 from toron._utils import (
     normalize_tabular_data,
@@ -91,6 +93,74 @@ class TestNormalizeTabularData(unittest.TestCase):
         regex = "rows must be sequences, got 'set': {.+}"
         with self.assertRaisesRegex(TypeError, regex):
             result = normalize_tabular_data(data)
+
+
+class TestNormalizeTabularDataPandas(unittest.TestCase):
+    def setUp(self):
+        self.df = pandas.DataFrame({
+            'col1': (1, 2, 3),
+            'col2': ('a', 'b', 'c'),
+        })
+
+    def test_rangeindex_unnamed(self):
+        normalized = normalize_tabular_data(self.df)
+        expected = [
+            ['col1', 'col2'],
+            [1, 'a'],
+            [2, 'b'],
+            [3, 'c'],
+        ]
+        self.assertEqual(list(normalized), expected)
+
+    def test_rangeindex_named(self):
+        self.df.index.name = 'col0'
+
+        normalized = normalize_tabular_data(self.df)
+        expected = [
+            ['col0', 'col1', 'col2'],
+            [0, 1, 'a'],
+            [1, 2, 'b'],
+            [2, 3, 'c'],
+        ]
+        self.assertEqual(list(normalized), expected)
+
+    def test_index_unnamed(self):
+        self.df.index = pandas.Index(['x', 'y', 'z'])
+
+        normalized = normalize_tabular_data(self.df)
+        expected = [
+            ['col1', 'col2'],
+            [1, 'a'],
+            [2, 'b'],
+            [3, 'c'],
+        ]
+        self.assertEqual(list(normalized), expected)
+
+    def test_index_named(self):
+        self.df.index = pandas.Index(['x', 'y', 'z'], name='col0')
+
+        normalized = normalize_tabular_data(self.df)
+        expected = [
+            ['col0', 'col1', 'col2'],
+            ['x', 1, 'a'],
+            ['y', 2, 'b'],
+            ['z', 3, 'c'],
+        ]
+        self.assertEqual(list(normalized), expected)
+
+    def test_multiindex(self):
+        index_values = [('x', 'one'), ('x', 'two'), ('y', 'three')]
+        index = pandas.MultiIndex.from_tuples(index_values, names=['A', 'B'])
+        self.df.index = index
+
+        normalized = normalize_tabular_data(self.df)
+        expected = [
+            ['A', 'B', 'col1', 'col2'],
+            ['x', 'one', 1, 'a'],
+            ['x', 'two', 2, 'b'],
+            ['y', 'three', 3, 'c'],
+        ]
+        self.assertEqual(list(normalized), expected)
 
 
 class TestWideToNarrow(unittest.TestCase):

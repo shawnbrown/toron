@@ -23,12 +23,17 @@ from ._typing import (
     Sequence,
     TypeAlias,
     Union,
+    TYPE_CHECKING,
 )
+
+if TYPE_CHECKING:
+    import pandas
 
 
 TabularData : TypeAlias = Union[
     Iterable[Sequence],
     Iterable[Mapping],
+    'pandas.DataFrame',
 ]
 
 TabularData.__doc__ = """
@@ -38,6 +43,7 @@ Valid tabular data sources include:
 
 * an iterable of sequences (uses first item as a "header" row)
 * an iterable of dictionary rows (expects uniform dictionaries)
+* ``pandas.DataFrame``
 
 This includes ``csv.reader(...)`` (an iterable of sequences)
 and ``csv.DictReader`` (an iterable of dictionary rows).
@@ -62,6 +68,18 @@ def normalize_tabular_data(data: TabularData) -> Iterator[Sequence]:
         fieldnames = list(data.fieldnames)  # type: ignore [arg-type]
         make_row = lambda dictrow: [dictrow.get(x, None) for x in fieldnames]
         return chain([fieldnames], (make_row(x) for x in data))
+
+    # Handle pandas.DataFrame() objects.
+    if data.__class__.__name__ == 'DataFrame' \
+            and data.__class__.__module__.partition('.')[0] == 'pandas':
+        if data.index.names == [None]:                                 # type: ignore [union-attr]
+            fieldnames = list(data.columns)                            # type: ignore [union-attr]
+            records = (list(x) for x in data.to_records(index=False))  # type: ignore [union-attr]
+            return chain([fieldnames], records)
+        else:
+            fieldnames = list(data.index.names) + list(data.columns)   # type: ignore [union-attr]
+            records = (list(x) for x in data.to_records(index=True))   # type: ignore [union-attr]
+            return chain([fieldnames], records)
 
     try:
         iterator = iter(data)
