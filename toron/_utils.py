@@ -163,35 +163,11 @@ def make_dictreaderlike(data: TabularData) -> Iterator[Mapping]:
     return (dict(zip(fieldnames, row)) for row in reader)
 
 
-def _data_to_dict_rows(
-    data: Union[Iterable[Mapping], Iterable[Sequence]],
-    columns: Optional[Sequence[str]] = None,
-) -> Iterable[Mapping]:
-    """Normalize data as an iterator of dictionary rows."""
-    iter_data = iter(data)
-    first_element = next(iter_data)
-    if isinstance(first_element, Sequence):
-        if not columns:
-            columns = first_element
-        else:
-            iter_data = chain([first_element], iter_data)
-        dict_rows = (dict(zip(columns, row)) for row in iter_data)
-    elif isinstance(first_element, Mapping):
-        dict_rows = chain([first_element], iter_data)  # type: ignore [assignment]
-    else:
-        msg = (f'data must contain mappings or sequences, '
-               f'got type {type(first_element)}')
-        raise TypeError(msg)
-    return dict_rows
-
-
 def wide_to_narrow(
-    data: Union[Iterable[Mapping], Iterable[Sequence]],
+    data: TabularData,
     cols_to_stack: Sequence[str],
     var_name: Hashable = 'variable',
     value_name: Hashable = 'value',
-    *,
-    columns: Optional[Sequence[str]] = None,
 ) -> Generator[Mapping, None, None]:
     """A generator function that takes an iterable of wide-format
     records and yields narrow-format dictionary rows.
@@ -199,16 +175,14 @@ def wide_to_narrow(
     Parameters
     ----------
 
-    data : iterable of mappings (dict) or sequences
-        Wide-format data.
+    data : Iterable[Sequence] | Iterable[Mapping] | pandas.DataFrame
+        Wide-format tabular data.
     cols_to_stack : sequence of str
         Name of column(s) to stack.
     var_name : hashable, default 'variable'
         Name to use for the variable column.
     value_name : hashable, default 'value'
         Name to use for the value column.
-    columns : sequence of str, optional
-        Column names to use if data is a sequence with no header row.
 
     Returns
     -------
@@ -264,7 +238,7 @@ def wide_to_narrow(
          {'A': 'x', 'myvar': 'C', 'myval': 80},
          {'A': 'x', 'myvar': 'D', 'myval': 90}]
     """
-    dict_rows = _data_to_dict_rows(data, columns)
+    dict_rows = make_dictreaderlike(data)
 
     for input_row in dict_rows:
         if var_name in input_row:

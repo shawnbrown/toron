@@ -332,23 +332,6 @@ class TestWideToNarrow(unittest.TestCase):
         ]
         self.assertEqual(list(result), expected)
 
-    def test_no_header(self):
-        """Passing columns as an argument instead of a header row."""
-        data = [
-            ('OH',    'BUTLER',   180140,     187990),
-            ('OH',    'FRANKLIN', 566499,     596915),
-        ]
-        columns = ('state', 'county', 'TOT_MALE', 'TOT_FEMALE')
-        result = wide_to_narrow(data, ['TOT_MALE', 'TOT_FEMALE'], columns=columns)
-
-        expected = [
-            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_MALE',   'value': 180140},
-            {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_FEMALE', 'value': 187990},
-            {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_MALE',   'value': 566499},
-            {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_FEMALE', 'value': 596915},
-        ]
-        self.assertEqual(list(result), expected)
-
     def test_dict_rows(self):
         data = [
             {'state': 'OH', 'county': 'BUTLER',   'TOT_MALE': 180140, 'TOT_FEMALE': 187990},
