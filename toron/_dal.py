@@ -50,7 +50,7 @@ from ._utils import (
     ToronError,
     ToronWarning,
     TabularData,
-    normalize_tabular_data,
+    make_readerlike,
     make_dictreaderlike,
 )
 
@@ -884,7 +884,7 @@ class DataAccessLayer(object):
         return f'INSERT INTO main.label_index ({columns_clause}) VALUES ({values_clause})'
 
     def add_index_records(self, data: TabularData) -> None:
-        iterator = normalize_tabular_data(data)
+        iterator = make_readerlike(data)
         columns = next(iterator)
 
         with self._transaction() as cur:
@@ -974,7 +974,7 @@ class DataAccessLayer(object):
         selectors: Optional[Sequence[str]],
         description: Optional[str] = None,
     ) -> None:
-        iterator = normalize_tabular_data(data)
+        iterator = make_readerlike(data)
         columns = next(iterator)
 
         try:

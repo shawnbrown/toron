@@ -53,8 +53,8 @@ and ``csv.DictReader`` (an iterable of dictionary rows).
 _csv_reader_type = type(csv.reader([]))
 
 
-def normalize_tabular_data(data: TabularData) -> Iterator[Sequence]:
-    """Normalize tabular data sources as an iterator of sequence rows.
+def make_readerlike(data: TabularData) -> Iterator[Sequence]:
+    """Normalize tabular data source as a csv.reader-like iterator.
 
     If *data* is an iterable of dictionary rows, this function assumes
     that all rows share a uniform set of keys.
@@ -136,7 +136,7 @@ def make_dictreaderlike(data: TabularData) -> Iterator[Mapping]:
     # Handle pandas.DataFrame() objects.
     if data.__class__.__name__ == 'DataFrame' \
             and data.__class__.__module__.partition('.')[0] == 'pandas':
-        reader = normalize_tabular_data(data)
+        reader = make_readerlike(data)
         fieldnames = next(reader)
         return (dict(zip(fieldnames, row)) for row in reader)
 
@@ -158,7 +158,7 @@ def make_dictreaderlike(data: TabularData) -> Iterator[Mapping]:
         return iterator  # type: ignore [return-value]
 
     # Normalize as reader-like object and return dictrow generator.
-    reader = normalize_tabular_data(iterator)  # type: ignore [arg-type]
+    reader = make_readerlike(iterator)  # type: ignore [arg-type]
     fieldnames = next(reader)
     return (dict(zip(fieldnames, row)) for row in reader)
 

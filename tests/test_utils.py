@@ -8,13 +8,13 @@ import pandas
 
 from toron._utils import ToronError
 from toron._utils import (
-    normalize_tabular_data,
+    make_readerlike,
     make_dictreaderlike,
     wide_to_narrow,
 )
 
 
-class TestNormalizeTabularData(unittest.TestCase):
+class TestMakeReaderLike(unittest.TestCase):
     def test_csv_reader(self):
         """CSV reader() objects should be returned unchanged."""
         reader = csv.reader(io.StringIO(
@@ -23,7 +23,7 @@ class TestNormalizeTabularData(unittest.TestCase):
             '2,b\n'
             '3,c\n'
         ))
-        result = normalize_tabular_data(reader)
+        result = make_readerlike(reader)
         self.assertIs(result, reader, msg='should be original object')
 
         expected = [
@@ -41,7 +41,7 @@ class TestNormalizeTabularData(unittest.TestCase):
             '2,b\n'
             '3,c\n'
         ))
-        result = normalize_tabular_data(dictreader)
+        result = make_readerlike(dictreader)
 
         expected = [
             ['col1', 'col2'],
@@ -57,7 +57,7 @@ class TestNormalizeTabularData(unittest.TestCase):
             [1,   2,   3],
             [4,   5,   6],
         ]
-        result = normalize_tabular_data(data)
+        result = make_readerlike(data)
         self.assertEqual(list(result), data)
 
     def test_dict_rows(self):
@@ -65,7 +65,7 @@ class TestNormalizeTabularData(unittest.TestCase):
             {'a': 1, 'b': 2, 'c': 3},
             {'a': 4, 'b': 5, 'c': 6},
         ]
-        result = normalize_tabular_data(data)
+        result = make_readerlike(data)
 
         expected = [
             ['a', 'b', 'c'],
@@ -76,14 +76,14 @@ class TestNormalizeTabularData(unittest.TestCase):
 
     def test_empty_dataset(self):
         data = iter([])
-        result = normalize_tabular_data(data)
+        result = make_readerlike(data)
         self.assertEqual(list(result), [])
 
     def test_bad_object(self):
         data = 123
         regex = "cannot normalize object as tabular data, got 'int': 123"
         with self.assertRaisesRegex(TypeError, regex):
-            result = normalize_tabular_data(data)
+            result = make_readerlike(data)
 
     def test_bad_types(self):
         data = [
@@ -93,10 +93,10 @@ class TestNormalizeTabularData(unittest.TestCase):
         ]
         regex = "rows must be sequences, got 'set': {.+}"
         with self.assertRaisesRegex(TypeError, regex):
-            result = normalize_tabular_data(data)
+            result = make_readerlike(data)
 
 
-class TestNormalizeTabularDataPandas(unittest.TestCase):
+class TestMakeReaderLikePandas(unittest.TestCase):
     def setUp(self):
         self.df = pandas.DataFrame({
             'col1': (1, 2, 3),
@@ -104,7 +104,7 @@ class TestNormalizeTabularDataPandas(unittest.TestCase):
         })
 
     def test_rangeindex_unnamed(self):
-        normalized = normalize_tabular_data(self.df)
+        normalized = make_readerlike(self.df)
         expected = [
             ['col1', 'col2'],
             [1, 'a'],
@@ -116,7 +116,7 @@ class TestNormalizeTabularDataPandas(unittest.TestCase):
     def test_rangeindex_named(self):
         self.df.index.name = 'col0'
 
-        normalized = normalize_tabular_data(self.df)
+        normalized = make_readerlike(self.df)
         expected = [
             ['col0', 'col1', 'col2'],
             [0, 1, 'a'],
@@ -128,7 +128,7 @@ class TestNormalizeTabularDataPandas(unittest.TestCase):
     def test_index_unnamed(self):
         self.df.index = pandas.Index(['x', 'y', 'z'])
 
-        normalized = normalize_tabular_data(self.df)
+        normalized = make_readerlike(self.df)
         expected = [
             ['col1', 'col2'],
             [1, 'a'],
@@ -140,7 +140,7 @@ class TestNormalizeTabularDataPandas(unittest.TestCase):
     def test_index_named(self):
         self.df.index = pandas.Index(['x', 'y', 'z'], name='col0')
 
-        normalized = normalize_tabular_data(self.df)
+        normalized = make_readerlike(self.df)
         expected = [
             ['col0', 'col1', 'col2'],
             ['x', 1, 'a'],
@@ -156,14 +156,14 @@ class TestNormalizeTabularDataPandas(unittest.TestCase):
 
         regex = r"MultiIndex names must not be None, got \[None, None\]"
         with self.assertRaisesRegex(ValueError, regex):
-            normalized = normalize_tabular_data(self.df)
+            normalized = make_readerlike(self.df)
 
     def test_multiindex_named(self):
         index_values = [('x', 'one'), ('x', 'two'), ('y', 'three')]
         index = pandas.MultiIndex.from_tuples(index_values, names=['A', 'B'])
         self.df.index = index
 
-        normalized = normalize_tabular_data(self.df)
+        normalized = make_readerlike(self.df)
         expected = [
             ['A', 'B', 'col1', 'col2'],
             ['x', 'one', 1, 'a'],
