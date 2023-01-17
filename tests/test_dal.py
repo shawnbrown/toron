@@ -1083,34 +1083,13 @@ class TestAddIndexRecords(unittest.TestCase):
     def test_add_index_records(self):
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
-
-        labels = [
-            ('IA', 'POLK'),
-            ('IN', 'LA PORTE'),
-            ('MN', 'HENNEPIN '),
-        ]
-        dal.add_index_records(labels, columns=['state', 'county'])
-
-        con = dal._connection
-        result = con.execute('SELECT * FROM label_index').fetchall()
-        expected = [
-            (1, 'IA', 'POLK'),
-            (2, 'IN', 'LA PORTE'),
-            (3, 'MN', 'HENNEPIN '),
-        ]
-        self.assertEqual(result, expected)
-
-    def test_add_index_records_no_column_arg(self):
-        dal = dal_class()
-        dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
-
-        labels = [
+        data = [
             ('state', 'county'),  # <- Header row.
             ('IA', 'POLK'),
             ('IN', 'LA PORTE'),
             ('MN', 'HENNEPIN '),
         ]
-        dal.add_index_records(labels) # <- No *columns* argument given.
+        dal.add_index_records(data)
 
         con = dal._connection
         result = con.execute('SELECT * FROM label_index').fetchall()
@@ -1127,13 +1106,13 @@ class TestAddIndexRecords(unittest.TestCase):
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
         # Labels rows include "state" but not "county".
-        labels = [
+        data = [
             ('state',),  # <- Header row.
             ('IA',),
             ('IN',),
             ('MN',),
         ]
-        dal.add_index_records(labels) # <- No *columns* argument given.
+        dal.add_index_records(data)
 
         con = dal._connection
         result = con.execute('SELECT * FROM label_index').fetchall()
@@ -1150,13 +1129,13 @@ class TestAddIndexRecords(unittest.TestCase):
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
         # Lable rows include unknown columns "region" and "group".
-        labels = [
+        data = [
             ('region', 'state', 'group',  'county'),  # <- Header row.
             ('WNC',    'IA',    'GROUP2', 'POLK'),
             ('ENC',    'IN',    'GROUP7', 'LA PORTE'),
             ('WNC',    'MN',    'GROUP1', 'HENNEPIN '),
         ]
-        dal.add_index_records(labels) # <- No *columns* argument given.
+        dal.add_index_records(data)
 
         con = dal._connection
         result = con.execute('SELECT * FROM label_index').fetchall()

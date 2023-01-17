@@ -50,6 +50,8 @@ from ._utils import (
     ToronError,
     ToronWarning,
     _data_to_dict_rows,
+    TabularData,
+    normalize_tabular_data,
 )
 
 
@@ -881,14 +883,9 @@ class DataAccessLayer(object):
         values_clause = ', '.join('?' * len(columns))
         return f'INSERT INTO main.label_index ({columns_clause}) VALUES ({values_clause})'
 
-    def add_index_records(
-        self,
-        iterable: Iterable[Sequence[str]],
-        columns: Optional[Sequence[str]] = None,
-    ) -> None:
-        iterator = iter(iterable)
-        if not columns:
-            columns = next(iterator)
+    def add_index_records(self, data: TabularData) -> None:
+        iterator = normalize_tabular_data(data)
+        columns = next(iterator)
 
         with self._transaction() as cur:
             # Get allowed columns and build selectors values.
