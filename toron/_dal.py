@@ -968,19 +968,14 @@ class DataAccessLayer(object):
 
     def add_weights(
         self,
-        iterable: Iterable[Sequence[Union[str, float, int]]],
-        columns: Optional[Sequence[str]] = None,
+        data: TabularData,
         *,
         name: str,
         selectors: Optional[Sequence[str]],
         description: Optional[str] = None,
     ) -> None:
-        iterator = iter(iterable)
-        if not columns:
-            columns = tuple(next(iterator))  # type: ignore [arg-type]
-            if not all(isinstance(x, str) for x in columns):
-                msg = ''
-                raise TypeError(msg)
+        iterator = normalize_tabular_data(data)
+        columns = next(iterator)
 
         try:
             weight_pos = columns.index(name)  # Get position of weight column.

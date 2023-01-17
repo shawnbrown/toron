@@ -1317,8 +1317,8 @@ class TestAddWeights(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def test_full_column_match(self):
-        columns = ('state', 'county', 'tract', 'pop10')
-        weights = [
+        data = [
+            ('state', 'county', 'tract', 'pop10'),
             ('12', '001', '000200', 110),
             ('12', '003', '040101', 212),
             ('12', '003', '040102', 17),
@@ -1329,7 +1329,7 @@ class TestAddWeights(unittest.TestCase):
             ('12', '017', '450302', 183),
             ('12', '019', '030202', 62),
         ]
-        self.dal.add_weights(weights, columns, name='pop10', selectors=None)
+        self.dal.add_weights(data, name='pop10', selectors=None)
 
         self.cursor.execute('SELECT * FROM weighting')
         self.assertEqual(
@@ -1343,7 +1343,8 @@ class TestAddWeights(unittest.TestCase):
             NATURAL JOIN weight
             WHERE weighting_id=1
         """)
-        self.assertEqual(set(self.cursor.fetchall()), set(weights))
+        expected = set(data[1:])  # Slice-off header and convert to set.
+        self.assertEqual(set(self.cursor.fetchall()), expected)
 
     def test_skip_non_unique_matches(self):
         """Should only insert weights that match to a single record."""
