@@ -49,9 +49,9 @@ from ._categories import minimize_discrete_categories
 from ._utils import (
     ToronError,
     ToronWarning,
-    _data_to_dict_rows,
     TabularData,
     normalize_tabular_data,
+    make_dictreaderlike,
 )
 
 
@@ -1069,60 +1069,47 @@ class DataAccessLayer(object):
 
     def add_quantities(
         self,
-        data: Union[Iterable[Mapping], Iterable[Sequence]],
+        data: TabularData,
         value: str,
         *,
         attributes: Optional[Iterable[str]] = None,
-        columns: Optional[Sequence[str]] = None,
     ) -> None:
         """Add quantities and associated attributes. Quantity values
         are automatically associated with matching index labels.
 
         Parameters
         ----------
-        data : Iterable[Mapping] | Iterable[Sequence]
-            Iterable of rows or dict-rows that contain the data to
-            be loaded. Must contain one or more index columns, one
-            or more `attribute` columns, and a single `value` column.
+        data : Iterable[Sequence] | Iterable[Mapping] | pandas.DataFrame
+            Tabular data values--must contain one or more index columns,
+            one or more `attribute` columns, and a single `value`
+            column.
         value : str
             Name of column which contains the quantity values.
         attributes : Iterable[str], optional
             Name of columns which contain attributes. If not given,
             attributes will default to all non-index, non-value
             columns that don't begin with an underscore ('_').
-        columns : Sequence[str], optional
-            Optional sequence of data column names--must be given when
-            *data* does not contain fieldname information.
 
-        Load quantites with a header row::
+        Load quantites from an iterator of sequences::
 
             >>> data = [
-            ...     ['elem1', 'elem2', 'attr1', 'attr2', 'quant'],
+            ...     ['idx1', 'idx2', 'attr1', 'attr2', 'counts'],
             ...     ['A', 'x', 'foo', 'corge', 12],
             ...     ['B', 'y', 'bar', 'qux', 10],
             ...     ['C', 'z', 'baz', 'quux', 15],
             ... ]
-            >>> dal.add_quantities(data, 'quant')
+            >>> dal.add_quantities(data, 'counts')
 
-        Load quantites using a specified *columns* argument::
-
-            >>> data = [
-            ...     ['A', 'x', 'foo', 'corge', 12],
-            ...     ['B', 'y', 'bar', 'qux', 10],
-            ...     ['C', 'z', 'baz', 'quux', 15],
-            ... ]
-            >>> dal.add_quantities(data, 'quant', columns=['elem1', 'elem2', 'attr1', 'attr2', 'quant'])
-
-        Load quantites using a dictionary-rows::
+        Load quantites using an iterator of dictionary-rows::
 
             >>> data = [
-            ...     {'elem1': 'A', 'elem2': 'x', 'attr1': 'foo', 'attr2': 'corge', 'quant': 12},
-            ...     {'elem1': 'B', 'elem2': 'y', 'attr1': 'bar', 'attr2': 'qux', 'quant': 10},
-            ...     {'elem1': 'C', 'elem2': 'z', 'attr1': 'baz', 'attr2': 'quux', 'quant': 15},
+            ...     {'idx1': 'A', 'idx2': 'x', 'attr1': 'foo', 'attr2': 'corge', 'counts': 12},
+            ...     {'idx1': 'B', 'idx2': 'y', 'attr1': 'bar', 'attr2': 'qux', 'counts': 10},
+            ...     {'idx1': 'C', 'idx2': 'z', 'attr1': 'baz', 'attr2': 'quux', 'counts': 15},
             ... ]
             >>> dal.add_quantities(data, 'counts')
         """
-        dict_rows = _data_to_dict_rows(data, columns)
+        dict_rows = make_dictreaderlike(data)
 
         # Prepare data and insert quantities.
         with self._transaction() as cur:

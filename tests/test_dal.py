@@ -1502,22 +1502,6 @@ class TestAddQuantities(unittest.TestCase):
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, self.sample_quantity_records)
 
-    def test_no_header(self):
-        data = [
-            ('OH', 'BUTLER', 'TOT_MALE', 180140),
-            ('OH', 'BUTLER', 'TOT_FEMALE', 187990),
-            ('OH', 'FRANKLIN', 'TOT_MALE', 566499),
-            ('OH', 'FRANKLIN', 'TOT_FEMALE', 596915),
-        ]
-        columns = ('state', 'county', 'census', 'counts')
-        self.dal.add_quantities(data, 'counts', columns=columns)  # <- Method under test.
-
-        records = self.cursor.execute('SELECT * FROM location').fetchall()
-        self.assertEqual(records, self.sample_location_records)
-
-        records = self.cursor.execute('SELECT * FROM quantity').fetchall()
-        self.assertEqual(records, self.sample_quantity_records)
-
     def test_dict_rows(self):
         data = [
             {'state': 'OH', 'county': 'BUTLER', 'census': 'TOT_MALE', 'counts': 180140},
