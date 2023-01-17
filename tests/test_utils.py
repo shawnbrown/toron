@@ -9,6 +9,7 @@ import pandas
 from toron._utils import ToronError
 from toron._utils import (
     normalize_tabular_data,
+    make_dictreaderlike,
     wide_to_narrow,
 )
 
@@ -170,6 +171,98 @@ class TestNormalizeTabularDataPandas(unittest.TestCase):
             ['y', 'three', 3, 'c'],
         ]
         self.assertEqual(list(normalized), expected)
+
+
+class TestMakeDictReaderLike(unittest.TestCase):
+    def test_csv_dictreader(self):
+        dictreader = csv.DictReader(io.StringIO(
+            'col1,col2\n'
+            '1,a\n'
+            '2,b\n'
+            '3,c\n'
+        ))
+        result = make_dictreaderlike(dictreader)
+        self.assertIs(result, dictreader, msg='should be original object')
+
+        expected = [
+            {'col1': '1', 'col2': 'a'},
+            {'col1': '2', 'col2': 'b'},
+            {'col1': '3', 'col2': 'c'},
+        ]
+        self.assertEqual(list(result), expected, msg='should return all values')
+
+    def test_csv_reader(self):
+        reader = csv.reader(io.StringIO(
+            'col1,col2\n'
+            '1,a\n'
+            '2,b\n'
+            '3,c\n'
+        ))
+        result = make_dictreaderlike(reader)
+
+        expected = [
+            {'col1': '1', 'col2': 'a'},
+            {'col1': '2', 'col2': 'b'},
+            {'col1': '3', 'col2': 'c'},
+        ]
+        self.assertEqual(list(result), expected)
+
+    def test_dictrows_unchanged(self):
+        data = [
+            {'a': '1', 'b': '2', 'c': '3'},
+            {'a': '4', 'b': '5', 'c': '6'},
+        ]
+        result = make_dictreaderlike(data)
+        self.assertEqual(list(result), data)
+
+    def test_sequence_rows(self):
+        data = [
+            ['a', 'b', 'c'],
+            [1,   2,   3],
+            [4,   5,   6],
+        ]
+        result = make_dictreaderlike(data)
+
+        expected = [
+            {'a': 1, 'b': 2, 'c': 3},
+            {'a': 4, 'b': 5, 'c': 6},
+        ]
+        self.assertEqual(list(result), expected)
+
+    def test_pandas_dataframe(self):
+        df = pandas.DataFrame({
+            'col1': (1, 2, 3),
+            'col2': ('a', 'b', 'c'),
+        })
+        result = make_dictreaderlike(df)
+
+        expected = [
+            {'col1': 1, 'col2': 'a'},
+            {'col1': 2, 'col2': 'b'},
+            {'col1': 3, 'col2': 'c'},
+        ]
+        self.assertEqual(list(result), expected)
+
+    def test_empty_dataset(self):
+        data = iter([])
+        result = make_dictreaderlike(data)
+        self.assertEqual(list(result), [])
+
+    def test_bad_object(self):
+        data = 123
+        regex = "cannot make iterator of dictrows, got 'int': 123"
+        with self.assertRaisesRegex(TypeError, regex):
+            result = make_dictreaderlike(data)
+
+    def test_bad_types(self):
+        data = [
+            {'a', 'b', 'c'},
+            {1,   2,   3},
+            {4,   5,   6},
+        ]
+        regex = "rows must be sequences, got 'set': {.+}"
+        with self.assertRaisesRegex(TypeError, regex):
+            result = make_dictreaderlike(data)
 
 
 class TestWideToNarrow(unittest.TestCase):
