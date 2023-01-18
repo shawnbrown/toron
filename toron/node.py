@@ -7,6 +7,7 @@ from ._dal import dal_class
 from ._dal import Strategy as _Strategy
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
+from ._utils import TabularData
 
 
 class Node(object):
@@ -85,8 +86,8 @@ class Node(object):
     def rename_index_columns(self, mapper):
         self._dal.rename_index_columns(mapper)
 
-    def add_index_records(self, iterable, columns=None):
-        self._dal.add_index_records(iterable, columns)
+    def add_index_records(self, data: TabularData) -> None:
+        self._dal.add_index_records(data)
 
     def add_weights(self, iterable, columns=None, *, name, selectors, description=None):
         self._dal.add_weights(iterable, columns,
