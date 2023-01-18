@@ -1,7 +1,11 @@
 """Node implementation for the Toron project."""
 
 from itertools import chain
-from typing import List
+from typing import (
+    List,
+    Optional,
+    Sequence,
+)
 
 from ._dal import dal_class
 from ._dal import Strategy as _Strategy
@@ -89,8 +93,15 @@ class Node(object):
     def add_index_records(self, data: TabularData) -> None:
         self._dal.add_index_records(data)
 
-    def add_weights(self, iterable, columns=None, *, name, selectors, description=None):
-        self._dal.add_weights(iterable, columns,
+    def add_weights(
+        self,
+        data: TabularData,
+        name: str,
+        *,
+        selectors: Optional[Sequence[str]],
+        description: Optional[str] = None,
+    ) -> None:
+        self._dal.add_weights(data=data,
                               name=name,
                               selectors=selectors,
                               description=description)

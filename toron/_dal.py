@@ -969,8 +969,8 @@ class DataAccessLayer(object):
     def add_weights(
         self,
         data: TabularData,
-        *,
         name: str,
+        *,
         selectors: Optional[Sequence[str]],
         description: Optional[str] = None,
     ) -> None:
