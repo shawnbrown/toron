@@ -3,6 +3,7 @@
 import unittest
 
 from .common import get_column_names
+from toron._selectors import SimpleSelector
 
 from toron.node import Node
 from toron._utils import ToronWarning
@@ -171,3 +172,68 @@ class TestNodeRemoveDiscreteCategories(unittest.TestCase):
     def test_no_match_warning(self):
         raise NotImplementedError
 
+
+class TestNodeWrapperMethods(unittest.TestCase):
+    def setUp(self):
+        self.node = Node()
+        self.dal = self.node._dal
+        self.cursor = self.dal._get_connection().cursor()
+
+    def test_adding_data(self):
+        """Test wrapper methods for adding data to a node.
+
+        This test checks the following methods:
+
+        * Node.add_index_columns()
+        * Node.add_index_records()
+        * Node.add_weights()
+        * Node.add_quantities()
+        """
+        data = [
+            ['idx1', 'idx2', 'attr1', 'attr2', 'wght1', 'counts'],
+            ['A', 'x', 'foo', 'corge', 14, 12],
+            ['B', 'y', 'bar', 'qux', 11, 10],
+            ['C', 'z', 'baz', 'quux', 16, 15],
+        ]
+        self.node.add_index_columns(['idx1', 'idx2'])
+        self.node.add_index_records(data)
+        self.node.add_weights(data, 'wght1', selectors=['[attr1]'])
+        self.node.add_quantities(data, 'counts', ['attr1', 'attr2'])
+
+        self.cursor.execute('SELECT * FROM label_index')
+        expected = [
+            (1, 'A', 'x'),
+            (2, 'B', 'y'),
+            (3, 'C', 'z'),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
+        self.cursor.execute('SELECT * FROM weighting')
+        expected = [
+            (1, 'wght1', None, [SimpleSelector('attr1')], 1),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
+        self.cursor.execute('SELECT * FROM weight')
+        expected = [
+            (1, 1, 1, 14.0),
+            (2, 1, 2, 11.0),
+            (3, 1, 3, 16.0),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
+        self.cursor.execute('SELECT * FROM location')
+        expected = [
+            (1, 'A', 'x'),
+            (2, 'B', 'y'),
+            (3, 'C', 'z'),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
+        self.cursor.execute('SELECT * FROM quantity')
+        expected = [
+            (1, 1, {'attr1': 'foo', 'attr2': 'corge'}, 12),
+            (2, 2, {'attr1': 'bar', 'attr2': 'qux'}, 10),
+            (3, 3, {'attr1': 'baz', 'attr2': 'quux'}, 15),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
