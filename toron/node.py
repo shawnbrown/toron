@@ -2,6 +2,7 @@
 
 from itertools import chain
 from typing import (
+    Iterable,
     List,
     Optional,
     Sequence,
@@ -166,3 +167,12 @@ class Node(object):
         """
         self._dal.remove_discrete_categories(discrete_categories)
 
+    def add_quantities(
+        self,
+        data: TabularData,
+        value: str,
+        attributes: Optional[Iterable[str]] = None,
+    ) -> None:
+        self._dal.add_quantities(data=data,
+                                 value=value,
+                                 attributes=attributes)
