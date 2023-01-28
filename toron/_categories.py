@@ -5,26 +5,27 @@ from itertools import combinations
 
 
 def make_structure(discrete_categories):
-    """Returns a category structure generated from a base of
-    discrete categories::
+    """Returns a join-semilattice generated from a collection of
+    discrete categories which can be used to define the valid levels
+    of granularity in a dataset::
 
         >>> make_structure([{'A'}, {'B'}, {'B', 'C'}])
         [set(), {'A'}, {'B'}, {'B', 'C'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
-    The generated structure is almost always a topology but that
-    is not necessarily the case. There are valid collections of
-    discrete categories that do not result in a valid topology::
+    While the collection of sets in the semilattice may often satisfy
+    the requirements of a topology, this is not necessarily the case::
 
         >>> make_structure([{'A', 'B'}, {'B', 'C'}])
         [set(), {'A', 'B'}, {'B', 'C'}, {'A', 'B', 'C'}]
 
-    The above result is not a topology because it's missing the
-    intersection of {'A', 'B'} and {'B', 'C'}--the set {'B'}.
+    The collection of sets in the above semilattice do not satisfy the
+    requirements of a topology because it's missing the set {'B'}--the
+    intersection of {'A', 'B'} and {'B', 'C'}.
     """
     structure = []  # Use list to preserve lexical order of input.
     for length in range(len(discrete_categories) + 1):
         for subsequence in combinations(discrete_categories, length):
-            unioned = set().union(*subsequence)
+            unioned = set().union(*subsequence)  # Use union() for join-semilattice.
             if unioned not in structure:
                 structure.append(unioned)
     return structure
@@ -46,4 +47,3 @@ def minimize_discrete_categories(*bases):
             base_categories.append(category)
 
     return base_categories
-
