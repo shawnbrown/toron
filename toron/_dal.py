@@ -1438,10 +1438,13 @@ class DataAccessLayer(object):
             match_weighting_id = GetMatchingKey(cur.fetchall(), default=1)
             weighting_func_name = _schema.get_userfunc(cur, match_weighting_id)
 
-            # Get bitmask levels from structure table.
+            # Get column names from 'location'.
             columns = self._get_column_names(cur, 'location')[1:]
             normalized_cols = [_schema.normalize_identifier(col) for col in columns]
-            bitmasks = cur.execute('SELECT * FROM main.structure').fetchall()
+
+            # Get bitmask levels from structure table.
+            cur.execute('SELECT * FROM main.structure')
+            bitmasks = [row[2:] for row in cur]  # Slice-off id and granularity values.
 
             # Prepare WHERE clause items, parameters, and optional function.
             where_items, parameters, attr_func = \
@@ -1456,8 +1459,7 @@ class DataAccessLayer(object):
 
             # Build SQL statement.
             sql_statements = []
-            for row in bitmasks:
-                bitmask = row[2:]  # Slice-off id and granularity values.
+            for bitmask in bitmasks:
                 sql = self._disaggregate_make_sql(
                     normalized_cols,
                     bitmask,
