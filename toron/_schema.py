@@ -10,23 +10,23 @@ the application layer:
 
                                  +----------------+
  +----------------------+        | relation       |
- | edge                 |        +----------------+
- +----------------------+        | relation_id    |     •••• <Other Node>
+ | edge                 |        +----------------+     •••• <Other Node>
+ +----------------------+        | relation_id    |     •
  | edge_id              |------->| edge_id        |     •
- | name                 |  ••••••| other_index_id |<•••••
- | description          |  •  •••| index_id       |<-+     +----------------+
- | selectors            |  •  •  | proportion     |  |     | quantity       |
- | user_properties      |  •  •  | mapping_level* |  |     +----------------+
- | other_uuid           |  •  •  +----------------+  |     | quantity_id    |
- | other_filename_hint  |  •  •                      |  +->| _location_id   |
- | other_index_hash*    |<••  •                      |  |  | attributes     |
- | is_locally_complete* |<•••••    +-----------------+  |  | quantity_value |
- +----------------------+          |                    |  +----------------+
-                                   |                    |
-                  +-------------+  |  +--------------+  |  +---------------+
-                  | label_index |  |  | location     |  |  | structure     |
-                  +-------------+  |  +--------------+  |  +---------------+
-               +--| index_id    |--+  | _location_id |--+  | _structure_id |
+ | name                 |  ••••••| other_index_id |<•••••  +----------------+
+ | description          |  •  •••| index_id       |<-+     | quantity       |
+ | selectors            |  •  •  | proportion     |  |     +----------------+
+ | user_properties      |  •  •  | mapping_level* |  |     | quantity_id    |
+ | other_uuid           |  •  •  +----------------+  |  +->| _location_id   |
+ | other_filename_hint  |  •  •                      |  |  | attributes     |
+ | other_index_hash*    |<••  •                      |  |  | quantity_value |
+ | is_locally_complete* |<•••••    +-----------------+  |  +----------------+
+ +----------------------+          |                    |
+                                   |                    |  +---------------+
+                  +-------------+  |  +--------------+  |  | structure     |
+                  | label_index |  |  | location     |  |  +---------------+
+                  +-------------+  |  +--------------+  |  | _structure_id |
+               +--| index_id    |--+  | _location_id |--+  | _granularity* |
                |  | label_a     |••••>| label_a      |<••••| label_a*      |
                |  | label_b     |••••>| label_b      |<••••| label_b*      |
                |  | label_c     |••••>| label_c      |<••••| label_c*      |
@@ -114,7 +114,8 @@ _schema_script = """
     );
 
     CREATE TABLE main.structure(
-        _structure_id INTEGER PRIMARY KEY
+        _structure_id INTEGER PRIMARY KEY,
+        _granularity REAL
         /* label columns added programmatically */
     );
 
