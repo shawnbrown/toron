@@ -22,7 +22,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
         self.assertEqual(columns, ['index_id', 'A', 'B', 'C'])
 
         self.cursor.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cursor.fetchall()}
+        actual = {row[2:] for row in self.cursor.fetchall()}
         expected = {(0, 0, 0), (1, 1, 1)}  # The trivial topology.
         self.assertEqual(actual, expected)
 
@@ -33,7 +33,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
         self.assertEqual(columns, ['index_id', 'A', 'B'])
 
         self.cursor.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cursor.fetchall()}
+        actual = {row[2:] for row in self.cursor.fetchall()}
         expected = {(0, 0), (1, 1)}  # The trivial topology.
         self.assertEqual(actual, expected)
 
@@ -43,7 +43,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
         self.assertEqual(columns, ['index_id', 'A', 'B', 'C', 'D'])
 
         self.cursor.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cursor.fetchall()}
+        actual = {row[2:] for row in self.cursor.fetchall()}
         expected = {(0, 0, 0, 0), (1, 1, 0, 0), (1, 1, 1, 1)}
         self.assertEqual(actual, expected)
 
@@ -69,7 +69,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         )
 
         self.cursor.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cursor.fetchall()}
+        actual = {row[2:] for row in self.cursor.fetchall()}
         expected = {(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1),
                     (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)}
         self.assertEqual(actual, expected)
@@ -90,7 +90,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         )
 
         self.cursor.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cursor.fetchall()}
+        actual = {row[2:] for row in self.cursor.fetchall()}
         expected = {(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)}
         self.assertEqual(actual, expected)
 
@@ -112,7 +112,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         )
 
         self.cursor.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cursor.fetchall()}
+        actual = {row[2:] for row in self.cursor.fetchall()}
         expected = {(0, 0, 0), (1, 0, 0), (0, 1, 0),
                     (1, 0, 1), (1, 1, 0), (1, 1, 1)}
         self.assertEqual(actual, expected)
@@ -135,7 +135,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.assertEqual(actual, indiscrete_category)
 
         self.cursor.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cursor.fetchall()}
+        actual = {row[2:] for row in self.cursor.fetchall()}
         indiscrete_topology = {(0, 0, 0), (1, 1, 1)}
         self.assertEqual(actual, indiscrete_topology)
 
@@ -160,7 +160,7 @@ class TestNodeRemoveDiscreteCategories(unittest.TestCase):
         )
 
         self.cursor.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cursor.fetchall()}
+        actual = {row[2:] for row in self.cursor.fetchall()}
         structure = {(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)}
         self.assertEqual(actual, structure)
 

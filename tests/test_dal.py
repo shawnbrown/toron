@@ -526,11 +526,11 @@ class TestAddColumns(unittest.TestCase):
         self.assertEqual(columns, ['_location_id', 'state', 'county'])
 
         columns = get_column_names(con, 'structure')
-        self.assertEqual(columns, ['_structure_id', 'state', 'county'])
+        self.assertEqual(columns, ['_structure_id', '_granularity', 'state', 'county'])
 
         con = dal._get_connection()
         cur = con.execute('SELECT * FROM structure')
-        actual = {row[1:] for row in cur.fetchall()}
+        actual = {row[2:] for row in cur.fetchall()}
         self.assertEqual(actual, {(0, 0), (1, 1)})
 
     def test_set_data_order(self):
@@ -622,8 +622,8 @@ class TestRenameIndexColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_location SELECT _location_id, "state", "county", "town" FROM main.location',
             'DROP TABLE main.location',
             'ALTER TABLE main.new_location RENAME TO location',
-            'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, "stusab" INTEGER CHECK ("stusab" IN (0, 1)) DEFAULT 0, "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0, "place" INTEGER CHECK ("place" IN (0, 1)) DEFAULT 0)',
-            'INSERT INTO main.new_structure SELECT _structure_id, "state", "county", "town" FROM main.structure',
+            'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, _granularity REAL, "stusab" INTEGER CHECK ("stusab" IN (0, 1)) DEFAULT 0, "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0, "place" INTEGER CHECK ("place" IN (0, 1)) DEFAULT 0)',
+            'INSERT INTO main.new_structure SELECT _structure_id, _granularity, "state", "county", "town" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
             'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index("stusab", "county", "place")',
@@ -719,8 +719,8 @@ class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_location SELECT _location_id, "state", "county" FROM main.location',
             'DROP TABLE main.location',
             'ALTER TABLE main.new_location RENAME TO location',
-            'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, "state" INTEGER CHECK ("state" IN (0, 1)) DEFAULT 0, "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0)',
-            'INSERT INTO main.new_structure SELECT _structure_id, "state", "county" FROM main.structure',
+            'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, _granularity REAL, "state" INTEGER CHECK ("state" IN (0, 1)) DEFAULT 0, "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0)',
+            'INSERT INTO main.new_structure SELECT _structure_id, _granularity, "state", "county" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
             'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index("state", "county")',
@@ -778,7 +778,7 @@ class TestRemoveIndexColumnsMixin(object):
 
         # Check initial structure table.
         self.cur.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cur.fetchall()}
+        actual = {row[2:] for row in self.cur.fetchall()}
         expected = {
             (0, 0, 0, 0),  # <- Empty set.
             (1, 0, 0, 0),  # <- {'state'}
@@ -797,7 +797,7 @@ class TestRemoveIndexColumnsMixin(object):
 
         # Check rebuild structure table.
         self.cur.execute('SELECT * FROM main.structure')
-        actual = {row[1:] for row in self.cur.fetchall()}
+        actual = {row[2:] for row in self.cur.fetchall()}
         self.assertEqual(actual, {(0, 0), (1, 0), (1, 1)})
 
         # Check index labels and weights.
@@ -855,7 +855,7 @@ class TestRemoveIndexColumnsMixin(object):
 
         # Check rebuilt structure.
         self.cur.execute('SELECT * FROM structure')
-        actual = {row[1:] for row in self.cur.fetchall()}
+        actual = {row[2:] for row in self.cur.fetchall()}
         expected = {
             (0, 0, 0),
             (1, 0, 0),
@@ -2626,7 +2626,7 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.assertEqual(result, [['A'], ['B'], ['C']])
 
         self.cursor.execute("SELECT * FROM structure")
-        result = {tup[1:] for tup in self.cursor.fetchall()}
+        result = {tup[2:] for tup in self.cursor.fetchall()}
         expected = {
             (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1),
             (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1),
@@ -2730,5 +2730,5 @@ class TestSetStructure(unittest.TestCase):
                     (0, 1, 0),  # <- {'B'}
                     (1, 1, 0),  # <- {'A', 'B'}
                     (1, 1, 1)]  # <- {'A', 'B', 'C'}
-        self.assertEqual(actual, expected)
+        self.assertEqual(set(actual), set(expected))
 

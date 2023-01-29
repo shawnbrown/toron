@@ -1457,7 +1457,7 @@ class DataAccessLayer(object):
             # Build SQL statement.
             sql_statements = []
             for row in bitmasks:
-                bitmask = row[1:]  # Slice-off the id value.
+                bitmask = row[2:]  # Slice-off id and granularity values.
                 sql = self._disaggregate_make_sql(
                     normalized_cols,
                     bitmask,
@@ -1584,7 +1584,7 @@ class DataAccessLayer(object):
             columns = self._get_column_names(cur, 'location')[1:]
             normalized_cols = [_schema.normalize_identifier(col) for col in columns]
             cur.execute('SELECT * FROM main.structure')
-            bitmasks = [row[1:] for row in cur]  # Slice-off the id value.
+            bitmasks = [row[2:] for row in cur]  # Slice-off id and granularity values.
             bitmasks.reverse()  # <- Temporary until granularity measure is implemented.
 
             # Prepare WHERE clause items and parameters.
@@ -1900,10 +1900,10 @@ class DataAccessLayerPre35(DataAccessLayer):
             'ALTER TABLE main.new_location RENAME TO location',
 
             # Rebuild 'structure' table.
-            f'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, ' \
+            f'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, _granularity REAL, ' \
                 f'{", ".join(new_structure_cols)})',
             f'INSERT INTO main.new_structure ' \
-                f'SELECT _structure_id, {", ".join(columns_to_keep)} FROM main.structure',
+                f'SELECT _structure_id, _granularity, {", ".join(columns_to_keep)} FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
         ]
@@ -1974,10 +1974,10 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
             'ALTER TABLE main.new_location RENAME TO location',
 
             # Rebuild 'structure' table.
-            f'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, ' \
+            f'CREATE TABLE main.new_structure(_structure_id INTEGER PRIMARY KEY, _granularity REAL, ' \
                 f'{", ".join(new_structure_cols)})',
             f'INSERT INTO main.new_structure ' \
-                f'SELECT _structure_id, {", ".join(column_names)} FROM main.structure',
+                f'SELECT _structure_id, _granularity, {", ".join(column_names)} FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
         ]
