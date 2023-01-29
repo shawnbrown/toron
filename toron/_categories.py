@@ -12,7 +12,7 @@ def make_structure(discrete_categories):
         >>> make_structure([{'A'}, {'B'}, {'B', 'C'}])
         [set(), {'A'}, {'B'}, {'B', 'C'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
-    While the collection of sets in the semilattice may often satisfy
+    While the collection of sets in a semilattice may often satisfy
     the requirements of a topology, this is not necessarily the case::
 
         >>> make_structure([{'A', 'B'}, {'B', 'C'}])
