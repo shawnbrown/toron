@@ -169,10 +169,17 @@ _schema_script = """
 #     https://www.sqlite.org/json1.html#compiling_in_json_support
 try:
     _con = sqlite3.connect(':memory:')
-    _con.execute("SELECT json_valid('123')")
-    SQLITE_JSON1_ENABLED = True
-except sqlite3.OperationalError:
-    SQLITE_JSON1_ENABLED = False
+    try:
+        _con.execute("SELECT json_valid('123')")
+        SQLITE_JSON1_ENABLED = True
+    except sqlite3.OperationalError:
+        SQLITE_JSON1_ENABLED = False
+
+    try:
+        _con.execute('SELECT log2(64)')
+        SQLITE_ENABLE_MATH_FUNCTIONS = True
+    except sqlite3.OperationalError:
+        SQLITE_ENABLE_MATH_FUNCTIONS = False
 finally:
     _con.close()
     del _con
@@ -699,6 +706,13 @@ def _add_functions_and_triggers(connection):
             connection.create_function('user_userproperties_valid', 1, _user_userproperties_valid)
             connection.create_function('user_attributes_valid', 1, _user_attributes_valid)
             connection.create_function('user_selectors_valid', 1, _user_selectors_valid)
+
+    if not SQLITE_ENABLE_MATH_FUNCTIONS:
+        from math import log2 as _log2
+        try:
+            connection.create_function('log2', 1, _log2, deterministic=True)
+        except TypeError:
+            connection.create_function('log2', 1, _log2)
 
     connection.execute(_sql_trigger_validate_json('INSERT', 'property', 'value'))
     connection.execute(_sql_trigger_validate_json('UPDATE', 'property', 'value'))
