@@ -1720,6 +1720,76 @@ class DataAccessLayer(object):
         parameters = (make_bitmask(category) for category in structure)
         cursor.executemany(sql, parameters)
 
+    @staticmethod
+    def _refresh_granularity_sql(columns: Sequence[str]) -> str:
+        r"""Return a SQL statement to UPDATE a single structure record.
+
+        When executing the returned SQL, a 2-tuple parameters argument
+        must also be given:
+
+        .. code-block:: python
+            :emphasize-lines: 3
+
+            node_cardnality = 91856
+            structure_id = 4
+            sql = _refresh_granularity_sql(['col1', 'col2', 'col3])
+            cursor.execute(sql, (node_cardnality, structure_id))
+
+        The SQL statement here implements the "granularity measure
+        of a partition" as described on p. 293 of:
+
+            MARK J. WIERMAN (1999) MEASURING UNCERTAINTY IN ROUGH SET
+            THEORY, International Journal of General Systems, 28:4-5,
+            283-297, DOI: 10.1080/03081079908935239
+
+        In PROBABILISTIC APPROACHES TO ROUGH SETS (Y. Y. Yao, 2003),
+        Yiyu Yao presents this same equation in Eq. (6), shown here:
+
+        .. code-block:: none
+
+                       m
+                      ___
+                      \    |A_i|
+            log |U| - /    ───── log |A_i|
+                      ‾‾‾   |U|
+                      i=1
+
+            TeX notation:
+
+                \[\log_{2}|U|-\sum_{i=1}^m \frac{|A_i|}{|U|}\log_{2}|A_i|\]
+        """
+        if columns:
+            columns = [_schema.normalize_identifier(col) for col in columns]
+            groupby_clause = f'\n                    GROUP BY {", ".join(columns)}'
+        else:
+            groupby_clause = ''
+
+        sql = f"""
+            WITH
+                partition (cardinality) AS (
+                    SELECT CAST(? AS REAL)
+                ),
+                subset (cardinality) AS (
+                    SELECT COUNT(*)
+                    FROM main.label_index{groupby_clause}
+                ),
+                summand (uncertainty) AS (
+                    SELECT ((subset.cardinality / partition.cardinality)
+                            * LOG2(subset.cardinality))
+                    FROM subset
+                    JOIN partition ON (1=1)
+                ),
+                granularity (value) AS (
+                    SELECT LOG2(partition.cardinality) - SUM(uncertainty)
+                    FROM summand
+                    JOIN partition ON (1=1)
+                )
+            UPDATE main.structure
+            SET _granularity = (SELECT value FROM granularity)
+            WHERE _structure_id=?
+        """
+        return sql
+
     @classmethod
     def _update_categories_and_structure(
         cls,

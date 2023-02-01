@@ -2732,3 +2732,92 @@ class TestSetStructure(unittest.TestCase):
                     (1, 1, 1)]  # <- {'A', 'B', 'C'}
         self.assertEqual(set(actual), set(expected))
 
+
+class TestRefreshGranularity(unittest.TestCase):
+    def test_refresh_granularity_sql(self):
+        sql = DataAccessLayer._refresh_granularity_sql(['A', 'B', 'C'])
+        expected = """
+            WITH
+                partition (cardinality) AS (
+                    SELECT CAST(? AS REAL)
+                ),
+                subset (cardinality) AS (
+                    SELECT COUNT(*)
+                    FROM main.label_index
+                    GROUP BY "A", "B", "C"
+                ),
+                summand (uncertainty) AS (
+                    SELECT ((subset.cardinality / partition.cardinality)
+                            * LOG2(subset.cardinality))
+                    FROM subset
+                    JOIN partition ON (1=1)
+                ),
+                granularity (value) AS (
+                    SELECT LOG2(partition.cardinality) - SUM(uncertainty)
+                    FROM summand
+                    JOIN partition ON (1=1)
+                )
+            UPDATE main.structure
+            SET _granularity = (SELECT value FROM granularity)
+            WHERE _structure_id=?
+        """
+        self.assertEqual(sql, expected)
+
+    def test_refresh_granularity_sql_no_columns(self):
+        sql = DataAccessLayer._refresh_granularity_sql([])
+        expected = """
+            WITH
+                partition (cardinality) AS (
+                    SELECT CAST(? AS REAL)
+                ),
+                subset (cardinality) AS (
+                    SELECT COUNT(*)
+                    FROM main.label_index
+                ),
+                summand (uncertainty) AS (
+                    SELECT ((subset.cardinality / partition.cardinality)
+                            * LOG2(subset.cardinality))
+                    FROM subset
+                    JOIN partition ON (1=1)
+                ),
+                granularity (value) AS (
+                    SELECT LOG2(partition.cardinality) - SUM(uncertainty)
+                    FROM summand
+                    JOIN partition ON (1=1)
+                )
+            UPDATE main.structure
+            SET _granularity = (SELECT value FROM granularity)
+            WHERE _structure_id=?
+        """
+        self.assertEqual(sql, expected)
+
+    def test_refresh_granularity_sql_execute(self):
+        # Prepare DAL to test.
+        dal = dal_class()
+        dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        dal.add_discrete_categories([{'A', 'B'}])
+        connection = dal._connection
+        dal.add_index_records([
+            ['A',  'B',  'C'],
+            ['a1', 'b1', 'c1'],
+            ['a1', 'b1', 'c2'],
+            ['a1', 'b2', 'c3'],
+            ['a1', 'b2', 'c4'],
+            ['a2', 'b3', 'c5'],
+            ['a2', 'b3', 'c6'],
+        ])
+
+        # Prepare SQL statement.
+        sql = dal._refresh_granularity_sql(['A', 'B'])  # <- Method under test.
+
+        # Define parameters and execute SQL.
+        node_cardnality = 6
+        structure_id = 2
+        connection.execute(sql, (node_cardnality, structure_id))
+
+        # Check for expected result.
+        calculated = connection.execute(
+            'SELECT _granularity FROM structure WHERE _structure_id=2'
+        ).fetchall()[0][0]
+        expected = 1.584962500721156
+        self.assertAlmostEqual(calculated, expected, places=7)
