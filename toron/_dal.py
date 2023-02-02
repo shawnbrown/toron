@@ -1797,11 +1797,12 @@ class DataAccessLayer(object):
         The granularity should be refreshed after any of the following
         actions:
 
-        * Rebuilding the 'structure' table (gets rebuilt when adding
+        * Rebuild of the 'structure' table (this happens via the
+          _set_data_structure() method which gets called after adding
           or removing discrete categories and when adding or removing
           a column in the 'label_index' table).
-        * Running an INSERT, DELETE, or UPDATE query on the
-          'label_index' table.
+        * Records are changed in the 'label_index' table (after INSERT,
+          DELETE, and UPDATE queries).
         """
         all_columns = cls._get_column_names(cursor, 'label_index')[1:]
 
