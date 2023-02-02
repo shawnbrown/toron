@@ -899,6 +899,9 @@ class DataAccessLayer(object):
             sql = self._add_index_records_make_sql(cur, columns)
             cur.executemany(sql, iterator)
 
+            # Refresh granularity to account for new records.
+            self._refresh_granularity(cur)
+
     @staticmethod
     def _add_weights_get_new_id(
         cursor: sqlite3.Cursor,
@@ -1719,6 +1722,8 @@ class DataAccessLayer(object):
         make_bitmask = lambda cat: tuple((col in cat) for col in columns)
         parameters = (make_bitmask(category) for category in structure)
         cursor.executemany(sql, parameters)
+
+        cls._refresh_granularity(cursor)
 
     @staticmethod
     def _refresh_granularity_sql(columns: Sequence[str]) -> str:
