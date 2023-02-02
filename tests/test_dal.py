@@ -2821,3 +2821,36 @@ class TestRefreshGranularity(unittest.TestCase):
         ).fetchall()[0][0]
         expected = 1.584962500721156
         self.assertAlmostEqual(calculated, expected, places=7)
+
+    def test_refresh_granularity(self):
+        """Test for DataAccessLayer._refresh_granularity() method."""
+        dal = dal_class()
+        dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        dal.add_discrete_categories([{'A'}, {'A', 'B'}])
+        cur = dal._connection.cursor()
+
+        columns = ['A',  'B',  'C']
+        data = [
+            ['a1', 'b1', 'c1'],
+            ['a1', 'b1', 'c2'],
+            ['a1', 'b2', 'c3'],
+            ['a1', 'b2', 'c4'],
+            ['a2', 'b3', 'c5'],
+            ['a2', 'b3', 'c6'],
+            ['a2', 'b4', 'c7'],
+            ['a2', 'b4', 'c8'],
+        ]
+        sql = dal._add_index_records_make_sql(cur, ['A', 'B', 'C'])
+        cur.executemany(sql, data)
+
+        dal._refresh_granularity(cur)  # <- Method under test.
+
+        cur.execute('SELECT * FROM main.structure')
+        structure_records = cur.fetchall()
+        expected = [
+            (1, 0.0, 0, 0, 0),  # <- 0.0 granularity for {} (0, 0, 0)
+            (2, 1.0, 1, 0, 0),  # <- 1.0 granularity for {A} (1, 0, 0)
+            (3, 2.0, 1, 1, 0),  # <- 2.0 granularity for {A, B} (1, 1, 0)
+            (4, 3.0, 1, 1, 1),  # <- 3.0 granularity for {A, B, C} (1, 1, 1)
+        ]
+        self.assertEqual(structure_records, expected)

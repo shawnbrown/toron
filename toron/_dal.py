@@ -1791,6 +1791,32 @@ class DataAccessLayer(object):
         return sql
 
     @classmethod
+    def _refresh_granularity(cls, cursor: sqlite3.Cursor) -> None:
+        """Refresh the granularity measure in the structure table.
+
+        The granularity should be refreshed after any of the following
+        actions:
+
+        * Rebuilding the 'structure' table (gets rebuilt when adding
+          or removing discrete categories and when adding or removing
+          a column in the 'label_index' table).
+        * Running an INSERT, DELETE, or UPDATE query on the
+          'label_index' table.
+        """
+        all_columns = cls._get_column_names(cursor, 'label_index')[1:]
+
+        cursor.execute('SELECT COUNT(*) FROM main.label_index')
+        node_cardnality = cursor.fetchone()[0]
+
+        cursor.execute('SELECT * FROM main.structure')
+        structure_records = cursor.fetchall()
+        for record in structure_records:
+            structure_id, _, *bitmask = record
+            columns = list(compress(all_columns, bitmask))
+            sql = cls._refresh_granularity_sql(columns)
+            cursor.execute(sql, (node_cardnality, structure_id))
+
+    @classmethod
     def _update_categories_and_structure(
         cls,
         cursor: sqlite3.Cursor,
