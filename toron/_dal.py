@@ -1588,9 +1588,8 @@ class DataAccessLayer(object):
             # Get bitmask levels from structure table.
             columns = self._get_column_names(cur, 'location')[1:]
             normalized_cols = [_schema.normalize_identifier(col) for col in columns]
-            cur.execute('SELECT * FROM main.structure')
+            cur.execute('SELECT * FROM main.structure ORDER BY _granularity DESC')
             bitmasks = [row[2:] for row in cur]  # Slice-off id and granularity values.
-            bitmasks.reverse()  # <- Temporary until granularity measure is implemented.
 
             # Prepare WHERE clause items and parameters.
             where_items, parameters, attr_func = \
