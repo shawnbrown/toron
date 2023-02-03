@@ -1728,16 +1728,16 @@ class DataAccessLayer(object):
     def _refresh_granularity_sql(columns: Sequence[str]) -> str:
         r"""Return a SQL statement to UPDATE a single structure record.
 
-        When executing the returned SQL, a 2-tuple parameters argument
-        must also be given:
+        When executing the returned SQL, a parameters dictionary must
+        also be given that specifies ``'partition_cardinality'`` and
+        ``'structure_id'`` values:
 
         .. code-block:: python
-            :emphasize-lines: 3
 
-            node_cardnality = 91856
-            structure_id = 4
             sql = _refresh_granularity_sql(['col1', 'col2', 'col3])
-            cursor.execute(sql, (node_cardnality, structure_id))
+
+            params = {'partition_cardinality': 91856, 'structure_id': 4}
+            cursor.execute(sql, params)
 
         The SQL statement here implements the "granularity measure
         of a partition" as described on p. 293 of:
@@ -1770,27 +1770,22 @@ class DataAccessLayer(object):
 
         sql = f"""
             WITH
-                partition (cardinality) AS (
-                    SELECT CAST(? AS REAL)
-                ),
                 subset (cardinality) AS (
-                    SELECT COUNT(*)
+                    SELECT CAST(COUNT(*) AS REAL)
                     FROM main.label_index{groupby_clause}
                 ),
                 summand (uncertainty) AS (
-                    SELECT ((subset.cardinality / partition.cardinality)
+                    SELECT ((subset.cardinality / :partition_cardinality)
                             * LOG2(subset.cardinality))
                     FROM subset
-                    JOIN partition ON (1=1)
                 ),
                 granularity (value) AS (
-                    SELECT LOG2(partition.cardinality) - SUM(uncertainty)
+                    SELECT LOG2(:partition_cardinality) - SUM(uncertainty)
                     FROM summand
-                    JOIN partition ON (1=1)
                 )
             UPDATE main.structure
             SET _granularity = (SELECT value FROM granularity)
-            WHERE _structure_id=?
+            WHERE _structure_id=:structure_id
         """
         return sql
 
@@ -1810,7 +1805,7 @@ class DataAccessLayer(object):
         """
         all_columns = cls._get_column_names(cursor, 'label_index')[1:]
 
-        cursor.execute('SELECT COUNT(*) FROM main.label_index')
+        cursor.execute('SELECT CAST(COUNT(*) AS REAL) FROM main.label_index')
         node_cardnality = cursor.fetchone()[0]
 
         cursor.execute('SELECT * FROM main.structure')
@@ -1819,7 +1814,11 @@ class DataAccessLayer(object):
             structure_id, _, *bitmask = record
             columns = list(compress(all_columns, bitmask))
             sql = cls._refresh_granularity_sql(columns)
-            cursor.execute(sql, (node_cardnality, structure_id))
+            parameters = {
+                'partition_cardinality': node_cardnality,
+                'structure_id': structure_id,
+            }
+            cursor.execute(sql, parameters)
 
     @classmethod
     def _update_categories_and_structure(

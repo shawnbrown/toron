@@ -2734,32 +2734,29 @@ class TestSetStructure(unittest.TestCase):
 
 
 class TestRefreshGranularity(unittest.TestCase):
+    maxDiff = None
+
     def test_refresh_granularity_sql(self):
         sql = DataAccessLayer._refresh_granularity_sql(['A', 'B', 'C'])
         expected = """
             WITH
-                partition (cardinality) AS (
-                    SELECT CAST(? AS REAL)
-                ),
                 subset (cardinality) AS (
-                    SELECT COUNT(*)
+                    SELECT CAST(COUNT(*) AS REAL)
                     FROM main.label_index
                     GROUP BY "A", "B", "C"
                 ),
                 summand (uncertainty) AS (
-                    SELECT ((subset.cardinality / partition.cardinality)
+                    SELECT ((subset.cardinality / :partition_cardinality)
                             * LOG2(subset.cardinality))
                     FROM subset
-                    JOIN partition ON (1=1)
                 ),
                 granularity (value) AS (
-                    SELECT LOG2(partition.cardinality) - SUM(uncertainty)
+                    SELECT LOG2(:partition_cardinality) - SUM(uncertainty)
                     FROM summand
-                    JOIN partition ON (1=1)
                 )
             UPDATE main.structure
             SET _granularity = (SELECT value FROM granularity)
-            WHERE _structure_id=?
+            WHERE _structure_id=:structure_id
         """
         self.assertEqual(sql, expected)
 
@@ -2767,27 +2764,22 @@ class TestRefreshGranularity(unittest.TestCase):
         sql = DataAccessLayer._refresh_granularity_sql([])
         expected = """
             WITH
-                partition (cardinality) AS (
-                    SELECT CAST(? AS REAL)
-                ),
                 subset (cardinality) AS (
-                    SELECT COUNT(*)
+                    SELECT CAST(COUNT(*) AS REAL)
                     FROM main.label_index
                 ),
                 summand (uncertainty) AS (
-                    SELECT ((subset.cardinality / partition.cardinality)
+                    SELECT ((subset.cardinality / :partition_cardinality)
                             * LOG2(subset.cardinality))
                     FROM subset
-                    JOIN partition ON (1=1)
                 ),
                 granularity (value) AS (
-                    SELECT LOG2(partition.cardinality) - SUM(uncertainty)
+                    SELECT LOG2(:partition_cardinality) - SUM(uncertainty)
                     FROM summand
-                    JOIN partition ON (1=1)
                 )
             UPDATE main.structure
             SET _granularity = (SELECT value FROM granularity)
-            WHERE _structure_id=?
+            WHERE _structure_id=:structure_id
         """
         self.assertEqual(sql, expected)
 
