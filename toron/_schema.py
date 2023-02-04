@@ -709,10 +709,16 @@ def _add_functions_and_triggers(connection):
 
     if not SQLITE_ENABLE_MATH_FUNCTIONS:
         from math import log2 as _log2
+        def log2(x):
+            try:
+                return _log2(x)
+            except ValueError:  # Returns None on error to mimic SQLite's log
+                return None     # function behavior (returns NULL for errors).
+
         try:
-            connection.create_function('log2', 1, _log2, deterministic=True)
+            connection.create_function('log2', 1, log2, deterministic=True)
         except TypeError:
-            connection.create_function('log2', 1, _log2)
+            connection.create_function('log2', 1, log2)
 
     connection.execute(_sql_trigger_validate_json('INSERT', 'property', 'value'))
     connection.execute(_sql_trigger_validate_json('UPDATE', 'property', 'value'))
