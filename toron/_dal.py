@@ -1210,7 +1210,7 @@ class DataAccessLayer(object):
         """
         normalized = [_schema.normalize_identifier(x) for x in index_cols]
 
-        # Partition location and atttribute keys into separate dicts.
+        # Partition location and attribute keys into separate dicts.
         loc_dict = {}
         attr_dict = {}
         for k, v in where.items():
