@@ -1640,6 +1640,82 @@ class TestAddQuantities(unittest.TestCase):
         self.assertEqual(records, expected_quantity_records)
 
 
+class TestFormatSelectParams(unittest.TestCase):
+    def setUp(self):
+        self.where = OrderedDict([('state', 'IL'), ('town', 'Chicago')])
+
+    def test_using_all_defaults(self):
+        result = dal_class._format_select_params(self.where)
+        self.assertIsInstance(result, tuple)
+
+        where_expr, parameters = result
+        self.assertEqual(where_expr, '"state"=:autoparam1 AND "town"=:autoparam2')
+        self.assertEqual(parameters, {'autoparam1': 'IL', 'autoparam2': 'Chicago'})
+
+    def test_connecting_op(self):
+        where_expr, parameters = dal_class._format_select_params(
+            self.where, connecting_op='OR'
+        )
+        self.assertEqual(where_expr, '"state"=:autoparam1 OR "town"=:autoparam2')
+        self.assertEqual(parameters, {'autoparam1': 'IL', 'autoparam2': 'Chicago'})
+
+    def test_start_num(self):
+        where_expr, parameters = dal_class._format_select_params(
+            self.where, start_num=5
+        )
+        self.assertEqual(where_expr, '"state"=:autoparam5 AND "town"=:autoparam6')
+        self.assertEqual(parameters, {'autoparam5': 'IL', 'autoparam6': 'Chicago'})
+
+    def test_table_qualifier(self):
+        where_expr, parameters = dal_class._format_select_params(
+            self.where, table_qualifier='mytable'
+        )
+        self.assertEqual(where_expr, 'mytable."state"=:autoparam1 AND mytable."town"=:autoparam2')
+        self.assertEqual(parameters, {'autoparam1': 'IL', 'autoparam2': 'Chicago'})
+
+    def test_single_item(self):
+        where_expr, parameters = dal_class._format_select_params(
+            {'state': 'IL'}
+        )
+        self.assertEqual(where_expr, '"state"=:autoparam1')
+        self.assertEqual(parameters, {'autoparam1': 'IL'})
+
+    def test_empty_dict(self):
+        where_expr, parameters = dal_class._format_select_params({})
+        self.assertEqual(where_expr, '')
+        self.assertEqual(parameters, {})
+
+    def test_integration(self):
+        con = sqlite3.connect(':memory:')
+        con.executescript("""
+            CREATE TABLE mytable(
+                "state" TEXT,
+                "town" TEXT,
+                "neighborhood" TEXT
+            );
+            INSERT INTO mytable
+            VALUES
+                ('IL', 'Chicago', 'River North'),
+                ('IL', 'Chicago', 'Streeterville'),
+                ('IL', 'Chicago', 'The Loop'),
+                ('IL', 'Springfield', 'Downtown'),
+                ('IL', 'Springfield', 'Harvard Park'),
+                ('IL', 'Springfield', 'Lincoln Park')
+        """)
+
+        where_expr, parameters = dal_class._format_select_params(self.where)
+
+        sql = f'SELECT * FROM mytable WHERE {where_expr}'
+        results = con.execute(sql, parameters).fetchall()
+
+        expected = [
+            ('IL', 'Chicago', 'River North'),
+            ('IL', 'Chicago', 'Streeterville'),
+            ('IL', 'Chicago', 'The Loop'),
+        ]
+        self.assertEqual(results, expected)
+
+
 class TestGetRawQuantities(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()

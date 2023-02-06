@@ -1174,6 +1174,52 @@ class DataAccessLayer(object):
             )
 
     @staticmethod
+    def _format_select_params(
+        where: Dict[str, str],
+        connecting_op: Literal['AND', 'OR'] = 'AND',
+        start_num: int = 1,
+        table_qualifier: str = '',
+    ) -> Tuple[List[str], Tuple[str, ...]]:
+        """Format WHERE clause and parameters dictionary for use in
+        SELECT queries.
+
+        :param Dict where:
+            A dictionary of column and value requirements that will be
+            used to prepare a WHERE expression and *parameters* for a
+            call to `con.execute(..., parameters)`.
+        :param str connecting_op:
+            Logical operator to connect where clause items.
+        :param int start_num:
+            Number to start with for "autoparam" names.
+        :param str table_qualifier:
+            If given, a table qualifier is used as a prefix for any
+            column references.
+        :returns Tuple:
+            Returns a two-tuple containing a *where-expression* string
+            and an *execute-parameters* dictionary that follow the
+            DBAPI2 convention for "named style" parameters.
+
+        .. code-block::
+
+            >>> dal._format_select_params({'state': 'OH', 'town': 'Cleveland'})
+            ('"state"=:autoparam1 AND "town"=:autoparam2',
+             {'autoparam1': 'OH', 'autoparam2': 'Cleveland'})
+        """
+        if table_qualifier and not table_qualifier.endswith('.'):
+            table_qualifier = f'{table_qualifier}.'
+
+        conditions = []
+        parameters = {}
+        for num, (k, v) in enumerate(where.items(), start=start_num):
+            param_name = f'autoparam{num}'
+            col_name = _schema.normalize_identifier(k)
+            conditions.append(f'{table_qualifier}{col_name}=:{param_name}')
+            parameters[param_name] = v
+
+        where_expr = f' {connecting_op} '.join(conditions)
+        return where_expr, parameters
+
+    @staticmethod
     def _get_raw_quantities_format_args(
         index_cols: List[str], where: Dict[str, str]
     ) -> Tuple[List[str], Tuple[str, ...], Optional[Callable[[Any], bool]]]:
