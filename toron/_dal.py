@@ -1201,9 +1201,21 @@ class DataAccessLayer(object):
 
         .. code-block::
 
-            >>> dal._format_select_params({'state': 'OH', 'town': 'Cleveland'})
-            ('"state"=:autoparam1 AND "town"=:autoparam2',
-             {'autoparam1': 'OH', 'autoparam2': 'Cleveland'})
+            >>> where_expr, parameters = dal._format_select_params({
+            ...     'state': 'OH',
+            ...     'town': 'Cleveland',
+            ... })
+            >>> where_expr
+            '"state"=:autoparam1 AND "town"=:autoparam2'
+            >>> parameters
+            {'autoparam1': 'OH', 'autoparam2': 'Cleveland'}
+
+        Using the returned values in a SQL query:
+
+        .. code-block::
+
+            >>> sql = f'SELECT * FROM mytable WHERE {where_expr}'
+            >>> cursor.execute(sql, parameters)
         """
         if table_qualifier and not table_qualifier.endswith('.'):
             table_qualifier = f'{table_qualifier}.'
