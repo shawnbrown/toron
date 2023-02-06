@@ -1179,7 +1179,7 @@ class DataAccessLayer(object):
         connecting_op: Literal['AND', 'OR'] = 'AND',
         start_num: int = 1,
         table_qualifier: str = '',
-    ) -> Tuple[List[str], Tuple[str, ...]]:
+    ) -> Tuple[str, Dict[str, str]]:
         """Format WHERE clause and parameters dictionary for use in
         SELECT queries.
 
