@@ -1652,6 +1652,13 @@ class TestFormatSelectParams(unittest.TestCase):
         self.assertEqual(where_expr, '"state"=:autoparam1 AND "town"=:autoparam2')
         self.assertEqual(parameters, {'autoparam1': 'IL', 'autoparam2': 'Chicago'})
 
+    def test_using_all_defaults_int(self):
+        where_expr, parameters = dal_class._format_select_params(
+            {'index_id': 3}
+        )
+        self.assertEqual(where_expr, '"index_id"=:autoparam1')
+        self.assertEqual(parameters, {'autoparam1': 3})
+
     def test_connecting_op(self):
         where_expr, parameters = dal_class._format_select_params(
             self.where, connecting_op='OR'

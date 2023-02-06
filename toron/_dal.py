@@ -1175,11 +1175,11 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _format_select_params(
-        where: Dict[str, str],
+        where: Dict[str, Union[str, int]],
         connecting_op: Literal['AND', 'OR'] = 'AND',
         start_num: int = 1,
         table_qualifier: str = '',
-    ) -> Tuple[str, Dict[str, str]]:
+    ) -> Tuple[str, Dict[str, Union[str, int]]]:
         """Format WHERE clause and parameters dictionary for use in
         SELECT queries.
 
