@@ -13,7 +13,9 @@ Standard Library and may be imported.
 import csv
 from itertools import chain
 import re
+from functools import wraps
 from ._typing import (
+    Callable,
     Generator,
     Hashable,
     Iterable,
@@ -354,3 +356,26 @@ def parse_edge_shorthand(string):
     if matched:
         return matched.groupdict()
     return None
+
+
+def eagerly_initialize(
+    genfunc: Callable[..., Generator]
+) -> Callable[..., Iterator]:
+    """A decorator to eagerly initialize a generator object.
+
+    On instantiation, this decorator will execute all code up to the
+    first yield statement. This allows a generator to immediately
+    perform any needed pre-iteration actions (like validation, error
+    handling, logging, etc.) rather than passively waiting until the
+    object is iterated over.
+    """
+    @wraps(genfunc)
+    def wrapped_genfunc(*args, **kwds) -> Iterator:
+        generator = genfunc(*args, **kwds)
+        sentinel_value = object()
+        first_item = next(generator, sentinel_value)
+        if first_item is sentinel_value:
+            return chain()  # <- Empty chain() for consistent return type.
+        return chain([first_item], generator)
+
+    return wrapped_genfunc

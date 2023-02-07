@@ -11,6 +11,7 @@ from toron._utils import (
     make_readerlike,
     make_dictreaderlike,
     wide_to_narrow,
+    eagerly_initialize,
 )
 
 
@@ -393,3 +394,23 @@ class TestWideToNarrow(unittest.TestCase):
         with self.assertRaisesRegex(ToronError, regex):
             generator = wide_to_narrow(data, ['TOT_MALE', 'TOT_FEMALE', 'BAD_VAR'])
             list(generator)  # <- Must consume generator (it's not primed).
+
+
+class TestEagerlyInitialize(unittest.TestCase):
+    @staticmethod
+    def dummy_generator(status_good):
+        if not status_good:
+            raise AssertionError
+        yield 1
+        yield 2
+        yield 3
+
+    def test_undecorated_behavior(self):
+        gen = self.dummy_generator(False)  # <- No error on instantiation.
+        with self.assertRaises(AssertionError):
+            list(gen)  # <- Raises error when consumed.
+
+    def test_decorator(self):
+        decorated = eagerly_initialize(self.dummy_generator)  # <- Apply decorator.
+        with self.assertRaises(AssertionError):
+            gen = decorated(False)  # <- Raises error on instantiation.
