@@ -237,3 +237,32 @@ class TestNodeWrapperMethods(unittest.TestCase):
             (3, 3, {'attr1': 'baz', 'attr2': 'quux'}, 15),
         ]
         self.assertEqual(self.cursor.fetchall(), expected)
+
+    def test_reading_data(self):
+        """Test wrapper methods for reading data from a node.
+
+        This test checks the following methods:
+
+        * TODO: Node.index_columns()
+        * Node.index_records()
+        * TODO: Node.weights()
+        * TODO: Node.quantities()
+        """
+        data = [
+            ['idx1', 'idx2', 'attr1', 'attr2', 'wght1', 'counts'],
+            ['A', 'x', 'foo', 'corge', 14, 12],
+            ['B', 'y', 'bar', 'qux', 11, 10],
+            ['C', 'z', 'baz', 'quux', 16, 15],
+        ]
+        self.node.add_index_columns(['idx1', 'idx2'])
+        self.node.add_index_records(data)
+        self.node.add_weights(data, 'wght1', selectors=['[attr1]'])
+        self.node.add_quantities(data, 'counts', ['attr1', 'attr2'])
+
+        records = self.node.index_records()
+        expected = [
+            (1, 'A', 'x'),
+            (2, 'B', 'y'),
+            (3, 'C', 'z'),
+        ]
+        self.assertEqual(list(records), expected)

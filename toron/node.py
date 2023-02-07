@@ -6,6 +6,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Union,
 )
 
 from ._dal import dal_class
@@ -93,6 +94,9 @@ class Node(object):
 
     def add_index_records(self, data: TabularData) -> None:
         self._dal.add_index_records(data)
+
+    def index_records(self, **where: Union[str, int]) -> Iterable[Sequence]:
+        return self._dal.index_records(**where)
 
     def add_weights(
         self,
