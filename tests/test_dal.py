@@ -1154,6 +1154,56 @@ class TestAddIndexRecords(unittest.TestCase):
         raise NotImplementedError
 
 
+class TestIndexRecords(unittest.TestCase):
+    def setUp(self):
+        self.header = ('state', 'town', 'neighborhood')
+
+        self.data = [
+            ('IL', 'Chicago', 'River North'),
+            ('IL', 'Chicago', 'Streeterville'),
+            ('IL', 'Chicago', 'The Loop'),
+            ('IL', 'Springfield', 'Downtown'),
+            ('IL', 'Springfield', 'Harvard Park'),
+            ('IL', 'Springfield', 'Lincoln Park')
+        ]
+
+        self.dal = dal_class()
+        self.dal.set_data({'add_index_columns': self.header})
+        self.dal.add_index_records([self.header] + self.data)
+
+    def test_no_args(self):
+        results = self.dal.index_records()
+        data = [row[1:] for row in results]  # Slice-off index_id.
+        self.assertEqual(data, self.data)
+
+    def test_where_args(self):
+        results = self.dal.index_records(state='IL', town='Chicago')
+        data = [row[1:] for row in results]  # Slice-off index_id.
+        expected = [
+            ('IL', 'Chicago', 'River North'),
+            ('IL', 'Chicago', 'Streeterville'),
+            ('IL', 'Chicago', 'The Loop'),
+        ]
+        self.assertEqual(data, expected)
+
+    def test_where_index_id(self):
+        results = self.dal.index_records(index_id=3)
+        data = list(results)
+        expected = [(3, 'IL', 'Chicago', 'The Loop')]
+        self.assertEqual(data, expected)
+
+    def test_where_index_id_string(self):
+        results = self.dal.index_records(index_id='3')  # <- '3' as string
+        data = list(results)
+        expected = [(3, 'IL', 'Chicago', 'The Loop')]
+        self.assertEqual(data, expected)
+
+    def test_bad_column(self):
+        results = self.dal.index_records(country='US')  # no "country" column
+        with self.assertRaises(KeyError):
+            list(results)  # Error is raised on iteration (not instantiation).
+
+
 class TestAddWeightsGetNewId(unittest.TestCase):
     def setUp(self):
         self.con = get_connection(':memory:', None)

@@ -902,6 +902,33 @@ class DataAccessLayer(object):
             # Refresh granularity to account for new records.
             self._refresh_granularity(cur)
 
+    def index_records(
+        self, **where: Union[str, int]
+    ) -> Generator[Sequence, None, None]:
+        """Returns an iterator that yields index records.
+
+        .. code-block::
+
+            >>> for x in dal.index_records():
+            ...     print(x)
+        """
+        with self._transaction(method=None) as cur:
+            if where:
+                columns = self._get_column_names(cur, 'label_index')
+                for key in where.keys():
+                    if key not in columns:
+                        raise KeyError(key)
+
+                where_expr, parameters = self._format_select_params(where)
+                sql = f'SELECT * FROM label_index WHERE {where_expr}'
+            else:
+                parameters = {}
+                sql = 'SELECT * FROM label_index'
+
+            cur.execute(sql, parameters)
+            for row in cur:
+                yield row
+
     @staticmethod
     def _add_weights_get_new_id(
         cursor: sqlite3.Cursor,
