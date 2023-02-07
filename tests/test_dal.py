@@ -1199,9 +1199,8 @@ class TestIndexRecords(unittest.TestCase):
         self.assertEqual(data, expected)
 
     def test_bad_column(self):
-        results = self.dal.index_records(country='US')  # no "country" column
         with self.assertRaises(KeyError):
-            list(results)  # Error is raised on iteration (not instantiation).
+            results = self.dal.index_records(country='US')  # no "country" column
 
 
 class TestAddWeightsGetNewId(unittest.TestCase):

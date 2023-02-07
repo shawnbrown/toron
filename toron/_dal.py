@@ -52,6 +52,7 @@ from ._utils import (
     TabularData,
     make_readerlike,
     make_dictreaderlike,
+    eagerly_initialize,
 )
 
 
@@ -902,6 +903,7 @@ class DataAccessLayer(object):
             # Refresh granularity to account for new records.
             self._refresh_granularity(cur)
 
+    @eagerly_initialize
     def index_records(
         self, **where: Union[str, int]
     ) -> Generator[Sequence, None, None]:
