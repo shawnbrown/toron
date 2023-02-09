@@ -1164,7 +1164,13 @@ class TestIndexRecords(unittest.TestCase):
             ('IL', 'Chicago', 'The Loop'),
             ('IL', 'Springfield', 'Downtown'),
             ('IL', 'Springfield', 'Harvard Park'),
-            ('IL', 'Springfield', 'Lincoln Park')
+            ('IL', 'Springfield', 'Lincoln Park'),
+            ('CA', 'Los Angeles', 'Bel Air'),
+            ('CA', 'Los Angeles', 'Hollywood'),
+            ('CA', 'Los Angeles', 'Venice'),
+            ('CA', 'San Francisco', 'Mid-Market'),
+            ('CA', 'San Francisco', 'Mission District'),
+            ('CA', 'San Francisco', 'Russian Hill'),
         ]
 
         self.dal = dal_class()
@@ -1201,6 +1207,34 @@ class TestIndexRecords(unittest.TestCase):
     def test_bad_column(self):
         with self.assertRaises(KeyError):
             results = self.dal.index_records(country='US')  # no "country" column
+
+    def test_index_records_grouped(self):
+        results = self.dal.index_records_grouped([
+            {'state': 'CA', 'town': 'Los Angeles'},
+            {'state': 'CA', 'town': 'San Francisco'},
+        ])
+
+        # Check first item.
+        key, group = next(results)
+        expected_key = {'state': 'CA', 'town': 'Los Angeles'}
+        expected_group = [
+            (7, 'CA', 'Los Angeles', 'Bel Air'),
+            (8, 'CA', 'Los Angeles', 'Hollywood'),
+            (9, 'CA', 'Los Angeles', 'Venice')
+        ]
+        self.assertEqual(key, expected_key)
+        self.assertEqual(list(group), expected_group)
+
+        # Check second item.
+        key, group = next(results)
+        expected_key = {'state': 'CA', 'town': 'San Francisco'}
+        expected_group = [
+            (10, 'CA', 'San Francisco', 'Mid-Market'),
+            (11, 'CA', 'San Francisco', 'Mission District'),
+            (12, 'CA', 'San Francisco', 'Russian Hill'),
+        ]
+        self.assertEqual(key, expected_key)
+        self.assertEqual(list(group), expected_group)
 
 
 class TestAddWeightsGetNewId(unittest.TestCase):

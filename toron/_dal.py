@@ -938,6 +938,48 @@ class DataAccessLayer(object):
 
             yield from self._select_index_records(cur, **where)
 
+    @eagerly_initialize
+    def index_records_grouped(
+        self, where_dicts: Iterable[Dict[str, Union[str, int]]]
+    ) -> Generator[Sequence, None, None]:
+        """Returns index records grouped by where conditions.
+
+        The return value is modeled after the itertools.groupby()
+        behavior which returns a key and group for each item::
+
+            >>> results = dal.index_records_grouped([
+            ...     {'state': 'CA', 'town': 'Los Angeles'},
+            ...     {'state': 'CA', 'town': 'San Francisco'},
+            ... ])
+            >>> key, group = next(results)
+            >>> key
+            {'state': 'CA', 'town': 'Los Angeles'}
+            >>> list(group)
+            [(410, 'CA', 'Los Angeles', 'Bel Air'),
+             (411, 'CA', 'Los Angeles', 'Hollywood'),
+             (412, 'CA', 'Los Angeles', 'Venice'),
+             ...]
+            >>> key, group = next(results)
+            >>> key
+            {'state': 'CA', 'town': 'San Francisco'}
+            >>> list(group)
+            [(527, 'CA', 'San Francisco', 'Mid-Market'),
+             (528, 'CA', 'San Francisco', 'Mission District'),
+             (529, 'CA', 'San Francisco', 'Russian Hill'),
+             ...]
+        """
+        with self._transaction(method=None) as cur:
+            columns = self._get_column_names(cur, 'label_index')
+
+            for where in where_dicts:
+                if where:
+                    for key in where.keys():
+                        if key not in columns:
+                            raise KeyError(key)
+
+                group = self._select_index_records(cur, **where)
+                yield (where, group)
+
     @staticmethod
     def _add_weights_get_new_id(
         cursor: sqlite3.Cursor,
