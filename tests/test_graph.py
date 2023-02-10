@@ -3,10 +3,13 @@
 import unittest
 
 from toron.node import Node
-from toron.graph import add_edge
+from toron.graph import (
+    add_edge,
+    _EdgeMapper,
+)
 
 
-class TestAddEdge(unittest.TestCase):
+class TestEdgeMapper(unittest.TestCase):
     def setUp(self):
         self.node1 = Node()
         data1 = [
@@ -33,8 +36,7 @@ class TestAddEdge(unittest.TestCase):
         self.node2.add_index_records(data2)
         self.node2.add_weights(data2, 'wght', selectors=['[attr1]'])
 
-    @unittest.expectedFailure
-    def test_add_edge(self):
+    def test_init(self):
         data = [
             ['idx', 'population', 'idx1', 'idx2'],
             ['A', 10, 'A', 'x'],
@@ -44,4 +46,15 @@ class TestAddEdge(unittest.TestCase):
             ['C', 30, 'C', 'x'],
             ['C', 50, 'C', 'y'],
         ]
-        add_edge(data, 'population', self.node1, '-->', self.node2)
+        mapper = _EdgeMapper(data, 'population', self.node1, '-->', self.node2)
+
+        mapper.cur.execute('SELECT * FROM temp.source_mapping')
+        expected = [
+            (1, '["A"]', '["A", "x"]', 10.0),
+            (2, '["A"]', '["A", "y"]', 70.0),
+            (3, '["B"]', '["B", "x"]', 20.0),
+            (4, '["B"]', '["B", "y"]', 60.0),
+            (5, '["C"]', '["C", "x"]', 30.0),
+            (6, '["C"]', '["C", "y"]', 50.0),
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
