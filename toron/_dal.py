@@ -2445,8 +2445,10 @@ class DataAccessLayerPre24(DataAccessLayerPre25):
 
 # Set the DataAccessLayer class appropriate for the current version of SQLite.
 dal_class: Type[DataAccessLayer]
-
-if _SQLITE_VERSION_INFO < (3, 24, 0):
+if _SQLITE_VERSION_INFO < (3, 21, 0):
+    msg = f'Internal SQLite version {sqlite3.sqlite_version} not supported.'
+    raise RuntimeError(msg)
+elif _SQLITE_VERSION_INFO < (3, 24, 0):
     dal_class = DataAccessLayerPre24
 elif _SQLITE_VERSION_INFO < (3, 25, 0):
     dal_class = DataAccessLayerPre25
