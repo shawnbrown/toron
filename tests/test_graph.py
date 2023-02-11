@@ -36,8 +36,7 @@ class TestEdgeMapper(unittest.TestCase):
         self.node2.add_index_records(data2)
         self.node2.add_weights(data2, 'wght', selectors=['[attr1]'])
 
-    def test_init(self):
-        data = [
+        self.data = [
             ['idx', 'population', 'idx1', 'idx2'],
             ['A', 10, 'A', 'x'],
             ['A', 70, 'A', 'y'],
@@ -46,7 +45,9 @@ class TestEdgeMapper(unittest.TestCase):
             ['C', 30, 'C', 'x'],
             ['C', 50, 'C', 'y'],
         ]
-        mapper = _EdgeMapper(data, 'population', self.node1, '-->', self.node2)
+
+    def test_init(self):
+        mapper = _EdgeMapper(self.data, 'population', self.node1, '-->', self.node2)
 
         mapper.cur.execute('SELECT * FROM temp.source_mapping')
         expected = [
