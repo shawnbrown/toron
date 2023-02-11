@@ -59,3 +59,19 @@ class TestEdgeMapper(unittest.TestCase):
             (6, '["C"]', '["C", "y"]', 50.0),
         ]
         self.assertEqual(mapper.cur.fetchall(), expected)
+
+    def test_find_matches(self):
+        mapper = _EdgeMapper(self.data, 'population', self.node1, '-->', self.node2)
+
+        mapper.find_matches('left')  # <- Method under test.
+        mapper.cur.execute('SELECT * FROM temp.left_matches')
+        expected = [(1, 1), (2, 1), (3, 2), (4, 2), (5, 3), (6, 3)]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
+        mapper.find_matches('right')  # <- Method under test.
+        mapper.cur.execute('SELECT * FROM temp.right_matches')
+        expected = [(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
+        with self.assertRaises(ValueError):
+            mapper.find_matches('blerg')  # <- Method under test.

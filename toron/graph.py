@@ -91,6 +91,50 @@ class _EdgeMapper(object):
             sql = 'INSERT INTO temp.source_mapping VALUES (NULL, ?, ?, ?)'
             self.cur.execute(sql, (left_labels, right_labels, weight))
 
+    def find_matches(self, side: Literal['left', 'right']) -> None:
+        if side == 'left':
+            keys = self.left_keys
+            node = self.left_node
+        elif side == 'right':
+            keys = self.right_keys
+            node = self.right_node
+        else:
+            msg = f"side must be 'left' or 'right', got {side!r}"
+            raise ValueError(msg)
+
+        # Order by labels for itertools.groupby() later.
+        self.cur.execute(f"""
+            SELECT {side}_labels, run_id
+            FROM temp.source_mapping
+            ORDER BY {side}_labels
+        """)
+
+        # Group rows using lablels as key.
+        grouped = groupby(self.cur, key=lambda row: row[0])
+
+        # Format keys as dictionary, format groups as list of run_ids.
+        format_key = lambda x: dict(zip(keys, json.loads(x)))
+        format_group = lambda g: [x[1] for x in g]
+        items = ((format_key(k), format_group(g)) for k, g in grouped)
+
+        # Unzip items into separate where_dict and run_id containers.
+        where_dicts, run_ids_groups = zip(*items)
+
+        # Get node matches (NOTE: accessing internal ``_dal`` directly).
+        matches = node._dal.index_records_grouped(where_dicts)
+
+        # Step over results and add exact matches.
+        for run_ids, (key, group) in zip(run_ids_groups, matches):
+            index_record = next(group)
+            if next(group, None):  # If more than one index record, the
+                continue           # match is ambiguous--skip to next!
+
+            index_id = index_record[0]
+
+            parameters = ((run_id, index_id) for run_id in run_ids)
+            sql = f'INSERT INTO temp.{side}_matches VALUES (?, ?)'
+            self.cur.executemany(sql, parameters)
+
     def close(self) -> None:
         self.cur.close()
         self.con.close()
