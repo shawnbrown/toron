@@ -81,8 +81,8 @@ class _EdgeMapper(object):
         left_mask = tuple(int(col in left_cols) for col in fieldnames)
         right_mask = tuple(int(col in right_cols) for col in fieldnames)
 
-        left_keys = list(compress(fieldnames, left_mask))
-        right_keys = list(compress(fieldnames, right_mask))
+        self.left_keys = list(compress(fieldnames, left_mask))
+        self.right_keys = list(compress(fieldnames, right_mask))
 
         for row in iterator:
             left_labels = json.dumps(list(compress(row, left_mask)))
