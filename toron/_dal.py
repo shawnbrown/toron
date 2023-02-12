@@ -5,6 +5,7 @@ import os
 import sqlite3
 import sys
 import tempfile
+import uuid
 from collections import Counter
 from contextlib import contextmanager, nullcontext
 from itertools import (
@@ -135,6 +136,7 @@ class DataAccessLayer(object):
     _filename: Optional[str]
     _required_permissions: _schema.RequiredPermissions
     _cleanup_item: Optional[Union[str, sqlite3.Connection]]
+    _uuid: Optional[str] = None
 
     def __init__(self, cache_to_drive: bool = False):
         """Initialize a new node instance."""
@@ -152,6 +154,9 @@ class DataAccessLayer(object):
         con.executescript(_schema._schema_script)
         _schema._add_functions_and_triggers(con)
 
+        self._uuid = str(uuid.uuid4())  # UUID 4 for most random value.
+        self._set_data_property(con.cursor(), 'node_uuid', self._uuid)
+
         # Assign object attributes.
         if cache_to_drive:
             con.close()  # Close on-drive connection (only open when accessed).
@@ -164,6 +169,14 @@ class DataAccessLayer(object):
             self._filename = None
             self._required_permissions = None
             self._cleanup_item = con
+
+    @property
+    def uuid(self):
+        """Unique identifier for the node object."""
+        if not self._uuid:
+            with self._transaction(method=None) as cur:
+                self._uuid = self._get_data_property(cur, 'node_uuid')
+        return self._uuid
 
     @classmethod
     def from_file(
