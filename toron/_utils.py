@@ -11,6 +11,7 @@ Standard Library and may be imported.
 """
 
 import csv
+import hashlib
 from itertools import chain
 import re
 from functools import wraps
@@ -356,6 +357,30 @@ def parse_edge_shorthand(string):
     if matched:
         return matched.groupdict()
     return None
+
+
+def make_hash(values: Iterable, sep='|') -> Optional[str]:
+    """Hashes an iterable of values returning a message digest string
+    or None if the given iterable is empty.
+
+    Before hashing, values are converted into strings and separated
+    with ``sep`` (defaults to pipe, ``'|'``). So, given the list
+    ``[1, 2, 3]``, this function will output the digest for the
+    message ``"1|2|3"``.
+    """
+    values = iter(values)
+    try:
+        first_item = next(values)
+    except StopIteration:
+        return None
+
+    values = chain([f'{first_item}'], (f'{sep}{x}' for x in values))
+
+    sha256 = hashlib.sha256()
+    for value in values:
+        sha256.update(value.encode('utf-8'))
+
+    return sha256.hexdigest()
 
 
 def eagerly_initialize(

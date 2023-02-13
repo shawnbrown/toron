@@ -11,6 +11,7 @@ from toron._utils import (
     make_readerlike,
     make_dictreaderlike,
     wide_to_narrow,
+    make_hash,
     eagerly_initialize,
 )
 
@@ -394,6 +395,41 @@ class TestWideToNarrow(unittest.TestCase):
         with self.assertRaisesRegex(ToronError, regex):
             generator = wide_to_narrow(data, ['TOT_MALE', 'TOT_FEMALE', 'BAD_VAR'])
             list(generator)  # <- Must consume generator (it's not primed).
+
+
+class TestMakeHash(unittest.TestCase):
+    # NOTE: The expected hash digests for each test case has been
+    # independently verified.
+
+    def test_sequence_of_strings(self):
+        self.assertEqual(
+            make_hash(['a', 'b', 'c', 'd']),  # Hash of message "a|b|c|d".
+            'b54856b7a8705958e13238b3d67eac1cf256afefd4ad405d644ac956b1164870',
+        )
+        self.assertEqual(
+            make_hash(['a', 'bc', 'd']),  # Hash of message "a|bc|d".
+            '845645d1f0491e0bee5a2bf69bf76a9bec2abf157eb2716255fdb708166f5c1e',
+        )
+
+    def test_sequence_of_integers(self):
+        self.assertEqual(
+            make_hash([1, 2, 3, 4]),  # Hash of message "1|2|3|4".
+            '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
+        )
+        self.assertEqual(
+            make_hash([1, 23, 4]),  # Hash of message "1|23|4".
+            'daf1e2d7d8c08a1a9d194df37cfb030311a1d8cca3908bbc502c6c82fe3a0739',
+        )
+
+    def test_non_default_separator(self):
+        self.assertEqual(
+            make_hash([1, 23, 4], sep='=>'),  # Hash of message "1=>23=>4".
+            'f3f6f772362b79f9205294d905f0ea4e21fb0e0801fca3d64b8a2a2dbc756465',
+        )
+
+    def test_empty_iterable(self):
+        digest = make_hash([])
+        self.assertIsNone(digest)
 
 
 class TestEagerlyInitialize(unittest.TestCase):
