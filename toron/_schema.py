@@ -17,7 +17,7 @@ the application layer:
  | description          |  •  •••| index_id       |<-+     | quantity       |
  | selectors            |  •  •  | proportion     |  |     +----------------+
  | user_properties      |  •  •  | mapping_level* |  |     | quantity_id    |
- | other_uuid           |  •  •  +----------------+  |  +->| _location_id   |
+ | other_unique_id      |  •  •  +----------------+  |  +->| _location_id   |
  | other_filename_hint  |  •  •                      |  |  | attributes     |
  | other_index_hash*    |<••  •                      |  |  | quantity_value |
  | is_locally_complete* |<•••••    +-----------------+  |  +----------------+
@@ -84,11 +84,11 @@ _schema_script = """
         description TEXT,
         selectors TEXT_SELECTORS,
         user_properties TEXT_USERPROPERTIES,
-        other_uuid TEXT NOT NULL CHECK (other_uuid LIKE '________-____-____-____-____________'),
+        other_unique_id TEXT NOT NULL CHECK (other_unique_id LIKE '________-____-____-____-____________'),
         other_filename_hint TEXT NOT NULL,
         other_index_hash TEXT,
         is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
-        UNIQUE (name, other_uuid)
+        UNIQUE (name, other_unique_id)
     );
 
     CREATE TABLE main.relation(

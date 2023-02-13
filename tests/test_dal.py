@@ -79,36 +79,37 @@ class TestDataAccessLayerInit(TempDirTestCase):
         self.assertEqual(result, expected)
 
 
-class TestUuid(TempDirTestCase):
-    """On creation, each node should get its own UUID value."""
+class TestUniqueId(TempDirTestCase):
+    """On creation, each node should get its own unique id value."""
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
 
-    def test_uuid_basics(self):
-        """Check basic UUID behavior."""
+    def test_unique_id_basics(self):
+        """Check basic unique id behavior."""
         dal1 = dal_class()
         dal2 = dal_class()
 
-        regex = r'[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}'
-        self.assertRegex(dal1.uuid, regex)
-        self.assertRegex(dal2.uuid, regex)
+        # Currently Toron unique IDs are generated as UUIDs.
+        uuid_regex = r'[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}'
+        self.assertRegex(dal1.unique_id, uuid_regex)
+        self.assertRegex(dal2.unique_id, uuid_regex)
 
-        self.assertNotEqual(dal1.uuid, dal2.uuid)
+        self.assertNotEqual(dal1.unique_id, dal2.unique_id)
 
     def test_persistence(self):
-        """A node's UUID must only be generated once (at creation)."""
+        """A node's unique ID must only be generated once (at creation)."""
         file_path = 'tempnode.toron'
 
         dal = dal_class()
-        initial_value = dal.uuid
+        initial_value = dal.unique_id
         dal.to_file(file_path)  # Node is persisted to drive.
         del dal
 
         # Load node from drive.
         dal = dal_class.from_file(file_path)
-        reloaded_value = dal.uuid
+        reloaded_value = dal.unique_id
 
-        msg = 'UUID from reloaded node should match the initial UUID'
+        msg = 'Unique ID from reloaded node should match the initial unique ID'
         self.assertEqual(initial_value, reloaded_value, msg=msg)
 
 

@@ -427,7 +427,7 @@ class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
             None,                      # description
             None,                      # selectors
             value,                     # user_properties
-            '00000000-0000-0000-0000-000000000000',  # other_uuid
+            '00000000-0000-0000-0000-000000000000',  # other_unique_id
             f'other{index}.toron',     # other_filename_hint
             'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',  # other_index_hash
             0,                         # is_complete
@@ -1024,7 +1024,7 @@ class TestBitListConversionAndAdaptation(unittest.TestCase):
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
         self.cur.execute(
-            'INSERT INTO edge (edge_id, name, other_uuid, other_filename_hint) VALUES (?, ?, ?, ?)',
+            'INSERT INTO edge (edge_id, name, other_unique_id, other_filename_hint) VALUES (?, ?, ?, ?)',
             (1, 'myedge', '00000000-0000-0000-0000-000000000000', 'mynode.toron')
         )
         self.other_index_id_generator = itertools.count(42)  # Start at 42.
