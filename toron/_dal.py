@@ -133,6 +133,12 @@ class DataAccessLayer(object):
         >>> from toron._dal import dal_class
         >>> dal = dal_class(cache_to_drive=True)
     """
+    # The absolute path of the file where the node data was loaded from
+    # or was most recently saved to (if any). If the node was not loaded
+    # from a file and has never been explicitly saved to a file, then
+    # this attribute should be None.
+    _absolute_data_source: Optional[str] = None
+
     # The absolute path of the file where the node instance's data is
     # currently stored (if any). This attribute should only be populated
     # when the instance's data is being read from and written to the
@@ -140,6 +146,12 @@ class DataAccessLayer(object):
     # drive or when ``cache_to_drive=True`` is used. If the node data
     # is located in memory, this attribute should be None.
     _absolute_working_path: Optional[str] = None
+
+    # NOTE: To be clear, the above attributes ``_absolute_data_source``
+    # and ``_absolute_working_path`` are independent. If node data is
+    # loaded from a file into memory, then it should have a "data source"
+    # but since the active database is running in memory, it should not
+    # have a "working path".
 
     _required_permissions: _schema.RequiredPermissions
     _cleanup_item: Optional[Union[str, sqlite3.Connection]]
@@ -167,13 +179,15 @@ class DataAccessLayer(object):
         # Assign object attributes.
         if cache_to_drive:
             con.close()  # Close on-drive connection (only open when accessed).
+            self._absolute_data_source = None
             self._absolute_working_path = target_path
             self._required_permissions = 'readwrite'
             self._cleanup_item = target_path
         else:
+            self._absolute_data_source = None
+            self._absolute_working_path = None
             self._connection = con  # Keep connection open (in-memory database
                                     # is discarded once closed).
-            self._absolute_working_path = None
             self._required_permissions = None
             self._cleanup_item = con
 
@@ -203,8 +217,8 @@ class DataAccessLayer(object):
             >>> from toron import Node
             >>> node = Node.from_file('mynode.toron', cache_to_drive=True)
         """
-        path = os.fsdecode(path)
-        source_con = _schema.get_raw_connection(path, access_mode='ro')
+        source_path = os.path.abspath(os.fsdecode(path))
+        source_con = _schema.get_raw_connection(source_path, access_mode='ro')
 
         if cache_to_drive:
             fh = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
@@ -224,12 +238,14 @@ class DataAccessLayer(object):
         obj = cls.__new__(cls)
         if cache_to_drive:
             target_con.close()
+            obj._absolute_data_source = source_path
             obj._absolute_working_path = target_path
             obj._required_permissions = 'readwrite'
             obj._cleanup_item = target_path
         else:
-            obj._connection = target_con
+            obj._absolute_data_source = source_path
             obj._absolute_working_path = None
+            obj._connection = target_con
             obj._required_permissions = None
             obj._cleanup_item = target_con
 
@@ -357,6 +373,7 @@ class DataAccessLayer(object):
         _schema.get_connection(path, required_permissions).close()  # Verify path to Toron node file.
 
         obj = cls.__new__(cls)
+        obj._absolute_data_source = path
         obj._absolute_working_path = path
         obj._required_permissions = required_permissions
         obj._cleanup_item = None
