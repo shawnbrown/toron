@@ -379,6 +379,13 @@ class DataAccessLayer(object):
         obj._cleanup_item = None
         return obj
 
+    @property
+    def data_source(self) -> Optional[str]:
+        """A relative file path to the data source for this node."""
+        if self._absolute_data_source:
+            return os.path.relpath(self._absolute_data_source)
+        return None
+
     def _get_connection(self) -> sqlite3.Connection:
         if hasattr(self, '_connection'):
             return self._connection
