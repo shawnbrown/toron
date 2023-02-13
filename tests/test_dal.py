@@ -36,8 +36,8 @@ def get_dal_filepath(dal):
     """Helper function returns path of DAL's db file (if any)."""
     if hasattr(dal, '_connection'):
         con = dal._connection
-    elif dal.filename:
-        con = sqlite3.connect(dal.filename)
+    elif dal._absolute_working_path:
+        con = sqlite3.connect(dal._absolute_working_path)
     else:
         raise Exception(f'cannot get connection from data access layer: {dal}')
 
@@ -130,7 +130,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         self.assertEqual(filepath, '', msg='should be empty string for in-memory db')
 
         # For in-memory connections, path is unused.
-        self.assertIsNone(dal.filename)
+        self.assertIsNone(dal._absolute_working_path)
 
         # Check that node contains test value.
         value = dal.get_data(['testkey'])
@@ -146,7 +146,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         self.assertRegex(filepath, '.toron$', msg="temp file should use '.toron' suffix")
 
         # For on-drive connections, path and node are used.
-        self.assertIsNotNone(dal.filename)
+        self.assertIsNotNone(dal._absolute_working_path)
         self.assertEqual(dal._required_permissions, 'readwrite')
 
         # Check that node contains test value.
@@ -160,7 +160,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
 
     def test_del_behavior(self):
         dal = dal_class.from_file(self.existing_path, cache_to_drive=True)
-        path = dal.filename
+        path = dal._absolute_working_path
 
         self.assertIn(path, _temp_files_to_delete_atexit)
 
@@ -173,7 +173,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
                 pass  # <- Dummy method takes no action.
 
         dal = DummyDataAccessLayer.from_file(self.existing_path, cache_to_drive=True)
-        path = dal.filename
+        path = dal._absolute_working_path
 
         dal.__del__()
         self.assertIn(path, _temp_files_to_delete_atexit)

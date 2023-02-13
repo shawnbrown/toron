@@ -133,7 +133,14 @@ class DataAccessLayer(object):
         >>> from toron._dal import dal_class
         >>> dal = dal_class(cache_to_drive=True)
     """
-    _filename: Optional[str]
+    # The absolute path of the file where the node instance's data is
+    # currently stored (if any). This attribute should only be populated
+    # when the instance's data is being read from and written to the
+    # drive. This happens when the node is opened directly from the
+    # drive or when ``cache_to_drive=True`` is used. If the node data
+    # is located in memory, this attribute should be None.
+    _absolute_working_path: Optional[str] = None
+
     _required_permissions: _schema.RequiredPermissions
     _cleanup_item: Optional[Union[str, sqlite3.Connection]]
     _uuid: Optional[str] = None
@@ -160,13 +167,13 @@ class DataAccessLayer(object):
         # Assign object attributes.
         if cache_to_drive:
             con.close()  # Close on-drive connection (only open when accessed).
-            self._filename = target_path
+            self._absolute_working_path = target_path
             self._required_permissions = 'readwrite'
             self._cleanup_item = target_path
         else:
             self._connection = con  # Keep connection open (in-memory database
                                     # is discarded once closed).
-            self._filename = None
+            self._absolute_working_path = None
             self._required_permissions = None
             self._cleanup_item = con
 
@@ -217,12 +224,12 @@ class DataAccessLayer(object):
         obj = cls.__new__(cls)
         if cache_to_drive:
             target_con.close()
-            obj._filename = target_path
+            obj._absolute_working_path = target_path
             obj._required_permissions = 'readwrite'
             obj._cleanup_item = target_path
         else:
             obj._connection = target_con
-            obj._filename = None
+            obj._absolute_working_path = None
             obj._required_permissions = None
             obj._cleanup_item = target_con
 
@@ -350,20 +357,16 @@ class DataAccessLayer(object):
         _schema.get_connection(path, required_permissions).close()  # Verify path to Toron node file.
 
         obj = cls.__new__(cls)
-        obj._filename = path
+        obj._absolute_working_path = path
         obj._required_permissions = required_permissions
         obj._cleanup_item = None
         return obj
 
-    @property
-    def filename(self) -> Optional[str]:
-        return getattr(self, '_filename', None)
-
     def _get_connection(self) -> sqlite3.Connection:
         if hasattr(self, '_connection'):
             return self._connection
-        if self._filename:
-            return _schema.get_connection(self._filename, self._required_permissions)
+        if self._absolute_working_path:
+            return _schema.get_connection(self._absolute_working_path, self._required_permissions)
         raise RuntimeError('cannot get connection')
 
     @contextmanager
@@ -396,9 +399,9 @@ class DataAccessLayer(object):
             con_close = lambda: None
         else:
             # On-drive database (close connection when finished).
-            if not self.filename:
+            if not self._absolute_working_path:
                 raise RuntimeError('expected filename, none found')
-            con = _schema.get_connection(self.filename, self._required_permissions)
+            con = _schema.get_connection(self._absolute_working_path, self._required_permissions)
             con_close = con.close
 
         cur = con.cursor()
