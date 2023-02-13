@@ -864,7 +864,7 @@ class DataAccessLayer(object):
         else:
             new_categories = cats_filtered
 
-        # Check for a loss of granularity.
+        # Check for a loss of granularity and coarsen if appropriate.
         cursor.execute(f'''
             SELECT 1
             FROM main.label_index
@@ -879,6 +879,8 @@ class DataAccessLayer(object):
             for stmnt in cls._coarsen_records_make_sql(names_remaining):
                 cursor.execute(stmnt)
 
+            cls._refresh_index_hash(cursor)
+
         # Clear `structure` table to prevent duplicates when removing columns.
         cursor.execute('DELETE FROM main.structure')
 
@@ -888,8 +890,6 @@ class DataAccessLayer(object):
 
         # Rebuild categories property and structure table.
         cls._update_categories_and_structure(cursor, new_categories)
-
-        # TODO: Recalculate node_hash for `properties` table.
 
     def remove_index_columns(
         self, columns: Iterable[str], strategy: Strategy = 'preserve'

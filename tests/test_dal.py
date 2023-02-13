@@ -923,8 +923,13 @@ class TestRemoveIndexColumnsMixin(object):
 
     def test_strategy_coarsen_weights(self):
         """The 'coarsen' strategy should override granularity error."""
+        # Get hash of node before coarsening.
+        hash_before_coarsening = self.dal._get_data_property(self.cur, 'index_hash')
+
+        # Coarsen the dataset (run the method under test).
         self.dal.remove_index_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
 
+        # Check that dataset was altered as expected.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM label_index a
@@ -932,7 +937,6 @@ class TestRemoveIndexColumnsMixin(object):
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
         ''').fetchall()
-
         expected = [
             (1, 'AZ', 1524),
             (2, 'CA', 8250),  # <- Aggregate sum of 3 records.
@@ -943,6 +947,14 @@ class TestRemoveIndexColumnsMixin(object):
             (9, 'TX', 104028),  # <- Aggregate sum of 2 records.
         ]
         self.assertEqual(actual, expected)
+
+        # Check that 'index_hash' was recomputed for the coarsened dataset.
+        hash_after_coarsening = self.dal._get_data_property(self.cur, 'index_hash')
+        self.assertNotEqual(
+            hash_before_coarsening,
+            hash_after_coarsening,
+            msg='When a node is coarsened, its index hash should be updated.',
+        )
 
     def test_strategy_coarsen_weights_and_quantities(self):
         """The 'coarsen' strategy should override granularity error."""
