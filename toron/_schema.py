@@ -84,7 +84,7 @@ _schema_script = """
         description TEXT,
         selectors TEXT_SELECTORS,
         user_properties TEXT_USERPROPERTIES,
-        other_unique_id TEXT NOT NULL CHECK (other_unique_id LIKE '________-____-____-____-____________'),
+        other_unique_id TEXT NOT NULL,
         other_filename_hint TEXT NOT NULL,
         other_index_hash TEXT,
         is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
