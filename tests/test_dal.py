@@ -3046,3 +3046,30 @@ class TestRefreshGranularity(unittest.TestCase):
             (4, 3.0, 1, 1, 1),  # <- 3.0 granularity for {A, B, C} (1, 1, 1)
         ]
         self.assertEqual(structure_records, expected)
+
+
+class TestRefreshIndexHash(unittest.TestCase):
+    maxDiff = None
+
+    def test_refresh_index_hash(self):
+        """Test for DataAccessLayer._refresh_index_hash() method."""
+        dal = dal_class()
+        dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        cur = dal._connection.cursor()
+
+        columns = ['A',  'B',  'C']
+        data = [
+            ['a1', 'b1', 'c1'],
+            ['a1', 'b1', 'c2'],
+            ['a1', 'b2', 'c3'],
+            ['a1', 'b2', 'c4'],
+        ]
+        sql = dal._add_index_records_make_sql(cur, columns)
+        cur.executemany(sql, data)
+
+        dal._refresh_index_hash(cur)  # <- Method under test.
+
+        cur.execute("SELECT value FROM main.property WHERE key='index_hash'")
+        index_hash = cur.fetchone()[0]  # Hash of index_id values "1|2|3|4".
+        expected = '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39'
+        self.assertEqual(index_hash, expected)

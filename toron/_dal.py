@@ -53,6 +53,7 @@ from ._utils import (
     TabularData,
     make_readerlike,
     make_dictreaderlike,
+    make_hash,
     eagerly_initialize,
 )
 
@@ -897,6 +898,18 @@ class DataAccessLayer(object):
             self._remove_index_columns_execute_sql(cur, columns, strategy)
 
     @classmethod
+    def _refresh_index_hash(cls, cursor: sqlite3.Cursor) -> None:
+        """Refresh the index_hash in the 'property' table.
+
+        The index hash should be refreshed after any INSERT or DELETE
+        on the 'label_index' table.
+        """
+        cursor.execute('SELECT index_id FROM main.label_index ORDER BY index_id')
+        unpacked_values = (x[0] for x in cursor)  # Unpack 1-tuple rows.
+        hash_value = make_hash(unpacked_values)
+        cls._set_data_property(cursor, 'index_hash', hash_value)
+
+    @classmethod
     def _add_index_records_make_sql(
         cls, cursor: sqlite3.Cursor, columns: Iterable[str]
     ) -> str:
@@ -940,8 +953,9 @@ class DataAccessLayer(object):
             sql = self._add_index_records_make_sql(cur, columns)
             cur.executemany(sql, iterator)
 
-            # Refresh granularity to account for new records.
+            # Refresh granularity and index_hash to account for new records.
             self._refresh_granularity(cur)
+            self._refresh_index_hash(cur)
 
     def _select_index_records(
         self, cursor: sqlite3.Cursor, **where: Union[str, int]
