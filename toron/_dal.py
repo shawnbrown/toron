@@ -142,10 +142,10 @@ class DataAccessLayer(object):
 
     # The absolute path of the file where the node instance's data is
     # currently stored (if any). This attribute should only be populated
-    # when the instance's data is being read from and written to the
-    # drive. This happens when the node is opened directly from the
-    # drive or when ``cache_to_drive=True`` is used. If the node data
-    # is located in memory, this attribute should be None.
+    # when the instance's data is located on drive. This happens when the
+    # node is opened directly from the drive or when ``cache_to_drive=True``
+    # is used. If the node data is located in memory, this attribute should
+    # be None.
     _absolute_working_path: Optional[str] = None
 
     # NOTE: To be clear, the above attributes ``_absolute_data_source``
