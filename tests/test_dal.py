@@ -445,7 +445,7 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
         """Add columns to new/empty node database."""
         statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county'])
         expected = [
-            'DROP INDEX IF EXISTS main.unique_labelindex_index',
+            'DROP INDEX IF EXISTS main.unique_nodeindex_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
             'ALTER TABLE main.node_index ADD COLUMN "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\'',
@@ -454,23 +454,23 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
             'ALTER TABLE main.node_index ADD COLUMN "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "county" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_nodeindex_index ON node_index("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
         self.assertEqual(statements, expected)
 
     def test_add_index_columns_to_exsting(self):
-        """Add columns to database with existing label columns."""
-        # Add initial label columns.
+        """Add columns to database with existing node index columns."""
+        # Add initial index columns.
         statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county'])
         for stmnt in statements:
             self.cur.execute(stmnt)
 
-        # Add attitional label columns.
+        # Add attitional index columns.
         statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['tract', 'block'])
         expected = [
-            'DROP INDEX IF EXISTS main.unique_labelindex_index',
+            'DROP INDEX IF EXISTS main.unique_nodeindex_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
             'ALTER TABLE main.node_index ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
@@ -479,7 +479,7 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
             'ALTER TABLE main.node_index ADD COLUMN "block" TEXT NOT NULL CHECK ("block" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "block" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "block" INTEGER CHECK ("block" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county", "tract", "block")',
+            'CREATE UNIQUE INDEX main.unique_nodeindex_index ON node_index("state", "county", "tract", "block")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county", "tract", "block")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county", "tract", "block")',
         ]
@@ -487,7 +487,7 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
 
     def test_no_columns_to_add(self):
         """When there are no new columns to add, should return empty list."""
-        # Add initial label columns.
+        # Add initial index columns.
         statements = DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county'])
         for stmnt in statements:
             self.cur.execute(stmnt)
@@ -513,11 +513,11 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
 
     def test_normalization_collision_with_existing(self):
         """Columns should be checked for collisions after normalizing."""
-        # Add initial label columns.
+        # Add initial index columns.
         for stmnt in DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', 'county']):
             self.cur.execute(stmnt)
 
-        # Prepare attitional label columns.
+        # Prepare attitional index columns.
         columns = [
             'state     ',  # <- Normalized to "state", which then gets skipped.
             'county    ',  # <- Normalized to "county", which then gets skipped.
@@ -526,13 +526,13 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
         statements = DataAccessLayer._add_index_columns_make_sql(self.cur, columns)
 
         expected = [
-            'DROP INDEX IF EXISTS main.unique_labelindex_index',
+            'DROP INDEX IF EXISTS main.unique_nodeindex_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
             'ALTER TABLE main.node_index ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "tract" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "tract" INTEGER CHECK ("tract" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county", "tract")',
+            'CREATE UNIQUE INDEX main.unique_nodeindex_index ON node_index("state", "county", "tract")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county", "tract")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county", "tract")',
         ]
@@ -540,7 +540,7 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
         self.assertEqual(statements, expected, msg=msg)
 
     def test_column_id_collision(self):
-        regex = 'label name not allowed: "_location_id"'
+        regex = 'column name not allowed: "_location_id"'
         with self.assertRaisesRegex(ValueError, regex):
             DataAccessLayer._add_index_columns_make_sql(self.cur, ['state', '_location_id'])
 
@@ -648,10 +648,10 @@ class TestRenameIndexColumnsMakeSql(unittest.TestCase):
         """Test legacy column-rename statements for workaround procedure."""
         sql = DataAccessLayerPre25._rename_index_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
-            'CREATE TABLE main.new_labelindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT NOT NULL CHECK ("stusab" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\', "place" TEXT NOT NULL CHECK ("place" != \'\') DEFAULT \'-\')',
-            'INSERT INTO main.new_labelindex SELECT index_id, "state", "county", "town" FROM main.node_index',
+            'CREATE TABLE main.new_nodeindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT NOT NULL CHECK ("stusab" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\', "place" TEXT NOT NULL CHECK ("place" != \'\') DEFAULT \'-\')',
+            'INSERT INTO main.new_nodeindex SELECT index_id, "state", "county", "town" FROM main.node_index',
             'DROP TABLE main.node_index',
-            'ALTER TABLE main.new_labelindex RENAME TO node_index',
+            'ALTER TABLE main.new_nodeindex RENAME TO node_index',
             'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, "stusab" TEXT NOT NULL DEFAULT \'\', "county" TEXT NOT NULL DEFAULT \'\', "place" TEXT NOT NULL DEFAULT \'\')',
             'INSERT INTO main.new_location SELECT _location_id, "state", "county", "town" FROM main.location',
             'DROP TABLE main.location',
@@ -660,7 +660,7 @@ class TestRenameIndexColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_structure SELECT _structure_id, _granularity, "state", "county", "town" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("stusab", "county", "place")',
+            'CREATE UNIQUE INDEX main.unique_nodeindex_index ON node_index("stusab", "county", "place")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("stusab", "county", "place")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("stusab", "county", "place")',
         ]
@@ -726,7 +726,7 @@ class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
     def test_native_delete_column_support(self):
         sql_stmnts = DataAccessLayer._remove_index_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
-            'DROP INDEX IF EXISTS main.unique_labelindex_index',
+            'DROP INDEX IF EXISTS main.unique_nodeindex_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
             'ALTER TABLE main.node_index DROP COLUMN "mcd"',
@@ -735,7 +735,7 @@ class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
             'ALTER TABLE main.node_index DROP COLUMN "place"',
             'ALTER TABLE main.location DROP COLUMN "place"',
             'ALTER TABLE main.structure DROP COLUMN "place"',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_nodeindex_index ON node_index("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -745,10 +745,10 @@ class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
         """Check SQL of column removal procedure for legacy SQLite."""
         sql_stmnts = DataAccessLayerPre35._remove_index_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
-            'CREATE TABLE main.new_labelindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\')',
-            'INSERT INTO main.new_labelindex SELECT index_id, "state", "county" FROM main.node_index',
+            'CREATE TABLE main.new_nodeindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\')',
+            'INSERT INTO main.new_nodeindex SELECT index_id, "state", "county" FROM main.node_index',
             'DROP TABLE main.node_index',
-            'ALTER TABLE main.new_labelindex RENAME TO node_index',
+            'ALTER TABLE main.new_nodeindex RENAME TO node_index',
             'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, "state" TEXT NOT NULL DEFAULT \'\', "county" TEXT NOT NULL DEFAULT \'\')',
             'INSERT INTO main.new_location SELECT _location_id, "state", "county" FROM main.location',
             'DROP TABLE main.location',
@@ -757,7 +757,7 @@ class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_structure SELECT _structure_id, _granularity, "state", "county" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_nodeindex_index ON node_index("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -834,7 +834,7 @@ class TestRemoveIndexColumnsMixin(object):
         actual = {row[2:] for row in self.cur.fetchall()}
         self.assertEqual(actual, {(0, 0), (1, 0), (1, 1)})
 
-        # Check index labels and weights.
+        # Check index records and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM node_index a
@@ -898,7 +898,7 @@ class TestRemoveIndexColumnsMixin(object):
         }
         self.assertEqual(actual, expected)
 
-        # Check index labels and weights.
+        # Check index records and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
             FROM node_index a
@@ -1151,7 +1151,7 @@ class TestAddIndexRecords(unittest.TestCase):
         dal = dal_class()
         dal.set_data({'add_index_columns': ['state', 'county']})  # <- Add columns.
 
-        # Labels rows include "state" but not "county".
+        # Index rows include "state" but not "county".
         data = [
             ('state',),  # <- Header row.
             ('IA',),
@@ -1194,8 +1194,8 @@ class TestAddIndexRecords(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_no_columns_added(self):
-        """Specify behavior when attempting to add labels before
-        index columns have been added.
+        """Specify behavior when attempting to add records before
+        index columns have been defined.
         """
         raise NotImplementedError
 
@@ -1520,7 +1520,7 @@ class TestAddWeights(unittest.TestCase):
         raise NotImplementedError
 
     @unittest.expectedFailure
-    def test_mismatched_labels_and_index_id(self):
+    def test_mismatched_columns_and_index_id(self):
         raise NotImplementedError
 
 
@@ -1538,15 +1538,15 @@ class TestAddQuantitiesGetLocationId(unittest.TestCase):
         msg = 'table should start out empty'
         self.assertEqual(self.cursor.fetchall(), [], msg=msg)
 
-        labels_a = {'state': '12', 'county': '001', 'tract': '000200'}
-        labels_b = {'state': '12', 'county': '', 'tract': ''}
+        values_a = {'state': '12', 'county': '001', 'tract': '000200'}
+        values_b = {'state': '12', 'county': '', 'tract': ''}
 
         # Should insert new record.
-        location_id = self.dal._add_quantities_get_location_id(self.cursor, labels_a)
+        location_id = self.dal._add_quantities_get_location_id(self.cursor, values_a)
         self.assertEqual(location_id, 1)
 
         # Should insert new record.
-        location_id = self.dal._add_quantities_get_location_id(self.cursor, labels_b)
+        location_id = self.dal._add_quantities_get_location_id(self.cursor, values_b)
         self.assertEqual(location_id, 2)
 
         self.cursor.execute('SELECT * FROM location')
@@ -1562,14 +1562,14 @@ class TestAddQuantitiesGetLocationId(unittest.TestCase):
         msg = 'table should start out empty'
         self.assertEqual(self.cursor.fetchall(), [], msg=msg)
 
-        labels = {'state': '12', 'county': '001', 'tract': '000200'}
+        values = {'state': '12', 'county': '001', 'tract': '000200'}
 
         # Should insert new record.
-        location_id = self.dal._add_quantities_get_location_id(self.cursor, labels)
+        location_id = self.dal._add_quantities_get_location_id(self.cursor, values)
         self.assertEqual(location_id, 1)
 
         # Should select existing record.
-        location_id = self.dal._add_quantities_get_location_id(self.cursor, labels)
+        location_id = self.dal._add_quantities_get_location_id(self.cursor, values)
         self.assertEqual(location_id, 1)
 
         self.cursor.execute('SELECT * FROM location')
@@ -1588,10 +1588,10 @@ class TestAddQuantitiesGetLocationId(unittest.TestCase):
             self.cursor, {'state': '12', 'county': '', 'tract': ''}
         )
 
-        # Test failure when labels match multiple records.
-        labels = {'state': '12'}
+        # Test failure when values match multiple records.
+        values = {'state': '12'}
         with self.assertRaises(RuntimeError):
-            location_id = self.dal._add_quantities_get_location_id(self.cursor, labels)
+            location_id = self.dal._add_quantities_get_location_id(self.cursor, values)
 
 
 class TestAddQuantities(unittest.TestCase):
@@ -2166,7 +2166,7 @@ class TestStaticDisaggregate(unittest.TestCase):
         categories = [{'col1'}]
         self.dal.add_discrete_categories(categories)
 
-        labels = [
+        records = [
             ('col1', 'col2'),
             ('A',    'x'),
             ('A',    'y'),
@@ -2176,7 +2176,7 @@ class TestStaticDisaggregate(unittest.TestCase):
             ('C',    'y'),
             ('C',    'z'),
         ]
-        self.dal.add_index_records(labels)
+        self.dal.add_index_records(records)
 
         weighting = [
             ('col1', 'col2', 'weight'),
@@ -2379,7 +2379,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         categories = [{'col1'}]
         self.dal.add_discrete_categories(categories)
 
-        labels = [
+        records = [
             ('col1', 'col2'),
             ('A',    'x'),
             ('A',    'y'),
@@ -2389,7 +2389,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             ('C',    'y'),
             ('C',    'z'),
         ]
-        self.dal.add_index_records(labels)
+        self.dal.add_index_records(records)
 
         weighting = [
             ('col1', 'col2', 'weight'),

@@ -354,10 +354,10 @@ def sql_string_literal(value: str) -> str:
     return f"'{value}'"
 
 
-def sql_drop_node_indexes() -> List[str]:
-    """Return list of SQL statements to drop unique label indexes."""
+def sql_drop_label_column_indexes() -> List[str]:
+    """Return list of SQL statements to drop unique label column indexes."""
     return [
-        'DROP INDEX IF EXISTS main.unique_labelindex_index',
+        'DROP INDEX IF EXISTS main.unique_nodeindex_index',
         'DROP INDEX IF EXISTS main.unique_location_index',
         'DROP INDEX IF EXISTS main.unique_structure_index',
     ]
@@ -367,7 +367,7 @@ def sql_create_node_indexes(columns: List[str]) -> List[str]:
     """Return list of SQL statements to create unique label indexes."""
     formatted = ', '.join(normalize_identifier(x) for x in columns)
     return [
-        f'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index({formatted})',
+        f'CREATE UNIQUE INDEX main.unique_nodeindex_index ON node_index({formatted})',
         f'CREATE UNIQUE INDEX main.unique_location_index ON location({formatted})',
         f'CREATE UNIQUE INDEX main.unique_structure_index ON structure({formatted})',
     ]
@@ -382,7 +382,7 @@ def sql_create_node_indexes(columns: List[str]) -> List[str]:
 # CREATE TABLE statements.
 
 
-def sql_column_def_labelindex_label(name: str) -> str:
+def sql_column_def_nodeindex_label(name: str) -> str:
     """Return a `node_index` column-def for a label column."""
     return f"{name} TEXT NOT NULL CHECK ({name} != '') DEFAULT '-'"
 

@@ -459,14 +459,14 @@ class DataAccessLayer(object):
     def _add_index_columns_make_sql(
         cls, cursor: sqlite3.Cursor, columns: Iterable[str]
     ) -> List[str]:
-        """Return a list of SQL statements for adding new label columns."""
+        """Return a list of SQL statements for adding new index columns."""
         if isinstance(columns, str):
             columns = [columns]
         columns = [_schema.normalize_identifier(col) for col in columns]
 
         not_allowed = {'"index_id"', '"_location_id"', '"_structure_id"'}.intersection(columns)
         if not_allowed:
-            msg = f"label name not allowed: {', '.join(not_allowed)}"
+            msg = f"column name not allowed: {', '.join(not_allowed)}"
             raise ValueError(msg)
 
         current_cols = cls._get_column_names(cursor, 'node_index')
@@ -483,11 +483,11 @@ class DataAccessLayer(object):
 
         sql_stmnts = []
 
-        sql_stmnts.extend(_schema.sql_drop_node_indexes())
+        sql_stmnts.extend(_schema.sql_drop_label_column_indexes())
 
         for col in new_cols:
             sql_stmnts.extend([
-                f"ALTER TABLE main.node_index ADD COLUMN {_schema.sql_column_def_labelindex_label(col)}",
+                f"ALTER TABLE main.node_index ADD COLUMN {_schema.sql_column_def_nodeindex_label(col)}",
                 f"ALTER TABLE main.location ADD COLUMN {_schema.sql_column_def_location_label(col)}",
                 f"ALTER TABLE main.structure ADD COLUMN {_schema.sql_column_def_structure_label(col)}",
             ])
@@ -558,7 +558,7 @@ class DataAccessLayer(object):
     def _remove_index_columns_make_sql(
         column_names: Sequence[str], names_to_remove: Sequence[str]
     ) -> List[str]:
-        """Return a list of SQL statements for removing label columns."""
+        """Return a list of SQL statements for removing index columns."""
         names_to_remove = [col for col in names_to_remove if col in column_names]
 
         if not names_to_remove:
@@ -566,7 +566,7 @@ class DataAccessLayer(object):
 
         sql_stmnts = []
 
-        sql_stmnts.extend(_schema.sql_drop_node_indexes())
+        sql_stmnts.extend(_schema.sql_drop_label_column_indexes())
 
         for col in names_to_remove:
             sql_stmnts.extend([
@@ -1210,7 +1210,7 @@ class DataAccessLayer(object):
         attributes: Optional[Iterable[str]] = None,
     ) -> None:
         """Add quantities and associated attributes. Quantity values
-        are automatically associated with matching index labels.
+        are associated with matching index records.
 
         Parameters
         ----------
@@ -2032,7 +2032,7 @@ class DataAccessLayer(object):
             >>> cur = ...
             >>> dal._update_categories_and_structure(cur, categories, minimize=False)
 
-        Refresh values if label columns have been added but there are
+        Refresh values if index columns have been added but there are
         no explicit category changes (only implicit ones)::
 
             >>> cur = ...
@@ -2165,23 +2165,23 @@ class DataAccessLayerPre35(DataAccessLayer):
     def _remove_index_columns_make_sql(
         column_names: Sequence[str], names_to_remove: Sequence[str]
     ) -> List[str]:
-        """Return a list of SQL statements for removing label columns."""
+        """Return a list of SQL statements for removing index columns."""
         # In SQLite versions before 3.35.0, there is no native support for the
         # DROP COLUMN command. In these older versions of SQLite the tables
         # must be rebuilt. This method prepares a sequence of operations to
         # rebuild the table structures.
         columns_to_keep = [col for col in column_names if col not in names_to_remove]
-        new_labelindex_cols = [_schema.sql_column_def_labelindex_label(col) for col in columns_to_keep]
+        new_nodeindex_cols = [_schema.sql_column_def_nodeindex_label(col) for col in columns_to_keep]
         new_location_cols = [_schema.sql_column_def_location_label(col) for col in columns_to_keep]
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in columns_to_keep]
 
         statements = [
             # Rebuild 'node_index'.
-            f'CREATE TABLE main.new_labelindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
-                f'{", ".join(new_labelindex_cols)})',
-            f'INSERT INTO main.new_labelindex SELECT index_id, {", ".join(columns_to_keep)} FROM main.node_index',
+            f'CREATE TABLE main.new_nodeindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+                f'{", ".join(new_nodeindex_cols)})',
+            f'INSERT INTO main.new_nodeindex SELECT index_id, {", ".join(columns_to_keep)} FROM main.node_index',
             'DROP TABLE main.node_index',
-            'ALTER TABLE main.new_labelindex RENAME TO node_index',
+            'ALTER TABLE main.new_nodeindex RENAME TO node_index',
 
             # Rebuild 'location' table.
             f'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, ' \
@@ -2246,16 +2246,16 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         # RENAME COLUMN command. In these older versions of SQLite the tables
         # must be rebuilt. This method prepares a sequence of operations to
         # rebuild the table structures.
-        new_labelindex_cols = [_schema.sql_column_def_labelindex_label(col) for col in new_column_names]
+        new_nodeindex_cols = [_schema.sql_column_def_nodeindex_label(col) for col in new_column_names]
         new_location_cols = [_schema.sql_column_def_location_label(col) for col in new_column_names]
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in new_column_names]
         statements = [
             # Rebuild 'node_index'.
-            f'CREATE TABLE main.new_labelindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
-                f'{", ".join(new_labelindex_cols)})',
-            f'INSERT INTO main.new_labelindex SELECT index_id, {", ".join(column_names)} FROM main.node_index',
+            f'CREATE TABLE main.new_nodeindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
+                f'{", ".join(new_nodeindex_cols)})',
+            f'INSERT INTO main.new_nodeindex SELECT index_id, {", ".join(column_names)} FROM main.node_index',
             'DROP TABLE main.node_index',
-            'ALTER TABLE main.new_labelindex RENAME TO node_index',
+            'ALTER TABLE main.new_nodeindex RENAME TO node_index',
 
             # Rebuild 'location' table.
             f'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, ' \
