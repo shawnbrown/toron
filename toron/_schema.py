@@ -152,7 +152,7 @@ _schema_script = """
     );
 
     /* Set properties for Toron schema. */
-    INSERT INTO main.property VALUES ('toron_schema_version', '1');
+    INSERT INTO main.property VALUES ('toron_schema_version', '"0.1.0"');
 """
 
 
@@ -893,8 +893,8 @@ def get_connection(
     schema_version, *_ = cur.fetchone() or (None,)
     cur.close()
 
-    if schema_version != 1:  # When schema version is unsupported.
-        msg = f'Unsupported Toron node format: schema version {schema_version!r}'
+    if schema_version != '0.1.0':  # When schema version is unsupported.
+        msg = f'Unsupported Toron node format: schema version {schema_version}'
         raise ToronError(msg)
 
     return con
