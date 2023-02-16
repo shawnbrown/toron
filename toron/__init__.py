@@ -3,7 +3,7 @@
 inference problems.
 """
 
-__version__ = '0.01'
+__version__ = '0.1.0'
 
 from .node import Node
 from ._utils import (

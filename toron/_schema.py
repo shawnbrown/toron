@@ -151,8 +151,9 @@ _schema_script = """
         value TEXT_JSON
     );
 
-    /* Set properties for Toron schema. */
+    /* Set properties for Toron schema and application versions. */
     INSERT INTO main.property VALUES ('toron_schema_version', '"0.1.0"');
+    INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
 """
 
 
