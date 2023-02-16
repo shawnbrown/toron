@@ -889,8 +889,8 @@ class TestConnectDb(TempDirTestCase):
 
         expected = {
             'edge',
-            'label_index',
             'location',
+            'node_index',
             'property',
             'quantity',
             'relation',

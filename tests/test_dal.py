@@ -448,13 +448,13 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
             'DROP INDEX IF EXISTS main.unique_labelindex_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
-            'ALTER TABLE main.label_index ADD COLUMN "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.node_index ADD COLUMN "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "state" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "state" INTEGER CHECK ("state" IN (0, 1)) DEFAULT 0',
-            'ALTER TABLE main.label_index ADD COLUMN "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.node_index ADD COLUMN "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "county" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "county" INTEGER CHECK ("county" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -473,13 +473,13 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
             'DROP INDEX IF EXISTS main.unique_labelindex_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
-            'ALTER TABLE main.label_index ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.node_index ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "tract" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "tract" INTEGER CHECK ("tract" IN (0, 1)) DEFAULT 0',
-            'ALTER TABLE main.label_index ADD COLUMN "block" TEXT NOT NULL CHECK ("block" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.node_index ADD COLUMN "block" TEXT NOT NULL CHECK ("block" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "block" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "block" INTEGER CHECK ("block" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index("state", "county", "tract", "block")',
+            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county", "tract", "block")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county", "tract", "block")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county", "tract", "block")',
         ]
@@ -529,10 +529,10 @@ class TestAddIndexColumnsMakeSql(unittest.TestCase):
             'DROP INDEX IF EXISTS main.unique_labelindex_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
-            'ALTER TABLE main.label_index ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
+            'ALTER TABLE main.node_index ADD COLUMN "tract" TEXT NOT NULL CHECK ("tract" != \'\') DEFAULT \'-\'',
             'ALTER TABLE main.location ADD COLUMN "tract" TEXT NOT NULL DEFAULT \'\'',
             'ALTER TABLE main.structure ADD COLUMN "tract" INTEGER CHECK ("tract" IN (0, 1)) DEFAULT 0',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index("state", "county", "tract")',
+            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county", "tract")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county", "tract")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county", "tract")',
         ]
@@ -553,7 +553,7 @@ class TestAddColumns(unittest.TestCase):
 
         con = dal._connection
 
-        columns = get_column_names(con, 'label_index')
+        columns = get_column_names(con, 'node_index')
         self.assertEqual(columns, ['index_id', 'state', 'county'])
 
         columns = get_column_names(con, 'location')
@@ -635,10 +635,10 @@ class TestRenameIndexColumnsMakeSql(unittest.TestCase):
         """Test native RENAME COLUMN statements."""
         sql = DataAccessLayer._rename_index_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
-            'ALTER TABLE main.label_index RENAME COLUMN "state" TO "stusab"',
+            'ALTER TABLE main.node_index RENAME COLUMN "state" TO "stusab"',
             'ALTER TABLE main.location RENAME COLUMN "state" TO "stusab"',
             'ALTER TABLE main.structure RENAME COLUMN "state" TO "stusab"',
-            'ALTER TABLE main.label_index RENAME COLUMN "town" TO "place"',
+            'ALTER TABLE main.node_index RENAME COLUMN "town" TO "place"',
             'ALTER TABLE main.location RENAME COLUMN "town" TO "place"',
             'ALTER TABLE main.structure RENAME COLUMN "town" TO "place"',
         ]
@@ -649,9 +649,9 @@ class TestRenameIndexColumnsMakeSql(unittest.TestCase):
         sql = DataAccessLayerPre25._rename_index_columns_make_sql(self.column_names, self.new_column_names)
         expected = [
             'CREATE TABLE main.new_labelindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "stusab" TEXT NOT NULL CHECK ("stusab" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\', "place" TEXT NOT NULL CHECK ("place" != \'\') DEFAULT \'-\')',
-            'INSERT INTO main.new_labelindex SELECT index_id, "state", "county", "town" FROM main.label_index',
-            'DROP TABLE main.label_index',
-            'ALTER TABLE main.new_labelindex RENAME TO label_index',
+            'INSERT INTO main.new_labelindex SELECT index_id, "state", "county", "town" FROM main.node_index',
+            'DROP TABLE main.node_index',
+            'ALTER TABLE main.new_labelindex RENAME TO node_index',
             'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, "stusab" TEXT NOT NULL DEFAULT \'\', "county" TEXT NOT NULL DEFAULT \'\', "place" TEXT NOT NULL DEFAULT \'\')',
             'INSERT INTO main.new_location SELECT _location_id, "state", "county", "town" FROM main.location',
             'DROP TABLE main.location',
@@ -660,7 +660,7 @@ class TestRenameIndexColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_structure SELECT _structure_id, _granularity, "state", "county", "town" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index("stusab", "county", "place")',
+            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("stusab", "county", "place")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("stusab", "county", "place")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("stusab", "county", "place")',
         ]
@@ -686,20 +686,20 @@ class TestRenameIndexColumns(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
     def run_rename_test(self, rename_index_columns_func):
-        columns_before_rename = get_column_names(self.cur, 'label_index')
+        columns_before_rename = get_column_names(self.cur, 'node_index')
         self.assertEqual(columns_before_rename, ['index_id', 'state', 'county', 'town'])
 
         data_before_rename = \
-            self.cur.execute('SELECT state, county, town FROM label_index').fetchall()
+            self.cur.execute('SELECT state, county, town FROM node_index').fetchall()
 
         mapper = {'state': 'stusab', 'town': 'place'}
         rename_index_columns_func(self.dal, mapper)  # <- Rename columns!
 
-        columns_after_rename = get_column_names(self.cur, 'label_index')
+        columns_after_rename = get_column_names(self.cur, 'node_index')
         self.assertEqual(columns_after_rename, ['index_id', 'stusab', 'county', 'place'])
 
         data_after_rename = \
-            self.cur.execute('SELECT stusab, county, place FROM label_index').fetchall()
+            self.cur.execute('SELECT stusab, county, place FROM node_index').fetchall()
 
         self.assertEqual(data_before_rename, data_after_rename)
 
@@ -729,13 +729,13 @@ class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
             'DROP INDEX IF EXISTS main.unique_labelindex_index',
             'DROP INDEX IF EXISTS main.unique_location_index',
             'DROP INDEX IF EXISTS main.unique_structure_index',
-            'ALTER TABLE main.label_index DROP COLUMN "mcd"',
+            'ALTER TABLE main.node_index DROP COLUMN "mcd"',
             'ALTER TABLE main.location DROP COLUMN "mcd"',
             'ALTER TABLE main.structure DROP COLUMN "mcd"',
-            'ALTER TABLE main.label_index DROP COLUMN "place"',
+            'ALTER TABLE main.node_index DROP COLUMN "place"',
             'ALTER TABLE main.location DROP COLUMN "place"',
             'ALTER TABLE main.structure DROP COLUMN "place"',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -746,9 +746,9 @@ class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
         sql_stmnts = DataAccessLayerPre35._remove_index_columns_make_sql(self.column_names, self.columns_to_remove)
         expected = [
             'CREATE TABLE main.new_labelindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, "state" TEXT NOT NULL CHECK ("state" != \'\') DEFAULT \'-\', "county" TEXT NOT NULL CHECK ("county" != \'\') DEFAULT \'-\')',
-            'INSERT INTO main.new_labelindex SELECT index_id, "state", "county" FROM main.label_index',
-            'DROP TABLE main.label_index',
-            'ALTER TABLE main.new_labelindex RENAME TO label_index',
+            'INSERT INTO main.new_labelindex SELECT index_id, "state", "county" FROM main.node_index',
+            'DROP TABLE main.node_index',
+            'ALTER TABLE main.new_labelindex RENAME TO node_index',
             'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, "state" TEXT NOT NULL DEFAULT \'\', "county" TEXT NOT NULL DEFAULT \'\')',
             'INSERT INTO main.new_location SELECT _location_id, "state", "county" FROM main.location',
             'DROP TABLE main.location',
@@ -757,7 +757,7 @@ class TestRemoveIndexColumnsMakeSql(unittest.TestCase):
             'INSERT INTO main.new_structure SELECT _structure_id, _granularity, "state", "county" FROM main.structure',
             'DROP TABLE main.structure',
             'ALTER TABLE main.new_structure RENAME TO structure',
-            'CREATE UNIQUE INDEX main.unique_labelindex_index ON label_index("state", "county")',
+            'CREATE UNIQUE INDEX main.unique_labelindex_index ON node_index("state", "county")',
             'CREATE UNIQUE INDEX main.unique_location_index ON location("state", "county")',
             'CREATE UNIQUE INDEX main.unique_structure_index ON structure("state", "county")',
         ]
@@ -837,7 +837,7 @@ class TestRemoveIndexColumnsMixin(object):
         # Check index labels and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM label_index a
+            FROM node_index a
             JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
@@ -901,7 +901,7 @@ class TestRemoveIndexColumnsMixin(object):
         # Check index labels and weights.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM label_index a
+            FROM node_index a
             JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
@@ -932,7 +932,7 @@ class TestRemoveIndexColumnsMixin(object):
         # Check that dataset was altered as expected.
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM label_index a
+            FROM node_index a
             JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
@@ -1007,7 +1007,7 @@ class TestRemoveIndexColumnsMixin(object):
 
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM label_index a
+            FROM node_index a
             JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='population'
@@ -1057,7 +1057,7 @@ class TestRemoveIndexColumnsMixin(object):
 
         actual = set(self.cur.execute('''
             SELECT a.*, b.weight_value
-            FROM label_index a
+            FROM node_index a
             JOIN weight b USING (index_id)
             JOIN weighting c USING (weighting_id)
             WHERE c.name='new_count'
@@ -1102,21 +1102,21 @@ class TestAddIndexRecordsMakeSql(unittest.TestCase):
         """Insert columns that match index columns."""
         columns = ['state', 'county', 'town']
         sql = DataAccessLayer._add_index_records_make_sql(self.cur, columns)
-        expected = 'INSERT INTO main.label_index ("state", "county", "town") VALUES (?, ?, ?)'
+        expected = 'INSERT INTO main.node_index ("state", "county", "town") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_differently_ordered_columns(self):
         """Order should reflect given *columns* not table order."""
         columns = ['town', 'county', 'state']  # <- Reverse order from table cols.
         sql = DataAccessLayer._add_index_records_make_sql(self.cur, columns)
-        expected = 'INSERT INTO main.label_index ("town", "county", "state") VALUES (?, ?, ?)'
+        expected = 'INSERT INTO main.node_index ("town", "county", "state") VALUES (?, ?, ?)'
         self.assertEqual(sql, expected)
 
     def test_subset_of_columns(self):
         """Insert fewer columns than exist in the index table."""
         columns = ['state', 'county']  # <- Does not include "town", and that's OK.
         sql = DataAccessLayer._add_index_records_make_sql(self.cur, columns)
-        expected = 'INSERT INTO main.label_index ("state", "county") VALUES (?, ?)'
+        expected = 'INSERT INTO main.node_index ("state", "county") VALUES (?, ?)'
         self.assertEqual(sql, expected)
 
     def test_bad_column_value(self):
@@ -1138,7 +1138,7 @@ class TestAddIndexRecords(unittest.TestCase):
         dal.add_index_records(data)
 
         con = dal._connection
-        result = con.execute('SELECT * FROM label_index').fetchall()
+        result = con.execute('SELECT * FROM node_index').fetchall()
         expected = [
             (1, 'IA', 'POLK'),
             (2, 'IN', 'LA PORTE'),
@@ -1161,7 +1161,7 @@ class TestAddIndexRecords(unittest.TestCase):
         dal.add_index_records(data)
 
         con = dal._connection
-        result = con.execute('SELECT * FROM label_index').fetchall()
+        result = con.execute('SELECT * FROM node_index').fetchall()
         expected = [
             (1, 'IA', '-'),  # <- "county" gets default '-'
             (2, 'IN', '-'),  # <- "county" gets default '-'
@@ -1184,7 +1184,7 @@ class TestAddIndexRecords(unittest.TestCase):
         dal.add_index_records(data)
 
         con = dal._connection
-        result = con.execute('SELECT * FROM label_index').fetchall()
+        result = con.execute('SELECT * FROM node_index').fetchall()
         expected = [
             (1, 'IA', 'POLK'),
             (2, 'IN', 'LA PORTE'),
@@ -1330,7 +1330,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         expected = """
             INSERT INTO main.weight (weighting_id, index_id, weight_value)
             SELECT ? AS weighting_id, index_id, ? AS weight_value
-            FROM main.label_index
+            FROM main.node_index
             WHERE "state"=? AND "county"=? AND "town"=?
             GROUP BY "state", "county", "town"
             HAVING COUNT(*)=1
@@ -1346,7 +1346,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
         expected = """
             INSERT INTO main.weight (weighting_id, index_id, weight_value)
             SELECT ? AS weighting_id, index_id, ? AS weight_value
-            FROM main.label_index
+            FROM main.node_index
             WHERE "state"=? AND "county"=?
             GROUP BY "state", "county"
             HAVING COUNT(*)=1
@@ -1468,7 +1468,7 @@ class TestAddWeights(unittest.TestCase):
 
         self.cursor.execute("""
             SELECT state, county, tract, weight_value
-            FROM label_index
+            FROM node_index
             NATURAL JOIN weight
             WHERE weighting_id=1
         """)
@@ -1498,7 +1498,7 @@ class TestAddWeights(unittest.TestCase):
         # Get loaded weights.
         self.cursor.execute("""
             SELECT state, county, weight_value
-            FROM label_index
+            FROM node_index
             JOIN weight USING (index_id)
             WHERE weighting_id=1
         """)
@@ -2110,7 +2110,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
+            JOIN main.node_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id=USER_FUNC_NAME(t1.attributes)
@@ -2120,7 +2120,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
 
         bitmask = [0, 0, 0, 0]  # <- Bitmask is all 0s.
         result = DataAccessLayer._disaggregate_make_sql(columns, bitmask, match_selector_func)
-        self.assertIn("""JOIN main.label_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
+        self.assertIn("""JOIN main.node_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
 
     def test_disaggregate_make_sql_filter_attrs_func(self):
         """Providing a *filter_attrs_func* argument adds a WHERE clause."""
@@ -2139,7 +2139,7 @@ class TestDisaggregateHelpers(unittest.TestCase):
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
+            JOIN main.node_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id=USER_FUNC_NAME1(t1.attributes)
@@ -2434,7 +2434,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
+            JOIN main.node_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id=UserFuncName(t1.attributes)
@@ -2462,7 +2462,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
             match_selector_func,
             adaptive_weight_table,
         )
-        self.assertIn("""JOIN main.label_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
+        self.assertIn("""JOIN main.node_index t3 ON (t2."A"='' AND t2."B"='' AND t2."C"='' AND t2."D"='')""", result)
 
     def test_adaptive_disaggregate_make_sql_filter_attrs_func(self):
         result = DataAccessLayer._adaptive_disaggregate_make_sql(
@@ -2483,7 +2483,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
+            JOIN main.node_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id=UserFuncName(t1.attributes)
@@ -2954,7 +2954,7 @@ class TestRefreshGranularity(unittest.TestCase):
             WITH
                 subset (cardinality) AS (
                     SELECT CAST(COUNT(*) AS REAL)
-                    FROM main.label_index
+                    FROM main.node_index
                     GROUP BY "A", "B", "C"
                 ),
                 summand (uncertainty) AS (
@@ -2978,7 +2978,7 @@ class TestRefreshGranularity(unittest.TestCase):
             WITH
                 subset (cardinality) AS (
                     SELECT CAST(COUNT(*) AS REAL)
-                    FROM main.label_index
+                    FROM main.node_index
                 ),
                 summand (uncertainty) AS (
                     SELECT ((subset.cardinality / :partition_cardinality)

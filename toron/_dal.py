@@ -469,7 +469,7 @@ class DataAccessLayer(object):
             msg = f"label name not allowed: {', '.join(not_allowed)}"
             raise ValueError(msg)
 
-        current_cols = cls._get_column_names(cursor, 'label_index')
+        current_cols = cls._get_column_names(cursor, 'node_index')
         current_cols = [_schema.normalize_identifier(col) for col in current_cols]
         new_cols = [col for col in columns if col not in current_cols]
 
@@ -483,17 +483,17 @@ class DataAccessLayer(object):
 
         sql_stmnts = []
 
-        sql_stmnts.extend(_schema.sql_drop_label_indexes())
+        sql_stmnts.extend(_schema.sql_drop_node_indexes())
 
         for col in new_cols:
             sql_stmnts.extend([
-                f"ALTER TABLE main.label_index ADD COLUMN {_schema.sql_column_def_labelindex_label(col)}",
+                f"ALTER TABLE main.node_index ADD COLUMN {_schema.sql_column_def_labelindex_label(col)}",
                 f"ALTER TABLE main.location ADD COLUMN {_schema.sql_column_def_location_label(col)}",
                 f"ALTER TABLE main.structure ADD COLUMN {_schema.sql_column_def_structure_label(col)}",
             ])
 
         label_cols = current_cols[1:] + new_cols  # All columns except the id column.
-        sql_stmnts.extend(_schema.sql_create_label_indexes(label_cols))
+        sql_stmnts.extend(_schema.sql_create_node_indexes(label_cols))
 
         return sql_stmnts
 
@@ -503,7 +503,7 @@ class DataAccessLayer(object):
         cursor: sqlite3.Cursor,
         mapper: Union[Callable[[str], str], Mapping[str, str]],
     ) -> Tuple[List[str], List[str]]:
-        column_names = cls._get_column_names(cursor, 'label_index')
+        column_names = cls._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
 
         if callable(mapper):
@@ -538,7 +538,7 @@ class DataAccessLayer(object):
         sql_stmnts = []
         for name, new_name in rename_pairs:
             sql_stmnts.extend([
-                f'ALTER TABLE main.label_index RENAME COLUMN {name} TO {new_name}',
+                f'ALTER TABLE main.node_index RENAME COLUMN {name} TO {new_name}',
                 f'ALTER TABLE main.location RENAME COLUMN {name} TO {new_name}',
                 f'ALTER TABLE main.structure RENAME COLUMN {name} TO {new_name}',
             ])
@@ -566,17 +566,17 @@ class DataAccessLayer(object):
 
         sql_stmnts = []
 
-        sql_stmnts.extend(_schema.sql_drop_label_indexes())
+        sql_stmnts.extend(_schema.sql_drop_node_indexes())
 
         for col in names_to_remove:
             sql_stmnts.extend([
-                f'ALTER TABLE main.label_index DROP COLUMN {col}',
+                f'ALTER TABLE main.node_index DROP COLUMN {col}',
                 f'ALTER TABLE main.location DROP COLUMN {col}',
                 f'ALTER TABLE main.structure DROP COLUMN {col}',
             ])
 
         remaining_cols = [col for col in column_names if col not in names_to_remove]
-        sql_stmnts.extend(_schema.sql_create_label_indexes(remaining_cols))
+        sql_stmnts.extend(_schema.sql_create_node_indexes(remaining_cols))
 
         return sql_stmnts
 
@@ -591,16 +591,16 @@ class DataAccessLayer(object):
         sql_statements = []
 
         ################################################################
-        # Consolidate records in `label_index` and `weight` tables.
+        # Consolidate records in `node_index` and `weight` tables.
         ################################################################
 
         # Build a temporary table with old-to-new `index_id` mapping.
         sql_statements.append(f'''
             CREATE TEMPORARY TABLE old_to_new_index_id
             AS SELECT index_id, new_index_id
-            FROM main.label_index
+            FROM main.node_index
             JOIN (SELECT MIN(index_id) AS new_index_id, {formatted_names}
-                  FROM main.label_index
+                  FROM main.node_index
                   GROUP BY {formatted_names}
                   HAVING COUNT(*) > 1)
             USING ({formatted_names})
@@ -681,9 +681,9 @@ class DataAccessLayer(object):
         # TODO: Discard old `relation` records.
         # TODO: Update `relation.mapping_level` codes.
 
-        # Discard old `label_index` records.
+        # Discard old `node_index` records.
         sql_statements.append('''
-            DELETE FROM main.label_index
+            DELETE FROM main.node_index
             WHERE index_id IN (
                 SELECT index_id
                 FROM temp.old_to_new_index_id
@@ -702,7 +702,7 @@ class DataAccessLayer(object):
                     GROUP BY weighting_id
                 ),
                 IndexCounts AS (
-                    SELECT COUNT(*) AS index_count FROM main.label_index
+                    SELECT COUNT(*) AS index_count FROM main.node_index
                 ),
                 NewStatus AS (
                     SELECT
@@ -835,7 +835,7 @@ class DataAccessLayer(object):
         columns: Iterable[str],
         strategy: Strategy = 'preserve',
     ) -> None:
-        column_names = cls._get_column_names(cursor, 'label_index')
+        column_names = cls._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
 
         names_to_remove = sorted(set(columns).intersection(column_names))
@@ -867,7 +867,7 @@ class DataAccessLayer(object):
         # Check for a loss of granularity and coarsen if appropriate.
         cursor.execute(f'''
             SELECT 1
-            FROM main.label_index
+            FROM main.node_index
             GROUP BY {", ".join(names_remaining)}
             HAVING COUNT(*) > 1
         ''')
@@ -902,9 +902,9 @@ class DataAccessLayer(object):
         """Refresh the index_hash in the 'property' table.
 
         The index hash should be refreshed after any INSERT or DELETE
-        on the 'label_index' table.
+        on the 'node_index' table.
         """
-        cursor.execute('SELECT index_id FROM main.label_index ORDER BY index_id')
+        cursor.execute('SELECT index_id FROM main.node_index ORDER BY index_id')
         unpacked_values = (x[0] for x in cursor)  # Unpack 1-tuple rows.
         hash_value = make_hash(unpacked_values)
         cls._set_data_property(cursor, 'index_hash', hash_value)
@@ -920,11 +920,11 @@ class DataAccessLayer(object):
 
             >>> dal = DataAccessLayer(...)
             >>> dal._add_index_records_make_sql(cursor, ['state', 'county'])
-            'INSERT INTO label_index ("state", "county") VALUES (?, ?)'
+            'INSERT INTO node_index ("state", "county") VALUES (?, ?)'
         """
         columns = [_schema.normalize_identifier(col) for col in columns]
 
-        existing_columns = cls._get_column_names(cursor, 'label_index')
+        existing_columns = cls._get_column_names(cursor, 'node_index')
         existing_columns = existing_columns[1:]  # Slice-off "index_id" column.
         existing_columns = [_schema.normalize_identifier(col) for col in existing_columns]
 
@@ -935,7 +935,7 @@ class DataAccessLayer(object):
 
         columns_clause = ', '.join(columns)
         values_clause = ', '.join('?' * len(columns))
-        return f'INSERT INTO main.label_index ({columns_clause}) VALUES ({values_clause})'
+        return f'INSERT INTO main.node_index ({columns_clause}) VALUES ({values_clause})'
 
     def add_index_records(self, data: TabularData) -> None:
         iterator = make_readerlike(data)
@@ -943,7 +943,7 @@ class DataAccessLayer(object):
 
         with self._transaction() as cur:
             # Get allowed columns and build selectors values.
-            allowed_columns = self._get_column_names(cur, 'label_index')
+            allowed_columns = self._get_column_names(cur, 'node_index')
             selectors = tuple((col in allowed_columns) for col in columns)
 
             # Filter column names and iterator rows to allowed columns.
@@ -963,10 +963,10 @@ class DataAccessLayer(object):
         """Returns an iterator that yields index records."""
         if where:
             where_expr, parameters = self._format_select_params(where)
-            sql = f'SELECT * FROM label_index WHERE {where_expr}'
+            sql = f'SELECT * FROM main.node_index WHERE {where_expr}'
         else:
             parameters = {}
-            sql = 'SELECT * FROM label_index'
+            sql = 'SELECT * FROM main.node_index'
 
         cursor.execute(sql, parameters)
         for row in cursor:
@@ -985,7 +985,7 @@ class DataAccessLayer(object):
         """
         with self._transaction(method=None) as cur:
             if where:
-                columns = self._get_column_names(cur, 'label_index')
+                columns = self._get_column_names(cur, 'node_index')
                 for key in where.keys():
                     if key not in columns:
                         raise KeyError(key)
@@ -1023,7 +1023,7 @@ class DataAccessLayer(object):
              ...]
         """
         with self._transaction(method=None) as cur:
-            columns = self._get_column_names(cur, 'label_index')
+            columns = self._get_column_names(cur, 'node_index')
 
             for where in where_dicts:
                 if where:
@@ -1065,7 +1065,7 @@ class DataAccessLayer(object):
         """
         columns = [_schema.normalize_identifier(col) for col in columns]
 
-        existing_columns = cls._get_column_names(cursor, 'label_index')
+        existing_columns = cls._get_column_names(cursor, 'node_index')
         existing_columns = [_schema.normalize_identifier(col) for col in existing_columns]
 
         invalid_columns = set(columns).difference(existing_columns)
@@ -1079,7 +1079,7 @@ class DataAccessLayer(object):
         sql = f"""
             INSERT INTO main.weight (weighting_id, index_id, weight_value)
             SELECT ? AS weighting_id, index_id, ? AS weight_value
-            FROM main.label_index
+            FROM main.node_index
             WHERE {where_clause}
             GROUP BY {groupby_clause}
             HAVING COUNT(*)=1
@@ -1096,7 +1096,7 @@ class DataAccessLayer(object):
             SET is_complete=((SELECT COUNT(*)
                               FROM main.weight
                               WHERE weighting_id=?) = (SELECT COUNT(*)
-                                                       FROM main.label_index))
+                                                       FROM main.node_index))
             WHERE weighting_id=?
         """
         cursor.execute(sql, (weighting_id, weighting_id))
@@ -1123,7 +1123,7 @@ class DataAccessLayer(object):
             weighting_id = self._add_weights_get_new_id(cur, name, selectors, description)
 
             # Get allowed columns and build bitmask selectors values.
-            allowed_columns = self._get_column_names(cur, 'label_index')
+            allowed_columns = self._get_column_names(cur, 'node_index')
             bitmask_selectors = tuple((col in allowed_columns) for col in columns)
 
             # Filter column names and iterator rows to allowed columns.
@@ -1372,7 +1372,7 @@ class DataAccessLayer(object):
 
         :param List index_cols:
             A list of all index column names defined in the
-            `label_index` table.
+            `node_index` table.
         :param Dict where:
             A dictionary of column and value requirements that will be
             used to prepare a WHERE expression and *parameters* for a
@@ -1528,7 +1528,7 @@ class DataAccessLayer(object):
         index_table_alias: str,
     ) -> str:
         """Build a string of constraints on which to join the
-        `location` and `label_index` tables for disaggregation.
+        `location` and `node_index` tables for disaggregation.
 
         If a column is associated with a bitmask value of 1, then
         its condition should be `loc.COLNAME=idx.COLNAME`. But if
@@ -1607,7 +1607,7 @@ class DataAccessLayer(object):
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 ON ({join_constraints})
+            JOIN main.node_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
@@ -1678,7 +1678,7 @@ class DataAccessLayer(object):
                         {disaggregated_quantities}
                     )
                 SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
-                FROM main.label_index t1
+                FROM main.node_index t1
                 JOIN all_quantities t2 USING (index_id){where_clause}
                 GROUP BY {', '.join(f't1.{x}' for x in normalized_cols)}, t2.attributes
             """
@@ -1733,7 +1733,7 @@ class DataAccessLayer(object):
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 ON ({join_constraints})
+            JOIN main.node_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
@@ -1837,7 +1837,7 @@ class DataAccessLayer(object):
                 WITH
                     {all_cte_statements}
                 SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
-                FROM main.label_index t1
+                FROM main.node_index t1
                 JOIN {current_cte} t2 USING (index_id){where_clause}
                 GROUP BY t2.index_id, t2.attributes
             """
@@ -1859,7 +1859,7 @@ class DataAccessLayer(object):
         with self._transaction() as cur:
             for key in keys:
                 if key == 'index_columns':
-                    cur.execute("PRAGMA main.table_info('label_index')")
+                    cur.execute("PRAGMA main.table_info('node_index')")
                     names = [row[1] for row in cur.fetchall()]
                     data[key] = names[1:]  # Slice-off index_id.
                 elif key == 'discrete_categories':
@@ -1962,7 +1962,7 @@ class DataAccessLayer(object):
             WITH
                 subset (cardinality) AS (
                     SELECT CAST(COUNT(*) AS REAL)
-                    FROM main.label_index{groupby_clause}
+                    FROM main.node_index{groupby_clause}
                 ),
                 summand (uncertainty) AS (
                     SELECT ((subset.cardinality / :partition_cardinality)
@@ -1989,13 +1989,13 @@ class DataAccessLayer(object):
         * Rebuild of the 'structure' table (this happens via the
           _set_data_structure() method which gets called after adding
           or removing discrete categories and when adding or removing
-          a column in the 'label_index' table).
-        * Records are changed in the 'label_index' table (after INSERT,
+          a column in the 'node_index' table).
+        * Records are changed in the 'node_index' table (after INSERT,
           DELETE, and UPDATE queries).
         """
-        all_columns = cls._get_column_names(cursor, 'label_index')[1:]
+        all_columns = cls._get_column_names(cursor, 'node_index')[1:]
 
-        cursor.execute('SELECT CAST(COUNT(*) AS REAL) FROM main.label_index')
+        cursor.execute('SELECT CAST(COUNT(*) AS REAL) FROM main.node_index')
         node_cardnality = cursor.fetchone()[0]
 
         cursor.execute('SELECT * FROM main.structure')
@@ -2043,7 +2043,7 @@ class DataAccessLayer(object):
             categories = [set(x) for x in categories]
 
         if minimize:
-            whole_space = set(cls._get_column_names(cursor, 'label_index')[1:])
+            whole_space = set(cls._get_column_names(cursor, 'node_index')[1:])
             categories = minimize_discrete_categories(categories, [whole_space])
 
         list_of_lists = [list(cat) for cat in categories]  # type: ignore [union-attr]
@@ -2176,12 +2176,12 @@ class DataAccessLayerPre35(DataAccessLayer):
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in columns_to_keep]
 
         statements = [
-            # Rebuild 'label_index'.
+            # Rebuild 'node_index'.
             f'CREATE TABLE main.new_labelindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
                 f'{", ".join(new_labelindex_cols)})',
-            f'INSERT INTO main.new_labelindex SELECT index_id, {", ".join(columns_to_keep)} FROM main.label_index',
-            'DROP TABLE main.label_index',
-            'ALTER TABLE main.new_labelindex RENAME TO label_index',
+            f'INSERT INTO main.new_labelindex SELECT index_id, {", ".join(columns_to_keep)} FROM main.node_index',
+            'DROP TABLE main.node_index',
+            'ALTER TABLE main.new_labelindex RENAME TO node_index',
 
             # Rebuild 'location' table.
             f'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, ' \
@@ -2201,7 +2201,7 @@ class DataAccessLayerPre35(DataAccessLayer):
         ]
 
         # Reconstruct associated indexes.
-        statements.extend(_schema.sql_create_label_indexes(columns_to_keep))
+        statements.extend(_schema.sql_create_node_indexes(columns_to_keep))
 
         return statements
 
@@ -2250,12 +2250,12 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         new_location_cols = [_schema.sql_column_def_location_label(col) for col in new_column_names]
         new_structure_cols = [_schema.sql_column_def_structure_label(col) for col in new_column_names]
         statements = [
-            # Rebuild 'label_index'.
+            # Rebuild 'node_index'.
             f'CREATE TABLE main.new_labelindex(index_id INTEGER PRIMARY KEY AUTOINCREMENT, ' \
                 f'{", ".join(new_labelindex_cols)})',
-            f'INSERT INTO main.new_labelindex SELECT index_id, {", ".join(column_names)} FROM main.label_index',
-            'DROP TABLE main.label_index',
-            'ALTER TABLE main.new_labelindex RENAME TO label_index',
+            f'INSERT INTO main.new_labelindex SELECT index_id, {", ".join(column_names)} FROM main.node_index',
+            'DROP TABLE main.node_index',
+            'ALTER TABLE main.new_labelindex RENAME TO node_index',
 
             # Rebuild 'location' table.
             f'CREATE TABLE main.new_location(_location_id INTEGER PRIMARY KEY, ' \
@@ -2276,7 +2276,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
 
         # Reconstruct associated indexes.
         statements.extend(
-            _schema.sql_create_label_indexes(list(new_column_names))
+            _schema.sql_create_node_indexes(list(new_column_names))
         )
 
         return statements
@@ -2348,7 +2348,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                         SELECT SUM(sub4.weight_value)
                         FROM main.quantity sub1
                         JOIN main.location sub2 USING (_location_id)
-                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.node_index sub3 ON ({subquery_join_constraints})
                         JOIN main.weight sub4 USING (index_id)
                         WHERE sub1.quantity_id=t1.quantity_id
                             AND sub4.weighting_id=t4.weighting_id
@@ -2357,13 +2357,13 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                         SELECT COUNT(1)
                         FROM main.quantity sub1
                         JOIN main.location sub2 USING (_location_id)
-                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.node_index sub3 ON ({subquery_join_constraints})
                         WHERE sub1.quantity_id=t1.quantity_id
                     ))
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 ON ({join_constraints})
+            JOIN main.node_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)
@@ -2421,7 +2421,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                         SELECT SUM(sub4.weight_value)
                         FROM main.quantity sub1
                         JOIN main.location sub2 USING (_location_id)
-                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.node_index sub3 ON ({subquery_join_constraints})
                         LEFT JOIN (
                             SELECT
                                 sub4sub.index_id,
@@ -2439,7 +2439,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                         SELECT SUM(sub4.weight_value)
                         FROM main.quantity sub1
                         JOIN main.location sub2 USING (_location_id)
-                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.node_index sub3 ON ({subquery_join_constraints})
                         JOIN main.weight sub4 USING (index_id)
                         WHERE sub1.quantity_id=t1.quantity_id
                             AND sub4.weighting_id=t4.weighting_id
@@ -2448,13 +2448,13 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                         SELECT COUNT(1)
                         FROM main.quantity sub1
                         JOIN main.location sub2 USING (_location_id)
-                        JOIN main.label_index sub3 ON ({subquery_join_constraints})
+                        JOIN main.node_index sub3 ON ({subquery_join_constraints})
                         WHERE sub1.quantity_id=t1.quantity_id
                     ))
                 ) AS quantity_value
             FROM main.quantity t1
             JOIN main.location t2 USING (_location_id)
-            JOIN main.label_index t3 ON ({join_constraints})
+            JOIN main.node_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
                 AND t4.weighting_id={match_selector_func}(t1.attributes)

@@ -18,7 +18,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
     def test_add_index_columns(self):
         self.node.add_index_columns(['A', 'B', 'C'])
 
-        columns = get_column_names(self.cursor, 'label_index')
+        columns = get_column_names(self.cursor, 'node_index')
         self.assertEqual(columns, ['index_id', 'A', 'B', 'C'])
 
         self.cursor.execute('SELECT * FROM main.structure')
@@ -29,7 +29,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
     def test_add_index_columns_in_two_parts(self):
         self.node.add_index_columns(['A', 'B'])  # <- Method under test.
 
-        columns = get_column_names(self.cursor, 'label_index')
+        columns = get_column_names(self.cursor, 'node_index')
         self.assertEqual(columns, ['index_id', 'A', 'B'])
 
         self.cursor.execute('SELECT * FROM main.structure')
@@ -39,7 +39,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
 
         self.node.add_index_columns(['C', 'D'])  # <- Method under test.
 
-        columns = get_column_names(self.cursor, 'label_index')
+        columns = get_column_names(self.cursor, 'node_index')
         self.assertEqual(columns, ['index_id', 'A', 'B', 'C', 'D'])
 
         self.cursor.execute('SELECT * FROM main.structure')
@@ -200,7 +200,7 @@ class TestNodeWrapperMethods(unittest.TestCase):
         self.node.add_weights(data, 'wght1', selectors=['[attr1]'])
         self.node.add_quantities(data, 'counts', ['attr1', 'attr2'])
 
-        self.cursor.execute('SELECT * FROM label_index')
+        self.cursor.execute('SELECT * FROM node_index')
         expected = [
             (1, 'A', 'x'),
             (2, 'B', 'y'),
