@@ -151,7 +151,8 @@ _schema_script = """
         value TEXT_JSON
     );
 
-    INSERT INTO main.property VALUES ('schema_version', '1');
+    /* Set properties for Toron schema. */
+    INSERT INTO main.property VALUES ('toron_schema_version', '1');
 """
 
 
@@ -888,7 +889,7 @@ def get_connection(
         con.close()
         raise ToronError(f'Path is not a Toron node: {path!r}')
 
-    cur = con.execute("SELECT value FROM main.property WHERE key='schema_version'")
+    cur = con.execute("SELECT value FROM main.property WHERE key='toron_schema_version'")
     schema_version, *_ = cur.fetchone() or (None,)
     cur.close()
 

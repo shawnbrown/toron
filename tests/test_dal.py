@@ -60,8 +60,8 @@ class TestDataAccessLayerInit(TempDirTestCase):
         self.assertEqual(filepath, '', msg='expecting empty string for in-memory DAL')
 
         # Check for DAL functionality.
-        result = dal.get_data(['schema_version'])
-        expected = {'schema_version': 1}
+        result = dal.get_data(['toron_schema_version'])
+        expected = {'toron_schema_version': 1}
         self.assertEqual(result, expected)
 
     def test_cache_to_drive(self):
@@ -74,8 +74,8 @@ class TestDataAccessLayerInit(TempDirTestCase):
         self.assertRegex(filepath, regex, msg='expecting tempfile path for on-drive DAL')
 
         # Check for DAL functionality.
-        result = dal.get_data(['schema_version'])
-        expected = {'schema_version': 1}
+        result = dal.get_data(['toron_schema_version'])
+        expected = {'toron_schema_version': 1}
         self.assertEqual(result, expected)
 
 

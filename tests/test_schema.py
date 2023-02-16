@@ -939,7 +939,7 @@ class TestConnectDb(TempDirTestCase):
         path = 'mynode.toron'
 
         con = get_connection(path, required_permissions=None)
-        con.execute("INSERT OR REPLACE INTO property VALUES ('schema_version', '999')")
+        con.execute("INSERT OR REPLACE INTO property VALUES ('toron_schema_version', '999')")
         con.commit()
         con.close()
 
