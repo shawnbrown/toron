@@ -702,7 +702,9 @@ class DataAccessLayer(object):
                     GROUP BY weighting_id
                 ),
                 IndexCounts AS (
-                    SELECT COUNT(*) AS index_count FROM main.node_index
+                    SELECT COUNT(*) AS index_count
+                    FROM main.node_index
+                    WHERE index_id > 0
                 ),
                 NewStatus AS (
                     SELECT
@@ -904,7 +906,11 @@ class DataAccessLayer(object):
         The index hash should be refreshed after any INSERT or DELETE
         on the 'node_index' table.
         """
-        cursor.execute('SELECT index_id FROM main.node_index ORDER BY index_id')
+        cursor.execute("""
+            SELECT index_id FROM main.node_index
+            WHERE index_id > 0
+            ORDER BY index_id
+        """)
         unpacked_values = (x[0] for x in cursor)  # Unpack 1-tuple rows.
         hash_value = make_hash(unpacked_values)
         cls._set_data_property(cursor, 'index_hash', hash_value)
@@ -1096,7 +1102,8 @@ class DataAccessLayer(object):
             SET is_complete=((SELECT COUNT(*)
                               FROM main.weight
                               WHERE weighting_id=?) = (SELECT COUNT(*)
-                                                       FROM main.node_index))
+                                                       FROM main.node_index
+                                                       WHERE index_id > 0))
             WHERE weighting_id=?
         """
         cursor.execute(sql, (weighting_id, weighting_id))
@@ -1962,7 +1969,8 @@ class DataAccessLayer(object):
             WITH
                 subset (cardinality) AS (
                     SELECT CAST(COUNT(*) AS REAL)
-                    FROM main.node_index{groupby_clause}
+                    FROM main.node_index
+                    WHERE index_id > 0{groupby_clause}
                 ),
                 summand (uncertainty) AS (
                     SELECT ((subset.cardinality / :partition_cardinality)
@@ -1995,7 +2003,11 @@ class DataAccessLayer(object):
         """
         all_columns = cls._get_column_names(cursor, 'node_index')[1:]
 
-        cursor.execute('SELECT CAST(COUNT(*) AS REAL) FROM main.node_index')
+        cursor.execute("""
+            SELECT CAST(COUNT(*) AS REAL)
+            FROM main.node_index
+            WHERE index_id > 0
+        """)
         node_cardnality = cursor.fetchone()[0]
 
         cursor.execute('SELECT * FROM main.structure')
