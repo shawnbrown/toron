@@ -1140,6 +1140,7 @@ class TestAddIndexRecords(unittest.TestCase):
         con = dal._connection
         result = con.execute('SELECT * FROM node_index').fetchall()
         expected = [
+            (0, '-', '-'),
             (1, 'IA', 'POLK'),
             (2, 'IN', 'LA PORTE'),
             (3, 'MN', 'HENNEPIN '),
@@ -1163,6 +1164,7 @@ class TestAddIndexRecords(unittest.TestCase):
         con = dal._connection
         result = con.execute('SELECT * FROM node_index').fetchall()
         expected = [
+            (0, '-', '-'),
             (1, 'IA', '-'),  # <- "county" gets default '-'
             (2, 'IN', '-'),  # <- "county" gets default '-'
             (3, 'MN', '-'),  # <- "county" gets default '-'
@@ -1186,6 +1188,7 @@ class TestAddIndexRecords(unittest.TestCase):
         con = dal._connection
         result = con.execute('SELECT * FROM node_index').fetchall()
         expected = [
+            (0, '-', '-'),
             (1, 'IA', 'POLK'),
             (2, 'IN', 'LA PORTE'),
             (3, 'MN', 'HENNEPIN '),
@@ -1226,7 +1229,7 @@ class TestIndexRecords(unittest.TestCase):
     def test_no_args(self):
         results = self.dal.index_records()
         data = [row[1:] for row in results]  # Slice-off index_id.
-        self.assertEqual(data, self.data)
+        self.assertEqual(data, [('-', '-', '-')] + self.data)
 
     def test_where_args(self):
         results = self.dal.index_records(state='IL', town='Chicago')
@@ -2955,6 +2958,7 @@ class TestRefreshGranularity(unittest.TestCase):
                 subset (cardinality) AS (
                     SELECT CAST(COUNT(*) AS REAL)
                     FROM main.node_index
+                    WHERE index_id > 0
                     GROUP BY "A", "B", "C"
                 ),
                 summand (uncertainty) AS (
@@ -2979,6 +2983,7 @@ class TestRefreshGranularity(unittest.TestCase):
                 subset (cardinality) AS (
                     SELECT CAST(COUNT(*) AS REAL)
                     FROM main.node_index
+                    WHERE index_id > 0
                 ),
                 summand (uncertainty) AS (
                     SELECT ((subset.cardinality / :partition_cardinality)

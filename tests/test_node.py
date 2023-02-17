@@ -202,6 +202,7 @@ class TestNodeWrapperMethods(unittest.TestCase):
 
         self.cursor.execute('SELECT * FROM node_index')
         expected = [
+            (0, '-', '-'),
             (1, 'A', 'x'),
             (2, 'B', 'y'),
             (3, 'C', 'z'),
@@ -261,6 +262,7 @@ class TestNodeWrapperMethods(unittest.TestCase):
 
         records = self.node.index_records()
         expected = [
+            (0, '-', '-'),
             (1, 'A', 'x'),
             (2, 'B', 'y'),
             (3, 'C', 'z'),
