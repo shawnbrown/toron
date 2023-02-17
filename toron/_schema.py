@@ -154,6 +154,9 @@ _schema_script = """
     /* Set properties for Toron schema and application versions. */
     INSERT INTO main.property VALUES ('toron_schema_version', '"0.1.0"');
     INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
+
+    /* Reserve id zero for an "undefined" record. */
+    INSERT INTO main.node_index (index_id) VALUES (0);
 """
 
 
