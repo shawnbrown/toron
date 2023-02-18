@@ -250,9 +250,17 @@ class BitList(UserList):
     @classmethod
     def from_bytes(cls, bytes_: bytes) -> 'BitList':
         """Take a bytes object and returns a new BitList."""
-        eight_bit_chunks = (bin(x)[2:].rjust(8, '0') for x in bytes_)
-        bitstr = ''.join(eight_bit_chunks)
-        return cls(int(x) for x in bitstr)  # type: ignore [arg-type]
+        # Convert bytes to strings of 1s and 0s and slice-off '0b' prefix.
+        binary_strings = (bin(x)[2:] for x in bytes_)
+
+        # Format strings as big-endian, 8-bit words.
+        eight_bit_words = (x.rjust(8, '0') for x in binary_strings)
+
+        # Convert to iterable of 1s and 0s.
+        ones_and_zeros = (int(x) for x in ''.join(eight_bit_words))
+
+        # Create and return a new BitList instance.
+        return cls(list(ones_and_zeros))
 
     def __repr__(self) -> str:
         """Return string representation of BitList object."""
