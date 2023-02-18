@@ -259,8 +259,10 @@ class BitList(UserList):
         # Convert to iterable of 1s and 0s.
         ones_and_zeros = (int(x) for x in ''.join(eight_bit_words))
 
-        # Create and return a new BitList instance.
-        return cls(list(ones_and_zeros))
+        # Initialize and return a new BitList instance.
+        new_inst = cls.__new__(cls)
+        super(cls, new_inst).__init__(ones_and_zeros)
+        return new_inst
 
     def __repr__(self) -> str:
         """Return string representation of BitList object."""
