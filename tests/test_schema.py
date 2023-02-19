@@ -1033,7 +1033,11 @@ class TestBitListConversionAndAdaptation(unittest.TestCase):
         """Helper function to insert a relation and mapping_level."""
         other_index_id = next(self.other_index_id_generator)
         self.cur.execute(
-            'INSERT INTO relation (edge_id, other_index_id, index_id, proportion, mapping_level) VALUES (?, ?, ?, ?, ?)',
+            """
+                INSERT INTO relation
+                    (edge_id, other_index_id, index_id, relation_value, mapping_level)
+                    VALUES (?, ?, ?, ?, ?)
+            """,
             (1, other_index_id, None, 1.0, mapping_level)
         )
 

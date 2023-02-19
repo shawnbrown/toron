@@ -15,10 +15,10 @@ the application layer:
  | edge_id              |------->| edge_id        |     •
  | name                 |  ••••••| other_index_id |<•••••  +----------------+
  | description          |  •  •••| index_id       |<-+     | quantity       |
- | selectors            |  •  •  | proportion     |  |     +----------------+
- | user_properties      |  •  •  | mapping_level* |  |     | quantity_id    |
- | other_unique_id      |  •  •  +----------------+  |  +->| _location_id   |
- | other_filename_hint  |  •  •                      |  |  | attributes     |
+ | selectors            |  •  •  | relation_value |  |     +----------------+
+ | user_properties      |  •  •  | proportion*    |  |     | quantity_id    |
+ | other_unique_id      |  •  •  | mapping_level* |  |  +->| _location_id   |
+ | other_filename_hint  |  •  •  +----------------+  |  |  | attributes     |
  | other_index_hash*    |<••  •                      |  |  | quantity_value |
  | is_locally_complete* |<•••••    +-----------------+  |  +----------------+
  +----------------------+          |                    |
@@ -96,7 +96,8 @@ _schema_script = """
         edge_id INTEGER,
         other_index_id INTEGER NOT NULL,
         index_id INTEGER,
-        proportion REAL NOT NULL CHECK (0.0 <= proportion AND proportion <= 1.0),
+        relation_value REAL NOT NULL CHECK (0.0 <= relation_value),
+        proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
         mapping_level BLOB_BITLIST NOT NULL,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
         FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
