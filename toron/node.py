@@ -92,6 +92,9 @@ class Node(object):
     def rename_index_columns(self, mapper):
         self._dal.rename_index_columns(mapper)
 
+    def index_columns(self) -> Sequence[str]:
+        return self._dal.index_columns()
+
     def add_index_records(self, data: TabularData) -> None:
         self._dal.add_index_records(data)
 

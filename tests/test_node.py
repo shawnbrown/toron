@@ -244,7 +244,7 @@ class TestNodeWrapperMethods(unittest.TestCase):
 
         This test checks the following methods:
 
-        * TODO: Node.index_columns()
+        * Node.index_columns()
         * Node.index_records()
         * TODO: Node.weights()
         * TODO: Node.quantities()
@@ -259,6 +259,10 @@ class TestNodeWrapperMethods(unittest.TestCase):
         self.node.add_index_records(data)
         self.node.add_weights(data, 'wght1', selectors=['[attr1]'])
         self.node.add_quantities(data, 'counts', ['attr1', 'attr2'])
+
+        columns = self.node.index_columns()
+        expected = ['idx1', 'idx2']
+        self.assertEqual(columns, expected)
 
         records = self.node.index_records()
         expected = [

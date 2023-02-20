@@ -915,6 +915,12 @@ class DataAccessLayer(object):
         hash_value = make_hash(unpacked_values)
         cls._set_data_property(cursor, 'index_hash', hash_value)
 
+    def index_columns(self) -> Sequence[str]:
+        """Return the node file's index columns."""
+        with self._transaction(method=None) as cur:
+            columns = self._get_column_names(cur, 'node_index')
+        return columns[1:]
+
     @classmethod
     def _add_index_records_make_sql(
         cls, cursor: sqlite3.Cursor, columns: Iterable[str]
