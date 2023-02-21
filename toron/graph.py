@@ -11,6 +11,7 @@ from ._typing import (
     TypeAlias,
 )
 
+from ._schema import BitList
 from ._utils import (
     TabularData,
     make_readerlike,
@@ -35,8 +36,8 @@ class _EdgeMapper(object):
         +---------------+    +----------------+    +---------------+
         | run_id        |<---| run_id         |--->| run_id        |
         | index_id      |    | left_labels    |    | index_id      |
-        +---------------+    | right_labels   |    +---------------+
-                             | weight         |
+        | mapping_level |    | right_labels   |    | mapping_level |
+        +---------------+    | weight         |    +---------------+
                              +----------------+
     """
     def __init__(
@@ -63,11 +64,13 @@ class _EdgeMapper(object):
             );
             CREATE TEMP TABLE left_matches(
                 run_id INTEGER NOT NULL REFERENCES source_mapping(run_id),
-                index_id INTEGER
+                index_id INTEGER,
+                mapping_level BLOB_BITLIST
             );
             CREATE TEMP TABLE right_matches(
                 run_id INTEGER NOT NULL REFERENCES source_mapping(run_id),
-                index_id INTEGER
+                index_id INTEGER,
+                mapping_level BLOB_BITLIST
             );
         """)
 
@@ -118,21 +121,21 @@ class _EdgeMapper(object):
         items = ((format_key(k), format_group(g)) for k, g in grouped)
 
         # Unzip items into separate where_dict and run_id containers.
-        where_dicts, run_ids_groups = zip(*items)
+        where_dicts, grouped_run_ids = zip(*items)
 
         # Get node matches (NOTE: accessing internal ``_dal`` directly).
-        matches = node._dal.index_records_grouped(where_dicts)
+        grouped_matches = node._dal.index_records_grouped(where_dicts)
 
-        # Step over results and add exact matches.
-        for run_ids, (key, group) in zip(run_ids_groups, matches):
-            index_record = next(group)
-            if next(group, None):  # If more than one index record, the
-                continue           # match is ambiguous--skip to next!
+        # Add exact matches.
+        for run_ids, (key, matches) in zip(grouped_run_ids, grouped_matches):
+            first_match = next(matches)
+            num_of_matches = 1 + sum(1 for _ in matches)
+            if num_of_matches > 1:  # If more than one index record, the
+                continue            # match is ambiguous--skip to next!
 
-            index_id = index_record[0]
-
+            index_id, *_ = first_match  # Unpack index record (discards labels).
             parameters = ((run_id, index_id) for run_id in run_ids)
-            sql = f'INSERT INTO temp.{side}_matches VALUES (?, ?)'
+            sql = f'INSERT INTO temp.{side}_matches VALUES (?, ?, NULL)'
             self.cur.executemany(sql, parameters)
 
     def close(self) -> None:

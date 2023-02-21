@@ -65,12 +65,26 @@ class TestEdgeMapper(unittest.TestCase):
 
         mapper.find_matches('left')  # <- Method under test.
         mapper.cur.execute('SELECT * FROM temp.left_matches')
-        expected = [(1, 1), (2, 1), (3, 2), (4, 2), (5, 3), (6, 3)]
+        expected = [
+            (1, 1, None),
+            (2, 1, None),
+            (3, 2, None),
+            (4, 2, None),
+            (5, 3, None),
+            (6, 3, None),
+        ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 
         mapper.find_matches('right')  # <- Method under test.
         mapper.cur.execute('SELECT * FROM temp.right_matches')
-        expected = [(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)]
+        expected = [
+            (1, 1, None),
+            (2, 2, None),
+            (3, 3, None),
+            (4, 4, None),
+            (5, 5, None),
+            (6, 6, None),
+        ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 
         with self.assertRaises(ValueError):
