@@ -3482,3 +3482,93 @@ class TestRefreshIsLocallyComplete(unittest.TestCase):
         self.cur.execute('SELECT is_locally_complete FROM main.edge WHERE edge_id=2')
         is_locally_complete = self.cur.fetchone()[0]
         self.assertEqual(is_locally_complete, 0)
+
+
+class TestAddEdge(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        data = [
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],  # <- index_id=1
+            ['a1', 'b1', 'c2'],  # <- index_id=2
+            ['a1', 'b2', 'c3'],  # <- index_id=3
+            ['a1', 'b2', 'c4'],  # <- index_id=4
+        ]
+        self.dal.add_index_records(data)
+
+    def test_add_complete_edge(self):
+        self.dal.add_edge(
+            unique_id='00000000-0000-0000-0000-000000000000',
+            name='edge 1',
+            relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 130.0), (4, 4, 140.0)],
+            description='Edge one description.',
+            selectors=['[foo="bar"]'],
+            filename_hint='other-file.toron',
+        )
+
+        # Check "edge" record.
+        results = self.cur.execute('SELECT * FROM main.edge').fetchall()
+        expected = [(
+            1,
+            'edge 1',
+            'Edge one description.',
+            [SimpleSelector('foo', '=', 'bar')],
+            None,
+            '00000000-0000-0000-0000-000000000000',
+            'other-file.toron',
+            '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
+            1,  # <- Is locally complete.
+        )]
+        self.assertEqual(results, expected)
+
+        # Check relation records.
+        results = self.cur.execute('SELECT * FROM main.relation').fetchall()
+        expected = [
+            (1, 1, 1, 1, 110.0, None, None),
+            (2, 1, 2, 2, 120.0, None, None),
+            (3, 1, 3, 3, 130.0, None, None),
+            (4, 1, 4, 4, 140.0, None, None),
+            (5, 1, 0, 0,   0.0, None, None),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_add_incomplete_edge(self):
+        self.dal.add_edge(
+            unique_id='00000000-0000-0000-0000-000000000000',
+            name='edge 1',
+            relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 100.0), (4, 3, 30.0)],
+        )
+
+        # Check "edge" record.
+        results = self.cur.execute('SELECT * FROM main.edge').fetchall()
+        expected = [(
+            1,
+            'edge 1',
+            None,
+            None,
+            None,
+            '00000000-0000-0000-0000-000000000000',
+            None,
+            '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
+            0,  # <- Not locally complete.
+        )]
+        self.assertEqual(results, expected)
+
+        # Check relation records.
+        results = self.cur.execute('SELECT * FROM main.relation').fetchall()
+        expected =  [
+            (1, 1, 1, 1, 110.0, None, None),
+            (2, 1, 2, 2, 120.0, None, None),
+            (3, 1, 3, 3, 100.0, None, None),
+            (4, 1, 4, 3,  30.0, None, None),
+            (5, 1, 0, 0,   0.0, None, None),
+        ]
+        self.assertEqual(results, expected)

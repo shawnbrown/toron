@@ -2285,6 +2285,25 @@ class DataAccessLayer(object):
         """
         cursor.execute(sql, (edge_id, edge_id))
 
+    def add_edge(
+        self,
+        unique_id: str,
+        name: str,
+        relations: Iterable[Tuple[int, int, float]],
+        description: Union[str, None, NoValueType] = NOVALUE,
+        selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
+        filename_hint: Union[str, None, NoValueType] = NOVALUE,
+    ) -> None:
+        """Add incoming edge from other node."""
+        with self._transaction(method='begin') as cur:
+            edge_id = self._add_edge_get_new_id(
+                cur, unique_id, name, description, selectors, filename_hint
+            )
+            self._add_edge_relations(cur, edge_id, relations)
+            #self._refresh_proportions(cur, edge_id)
+            self._refresh_other_index_hash(cur, edge_id)
+            self._refresh_is_locally_complete(cur, edge_id)
+
 
 class DataAccessLayerPre35(DataAccessLayer):
     """This is a subclass of DataAccessLayer that supports SQLite
