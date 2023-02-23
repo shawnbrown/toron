@@ -3210,7 +3210,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
         self.assertEqual(actual, expected)
 
 
-class TestAddEdgeAndRelations(unittest.TestCase):
+class TestAddRelations(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
 
@@ -3236,7 +3236,7 @@ class TestAddEdgeAndRelations(unittest.TestCase):
         )
 
     def test_add_relations(self):
-        self.dal._add_edge_and_relations(
+        self.dal._add_relations(
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[
@@ -3247,12 +3247,53 @@ class TestAddEdgeAndRelations(unittest.TestCase):
                 (0, 0,   0.0),
             ],
         )
-        results = self.cur.execute('SELECT * FROM main.relation').fetchall()
+
+        results = sorted(self.cur.execute("""
+            SELECT edge_id, other_index_id, index_id, relation_value
+            FROM main.relation
+        """))
+
         expected = [
-            (1, 1, 6, 1, 110.0, None, None),
-            (2, 1, 7, 2, 120.0, None, None),
-            (3, 1, 8, 3, 130.0, None, None),
-            (4, 1, 9, 4, 140.0, None, None),
-            (5, 1, 0, 0,   0.0, None, None),
+            (1, 0, 0,   0.0),
+            (1, 6, 1, 110.0),
+            (1, 7, 2, 120.0),
+            (1, 8, 3, 130.0),
+            (1, 9, 4, 140.0),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_update_relations(self):
+        self.dal._add_relations(
+            cursor=self.cur,
+            edge_id=self.edge_id,
+            relations=[
+                (6, 1, 110.0),
+                (7, 2, 120.0),
+                (8, 3, 130.0),
+                (9, 4, 140.0),
+                (0, 0,   0.0),
+            ],
+        )
+
+        self.dal._add_relations(  # <- UPDATE EXISTING RELATIONS!
+            cursor=self.cur,
+            edge_id=self.edge_id,
+            relations=[
+                (8, 3, 980.0),
+                (9, 4, 990.0),
+            ],
+        )
+
+        results = sorted(self.cur.execute("""
+            SELECT edge_id, other_index_id, index_id, relation_value
+            FROM main.relation
+        """))
+
+        expected = [
+            (1, 0, 0,   0.0),
+            (1, 6, 1, 110.0),
+            (1, 7, 2, 120.0),
+            (1, 8, 3, 980.0),  # <- Updated value!
+            (1, 9, 4, 990.0),  # <- Updated value!
         ]
         self.assertEqual(results, expected)

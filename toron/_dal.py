@@ -2220,14 +2220,14 @@ class DataAccessLayer(object):
         return edge_id
 
     @staticmethod
-    def _add_edge_and_relations(
+    def _add_relations(
         cursor: sqlite3.Cursor,
         edge_id: int,
         relations: Iterable[Tuple[int, int, float]],
     ) -> None:
         """Add incoming edge from other node."""
         sql = """
-            INSERT INTO main.relation (
+            INSERT OR REPLACE INTO main.relation (
                 edge_id,
                 other_index_id,
                 index_id,
