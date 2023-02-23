@@ -98,7 +98,7 @@ _schema_script = """
         index_id INTEGER,
         relation_value REAL NOT NULL CHECK (0.0 <= relation_value),
         proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
-        mapping_level BLOB_BITLIST NOT NULL,
+        mapping_level BLOB_BITLIST,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
         FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (edge_id, other_index_id, index_id)
