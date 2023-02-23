@@ -3297,3 +3297,42 @@ class TestAddRelations(unittest.TestCase):
             (1, 9, 4, 990.0),  # <- Updated value!
         ]
         self.assertEqual(results, expected)
+
+    def test_auto_add_undefined_relation(self):
+        self.dal._add_relations(
+            cursor=self.cur,
+            edge_id=self.edge_id,
+            relations=[(6, 1, 110.0), (7, 2, 120.0), (8, 3, 130.0), (9, 4, 140.0)],
+        )
+
+        results = sorted(self.cur.execute(
+            'SELECT edge_id, other_index_id, index_id, relation_value FROM main.relation'
+        ))
+
+        expected = [
+            (1, 0, 0,   0.0),  # <- Automatically added.
+            (1, 6, 1, 110.0),
+            (1, 7, 2, 120.0),
+            (1, 8, 3, 130.0),
+            (1, 9, 4, 140.0),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_force_undefined_relation_weight(self):
+        """Weight value for undefined relation should always be zero."""
+        self.dal._add_relations(
+            cursor=self.cur,
+            edge_id=self.edge_id,
+            relations=[(6, 1, 110.0), (7, 2, 120.0), (0, 0, 999.0)],  # <- Undefined relation with weight 999.
+        )
+
+        results = sorted(self.cur.execute(
+            'SELECT edge_id, other_index_id, index_id, relation_value FROM main.relation'
+        ))
+
+        expected = [
+            (1, 0, 0,   0.0),  # <- Undefined relation always gets weight value of 0.0.
+            (1, 6, 1, 110.0),
+            (1, 7, 2, 120.0),
+        ]
+        self.assertEqual(results, expected)

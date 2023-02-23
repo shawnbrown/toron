@@ -2235,6 +2235,7 @@ class DataAccessLayer(object):
             )
             VALUES (?, ?, ?, ?)
         """
+        relations = chain(relations, [(0, 0, 0.0)])  # Append "undefined" relation.
         params_iter = ((edge_id, a, b, c) for a, b, c in relations)
         cursor.executemany(sql, params_iter)
 
