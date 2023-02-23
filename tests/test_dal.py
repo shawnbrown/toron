@@ -3336,3 +3336,94 @@ class TestAddEdgeRelations(unittest.TestCase):
             (1, 7, 2, 120.0),
         ]
         self.assertEqual(results, expected)
+
+
+class TestRefreshOtherIndexHash(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        data = [
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],
+            ['a1', 'b1', 'c2'],
+            ['a1', 'b2', 'c3'],
+            ['a1', 'b2', 'c4'],
+        ]
+        self.dal.add_index_records(data)
+
+        # Add first edge.
+        edge_id = self.dal._add_edge_get_new_id(
+            self.cur, '00000000-0000-0000-0000-000000000000', 'edge 1',
+        )
+        self.dal._add_edge_relations(
+            cursor=self.cur,
+            edge_id=edge_id,
+            relations=[(6, 1, 110.0), (7, 2, 120.0), (8, 3, 130.0), (9, 4, 140.0)],
+        )
+
+        # Add second edge (same distinct other_index_id values as "edge 3")
+        edge_id = self.dal._add_edge_get_new_id(
+            self.cur, '00000000-0000-0000-0000-000000000000', 'edge 2',
+        )
+        self.dal._add_edge_relations(
+            cursor=self.cur,
+            edge_id=edge_id,
+            relations=[(1, 1, 110.0), (1, 2, 120.0), (2, 3, 130.0), (2, 4, 140.0)],
+        )
+
+        # Add third edge (same distinct other_index_id values as "edge 2").
+        edge_id = self.dal._add_edge_get_new_id(
+            self.cur, '00000000-0000-0000-0000-000000000000', 'edge 3',
+        )
+        self.dal._add_edge_relations(
+            cursor=self.cur,
+            edge_id=edge_id,
+            relations=[(1, 1, 110.0), (2, 2, 120.0)],
+        )
+
+    def test_refresh_single_edge(self):
+        self.dal._refresh_other_index_hash(self.cur, 1)  # <- Method under test.
+
+        self.cur.execute('SELECT edge_id, other_index_hash FROM main.edge')
+        results = self.cur.fetchall()
+        expected = [
+            (1, 'a717d3ef0e9800283fedbd8d865df1b441e504ad79a72d9f14c32a28d5fab7b2'),
+            (2, None),
+            (3, None),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_refresh_specified_edges(self):
+        self.dal._refresh_other_index_hash(self.cur, [1, 2])  # <- Method under test.
+
+        self.cur.execute('SELECT edge_id, other_index_hash FROM main.edge')
+        results = self.cur.fetchall()
+        expected = [
+            (1, 'a717d3ef0e9800283fedbd8d865df1b441e504ad79a72d9f14c32a28d5fab7b2'),
+            (2, '22074227d8462b39403011e0bc4c5e7a3f1ee1bae54ae2deb0943dece537f93f'),
+            (3, None),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_refresh_all_edges(self):
+        """When no edge_ids are given, all hashes should get refreshed."""
+        self.dal._refresh_other_index_hash(self.cur)  # <- Method under test.
+
+        self.cur.execute('SELECT edge_id, other_index_hash FROM main.edge')
+        results = self.cur.fetchall()
+        expected = [
+            (1, 'a717d3ef0e9800283fedbd8d865df1b441e504ad79a72d9f14c32a28d5fab7b2'),
+            (2, '22074227d8462b39403011e0bc4c5e7a3f1ee1bae54ae2deb0943dece537f93f'),
+            (3, '22074227d8462b39403011e0bc4c5e7a3f1ee1bae54ae2deb0943dece537f93f'),
+        ]
+        self.assertEqual(results, expected)
+
+        # NOTE: Edges 2 and 3 have the same hash digest because they
+        # have the same DISTINCT "other_index_id" values.

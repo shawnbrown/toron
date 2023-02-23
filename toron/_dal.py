@@ -2239,6 +2239,37 @@ class DataAccessLayer(object):
         params_iter = ((edge_id, a, b, c) for a, b, c in relations)
         cursor.executemany(sql, params_iter)
 
+    @staticmethod
+    def _refresh_other_index_hash(
+        cursor: sqlite3.Cursor,
+        edge_ids: Optional[Union[int, Iterable[int]]] = None,
+    ) -> None:
+        """Refresh 'other_index_hash' for given edge_id values. If no
+        edge_id values are given, the hashes for all edges will be
+        refreshed.
+        """
+        if isinstance(edge_ids, int):
+            edge_ids = [edge_ids]
+        elif edge_ids is None:
+            cursor.execute('SELECT edge_id FROM main.edge')
+            edge_ids = [x[0] for x in cursor]  # Eagerly unpack as list.
+        elif not isinstance(edge_ids, Iterable):
+            msg = (f'edge_ids must be an integer, an iterable of integers, '
+                   f'or None, got {edge_ids!r}')
+            raise ValueError(msg)
+
+        for edge_id in edge_ids:
+            cursor.execute("""
+                SELECT DISTINCT other_index_id
+                FROM main.relation
+                WHERE other_index_id > 0 AND edge_id=?
+                ORDER BY other_index_id
+            """, (edge_id,))
+            unpacked_values = (x[0] for x in cursor)  # Unpack 1-tuple rows.
+            hash_value = make_hash(unpacked_values)
+            sql = 'UPDATE main.edge SET other_index_hash=? WHERE edge_id=?'
+            cursor.execute(sql, (hash_value, edge_id))
+
 
 class DataAccessLayerPre35(DataAccessLayer):
     """This is a subclass of DataAccessLayer that supports SQLite
