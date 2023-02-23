@@ -2220,7 +2220,7 @@ class DataAccessLayer(object):
         return edge_id
 
     @staticmethod
-    def _add_relations(
+    def _add_edge_relations(
         cursor: sqlite3.Cursor,
         edge_id: int,
         relations: Iterable[Tuple[int, int, float]],

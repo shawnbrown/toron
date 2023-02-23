@@ -3210,7 +3210,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
         self.assertEqual(actual, expected)
 
 
-class TestAddRelations(unittest.TestCase):
+class TestAddEdgeRelations(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
 
@@ -3235,8 +3235,8 @@ class TestAddRelations(unittest.TestCase):
             'edge 1',
         )
 
-    def test_add_relations(self):
-        self.dal._add_relations(
+    def test_add_edge_relations(self):
+        self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[
@@ -3263,7 +3263,7 @@ class TestAddRelations(unittest.TestCase):
         self.assertEqual(results, expected)
 
     def test_update_relations(self):
-        self.dal._add_relations(
+        self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[
@@ -3275,7 +3275,7 @@ class TestAddRelations(unittest.TestCase):
             ],
         )
 
-        self.dal._add_relations(  # <- UPDATE EXISTING RELATIONS!
+        self.dal._add_edge_relations(  # <- UPDATE EXISTING RELATIONS!
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[
@@ -3299,7 +3299,7 @@ class TestAddRelations(unittest.TestCase):
         self.assertEqual(results, expected)
 
     def test_auto_add_undefined_relation(self):
-        self.dal._add_relations(
+        self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[(6, 1, 110.0), (7, 2, 120.0), (8, 3, 130.0), (9, 4, 140.0)],
@@ -3320,7 +3320,7 @@ class TestAddRelations(unittest.TestCase):
 
     def test_force_undefined_relation_weight(self):
         """Weight value for undefined relation should always be zero."""
-        self.dal._add_relations(
+        self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[(6, 1, 110.0), (7, 2, 120.0), (0, 0, 999.0)],  # <- Undefined relation with weight 999.
