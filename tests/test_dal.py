@@ -3427,3 +3427,58 @@ class TestRefreshOtherIndexHash(unittest.TestCase):
 
         # NOTE: Edges 2 and 3 have the same hash digest because they
         # have the same DISTINCT "other_index_id" values.
+
+
+class TestRefreshIsLocallyComplete(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        data = [
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],  # <- index_id=1
+            ['a1', 'b1', 'c2'],  # <- index_id=2
+            ['a1', 'b2', 'c3'],  # <- index_id=3
+            ['a1', 'b2', 'c4'],  # <- index_id=4
+        ]
+        self.dal.add_index_records(data)
+
+        # Add first edge.
+        edge_id = self.dal._add_edge_get_new_id(
+            self.cur, '00000000-0000-0000-0000-000000000000', 'edge 1',
+        )
+        self.dal._add_edge_relations(
+            cursor=self.cur,
+            edge_id=edge_id,
+            relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 130.0), (4, 4, 140.0)],  # <- Complete.
+        )
+
+        # Add second edge
+        edge_id = self.dal._add_edge_get_new_id(
+            self.cur, '00000000-0000-0000-0000-000000000000', 'edge 2',
+        )
+        self.dal._add_edge_relations(
+            cursor=self.cur,
+            edge_id=edge_id,
+            relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 100.0), (4, 3, 30.0)],  # <- Not complete (missing 4).
+        )
+
+    def test_complete(self):
+        self.dal._refresh_is_locally_complete(self.cur, 1)  # <- Method under test.
+
+        self.cur.execute('SELECT is_locally_complete FROM main.edge WHERE edge_id=1')
+        is_locally_complete = self.cur.fetchone()[0]
+        self.assertEqual(is_locally_complete, 1)
+
+    def test_not_complete(self):
+        self.dal._refresh_is_locally_complete(self.cur, 2)  # <- Method under test.
+
+        self.cur.execute('SELECT is_locally_complete FROM main.edge WHERE edge_id=2')
+        is_locally_complete = self.cur.fetchone()[0]
+        self.assertEqual(is_locally_complete, 0)

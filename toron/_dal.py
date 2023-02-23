@@ -2270,6 +2270,21 @@ class DataAccessLayer(object):
             sql = 'UPDATE main.edge SET other_index_hash=? WHERE edge_id=?'
             cursor.execute(sql, (hash_value, edge_id))
 
+    @staticmethod
+    def _refresh_is_locally_complete(
+        cursor: sqlite3.Cursor, edge_id: int
+    ) -> None:
+        """Refresh 'edge.is_locally_complete' (sets to 1 or 0, True/False)."""
+        sql = """
+            UPDATE main.edge
+            SET is_locally_complete=((SELECT COUNT(DISTINCT index_id)
+                                      FROM main.relation
+                                      WHERE edge_id=?) = (SELECT COUNT(*)
+                                                          FROM main.node_index))
+            WHERE edge_id=?
+        """
+        cursor.execute(sql, (edge_id, edge_id))
+
 
 class DataAccessLayerPre35(DataAccessLayer):
     """This is a subclass of DataAccessLayer that supports SQLite
