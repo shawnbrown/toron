@@ -3208,3 +3208,51 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             0,                                      # is_locally_complete
         )]
         self.assertEqual(actual, expected)
+
+
+class TestAddEdgeAndRelations(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        data = [
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],
+            ['a1', 'b1', 'c2'],
+            ['a1', 'b2', 'c3'],
+            ['a1', 'b2', 'c4'],
+        ]
+        self.dal.add_index_records(data)
+        self.edge_id = self.dal._add_edge_get_new_id(
+            self.cur,
+            '00000000-0000-0000-0000-000000000000',
+            'edge 1',
+        )
+
+    def test_add_relations(self):
+        self.dal._add_edge_and_relations(
+            cursor=self.cur,
+            edge_id=self.edge_id,
+            relations=[
+                (6, 1, 110.0),
+                (7, 2, 120.0),
+                (8, 3, 130.0),
+                (9, 4, 140.0),
+                (0, 0,   0.0),
+            ],
+        )
+        results = self.cur.execute('SELECT * FROM main.relation').fetchall()
+        expected = [
+            (1, 1, 6, 1, 110.0, None, None),
+            (2, 1, 7, 2, 120.0, None, None),
+            (3, 1, 8, 3, 130.0, None, None),
+            (4, 1, 9, 4, 140.0, None, None),
+            (5, 1, 0, 0,   0.0, None, None),
+        ]
+        self.assertEqual(results, expected)

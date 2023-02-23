@@ -2219,6 +2219,25 @@ class DataAccessLayer(object):
 
         return edge_id
 
+    @staticmethod
+    def _add_edge_and_relations(
+        cursor: sqlite3.Cursor,
+        edge_id: int,
+        relations: Iterable[Tuple[int, int, float]],
+    ) -> None:
+        """Add incoming edge from other node."""
+        sql = """
+            INSERT INTO main.relation (
+                edge_id,
+                other_index_id,
+                index_id,
+                relation_value
+            )
+            VALUES (?, ?, ?, ?)
+        """
+        params_iter = ((edge_id, a, b, c) for a, b, c in relations)
+        cursor.executemany(sql, params_iter)
+
 
 class DataAccessLayerPre35(DataAccessLayer):
     """This is a subclass of DataAccessLayer that supports SQLite
