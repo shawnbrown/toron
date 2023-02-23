@@ -3090,3 +3090,100 @@ class TestRefreshIndexHash(unittest.TestCase):
         index_hash = cur.fetchone()[0]  # Hash of index_id values "1|2|3|4".
         expected = '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39'
         self.assertEqual(index_hash, expected)
+
+
+class TestAddEdgeGetNewId(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+    def test_create_new_edge(self):
+        edge_id = self.dal._add_edge_get_new_id(
+            cursor=self.cur,
+            unique_id='00000000-0000-0000-0000-000000000000',
+            name='edge 1',
+            description='Edge number one.',
+            selectors=['[foo="bar"]'],
+            filename_hint='other-node-1.toron',
+        )
+        self.assertEqual(edge_id, 1)
+
+        self.cur.execute('SELECT * FROM main.edge')
+        actual = self.cur.fetchall()
+        expected = [(
+            1,                                      # edge_id
+            'edge 1',                               # name
+            'Edge number one.',                     # description
+            [SimpleSelector('foo', '=', 'bar')],    # selectors
+            None,                                   # user_properties
+            '00000000-0000-0000-0000-000000000000', # other_unique_id
+            'other-node-1.toron',                   # other_filename_hint
+            None,                                   # other_index_hash
+            0,                                      # is_locally_complete
+        )]
+        self.assertEqual(actual, expected)
+
+    def test_update_existing_edge(self):
+        """When updating an existing edge, any given properties should
+        be set while unspecified properties should be left as-is.
+        """
+        # Create new edge.
+        new_edge_id = self.dal._add_edge_get_new_id(
+            cursor=self.cur,
+            unique_id='00000000-0000-0000-0000-000000000000',
+            name='edge 1',
+            description='Edge number one.',
+            selectors=['[foo="bar"]'],
+            filename_hint='other-node-1.toron',
+        )
+
+        # Update existing edge with new value.
+        new_edge_id = self.dal._add_edge_get_new_id(
+            cursor=self.cur,
+            unique_id='00000000-0000-0000-0000-000000000000',
+            name='edge 1',
+            description='New description.',  # <- Updated 'description'.
+        )
+
+        self.cur.execute('SELECT * FROM main.edge')
+        actual = self.cur.fetchall()
+        expected = [(
+            1,                                      # edge_id
+            'edge 1',                               # name
+            'New description.',                     # description
+            [SimpleSelector('foo', '=', 'bar')],    # selectors
+            None,                                   # user_properties
+            '00000000-0000-0000-0000-000000000000', # other_unique_id
+            'other-node-1.toron',                   # other_filename_hint
+            None,                                   # other_index_hash
+            0,                                      # is_locally_complete
+        )]
+        self.assertEqual(actual, expected)
+
+        # Remove 'description' from existing edge.
+        new_edge_id = self.dal._add_edge_get_new_id(
+            cursor=self.cur,
+            unique_id='00000000-0000-0000-0000-000000000000',
+            name='edge 1',
+            description=None,  # <- Passing None should erase description.
+        )
+
+        self.cur.execute('SELECT * FROM main.edge')
+        actual = self.cur.fetchall()
+        expected = [(
+            1,                                      # edge_id
+            'edge 1',                               # name
+            None,                                   # description
+            [SimpleSelector('foo', '=', 'bar')],    # selectors
+            None,                                   # user_properties
+            '00000000-0000-0000-0000-000000000000', # other_unique_id
+            'other-node-1.toron',                   # other_filename_hint
+            None,                                   # other_index_hash
+            0,                                      # is_locally_complete
+        )]
+        self.assertEqual(actual, expected)

@@ -55,7 +55,11 @@ from ._utils import (
     make_dictreaderlike,
     make_hash,
     eagerly_initialize,
+    NOVALUE,
 )
+
+
+NoValueType: TypeAlias = NOVALUE.__class__
 
 
 if sys.platform != 'win32' and hasattr(fcntl, 'F_FULLFSYNC'):
@@ -2148,6 +2152,65 @@ class DataAccessLayer(object):
 
         with self._transaction() as cur:
             self._update_categories_and_structure(cur, minimized, minimize=False)
+
+    @staticmethod
+    def _add_edge_get_new_id(
+        cursor: sqlite3.Cursor,
+        unique_id: str,
+        name: str,
+        description: Union[str, None, NoValueType] = NOVALUE,
+        selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
+        filename_hint: Union[str, None, NoValueType] = NOVALUE,
+    ) -> int:
+        """Add a new edge or update existing edge, returns 'edge_id'."""
+        cursor.execute(
+            'SELECT edge_id FROM main.edge WHERE other_unique_id=? AND name=?',
+            (unique_id, name),
+        )
+        record = cursor.fetchone()
+        if record:
+            # If record exists, update any given columns.
+            edge_id = record[0]
+            if description is not NOVALUE:
+                cursor.execute(
+                    'UPDATE main.edge SET description=? WHERE edge_id=?',
+                    (description, edge_id),
+                )
+            if selectors is not NOVALUE:
+                selectors_val = _dumps(selectors) if selectors else None
+                cursor.execute(
+                    'UPDATE main.edge SET selectors=? WHERE edge_id=?',
+                    (selectors_val, edge_id),
+                )
+            if filename_hint is not NOVALUE:
+                cursor.execute(
+                    'UPDATE main.edge SET other_filename_hint=? WHERE edge_id=?',
+                    (filename_hint, edge_id),
+                )
+        else:
+            # If record does not exist, create a new record and get its ID.
+            sql = """
+                INSERT INTO main.edge(
+                    name,
+                    description,
+                    selectors,
+                    other_unique_id,
+                    other_filename_hint
+                )
+                VALUES (?, ?, ?, ?, ?)
+            """
+            parameters = (
+                name,
+                description,
+                _dumps(selectors) if selectors else None,
+                unique_id,
+                filename_hint,
+            )
+            cursor.execute(sql, parameters)
+            cursor.execute('SELECT last_insert_rowid()')
+            edge_id = cursor.fetchone()[0]
+
+        return edge_id
 
 
 class DataAccessLayerPre35(DataAccessLayer):

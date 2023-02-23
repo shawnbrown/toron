@@ -404,3 +404,17 @@ def eagerly_initialize(
         return chain([first_item], generator)
 
     return wrapped_genfunc
+
+
+# Define and instantiate NOVALUE inline (keeps class reference out of scope).
+NOVALUE = type('NoValueType', (object,), {
+    '__doc__': """
+        Token to differentiate between ``None`` and no value given.
+
+        This token is used by ``DataAccessLayer._add_edge()`` to
+        differentiate between giving ``None`` as an argument and
+        giving no value at all.
+    """,
+    '__repr__': lambda self: '<no value>',
+    '__bool__': lambda self: False,  # Object is falsy.
+})()

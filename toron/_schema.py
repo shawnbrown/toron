@@ -85,7 +85,7 @@ _schema_script = """
         selectors TEXT_SELECTORS,
         user_properties TEXT_USERPROPERTIES,
         other_unique_id TEXT NOT NULL,
-        other_filename_hint TEXT NOT NULL,
+        other_filename_hint TEXT,
         other_index_hash TEXT,
         is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
         UNIQUE (name, other_unique_id)
