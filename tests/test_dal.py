@@ -3128,6 +3128,27 @@ class TestAddEdgeGetNewId(unittest.TestCase):
         )]
         self.assertEqual(actual, expected)
 
+    def test_create_new_edge_minimal_args(self):
+        edge_id = self.dal._add_edge_get_new_id(
+            self.cur, '00000000-0000-0000-0000-000000000000', 'edge 1',
+        )
+        self.assertEqual(edge_id, 1)
+
+        self.cur.execute('SELECT * FROM main.edge')
+        actual = self.cur.fetchall()
+        expected = [(
+            1,                                      # edge_id
+            'edge 1',                               # name
+            None,                                   # description
+            None,                                   # selectors
+            None,                                   # user_properties
+            '00000000-0000-0000-0000-000000000000', # other_unique_id
+            None,                                   # other_filename_hint
+            None,                                   # other_index_hash
+            0,                                      # is_locally_complete
+        )]
+        self.assertEqual(actual, expected)
+
     def test_update_existing_edge(self):
         """When updating an existing edge, any given properties should
         be set while unspecified properties should be left as-is.

@@ -2189,6 +2189,13 @@ class DataAccessLayer(object):
                 )
         else:
             # If record does not exist, create a new record and get its ID.
+            if description is NOVALUE:
+                description = None
+            if selectors is NOVALUE:
+                selectors = None
+            if filename_hint is NOVALUE:
+                filename_hint = None
+
             sql = """
                 INSERT INTO main.edge(
                     name,
