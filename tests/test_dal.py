@@ -3338,6 +3338,151 @@ class TestAddEdgeRelations(unittest.TestCase):
         self.assertEqual(results, expected)
 
 
+class TestRefreshProportions(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        data = [
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],  # index_id 1
+            ['a1', 'b1', 'c2'],  # index_id 2
+            ['a1', 'b2', 'c3'],  # index_id 3
+            ['a1', 'b2', 'c4'],  # index_id 4
+        ]
+        self.dal.add_index_records(data)
+
+    def add_edge_and_relations(self, relations):
+        """Helper function to add edge and relations."""
+        edge_id = self.dal._add_edge_get_new_id(
+            self.cur,
+            '00000000-0000-0000-0000-000000000000',
+            'edge 1',
+        )
+        self.dal._add_edge_relations(
+            cursor=self.cur,
+            edge_id=edge_id,
+            relations=relations,
+        )
+        return edge_id
+
+    def get_relations(self, edge_id):
+        """Helper function to get relations from database."""
+        self.cur.execute("""
+            SELECT other_index_id, index_id, relation_value, proportion
+            FROM relation
+        """)
+        return self.cur.fetchall()
+
+    def test_refresh_proportions(self):
+        edge_id = self.add_edge_and_relations([
+            (6, 1, 117.0),
+            (6, 2,  91.0),
+            (7, 3, 110.0),
+            (7, 4,  50.0),
+            (8, 3,  97.0),
+            (8, 4,   0.0),
+            (0, 0,   0.0),
+        ])
+        self.dal._refresh_proportions(self.cur, edge_id)  # <- Method under test.
+
+        results = self.get_relations(edge_id)
+        expected = [
+            (6, 1, 117.0, 0.5625),
+            (6, 2,  91.0, 0.4375),
+            (7, 3, 110.0, 0.6875),
+            (7, 4,  50.0, 0.3125),
+            (8, 3,  97.0,    1.0),
+            (8, 4,   0.0,    0.0),
+            (0, 0,   0.0,    1.0),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_zero_weight_relations(self):
+        """When the sum of a relation's values are 0, divide evenly."""
+        edge_id = self.add_edge_and_relations([
+            (6, 1, 0.0),
+            (6, 2, 0.0),
+            (6, 3, 0.0),
+            (6, 4, 0.0),
+            (7, 3, 0.0),
+            (7, 4, 0.0),
+            (8, 4, 0.0),
+            (9, 1, 7.5),
+            (9, 2, 0.0),
+            (9, 3, 0.0),
+            (9, 4, 4.5),
+            (0, 0, 0.0),
+        ])
+        self.dal._refresh_proportions(self.cur, edge_id)  # <- Method under test.
+
+        results = self.get_relations(edge_id)
+        expected = (0, 0, 0.0, 1.0)
+        self.assertIn(expected, results)
+
+        expected = [
+            # For incoming ID 6, there are four relations and their values
+            # are all 0.0. When the sum of all values in a relation are 0,
+            # they are evenly proportioned.
+            (6, 1, 0.0, 0.25),
+            (6, 2, 0.0, 0.25),
+            (6, 3, 0.0, 0.25),
+            (6, 4, 0.0, 0.25),
+            # For incoming ID 7, there are two relations and their values
+            # are both 0.0. These relations get evenly proportioned.
+            (7, 3, 0.0, 0.5),
+            (7, 4, 0.0, 0.5),
+            # For incoming ID 8, there is a single relation whose value
+            # is 0.0. In this case, an "evenly proportioned" weight simply
+            # means assigning it all to this one relation (1.0).
+            (8, 4, 0.0, 1.0),
+            # For incoming ID 9, there are four relations--two of the
+            # relations have a value of 0.0 but the sum of all values
+            # is greater than zero. Since the sum is greater than 0,
+            # the proportions are assigned normally according to value
+            # and the zero-weight relations get a proportion of 0.0.
+            (9, 1, 7.5, 0.625),
+            (9, 2, 0.0, 0.0),
+            (9, 3, 0.0, 0.0),
+            (9, 4, 4.5, 0.375),
+            # Undefined-to-undefined always has proportion of 1.0.
+            (0, 0, 0.0, 1.0),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_handling_for_undefined_points(self):
+        edge_id = self.add_edge_and_relations([
+            (6, 0, 117.0),  # 6 -> 0 (defined-to-undefined)
+            (6, 2,  91.0),  # 6 -> 2 (defined-to-defined)
+            (7, 0, 110.0),  # 7 -> 0 (defined-to-undefined)
+            (7, 4,  50.0),  # 7 -> 4 (defined-to-defined)
+            (0, 3,  97.0),  # 0 -> 3 (undefined-to-defined)
+            (0, 4,   0.0),  # 0 -> 4 (undefined-to-defined)
+        ])
+        self.dal._refresh_proportions(self.cur, edge_id)  # <- Method under test.
+
+        results = self.get_relations(edge_id)
+        expected = (0, 0, 0.0, 1.0)
+        self.assertIn(expected, results)
+
+        expected = [
+            (6, 0, 117.0, 0.5625),  # <- Defined-to-undefined is unaffected.
+            (6, 2,  91.0, 0.4375),
+            (7, 0, 110.0, 0.6875),  # <- Defined-to-undefined is unaffected.
+            (7, 4,  50.0, 0.3125),
+            (0, 3,  97.0, 0.0),  # <- Undefined-to-defined always gets 0 regardless of value.
+            (0, 4,   0.0, 0.0),  # <- Undefined-to-defined always gets 0 regardless of value.
+            (0, 0,   0.0, 1.0),  # <- Undefined-to-undefined always gets 1.0.
+        ]
+        self.assertEqual(results, expected)
+
+
 class TestRefreshOtherIndexHash(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()

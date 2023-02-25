@@ -2240,6 +2240,62 @@ class DataAccessLayer(object):
         cursor.executemany(sql, params_iter)
 
     @staticmethod
+    def _refresh_proportions(cursor: sqlite3.Cursor, edge_id: int) -> None:
+        """Recalculate and assign 'proportion' values for an edge."""
+        # Get a list of incoming IDs (i.e. 'other_index_id' values) for
+        # the specified edge (not including 0, the undefined point).
+        sql = """
+            SELECT DISTINCT other_index_id
+            FROM main.relation
+            WHERE edge_id=? AND other_index_id>0
+        """
+        all_other_index_ids = [x[0] for x in cursor.execute(sql, (edge_id,))]
+
+        for other_index_id in all_other_index_ids:
+            # Get all relations associated with an incoming ID.
+            sql = """
+                SELECT relation_id, relation_value
+                FROM main.relation
+                WHERE edge_id=? AND other_index_id=?
+            """
+            cursor.execute(sql, (edge_id, other_index_id))
+            results = cursor.fetchall()
+
+            # Get total of values from associated relations. If total
+            # is 0 or None, then relations are weighted evenly.
+            total_val = sum(row[1] for row in results)
+            if not total_val:
+                total_val = len(results)
+                results = [(rel_id, 1) for rel_id, _ in results]
+
+            # Calculate and assign proportions for associated relations.
+            sql = """
+                UPDATE main.relation
+                SET proportion=?
+                WHERE relation_id=?
+            """
+            params_iter = ((val/total_val, rel_id) for rel_id, val in results)
+            cursor.executemany(sql, params_iter)
+
+        # Set proportion to 0.0 for any relations between the incoming
+        # undefined point (ID 0) and a locally defined point (ID > 0).
+        sql = """
+            UPDATE main.relation
+            SET proportion=0.0
+            WHERE edge_id=? AND other_index_id=0 AND index_id>0
+        """
+        cursor.execute(sql, (edge_id,))
+
+        # Set proportion to 1.0 for the relation between the incoming
+        # undefined point and the locally undefined point (both ID 0).
+        sql = """
+            UPDATE main.relation
+            SET proportion=1.0
+            WHERE edge_id=? AND other_index_id=0 AND index_id=0
+        """
+        cursor.execute(sql, (edge_id,))
+
+    @staticmethod
     def _refresh_other_index_hash(
         cursor: sqlite3.Cursor,
         edge_ids: Optional[Union[int, Iterable[int]]] = None,
