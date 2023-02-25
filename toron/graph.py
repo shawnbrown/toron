@@ -11,17 +11,19 @@ from ._typing import (
     Optional,
     Tuple,
     TypeAlias,
+    Union,
 )
 
 from ._schema import BitList
 from ._utils import (
     TabularData,
     make_readerlike,
+    NOVALUE,
 )
 from .node import Node
 
 
-Direction: TypeAlias = Literal['->', '-->', '<->', '<-->', '<-', '<--']
+NoValueType: TypeAlias = NOVALUE.__class__
 
 
 class _EdgeMapper(object):
@@ -176,12 +178,42 @@ class _EdgeMapper(object):
         self.close()
 
 
+Direction: TypeAlias = Literal['->', '-->', '<->', '<-->', '<-', '<--']
+
+
 def add_edge(
     data : TabularData,
     name : str,
     left_node : Node,
     direction : Direction,
     right_node : Node,
-    selector : Optional[str] = None,
+    selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
 ) -> None:
-    raise NotImplementedError
+    mapper = _EdgeMapper(data, name, left_node, right_node)
+    try:
+        mapper.find_matches('left')
+        mapper.find_matches('right')
+
+        if '<' in direction:
+            relations = mapper.get_relations('left')
+            left_node._dal.add_incoming_edge(
+                unique_id=right_node._dal.unique_id,
+                name=name,
+                relations=relations,
+                selectors=selectors,
+                filename_hint=right_node._dal.data_source or NOVALUE,
+            )
+
+        if '>' in direction:
+            relations = mapper.get_relations('right')
+            right_node._dal.add_incoming_edge(
+                unique_id=left_node._dal.unique_id,
+                name=name,
+                relations=relations,
+                selectors=selectors,
+                filename_hint=left_node._dal.data_source or NOVALUE,
+            )
+
+    except Exception:
+        mapper.close()
+        raise

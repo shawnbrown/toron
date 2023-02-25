@@ -110,3 +110,38 @@ class TestEdgeMapper(TwoNodesTestCase):
             (3, 6, 50.0),
         ]
         self.assertEqual(list(relations), expected)
+
+
+class TestAddEdge(TwoNodesTestCase):
+    def test_basics(self):
+        mapping_data = [
+            ['idx', 'population', 'idx1', 'idx2'],
+            ['A', 10, 'A', 'x'],
+            ['A', 70, 'A', 'y'],
+            ['B', 20, 'B', 'x'],
+            ['B', 60, 'B', 'y'],
+            ['C', 30, 'C', 'x'],
+            ['C', 50, 'C', 'y'],
+        ]
+
+        add_edge(                 # <- The method under test.
+            data=mapping_data,
+            name='population',
+            left_node=self.node1,
+            direction='-->',
+            right_node=self.node2,
+        )
+
+        con = self.node2._dal._get_connection()
+        results = con.execute('SELECT * FROM relation').fetchall()
+
+        expected = [
+            (1, 1, 1, 1, 10.0, 0.125, None),
+            (2, 1, 1, 2, 70.0, 0.875, None),
+            (3, 1, 2, 3, 20.0, 0.25,  None),
+            (4, 1, 2, 4, 60.0, 0.75,  None),
+            (5, 1, 3, 5, 30.0, 0.375, None),
+            (6, 1, 3, 6, 50.0, 0.625, None),
+            (7, 1, 0, 0,  0.0, 1.0,   None),
+        ]
+        self.assertEqual(results, expected)
