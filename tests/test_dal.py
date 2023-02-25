@@ -3677,11 +3677,11 @@ class TestAddEdge(unittest.TestCase):
         # Check relation records.
         results = self.cur.execute('SELECT * FROM main.relation').fetchall()
         expected = [
-            (1, 1, 1, 1, 110.0, None, None),
-            (2, 1, 2, 2, 120.0, None, None),
-            (3, 1, 3, 3, 130.0, None, None),
-            (4, 1, 4, 4, 140.0, None, None),
-            (5, 1, 0, 0,   0.0, None, None),
+            (1, 1, 1, 1, 110.0, 1.0, None),
+            (2, 1, 2, 2, 120.0, 1.0, None),
+            (3, 1, 3, 3, 130.0, 1.0, None),
+            (4, 1, 4, 4, 140.0, 1.0, None),
+            (5, 1, 0, 0,   0.0, 1.0, None),
         ]
         self.assertEqual(results, expected)
 
@@ -3710,10 +3710,10 @@ class TestAddEdge(unittest.TestCase):
         # Check relation records.
         results = self.cur.execute('SELECT * FROM main.relation').fetchall()
         expected =  [
-            (1, 1, 1, 1, 110.0, None, None),
-            (2, 1, 2, 2, 120.0, None, None),
-            (3, 1, 3, 3, 100.0, None, None),
-            (4, 1, 4, 3,  30.0, None, None),
-            (5, 1, 0, 0,   0.0, None, None),
+            (1, 1, 1, 1, 110.0, 1.0, None),
+            (2, 1, 2, 2, 120.0, 1.0, None),
+            (3, 1, 3, 3, 100.0, 1.0, None),
+            (4, 1, 4, 3,  30.0, 1.0, None),
+            (5, 1, 0, 0,   0.0, 1.0, None),
         ]
         self.assertEqual(results, expected)

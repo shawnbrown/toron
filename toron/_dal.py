@@ -2368,7 +2368,7 @@ class DataAccessLayer(object):
                 cur, unique_id, name, description, selectors, filename_hint
             )
             self._add_edge_relations(cur, edge_id, relations)
-            #self._refresh_proportions(cur, edge_id)
+            self._refresh_proportions(cur, edge_id)
             self._refresh_other_index_hash(cur, edge_id)
             self._refresh_is_locally_complete(cur, edge_id)
 
