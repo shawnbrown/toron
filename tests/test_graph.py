@@ -9,7 +9,7 @@ from toron.graph import (
 )
 
 
-class TestEdgeMapper(unittest.TestCase):
+class TwoNodesTestCase(unittest.TestCase):
     def setUp(self):
         self.node1 = Node()
         data1 = [
@@ -36,6 +36,10 @@ class TestEdgeMapper(unittest.TestCase):
         self.node2.add_index_records(data2)
         self.node2.add_weights(data2, 'wght', selectors=['[attr1]'])
 
+
+class TestEdgeMapper(TwoNodesTestCase):
+    def setUp(self):
+        super().setUp()
         self.data = [
             ['idx', 'population', 'idx1', 'idx2'],
             ['A', 10, 'A', 'x'],
