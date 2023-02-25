@@ -3650,7 +3650,7 @@ class TestAddEdge(unittest.TestCase):
         self.dal.add_index_records(data)
 
     def test_add_complete_edge(self):
-        self.dal.add_edge(
+        self.dal.add_incoming_edge(
             unique_id='00000000-0000-0000-0000-000000000000',
             name='edge 1',
             relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 130.0), (4, 4, 140.0)],
@@ -3686,7 +3686,7 @@ class TestAddEdge(unittest.TestCase):
         self.assertEqual(results, expected)
 
     def test_add_incomplete_edge(self):
-        self.dal.add_edge(
+        self.dal.add_incoming_edge(
             unique_id='00000000-0000-0000-0000-000000000000',
             name='edge 1',
             relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 100.0), (4, 3, 30.0)],

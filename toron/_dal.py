@@ -2341,7 +2341,7 @@ class DataAccessLayer(object):
         """
         cursor.execute(sql, (edge_id, edge_id))
 
-    def add_edge(
+    def add_incoming_edge(
         self,
         unique_id: str,
         name: str,
@@ -2350,7 +2350,19 @@ class DataAccessLayer(object):
         selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
     ) -> None:
-        """Add incoming edge from other node."""
+        """Add an incoming edge from another node.
+
+        .. code-block::
+
+            dal.add_incoming_edge(
+                unique_id='00000000-0000-0000-0000-000000000000',
+                name='pop20+',
+                relations=[(1, 1, 110.0), (2, 2, 120.0), ...],
+                description='Population Ages 20 and up.',
+                selectors=['[category="pop"]'],
+                filename_hint='other-file.toron',
+            )
+        """
         with self._transaction(method='begin') as cur:
             edge_id = self._add_edge_get_new_id(
                 cur, unique_id, name, description, selectors, filename_hint
