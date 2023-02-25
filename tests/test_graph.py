@@ -47,7 +47,7 @@ class TestEdgeMapper(unittest.TestCase):
         ]
 
     def test_init(self):
-        mapper = _EdgeMapper(self.data, 'population', self.node1, '-->', self.node2)
+        mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
 
         mapper.cur.execute('SELECT * FROM temp.source_mapping')
         expected = [
@@ -61,7 +61,7 @@ class TestEdgeMapper(unittest.TestCase):
         self.assertEqual(mapper.cur.fetchall(), expected)
 
     def test_find_matches(self):
-        mapper = _EdgeMapper(self.data, 'population', self.node1, '-->', self.node2)
+        mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
 
         mapper.find_matches('left')  # <- Method under test.
         mapper.cur.execute('SELECT * FROM temp.left_matches')
@@ -91,7 +91,7 @@ class TestEdgeMapper(unittest.TestCase):
             mapper.find_matches('blerg')  # <- Method under test.
 
     def test_get_relations(self):
-        mapper = _EdgeMapper(self.data, 'population', self.node1, '-->', self.node2)
+        mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
         mapper.find_matches('left')
         mapper.find_matches('right')
 

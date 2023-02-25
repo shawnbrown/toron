@@ -47,15 +47,11 @@ class _EdgeMapper(object):
         data : TabularData,
         name : str,
         left_node : Node,
-        direction : Direction,
         right_node : Node,
-        selector : Optional[str] = None,
     ) -> None:
         self.name = name
         self.left_node = left_node
-        self.direction = direction
         self.right_node = right_node
-        self.selector = selector
         self.con = sqlite3.connect(':memory:')
         self.cur = self.con.executescript("""
             CREATE TEMP TABLE source_mapping(
