@@ -89,3 +89,20 @@ class TestEdgeMapper(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             mapper.find_matches('blerg')  # <- Method under test.
+
+    def test_get_relations(self):
+        mapper = _EdgeMapper(self.data, 'population', self.node1, '-->', self.node2)
+        mapper.find_matches('left')
+        mapper.find_matches('right')
+
+        relations = mapper.get_relations('right')  # <- Method under test.
+
+        expected = [
+            (1, 1, 10.0),
+            (1, 2, 70.0),
+            (2, 3, 20.0),
+            (2, 4, 60.0),
+            (3, 5, 30.0),
+            (3, 6, 50.0),
+        ]
+        self.assertEqual(list(relations), expected)

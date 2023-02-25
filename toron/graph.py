@@ -6,8 +6,10 @@ from itertools import (
     groupby,
 )
 from ._typing import (
+    Iterable,
     Literal,
     Optional,
+    Tuple,
     TypeAlias,
 )
 
@@ -137,6 +139,38 @@ class _EdgeMapper(object):
             parameters = ((run_id, index_id) for run_id in run_ids)
             sql = f'INSERT INTO temp.{side}_matches VALUES (?, ?, NULL)'
             self.cur.executemany(sql, parameters)
+
+    def get_relations(
+        self, side: Literal['left', 'right']
+    ) -> Iterable[Tuple[int, int, float]]:
+        """Returns an iterable of relations going into the table on the
+        given *side* (coming from the other side).
+
+        The following example gets an iterable of incoming relations
+        for the right-side table (coming from the left and going to
+        the right)::
+
+            >>> relations = mapper.get_relations('right')
+        """
+        if side == 'left':
+            other_side = 'right'
+        elif side == 'right':
+            other_side = 'left'
+        else:
+            msg = f"side must be 'left' or 'right', got {side!r}"
+            raise ValueError(msg)
+
+        self.cur.execute(f"""
+            SELECT
+                t2.index_id AS other_index_id,
+                t3.index_id AS index_id,
+                SUM(weight) AS relation_value
+            FROM temp.source_mapping t1
+            JOIN temp.{other_side}_matches t2 USING (run_id)
+            JOIN temp.{side}_matches t3 USING (run_id)
+            GROUP BY t2.index_id, t3.index_id
+        """)
+        return self.cur
 
     def close(self) -> None:
         self.cur.close()
