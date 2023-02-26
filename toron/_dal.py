@@ -1634,7 +1634,7 @@ class DataAccessLayer(object):
 
     def static_disaggregate(
         self, **filter_rows_where: str
-    ) -> Generator[Dict[str, Union[str, float]], None, None]:
+    ) -> Iterable[Tuple]:
         """Return a generator that yields disaggregated quantities
         calculated using only pre-determined weights.
         """
@@ -1702,6 +1702,7 @@ class DataAccessLayer(object):
 
             # Execute SQL and yield result rows.
             cur.execute(final_sql, parameters)
+            row: Tuple
             for row in cur:
                 yield row
 
@@ -1775,7 +1776,7 @@ class DataAccessLayer(object):
         self,
         match_attributes: Optional[Sequence[str]] = None,
         **filter_rows_where: str,
-    ) -> Generator[Dict[str, Union[str, float]], None, None]:
+    ) -> Iterable[Tuple]:
         """Return a generator that yields disaggregated quantities
         calculated using previously disaggregated quantities as
         weights (when available). And when no previously disaggregated
@@ -1861,6 +1862,7 @@ class DataAccessLayer(object):
 
             # Execute SQL and yield result rows.
             cur.execute(final_sql, parameters)
+            row: Tuple
             for row in cur:
                 yield row
 
