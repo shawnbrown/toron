@@ -1634,7 +1634,7 @@ class DataAccessLayer(object):
 
     def static_disaggregate(
         self, **filter_rows_where: str
-    ) -> Iterable[Tuple]:
+    ) -> Iterable[Tuple[int, Dict[str, str], float]]:
         """Return a generator that yields disaggregated quantities
         calculated using only pre-determined weights.
         """
@@ -1694,7 +1694,7 @@ class DataAccessLayer(object):
                     all_quantities AS (
                         {disaggregated_quantities}
                     )
-                SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
+                SELECT t1.index_id, t2.attributes, SUM(t2.quantity_value) AS quantity_value
                 FROM main.node_index t1
                 JOIN all_quantities t2 USING (index_id){where_clause}
                 GROUP BY {', '.join(f't1.{x}' for x in normalized_cols)}, t2.attributes
@@ -1702,7 +1702,7 @@ class DataAccessLayer(object):
 
             # Execute SQL and yield result rows.
             cur.execute(final_sql, parameters)
-            row: Tuple
+            row: Tuple[int, Dict[str, str], float]  # Should match SELECT above.
             for row in cur:
                 yield row
 

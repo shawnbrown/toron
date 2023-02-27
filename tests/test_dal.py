@@ -2196,8 +2196,8 @@ class TestStaticDisaggregate(unittest.TestCase):
     @staticmethod
     def make_hashable(iterable):
         """Helper function to make disaggregation rows hashable."""
-        func = lambda a, b, c, d, e: (a, b, c, frozenset(d.items()), e)
-        return {func(*x) for x in iterable}
+        func = lambda a, b, c: (a, frozenset(b.items()), c)
+        return {func(*row) for row in iterable}
 
     def test_disaggregate(self):
         # Add data for test.
@@ -2217,23 +2217,23 @@ class TestStaticDisaggregate(unittest.TestCase):
 
         results = self.dal.static_disaggregate()
         expected = [
-            (1, 'A', 'x', {'attr1': 'foo'}, 18.0),
-            (2, 'A', 'y', {'attr1': 'foo'}, 29.0),
-            (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
-            (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
+            (1, {'attr1': 'foo'}, 18.0),  # index (1, 'A', 'x')
+            (2, {'attr1': 'foo'}, 29.0),  # index (2, 'A', 'y')
+            (3, {'attr1': 'foo'}, 22.0),  # index (3, 'B', 'x')
+            (4, {'attr1': 'foo'}, 70.0),  # index (4, 'B', 'y')
 
-            (1, 'A', 'x', {'attr1': 'bar'}, 6.0),
-            (2, 'A', 'y', {'attr1': 'bar'}, 9.0),
-            (3, 'B', 'x', {'attr1': 'bar'}, 4.0),
-            (4, 'B', 'y', {'attr1': 'bar'}, 16.0),
+            (1, {'attr1': 'bar'}, 6.0),   # index (1, 'A', 'x')
+            (2, {'attr1': 'bar'}, 9.0),   # index (2, 'A', 'y')
+            (3, {'attr1': 'bar'}, 4.0),   # index (3, 'B', 'x')
+            (4, {'attr1': 'bar'}, 16.0),  # index (4, 'B', 'y')
 
-            (1, 'A', 'x', {'attr1': 'baz'}, 4.0),
-            (2, 'A', 'y', {'attr1': 'baz'}, 6.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
-            (5, 'C', 'x', {'attr1': 'baz'}, 0),
-            (6, 'C', 'y', {'attr1': 'baz'}, 0),
-            (7, 'C', 'z', {'attr1': 'baz'}, 0),
+            (1, {'attr1': 'baz'}, 4.0),   # index (1, 'A', 'x')
+            (2, {'attr1': 'baz'}, 6.0),   # index (2, 'A', 'y')
+            (3, {'attr1': 'baz'}, 3.0),   # index (3, 'B', 'x')
+            (4, {'attr1': 'baz'}, 12.0),  # index (4, 'B', 'y')
+            (5, {'attr1': 'baz'}, 0),     # index (5, 'C', 'x')
+            (6, {'attr1': 'baz'}, 0),     # index (6, 'C', 'y')
+            (7, {'attr1': 'baz'}, 0),     # index (7, 'C', 'z')
         ]
 
         results = self.make_hashable(results)
@@ -2258,13 +2258,13 @@ class TestStaticDisaggregate(unittest.TestCase):
 
         results = self.dal.static_disaggregate()
         expected = [
-            (1, 'A', 'x', {'attr1': 'foo'}, 28.0),  # <- 18 + 6 + 4
-            (2, 'A', 'y', {'attr1': 'foo'}, 44.0),  # <- 29 + 9 + 6
-            (3, 'B', 'x', {'attr1': 'foo'}, 29.0),  # <- 22 + 4 + 3
-            (4, 'B', 'y', {'attr1': 'foo'}, 98.0),  # <- 70 + 16 + 12
-            (5, 'C', 'x', {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
-            (6, 'C', 'y', {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
-            (7, 'C', 'z', {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
+            (1, {'attr1': 'foo'}, 28.0),  # <- 18 + 6 + 4
+            (2, {'attr1': 'foo'}, 44.0),  # <- 29 + 9 + 6
+            (3, {'attr1': 'foo'}, 29.0),  # <- 22 + 4 + 3
+            (4, {'attr1': 'foo'}, 98.0),  # <- 70 + 16 + 12
+            (5, {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
+            (6, {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
+            (7, {'attr1': 'foo'}, 0),  # <- 0 + 0 + 0
         ]
 
         results = self.make_hashable(results)
@@ -2293,18 +2293,18 @@ class TestStaticDisaggregate(unittest.TestCase):
 
         results = self.dal.static_disaggregate()
         expected = [
-            (1, 'A', 'x', {'attr1': 'foo'}, 10.0),
-            (1, 'A', 'x', {'attr1': 'bar'}, 12.0),
-            (2, 'A', 'y', {'attr1': 'foo'}, 21.0),
-            (2, 'A', 'y', {'attr1': 'bar'}, 18.0),
-            (3, 'B', 'x', {'attr1': 'bar'}, 6.75),
-            (4, 'B', 'y', {'attr1': 'bar'}, 27.0),
-            (5, 'C', 'x', {'attr1': 'bar'}, 0.0),
-            (5, 'C', 'x', {'attr1': 'baz'}, 3.0),
-            (6, 'C', 'y', {'attr1': 'bar'}, 0.0),
-            (6, 'C', 'y', {'attr1': 'baz'}, 3.0),
-            (7, 'C', 'z', {'attr1': 'bar'}, 0.0),
-            (7, 'C', 'z', {'attr1': 'baz'}, 3.0),
+            (1, {'attr1': 'foo'}, 10.0),  # index (1, 'A', 'x')
+            (1, {'attr1': 'bar'}, 12.0),  # index (1, 'A', 'x')
+            (2, {'attr1': 'foo'}, 21.0),  # index (2, 'A', 'y')
+            (2, {'attr1': 'bar'}, 18.0),  # index (2, 'A', 'y')
+            (3, {'attr1': 'bar'}, 6.75),  # index (3, 'B', 'x')
+            (4, {'attr1': 'bar'}, 27.0),  # index (4, 'B', 'y')
+            (5, {'attr1': 'bar'}, 0.0),   # index (5, 'C', 'x')
+            (5, {'attr1': 'baz'}, 3.0),   # index (5, 'C', 'x')
+            (6, {'attr1': 'bar'}, 0.0),   # index (6, 'C', 'y')
+            (6, {'attr1': 'baz'}, 3.0),   # index (6, 'C', 'y')
+            (7, {'attr1': 'bar'}, 0.0),   # index (7, 'C', 'z')
+            (7, {'attr1': 'baz'}, 3.0),   # index (7, 'C', 'z')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2329,12 +2329,12 @@ class TestStaticDisaggregate(unittest.TestCase):
         # Filter by index value.
         results = self.dal.static_disaggregate(col1='B')
         expected = [
-            (3, 'B', 'x', {'attr1': 'foo'}, 22.0),
-            (4, 'B', 'y', {'attr1': 'foo'}, 70.0),
-            (3, 'B', 'x', {'attr1': 'bar'}, 4.0),
-            (4, 'B', 'y', {'attr1': 'bar'}, 16.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+            (3, {'attr1': 'foo'}, 22.0),  # index (3, 'B', 'x')
+            (4, {'attr1': 'foo'}, 70.0),  # index (4, 'B', 'y')
+            (3, {'attr1': 'bar'}, 4.0),   # index (3, 'B', 'x')
+            (4, {'attr1': 'bar'}, 16.0),  # index (4, 'B', 'y')
+            (3, {'attr1': 'baz'}, 3.0),   # index (3, 'B', 'x')
+            (4, {'attr1': 'baz'}, 12.0),  # index (4, 'B', 'y')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2343,13 +2343,13 @@ class TestStaticDisaggregate(unittest.TestCase):
         # Filter by attribute value.
         results = self.dal.static_disaggregate(attr1='baz')
         expected = [
-            (1, 'A', 'x', {'attr1': 'baz'}, 4.0),
-            (2, 'A', 'y', {'attr1': 'baz'}, 6.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
-            (5, 'C', 'x', {'attr1': 'baz'}, 0),
-            (6, 'C', 'y', {'attr1': 'baz'}, 0),
-            (7, 'C', 'z', {'attr1': 'baz'}, 0),
+            (1, {'attr1': 'baz'}, 4.0),   # index (1, 'A', 'x')
+            (2, {'attr1': 'baz'}, 6.0),   # index (2, 'A', 'y')
+            (3, {'attr1': 'baz'}, 3.0),   # index (3, 'B', 'x')
+            (4, {'attr1': 'baz'}, 12.0),  # index (4, 'B', 'y')
+            (5, {'attr1': 'baz'}, 0),     # index (5, 'C', 'x')
+            (6, {'attr1': 'baz'}, 0),     # index (6, 'C', 'y')
+            (7, {'attr1': 'baz'}, 0),     # index (7, 'C', 'z')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2358,8 +2358,8 @@ class TestStaticDisaggregate(unittest.TestCase):
         # Filter by index and attribute values.
         results = self.dal.static_disaggregate(col1='B', attr1='baz')
         expected = [
-            (3, 'B', 'x', {'attr1': 'baz'}, 3.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 12.0),
+            (3, {'attr1': 'baz'}, 3.0),   # index (3, 'B', 'x')
+            (4, {'attr1': 'baz'}, 12.0),  # index (4, 'B', 'y')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
