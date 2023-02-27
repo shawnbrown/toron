@@ -171,11 +171,12 @@ class _EdgeMapper(object):
         return self.cur
 
     def close(self) -> None:
-        self.cur.close()
-        self.con.close()
+        try:
+            self.cur.close()  # Fails if Connection is not open.
+        except sqlite3.ProgrammingError:
+            pass
 
-    def __del__(self) -> None:
-        self.close()
+        self.con.close()
 
 
 Direction: TypeAlias = Literal['->', '-->', '<->', '<-->', '<-', '<--']
@@ -214,6 +215,5 @@ def add_edge(
                 filename_hint=left_node._dal.data_source or NOVALUE,
             )
 
-    except Exception:
+    finally:
         mapper.close()
-        raise
