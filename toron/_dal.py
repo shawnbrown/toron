@@ -1689,6 +1689,7 @@ class DataAccessLayer(object):
             else:
                 where_clause = ''
 
+            # Define and execute SELECT query.
             final_sql = f"""
                 WITH
                     all_quantities AS (
@@ -1699,10 +1700,10 @@ class DataAccessLayer(object):
                 JOIN all_quantities t2 USING (index_id){where_clause}
                 GROUP BY {', '.join(f't1.{x}' for x in normalized_cols)}, t2.attributes
             """
-
-            # Execute SQL and yield result rows.
             cur.execute(final_sql, parameters)
-            row: Tuple[int, Dict[str, str], float]  # Should match SELECT above.
+
+            # Annotate row variable and yield selected results.
+            row: Tuple[int, Dict[str, str], float]
             for row in cur:
                 yield row
 
@@ -1850,7 +1851,7 @@ class DataAccessLayer(object):
             else:
                 where_clause = ''
 
-            # Prepare final SQL statement.
+            # Define and execute SELECT query.
             final_sql = f"""
                 WITH
                     {all_cte_statements}
@@ -1859,9 +1860,9 @@ class DataAccessLayer(object):
                 JOIN {current_cte} t2 USING (index_id){where_clause}
                 GROUP BY t2.index_id, t2.attributes
             """
-
-            # Execute SQL and yield result rows.
             cur.execute(final_sql, parameters)
+
+            # Annotate row variable and yield selected results.
             row: Tuple[int, Dict[str, str], float]
             for row in cur:
                 yield row
