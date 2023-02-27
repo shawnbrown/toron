@@ -2409,8 +2409,8 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
     @staticmethod
     def make_hashable(iterable):
         """Helper function to make disaggregation rows hashable."""
-        func = lambda a, b, c, d, e: (a, b, c, frozenset(d.items()), e)
-        return {func(*x) for x in iterable}
+        func = lambda a, b, c: (a, frozenset(b.items()), c)
+        return {func(*row) for row in iterable}
 
     def test_adaptive_disaggregate_make_sql(self):
         self.maxDiff = None
@@ -2527,13 +2527,13 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
 
         results = self.dal.adaptive_disaggregate()
         expected = [
-            (1, 'A', 'x', {"attr1": "foo"}, 32.375),
-            (2, 'A', 'y', {"attr1": "foo"}, 48.5625),
-            (3, 'B', 'x', {"attr1": "foo"}, 20.8125),
-            (4, 'B', 'y', {"attr1": "foo"}, 83.25),
-            (5, 'C', 'x', {"attr1": "foo"}, 0.0),
-            (6, 'C', 'y', {"attr1": "foo"}, 0.0),
-            (7, 'C', 'z', {"attr1": "foo"}, 0.0),
+            (1, {"attr1": "foo"}, 32.375),   # index (1, 'A', 'x')
+            (2, {"attr1": "foo"}, 48.5625),  # index (2, 'A', 'y')
+            (3, {"attr1": "foo"}, 20.8125),  # index (3, 'B', 'x')
+            (4, {"attr1": "foo"}, 83.25),    # index (4, 'B', 'y')
+            (5, {"attr1": "foo"}, 0.0),      # index (5, 'C', 'x')
+            (6, {"attr1": "foo"}, 0.0),      # index (6, 'C', 'y')
+            (7, {"attr1": "foo"}, 0.0),      # index (7, 'C', 'z')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2555,13 +2555,13 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
 
         results = self.dal.adaptive_disaggregate()
         expected = [
-            (1, 'A', 'x', {"attr1": "foo"}, 0.0),  # <- Adaptive weight is 0 here.
-            (2, 'A', 'y', {"attr1": "foo"}, 65.625),
-            (3, 'B', 'x', {"attr1": "foo"}, 39.375),
-            (4, 'B', 'y', {"attr1": "foo"}, 0.0),  # <- Adaptive weight is 0 here.
-            (5, 'C', 'x', {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
-            (6, 'C', 'y', {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
-            (7, 'C', 'z', {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
+            (1, {"attr1": "foo"}, 0.0),  # <- Adaptive weight is 0 here.
+            (2, {"attr1": "foo"}, 65.625),
+            (3, {"attr1": "foo"}, 39.375),
+            (4, {"attr1": "foo"}, 0.0),  # <- Adaptive weight is 0 here.
+            (5, {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
+            (6, {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
+            (7, {"attr1": "foo"}, 0.0),  # <- Static and adaptive weight are 0.
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2590,27 +2590,34 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
 
         results = self.dal.adaptive_disaggregate()
         expected = [
-            (1, 'A', 'x', {'attr1': 'foo'}, 6.0),
-            (1, 'A', 'x', {'attr1': 'bar'}, 10.0),
-            (1, 'A', 'x', {'attr1': 'baz'}, 2.0),
-            (2, 'A', 'y', {'attr1': 'foo'}, 18.0),
-            (2, 'A', 'y', {'attr1': 'bar'}, 20.0),
-            (2, 'A', 'y', {'attr1': 'baz'}, 4.0),
-            (3, 'B', 'x', {'attr1': 'foo'}, 4.0),
-            (3, 'B', 'x', {'attr1': 'bar'}, 0.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
-            (4, 'B', 'y', {'attr1': 'foo'}, 8.0),
-            (4, 'B', 'y', {'attr1': 'bar'}, 0.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
-            (5, 'C', 'x', {'attr1': 'foo'}, 3.0),
-            (5, 'C', 'x', {'attr1': 'bar'}, 0.0),
-            (5, 'C', 'x', {'attr1': 'baz'}, 0.0),
-            (6, 'C', 'y', {'attr1': 'foo'}, 3.0),
-            (6, 'C', 'y', {'attr1': 'bar'}, 0.0),
-            (6, 'C', 'y', {'attr1': 'baz'}, 0.0),
-            (7, 'C', 'z', {'attr1': 'foo'}, 3.0),
-            (7, 'C', 'z', {'attr1': 'bar'}, 0.0),
-            (7, 'C', 'z', {'attr1': 'baz'}, 0.0),
+            # index (1, 'A', 'x'):
+            (1, {'attr1': 'foo'}, 6.0),
+            (1, {'attr1': 'bar'}, 10.0),
+            (1, {'attr1': 'baz'}, 2.0),
+            # index (2, 'A', 'y'):
+            (2, {'attr1': 'foo'}, 18.0),
+            (2, {'attr1': 'bar'}, 20.0),
+            (2, {'attr1': 'baz'}, 4.0),
+            # index (3, 'B', 'x'):
+            (3, {'attr1': 'foo'}, 4.0),
+            (3, {'attr1': 'bar'}, 0.0),
+            (3, {'attr1': 'baz'}, 1.25),
+            # index (4, 'B', 'y'):
+            (4, {'attr1': 'foo'}, 8.0),
+            (4, {'attr1': 'bar'}, 0.0),
+            (4, {'attr1': 'baz'}, 2.5),
+            # index (5, 'C', 'x'):
+            (5, {'attr1': 'foo'}, 3.0),
+            (5, {'attr1': 'bar'}, 0.0),
+            (5, {'attr1': 'baz'}, 0.0),
+            # index (6, 'C', 'y'):
+            (6, {'attr1': 'foo'}, 3.0),
+            (6, {'attr1': 'bar'}, 0.0),
+            (6, {'attr1': 'baz'}, 0.0),
+            # index (7, 'C', 'z'):
+            (7, {'attr1': 'foo'}, 3.0),
+            (7, {'attr1': 'bar'}, 0.0),
+            (7, {'attr1': 'baz'}, 0.0),
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2636,12 +2643,12 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         # Filter by index value.
         results = self.dal.adaptive_disaggregate(col1='B')
         expected = [
-            (3, 'B', 'x', {'attr1': 'foo'}, 4.0),
-            (3, 'B', 'x', {'attr1': 'bar'}, 0.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
-            (4, 'B', 'y', {'attr1': 'foo'}, 8.0),
-            (4, 'B', 'y', {'attr1': 'bar'}, 0.0),
-            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
+            (3, {'attr1': 'foo'}, 4.0),   # index (3, 'B', 'x')
+            (3, {'attr1': 'bar'}, 0.0),   # index (3, 'B', 'x')
+            (3, {'attr1': 'baz'}, 1.25),  # index (3, 'B', 'x')
+            (4, {'attr1': 'foo'}, 8.0),   # index (4, 'B', 'y')
+            (4, {'attr1': 'bar'}, 0.0),   # index (4, 'B', 'y')
+            (4, {'attr1': 'baz'}, 2.5),   # index (4, 'B', 'y')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2650,13 +2657,13 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         # Filter by attribute value.
         results = self.dal.adaptive_disaggregate(attr1='baz')
         expected = [
-            (1, 'A', 'x', {'attr1': 'baz'}, 2.0),
-            (2, 'A', 'y', {'attr1': 'baz'}, 4.0),
-            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
-            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
-            (5, 'C', 'x', {'attr1': 'baz'}, 0.0),
-            (6, 'C', 'y', {'attr1': 'baz'}, 0.0),
-            (7, 'C', 'z', {'attr1': 'baz'}, 0.0),
+            (1, {'attr1': 'baz'}, 2.0),   # index (1, 'A', 'x')
+            (2, {'attr1': 'baz'}, 4.0),   # index (2, 'A', 'y')
+            (3, {'attr1': 'baz'}, 1.25),  # index (3, 'B', 'x')
+            (4, {'attr1': 'baz'}, 2.5),   # index (4, 'B', 'y')
+            (5, {'attr1': 'baz'}, 0.0),   # index (5, 'C', 'x')
+            (6, {'attr1': 'baz'}, 0.0),   # index (6, 'C', 'y')
+            (7, {'attr1': 'baz'}, 0.0),   # index (7, 'C', 'z')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2665,8 +2672,8 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         # Filter by index and attribute values.
         results = self.dal.adaptive_disaggregate(col1='B', attr1='baz')
         expected = [
-            (3, 'B', 'x', {'attr1': 'baz'}, 1.25),
-            (4, 'B', 'y', {'attr1': 'baz'}, 2.5),
+            (3, {'attr1': 'baz'}, 1.25),  # index (3, 'B', 'x')
+            (4, {'attr1': 'baz'}, 2.5),   # index (4, 'B', 'y')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)
@@ -2693,17 +2700,17 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         results = self.dal.adaptive_disaggregate(match_attrs_keys)
 
         expected = [
-            (1, 'A', 'x', {'attr1': 'foo', 'attr2': 'a'}, 32.375),
-            (2, 'A', 'y', {'attr1': 'foo', 'attr2': 'a'}, 18.5625),
-            (2, 'A', 'y', {'attr1': 'foo', 'attr2': 'b'}, 30.0),
-            (3, 'B', 'x', {'attr1': 'foo', 'attr2': 'b'}, 3.0),
-            (3, 'B', 'x', {'attr1': 'foo', 'attr2': 'c'}, 15.0),
-            (3, 'B', 'x', {'attr1': 'foo', 'attr2': 'a'}, 2.8125),
-            (4, 'B', 'y', {'attr1': 'foo', 'attr2': 'a'}, 71.25),
-            (4, 'B', 'y', {'attr1': 'foo', 'attr2': 'b'}, 12.0),
-            (5, 'C', 'x', {'attr1': 'foo', 'attr2': 'a'}, 0.0),
-            (6, 'C', 'y', {'attr1': 'foo', 'attr2': 'a'}, 0.0),
-            (7, 'C', 'z', {'attr1': 'foo', 'attr2': 'a'}, 0.0),
+            (1, {'attr1': 'foo', 'attr2': 'a'}, 32.375),   # index (1, 'A', 'x')
+            (2, {'attr1': 'foo', 'attr2': 'a'}, 18.5625),  # index (2, 'A', 'y')
+            (2, {'attr1': 'foo', 'attr2': 'b'}, 30.0),     # index (2, 'A', 'y')
+            (3, {'attr1': 'foo', 'attr2': 'b'}, 3.0),      # index (3, 'B', 'x')
+            (3, {'attr1': 'foo', 'attr2': 'c'}, 15.0),     # index (3, 'B', 'x')
+            (3, {'attr1': 'foo', 'attr2': 'a'}, 2.8125),   # index (3, 'B', 'x')
+            (4, {'attr1': 'foo', 'attr2': 'a'}, 71.25),    # index (4, 'B', 'y')
+            (4, {'attr1': 'foo', 'attr2': 'b'}, 12.0),     # index (4, 'B', 'y')
+            (5, {'attr1': 'foo', 'attr2': 'a'}, 0.0),      # index (5, 'C', 'x')
+            (6, {'attr1': 'foo', 'attr2': 'a'}, 0.0),      # index (6, 'C', 'y')
+            (7, {'attr1': 'foo', 'attr2': 'a'}, 0.0),      # index (7, 'C', 'z')
         ]
         results = self.make_hashable(results)
         expected = self.make_hashable(expected)

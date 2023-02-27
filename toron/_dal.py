@@ -1776,7 +1776,7 @@ class DataAccessLayer(object):
         self,
         match_attributes: Optional[Sequence[str]] = None,
         **filter_rows_where: str,
-    ) -> Iterable[Tuple]:
+    ) -> Iterable[Tuple[int, Dict[str, str], float]]:
         """Return a generator that yields disaggregated quantities
         calculated using previously disaggregated quantities as
         weights (when available). And when no previously disaggregated
@@ -1854,7 +1854,7 @@ class DataAccessLayer(object):
             final_sql = f"""
                 WITH
                     {all_cte_statements}
-                SELECT t1.*, t2.attributes, SUM(t2.quantity_value) AS quantity_value
+                SELECT t1.index_id, t2.attributes, SUM(t2.quantity_value) AS quantity_value
                 FROM main.node_index t1
                 JOIN {current_cte} t2 USING (index_id){where_clause}
                 GROUP BY t2.index_id, t2.attributes
@@ -1862,7 +1862,7 @@ class DataAccessLayer(object):
 
             # Execute SQL and yield result rows.
             cur.execute(final_sql, parameters)
-            row: Tuple
+            row: Tuple[int, Dict[str, str], float]
             for row in cur:
                 yield row
 
