@@ -262,8 +262,9 @@ class _QuantityIterator(object):
                 SELECT
                     index_id,
                     attributes,
-                    quantity_value
+                    SUM(quantity_value) AS quantity_value
                 FROM temp_quantities
+                GROUP BY index_id, attributes
             """)
             try:
                 for index_id, attributes, quantity_value in cursor:

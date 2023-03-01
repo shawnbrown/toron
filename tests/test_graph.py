@@ -169,3 +169,21 @@ class TestQuantityIterator(unittest.TestCase):
         ]
         iterator = _QuantityIterator('0000-00-00-00-000000', data)
         self.assertEqual(list(iterator), data)
+
+    def test_aggregated_output(self):
+        iterator = _QuantityIterator('0000-00-00-00-000000', [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'foo'}, 2.5),
+            (3, {'a': 'foo'}, 3.0),
+            (4, {'a': 'foo'}, 3.0),  # <- Gets aggregated.
+            (4, {'a': 'foo'}, 2.0),  # <- Gets aggregated.
+            (4, {'a': 'foo'}, 4.0),  # <- Gets aggregated.
+        ])
+
+        expected = [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'foo'}, 2.5),
+            (3, {'a': 'foo'}, 3.0),
+            (4, {'a': 'foo'}, 9.0),  # <- Aggregated from 3.0 + 2.0 + 4.0
+        ]
+        self.assertEqual(list(iterator), expected)
