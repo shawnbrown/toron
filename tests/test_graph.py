@@ -1,11 +1,13 @@
 """Tests for toron/graph.py module."""
 
 import unittest
+from collections.abc import Iterator
 
 from toron.node import Node
 from toron.graph import (
     add_edge,
     _EdgeMapper,
+    _QuantityIterator,
 )
 
 
@@ -145,3 +147,25 @@ class TestAddEdge(TwoNodesTestCase):
             (7, 1, 0, 0,  0.0, 1.0,   None),
         ]
         self.assertEqual(results, expected)
+
+
+class TestQuantityIterator(unittest.TestCase):
+    def test_iterator_protocol(self):
+        iterator = _QuantityIterator('0000-00-00-00-000000', [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'foo'}, 2.5),
+            (3, {'a': 'foo'}, 3.0),
+            (4, {'a': 'foo'}, 9.0),
+        ])
+        self.assertIs(iter(iterator), iter(iterator))
+        self.assertIsInstance(iterator, Iterator)
+
+    def test_unchanged_data(self):
+        data = [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'foo'}, 2.5),
+            (3, {'a': 'foo'}, 3.0),
+            (4, {'a': 'foo'}, 9.0),
+        ]
+        iterator = _QuantityIterator('0000-00-00-00-000000', data)
+        self.assertEqual(list(iterator), data)
