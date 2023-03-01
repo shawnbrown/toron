@@ -1,6 +1,9 @@
 """Graph implementation and functions for the Toron project."""
-import json
 import sqlite3
+from json import (
+    dumps as _dumps,
+    loads as _loads,
+)
 from itertools import (
     compress,
     groupby,
@@ -88,8 +91,8 @@ class _EdgeMapper(object):
         self.right_keys = list(compress(fieldnames, right_mask))
 
         for row in iterator:
-            left_labels = json.dumps(list(compress(row, left_mask)))
-            right_labels = json.dumps(list(compress(row, right_mask)))
+            left_labels = _dumps(list(compress(row, left_mask)))
+            right_labels = _dumps(list(compress(row, right_mask)))
             weight = row[weight_pos]
             sql = 'INSERT INTO temp.source_mapping VALUES (NULL, ?, ?, ?)'
             self.cur.execute(sql, (left_labels, right_labels, weight))
@@ -116,7 +119,7 @@ class _EdgeMapper(object):
         grouped = groupby(self.cur, key=lambda row: row[0])
 
         # Format keys as dictionary, format groups as list of run_ids.
-        format_key = lambda x: dict(zip(keys, json.loads(x)))
+        format_key = lambda x: dict(zip(keys, _loads(x)))
         format_group = lambda g: [x[1] for x in g]
         items = ((format_key(k), format_group(g)) for k, g in grouped)
 
