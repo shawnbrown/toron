@@ -3724,3 +3724,63 @@ class TestAddEdge(unittest.TestCase):
             (5, 1, 0, 0,   0.0, 1.0, None),
         ]
         self.assertEqual(results, expected)
+
+
+class TestTranslate(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        data = [
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],  # <- index_id=1
+            ['a1', 'b1', 'c2'],  # <- index_id=2
+            ['a1', 'b2', 'c3'],  # <- index_id=3
+            ['a1', 'b2', 'c4'],  # <- index_id=4
+        ]
+        self.dal.add_index_records(data)
+
+        self.dal.add_incoming_edge(
+            unique_id='00000000-0000-0000-0000-000000000000',
+            name='edge 1',
+            relations=[
+                (1, 1,  39.0),  # proportion: 0.6
+                (1, 2,  26.0),  # proportion: 0.4
+                (2, 2,  16.0),  # proportion: 1.0
+                (3, 2,  50.0),  # proportion: 0.250
+                (3, 3,  25.0),  # proportion: 0.125
+                (3, 4, 125.0),  # proportion: 0.625
+                (4, 3,  64.0),  # proportion: 1.0
+                (5, 3,  19.0),  # proportion: 0.38
+                (5, 4,  31.0),  # proportion: 0.62
+                (0, 0,   0.0),  # proportion: 1.0
+            ],
+            description='Edge one description.',
+            selectors=['[foo="bar"]'],
+            filename_hint='other-file.toron',
+        )
+        #print(self.cur.execute('SELECT * FROM main.relation').fetchall())
+
+    @unittest.expectedFailure
+    def test_basics(self):
+        quantities = [
+            (1, {'foo': 'bar'}, 100),
+            (2, {'foo': 'bar'}, 100),
+            (3, {'foo': 'bar'}, 100),
+            (4, {'foo': 'bar'}, 100),
+            (5, {'foo': 'bar'}, 100),
+        ]
+        results = self.dal.translate(quantities)
+        expected = [
+            (1, {'foo': 'bar'}, 60),
+            (2, {'foo': 'bar'}, 165),
+            (3, {'foo': 'bar'}, 150.5),
+            (4, {'foo': 'bar'}, 124.5),
+        ]
+        self.assertEqual(list(results), expected)

@@ -2375,6 +2375,12 @@ class DataAccessLayer(object):
             self._refresh_other_index_hash(cur, edge_id)
             self._refresh_is_locally_complete(cur, edge_id)
 
+    def translate(
+        self, data: Iterable[Tuple[int, Dict[str, str], float]],
+    ) -> Iterable[Tuple[int, Dict[str, str], float]]:
+        """Compute crosswalk for incoming data and return result."""
+        raise NotImplementedError
+
 
 class DataAccessLayerPre35(DataAccessLayer):
     """This is a subclass of DataAccessLayer that supports SQLite
