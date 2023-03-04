@@ -12,11 +12,17 @@ Standard Library and may be imported.
 
 import csv
 import hashlib
-from itertools import chain
 import re
+import sqlite3
 from functools import wraps
+from itertools import chain
+from json import (
+    dumps as _dumps,
+    loads as _loads,
+)
 from ._typing import (
     Callable,
+    Dict,
     Generator,
     Hashable,
     Iterable,
@@ -24,6 +30,7 @@ from ._typing import (
     Mapping,
     Optional,
     Sequence,
+    Tuple,
     TypeAlias,
     Union,
     TYPE_CHECKING,
@@ -418,3 +425,68 @@ NOVALUE = type('NoValueType', (object,), {
     '__repr__': lambda self: '<no value>',
     '__bool__': lambda self: False,  # Object is falsy.
 })()
+
+
+class QuantityIterator(object):
+    """An iterator to temporarily store disaggregated quantity data.
+
+    This object is used to to store large amounts of quantity data
+    on drive rather than in memory. Internally, the iterator opens a
+    temporary file and stores its incoming data in a SQLite database.
+    The temporary file remains open until the iterator is exhausted
+    or until the close() method is called.
+    """
+    def __init__(self,
+        unique_id: str,
+        data: Iterable[Tuple[int, Dict[str, str], float]],
+    ) -> None:
+        self.unique_id = unique_id
+
+        # Create a connection and a temporary table.
+        connection = sqlite3.connect('')  # <- Using '' makes a temp file.
+
+        cursor = connection.execute("""
+            CREATE TEMP TABLE temp_quantities (
+                index_id INTEGER NOT NULL,
+                attributes TEXT NOT NULL,
+                quantity_value REAL NOT NULL
+            )
+        """)
+
+        # Populate the temporary table with the given data.
+        cursor.executemany(
+            'INSERT INTO temp.temp_quantities VALUES(?, ?, ?)',
+            ((a, _dumps(b, sort_keys=True), c) for a, b, c in data),
+        )
+
+        # Define a generator to wrap the connection and cursor objects
+        # and close them after iteration.
+        def generator(connection, cursor):
+            cursor.execute("""
+                SELECT
+                    index_id,
+                    attributes,
+                    SUM(quantity_value) AS quantity_value
+                FROM temp_quantities
+                GROUP BY index_id, attributes
+            """)
+            try:
+                for index_id, attributes, quantity_value in cursor:
+                    yield index_id, _loads(attributes), quantity_value
+            finally:
+                # Space used by the temp table and temp file are reclaimed
+                # after the connection is closed (the associated file gets
+                # automatically removed).
+                cursor.close()
+                connection.close()
+
+        self._generator = generator(connection, cursor)
+
+    def close(self) -> None:
+        self._generator.close()
+
+    def __next__(self) -> Tuple[int, Dict[str, str], float]:
+        return next(self._generator)
+
+    def __iter__(self):
+        return self

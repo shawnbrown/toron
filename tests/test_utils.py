@@ -3,6 +3,7 @@
 import csv
 import io
 import unittest
+from collections.abc import Iterator
 
 import pandas
 
@@ -13,6 +14,7 @@ from toron._utils import (
     wide_to_narrow,
     make_hash,
     eagerly_initialize,
+    QuantityIterator,
 )
 
 
@@ -450,3 +452,43 @@ class TestEagerlyInitialize(unittest.TestCase):
         decorated = eagerly_initialize(self.dummy_generator)  # <- Apply decorator.
         with self.assertRaises(AssertionError):
             gen = decorated(False)  # <- Raises error on instantiation.
+
+
+class TestQuantityIterator(unittest.TestCase):
+    def test_iterator_protocol(self):
+        iterator = QuantityIterator('0000-00-00-00-000000', [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'foo'}, 2.5),
+            (3, {'a': 'foo'}, 3.0),
+            (4, {'a': 'foo'}, 9.0),
+        ])
+        self.assertIs(iter(iterator), iter(iterator))
+        self.assertIsInstance(iterator, Iterator)
+
+    def test_unchanged_data(self):
+        data = [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'foo'}, 2.5),
+            (3, {'a': 'foo'}, 3.0),
+            (4, {'a': 'foo'}, 9.0),
+        ]
+        iterator = QuantityIterator('0000-00-00-00-000000', data)
+        self.assertEqual(list(iterator), data)
+
+    def test_aggregated_output(self):
+        iterator = QuantityIterator('0000-00-00-00-000000', [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'foo'}, 2.5),
+            (3, {'a': 'foo'}, 3.0),
+            (4, {'a': 'foo'}, 3.0),  # <- Gets aggregated.
+            (4, {'a': 'foo'}, 2.0),  # <- Gets aggregated.
+            (4, {'a': 'foo'}, 4.0),  # <- Gets aggregated.
+        ])
+
+        expected = [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'foo'}, 2.5),
+            (3, {'a': 'foo'}, 3.0),
+            (4, {'a': 'foo'}, 9.0),  # <- Aggregated from 3.0 + 2.0 + 4.0
+        ]
+        self.assertEqual(list(iterator), expected)
