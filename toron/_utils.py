@@ -440,6 +440,20 @@ class QuantityIterator(object):
         unique_id: str,
         data: Iterable[Tuple[int, Dict[str, str], float]],
     ) -> None:
+        """Initialize iterator (create and populate temp database).
+
+        The temporary database consists of a single table:
+
+        .. code-block:: text
+
+            +-----------------+
+            | temp_quantities |
+            +-----------------+
+            | index_id        |
+            | attributes      |
+            | quantity_value  |
+            +-----------------+
+        """
         self.unique_id = unique_id
 
         # Create a connection and a temporary table.
