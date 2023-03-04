@@ -497,6 +497,11 @@ class QuantityIterator(object):
         self._generator = generator(connection, cursor)
 
     def close(self) -> None:
+        """Close iterator early (removes data from drive).
+
+        Once the iterator is exhausted, it is automatically cleaned-up
+        and calls to the ``close()`` method have no additional effect.
+        """
         self._generator.close()
 
     def __next__(self) -> Tuple[int, Dict[str, str], float]:
