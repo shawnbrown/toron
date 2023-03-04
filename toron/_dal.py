@@ -56,6 +56,7 @@ from ._utils import (
     make_hash,
     eagerly_initialize,
     NOVALUE,
+    QuantityIterator,
 )
 
 
@@ -2376,8 +2377,8 @@ class DataAccessLayer(object):
             self._refresh_is_locally_complete(cur, edge_id)
 
     def translate(
-        self, data: Iterable[Tuple[int, Dict[str, str], float]],
-    ) -> Iterable[Tuple[int, Dict[str, str], float]]:
+        self, data: QuantityIterator,
+    ) -> QuantityIterator:
         """Compute crosswalk for incoming data and return result."""
         raise NotImplementedError
 
