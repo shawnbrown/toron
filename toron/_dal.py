@@ -6,7 +6,10 @@ import sqlite3
 import sys
 import tempfile
 import uuid
-from collections import Counter
+from collections import (
+    Counter,
+    defaultdict,
+)
 from contextlib import contextmanager, nullcontext
 from itertools import (
     chain,
@@ -2376,11 +2379,49 @@ class DataAccessLayer(object):
             self._refresh_other_index_hash(cur, edge_id)
             self._refresh_is_locally_complete(cur, edge_id)
 
+    @staticmethod
+    def _translate_generator(
+        cursor: sqlite3.Cursor, data: QuantityIterator
+    ) -> Iterable[Tuple[int, Dict[str, str], float]]:
+        sql = """
+            SELECT edge_id, selectors
+            FROM main.edge
+            WHERE other_unique_id=? AND is_locally_complete=1
+        """
+        cursor.execute(sql, (data.unique_id,))
+        get_edge_id = GetMatchingKey(cursor.fetchall(), default=1)
+
+        grouped = groupby(data, key=lambda x: x[0])  # Group by other_index_id.
+
+        for other_index_id, group in grouped:
+            sql = """
+                SELECT edge_id, index_id, proportion
+                FROM main.edge
+                JOIN main.relation USING (edge_id)
+                WHERE
+                    other_unique_id=? AND is_locally_complete=1
+                    AND other_index_id=?
+            """
+            cursor.execute(sql, (data.unique_id, other_index_id))
+
+            proportions: Dict[int, Dict[int, float]] = defaultdict(dict)
+            for edge_id, index_id, proportion in cursor:
+                proportions[edge_id][index_id] = proportion
+
+            for _, attributes, quantity_value in group:
+                edge_id = get_edge_id(attributes)
+                for index_id, proportion in proportions[edge_id].items():
+                    yield index_id, attributes, quantity_value * proportion
+
     def translate(
         self, data: QuantityIterator,
     ) -> QuantityIterator:
         """Compute crosswalk for incoming data and return result."""
-        raise NotImplementedError
+        with self._transaction(method=None) as cur:
+            translated = self._translate_generator(cur, data)
+            iterator = QuantityIterator(self.unique_id, translated)
+
+        return iterator
 
 
 class DataAccessLayerPre35(DataAccessLayer):

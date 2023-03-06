@@ -28,6 +28,7 @@ from toron._dal import _temp_files_to_delete_atexit
 from toron._utils import (
     ToronError,
     ToronWarning,
+    QuantityIterator,
 )
 
 
@@ -3769,16 +3770,56 @@ class TestTranslate(unittest.TestCase):
         )
         #print(self.cur.execute('SELECT * FROM main.relation').fetchall())
 
-    @unittest.expectedFailure
-    def test_basics(self):
-        quantities = [
-            (1, {'foo': 'bar'}, 100),
-            (2, {'foo': 'bar'}, 100),
-            (3, {'foo': 'bar'}, 100),
-            (4, {'foo': 'bar'}, 100),
-            (5, {'foo': 'bar'}, 100),
+    def test_translate_generator(self):
+        quantities = QuantityIterator(
+            '00000000-0000-0000-0000-000000000000',
+            [
+                (1, {'foo': 'bar'}, 100),
+                (2, {'foo': 'bar'}, 100),
+                (3, {'foo': 'bar'}, 100),
+                (4, {'foo': 'bar'}, 100),
+                (5, {'foo': 'bar'}, 100),
+            ],
+        )
+        results = self.dal._translate_generator(self.cur, quantities)
+
+        expected = [
+            (1, {'foo': 'bar'}, 60.0),
+            (2, {'foo': 'bar'}, 40.0),
+            (2, {'foo': 'bar'}, 100.0),
+            (2, {'foo': 'bar'}, 25.0),
+            (3, {'foo': 'bar'}, 12.5),
+            (4, {'foo': 'bar'}, 62.5),
+            (3, {'foo': 'bar'}, 100.0),
+            (3, {'foo': 'bar'}, 38.0),
+            (4, {'foo': 'bar'}, 62.0),
         ]
+        self.assertEqual(list(results), expected)
+
+    def test_simple_case(self):
+        quantities = QuantityIterator(
+            '00000000-0000-0000-0000-000000000000',
+            [
+                (1, {'foo': 'bar'}, 100),
+                (2, {'foo': 'bar'}, 100),
+                (3, {'foo': 'bar'}, 100),
+                (4, {'foo': 'bar'}, 100),
+                (5, {'foo': 'bar'}, 100),
+            ],
+        )
         results = self.dal.translate(quantities)
+
+        self.assertIsInstance(results, QuantityIterator)
+        self.assertNotEqual(
+            quantities.unique_id,
+            results.unique_id,
+            msg='results should NOT match previous unique_id',
+        )
+        self.assertEqual(
+            results.unique_id,
+            self.dal.unique_id,
+            msg='results should match unique_id of node',
+        )
         expected = [
             (1, {'foo': 'bar'}, 60),
             (2, {'foo': 'bar'}, 165),
