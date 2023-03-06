@@ -430,6 +430,9 @@ NOVALUE = type('NoValueType', (object,), {
 class QuantityIterator(object):
     """An iterator to temporarily store disaggregated quantity data.
 
+    When consumed, the iterator returns reaggregated results sorted
+    by index_id.
+
     This object is used to to store large amounts of quantity data
     on drive rather than in memory. Internally, the iterator opens a
     temporary file and stores its incoming data in a SQLite database.
@@ -483,6 +486,7 @@ class QuantityIterator(object):
                     SUM(quantity_value) AS quantity_value
                 FROM temp_quantities
                 GROUP BY index_id, attributes
+                ORDER BY index_id
             """)
             try:
                 for index_id, attributes, quantity_value in cursor:
