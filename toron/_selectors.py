@@ -538,9 +538,10 @@ def convert_text_selectors(selector_json: AnyStr) -> List[CompoundSelector]:
 
 
 class GetMatchingKey(object):
-    """A callable object to get keys for matching selectors.
+    """Makes a function that finds the best matching selector for a
+    given dictionary row.
 
-    .. code-block::
+    Build a match function by providing a collection of selectors::
 
         >>> get_matching_key = GetMatchingKey(
         ...     selectors={
@@ -549,11 +550,19 @@ class GetMatchingKey(object):
         ...     },
         ...     default=1,
         ... )
+
+    Call the function with a dictionary row and it'll return the key
+    of the selector with the greatest *unique* specificity::
+
         >>> get_matching_key({'A': 'xxx'})
         1
         >>> get_matching_key({'B': 'yyy'})
         2
-        >>> get_matching_key({'C': 'zzz'})  # Gets default.
+
+    If there is no match at all or if there is no match with a unique
+    level of specificity, then the default value is returned::
+
+        >>> get_matching_key({'C': 'zzz'})  # Doesn't match a selector.
         1
     """
     def __init__(
@@ -615,4 +624,3 @@ class GetMatchingKey(object):
             return hash(self) == hash(other)
         except TypeError:
             return False
-
