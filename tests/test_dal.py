@@ -3768,6 +3768,26 @@ class TestTranslate(unittest.TestCase):
             selectors=['[foo="bar"]'],
             filename_hint='other-file.toron',
         )
+
+        self.dal.add_incoming_edge(
+            unique_id='00000000-0000-0000-0000-000000000000',
+            name='edge 2',
+            relations=[
+                (1, 1, 32.0),   # proportion: 0.5
+                (1, 2, 32.0),   # proportion: 0.5
+                (2, 2, 15.0),   # proportion: 1.0
+                (3, 2, 85.5),   # proportion: 0.333984375
+                (3, 3, 85.25),  # proportion: 0.3330078125
+                (3, 4, 85.25),  # proportion: 0.3330078125
+                (4, 3, 64.0),   # proportion: 1.0
+                (5, 3, 50.0),   # proportion: 0.5
+                (5, 4, 50.0),   # proportion: 0.5
+                (0, 0,  0.0),   # proportion: 1.0
+            ],
+            description='Edge two description.',
+            selectors=['[foo]'],
+            filename_hint='other-file.toron',
+        )
         #print(self.cur.execute('SELECT * FROM main.relation').fetchall())
 
     def test_translate_generator(self):
@@ -3825,5 +3845,46 @@ class TestTranslate(unittest.TestCase):
             (2, {'foo': 'bar'}, 165),
             (3, {'foo': 'bar'}, 150.5),
             (4, {'foo': 'bar'}, 124.5),
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_handling_multiple_edges(self):
+        """Check that quantities are translated using appropriate edges.
+
+        Quantities should be matched by their attributes to the edge
+        with the greatest unique specificity or the default edge if
+        there is no unique match.
+        """
+        quantities = QuantityIterator(
+            '00000000-0000-0000-0000-000000000000',
+            [
+                # Attributes {'foo': 'bar'} match 'edge 1' ([foo="bar"])
+                # and 'edge 2' ([foo]), but 'edge 1' is used because it
+                # has a greater specificity.
+                (1, {'foo': 'bar'}, 100),
+                (2, {'foo': 'bar'}, 100),
+                (3, {'foo': 'bar'}, 100),
+                (4, {'foo': 'bar'}, 100),
+                (5, {'foo': 'bar'}, 100),
+
+                # Attributes {'foo': 'baz'} match 'edge 2' ([foo]).
+                (1, {'foo': 'baz'}, 100),
+                (2, {'foo': 'baz'}, 100),
+                (3, {'foo': 'baz'}, 100),
+                (4, {'foo': 'baz'}, 100),
+                (5, {'foo': 'baz'}, 100),
+            ],
+        )
+        results = self.dal.translate(quantities)
+
+        expected = [
+            (1, {'foo': 'bar'}, 60.0),          # <- Edge 1
+            (1, {'foo': 'baz'}, 50.0),          # <- Edge 2
+            (2, {'foo': 'bar'}, 165.0),         # <- Edge 1
+            (2, {'foo': 'baz'}, 183.3984375),   # <- Edge 2
+            (3, {'foo': 'bar'}, 150.5),         # <- Edge 1
+            (3, {'foo': 'baz'}, 183.30078125),  # <- Edge 2
+            (4, {'foo': 'bar'}, 124.5),         # <- Edge 1
+            (4, {'foo': 'baz'}, 83.30078125),   # <- Edge 2
         ]
         self.assertEqual(list(results), expected)
