@@ -3135,6 +3135,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             'other-node-1.toron',                   # other_filename_hint
             None,                                   # other_index_hash
             0,                                      # is_locally_complete
+            None,                                   # is_default
         )]
         self.assertEqual(actual, expected)
 
@@ -3156,6 +3157,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             None,                                   # other_filename_hint
             None,                                   # other_index_hash
             0,                                      # is_locally_complete
+            None,                                   # is_default
         )]
         self.assertEqual(actual, expected)
 
@@ -3193,6 +3195,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             'other-node-1.toron',                   # other_filename_hint
             None,                                   # other_index_hash
             0,                                      # is_locally_complete
+            None,                                   # is_default
         )]
         self.assertEqual(actual, expected)
 
@@ -3216,6 +3219,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             'other-node-1.toron',                   # other_filename_hint
             None,                                   # other_index_hash
             0,                                      # is_locally_complete
+            None,                                   # is_default
         )]
         self.assertEqual(actual, expected)
 
@@ -3681,6 +3685,7 @@ class TestAddEdge(unittest.TestCase):
             'other-file.toron',
             '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
             1,  # <- Is locally complete.
+            None,
         )]
         self.assertEqual(results, expected)
 
@@ -3714,6 +3719,7 @@ class TestAddEdge(unittest.TestCase):
             None,
             '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
             0,  # <- Not locally complete.
+            None,
         )]
         self.assertEqual(results, expected)
 

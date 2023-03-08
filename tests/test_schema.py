@@ -431,13 +431,14 @@ class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
             f'other{index}.toron',     # other_filename_hint
             'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',  # other_index_hash
             0,                         # is_complete
+            None,                      # is_default
         )
 
     def test_valid_values(self):
         for index, value in enumerate(self.valid_values):
             parameters = self.make_parameters(index, value)
             with self.subTest(value=value):
-                self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
+                self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
 
     def test_invalid_values(self):
         """Check all `not_an_object` and `malformed_json` values."""
@@ -449,14 +450,14 @@ class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
             parameters = self.make_parameters(index, value)
             with self.subTest(value=value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
+                    self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
 
     def test_none(self):
         """Currently, edge.user_properties allows NULL values (refer to
         the associated CREATE TABLE statement).
         """
         parameters = self.make_parameters('x', None)
-        self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
+        self.cur.execute("INSERT INTO edge VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", parameters)
 
 
 class CheckAttributesMixin(object):

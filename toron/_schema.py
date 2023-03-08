@@ -10,17 +10,18 @@ the application layer:
 
                                  +----------------+
  +----------------------+        | relation       |
- | edge                 |        +----------------+     •••• <Other Node>
- +----------------------+        | relation_id    |     •
+ | edge                 |        +----------------+
+ +----------------------+        | relation_id    |     ••••• <Other Node>
  | edge_id              |------->| edge_id        |     •
- | name                 |  ••••••| other_index_id |<•••••  +----------------+
- | description          |  •  •••| index_id       |<-+     | quantity       |
- | selectors            |  •  •  | relation_value |  |     +----------------+
- | user_properties      |  •  •  | proportion*    |  |     | quantity_id    |
- | other_unique_id      |  •  •  | mapping_level* |  |  +->| _location_id   |
- | other_filename_hint  |  •  •  +----------------+  |  |  | attributes     |
- | other_index_hash*    |<••  •                      |  |  | quantity_value |
- | is_locally_complete* |<•••••    +-----------------+  |  +----------------+
+ | name                 |  ••••••| other_index_id |<•••••
+ | description          |  •  •••| index_id       |<-+     +----------------+
+ | selectors            |  •  •  | relation_value |  |     | quantity       |
+ | user_properties      |  •  •  | proportion*    |  |     +----------------+
+ | other_unique_id      |  •  •  | mapping_level* |  |     | quantity_id    |
+ | other_filename_hint  |  •  •  +----------------+  |  +->| _location_id   |
+ | other_index_hash*    |<••  •                      |  |  | attributes     |
+ | is_locally_complete* |<•••••                      |  |  | quantity_value |
+ | is_default           |          +-----------------+  |  +----------------+
  +----------------------+          |                    |
                                    |                    |  +---------------+
                    +------------+  |  +--------------+  |  | structure     |
@@ -88,7 +89,9 @@ _schema_script = """
         other_filename_hint TEXT,
         other_index_hash TEXT,
         is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
-        UNIQUE (name, other_unique_id)
+        is_default INTEGER CHECK (is_default IS NULL OR is_default=1) DEFAULT NULL,
+        UNIQUE (name, other_unique_id),
+        UNIQUE (is_default, other_unique_id)
     );
 
     CREATE TABLE main.relation(
