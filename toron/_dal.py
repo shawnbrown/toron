@@ -426,24 +426,28 @@ class DataAccessLayer(object):
             msg = f'unknown transaction method: {method!r}'
             raise ValueError(msg)
 
-        if hasattr(self, '_connection'):
-            # In-memory database (leave connection open when finished).
+        # Get connection and open a new cursor..
+        if hasattr(self, '_connection'):  # Access in-memory database.
             con = self._connection
-            con_close = lambda: None
+        elif self._absolute_working_path:  # Load on-drive database.
+            con = _schema.get_connection(
+                self._absolute_working_path,
+                self._required_permissions,
+            )
         else:
-            # On-drive database (close connection when finished).
-            if not self._absolute_working_path:
-                raise RuntimeError('expected filename, none found')
-            con = _schema.get_connection(self._absolute_working_path, self._required_permissions)
-            con_close = con.close
-
+            msg = (f"{self} should have an '_absolute_working_path' or "
+                   f"a '_connection' attribute but neither was found")
+            raise RuntimeError(msg)
         cur = con.cursor()
+
+        # Yield the cursor object and clean-up when finished.
         try:
             with transaction_cm(cur):
                 yield cur
         finally:
             cur.close()
-            con_close()
+            if self._absolute_working_path:
+                con.close()  # Close connection if database is on-drive.
 
     def __del__(self):
         if isinstance(self._cleanup_item, sqlite3.Connection):
