@@ -492,3 +492,24 @@ class TestQuantityIterator(unittest.TestCase):
             (4, {'a': 'foo'}, 9.0),  # <- Aggregated from 3.0 + 2.0 + 4.0
         ]
         self.assertEqual(list(iterator), expected)
+
+    def test_attribute_keys(self):
+        data = [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'bar'}, 2.5),
+            (3, {'b': 'baz'}, 3.0),
+            (4, {'c': 'qux'}, 9.0),
+        ]
+
+        iterator1 = QuantityIterator(
+            '0000-00-00-00-000000',
+            data,
+        )
+        self.assertEqual(iterator1.attribute_keys, {'a', 'b', 'c'})
+
+        iterator2 = QuantityIterator(
+            '0000-00-00-00-000000',
+            data,
+            _attribute_keys={'a', 'b', 'c'},
+        )
+        self.assertEqual(iterator2.attribute_keys, {'a', 'b', 'c'})

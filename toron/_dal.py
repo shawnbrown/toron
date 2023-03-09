@@ -2422,8 +2422,11 @@ class DataAccessLayer(object):
     ) -> QuantityIterator:
         """Compute crosswalk for incoming data and return result."""
         with self._transaction(method=None) as cur:
-            translated = self._translate_generator(cur, data)
-            iterator = QuantityIterator(self.unique_id, translated)
+            iterator = QuantityIterator(
+                self.unique_id,  # Use destination ID.
+                self._translate_generator(cur, data),  # Translate to destination.
+                _attribute_keys=data.attribute_keys,  # Reuse keys from source.
+            )
 
         return iterator
 

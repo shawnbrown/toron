@@ -30,6 +30,7 @@ from ._typing import (
     Mapping,
     Optional,
     Sequence,
+    Set,
     Tuple,
     TypeAlias,
     Union,
@@ -438,10 +439,47 @@ class QuantityIterator(object):
     temporary file and stores its incoming data in a SQLite database.
     The temporary file remains open until the iterator is exhausted
     or until the close() method is called.
+
+    When *unique_id* and *data* are given, the ``attribute_keys``
+    property is automatically derived from the attributes dict
+    of each row in *data*::
+
+        data = [
+            (1, {'key1': 'val1', 'key2': 'val2'}, 20.5),
+            (2, {'key1': 'val1', 'key2': 'val2'}, 50.0),
+            ...
+        ]
+        iterator = QuantityIterator(unique_id, data)
+
+    The keyword-only argument '_attribute_keys' is intended for
+    internal use but can be provided directly::
+
+        data = [
+            (1, {'key1': 'val1', 'key2': 'val2'}, 20.5),
+            (2, {'key1': 'val1', 'key2': 'val2'}, 50.0),
+            (3, {'key3': 'val3'}, 42.0),
+            (4, {'key4': 'val4'}, 71.0),
+            ...
+        ]
+        iterator = QuantityIterator(
+            unique_id,
+            data,
+            _attribute_keys={'key1', 'key2', 'key3, 'key4'},
+        )
+
+    .. warning::
+
+        When an *_attribute_keys* value is given, it must contain the
+        set of dictionary keys from the 'attributes' column of every
+        row in *data*. These values can be accessed later via the
+        ``attribute_keys`` property which can be used to transform the
+        data into a tabular format.
     """
     def __init__(self,
         unique_id: str,
         data: Iterable[Tuple[int, Dict[str, str], float]],
+        *,
+        _attribute_keys: Optional[Iterable[str]] = None,
     ) -> None:
         """Initialize iterator (create and populate temp database).
 
@@ -470,11 +508,18 @@ class QuantityIterator(object):
             )
         """)
 
-        # Populate the temporary table with the given data.
-        cursor.executemany(
-            'INSERT INTO temp.temp_quantities VALUES(?, ?, ?)',
-            ((a, _dumps(b, sort_keys=True), c) for a, b, c in data),
-        )
+        # Populate the temp table with the given data and set attr keys.
+        sql = 'INSERT INTO temp.temp_quantities VALUES(?, ?, ?)'
+        if _attribute_keys:
+            iterator = ((a, _dumps(b, sort_keys=True), c) for a, b, c in data)
+            cursor.executemany(sql, iterator)
+            self._attribute_keys = set(_attribute_keys)
+        else:
+            _attribute_keys = set()
+            for a, b, c in data:
+                _attribute_keys.update(b.keys())  # Accumulate keys.
+                cursor.execute(sql, (a, _dumps(b, sort_keys=True), c))
+            self._attribute_keys = _attribute_keys
 
         # Define a generator to wrap the connection and cursor objects
         # and close them after iteration.
@@ -499,6 +544,11 @@ class QuantityIterator(object):
                 connection.close()
 
         self._generator = generator(connection, cursor)
+
+    @property
+    def attribute_keys(self) -> Set[str]:
+        """The keys used by 'attributes' values contained in data."""
+        return self._attribute_keys
 
     def close(self) -> None:
         """Close iterator early (removes data from drive).
