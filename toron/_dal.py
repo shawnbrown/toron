@@ -2401,13 +2401,26 @@ class DataAccessLayer(object):
     def _translate_generator(
         cursor: sqlite3.Cursor, data: QuantityIterator
     ) -> Iterable[Tuple[int, Dict[str, str], float]]:
+        # Get default 'edge_id' for matching 'other_unique_id'.
+        sql = """
+            SELECT edge_id, name, is_locally_complete
+            FROM main.edge
+            WHERE other_unique_id=? AND is_default=1
+        """
+        cursor.execute(sql, (data.unique_id,))
+        default_edge_id, default_name, is_locally_complete = cursor.fetchone()
+        if not is_locally_complete:
+            msg = f'default edge {default_name!r} is not complete'
+            raise RuntimeError(msg)
+
+        # Get 'edge_id' and 'selectors' values.
         sql = """
             SELECT edge_id, selectors
             FROM main.edge
             WHERE other_unique_id=? AND is_locally_complete=1
         """
         cursor.execute(sql, (data.unique_id,))
-        get_edge_id = GetMatchingKey(cursor.fetchall(), default=1)
+        get_edge_id = GetMatchingKey(cursor.fetchall(), default=default_edge_id)
 
         grouped = groupby(data, key=lambda x: x[0])  # Group by other_index_id.
 
