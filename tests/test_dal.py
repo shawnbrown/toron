@@ -3135,7 +3135,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             'other-node-1.toron',                   # other_filename_hint
             None,                                   # other_index_hash
             0,                                      # is_locally_complete
-            None,                                   # is_default
+            1,                                      # is_default
         )]
         self.assertEqual(actual, expected)
 
@@ -3157,7 +3157,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             None,                                   # other_filename_hint
             None,                                   # other_index_hash
             0,                                      # is_locally_complete
-            None,                                   # is_default
+            1,                                      # is_default
         )]
         self.assertEqual(actual, expected)
 
@@ -3195,7 +3195,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             'other-node-1.toron',                   # other_filename_hint
             None,                                   # other_index_hash
             0,                                      # is_locally_complete
-            None,                                   # is_default
+            1,                                      # is_default
         )]
         self.assertEqual(actual, expected)
 
@@ -3219,7 +3219,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             'other-node-1.toron',                   # other_filename_hint
             None,                                   # other_index_hash
             0,                                      # is_locally_complete
-            None,                                   # is_default
+            1,                                      # is_default
         )]
         self.assertEqual(actual, expected)
 
@@ -3685,7 +3685,7 @@ class TestAddEdge(unittest.TestCase):
             'other-file.toron',
             '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
             1,  # <- Is locally complete.
-            None,
+            1,
         )]
         self.assertEqual(results, expected)
 
@@ -3699,6 +3699,34 @@ class TestAddEdge(unittest.TestCase):
             (5, 1, 0, 0,   0.0, 1.0, None),
         ]
         self.assertEqual(results, expected)
+
+    def test_is_default_flags(self):
+        self.dal.add_incoming_edge(
+            unique_id='0000-00-00-00-000000', name='edge 1', relations=[],
+        )
+        self.dal.add_incoming_edge(
+            unique_id='0000-00-00-00-000000', name='edge 2', relations=[],
+        )
+        self.dal.add_incoming_edge(
+            unique_id='1111-11-11-11-111111', name='edge 1', relations=[],
+        )
+        self.dal.add_incoming_edge(
+            unique_id='1111-11-11-11-111111', name='edge 2', relations=[],
+        )
+
+        # Get results to check.
+        results = self.cur.execute("""
+            SELECT edge_id, other_unique_id, is_default
+            FROM main.edge
+        """).fetchall()
+
+        expected = [
+            (1, '0000-00-00-00-000000', 1),     # <- is_default: 1
+            (2, '0000-00-00-00-000000', None),  # <- is_default: NULL
+            (3, '1111-11-11-11-111111', 1),     # <- is_default: 1
+            (4, '1111-11-11-11-111111', None),  # <- is_default: NULL
+        ]
+        self.assertEqual(set(results), set(expected))
 
     def test_add_incomplete_edge(self):
         self.dal.add_incoming_edge(
@@ -3719,7 +3747,7 @@ class TestAddEdge(unittest.TestCase):
             None,
             '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
             0,  # <- Not locally complete.
-            None,
+            1,
         )]
         self.assertEqual(results, expected)
 

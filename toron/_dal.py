@@ -2213,17 +2213,31 @@ class DataAccessLayer(object):
                     description,
                     selectors,
                     other_unique_id,
-                    other_filename_hint
+                    other_filename_hint,
+                    is_default
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (
+                    :name,
+                    :description,
+                    :selectors,
+                    :unique_id,
+                    :filename_hint,
+                    CASE
+                        WHEN 1 NOT IN (SELECT is_default
+                                       FROM main.edge
+                                       WHERE other_unique_id=:unique_id)
+                        THEN 1
+                        ELSE NULL
+                    END
+                )
             """
-            parameters = (
-                name,
-                description,
-                _dumps(selectors) if selectors else None,
-                unique_id,
-                filename_hint,
-            )
+            parameters = {
+                'name': name,
+                'description': description,
+                'selectors': _dumps(selectors) if selectors else None,
+                'unique_id': unique_id,
+                'filename_hint': filename_hint,
+            }
             cursor.execute(sql, parameters)
             cursor.execute('SELECT last_insert_rowid()')
             edge_id = cursor.fetchone()[0]
