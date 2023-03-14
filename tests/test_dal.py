@@ -3679,13 +3679,13 @@ class TestAddEdge(unittest.TestCase):
         # Add two edges, setting default flag for both (last edge that was
         # explicitly set to True should be the only one that's True).
         self.dal.add_incoming_edge(
-            '1111-11-11-11-111111', 'edge 1', relations=[], is_default=True
+            '1111-11-11-11-111111', 'edge 1', relations=[], make_default=True
         )
         self.dal.add_incoming_edge(
-            '1111-11-11-11-111111', 'edge 2', relations=[], is_default=True
+            '1111-11-11-11-111111', 'edge 2', relations=[], make_default=True
         )
         self.dal.add_incoming_edge(
-            '2222-22-22-22-222222', 'edge 1', relations=[], is_default=False
+            '2222-22-22-22-222222', 'edge 1', relations=[], make_default=False
         )
 
         # Check implemented behavior.
@@ -3703,7 +3703,7 @@ class TestAddEdge(unittest.TestCase):
         """
         # Two edges, first gets explicit False, second gets implicit False.
         self.dal.add_incoming_edge(
-            '1111-11-11-11-111111', 'edge 1', relations=[], is_default=False
+            '1111-11-11-11-111111', 'edge 1', relations=[], make_default=False
         )
         self.dal.add_incoming_edge(
             '1111-11-11-11-111111', 'edge 2', relations=[]  # <- No explicit is_default.
