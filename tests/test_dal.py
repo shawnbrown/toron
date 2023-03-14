@@ -3763,6 +3763,198 @@ class TestAddEdge(unittest.TestCase):
         self.assertEqual(results, expected)
 
 
+class TestEditIncomingEdge(unittest.TestCase):
+    def setUp(self):
+        self.dal = dal_class()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+        self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
+        data = [
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],  # <- index_id=1
+            ['a1', 'b1', 'c2'],  # <- index_id=2
+            ['a1', 'b2', 'c3'],  # <- index_id=3
+            ['a1', 'b2', 'c4'],  # <- index_id=4
+        ]
+        self.dal.add_index_records(data)
+
+        self.dal.add_incoming_edge(
+            unique_id='0000-00-00-00-000000',
+            name='edge 1',
+            relations=[(1, 1, 11.0), (2, 2, 12.0), (3, 3, 13.0), (4, 4, 14.0)],
+            description='A description of Edge One.',
+            selectors=['[foo="bar"]'],
+            filename_hint='other-file.toron',
+            #is_default=,
+        )
+
+    def test_update_multiple(self):
+        self.dal.edit_incoming_edge(
+            '0000-00-00-00-000000',
+            'edge 1',
+            description='An updated description for Edge One.',
+            selectors=['[foo="baz"]'],
+            filename_hint='updated-file-name.toron',
+            is_default=False,
+        )
+
+        results = self.cur.execute('SELECT * FROM main.edge').fetchall()
+        expected = [(
+            1,
+            'edge 1',
+            'An updated description for Edge One.',
+            [SimpleSelector('foo', '=', 'baz')],
+            None,
+            '0000-00-00-00-000000',
+            'updated-file-name.toron',
+            '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
+            1,
+            None,
+        )]
+        self.assertEqual(results, expected)
+
+    def test_update_multiple_to_none(self):
+        self.dal.edit_incoming_edge(
+            '0000-00-00-00-000000',
+            'edge 1',
+            description=None,
+            selectors=None,
+            filename_hint=None,
+            is_default=None,
+        )
+
+        results = self.cur.execute('SELECT * FROM main.edge').fetchall()
+        expected = [(
+            1,
+            'edge 1',
+            None,
+            None,
+            None,
+            '0000-00-00-00-000000',
+            None,
+            '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
+            1,
+            None,
+        )]
+        self.assertEqual(results, expected)
+
+    def test_update_description(self):
+        self.dal.edit_incoming_edge(
+            '0000-00-00-00-000000',
+            'edge 1',
+            description='An updated description for Edge One.',
+        )
+
+        results = self.cur.execute('SELECT * FROM main.edge').fetchall()
+        expected = [(
+            1,
+            'edge 1',
+            'An updated description for Edge One.',  # <- Updated description.
+            [SimpleSelector('foo', '=', 'bar')],
+            None,
+            '0000-00-00-00-000000',
+            'other-file.toron',
+            '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
+            1,
+            1,
+        )]
+        self.assertEqual(results, expected)
+
+    def test_update_selectors(self):
+        self.dal.edit_incoming_edge(
+            '0000-00-00-00-000000',
+            'edge 1',
+            selectors=['[foo="baz"]'],
+        )
+
+        results = self.cur.execute('SELECT * FROM main.edge').fetchall()
+        expected = [(
+            1,
+            'edge 1',
+            'A description of Edge One.',
+            [SimpleSelector('foo', '=', 'baz')],  # <- Updated selectors.
+            None,
+            '0000-00-00-00-000000',
+            'other-file.toron',
+            '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
+            1,
+            1,
+        )]
+        self.assertEqual(results, expected)
+
+    def test_update_filename_hint(self):
+        self.dal.edit_incoming_edge(
+            '0000-00-00-00-000000',
+            'edge 1',
+            filename_hint='updated-file-name.toron',
+        )
+
+        results = self.cur.execute('SELECT * FROM main.edge').fetchall()
+        expected = [(
+            1,
+            'edge 1',
+            'A description of Edge One.',
+            [SimpleSelector('foo', '=', 'bar')],
+            None,
+            '0000-00-00-00-000000',
+            'updated-file-name.toron',  # <- Updated filename_hint.
+            '8e96dc5e83d405a518a3a93fcbaa8f6a21fd909fa989f73635fe74a093615f39',
+            1,
+            1,
+        )]
+        self.assertEqual(results, expected)
+
+    def test_update_is_default(self):
+        # Add a second edge for testing.
+        self.dal.add_incoming_edge(
+            '0000-00-00-00-000000',
+            'edge 2',
+            relations=[],
+        )
+
+        def get_results():  # <- Helper function.
+            self.cur.execute('SELECT edge_id, is_default FROM main.edge')
+            return set(self.cur.fetchall())
+
+        # Check current 'is_default' state. Since 'edge 1' was already
+        # set to default, the newly added 'edge 2' did not receive this
+        # flag.
+        expected = {
+            (1, True),  # <- edge_id 1 is default (True)
+            (2, None),
+        }
+        self.assertEqual(get_results(), expected)
+
+        # Change default to 'edge 2' (from 'edge 1').
+        self.dal.edit_incoming_edge(  # <- Method under test.
+            '0000-00-00-00-000000',
+            'edge 2',
+            is_default=True,
+        )
+        expected = {
+            (1, None),  # <- edge_id 1 is now NULL/None
+            (2, True),  # <- edge_id 2 is now default (True)
+        }
+        self.assertEqual(get_results(), expected)
+
+        # Disable default flag for 'edge 2' (no default)
+        self.dal.edit_incoming_edge(  # <- Method under test.
+            '0000-00-00-00-000000',
+            'edge 2',
+            is_default=False,
+        )
+        expected = {
+            (1, None),  # <- No default edge!
+            (2, None),  # <- No default edge!
+        }
+        self.assertEqual(get_results(), expected)
+
+
 class TestTranslate(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()

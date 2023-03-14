@@ -2397,6 +2397,61 @@ class DataAccessLayer(object):
             self._refresh_other_index_hash(cur, edge_id)
             self._refresh_is_locally_complete(cur, edge_id)
 
+    def edit_incoming_edge(
+        self,
+        unique_id: str,
+        name: str,
+        *,
+        #relations: Iterable[Tuple[int, int, Union[float, None]]],
+        description: Union[str, None, NoValueType] = NOVALUE,
+        selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
+        filename_hint: Union[str, None, NoValueType] = NOVALUE,
+        is_default: Union[bool, NoValueType] = NOVALUE,
+    ) -> None:
+        """Edit the properties of an incoming edge."""
+        with self._transaction(method='begin') as cur:
+            # Build list of properties to SET.
+            set_items = []
+            parameters: Dict[str, Optional[str]] = {}
+
+            if description is not NOVALUE:
+                set_items.append('description=:description')
+                parameters['description'] = description
+
+            if selectors is not NOVALUE:
+                set_items.append('selectors=:selectors')
+                parameters['selectors'] = _dumps(selectors) if selectors else None
+
+            if filename_hint is not NOVALUE:
+                set_items.append('other_filename_hint=:filename_hint')
+                parameters['filename_hint'] = filename_hint
+
+            # Execute SQL to SET properties.
+            if set_items:
+                sql = f"""
+                    UPDATE main.edge
+                    SET {', '.join(set_items)}
+                    WHERE other_unique_id=:unique_id AND name=:name
+                """
+                parameters.update({'unique_id': unique_id, 'name': name})
+                cur.execute(sql, parameters)
+
+            # Build and execute SQL for handling 'is_default' flag.
+            if is_default is not NOVALUE:
+                if is_default:
+                    sql = """
+                        UPDATE main.edge
+                        SET is_default=CASE WHEN name=:name THEN 1 ELSE NULL END
+                        WHERE other_unique_id=:unique_id
+                    """
+                else:
+                    sql = """
+                        UPDATE main.edge
+                        SET is_default=NULL
+                        WHERE other_unique_id=:unique_id AND name=:name
+                    """
+                cur.execute(sql, {'unique_id': unique_id, 'name': name})
+
     @staticmethod
     def _translate_generator(
         cursor: sqlite3.Cursor, data: QuantityIterator
