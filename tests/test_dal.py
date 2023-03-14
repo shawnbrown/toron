@@ -3161,67 +3161,20 @@ class TestAddEdgeGetNewId(unittest.TestCase):
         )]
         self.assertEqual(actual, expected)
 
-    def test_update_existing_edge(self):
-        """When updating an existing edge, any given properties should
-        be set while unspecified properties should be left as-is.
+    def test_edge_name_conflict(self):
+        """Should fail if trying to load a new edge using the same name
+        as an existing edge from the same node.
         """
         # Create new edge.
         new_edge_id = self.dal._add_edge_get_new_id(
-            cursor=self.cur,
-            unique_id='00000000-0000-0000-0000-000000000000',
-            name='edge 1',
-            description='Edge number one.',
-            selectors=['[foo="bar"]'],
-            filename_hint='other-node-1.toron',
+            self.cur, '0000-00-00-00-000000', 'edge 1'
         )
 
-        # Update existing edge with new value.
-        new_edge_id = self.dal._add_edge_get_new_id(
-            cursor=self.cur,
-            unique_id='00000000-0000-0000-0000-000000000000',
-            name='edge 1',
-            description='New description.',  # <- Updated 'description'.
-        )
-
-        self.cur.execute('SELECT * FROM main.edge')
-        actual = self.cur.fetchall()
-        expected = [(
-            1,                                      # edge_id
-            'edge 1',                               # name
-            'New description.',                     # description
-            [SimpleSelector('foo', '=', 'bar')],    # selectors
-            None,                                   # user_properties
-            '00000000-0000-0000-0000-000000000000', # other_unique_id
-            'other-node-1.toron',                   # other_filename_hint
-            None,                                   # other_index_hash
-            0,                                      # is_locally_complete
-            1,                                      # is_default
-        )]
-        self.assertEqual(actual, expected)
-
-        # Remove 'description' from existing edge.
-        new_edge_id = self.dal._add_edge_get_new_id(
-            cursor=self.cur,
-            unique_id='00000000-0000-0000-0000-000000000000',
-            name='edge 1',
-            description=None,  # <- Passing None should erase description.
-        )
-
-        self.cur.execute('SELECT * FROM main.edge')
-        actual = self.cur.fetchall()
-        expected = [(
-            1,                                      # edge_id
-            'edge 1',                               # name
-            None,                                   # description
-            [SimpleSelector('foo', '=', 'bar')],    # selectors
-            None,                                   # user_properties
-            '00000000-0000-0000-0000-000000000000', # other_unique_id
-            'other-node-1.toron',                   # other_filename_hint
-            None,                                   # other_index_hash
-            0,                                      # is_locally_complete
-            1,                                      # is_default
-        )]
-        self.assertEqual(actual, expected)
+        # Try to create a new edge with the same name.
+        with self.assertRaises(ToronError):
+            new_edge_id = self.dal._add_edge_get_new_id(
+                self.cur, '0000-00-00-00-000000', 'edge 1'
+            )
 
 
 class TestAddEdgeRelations(unittest.TestCase):

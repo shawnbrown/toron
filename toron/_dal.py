@@ -2174,74 +2174,53 @@ class DataAccessLayer(object):
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
     ) -> int:
         """Add a new edge or update existing edge, returns 'edge_id'."""
-        cursor.execute(
-            'SELECT edge_id FROM main.edge WHERE other_unique_id=? AND name=?',
-            (unique_id, name),
-        )
-        record = cursor.fetchone()
-        if record:
-            # If record exists, update any given columns.
-            edge_id = record[0]
-            if description is not NOVALUE:
-                cursor.execute(
-                    'UPDATE main.edge SET description=? WHERE edge_id=?',
-                    (description, edge_id),
-                )
-            if selectors is not NOVALUE:
-                selectors_val = _dumps(selectors) if selectors else None
-                cursor.execute(
-                    'UPDATE main.edge SET selectors=? WHERE edge_id=?',
-                    (selectors_val, edge_id),
-                )
-            if filename_hint is not NOVALUE:
-                cursor.execute(
-                    'UPDATE main.edge SET other_filename_hint=? WHERE edge_id=?',
-                    (filename_hint, edge_id),
-                )
-        else:
-            # If record does not exist, create a new record and get its ID.
-            if description is NOVALUE:
-                description = None
-            if selectors is NOVALUE:
-                selectors = None
-            if filename_hint is NOVALUE:
-                filename_hint = None
+        # Create a new record and get its ID.
+        if description is NOVALUE:
+            description = None
+        if selectors is NOVALUE:
+            selectors = None
+        if filename_hint is NOVALUE:
+            filename_hint = None
 
-            sql = """
-                INSERT INTO main.edge(
-                    name,
-                    description,
-                    selectors,
-                    other_unique_id,
-                    other_filename_hint,
-                    is_default
-                )
-                VALUES (
-                    :name,
-                    :description,
-                    :selectors,
-                    :unique_id,
-                    :filename_hint,
-                    CASE
-                        WHEN 1 NOT IN (SELECT is_default
-                                       FROM main.edge
-                                       WHERE other_unique_id=:unique_id)
-                        THEN 1
-                        ELSE NULL
-                    END
-                )
-            """
-            parameters = {
-                'name': name,
-                'description': description,
-                'selectors': _dumps(selectors) if selectors else None,
-                'unique_id': unique_id,
-                'filename_hint': filename_hint,
-            }
+        sql = """
+            INSERT INTO main.edge(
+                name,
+                description,
+                selectors,
+                other_unique_id,
+                other_filename_hint,
+                is_default
+            )
+            VALUES (
+                :name,
+                :description,
+                :selectors,
+                :unique_id,
+                :filename_hint,
+                CASE
+                    WHEN 1 NOT IN (SELECT is_default
+                                   FROM main.edge
+                                   WHERE other_unique_id=:unique_id)
+                    THEN 1
+                    ELSE NULL
+                END
+            )
+        """
+        parameters = {
+            'name': name,
+            'description': description,
+            'selectors': _dumps(selectors) if selectors else None,
+            'unique_id': unique_id,
+            'filename_hint': filename_hint,
+        }
+        try:
             cursor.execute(sql, parameters)
-            cursor.execute('SELECT last_insert_rowid()')
-            edge_id = cursor.fetchone()[0]
+        except sqlite3.IntegrityError:
+            msg = f'edge named {name!r} already exists between these nodes'
+            raise ToronError(msg)
 
+        cursor.execute('SELECT last_insert_rowid()')
+        edge_id = cursor.fetchone()[0]
         return edge_id
 
     @staticmethod
