@@ -2172,30 +2172,16 @@ class DataAccessLayer(object):
         description: Union[str, None, NoValueType] = NOVALUE,
         selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
+        is_default: Union[bool, NoValueType] = NOVALUE,
     ) -> int:
         """Add a new edge or update existing edge, returns 'edge_id'."""
+        # Build SQL and add new edge.
         sql = """
             INSERT INTO main.edge(
-                name,
-                description,
-                selectors,
-                other_unique_id,
-                other_filename_hint,
-                is_default
+                name, description, selectors, other_unique_id, other_filename_hint
             )
             VALUES (
-                :name,
-                :description,
-                :selectors,
-                :unique_id,
-                :filename_hint,
-                CASE
-                    WHEN 1 NOT IN (SELECT is_default
-                                   FROM main.edge
-                                   WHERE other_unique_id=:unique_id)
-                    THEN 1
-                    ELSE NULL
-                END
+                :name, :description, :selectors, :unique_id, :filename_hint
             )
         """
         parameters = {
@@ -2211,8 +2197,48 @@ class DataAccessLayer(object):
             msg = f'edge named {name!r} already exists between these nodes'
             raise ToronError(msg)
 
-        cursor.execute('SELECT last_insert_rowid()')
-        edge_id = cursor.fetchone()[0]
+        # Build SQL to handle 'is_default' flag.
+        if is_default is NOVALUE:
+            # If unspecified, set default flag to TRUE if it's the first edge.
+            sql= """
+                UPDATE main.edge
+                SET is_default=CASE
+                    WHEN 1=(SELECT COUNT(*)
+                            FROM main.edge
+                            WHERE other_unique_id=:unique_id)
+                    THEN 1
+                    ELSE NULL
+                END
+                WHERE other_unique_id=:unique_id AND name=:name
+            """
+        elif is_default:
+            # Set default flag to TRUE and set all others to NULL.
+            sql = """
+                UPDATE main.edge
+                SET is_default=CASE WHEN name=:name THEN 1 ELSE NULL END
+                WHERE other_unique_id=:unique_id
+            """
+        else:
+            # Set default flag to NULL regardless of other edges.
+            sql = """
+                UPDATE main.edge
+                SET is_default=NULL
+                WHERE other_unique_id=:unique_id AND name=:name
+            """
+        cursor.execute(sql, {'unique_id': unique_id, 'name': name})
+
+        # Get newly created edge_id.
+        sql = """
+            SELECT edge_id, is_default
+            FROM main.edge
+            WHERE other_unique_id=:unique_id AND name=:name
+        """
+        cursor.execute(sql, {'unique_id': unique_id, 'name': name})
+        edge_id, assigned_default_state = cursor.fetchone()
+
+        #if is_default is NOVALUE and assigned_default_state:
+        #    pass  # TODO: Warn that default was automatically set to TRUE.
+
         return edge_id
 
     @staticmethod
@@ -2345,6 +2371,7 @@ class DataAccessLayer(object):
         description: Union[str, None, NoValueType] = NOVALUE,
         selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
+        make_default: Union[bool, NoValueType] = NOVALUE,
     ) -> None:
         """Add an incoming edge from another node.
 
@@ -2358,10 +2385,14 @@ class DataAccessLayer(object):
                 selectors=['[category="pop"]'],
                 filename_hint='other-file.toron',
             )
+
+        When adding the first edge between two nodes, the edge will
+        automatically be set as default when the *make_default* arg
+        is not specified.
         """
         with self._transaction(method='begin') as cur:
             edge_id = self._add_edge_get_new_id(
-                cur, unique_id, name, description, selectors, filename_hint
+                cur, unique_id, name, description, selectors, filename_hint, make_default
             )
             self._add_edge_relations(cur, edge_id, relations)
             self._refresh_proportions(cur, edge_id)

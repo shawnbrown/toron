@@ -3653,33 +3653,69 @@ class TestAddEdge(unittest.TestCase):
         ]
         self.assertEqual(results, expected)
 
-    def test_is_default_flags(self):
-        self.dal.add_incoming_edge(
-            unique_id='0000-00-00-00-000000', name='edge 1', relations=[],
-        )
-        self.dal.add_incoming_edge(
-            unique_id='0000-00-00-00-000000', name='edge 2', relations=[],
-        )
-        self.dal.add_incoming_edge(
-            unique_id='1111-11-11-11-111111', name='edge 1', relations=[],
-        )
-        self.dal.add_incoming_edge(
-            unique_id='1111-11-11-11-111111', name='edge 2', relations=[],
-        )
+    def test_default_implicit_handling(self):
+        """The first edge between two nodes implicitly receives the
+        default flag unless it's explicitly set to False.
+        """
+        # Add incoming edges and let default flag be assigned implicitly.
+        self.dal.add_incoming_edge('1111-11-11-11-111111', 'edge 1', relations=[])
+        self.dal.add_incoming_edge('2222-22-22-22-222222', 'edge 1', relations=[])
+        self.dal.add_incoming_edge('2222-22-22-22-222222', 'edge 2', relations=[])
 
-        # Get results to check.
-        results = self.cur.execute("""
-            SELECT edge_id, other_unique_id, is_default
-            FROM main.edge
-        """).fetchall()
-
+        # Check implemented behavior.
+        self.cur.execute('SELECT other_unique_id, name, is_default FROM main.edge')
         expected = [
-            (1, '0000-00-00-00-000000', 1),     # <- is_default: 1
-            (2, '0000-00-00-00-000000', None),  # <- is_default: NULL
-            (3, '1111-11-11-11-111111', 1),     # <- is_default: 1
-            (4, '1111-11-11-11-111111', None),  # <- is_default: NULL
+            ('1111-11-11-11-111111', 'edge 1', 1),     # <- Has flag!
+            ('2222-22-22-22-222222', 'edge 1', 1),     # <- Has flag!
+            ('2222-22-22-22-222222', 'edge 2', None),  # <- Was second, does not have flag.
         ]
-        self.assertEqual(set(results), set(expected))
+        self.assertEqual(set(self.cur.fetchall()), set(expected))
+
+    def test_default_explicit_handling(self):
+        """If an edge added later is explicitly assigned the default
+        flag, then the flag should be removed from the edge that had
+        it previously.
+        """
+        # Add two edges, setting default flag for both (last edge that was
+        # explicitly set to True should be the only one that's True).
+        self.dal.add_incoming_edge(
+            '1111-11-11-11-111111', 'edge 1', relations=[], is_default=True
+        )
+        self.dal.add_incoming_edge(
+            '1111-11-11-11-111111', 'edge 2', relations=[], is_default=True
+        )
+        self.dal.add_incoming_edge(
+            '2222-22-22-22-222222', 'edge 1', relations=[], is_default=False
+        )
+
+        # Check implemented behavior.
+        self.cur.execute('SELECT other_unique_id, name, is_default FROM main.edge')
+        expected = [
+            ('1111-11-11-11-111111', 'edge 1', None),  # <- No longer has flag.
+            ('1111-11-11-11-111111', 'edge 2', 1),     # <- Now has the flag!
+            ('2222-22-22-22-222222', 'edge 1', None),  # <- Never had the flag!
+        ]
+        self.assertEqual(set(self.cur.fetchall()), set(expected))
+
+    def test_default_implicit_handling_with_no_flags(self):
+        """Additional edges should never implicitly receive the default
+        flag even if no existing edge has the flag.
+        """
+        # Two edges, first gets explicit False, second gets implicit False.
+        self.dal.add_incoming_edge(
+            '1111-11-11-11-111111', 'edge 1', relations=[], is_default=False
+        )
+        self.dal.add_incoming_edge(
+            '1111-11-11-11-111111', 'edge 2', relations=[]  # <- No explicit is_default.
+        )
+
+        # Check implemented behavior.
+        self.cur.execute('SELECT other_unique_id, name, is_default FROM main.edge')
+        expected = [
+            ('1111-11-11-11-111111', 'edge 1', None),  # <- Does not have default flag.
+            ('1111-11-11-11-111111', 'edge 2', None),  # <- Does not have default flag.
+        ]
+        self.assertEqual(set(self.cur.fetchall()), set(expected))
 
     def test_add_incomplete_edge(self):
         self.dal.add_incoming_edge(
