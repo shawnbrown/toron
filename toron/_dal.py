@@ -2174,14 +2174,6 @@ class DataAccessLayer(object):
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
     ) -> int:
         """Add a new edge or update existing edge, returns 'edge_id'."""
-        # Create a new record and get its ID.
-        if description is NOVALUE:
-            description = None
-        if selectors is NOVALUE:
-            selectors = None
-        if filename_hint is NOVALUE:
-            filename_hint = None
-
         sql = """
             INSERT INTO main.edge(
                 name,
@@ -2208,10 +2200,10 @@ class DataAccessLayer(object):
         """
         parameters = {
             'name': name,
-            'description': description,
+            'description': description or None,
             'selectors': _dumps(selectors) if selectors else None,
             'unique_id': unique_id,
-            'filename_hint': filename_hint,
+            'filename_hint': filename_hint or None,
         }
         try:
             cursor.execute(sql, parameters)
