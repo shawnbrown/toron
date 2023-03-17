@@ -1529,6 +1529,87 @@ class TestAddWeights(unittest.TestCase):
     def test_mismatched_columns_and_index_id(self):
         raise NotImplementedError
 
+    def test_default_weighting_implicit(self):
+        default_weighting = self.dal._get_data_property(self.cursor, 'default_weighting')
+        self.assertIsNone(default_weighting, msg='before adding weight, no default')
+
+        # Add first weighting (auto-assigns 'default_weighting').
+        self.dal.add_weights(
+            data=[
+                ('state', 'county', 'tract', 'pop20'),
+                ('12', '001', '000200', 110),
+                ('12', '003', '040101', 212),
+            ],
+            name='pop20',
+            selectors=None,
+            # (implicit default handling, *make_default* not passed)
+        )
+        result = self.dal._get_data_property(self.cursor, 'default_weighting')
+        self.assertEqual(result, 'pop20', msg='gets first weighting as default')
+
+        # Add second weighting (existing default unchanged).
+        self.dal.add_weights(
+            data=[
+                ('state', 'county', 'tract', 'vap20'),
+                ('12', '001', '000200', 110),
+                ('12', '003', '040101', 212),
+            ],
+            name='vap20',
+            selectors=None,
+            # (implicit default handling, *make_default* not passed)
+        )
+        result = self.dal._get_data_property(self.cursor, 'default_weighting')
+        self.assertEqual(result, 'pop20', msg='default already exists, unchanged')
+
+    def test_default_weighting_explicit_false(self):
+        default_weighting = self.dal._get_data_property(self.cursor, 'default_weighting')
+        self.assertIsNone(default_weighting, msg='before adding weight, no default')
+
+        self.dal.add_weights(
+            data=[
+                ('state', 'county', 'tract', 'pop20'),
+                ('12', '001', '000200', 110),
+                ('12', '003', '040101', 212),
+            ],
+            name='pop20',
+            selectors=None,
+            make_default=False,  # <- Explicitly False!
+        )
+        result = self.dal._get_data_property(self.cursor, 'default_weighting')
+        self.assertIsNone(default_weighting, msg='no default set, explicitly False')
+
+    def test_default_weighting_explicit_true(self):
+        default_weighting = self.dal._get_data_property(self.cursor, 'default_weighting')
+        self.assertIsNone(default_weighting, msg='before adding weight, no default')
+
+        # Add first weighting (auto-assigns 'default_weighting').
+        self.dal.add_weights(
+            data=[
+                ('state', 'county', 'tract', 'pop20'),
+                ('12', '001', '000200', 110),
+                ('12', '003', '040101', 212),
+            ],
+            name='pop20',
+            selectors=None,
+            make_default=True,  # <- Explicitly True!
+        )
+        result = self.dal._get_data_property(self.cursor, 'default_weighting')
+        self.assertEqual(result, 'pop20', msg='explicitly True sets as default')
+
+        # Add second weighting (existing default unchanged).
+        self.dal.add_weights(
+            data=[
+                ('state', 'county', 'tract', 'vap20'),
+                ('12', '001', '000200', 110),
+                ('12', '003', '040101', 212),
+            ],
+            name='vap20',
+            selectors=None,
+            make_default=True,  # <- Explicitly True!
+        )
+        result = self.dal._get_data_property(self.cursor, 'default_weighting')
+        self.assertEqual(result, 'vap20', msg='explicitly True replaces previous default')
+
 
 class TestAddQuantitiesGetLocationId(unittest.TestCase):
     def setUp(self):

@@ -1133,6 +1133,7 @@ class DataAccessLayer(object):
         *,
         selectors: Optional[Sequence[str]],
         description: Optional[str] = None,
+        make_default: Union[bool, NoValueType] = NOVALUE,
     ) -> None:
         iterator = make_readerlike(data)
         columns = next(iterator)
@@ -1165,6 +1166,16 @@ class DataAccessLayer(object):
 
             # Update "weighting.is_complete" value (set to 1 or 0).
             self._add_weights_set_is_complete(cur, weighting_id)
+
+            # Set as default if *make_default* is True or if *make_default*
+            # is unspecified and this is the first weighting.
+            if make_default is NOVALUE:
+                cur.execute('SELECT COUNT(*) FROM main.weighting')
+                if cur.fetchone()[0] == 1:
+                    self._set_data_property(cur, 'default_weighting', name)
+                    # TODO: Warn that default_weighting was automatically set.
+            elif make_default:
+                self._set_data_property(cur, 'default_weighting', name)
 
     @staticmethod
     def _add_quantities_get_location_id(
