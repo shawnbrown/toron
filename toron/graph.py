@@ -43,9 +43,10 @@ class _EdgeMapper(object):
         +---------------+    +----------------+    +---------------+
         | run_id        |<---| run_id         |--->| run_id        |
         | index_id      |    | left_labels    |    | index_id      |
-        | mapping_level |    | right_labels   |    | mapping_level |
-        +---------------+    | weight         |    +---------------+
-                             +----------------+
+        | weight_value  |    | right_labels   |    | weight_value  |
+        | proportion    |    | weight         |    | proportion    |
+        | mapping_level |    +----------------+    | mapping_level |
+        +---------------+                          +---------------+
     """
     def __init__(
         self,
@@ -68,11 +69,15 @@ class _EdgeMapper(object):
             CREATE TEMP TABLE left_matches(
                 run_id INTEGER NOT NULL REFERENCES source_mapping(run_id),
                 index_id INTEGER,
+                weight_value REAL CHECK (0.0 <= weight_value),
+                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
                 mapping_level BLOB_BITLIST
             );
             CREATE TEMP TABLE right_matches(
                 run_id INTEGER NOT NULL REFERENCES source_mapping(run_id),
                 index_id INTEGER,
+                weight_value REAL CHECK (0.0 <= weight_value),
+                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
                 mapping_level BLOB_BITLIST
             );
         """)
@@ -138,7 +143,7 @@ class _EdgeMapper(object):
 
             index_id, *_ = first_match  # Unpack index record (discards labels).
             parameters = ((run_id, index_id) for run_id in run_ids)
-            sql = f'INSERT INTO temp.{side}_matches VALUES (?, ?, NULL)'
+            sql = f'INSERT INTO temp.{side}_matches (run_id, index_id) VALUES (?, ?)'
             self.cur.executemany(sql, parameters)
 
     def get_relations(
