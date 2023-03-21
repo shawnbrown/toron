@@ -64,6 +64,54 @@ class TestEdgeMapper(TwoNodesTestCase):
         ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 
+    def test_find_matches_format_data_exact(self):
+        mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
+
+        node = self.node2
+        keys = ['idx1', 'idx2']
+        iterable = [
+            ('["A", "x"]', 101),
+            ('["A", "y"]', 102),
+            ('["B", "x"]', 103),
+            ('["B", "y"]', 104),
+            ('["C", "x"]', 105),
+            ('["C", "y"]', 106),
+        ]
+        formatted = mapper._find_matches_format_data(node, keys, iterable)
+        result = [(a, b, list(c)) for a, b, c in formatted]
+
+        expected = [
+            ([101], {'idx1': 'A', 'idx2': 'x'}, [(1, 'A', 'x')]),
+            ([102], {'idx1': 'A', 'idx2': 'y'}, [(2, 'A', 'y')]),
+            ([103], {'idx1': 'B', 'idx2': 'x'}, [(3, 'B', 'x')]),
+            ([104], {'idx1': 'B', 'idx2': 'y'}, [(4, 'B', 'y')]),
+            ([105], {'idx1': 'C', 'idx2': 'x'}, [(5, 'C', 'x')]),
+            ([106], {'idx1': 'C', 'idx2': 'y'}, [(6, 'C', 'y')]),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_find_matches_format_data_ambiguous(self):
+        mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
+
+        node = self.node2
+        keys = ['idx1', 'idx2']
+        iterable = [
+            ('["A", "x"]', 101),
+            ('["A", "y"]', 102),
+            ('["B", ""]',  103),  # <- Should match 2 index records.
+            ('["C", ""]',  104),  # <- Should match 2 index records.
+        ]
+        formatted = mapper._find_matches_format_data(node, keys, iterable)
+        result = [(a, b, list(c)) for a, b, c in formatted]
+
+        expected = [
+            ([101], {'idx1': 'A', 'idx2': 'x'}, [(1, 'A', 'x')]),
+            ([102], {'idx1': 'A', 'idx2': 'y'}, [(2, 'A', 'y')]),
+            ([103], {'idx1': 'B'}, [(3, 'B', 'x'), (4, 'B', 'y')]),
+            ([104], {'idx1': 'C'}, [(5, 'C', 'x'), (6, 'C', 'y')]),
+        ]
+        self.assertEqual(result, expected)
+
     def test_find_matches(self):
         mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
 

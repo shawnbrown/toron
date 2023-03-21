@@ -9,9 +9,13 @@ from itertools import (
     groupby,
 )
 from ._typing import (
+    Dict,
     Iterable,
+    Iterator,
+    List,
     Literal,
     Optional,
+    Sequence,
     Tuple,
     TypeAlias,
     Union,
@@ -102,6 +106,63 @@ class _EdgeMapper(object):
             sql = 'INSERT INTO temp.source_mapping VALUES (NULL, ?, ?, ?)'
             self.cur.execute(sql, (left_labels, right_labels, weight))
 
+    @staticmethod
+    def _find_matches_format_data(
+        node: Node, keys: Sequence[str], iterable: Iterable[Tuple[str, int]]
+    ) -> Iterator[Tuple[List[int], Dict[str, str], Iterator[Tuple]]]:
+        """Takes a list of index keys, a node, and an iterable of
+        source labels (values to use for matching) and run ids.
+        Returns an iterable of run_ids, where_dicts, and index
+        matches.
+
+        .. code-block::
+
+            >>> node = Node(...)
+            >>> keys = ['col1', 'col2']
+            >>> iterable = [
+            ...     ('["A", "x"]', 101),
+            ...     ('["A", "y"]', 102),
+            ...     ('["B", "x"]', 103),
+            ...     ('["B", "y"]', 104),
+            ...     ('["C", "x"]', 105),
+            ...     ('["C", "y"]', 106),
+            ... ]
+            >>> formatted = dal._find_matches_format_data(node, keys, iterable)
+            >>> for run_ids, where_dict, matches in formatted:
+            ...     print(f'{run_ids=}  {where_dict=}  {matches=}')
+            ...
+            run_ids=[101]  where_dict={'col1': 'A', 'col2': 'x'}  matches=[(1, 'A', 'x')]
+            run_ids=[102]  where_dict={'col1': 'A', 'col2': 'y'}  matches=[(2, 'A', 'y')]
+            run_ids=[103]  where_dict={'col1': 'B', 'col2': 'x'}  matches=[(3, 'B', 'x')]
+            run_ids=[104]  where_dict={'col1': 'B', 'col2': 'y'}  matches=[(4, 'B', 'y')]
+            run_ids=[105]  where_dict={'col1': 'C', 'col2': 'x'}  matches=[(5, 'C', 'x')]
+            run_ids=[106]  where_dict={'col1': 'C', 'col2': 'y'}  matches=[(6, 'C', 'y')]
+        """
+        # Group rows using source labels as the key.
+        grouped = groupby(iterable, key=lambda row: row[0])
+
+        # Helper function to format keys as dictionaries.
+        def format_key(x):
+            return dict((k, v) for k, v in zip(keys, _loads(x)) if v)
+
+        # Helper function to format groups as lists of run_ids (discards key).
+        def format_group(group):
+            return [x[1] for x in group]
+
+        items = ((format_key(k), format_group(g)) for k, g in grouped)
+
+        # Unzip items into separate where_dict and run_id containers.
+        where_dicts, grouped_run_ids = zip(*items)
+
+        # Get node matches (NOTE: accessing internal ``_dal`` directly).
+        grouped_matches = node._dal.index_records_grouped(where_dicts)
+
+        # Reformat records for output.
+        zipped = zip(grouped_run_ids, grouped_matches)
+        run_ids_where_dict_matches = ((x, y, z) for (x, (y, z)) in zipped)
+
+        return run_ids_where_dict_matches
+
     def find_matches(self, side: Literal['left', 'right']) -> None:
         if side == 'left':
             keys = self.left_keys
@@ -120,22 +181,10 @@ class _EdgeMapper(object):
             ORDER BY {side}_labels
         """)
 
-        # Group rows using lablels as key.
-        grouped = groupby(self.cur, key=lambda row: row[0])
-
-        # Format keys as dictionary, format groups as list of run_ids.
-        format_key = lambda x: dict(zip(keys, _loads(x)))
-        format_group = lambda g: [x[1] for x in g]
-        items = ((format_key(k), format_group(g)) for k, g in grouped)
-
-        # Unzip items into separate where_dict and run_id containers.
-        where_dicts, grouped_run_ids = zip(*items)
-
-        # Get node matches (NOTE: accessing internal ``_dal`` directly).
-        grouped_matches = node._dal.index_records_grouped(where_dicts)
+        run_ids_key_matches = self._find_matches_format_data(node, keys, self.cur)
 
         # Add exact matches.
-        for run_ids, (key, matches) in zip(grouped_run_ids, grouped_matches):
+        for run_ids, key, matches in run_ids_key_matches:
             first_match = next(matches)
             num_of_matches = 1 + sum(1 for _ in matches)
             if num_of_matches > 1:  # If more than one index record, the
