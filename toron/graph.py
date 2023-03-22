@@ -129,14 +129,14 @@ class _EdgeMapper(object):
             ... ]
             >>> formatted = dal._find_matches_format_data(node, keys, iterable)
             >>> for run_ids, where_dict, matches in formatted:
-            ...     print(f'{run_ids=}  {where_dict=}  {matches=}')
+            ...     print(f'{run_ids=}  {where_dict=}  {list(matches)=}')
             ...
-            run_ids=[101]  where_dict={'col1': 'A', 'col2': 'x'}  matches=[(1, 'A', 'x')]
-            run_ids=[102]  where_dict={'col1': 'A', 'col2': 'y'}  matches=[(2, 'A', 'y')]
-            run_ids=[103]  where_dict={'col1': 'B', 'col2': 'x'}  matches=[(3, 'B', 'x')]
-            run_ids=[104]  where_dict={'col1': 'B', 'col2': 'y'}  matches=[(4, 'B', 'y')]
-            run_ids=[105]  where_dict={'col1': 'C', 'col2': 'x'}  matches=[(5, 'C', 'x')]
-            run_ids=[106]  where_dict={'col1': 'C', 'col2': 'y'}  matches=[(6, 'C', 'y')]
+            run_ids=[101]  where_dict={'col1': 'A', 'col2': 'x'}  list(matches)=[(1, 'A', 'x')]
+            run_ids=[102]  where_dict={'col1': 'A', 'col2': 'y'}  list(matches)=[(2, 'A', 'y')]
+            run_ids=[103]  where_dict={'col1': 'B', 'col2': 'x'}  list(matches)=[(3, 'B', 'x')]
+            run_ids=[104]  where_dict={'col1': 'B', 'col2': 'y'}  list(matches)=[(4, 'B', 'y')]
+            run_ids=[105]  where_dict={'col1': 'C', 'col2': 'x'}  list(matches)=[(5, 'C', 'x')]
+            run_ids=[106]  where_dict={'col1': 'C', 'col2': 'y'}  list(matches)=[(6, 'C', 'y')]
         """
         # Group rows using source labels as the key.
         grouped = groupby(iterable, key=lambda row: row[0])
