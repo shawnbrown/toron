@@ -96,10 +96,10 @@ class TestEdgeMapper(TwoNodesTestCase):
         node = self.node2
         keys = ['idx1', 'idx2']
         iterable = [
-            ('["A", "x"]', 101),
-            ('["A", "y"]', 102),
-            ('["B", ""]',  103),  # <- Should match 2 index records.
-            ('["C", ""]',  104),  # <- Should match 2 index records.
+            ('["A", "x"]',  101),
+            ('["A", "y"]',  102),
+            ('["B", ""]',   103),  # <- Should match 2 index records.
+            ('["C", null]', 104),  # <- Should match 2 index records.
         ]
         formatted = mapper._find_matches_format_data(node, keys, iterable)
         result = [(a, b, list(c)) for a, b, c in formatted]
