@@ -64,6 +64,34 @@ class TestEdgeMapper(TwoNodesTestCase):
         ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 
+    def test_init_shared_column_names(self):
+        node3 = Node()
+        data3 = [
+            ['idx', 'wght'],
+            ['D', 20],
+            ['E', 10],
+            ['F', 37],
+        ]
+        node3.add_index_columns(['idx'])
+        node3.add_index_records(data3)
+        node3.add_weights(data3, 'wght', selectors=['[attr1]'])
+
+        mapper_data = [
+            ('idx', 'population', 'idx'),
+            ('A', '20', 'D'),
+            ('B', '10', 'E'),
+            ('C', '37', 'F'),
+        ]
+        mapper = _EdgeMapper(mapper_data, 'population', self.node1, node3)
+
+        mapper.cur.execute('SELECT * FROM temp.source_mapping')
+        expected = [
+            (1, '["A"]', '["D"]', 20.0),
+            (2, '["B"]', '["E"]', 10.0),
+            (3, '["C"]', '["F"]', 37.0),
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
     def test_find_matches_format_data_exact(self):
         mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
 

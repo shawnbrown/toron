@@ -90,11 +90,8 @@ class _EdgeMapper(object):
         fieldnames = next(iterator)
         weight_pos = fieldnames.index(name)
 
-        left_cols = fieldnames[:weight_pos]
-        right_cols = fieldnames[weight_pos+1:]
-
-        left_mask = tuple(int(col in left_cols) for col in fieldnames)
-        right_mask = tuple(int(col in right_cols) for col in fieldnames)
+        left_mask = tuple(i < weight_pos for i in range(len(fieldnames)))
+        right_mask = tuple(i > weight_pos for i in range(len(fieldnames)))
 
         self.left_keys = list(compress(fieldnames, left_mask))
         self.right_keys = list(compress(fieldnames, right_mask))
