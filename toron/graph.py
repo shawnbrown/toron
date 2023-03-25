@@ -182,7 +182,10 @@ class _EdgeMapper(object):
 
         # Add exact matches.
         for run_ids, key, matches in run_ids_key_matches:
-            first_match = next(matches)
+            first_match = next(matches, None)
+            if not first_match:
+                continue  # No matches--skip to next!
+
             num_of_matches = 1 + sum(1 for _ in matches)
             if num_of_matches > 1:  # If more than one index record, the
                 continue            # match is ambiguous--skip to next!

@@ -140,7 +140,7 @@ class TestEdgeMapper(TwoNodesTestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_find_matches_none_found(self):
+    def test_find_matches_format_data_none_found(self):
         mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
 
         node = self.node2
@@ -189,6 +189,20 @@ class TestEdgeMapper(TwoNodesTestCase):
 
         with self.assertRaises(ValueError):
             mapper.find_matches('blerg')  # <- Method under test.
+
+    def test_find_matches_none_found(self):
+        data = [
+            ['idx', 'population', 'idx1', 'idx2'],
+            ['X', 10, 'X', 'X'],
+            ['Y', 70, 'Y', 'Y'],
+            ['Z', 20, 'Z', 'Z'],
+        ]
+        mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
+
+        mapper.find_matches('left')  # <- Method under test.
+        mapper.cur.execute('SELECT * FROM temp.left_matches')
+        no_results = []
+        self.assertEqual(mapper.cur.fetchall(), no_results)
 
     def test_get_relations(self):
         mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
