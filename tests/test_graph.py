@@ -140,6 +140,26 @@ class TestEdgeMapper(TwoNodesTestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_find_matches_none_found(self):
+        mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
+
+        node = self.node2
+        keys = ['idx1', 'idx2']
+        iterable = [
+            ('["X", "xxx"]', 997),
+            ('["Y", "yyy"]', 998),
+            ('["Z", "zzz"]', 999),
+        ]
+        formatted = mapper._find_matches_format_data(node, keys, iterable)
+        result = [(a, b, list(c)) for a, b, c in formatted]
+
+        expected = [
+            ([997], {'idx1': 'X', 'idx2': 'xxx'}, []),
+            ([998], {'idx1': 'Y', 'idx2': 'yyy'}, []),
+            ([999], {'idx1': 'Z', 'idx2': 'zzz'}, []),
+        ]
+        self.assertEqual(result, expected)
+
     def test_find_matches(self):
         mapper = _EdgeMapper(self.data, 'population', self.node1, self.node2)
 
