@@ -160,7 +160,11 @@ class _EdgeMapper(object):
 
         return run_ids_where_dict_matches
 
-    def find_matches(self, side: Literal['left', 'right']) -> None:
+    def find_matches(
+        self,
+        side: Literal['left', 'right'],
+        match_limit: Union[int, float] = 1,
+    ) -> None:
         if side == 'left':
             keys = self.left_keys
             node = self.left_node
@@ -169,6 +173,13 @@ class _EdgeMapper(object):
             node = self.right_node
         else:
             msg = f"side must be 'left' or 'right', got {side!r}"
+            raise ValueError(msg)
+
+        if not isinstance(match_limit, (int, float)):
+            msg = f'match_limit must be int or float, got {match_limit!r}'
+            raise TypeError(msg)
+        elif match_limit < 1:
+            msg = f'match_limit must be 1 or greater, got {match_limit!r}'
             raise ValueError(msg)
 
         # Order by labels for itertools.groupby() later.

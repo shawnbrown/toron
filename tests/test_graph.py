@@ -222,6 +222,62 @@ class TestEdgeMapper(TwoNodesTestCase):
         self.assertEqual(list(relations), expected)
 
 
+class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
+    def setUp(self):
+        node1_data = [
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'x', 'a', 72],
+            ['B', 'x', 'b', 37.5],
+            ['B', 'y', 'c', 62.5],
+            ['C', 'x', 'd', 30],
+            ['C', 'y', 'e', 70],
+            ['D', 'x', 'f', 18.75],
+            ['D', 'x', 'g', 31.25],
+            ['D', 'y', 'h', 12.5],
+            ['D', 'y', 'i', 37.5],
+        ]
+        node1 = Node()
+        node1.add_index_columns(['idx1', 'idx2', 'idx3'])
+        node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        node1.add_index_records(node1_data)
+        node1.add_weights(node1_data, 'wght', selectors=['[attr1]'])
+        self.node1 = node1
+
+        node2_data = [
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'x', 'a', 25],
+            ['A', 'y', 'b', 75],
+            ['B', 'x', 'c', 80],
+            ['C', 'x', 'd', 40],
+            ['C', 'y', 'e', 60],
+            ['D', 'x', 'f', 6.25],
+            ['D', 'x', 'g', 43.75],
+            ['D', 'y', 'h', 18.75],
+            ['D', 'y', 'i', 31.25],
+        ]
+        node2 = Node()
+        node2.add_index_columns(['idx1', 'idx2', 'idx3'])
+        node2.add_discrete_categories([{'idx1'}, {'idx2', 'idx3'}])
+        node2.add_index_records(node2_data)
+        node2.add_weights(node2_data, 'wght', selectors=['[attr1]'])
+        self.node2 = node2
+
+    def test_find_matches_bad_match_limit(self):
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['A', 'x', 'a', 100, 'A', 'x', 'a'],
+        ]
+        mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
+
+        regex = 'match_limit must be 1 or greater, got 0'
+        with self.assertRaisesRegex(ValueError, regex):
+            mapper.find_matches('left', match_limit=0)
+
+        regex = "match_limit must be int or float, got 'foo'"
+        with self.assertRaisesRegex(TypeError, regex):
+            mapper.find_matches('left', match_limit='foo')
+
+
 class TestAddEdge(TwoNodesTestCase):
     def test_basics(self):
         mapping_data = [
