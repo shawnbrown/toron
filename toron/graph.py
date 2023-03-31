@@ -26,6 +26,7 @@ from ._utils import (
     TabularData,
     make_readerlike,
     NOVALUE,
+    ToronWarning,
 )
 from .node import Node
 
@@ -159,6 +160,35 @@ class _EdgeMapper(object):
         run_ids_where_dict_matches = ((x, y, z) for (x, (y, z)) in zipped)
 
         return run_ids_where_dict_matches
+
+    @staticmethod
+    def _find_matches_warn(
+        *,
+        unresolvable_count: int,
+        overlimit_count: int,
+        overlimit_max: int,
+        match_limit: Union[int, float],
+    ) -> None:
+        """If needed, emit ToronWarning with relevant information."""
+        messages = []
+
+        if unresolvable_count:
+            messages.append(
+                f'skipped {unresolvable_count} values that matched no records'
+            )
+
+        if overlimit_count:
+            messages.append(
+                f'skipped {overlimit_count} values that matched too many records'
+            )
+            messages.append(
+                f'current match_limit is {match_limit} but data includes values '
+                f'that match up to {overlimit_max} records'
+            )
+        if messages:
+            import warnings
+            msg = ', '.join(messages)
+            warnings.warn(msg, category=ToronWarning, stacklevel=3)
 
     def find_matches(
         self,

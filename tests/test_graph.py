@@ -1,8 +1,12 @@
 """Tests for toron/graph.py module."""
 
 import unittest
+import warnings
 
 from toron.node import Node
+from toron._utils import (
+    ToronWarning,
+)
 from toron.graph import (
     add_edge,
     _EdgeMapper,
@@ -276,6 +280,42 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         regex = "match_limit must be int or float, got 'foo'"
         with self.assertRaisesRegex(TypeError, regex):
             mapper.find_matches('left', match_limit='foo')
+
+    def test_find_matches_warn(self):
+        # Check that no warnings are raised when relevant args are 0.
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            _EdgeMapper._find_matches_warn(
+                unresolvable_count=0, overlimit_count=0, overlimit_max=0, match_limit=1,
+            )
+
+        # Check warning for values with no matches.
+        regex = 'skipped 11 values that matched no records'
+        with self.assertWarnsRegex(ToronWarning, regex):
+            _EdgeMapper._find_matches_warn(
+                unresolvable_count=11, overlimit_count=0, overlimit_max=0, match_limit=1,
+            )
+
+        # Check warning for values matching too many records.
+        regex = (
+            'skipped 7 values that matched too many records, '
+            'current match_limit is 3 but data includes values that match up to 5 records'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            _EdgeMapper._find_matches_warn(
+                unresolvable_count=0, overlimit_count=7, overlimit_max=5, match_limit=3,
+            )
+
+        # Check warnings on all conditions.
+        regex = (
+            'skipped 11 values that matched no records, '
+            'skipped 7 values that matched too many records, '
+            'current match_limit is 3 but data includes values that match up to 5 records'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            _EdgeMapper._find_matches_warn(
+                unresolvable_count=11, overlimit_count=7, overlimit_max=5, match_limit=3,
+            )
 
 
 class TestAddEdge(TwoNodesTestCase):
