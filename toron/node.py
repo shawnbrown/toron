@@ -6,6 +6,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 
@@ -173,6 +174,10 @@ class Node(object):
             >>> node.remove_discrete_categories([{'county'}, {'state', 'mcd'}])
         """
         self._dal.remove_discrete_categories(discrete_categories)
+
+    def structure(self) -> Sequence[Tuple]:
+        """Sequence of bitmask tuples representing the node structure."""
+        return self._dal.structure()
 
     def add_quantities(
         self,
