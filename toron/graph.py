@@ -233,8 +233,13 @@ class _EdgeMapper(object):
 
         run_ids_key_matches = self._find_matches_format_data(node, keys, self.cur)
 
+        index_columns = node.index_columns()
+        structure_set = set(node.structure())
+
         # Add exact matches and log information for other records.
         ambiguous_matches = []
+        invalid_count = 0
+        invalid_categories = set()
         unresolvable_count = 0
         overlimit_count = 0
         overlimit_max = 0
@@ -251,16 +256,27 @@ class _EdgeMapper(object):
             # If no match, add to count.
             elif num_of_matches == 0:
                 unresolvable_count += 1
-            # If ambiguous match, save for processing later.
-            elif num_of_matches <= match_limit:
-                ambiguous_matches.append((key, num_of_matches))
-            # Else, we're over match_limit, add to count.
             else:
-                overlimit_count += 1
-                overlimit_max = max(overlimit_max, num_of_matches)
+                key_cols = key.keys()
+                bitmask = tuple(int(col in key_cols) for col in index_columns)
+
+                # If ambiguous match uses invalid category, count and log it.
+                if bitmask not in structure_set:
+                    invalid_count += 1
+                    bad_category = (x for x, y in zip(index_columns, bitmask) if y)
+                    invalid_categories.add(tuple(bad_category))
+                # If ambiguous match is under allowed limit, save for later.
+                elif num_of_matches <= match_limit:
+                    ambiguous_matches.append((key, num_of_matches))
+                # Else, we're over match_limit, add to count.
+                else:
+                    overlimit_count += 1
+                    overlimit_max = max(overlimit_max, num_of_matches)
 
         self._find_matches_warn(
             unresolvable_count=unresolvable_count,
+            invalid_count=invalid_count,
+            invalid_categories=invalid_categories,
             overlimit_count=overlimit_count,
             overlimit_max=overlimit_max,
             match_limit=match_limit,

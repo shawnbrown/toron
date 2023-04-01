@@ -341,6 +341,43 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
                 match_limit=3,
             )
 
+    def test_find_matches_invalid_structure(self):
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['',  'x', '', 100, 'A', 'x', 'a'],
+            ['D', '',  '', 100, 'D', 'y', 'h'],
+            ['D', 'x', '', 100, 'D', 'x', 'g'],
+        ]
+        mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
+
+        regex = (
+            'skipped 3 values that used invalid categories:\n'
+            '  idx1\n'
+            '  idx1, idx2\n'
+            '  idx2'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches('left')
+
+        # Add one of the missing categories and try again.
+        self.node1.add_discrete_categories([{'idx1'}])
+        regex = (
+            'skipped 2 values that used invalid categories:\n'
+            '  idx1, idx2\n'
+            '  idx2'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches('left')
+
+        # Add another missing category and try again.
+        self.node1.add_discrete_categories([{'idx1', 'idx2'}])
+        regex = (
+            'skipped 1 values that used invalid categories:\n'
+            '  idx2'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches('left')
+
 
 class TestAddEdge(TwoNodesTestCase):
     def test_basics(self):
