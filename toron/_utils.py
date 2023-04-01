@@ -367,7 +367,7 @@ def parse_edge_shorthand(string):
     return None
 
 
-def make_hash(values: Iterable, sep='|') -> Optional[str]:
+def make_hash(values: Iterable, sep: str = '|') -> Optional[str]:
     """Hashes an iterable of values returning a message digest string
     or None if the given iterable is empty.
 
