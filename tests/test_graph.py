@@ -287,14 +287,24 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter('error')
             _EdgeMapper._find_matches_warn(
-                unresolvable_count=0, overlimit_count=0, overlimit_max=0, match_limit=1,
+                unresolvable_count=0,
+                invalid_count=0,
+                invalid_categories=set(),
+                overlimit_count=0,
+                overlimit_max=0,
+                match_limit=1,
             )
 
         # Check warning for values with no matches.
         regex = 'skipped 11 values that matched no records'
         with self.assertWarnsRegex(ToronWarning, regex):
             _EdgeMapper._find_matches_warn(
-                unresolvable_count=11, overlimit_count=0, overlimit_max=0, match_limit=1,
+                unresolvable_count=11,
+                invalid_count=0,
+                invalid_categories=set(),
+                overlimit_count=0,
+                overlimit_max=0,
+                match_limit=1,
             )
 
         # Check warning for values matching too many records.
@@ -304,18 +314,31 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         )
         with self.assertWarnsRegex(ToronWarning, regex):
             _EdgeMapper._find_matches_warn(
-                unresolvable_count=0, overlimit_count=7, overlimit_max=5, match_limit=3,
+                unresolvable_count=0,
+                invalid_count=0,
+                invalid_categories=set(),
+                overlimit_count=7,
+                overlimit_max=5,
+                match_limit=3,
             )
 
         # Check warnings on all conditions.
         regex = (
-            'skipped 11 values that matched no records, '
+            'skipped 13 values that matched no records, '
             'skipped 7 values that matched too many records, '
-            'current match_limit is 3 but data includes values that match up to 5 records'
+            'current match_limit is 3 but data includes values that match up to 5 records, '
+            'skipped 11 values that used invalid categories:\n'
+            '  B\n'
+            '  B, C'
         )
         with self.assertWarnsRegex(ToronWarning, regex):
             _EdgeMapper._find_matches_warn(
-                unresolvable_count=11, overlimit_count=7, overlimit_max=5, match_limit=3,
+                unresolvable_count=13,
+                invalid_count=11,
+                invalid_categories={('B', 'C'), ('B',)},
+                overlimit_count=7,
+                overlimit_max=5,
+                match_limit=3,
             )
 
 

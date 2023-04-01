@@ -16,6 +16,7 @@ from ._typing import (
     Literal,
     Optional,
     Sequence,
+    Set,
     Tuple,
     TypeAlias,
     Union,
@@ -168,6 +169,8 @@ class _EdgeMapper(object):
         overlimit_count: int,
         overlimit_max: int,
         match_limit: Union[int, float],
+        invalid_count: int,
+        invalid_categories: Set[Tuple],
     ) -> None:
         """If needed, emit ToronWarning with relevant information."""
         messages = []
@@ -185,6 +188,15 @@ class _EdgeMapper(object):
                 f'current match_limit is {match_limit} but data includes values '
                 f'that match up to {overlimit_max} records'
             )
+
+        if invalid_count:
+            category_list = [', '.join(c) for c in sorted(invalid_categories)]
+            category_string = '\n  '.join(category_list)
+            messages.append(
+                f'skipped {invalid_count} values that used invalid categories:\n'
+                f'  {category_string}'
+            )
+
         if messages:
             import warnings
             msg = ', '.join(messages)
