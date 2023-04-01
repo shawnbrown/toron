@@ -253,25 +253,30 @@ class _EdgeMapper(object):
                 parameters = ((run_id, index_id) for run_id in run_ids)
                 sql = f'INSERT INTO temp.{side}_matches (run_id, index_id) VALUES (?, ?)'
                 self.cur.executemany(sql, parameters)
-            # If no match, add to count.
-            elif num_of_matches == 0:
-                unresolvable_count += 1
-            else:
-                key_cols = key.keys()
-                bitmask = tuple(int(col in key_cols) for col in index_columns)
+                continue
 
-                # If ambiguous match uses invalid category, count and log it.
-                if bitmask not in structure_set:
-                    invalid_count += 1
-                    bad_category = (x for x, y in zip(index_columns, bitmask) if y)
-                    invalid_categories.add(tuple(bad_category))
-                # If ambiguous match is under allowed limit, save for later.
-                elif num_of_matches <= match_limit:
-                    ambiguous_matches.append((key, num_of_matches))
-                # Else, we're over match_limit, add to count.
-                else:
-                    overlimit_count += 1
-                    overlimit_max = max(overlimit_max, num_of_matches)
+            # If no match, add to count.
+            if num_of_matches == 0:
+                unresolvable_count += 1
+                continue
+
+            # If match is ambiguous, check for invalid category structure.
+            key_cols = key.keys()
+            bitmask = tuple(int(col in key_cols) for col in index_columns)
+            if bitmask not in structure_set:
+                invalid_count += 1
+                bad_category = (x for x, y in zip(index_columns, bitmask) if y)
+                invalid_categories.add(tuple(bad_category))
+                continue
+
+            # If ambiguous match is under allowed limit, save for later.
+            if num_of_matches <= match_limit:
+                ambiguous_matches.append((key, num_of_matches))
+                continue
+
+            # Else, we're over match_limit, add to count.
+            overlimit_count += 1
+            overlimit_max = max(overlimit_max, num_of_matches)
 
         self._find_matches_warn(
             unresolvable_count=unresolvable_count,
