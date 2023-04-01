@@ -245,7 +245,6 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         ]
         node1 = Node()
         node1.add_index_columns(['idx1', 'idx2', 'idx3'])
-        node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
         node1.add_index_records(node1_data)
         node1.add_weights(node1_data, 'wght', selectors=['[attr1]'])
         self.node1 = node1
@@ -264,7 +263,6 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         ]
         node2 = Node()
         node2.add_index_columns(['idx1', 'idx2', 'idx3'])
-        node2.add_discrete_categories([{'idx1'}, {'idx2', 'idx3'}])
         node2.add_index_records(node2_data)
         node2.add_weights(node2_data, 'wght', selectors=['[attr1]'])
         self.node2 = node2
