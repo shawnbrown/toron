@@ -1954,6 +1954,18 @@ class DataAccessLayer(object):
         cls._refresh_granularity(cursor)
 
     @staticmethod
+    def _structure(cursor: sqlite3.Cursor) -> Sequence[Tuple]:
+        """Sequence of bitmask tuples representing the node structure."""
+        cursor.execute('SELECT * FROM main.structure')
+        bitmasks = (row[2:] for row in cursor)  # Slice-off id and granularity.
+        return [tuple(bits) for bits in bitmasks]
+
+    def structure(self) -> Sequence[Tuple]:
+        """Sequence of bitmask tuples representing the node structure."""
+        with self._transaction(method=None) as cur:
+            return self._structure(cur)
+
+    @staticmethod
     def _refresh_granularity_sql(columns: Sequence[str]) -> str:
         r"""Return a SQL statement to UPDATE a single structure record.
 
