@@ -203,7 +203,10 @@ class TestEdgeMapper(TwoNodesTestCase):
         ]
         mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
 
-        mapper.find_matches('left')  # <- Method under test.
+        regex = 'skipped 3 values that matched no records'
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches('left')  # <- Method under test.
+
         mapper.cur.execute('SELECT * FROM temp.left_matches')
         no_results = []
         self.assertEqual(mapper.cur.fetchall(), no_results)
