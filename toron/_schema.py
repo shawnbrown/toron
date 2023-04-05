@@ -225,7 +225,7 @@ class BitList(UserList):
         >>> sqlite3.register_adapter(BitList, bytes)
         >>> sqlite3.register_converter('BLOB_BITLIST', BitList.from_bytes)
     """
-    def __init__(self, sequence: Sequence = None) -> None:
+    def __init__(self, sequence: Optional[Sequence] = None) -> None:
         """Initialize a new BitList instance."""
         if sequence is None:
             sequence = []
