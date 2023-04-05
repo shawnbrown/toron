@@ -1652,6 +1652,47 @@ class TestAddWeights(unittest.TestCase):
         self.assertEqual(result, 'vap20', msg='explicitly True replaces previous default')
 
 
+class TestWeightRecords(unittest.TestCase):
+    """Tests for dal.weighting_records() method."""
+    def setUp(self):
+        data = [
+            ['idx1', 'idx2', 'myweight'],
+            ['A', 'x', 30],
+            ['A', 'y', 15],
+            ['B', 'x', 20],
+            ['B', 'y', 70],
+        ]
+        self.dal = dal_class()
+        self.dal.set_data({'add_index_columns': ['idx1', 'idx2']})
+        self.dal.add_index_records(data)
+        self.dal.add_weights(data, name='myweight', selectors=None)
+
+        con = self.dal._connection
+        self.cursor = con.cursor()
+        self.addCleanup(con.close)
+        self.addCleanup(self.cursor.close)
+
+    def test_explicit_name(self):
+        records = self.dal.weight_records('myweight')  # <- Method under test.
+        expected = [(0, None), (1, 30.0), (2, 15.0), (3, 20.0), (4, 70.0)]
+        self.assertEqual(set(records), set(expected))
+
+    def test_implicit_name(self):
+        """When no name is given, should use default_weighting."""
+        records = self.dal.weight_records()  # <- Method under test.
+        expected = [(0, None), (1, 30.0), (2, 15.0), (3, 20.0), (4, 70.0)]
+        self.assertEqual(set(records), set(expected))
+
+    def test_filtered_records(self):
+        records = self.dal.weight_records(idx1='B')  # <- Method under test.
+        expected = [(3, 20.0), (4, 70.0)]
+        self.assertEqual(set(records), set(expected))
+
+        records = self.dal.weight_records(idx1='B', idx2='x')  # <- Method under test.
+        expected = [(3, 20.0)]
+        self.assertEqual(set(records), set(expected))
+
+
 class TestAddQuantitiesGetLocationId(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()

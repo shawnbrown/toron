@@ -1180,6 +1180,54 @@ class DataAccessLayer(object):
             elif make_default:
                 self._set_data_property(cur, 'default_weighting', name)
 
+    @eagerly_initialize
+    def weight_records(
+        self,
+        name: Optional[str] = None,
+        **where: Union[str, int],
+    ) -> Generator[Sequence, None, None]:
+        """Returns an iterator that yields weight records.
+
+        .. code-block::
+
+            >>> for x in dal.weighting_records():
+            ...     print(x)
+        """
+        with self._transaction(method=None) as cur:
+            if where:
+                columns = self._get_column_names(cur, 'node_index')
+                for key in where.keys():
+                    if key not in columns:
+                        raise KeyError(key)
+
+            if name is None:
+                name = self._get_data_property(cur, 'default_weighting')
+
+            cur.execute('SELECT name from main.weighting')
+            weighting_names = [x[0] for x in cur]
+            if name not in weighting_names:
+                raise KeyError(name)
+
+            sql = """
+                SELECT index_id, weight_value
+                FROM main.node_index t1
+                LEFT JOIN main.weight t2 USING (index_id)
+                LEFT JOIN main.weighting t3 ON (
+                    t2.weighting_id=t3.weighting_id
+                    AND t3.name=:weight_name
+                )
+            """
+            if where:
+                where_expr, parameters = self._format_select_params(where)
+                parameters['weight_name'] = name
+                sql = f'{sql}    WHERE {where_expr}'
+            else:
+                parameters = {'weight_name': name}
+
+            cur.execute(sql, parameters)
+            for row in cur:
+                yield row
+
     @staticmethod
     def _add_quantities_get_location_id(
         cursor: sqlite3.Cursor,
