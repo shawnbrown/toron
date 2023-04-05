@@ -402,7 +402,12 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
         mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
 
-        mapper.find_matches('left', match_limit=2)  # <- Method under test.
+        regex = (
+            'skipped 1 values that ambiguously matched to one or more '
+            'records that have no associated weight'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches('left', match_limit=2)  # <- Method under test.
 
         mapper.cur.execute('SELECT * FROM temp.left_matches')
         expected = [

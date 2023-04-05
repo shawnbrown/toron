@@ -172,6 +172,7 @@ class _EdgeMapper(object):
         match_limit: Union[int, float] = 1,
         invalid_count: int = 0,
         invalid_categories: Set[Tuple] = set(),
+        unweighted_count: int = 0,
     ) -> None:
         """If needed, emit ToronWarning with relevant information."""
         messages = []
@@ -195,7 +196,13 @@ class _EdgeMapper(object):
             category_string = '\n  '.join(category_list)
             messages.append(
                 f'skipped {invalid_count} values that used invalid categories:\n'
-                f'  {category_string}'
+                f'  {category_string}\n'
+            )
+
+        if unweighted_count:
+            messages.append(
+                f'skipped {unweighted_count} values that ambiguously matched '
+                f'to one or more records that have no associated weight'
             )
 
         if messages:
@@ -283,6 +290,7 @@ class _EdgeMapper(object):
             overlimit_max = max(overlimit_max, num_of_matches)
 
         # Add ambiguous matches to given matches table.
+        unweighted_count = 0
         if ambiguous_matches:
             for run_ids, where_dict, count in ambiguous_matches:
                 # Get records (NOTE: accessing internal ``_dal`` directly).
@@ -292,6 +300,7 @@ class _EdgeMapper(object):
 
                 # If any record is missing a weight value, skip to next match.
                 if any(weight is None for (_, weight) in records):
+                    unweighted_count += 1
                     continue
 
                 # Build bit list to encode mapping level.
@@ -316,6 +325,7 @@ class _EdgeMapper(object):
             overlimit_count=overlimit_count,
             overlimit_max=overlimit_max,
             match_limit=match_limit,
+            unweighted_count=unweighted_count,
         )
 
     def get_relations(
