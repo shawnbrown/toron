@@ -1481,6 +1481,47 @@ class TestAddWeights(unittest.TestCase):
         expected = set(data[1:])  # Slice-off header and convert to set.
         self.assertEqual(set(self.cursor.fetchall()), expected)
 
+    def test_missing_and_null(self):
+        """Check that missing records and records with None weight
+        are not inserted into the weight table.
+        """
+        data = [
+            ('state', 'county', 'tract', 'pop10'),
+            ('12', '001', '000200', 110),
+            ('12', '003', '040101', 212),
+            ('12', '003', '040102', 17),
+            # Omits three middle records:
+            #    ('12', '005', '000300', 10)
+            #    ('12', '007', '000200', 414)
+            #    ('12', '011', '010401', 223)
+            # Following records with None weight are not inserted:
+            ('12', '011', '010601', None),  # <- Not inserted!
+            ('12', '017', '450302', None),  # <- Not inserted!
+            ('12', '019', '030202', None),  # <- Not inserted!
+        ]
+        self.dal.add_weights(data, name='pop10', selectors=None)  # <- Method under test.
+
+        self.cursor.execute('SELECT * FROM weighting')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(1, 'pop10', None, None, 0)],  # <- is_complete is 0
+        )
+
+        self.cursor.execute("""
+            SELECT state, county, tract, weight_value
+            FROM node_index
+            NATURAL JOIN weight
+            WHERE weighting_id=1
+        """)
+
+        # Expected result only includes first three records.
+        expected = {
+            ('12', '003', '040101', 212.0),
+            ('12', '003', '040102', 17.0),
+            ('12', '001', '000200', 110.0),
+        }
+        self.assertEqual(set(self.cursor.fetchall()), expected)
+
     def test_skip_non_unique_matches(self):
         """Should only insert weights that match to a single record."""
         weights = [

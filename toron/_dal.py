@@ -1155,10 +1155,13 @@ class DataAccessLayer(object):
             # Filter column names and iterator rows to allowed columns.
             columns = tuple(compress(columns, bitmask_selectors))
             def mkrow(row):
-                weightid_and_value = (weighting_id, row[weight_pos])
-                index_labels = tuple(compress(row, bitmask_selectors))
-                return weightid_and_value + index_labels
+                weight_value = row[weight_pos]
+                index_labels = compress(row, bitmask_selectors)
+                return (weighting_id, weight_value) + tuple(index_labels)
             iterator = (mkrow(row) for row in iterator)
+
+            # Filter to rows where weight value is not None.
+            iterator = (row for row in iterator if row[1] is not None)
 
             # Insert weight records.
             sql = self._add_weights_make_sql(cur, columns)
