@@ -7,6 +7,7 @@ from json import (
 from itertools import (
     compress,
     groupby,
+    product,
 )
 from ._typing import (
     Dict,
@@ -206,6 +207,7 @@ class _EdgeMapper(object):
         self,
         side: Literal['left', 'right'],
         match_limit: Union[int, float] = 1,
+        weight_name: Optional[str] = None,
     ) -> None:
         if side == 'left':
             keys = self.left_keys
@@ -223,6 +225,8 @@ class _EdgeMapper(object):
         elif match_limit < 1:
             msg = f'match_limit must be 1 or greater, got {match_limit!r}'
             raise ValueError(msg)
+
+        parameters: Iterable[Tuple]
 
         # Order by labels for itertools.groupby() later.
         self.cur.execute(f"""
@@ -247,7 +251,7 @@ class _EdgeMapper(object):
             first_match = next(matches, tuple())  # Empty tuple if no matches.
             num_of_matches = (1 if first_match else 0) + sum(1 for _ in matches)
 
-            # If exact match, insert record.
+            # Add exact matches to given matches table.
             if num_of_matches == 1:
                 index_id, *_ = first_match  # Unpack index record (discards labels).
                 parameters = ((run_id, index_id) for run_id in run_ids)
@@ -271,12 +275,39 @@ class _EdgeMapper(object):
 
             # If ambiguous match is under allowed limit, save for later.
             if num_of_matches <= match_limit:
-                ambiguous_matches.append((key, num_of_matches))
+                ambiguous_matches.append((run_ids, key, num_of_matches))
                 continue
 
             # Else, we're over match_limit, add to count.
             overlimit_count += 1
             overlimit_max = max(overlimit_max, num_of_matches)
+
+        # Add ambiguous matches to given matches table.
+        if ambiguous_matches:
+            for run_ids, where_dict, count in ambiguous_matches:
+                # Get records (NOTE: accessing internal ``_dal`` directly).
+                records = list(
+                    node._dal.weight_records(weight_name, **where_dict)
+                )
+
+                # If any record is missing a weight value, skip to next match.
+                if any(weight is None for (_, weight) in records):
+                    continue
+
+                # Build bit list to encode mapping level.
+                key_cols = where_dict.keys()
+                mapping_level = BitList([(col in key_cols) for col in index_columns])
+
+                # Build iterator of parameters for executemany().
+                parameters = product(run_ids, records)
+                parameters = ((a, b, c) for (a, (b, c)) in parameters)
+                parameters = ((a, b, c, mapping_level) for (a, b, c) in parameters)
+                sql = f"""
+                    INSERT INTO temp.{side}_matches
+                        (run_id, index_id, weight_value, mapping_level)
+                    VALUES (?, ?, ?, ?)
+                """
+                self.cur.executemany(sql, parameters)
 
         self._find_matches_warn(
             unresolvable_count=unresolvable_count,
