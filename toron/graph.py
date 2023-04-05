@@ -166,12 +166,12 @@ class _EdgeMapper(object):
     @staticmethod
     def _find_matches_warn(
         *,
-        unresolvable_count: int,
-        overlimit_count: int,
-        overlimit_max: int,
-        match_limit: Union[int, float],
-        invalid_count: int,
-        invalid_categories: Set[Tuple],
+        unresolvable_count: int = 0,
+        overlimit_count: int = 0,
+        overlimit_max: int = 0,
+        match_limit: Union[int, float] = 1,
+        invalid_count: int = 0,
+        invalid_categories: Set[Tuple] = set(),
     ) -> None:
         """If needed, emit ToronWarning with relevant information."""
         messages = []

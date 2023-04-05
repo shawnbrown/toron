@@ -300,11 +300,6 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         with self.assertWarnsRegex(ToronWarning, regex):
             _EdgeMapper._find_matches_warn(
                 unresolvable_count=11,
-                invalid_count=0,
-                invalid_categories=set(),
-                overlimit_count=0,
-                overlimit_max=0,
-                match_limit=1,
             )
 
         # Check warning for values matching too many records.
@@ -314,9 +309,6 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         )
         with self.assertWarnsRegex(ToronWarning, regex):
             _EdgeMapper._find_matches_warn(
-                unresolvable_count=0,
-                invalid_count=0,
-                invalid_categories=set(),
                 overlimit_count=7,
                 overlimit_max=5,
                 match_limit=3,
