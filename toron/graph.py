@@ -215,6 +215,7 @@ class _EdgeMapper(object):
         side: Literal['left', 'right'],
         match_limit: Union[int, float] = 1,
         weight_name: Optional[str] = None,
+        allow_overlapping: bool = False,
     ) -> None:
         if side == 'left':
             keys = self.left_keys
@@ -289,6 +290,9 @@ class _EdgeMapper(object):
             overlimit_count += 1
             overlimit_max = max(overlimit_max, num_of_matches)
 
+        # Sort matches from least to most ambiguous.
+        ambiguous_matches = sorted(ambiguous_matches, key=lambda x: x[2])
+
         # Add ambiguous matches to given matches table.
         unweighted_count = 0
         if ambiguous_matches:
@@ -297,6 +301,22 @@ class _EdgeMapper(object):
                 records = list(
                     node._dal.weight_records(weight_name, **where_dict)
                 )
+
+                # Optionally, filter to records that have not already been
+                # matched at a finer-grained/less-ambiguous level.
+                if not allow_overlapping:
+                    index_ids = (f'({index_id})' for (index_id, _) in records)
+                    sql = f"""
+                        WITH ambiguous_match (index_id) AS (
+                            VALUES {', '.join(index_ids)}
+                        )
+                        SELECT index_id FROM ambiguous_match
+                        EXCEPT
+                        SELECT index_id FROM temp.{side}_matches
+                    """
+                    self.cur.execute(sql)
+                    no_overlap = [row[0] for row in self.cur]
+                    records = [(x, y) for (x, y) in records if x in no_overlap]
 
                 # If any record is missing a weight value, skip to next match.
                 if any(weight is None for (_, weight) in records):

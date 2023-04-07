@@ -422,6 +422,47 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
             for D/y/h (weight: 12.5) and D/y/i (weight: 37.5).
         """)
 
+    def test_find_matches_ambiguous_without_overlapping(self):
+        """Resolve overlapping matches."""
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['D', '',  '',  100, 'D', '',  ''],
+            ['D', 'x', 'g', 100, 'D', 'x', 'g'],
+            ['D', 'y', '',  100, 'D', 'y', ''],
+        ]
+        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
+
+        mapper.find_matches('left', match_limit=4, allow_overlapping=False)  # <- Method under test.
+
+        mapper.cur.execute('SELECT * FROM temp.left_matches ORDER BY run_id')
+        expected = [
+            (1, 6, 18.75, None, b'\x80'),  # <- Matched by 'D'
+            (2, 7, None,  None, None),     # <- Exact match.
+            (3, 8, 12.5,  None, b'\xc0'),  # <- Matched by 'D/y'
+            (3, 9, 37.5,  None, b'\xc0')   # <- Matched by 'D/y'
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
+    def test_find_matches_ambiguous_with_overlapping(self):
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['B', 'x', '',  100, 'B', 'x', ''],
+            ['B', '',  '',  100, 'B', '',  ''],
+        ]
+        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
+
+        mapper.find_matches('left', match_limit=4, allow_overlapping=True)  # <- Method under test.
+
+        mapper.cur.execute('SELECT * FROM temp.left_matches ORDER BY run_id')
+        expected = [
+            (1, 2, None, None, None),     # <- Exact match.
+            (2, 2, 37.5, None, b'\x80'),  # <- Matched by 'B' (overlaps the exact match)
+            (2, 3, 62.5, None, b'\x80'),  # <- Matched by 'B'
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
 
 class TestAddEdge(TwoNodesTestCase):
     def test_basics(self):
