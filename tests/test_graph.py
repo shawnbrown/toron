@@ -170,24 +170,24 @@ class TestEdgeMapper(TwoNodesTestCase):
         mapper.find_matches('left')  # <- Method under test.
         mapper.cur.execute('SELECT * FROM temp.left_matches')
         expected = [
-            (1, 1, None, None, None),
-            (2, 1, None, None, None),
-            (3, 2, None, None, None),
-            (4, 2, None, None, None),
-            (5, 3, None, None, None),
-            (6, 3, None, None, None),
+            (1, 1, None, 1.0, None),
+            (2, 1, None, 1.0, None),
+            (3, 2, None, 1.0, None),
+            (4, 2, None, 1.0, None),
+            (5, 3, None, 1.0, None),
+            (6, 3, None, 1.0, None),
         ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 
         mapper.find_matches('right')  # <- Method under test.
         mapper.cur.execute('SELECT * FROM temp.right_matches')
         expected = [
-            (1, 1, None, None, None),
-            (2, 2, None, None, None),
-            (3, 3, None, None, None),
-            (4, 4, None, None, None),
-            (5, 5, None, None, None),
-            (6, 6, None, None, None),
+            (1, 1, None, 1.0, None),
+            (2, 2, None, 1.0, None),
+            (3, 3, None, 1.0, None),
+            (4, 4, None, 1.0, None),
+            (5, 5, None, 1.0, None),
+            (6, 6, None, 1.0, None),
         ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 
@@ -412,12 +412,12 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
 
         mapper.cur.execute('SELECT * FROM temp.left_matches')
         expected = [
-            (1, 2, 37.5, None, b'\x80'),
-            (1, 3, 62.5, None, b'\x80'),
-            (2, 8, 12.5, None, b'\xc0'),
-            (2, 9, 37.5, None, b'\xc0'),
-            (3, 8, 12.5, None, b'\xc0'),
-            (3, 9, 37.5, None, b'\xc0')
+            (1, 2, 37.5, 0.375, b'\x80'),
+            (1, 3, 62.5, 0.625, b'\x80'),
+            (2, 8, 12.5, 0.25,  b'\xc0'),
+            (2, 9, 37.5, 0.75,  b'\xc0'),
+            (3, 8, 12.5, 0.25,  b'\xc0'),
+            (3, 9, 37.5, 0.75,  b'\xc0')
         ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 
@@ -439,8 +439,8 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
 
         mapper.cur.execute('SELECT * FROM temp.left_matches')
         expected = [
-            (2, 8, 12.5, None, b'\xc0'),
-            (2, 9, 37.5, None, b'\xc0'),
+            (2, 8, 12.5, 0.25, b'\xc0'),
+            (2, 9, 37.5, 0.75, b'\xc0'),
         ]
         self.assertEqual(mapper.cur.fetchall(), expected, msg="""
             The left-hand node does not have a weight for index D/x/g.
@@ -465,10 +465,10 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
 
         mapper.cur.execute('SELECT * FROM temp.left_matches ORDER BY run_id')
         expected = [
-            (1, 6, 18.75, None, b'\x80'),  # <- Matched by 'D'
-            (2, 7, None,  None, None),     # <- Exact match.
-            (3, 8, 12.5,  None, b'\xc0'),  # <- Matched by 'D/y'
-            (3, 9, 37.5,  None, b'\xc0')   # <- Matched by 'D/y'
+            (1, 6, 18.75, 1.0,  b'\x80'),  # <- Matched by 'D'
+            (2, 7, None,  1.0,  None),     # <- Exact match.
+            (3, 8, 12.5,  0.25, b'\xc0'),  # <- Matched by 'D/y'
+            (3, 9, 37.5,  0.75, b'\xc0')   # <- Matched by 'D/y'
         ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 
@@ -485,9 +485,9 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
 
         mapper.cur.execute('SELECT * FROM temp.left_matches ORDER BY run_id')
         expected = [
-            (1, 2, None, None, None),     # <- Exact match.
-            (2, 2, 37.5, None, b'\x80'),  # <- Matched by 'B' (overlaps the exact match)
-            (2, 3, 62.5, None, b'\x80'),  # <- Matched by 'B'
+            (1, 2, None, 1.0,   None),     # <- Exact match.
+            (2, 2, 37.5, 0.375, b'\x80'),  # <- Matched by 'B' (overlaps the exact match)
+            (2, 3, 62.5, 0.625, b'\x80'),  # <- Matched by 'B'
         ]
         self.assertEqual(mapper.cur.fetchall(), expected)
 

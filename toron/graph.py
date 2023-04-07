@@ -359,6 +359,8 @@ class _EdgeMapper(object):
                 """
                 self.cur.executemany(sql, parameters)
 
+        self._refresh_proportions(side)
+
         self._find_matches_warn(
             unresolvable_count=unresolvable_count,
             invalid_count=invalid_count,
