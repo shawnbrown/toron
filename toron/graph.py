@@ -163,6 +163,27 @@ class _EdgeMapper(object):
 
         return run_ids_where_dict_matches
 
+    def _refresh_proportions(self, side: Literal['left', 'right']) -> None:
+        """Update 'proportion' values in left or right matches table."""
+        sql = f"""
+            WITH
+                SummedValues AS (
+                    SELECT
+                        run_id AS summed_run_id,
+                        SUM(weight_value) AS summed_weight_value
+                    FROM temp.{side}_matches
+                    GROUP BY run_id
+                )
+            UPDATE temp.{side}_matches
+            SET proportion=COALESCE(
+                (weight_value / (SELECT summed_weight_value
+                                 FROM SummedValues
+                                 WHERE run_id=summed_run_id)),
+                1.0
+            )
+        """
+        self.cur.execute(sql)
+
     @staticmethod
     def _find_matches_warn(
         *,

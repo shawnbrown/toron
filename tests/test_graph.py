@@ -333,6 +333,34 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
                 match_limit=3,
             )
 
+    def test_refresh_proportions(self):
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            # <data rows omitted--not needed for this test>
+        ]
+        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
+
+        sql = 'INSERT INTO temp.left_matches VALUES (?, ?, ?, ?, ?)'
+        parameters = [
+            (1, 6, 18.75, None, b'\x80'),
+            (2, 7, None,  None, None),
+            (3, 8, 12.5,  None, b'\xc0'),
+            (3, 9, 37.5,  None, b'\xc0')
+        ]
+        mapper.cur.executemany(sql, parameters)
+
+        mapper._refresh_proportions('left')  # <- Method under test.
+
+        mapper.cur.execute('SELECT * FROM temp.left_matches')
+        expected = [
+            (1, 6, 18.75, 1.00, b'\x80'),
+            (2, 7, None,  1.00, None),
+            (3, 8, 12.5,  0.25, b'\xc0'),
+            (3, 9, 37.5,  0.75, b'\xc0')
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
     def test_find_matches_invalid_structure(self):
         data = [
             ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
