@@ -228,6 +228,59 @@ class TestEdgeMapper(TwoNodesTestCase):
         ]
         self.assertEqual(list(relations), expected)
 
+    def test_get_relations_ambiguous(self):
+        data = [
+            ['idx', 'population', 'idx1', 'idx2'],
+            ['A', 90, 'A', ''],   # <- Matched to 2 right-side records.
+            ['B', 20, 'B', 'x'],  # <- Exact match.
+            ['B', 60, 'B', 'y'],  # <- Exact match.
+            ['C', 28, 'C', ''],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
+            ['C', 7, 'C', 'y'],   # <- Exact match (overlapps the records matched on "C" alone).
+        ]
+        self.node2.add_discrete_categories([{'idx1'}])
+        mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
+        mapper.find_matches('left')
+        mapper.find_matches('right', match_limit=2)
+
+        relations = mapper.get_relations('right')  # <- Method under test.
+
+        expected = [
+            (1, 1, 15.0, b'\x80'),
+            (1, 2, 75.0, b'\x80'),
+            (2, 3, 20.0, None),
+            (2, 4, 60.0, None),
+            (3, 5, 28.0, b'\x80'),
+            (3, 6,  7.0, None),
+        ]
+        self.assertEqual(list(relations), expected)
+
+    def test_get_relations_ambiguous_allow_overlapping(self):
+        data = [
+            ['idx', 'population', 'idx1', 'idx2'],
+            ['A', 90, 'A', ''],   # <- Matched to 2 right-side records.
+            ['B', 20, 'B', 'x'],  # <- Exact match.
+            ['B', 60, 'B', 'y'],  # <- Exact match.
+            ['C', 28, 'C', ''],   # <- Matched to 2 right-side record (2-ambiguous, allowing overlap).
+            ['C', 7, 'C',  'y'],  # <- Exact match (overlapps the records matched on "C" alone).
+        ]
+        self.node2.add_discrete_categories([{'idx1'}])
+        mapper = _EdgeMapper(data, 'population', self.node1, self.node2)
+
+        mapper.find_matches('left')
+        mapper.find_matches('right', match_limit=2, allow_overlapping=True)
+        relations = mapper.get_relations('right')  # <- Method under test.
+
+        expected = [
+            (1, 1, 15.0, b'\x80'),
+            (1, 2, 75.0, b'\x80'),
+            (2, 3, 20.0, None),
+            (2, 4, 60.0, None),
+            (3, 5, 10.4, b'\x80'),
+            (3, 6, 7.0,  None),    # <- Exact match overlapped by ambiguous match.
+            (3, 6, 17.6, b'\x80')  # <- Ambiguous match that overlaps exact.
+        ]
+        self.assertEqual(list(relations), expected)
+
 
 class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
     def setUp(self):

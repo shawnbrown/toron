@@ -392,15 +392,26 @@ class _EdgeMapper(object):
             raise ValueError(msg)
 
         self.cur.execute(f"""
+            WITH
+                joint_probability AS (
+                    SELECT
+                        run_id,
+                        src.index_id AS other_index_id,
+                        dst.index_id AS index_id,
+                        src.proportion * dst.proportion AS proportion,
+                        dst.mapping_level AS mapping_level
+                    FROM temp.{other_side}_matches src
+                    JOIN temp.{side}_matches dst USING (run_id)
+                )
             SELECT
-                t2.index_id AS other_index_id,
-                t3.index_id AS index_id,
-                SUM(weight) AS relation_value,
-                NULL AS mapping_level
-            FROM temp.source_mapping t1
-            JOIN temp.{other_side}_matches t2 USING (run_id)
-            JOIN temp.{side}_matches t3 USING (run_id)
-            GROUP BY t2.index_id, t3.index_id
+                other_index_id,
+                index_id,
+                SUM(weight * proportion) AS relation_value,
+                mapping_level
+            FROM temp.source_mapping
+            JOIN joint_probability USING (run_id)
+            GROUP BY other_index_id, index_id, mapping_level
+            ORDER BY other_index_id, index_id, mapping_level
         """)
         return self.cur
 
