@@ -4,6 +4,7 @@ import unittest
 import warnings
 
 from toron.node import Node
+from toron._schema import BitList
 from toron._utils import (
     ToronWarning,
 )
@@ -619,5 +620,53 @@ class TestAddEdge(unittest.TestCase):
             (9,  1, 8, 8, 100.0, 1.0, None),
             (10, 1, 9, 9, 100.0, 1.0, None),
             (11, 1, 0, 0,   0.0, 1.0, None),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_some_ambiguous(self):
+        self.maxDiff = None
+
+        self.node1.add_discrete_categories([{'idx1'}])
+        self.node2.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+
+        mapping_data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['A', 'z', '',   50, 'A', 'z', ''],   # <- Matched to 2 right-side records.
+            ['B', '',  '',  100, 'B', '',  ''],   # <- Exact right-side match because there's only one "B".
+            ['C', '',  '',  105, 'C', '',  ''],   # <- Matched to 2 right-side records.
+            ['D', 'x', 'g', 100, 'D', 'x', 'g'],  # <- Exact match (overlapps the records matched on "D" alone).
+            ['D', '',  '',  300, 'D', '',  ''],   # <- Matched to 3 right-side records (4-ambiguous, minus 1-exact overlap).
+        ]
+        add_edge(  # <- The method under test.
+            data=mapping_data,
+            name='population',
+            left_node=self.node1,
+            direction='-->',
+            right_node=self.node2,
+            match_limit=4,
+        )
+
+        con = self.node2._dal._get_connection()
+        results = con.execute('SELECT * FROM main.relation').fetchall()
+        expected = [
+            (1,  1, 1, 1, 12.5,    0.25,   BitList([1, 1, 0])),
+            (2,  1, 1, 2, 37.5,    0.75,   BitList([1, 1, 0])),
+            (3,  1, 2, 3, 37.5,    1.0,    None),
+            (4,  1, 3, 3, 62.5,    1.0,    None),
+            (5,  1, 4, 4, 19.6875, 0.25,   BitList([1, 0, 0])),
+            (6,  1, 4, 5, 59.0625, 0.75,   BitList([1, 0, 0])),
+            (7,  1, 5, 4, 6.5625,  0.25,   BitList([1, 0, 0])),
+            (8,  1, 5, 5, 19.6875, 0.75,   BitList([1, 0, 0])),
+            (9,  1, 6, 6, 28.125,  0.375,  BitList([1, 0, 0])),
+            (10, 1, 6, 8, 23.4375, 0.3125, BitList([1, 0, 0])),
+            (11, 1, 6, 9, 23.4375, 0.3125, BitList([1, 0, 0])),
+            (12, 1, 7, 7, 100.0,   1.0,    None),
+            (13, 1, 8, 6, 56.25,   0.375,  BitList([1, 0, 0])),
+            (14, 1, 8, 8, 46.875,  0.3125, BitList([1, 0, 0])),
+            (15, 1, 8, 9, 46.875,  0.3125, BitList([1, 0, 0])),
+            (16, 1, 9, 6, 28.125,  0.375,  BitList([1, 0, 0])),
+            (17, 1, 9, 8, 23.4375, 0.3125, BitList([1, 0, 0])),
+            (18, 1, 9, 9, 23.4375, 0.3125, BitList([1, 0, 0])),
+            (19, 1, 0, 0, 0.0,     1.0,    None)
         ]
         self.assertEqual(results, expected)

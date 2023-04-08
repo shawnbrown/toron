@@ -434,11 +434,14 @@ def add_edge(
     direction : Direction,
     right_node : Node,
     selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
+    match_limit: Union[int, float] = 1,
+    weight_name: Optional[str] = None,
+    allow_overlapping: bool = False,
 ) -> None:
     mapper = _EdgeMapper(data, name, left_node, right_node)
     try:
-        mapper.find_matches('left')
-        mapper.find_matches('right')
+        mapper.find_matches('left', match_limit, weight_name, allow_overlapping)
+        mapper.find_matches('right', match_limit, weight_name, allow_overlapping)
 
         if '<' in direction:
             relations = mapper.get_relations('left')
