@@ -219,12 +219,12 @@ class TestEdgeMapper(TwoNodesTestCase):
         relations = mapper.get_relations('right')  # <- Method under test.
 
         expected = [
-            (1, 1, 10.0),
-            (1, 2, 70.0),
-            (2, 3, 20.0),
-            (2, 4, 60.0),
-            (3, 5, 30.0),
-            (3, 6, 50.0),
+            (1, 1, 10.0, None),
+            (1, 2, 70.0, None),
+            (2, 3, 20.0, None),
+            (2, 4, 60.0, None),
+            (3, 5, 30.0, None),
+            (3, 6, 50.0, None),
         ]
         self.assertEqual(list(relations), expected)
 
