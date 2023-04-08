@@ -3370,11 +3370,11 @@ class TestAddEdgeRelations(unittest.TestCase):
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[
-                (6, 1, 110.0),
-                (7, 2, 120.0),
-                (8, 3, 130.0),
-                (9, 4, 140.0),
-                (0, 0,   0.0),
+                (6, 1, 110.0, None),
+                (7, 2, 120.0, None),
+                (8, 3, 130.0, None),
+                (9, 4, 140.0, None),
+                (0, 0,   0.0, None),
             ],
         )
 
@@ -3397,11 +3397,11 @@ class TestAddEdgeRelations(unittest.TestCase):
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[
-                (6, 1, 110.0),
-                (7, 2, 120.0),
-                (8, 3, 130.0),
-                (9, 4, 140.0),
-                (0, 0,   0.0),
+                (6, 1, 110.0, None),
+                (7, 2, 120.0, None),
+                (8, 3, 130.0, None),
+                (9, 4, 140.0, None),
+                (0, 0,   0.0, None),
             ],
         )
 
@@ -3409,8 +3409,8 @@ class TestAddEdgeRelations(unittest.TestCase):
             cursor=self.cur,
             edge_id=self.edge_id,
             relations=[
-                (8, 3, 980.0),
-                (9, 4, 990.0),
+                (8, 3, 980.0, None),
+                (9, 4, 990.0, None),
             ],
         )
 
@@ -3432,7 +3432,10 @@ class TestAddEdgeRelations(unittest.TestCase):
         self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=self.edge_id,
-            relations=[(6, 1, 110.0), (7, 2, 120.0), (8, 3, 130.0), (9, 4, 140.0)],
+            relations=[(6, 1, 110.0, None),
+                       (7, 2, 120.0, None),
+                       (8, 3, 130.0, None),
+                       (9, 4, 140.0, None)],
         )
 
         results = sorted(self.cur.execute(
@@ -3453,7 +3456,9 @@ class TestAddEdgeRelations(unittest.TestCase):
         self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=self.edge_id,
-            relations=[(6, 1, 110.0), (7, 2, 120.0), (0, 0, 999.0)],  # <- Undefined relation with weight 999.
+            relations=[(6, 1, 110.0, None),
+                       (7, 2, 120.0, None),
+                       (0, 0, 999.0, None)],  # <- Undefined relation with weight 999.
         )
 
         results = sorted(self.cur.execute(
@@ -3512,13 +3517,13 @@ class TestRefreshProportions(unittest.TestCase):
 
     def test_refresh_proportions(self):
         edge_id = self.add_edge_and_relations([
-            (6, 1, 117.0),
-            (6, 2,  91.0),
-            (7, 3, 110.0),
-            (7, 4,  50.0),
-            (8, 3,  97.0),
-            (8, 4,   0.0),
-            (0, 0,   0.0),
+            (6, 1, 117.0, None),
+            (6, 2,  91.0, None),
+            (7, 3, 110.0, None),
+            (7, 4,  50.0, None),
+            (8, 3,  97.0, None),
+            (8, 4,   0.0, None),
+            (0, 0,   0.0, None),
         ])
         self.dal._refresh_proportions(self.cur, edge_id)  # <- Method under test.
 
@@ -3537,18 +3542,18 @@ class TestRefreshProportions(unittest.TestCase):
     def test_zero_weight_relations(self):
         """When the sum of a relation's values are 0, divide evenly."""
         edge_id = self.add_edge_and_relations([
-            (6, 1, 0.0),
-            (6, 2, 0.0),
-            (6, 3, 0.0),
-            (6, 4, 0.0),
-            (7, 3, 0.0),
-            (7, 4, 0.0),
-            (8, 4, 0.0),
-            (9, 1, 7.5),
-            (9, 2, 0.0),
-            (9, 3, 0.0),
-            (9, 4, 4.5),
-            (0, 0, 0.0),
+            (6, 1, 0.0, None),
+            (6, 2, 0.0, None),
+            (6, 3, 0.0, None),
+            (6, 4, 0.0, None),
+            (7, 3, 0.0, None),
+            (7, 4, 0.0, None),
+            (8, 4, 0.0, None),
+            (9, 1, 7.5, None),
+            (9, 2, 0.0, None),
+            (9, 3, 0.0, None),
+            (9, 4, 4.5, None),
+            (0, 0, 0.0, None),
         ])
         self.dal._refresh_proportions(self.cur, edge_id)  # <- Method under test.
 
@@ -3588,12 +3593,12 @@ class TestRefreshProportions(unittest.TestCase):
 
     def test_handling_for_undefined_points(self):
         edge_id = self.add_edge_and_relations([
-            (6, 0, 117.0),  # 6 -> 0 (defined-to-undefined)
-            (6, 2,  91.0),  # 6 -> 2 (defined-to-defined)
-            (7, 0, 110.0),  # 7 -> 0 (defined-to-undefined)
-            (7, 4,  50.0),  # 7 -> 4 (defined-to-defined)
-            (0, 3,  97.0),  # 0 -> 3 (undefined-to-defined)
-            (0, 4,   0.0),  # 0 -> 4 (undefined-to-defined)
+            (6, 0, 117.0, None),  # 6 -> 0 (defined-to-undefined)
+            (6, 2,  91.0, None),  # 6 -> 2 (defined-to-defined)
+            (7, 0, 110.0, None),  # 7 -> 0 (defined-to-undefined)
+            (7, 4,  50.0, None),  # 7 -> 4 (defined-to-defined)
+            (0, 3,  97.0, None),  # 0 -> 3 (undefined-to-defined)
+            (0, 4,   0.0, None),  # 0 -> 4 (undefined-to-defined)
         ])
         self.dal._refresh_proportions(self.cur, edge_id)  # <- Method under test.
 
@@ -3640,7 +3645,10 @@ class TestRefreshOtherIndexHash(unittest.TestCase):
         self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=edge_id,
-            relations=[(6, 1, 110.0), (7, 2, 120.0), (8, 3, 130.0), (9, 4, 140.0)],
+            relations=[(6, 1, 110.0, None),
+                       (7, 2, 120.0, None),
+                       (8, 3, 130.0, None),
+                       (9, 4, 140.0, None)],
         )
 
         # Add second edge (same distinct other_index_id values as "edge 3")
@@ -3650,7 +3658,10 @@ class TestRefreshOtherIndexHash(unittest.TestCase):
         self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=edge_id,
-            relations=[(1, 1, 110.0), (1, 2, 120.0), (2, 3, 130.0), (2, 4, 140.0)],
+            relations=[(1, 1, 110.0, None),
+                       (1, 2, 120.0, None),
+                       (2, 3, 130.0, None),
+                       (2, 4, 140.0, None)],
         )
 
         # Add third edge (same distinct other_index_id values as "edge 2").
@@ -3660,7 +3671,7 @@ class TestRefreshOtherIndexHash(unittest.TestCase):
         self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=edge_id,
-            relations=[(1, 1, 110.0), (2, 2, 120.0)],
+            relations=[(1, 1, 110.0, None), (2, 2, 120.0, None)],
         )
 
     def test_refresh_single_edge(self):
@@ -3731,7 +3742,10 @@ class TestRefreshIsLocallyComplete(unittest.TestCase):
         self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=edge_id,
-            relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 130.0), (4, 4, 140.0)],  # <- Complete.
+            relations=[(1, 1, 110.0, None),
+                       (2, 2, 120.0, None),
+                       (3, 3, 130.0, None),
+                       (4, 4, 140.0, None)],  # <- Complete.
         )
 
         # Add second edge
@@ -3741,7 +3755,10 @@ class TestRefreshIsLocallyComplete(unittest.TestCase):
         self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=edge_id,
-            relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 100.0), (4, 3, 30.0)],  # <- Not complete (missing 4).
+            relations=[(1, 1, 110.0, None),
+                       (2, 2, 120.0, None),
+                       (3, 3, 100.0, None),
+                       (4, 3,  30.0, None)],  # <- Not complete (missing 4).
         )
 
     def test_complete(self):
@@ -3783,7 +3800,10 @@ class TestAddEdge(unittest.TestCase):
         self.dal.add_incoming_edge(
             unique_id='00000000-0000-0000-0000-000000000000',
             name='edge 1',
-            relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 130.0), (4, 4, 140.0)],
+            relations=[(1, 1, 110.0, None),
+                       (2, 2, 120.0, None),
+                       (3, 3, 130.0, None),
+                       (4, 4, 140.0, None)],
             description='Edge one description.',
             selectors=['[foo="bar"]'],
             filename_hint='other-file.toron',
@@ -3884,7 +3904,10 @@ class TestAddEdge(unittest.TestCase):
         self.dal.add_incoming_edge(
             unique_id='00000000-0000-0000-0000-000000000000',
             name='edge 1',
-            relations=[(1, 1, 110.0), (2, 2, 120.0), (3, 3, 100.0), (4, 3, 30.0)],
+            relations=[(1, 1, 110.0, None),
+                       (2, 2, 120.0, None),
+                       (3, 3, 100.0, None),
+                       (4, 3,  30.0, None)],
         )
 
         # Check "edge" record.
@@ -3938,7 +3961,10 @@ class TestEditIncomingEdge(unittest.TestCase):
         self.dal.add_incoming_edge(
             unique_id='0000-00-00-00-000000',
             name='edge 1',
-            relations=[(1, 1, 11.0), (2, 2, 12.0), (3, 3, 13.0), (4, 4, 14.0)],
+            relations=[(1, 1, 11.0, None),
+                       (2, 2, 12.0, None),
+                       (3, 3, 13.0, None),
+                       (4, 4, 14.0, None)],
             description='A description of Edge One.',
             selectors=['[foo="bar"]'],
             filename_hint='other-file.toron',
@@ -4131,16 +4157,16 @@ class TestTranslate(unittest.TestCase):
             unique_id='00000000-0000-0000-0000-000000000000',
             name='edge 1',
             relations=[
-                (1, 1,  39.0),  # proportion: 0.6
-                (1, 2,  26.0),  # proportion: 0.4
-                (2, 2,  16.0),  # proportion: 1.0
-                (3, 2,  50.0),  # proportion: 0.250
-                (3, 3,  25.0),  # proportion: 0.125
-                (3, 4, 125.0),  # proportion: 0.625
-                (4, 3,  64.0),  # proportion: 1.0
-                (5, 3,  19.0),  # proportion: 0.38
-                (5, 4,  31.0),  # proportion: 0.62
-                (0, 0,   0.0),  # proportion: 1.0
+                (1, 1,  39.0, None),  # proportion: 0.6
+                (1, 2,  26.0, None),  # proportion: 0.4
+                (2, 2,  16.0, None),  # proportion: 1.0
+                (3, 2,  50.0, None),  # proportion: 0.250
+                (3, 3,  25.0, None),  # proportion: 0.125
+                (3, 4, 125.0, None),  # proportion: 0.625
+                (4, 3,  64.0, None),  # proportion: 1.0
+                (5, 3,  19.0, None),  # proportion: 0.38
+                (5, 4,  31.0, None),  # proportion: 0.62
+                (0, 0,   0.0, None),  # proportion: 1.0
             ],
             description='Edge one description.',
             selectors=['[foo="bar"]'],
@@ -4151,16 +4177,16 @@ class TestTranslate(unittest.TestCase):
             unique_id='00000000-0000-0000-0000-000000000000',
             name='edge 2',
             relations=[
-                (1, 1, 32.0),   # proportion: 0.5
-                (1, 2, 32.0),   # proportion: 0.5
-                (2, 2, 15.0),   # proportion: 1.0
-                (3, 2, 85.5),   # proportion: 0.333984375
-                (3, 3, 85.25),  # proportion: 0.3330078125
-                (3, 4, 85.25),  # proportion: 0.3330078125
-                (4, 3, 64.0),   # proportion: 1.0
-                (5, 3, 50.0),   # proportion: 0.5
-                (5, 4, 50.0),   # proportion: 0.5
-                (0, 0,  0.0),   # proportion: 1.0
+                (1, 1, 32.0,  None),  # proportion: 0.5
+                (1, 2, 32.0,  None),  # proportion: 0.5
+                (2, 2, 15.0,  None),  # proportion: 1.0
+                (3, 2, 85.5,  None),  # proportion: 0.333984375
+                (3, 3, 85.25, None),  # proportion: 0.3330078125
+                (3, 4, 85.25, None),  # proportion: 0.3330078125
+                (4, 3, 64.0,  None),  # proportion: 1.0
+                (5, 3, 50.0,  None),  # proportion: 0.5
+                (5, 4, 50.0,  None),  # proportion: 0.5
+                (0, 0,  0.0,  None),  # proportion: 1.0
             ],
             description='Edge two description.',
             selectors=['[foo]'],

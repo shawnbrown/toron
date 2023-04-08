@@ -2319,7 +2319,7 @@ class DataAccessLayer(object):
     def _add_edge_relations(
         cursor: sqlite3.Cursor,
         edge_id: int,
-        relations: Iterable[Tuple[int, int, float]],
+        relations: Iterable[Tuple[int, int, float, Union[bytes, None]]],
     ) -> None:
         """Add incoming edge from other node."""
         sql = """
@@ -2327,12 +2327,13 @@ class DataAccessLayer(object):
                 edge_id,
                 other_index_id,
                 index_id,
-                relation_value
+                relation_value,
+                mapping_level
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?)
         """
-        relations = chain(relations, [(0, 0, 0.0)])  # Append "undefined" relation.
-        params_iter = ((edge_id, a, b, c) for a, b, c in relations)
+        relations = chain(relations, [(0, 0, 0.0, None)])  # Append "undefined" relation.
+        params_iter = ((edge_id, a, b, c, d) for a, b, c, d in relations)
         cursor.executemany(sql, params_iter)
 
     @staticmethod
@@ -2441,7 +2442,7 @@ class DataAccessLayer(object):
         self,
         unique_id: str,
         name: str,
-        relations: Iterable[Tuple[int, int, float]],
+        relations: Iterable[Tuple[int, int, float, Union[bytes, None]]],
         description: Union[str, None, NoValueType] = NOVALUE,
         selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
@@ -2454,7 +2455,7 @@ class DataAccessLayer(object):
             dal.add_incoming_edge(
                 unique_id='00000000-0000-0000-0000-000000000000',
                 name='pop20+',
-                relations=[(1, 1, 110.0), (2, 2, 120.0), ...],
+                relations=[(1, 1, 110.0, None), (2, 2, 120.0, None), ...],
                 description='Population Ages 20 and up.',
                 selectors=['[category="pop"]'],
                 filename_hint='other-file.toron',
