@@ -2450,6 +2450,29 @@ class DataAccessLayer(object):
     ) -> None:
         """Add an incoming edge from another node.
 
+        Parameters
+        ----------
+        unique_id : str
+            The unique_id string of the node that the edge is coming
+            from.
+        name : str
+            A name used to identify the edge.
+        relations : Iterable[Tuple[int, int, float, Union[bytes, None]]]
+            An iterable of tuples containing the relationship
+            information. Each tuple should contain four items:
+            (other_index_id, index_id, relation_value, mapping_level)
+        description : str (optional)
+            An optional description describing the relationship and its
+            weight values.
+        selectors : list of selector strings (optional)
+            Any selectors used to match attributes.
+        filename_hint : str
+            The filename of the node that the edge is coming from.
+        make_default : bool (optional)
+            A flag to determine if the edge should be used as the
+            default edge when attributes cannot be matched using
+            any of the edge's selectors.
+
         .. code-block::
 
             dal.add_incoming_edge(
