@@ -373,7 +373,7 @@ class _EdgeMapper(object):
 
     def get_relations(
         self, side: Literal['left', 'right']
-    ) -> Iterable[Tuple[int, int, float]]:
+    ) -> Iterable[Tuple[int, int, float, Union[bytes, None]]]:
         """Returns an iterable of relations going into the table on the
         given *side* (coming from the other side).
 
@@ -395,7 +395,8 @@ class _EdgeMapper(object):
             SELECT
                 t2.index_id AS other_index_id,
                 t3.index_id AS index_id,
-                SUM(weight) AS relation_value
+                SUM(weight) AS relation_value,
+                NULL AS mapping_level
             FROM temp.source_mapping t1
             JOIN temp.{other_side}_matches t2 USING (run_id)
             JOIN temp.{side}_matches t3 USING (run_id)
