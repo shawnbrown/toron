@@ -492,19 +492,59 @@ class TestEdgeMapperWithAmbiguousMappings(unittest.TestCase):
         self.assertEqual(mapper.cur.fetchall(), expected)
 
 
-class TestAddEdge(TwoNodesTestCase):
-    def test_basics(self):
-        mapping_data = [
-            ['idx', 'population', 'idx1', 'idx2'],
-            ['A', 10, 'A', 'x'],
-            ['A', 70, 'A', 'y'],
-            ['B', 20, 'B', 'x'],
-            ['B', 60, 'B', 'y'],
-            ['C', 30, 'C', 'x'],
-            ['C', 50, 'C', 'y'],
+class TestAddEdge(unittest.TestCase):
+    def setUp(self):
+        node1_data = [
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'z', 'a', 72],
+            ['B', 'x', 'b', 37.5],
+            ['B', 'y', 'c', 62.5],
+            ['C', 'x', 'd', 75],
+            ['C', 'y', 'e', 25],
+            ['D', 'x', 'f', 25],
+            ['D', 'x', 'g', None],
+            ['D', 'y', 'h', 50],
+            ['D', 'y', 'i', 25],
         ]
+        node1 = Node()
+        node1.add_index_columns(['idx1', 'idx2', 'idx3'])
+        node1.add_index_records(node1_data)
+        node1.add_weights(node1_data, 'wght', selectors=['[attr1]'])
+        self.node1 = node1
 
-        add_edge(                 # <- The method under test.
+        node2_data = [
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'z', 'a', 25],
+            ['A', 'z', 'b', 75],
+            ['B', 'x', 'c', 80],
+            ['C', 'x', 'd', 25],
+            ['C', 'y', 'e', 75],
+            ['D', 'x', 'f', 37.5],
+            ['D', 'x', 'g', 43.75],
+            ['D', 'y', 'h', 31.25],
+            ['D', 'y', 'i', 31.25],
+        ]
+        node2 = Node()
+        node2.add_index_columns(['idx1', 'idx2', 'idx3'])
+        node2.add_index_records(node2_data)
+        node2.add_weights(node2_data, 'wght', selectors=['[attr1]'])
+        self.node2 = node2
+
+    def test_all_exact(self):
+        mapping_data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['A', 'z', 'a',  25, 'A', 'z', 'a'],
+            ['A', 'z', 'a',  25, 'A', 'z', 'b'],
+            ['B', 'x', 'b',  50, 'B', 'x', 'c'],
+            ['B', 'y', 'c',  50, 'B', 'x', 'c'],
+            ['C', 'x', 'd',  55, 'C', 'x', 'd'],
+            ['C', 'y', 'e',  50, 'C', 'y', 'e'],
+            ['D', 'x', 'f', 100, 'D', 'x', 'f'],
+            ['D', 'x', 'g', 100, 'D', 'x', 'g'],
+            ['D', 'y', 'h', 100, 'D', 'y', 'h'],
+            ['D', 'y', 'i', 100, 'D', 'y', 'i'],
+        ]
+        add_edge(  # <- The method under test.
             data=mapping_data,
             name='population',
             left_node=self.node1,
@@ -514,14 +554,17 @@ class TestAddEdge(TwoNodesTestCase):
 
         con = self.node2._dal._get_connection()
         results = con.execute('SELECT * FROM relation').fetchall()
-
         expected = [
-            (1, 1, 1, 1, 10.0, 0.125, None),
-            (2, 1, 1, 2, 70.0, 0.875, None),
-            (3, 1, 2, 3, 20.0, 0.25,  None),
-            (4, 1, 2, 4, 60.0, 0.75,  None),
-            (5, 1, 3, 5, 30.0, 0.375, None),
-            (6, 1, 3, 6, 50.0, 0.625, None),
-            (7, 1, 0, 0,  0.0, 1.0,   None),
+            (1,  1, 1, 1,  25.0, 0.5, None),
+            (2,  1, 1, 2,  25.0, 0.5, None),
+            (3,  1, 2, 3,  50.0, 1.0, None),
+            (4,  1, 3, 3,  50.0, 1.0, None),
+            (5,  1, 4, 4,  55.0, 1.0, None),
+            (6,  1, 5, 5,  50.0, 1.0, None),
+            (7,  1, 6, 6, 100.0, 1.0, None),
+            (8,  1, 7, 7, 100.0, 1.0, None),
+            (9,  1, 8, 8, 100.0, 1.0, None),
+            (10, 1, 9, 9, 100.0, 1.0, None),
+            (11, 1, 0, 0,   0.0, 1.0, None),
         ]
         self.assertEqual(results, expected)
