@@ -48,6 +48,7 @@ except ImportError:
     fcntl = None  # type: ignore
 
 from . import _schema
+from ._schema import BitList
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
 from ._utils import (
@@ -2319,7 +2320,7 @@ class DataAccessLayer(object):
     def _add_edge_relations(
         cursor: sqlite3.Cursor,
         edge_id: int,
-        relations: Iterable[Tuple[int, int, float, Union[bytes, None]]],
+        relations: Iterable[Tuple[int, int, float, Union[BitList, None]]],
     ) -> None:
         """Add incoming edge from other node."""
         sql = """
@@ -2442,7 +2443,7 @@ class DataAccessLayer(object):
         self,
         unique_id: str,
         name: str,
-        relations: Iterable[Tuple[int, int, float, Union[bytes, None]]],
+        relations: Iterable[Tuple[int, int, float, Union[BitList, None]]],
         description: Union[str, None, NoValueType] = NOVALUE,
         selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
@@ -2457,7 +2458,7 @@ class DataAccessLayer(object):
             from.
         name : str
             A name used to identify the edge.
-        relations : Iterable[Tuple[int, int, float, Union[bytes, None]]]
+        relations : Iterable[Tuple[int, int, float, Union[BitList, None]]]
             An iterable of tuples containing the relationship
             information. Each tuple should contain four items:
             (other_index_id, index_id, relation_value, mapping_level)

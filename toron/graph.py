@@ -373,7 +373,7 @@ class _EdgeMapper(object):
 
     def get_relations(
         self, side: Literal['left', 'right']
-    ) -> Iterable[Tuple[int, int, float, Union[bytes, None]]]:
+    ) -> Iterable[Tuple[int, int, float, Union[BitList, None]]]:
         """Returns an iterable of relations going into the table on the
         given *side* (coming from the other side).
 
