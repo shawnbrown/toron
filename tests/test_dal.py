@@ -881,7 +881,7 @@ class TestRemoveIndexColumnsMixin(object):
 
     def test_strategy_restructure(self):
         """The 'restructure' strategy should override category error."""
-        self.dal.remove_index_columns(['mcd'], strategy='restructure')  # <- Method under test.
+        self.dal.remove_index_columns(['mcd'], preserve_structure=False)  # <- Method under test.
 
         # Check rebuilt categories.
         data = self.dal.get_data(['discrete_categories'])
@@ -930,7 +930,7 @@ class TestRemoveIndexColumnsMixin(object):
         hash_before_coarsening = self.dal._get_data_property(self.cur, 'index_hash')
 
         # Coarsen the dataset (run the method under test).
-        self.dal.remove_index_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
+        self.dal.remove_index_columns(['county', 'mcd', 'place'], preserve_granularity=False)  # <- Method under test.
 
         # Check that dataset was altered as expected.
         actual = self.cur.execute('''
@@ -978,7 +978,7 @@ class TestRemoveIndexColumnsMixin(object):
 
         self.dal.remove_index_columns(    # <- Method under test.
             ['county', 'mcd', 'place'],
-            strategy='coarsen',
+            preserve_granularity=False,
         )
 
         actual = self.cur.execute('''
@@ -1006,7 +1006,11 @@ class TestRemoveIndexColumnsMixin(object):
         Note: The example result used in this test is nonsensical but
         it does serve to validate the strategy behavior.
         """
-        self.dal.remove_index_columns(['state', 'mcd', 'place'], strategy='coarsenrestructure')  # <- Method under test.
+        self.dal.remove_index_columns(  # <- Method under test.
+            ['state', 'mcd', 'place'],
+            preserve_structure=False,
+            preserve_granularity=False,
+        )
 
         actual = self.cur.execute('''
             SELECT a.*, b.weight_value
@@ -1051,7 +1055,7 @@ class TestRemoveIndexColumnsMixin(object):
         msg = "should be False/0 because it's incomplete"
         self.assertEqual(actual, False, msg=msg)
 
-        self.dal.remove_index_columns(['county', 'mcd', 'place'], strategy='coarsen')  # <- Method under test.
+        self.dal.remove_index_columns(['county', 'mcd', 'place'], preserve_granularity=False)  # <- Method under test.
 
         self.cur.execute("SELECT is_complete FROM weighting WHERE name='new_count'")
         actual = self.cur.fetchone()[0]

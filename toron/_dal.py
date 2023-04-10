@@ -849,8 +849,8 @@ class DataAccessLayer(object):
         cursor: sqlite3.Cursor,
         columns: Iterable[str],
         *,
-        preserve_structure: bool = True,
-        preserve_granularity: bool = True,
+        preserve_structure: bool,
+        preserve_granularity: bool,
     ) -> None:
         column_names = cls._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
@@ -909,10 +909,12 @@ class DataAccessLayer(object):
         cls._update_categories_and_structure(cursor, new_categories)
 
     def remove_index_columns(
-        self, columns: Iterable[str], strategy: Strategy = 'preserve'
+        self,
+        columns: Iterable[str],
+        *,
+        preserve_structure: bool = True,
+        preserve_granularity: bool = True,
     ) -> None:
-        preserve_structure = 'restructure' not in strategy
-        preserve_granularity = 'coarsen' not in strategy
         with self._transaction() as cur:
             self._remove_index_columns_execute_sql(
                 cur,
@@ -2697,7 +2699,11 @@ class DataAccessLayerPre35(DataAccessLayer):
         return statements
 
     def remove_index_columns(
-        self, columns: Iterable[str], strategy: Strategy = 'preserve'
+        self,
+        columns: Iterable[str],
+        *,
+        preserve_structure: bool = True,
+        preserve_granularity: bool = True,
     ) -> None:
         # In versions earlier than SQLite 3.35.0, there was no support for
         # the DROP COLUMN command. This method (and other related methods
@@ -2709,8 +2715,6 @@ class DataAccessLayerPre35(DataAccessLayer):
             con.execute('PRAGMA foreign_keys=OFF')
             cur = con.cursor()
             with _schema.savepoint(cur):
-                preserve_structure = 'restructure' not in strategy
-                preserve_granularity = 'coarsen' not in strategy
                 self._remove_index_columns_execute_sql(
                     cur,
                     columns,

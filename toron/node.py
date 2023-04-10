@@ -88,7 +88,13 @@ class Node(object):
         |                          | categories as necessary.         |
         +--------------------------+----------------------------------+
         """
-        self._dal.remove_index_columns(columns, strategy=strategy)
+        preserve_structure = 'restructure' not in strategy
+        preserve_granularity = 'coarsen' not in strategy
+        self._dal.remove_index_columns(
+            columns,
+            preserve_structure=preserve_structure,
+            preserve_granularity=preserve_granularity,
+        )
 
     def rename_index_columns(self, mapper):
         self._dal.rename_index_columns(mapper)
