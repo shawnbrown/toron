@@ -59,40 +59,22 @@ class Node(object):
     ) -> None:
         """Remove columns from node.
 
+        Args:
+            columns (List[str]): A list of column names to remove.
+            preserve_structure (bool): When True, the operation will
+                raise a ToronError if the node's category structure
+                cannot be preserved. When False, the categories will
+                be restructured as necessary to satisfy the remaining
+                columns.
+            preserve_granularity (bool): When True, the operation will
+                raise a ToronError if the node's granularity cannot be
+                preserved. When False, the node's granularity will be
+                coarsened as necessary to satisfy the remaining columns.
+
         .. code-block::
 
             >>> node = toron.Node.from_file(...)
             >>> node.remove_index_columns(['C', 'D'])
-
-        TODO: UPDATE DOCS TO REFLECT NEW SIGNATURE.
-
-        The following *strategy* values can be used when deleting
-        columns:
-
-        +--------------------------+----------------------------------+
-        | Value                    | Meaning                          |
-        +==========================+==================================+
-        | ``'preserve'``           | Cancel the operation and Raise   |
-        |                          | a ToronError if the node's       |
-        |                          | granularity and category         |
-        |                          | structure cannot be preserved.   |
-        +--------------------------+----------------------------------+
-        | ``'restructure'``        | Restructure existing categories  |
-        |                          | as necessary or cancel the       |
-        |                          | operation and raise a ToronError |
-        |                          | if the node's granularity cannot |
-        |                          | be preserved.                    |
-        +--------------------------+----------------------------------+
-        | ``'coarsen'``            | Coarsen the node's granularity   |
-        |                          | as necessary or cancel the       |
-        |                          | operation and raise a ToronError |
-        |                          | if its category structure cannot |
-        |                          | be preserved.                    |
-        +--------------------------+----------------------------------+
-        | ``'coarsenrestructure'`` | Coarsen the node's granularity   |
-        |                          | and restructure its existing     |
-        |                          | categories as necessary.         |
-        +--------------------------+----------------------------------+
         """
         self._dal.remove_index_columns(
             columns,
