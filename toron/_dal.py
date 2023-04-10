@@ -850,6 +850,9 @@ class DataAccessLayer(object):
         columns: Iterable[str],
         strategy: Strategy = 'preserve',
     ) -> None:
+        preserve_structure = 'restructure' not in strategy
+        preserve_granularity = 'coarsen' not in strategy
+
         column_names = cls._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
 
@@ -866,7 +869,7 @@ class DataAccessLayer(object):
         # Check for a loss of category coverage.
         cols_uncovered = set(names_remaining).difference(chain(*cats_filtered))
         if cols_uncovered:
-            if strategy not in {'restructure', 'coarsenrestructure'}:
+            if preserve_structure:
                 formatted = ', '.join(repr(x) for x in sorted(cols_uncovered))
                 msg = f'cannot remove, categories are undefined for remaining columns: {formatted}'
                 raise ToronError(msg)
@@ -887,7 +890,7 @@ class DataAccessLayer(object):
             HAVING COUNT(*) > 1
         ''')
         if cursor.fetchone() is not None:
-            if strategy not in {'coarsen', 'coarsenrestructure'}:
+            if preserve_granularity:
                 msg = 'cannot remove, columns are needed to preserve granularity'
                 raise ToronError(msg)
 
