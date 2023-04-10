@@ -848,11 +848,10 @@ class DataAccessLayer(object):
         cls,
         cursor: sqlite3.Cursor,
         columns: Iterable[str],
-        strategy: Strategy = 'preserve',
+        *,
+        preserve_structure: bool = True,
+        preserve_granularity: bool = True,
     ) -> None:
-        preserve_structure = 'restructure' not in strategy
-        preserve_granularity = 'coarsen' not in strategy
-
         column_names = cls._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
 
@@ -912,8 +911,15 @@ class DataAccessLayer(object):
     def remove_index_columns(
         self, columns: Iterable[str], strategy: Strategy = 'preserve'
     ) -> None:
+        preserve_structure = 'restructure' not in strategy
+        preserve_granularity = 'coarsen' not in strategy
         with self._transaction() as cur:
-            self._remove_index_columns_execute_sql(cur, columns, strategy)
+            self._remove_index_columns_execute_sql(
+                cur,
+                columns,
+                preserve_structure=preserve_structure,
+                preserve_granularity=preserve_granularity,
+            )
 
     @classmethod
     def _refresh_index_hash(cls, cursor: sqlite3.Cursor) -> None:
@@ -2703,7 +2709,14 @@ class DataAccessLayerPre35(DataAccessLayer):
             con.execute('PRAGMA foreign_keys=OFF')
             cur = con.cursor()
             with _schema.savepoint(cur):
-                self._remove_index_columns_execute_sql(cur, columns, strategy)
+                preserve_structure = 'restructure' not in strategy
+                preserve_granularity = 'coarsen' not in strategy
+                self._remove_index_columns_execute_sql(
+                    cur,
+                    columns,
+                    preserve_structure=preserve_structure,
+                    preserve_granularity=preserve_granularity,
+                )
 
                 cur.execute('PRAGMA main.foreign_key_check')
                 one_result = cur.fetchone()
