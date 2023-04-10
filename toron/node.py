@@ -51,7 +51,11 @@ class Node(object):
         })
 
     def remove_index_columns(
-        self, columns: List[str], strategy: _Strategy = 'preserve'
+        self,
+        columns: List[str],
+        *,
+        preserve_structure: bool = True,
+        preserve_granularity: bool = True,
     ) -> None:
         """Remove columns from node.
 
@@ -59,6 +63,8 @@ class Node(object):
 
             >>> node = toron.Node.from_file(...)
             >>> node.remove_index_columns(['C', 'D'])
+
+        TODO: UPDATE DOCS TO REFLECT NEW SIGNATURE.
 
         The following *strategy* values can be used when deleting
         columns:
@@ -88,8 +94,6 @@ class Node(object):
         |                          | categories as necessary.         |
         +--------------------------+----------------------------------+
         """
-        preserve_structure = 'restructure' not in strategy
-        preserve_granularity = 'coarsen' not in strategy
         self._dal.remove_index_columns(
             columns,
             preserve_structure=preserve_structure,
