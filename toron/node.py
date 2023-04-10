@@ -11,7 +11,6 @@ from typing import (
 )
 
 from ._dal import dal_class
-from ._dal import Strategy as _Strategy
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
 from ._utils import TabularData

@@ -123,7 +123,6 @@ def _delete_leftover_temp_files():
             warnings.warn(msg, RuntimeWarning)
 
 
-Strategy: TypeAlias = Literal['preserve', 'restructure', 'coarsen', 'coarsenrestructure']
 PathType: TypeAlias = Union[str, bytes, os.PathLike]
 
 
