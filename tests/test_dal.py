@@ -1147,6 +1147,15 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         """, parameters)
 
 
+@unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
+class TestRemoveIndexColumnsWithEdges(TestRemoveIndexColumnsWithEdgesMixin, unittest.TestCase):
+    class_under_test = DataAccessLayer
+
+
+class TestRemoveIndexColumnsWithEdgesLegacy(TestRemoveIndexColumnsWithEdgesMixin, unittest.TestCase):
+    class_under_test = DataAccessLayerPre24
+
+
 class TestAddIndexRecordsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = get_connection(':memory:', None)
