@@ -18,6 +18,7 @@ from .common import TempDirTestCase
 from toron._schema import get_connection
 from toron._schema import _schema_script
 from toron._schema import _add_functions_and_triggers
+from toron._schema import BitList
 from toron._selectors import SimpleSelector
 from toron._dal import DataAccessLayer
 from toron._dal import DataAccessLayerPre24
@@ -1145,6 +1146,56 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             )
             VALUES (?, ?, ?, ?, ?, ?)
         """, parameters)
+
+    def test_update_level(self):
+        """Check that mapping_level is updated."""
+        self.load_data(
+            self.dal,
+            data=[
+                ('A', 'B', 'C', 'D', 'population'),
+                ('foo', 'x', '1', 'a', 100),
+                ('foo', 'x', '2', 'b', 100),
+                ('foo', 'y', '3', 'c', 100),
+                ('foo', 'y', '3', 'd', 100),
+                ('bar', 'x', '-', 'a', 100),
+                ('bar', 'x', '-', 'b', 100),
+            ],
+            index_cols=['A', 'B', 'C', 'D'],
+            categories=[{'A'}, {'A', 'B'}, {'A', 'B', 'C'}, {'A', 'B', 'D'}],
+            weight_col='population',
+        )
+
+        self.load_edge(
+            self.dal,
+            data=[                                           # other node -> this node
+                (11,  1, 100, 1.00, None),                   # foo/x/1/a -> foo/x/1/a (exact match)
+                (12,  2, 100, 1.00, None),                   # foo/x/2/b -> foo/x/2/b (exact match)
+                (13,  3,  50, 0.50, BitList([1, 1, 1, 0])),  # foo/y/3/? -> foo/y/3/c
+                (13,  4,  50, 0.50, BitList([1, 1, 1, 0])),  # foo/y/3/? -> foo/y/3/d
+                (14,  5,  25, 0.25, BitList([1, 1, 0, 0])),  # bar/x/?/? -> bar/x/-/a
+                (14,  6,  75, 0.75, BitList([1, 1, 0, 0])),  # bar/x/?/? -> bar/x/-/b
+            ],
+            edge_id=1,
+            name='population',
+            unique_id='111-11-11-1111',
+            filename_hint='myfile1.toron',
+            complete=1,
+        )
+
+        self.dal.remove_index_columns(['C'])  # <- Method under test.
+
+        self.cur.execute('SELECT * FROM main.relation')
+        actual = [row[2:] for row in self.cur]  # Slice off relation_id and edge_id.
+
+        expected = [
+            (11, 1, 100.0, 1.0,  None),                # <- Unchanged.
+            (12, 2, 100.0, 1.0,  None),                # <- Unchanged.
+            (13, 3,  50.0, 0.5,  BitList([1, 1, 0])),  # <- Changed from [1, 1, 1, 0]
+            (13, 4,  50.0, 0.5,  BitList([1, 1, 0])),  # <- Changed from [1, 1, 1, 0]
+            (14, 5,  25.0, 0.25, BitList([1, 1, 0])),  # <- Unchanged.
+            (14, 6,  75.0, 0.75, BitList([1, 1, 0])),  # <- Unchanged.
+        ]
+        self.assertEqual(actual, expected)
 
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')

@@ -907,6 +907,21 @@ class DataAccessLayer(object):
         # Rebuild categories property and structure table.
         cls._update_categories_and_structure(cursor, new_categories)
 
+        # Update mapping_level values to match remaining columns.
+        cursor.execute("""
+            SELECT DISTINCT mapping_level
+            FROM main.relation
+            WHERE mapping_level IS NOT NULL
+        """)
+        selectors = tuple(col in names_remaining for col in column_names)
+        mknew = lambda maplvl: BitList(tuple(compress(maplvl, selectors)))
+        parameters = [(mknew(maplvl), maplvl) for maplvl, *_ in cursor]
+        parameters = [(a, b) for (a, b) in parameters if a != b]
+        cursor.executemany(
+            'UPDATE main.relation SET mapping_level=? WHERE mapping_level=?',
+            parameters,
+        )
+
     def remove_index_columns(
         self,
         columns: Iterable[str],
