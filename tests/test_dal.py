@@ -1094,6 +1094,59 @@ class TestRemoveIndexColumnsLegacy(TestRemoveIndexColumnsMixin, unittest.TestCas
     class_under_test = DataAccessLayerPre24
 
 
+class TestRemoveIndexColumnsWithEdgesMixin(object):
+    class_under_test = None  # When subclassing, assign DAL class to test.
+
+    def setUp(self):
+        self.dal = self.class_under_test()
+
+        con = self.dal._get_connection()
+        self.addCleanup(con.close)
+
+        self.cur = con.cursor()
+        self.addCleanup(self.cur.close)
+
+    @staticmethod
+    def load_data(dal, data, index_cols, categories, weight_col):
+        """Helper function to load node data."""
+        dal.set_data({'add_index_columns': index_cols})
+        dal.add_discrete_categories(categories)
+        dal.add_index_records(data)
+        dal.add_weights(data, name=weight_col, selectors=None)
+
+    @staticmethod
+    def load_edge(dal, data, edge_id, name, unique_id, filename_hint, complete):
+        """Helper function to insert edge and relation data."""
+        con = dal._get_connection()
+        cur = con.cursor()
+
+        # Insert edge record.
+        cur.execute("""
+            INSERT INTO main.edge (
+                edge_id,
+                name,
+                other_unique_id,
+                other_filename_hint,
+                is_locally_complete
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (edge_id, name, unique_id, filename_hint, complete))
+
+        # Insert relation records.
+        parameters = [(edge_id,) + row for row in data]
+        cur.executemany("""
+            INSERT INTO main.relation (
+                edge_id,
+                other_index_id,
+                index_id,
+                relation_value,
+                proportion,
+                mapping_level
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, parameters)
+
+
 class TestAddIndexRecordsMakeSql(unittest.TestCase):
     def setUp(self):
         self.con = get_connection(':memory:', None)
