@@ -1147,8 +1147,8 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             VALUES (?, ?, ?, ?, ?, ?)
         """, parameters)
 
-    def test_update_level(self):
-        """Check that mapping_level is updated."""
+    def add_edge1(self):
+        """Add a helper class for adding index and edge data."""
         self.load_data(
             self.dal,
             data=[
@@ -1181,6 +1181,10 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             filename_hint='myfile1.toron',
             complete=1,
         )
+
+    def test_update_level(self):
+        """Check that mapping_level is updated."""
+        self.add_edge1()
 
         self.dal.remove_index_columns(['C'])  # <- Method under test.
 
