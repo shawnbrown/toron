@@ -151,21 +151,16 @@ class TestBitList(unittest.TestCase):
 
 class TestBitFlags(unittest.TestCase):
     def test_init(self):
-        values = (1, 1, 1, 1, 1, 1, 1, 1)
-        bits = BitFlags(*values)
-        self.assertEqual(bits.data, values)
-
-        values = (1, 0, 0, 0, 0, 0, 0, 0)
-        bits = BitFlags(*values)
-        self.assertEqual(bits.data, values)
-
-        values = (0, 0, 0, 0, 0, 0, 0, 1)
-        bits = BitFlags(*values)
-        self.assertEqual(bits.data, values)
-
-        values = (0, 0, 0, 0, 0, 0, 0, 0)
-        bits = BitFlags(*values)
-        self.assertEqual(bits.data, values)
+        all_values = [
+            (1, 1, 1, 1, 1, 1, 1, 1),
+            (1, 0, 0, 0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 1),
+            (0, 0, 0, 0, 0, 0, 0, 0),
+        ]
+        for values in all_values:
+            with self.subTest(values=values):
+                bits = BitFlags(*values)
+                self.assertEqual(bits.data, values)
 
     def test_normalize_values(self):
         values = ('x', 'x', '', 'x', '', '', '', '')
