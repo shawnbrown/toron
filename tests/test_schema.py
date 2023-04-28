@@ -167,6 +167,12 @@ class TestBitFlags(unittest.TestCase):
         bits = BitFlags(*values)
         self.assertEqual(bits.data, values)
 
+    def test_normalize_values(self):
+        values = ('x', 'x', '', 'x', '', '', '', '')
+        bits = BitFlags(*values)
+        msg = 'values should be normalized as 0s and 1s'
+        self.assertEqual(bits.data, (1, 1, 0, 1, 0, 0, 0, 0), msg=msg)
+
     def test_repr(self):
         bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
         self.assertEqual(repr(bits), 'BitFlags(1, 1, 0, 1, 0, 0, 0, 0)')
