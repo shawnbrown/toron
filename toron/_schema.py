@@ -367,6 +367,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
             return self._data == other._data
 
         if isinstance(other, Iterable):
+            other = self._normalize_length(other)
             return self._data == tuple(other)
 
         return NotImplemented

@@ -198,6 +198,10 @@ class TestBitFlags(unittest.TestCase):
             [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1, 0, 0, 0, 0]],
             [(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
             [[1, 1, 0, 1, 0, 0, 0, 0], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1]],
+            [(1, 1, 0, 1), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
+            [[1, 1, 0, 1], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
         ]
         for a, b in equal_values:
             with self.subTest(a=a, b=b):
