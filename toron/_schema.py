@@ -343,12 +343,12 @@ class BitFlags(Sequence[Literal[0, 1]]):
         return self._data
 
     @overload
-    def __getitem__(self, key: int, /) -> Literal[0, 1]:
+    def __getitem__(self, key: int) -> Literal[0, 1]:
         ...
     @overload
-    def __getitem__(self, key: slice, /) -> 'BitFlags':
+    def __getitem__(self, key: slice) -> 'BitFlags':
         ...
-    def __getitem__(self, key, /):
+    def __getitem__(self, key):
         """Return value at index position or slice."""
         return self._data[key]
 
