@@ -18,6 +18,7 @@ from toron._selectors import SimpleSelector
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
     BitList,
+    BitFlags,
     _user_json_object_keep,
     _user_json_valid,
     _user_userproperties_valid,
@@ -146,6 +147,29 @@ class TestBitList(unittest.TestCase):
         # Verify that sample lists have not been changed (meta-test).
         self.assertEqual(list_a, [1, 1])
         self.assertEqual(list_b, [1, 1, 0, 0, 0])
+
+
+class TestBitFlags(unittest.TestCase):
+    def test_init(self):
+        values = (1, 1, 1, 1, 1, 1, 1, 1)
+        bits = BitFlags(*values)
+        self.assertEqual(bits.data, values)
+
+        values = (1, 0, 0, 0, 0, 0, 0, 0)
+        bits = BitFlags(*values)
+        self.assertEqual(bits.data, values)
+
+        values = (0, 0, 0, 0, 0, 0, 0, 1)
+        bits = BitFlags(*values)
+        self.assertEqual(bits.data, values)
+
+        values = (0, 0, 0, 0, 0, 0, 0, 0)
+        bits = BitFlags(*values)
+        self.assertEqual(bits.data, values)
+
+    def test_repr(self):
+        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+        self.assertEqual(repr(bits), 'BitFlags(1, 1, 0, 1, 0, 0, 0, 0)')
 
 
 class TestNormalizeIdentifier(unittest.TestCase):

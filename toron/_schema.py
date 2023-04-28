@@ -60,6 +60,8 @@ from contextlib import contextmanager
 from json import loads as _loads
 from json import dumps as _dumps
 from ._typing import (
+    overload,
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -67,6 +69,7 @@ from ._typing import (
     Literal,
     Optional,
     Sequence,
+    Tuple,
     TypeAlias,
     Union,
 )
@@ -289,6 +292,51 @@ class BitList(UserList):
 
 sqlite3.register_adapter(BitList, bytes)
 sqlite3.register_converter('BLOB_BITLIST', BitList.from_bytes)
+
+
+class BitFlags(Sequence[Literal[0, 1]]):
+    """A sequence of 0s and 1s used to encode multiple true/false or
+    on/off values. This class can be registered with SQLite to support
+    a "BLOB_BITFLAGS" data type.
+
+    Create a BitFlags object from arguments of 0 or 1::
+
+        >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+
+    Other values are converted to 0 and 1 based on their truth value::
+
+        >>> BitFlags('x', 'x', '', 'x', '', '', '', '')
+        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+    """
+    def __init__(self, *bits: Any) -> None:
+        """Initialize a new BitFlags instance."""
+        self._data: Tuple[Literal[0, 1], ...]
+        self._data = tuple((1 if x else 0) for x in bits)
+
+    @property
+    def data(self) -> Tuple[Literal[0, 1], ...]:
+        """Adsf"""
+        return self._data
+
+    @overload
+    def __getitem__(self, key: int, /) -> Literal[0, 1]:
+        ...
+    @overload
+    def __getitem__(self, key: slice, /) -> 'BitFlags':
+        ...
+    def __getitem__(self, key, /):
+        """Return value at index position or slice."""
+        return self._data[key]
+
+    def __len__(self):
+        """Return len() of bit flags data."""
+        return len(self._data)
+
+    def __repr__(self) -> str:
+        """Return string representation of BitFlags object."""
+        bits = ', '.join(str(x) for x in self._data)
+        return f'{self.__class__.__name__}({bits})'
 
 
 def normalize_identifier(value: str) -> str:
