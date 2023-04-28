@@ -316,7 +316,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
 
     @property
     def data(self) -> Tuple[Literal[0, 1], ...]:
-        """Adsf"""
+        """A tuple containing the contents of the BitFlags object."""
         return self._data
 
     @overload
