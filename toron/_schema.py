@@ -311,8 +311,15 @@ class BitFlags(Sequence[Literal[0, 1]]):
     """
     def __init__(self, *bits: Any) -> None:
         """Initialize a new BitFlags instance."""
-        self._data: Tuple[Literal[0, 1], ...]
-        self._data = tuple((1 if x else 0) for x in bits)
+        # Normalize bit values.
+        data: List[Literal[0, 1]] = [(1 if x else 0) for x in bits]
+
+        # Pad bits to a multiple of eight.
+        remainder = len(data) % 8
+        if remainder:
+            data = data + [0] * (8 - remainder)
+
+        self._data: Tuple[Literal[0, 1], ...] = tuple(data)
 
     @property
     def data(self) -> Tuple[Literal[0, 1], ...]:

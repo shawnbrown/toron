@@ -168,6 +168,19 @@ class TestBitFlags(unittest.TestCase):
         msg = 'values should be normalized as 0s and 1s'
         self.assertEqual(bits.data, (1, 1, 0, 1, 0, 0, 0, 0), msg=msg)
 
+    def test_normalize_length(self):
+        self.assertEqual(
+            BitFlags(1, 1, 0, 1).data,
+            (1, 1, 0, 1, 0, 0, 0, 0),
+            msg='bits should be padded to multiple of eight',
+        )
+
+        self.assertEqual(
+            BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 1).data,
+            (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0),
+            msg='bits should be padded to multiple of eight',
+        )
+
     def test_repr(self):
         bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
         self.assertEqual(repr(bits), 'BitFlags(1, 1, 0, 1, 0, 0, 0, 0)')
