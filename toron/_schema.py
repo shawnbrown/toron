@@ -311,8 +311,13 @@ class BitFlags(Sequence[Literal[0, 1]]):
     """
     def __init__(self, *bits: Any) -> None:
         """Initialize a new BitFlags instance."""
-        # Normalize bit values.
         data: List[Literal[0, 1]] = [(1 if x else 0) for x in bits]
+        data = self._normalize_length(data)
+        self._data: Tuple[Literal[0, 1], ...] = tuple(data)
+
+    @staticmethod
+    def _normalize_length(values: Iterable) -> List:
+        data = list(values)
 
         # Remove excess trailing 0 bits.
         while data:
@@ -330,7 +335,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
         if not data:
             data = [0] * 8
 
-        self._data: Tuple[Literal[0, 1], ...] = tuple(data)
+        return data
 
     @property
     def data(self) -> Tuple[Literal[0, 1], ...]:
