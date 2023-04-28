@@ -314,10 +314,21 @@ class BitFlags(Sequence[Literal[0, 1]]):
         # Normalize bit values.
         data: List[Literal[0, 1]] = [(1 if x else 0) for x in bits]
 
+        # Remove excess trailing 0 bits.
+        while data:
+            if data[-1] == 0:
+                data.pop()
+            else:
+                break
+
         # Pad bits to a multiple of eight.
         remainder = len(data) % 8
         if remainder:
             data = data + [0] * (8 - remainder)
+
+        # If no data, set to zeros.
+        if not data:
+            data = [0] * 8
 
         self._data: Tuple[Literal[0, 1], ...] = tuple(data)
 

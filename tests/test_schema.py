@@ -181,6 +181,12 @@ class TestBitFlags(unittest.TestCase):
             msg='bits should be padded to multiple of eight',
         )
 
+        self.assertEqual(
+            BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).data,
+            (1, 1, 0, 1, 0, 0, 0, 0),
+            msg='excess trailing 0s should be removed',
+        )
+
     def test_repr(self):
         bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
         self.assertEqual(repr(bits), 'BitFlags(1, 1, 0, 1, 0, 0, 0, 0)')
