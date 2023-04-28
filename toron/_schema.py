@@ -356,6 +356,16 @@ class BitFlags(Sequence[Literal[0, 1]]):
         bits = ', '.join(str(x) for x in self._data)
         return f'{self.__class__.__name__}({bits})'
 
+    def __eq__(self, other: Any) -> bool:
+        """Return True if BitFlags == other."""
+        if isinstance(other, self.__class__):
+            return self._data == other._data
+
+        if isinstance(other, Iterable):
+            return self._data == tuple(other)
+
+        return NotImplemented
+
 
 def normalize_identifier(value: str) -> str:
     """Normalize and return a delimited identifier suitable as a SQLite
