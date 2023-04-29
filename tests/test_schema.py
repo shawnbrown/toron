@@ -219,6 +219,17 @@ class TestBitFlags(unittest.TestCase):
             with self.subTest(a=a, b=b):
                 self.assertFalse(a == b)
 
+    def test_immutable(self):
+        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+
+        regex = "'BitFlags' object does not support assignment"
+        with self.assertRaisesRegex(TypeError, regex):
+            bits._data = (1, 1, 1, 1, 1, 1, 1, 1)
+
+        regex = "'BitFlags' object does not support deletion"
+        with self.assertRaisesRegex(TypeError, regex):
+            del bits._data
+
 
 class TestNormalizeIdentifier(unittest.TestCase):
     values = [

@@ -313,7 +313,9 @@ class BitFlags(Sequence[Literal[0, 1]]):
         """Initialize a new BitFlags instance."""
         data: List[Literal[0, 1]] = [(1 if x else 0) for x in bits]
         data = self._normalize_length(data)
-        self._data: Tuple[Literal[0, 1], ...] = tuple(data)
+
+        self._data: Tuple[Literal[0, 1], ...]
+        super().__setattr__('_data', tuple(data))  # Assign to "immutable".
 
     @staticmethod
     def _normalize_length(values: Iterable) -> List:
@@ -371,6 +373,14 @@ class BitFlags(Sequence[Literal[0, 1]]):
             return self._data == tuple(other)
 
         return NotImplemented
+
+    def __setattr__(self, *args):
+        msg = f'{self.__class__.__name__!r} object does not support assignment'
+        raise TypeError(msg)
+
+    def __delattr__(self, *args):
+        msg = f'{self.__class__.__name__!r} object does not support deletion'
+        raise TypeError(msg)
 
 
 def normalize_identifier(value: str) -> str:
