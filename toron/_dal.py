@@ -48,7 +48,7 @@ except ImportError:
     fcntl = None  # type: ignore
 
 from . import _schema
-from ._schema import BitList
+from ._schema import BitFlags
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
 from ._utils import (
@@ -917,11 +917,11 @@ class DataAccessLayer(object):
 
         # Make new mapping_level values.
         selectors = tuple(col in names_remaining for col in column_names)
-        make_new_level = lambda bits: BitList(tuple(compress(bits, selectors)))
+        make_new_level = lambda bits: BitFlags(*compress(bits, selectors))
         new_mapping_levels = [make_new_level(x) for x in old_mapping_levels]
 
         # Update mapping_level values.
-        parameters: Iterable[Tuple[BitList, BitList]]
+        parameters: Iterable[Tuple[BitFlags, BitFlags]]
         parameters = zip(new_mapping_levels, old_mapping_levels)
         parameters = ((a, b) for (a, b) in parameters if a != b)
         cursor.executemany(
@@ -2352,7 +2352,7 @@ class DataAccessLayer(object):
     def _add_edge_relations(
         cursor: sqlite3.Cursor,
         edge_id: int,
-        relations: Iterable[Tuple[int, int, float, Union[BitList, None]]],
+        relations: Iterable[Tuple[int, int, float, Union[BitFlags, None]]],
     ) -> None:
         """Add incoming edge from other node."""
         sql = """
@@ -2475,7 +2475,7 @@ class DataAccessLayer(object):
         self,
         unique_id: str,
         name: str,
-        relations: Iterable[Tuple[int, int, float, Union[BitList, None]]],
+        relations: Iterable[Tuple[int, int, float, Union[BitFlags, None]]],
         description: Union[str, None, NoValueType] = NOVALUE,
         selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
@@ -2490,7 +2490,7 @@ class DataAccessLayer(object):
             from.
         name : str
             A name used to identify the edge.
-        relations : Iterable[Tuple[int, int, float, Union[BitList, None]]]
+        relations : Iterable[Tuple[int, int, float, Union[BitFlags, None]]]
             An iterable of tuples containing the relationship
             information. Each tuple should contain four items:
             (other_index_id, index_id, relation_value, mapping_level)

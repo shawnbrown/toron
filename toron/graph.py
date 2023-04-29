@@ -23,7 +23,7 @@ from ._typing import (
     Union,
 )
 
-from ._schema import BitList
+from ._schema import BitFlags
 from ._utils import (
     TabularData,
     make_readerlike,
@@ -78,14 +78,14 @@ class _EdgeMapper(object):
                 index_id INTEGER,
                 weight_value REAL CHECK (0.0 <= weight_value),
                 proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
-                mapping_level BLOB_BITLIST
+                mapping_level BLOB_BITFLAGS
             );
             CREATE TEMP TABLE right_matches(
                 run_id INTEGER NOT NULL REFERENCES source_mapping(run_id),
                 index_id INTEGER,
                 weight_value REAL CHECK (0.0 <= weight_value),
                 proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
-                mapping_level BLOB_BITLIST
+                mapping_level BLOB_BITFLAGS
             );
         """)
 
@@ -346,7 +346,7 @@ class _EdgeMapper(object):
 
                 # Build bit list to encode mapping level.
                 key_cols = where_dict.keys()
-                mapping_level = BitList([(col in key_cols) for col in index_columns])
+                mapping_level = BitFlags(*((col in key_cols) for col in index_columns))
 
                 # Build iterator of parameters for executemany().
                 parameters = product(run_ids, records)
@@ -373,7 +373,7 @@ class _EdgeMapper(object):
 
     def get_relations(
         self, side: Literal['left', 'right']
-    ) -> Iterable[Tuple[int, int, float, Union[BitList, None]]]:
+    ) -> Iterable[Tuple[int, int, float, Union[BitFlags, None]]]:
         """Returns an iterable of relations going into the table on the
         given *side* (coming from the other side).
 

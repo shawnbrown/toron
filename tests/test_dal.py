@@ -18,7 +18,7 @@ from .common import TempDirTestCase
 from toron._schema import get_connection
 from toron._schema import _schema_script
 from toron._schema import _add_functions_and_triggers
-from toron._schema import BitList
+from toron._schema import BitFlags
 from toron._selectors import SimpleSelector
 from toron._dal import DataAccessLayer
 from toron._dal import DataAccessLayerPre24
@@ -1167,13 +1167,13 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
 
         self.load_edge(
             self.dal,
-            data=[                                           # other node -> this node
-                (11,  1, 100, 1.00, None),                   # foo/x/1/a -> foo/x/1/a (exact match)
-                (12,  2, 100, 1.00, None),                   # foo/x/2/b -> foo/x/2/b (exact match)
-                (13,  3,  50, 0.50, BitList([1, 1, 1, 0])),  # foo/y/3/? -> foo/y/3/c
-                (13,  4,  50, 0.50, BitList([1, 1, 1, 0])),  # foo/y/3/? -> foo/y/3/d
-                (14,  5,  25, 0.25, BitList([1, 1, 0, 0])),  # bar/x/?/? -> bar/x/-/a
-                (14,  6,  75, 0.75, BitList([1, 1, 0, 0])),  # bar/x/?/? -> bar/x/-/b
+            data=[                                          # other node -> this node
+                (11,  1, 100, 1.00, None),                  # foo/x/1/a -> foo/x/1/a (exact match)
+                (12,  2, 100, 1.00, None),                  # foo/x/2/b -> foo/x/2/b (exact match)
+                (13,  3,  50, 0.50, BitFlags(1, 1, 1, 0)),  # foo/y/3/? -> foo/y/3/c
+                (13,  4,  50, 0.50, BitFlags(1, 1, 1, 0)),  # foo/y/3/? -> foo/y/3/d
+                (14,  5,  25, 0.25, BitFlags(1, 1, 0, 0)),  # bar/x/?/? -> bar/x/-/a
+                (14,  6,  75, 0.75, BitFlags(1, 1, 0, 0)),  # bar/x/?/? -> bar/x/-/b
             ],
             edge_id=1,
             name='population',
@@ -1192,12 +1192,12 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         actual = [row[2:] for row in self.cur]  # Slice off relation_id and edge_id.
 
         expected = [
-            (11, 1, 100.0, 1.0,  None),                # <- Unchanged.
-            (12, 2, 100.0, 1.0,  None),                # <- Unchanged.
-            (13, 3,  50.0, 0.5,  BitList([1, 1, 0])),  # <- Changed from [1, 1, 1, 0]
-            (13, 4,  50.0, 0.5,  BitList([1, 1, 0])),  # <- Changed from [1, 1, 1, 0]
-            (14, 5,  25.0, 0.25, BitList([1, 1, 0])),  # <- Unchanged.
-            (14, 6,  75.0, 0.75, BitList([1, 1, 0])),  # <- Unchanged.
+            (11, 1, 100.0, 1.0,  None),               # <- Unchanged.
+            (12, 2, 100.0, 1.0,  None),               # <- Unchanged.
+            (13, 3,  50.0, 0.5,  BitFlags(1, 1, 0)),  # <- Changed from [1, 1, 1, 0]
+            (13, 4,  50.0, 0.5,  BitFlags(1, 1, 0)),  # <- Changed from [1, 1, 1, 0]
+            (14, 5,  25.0, 0.25, BitFlags(1, 1, 0)),  # <- Unchanged.
+            (14, 6,  75.0, 0.75, BitFlags(1, 1, 0)),  # <- Unchanged.
         ]
         self.assertEqual(actual, expected)
 

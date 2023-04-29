@@ -866,7 +866,7 @@ class TestTriggerCoverage(unittest.TestCase):
             for column in column_names:
                 custom_type_columns.append((table, column))
 
-        # Remove "relation.mapping_level" (a BLOB_BITLIST type) because
+        # Remove "relation.mapping_level" (a BLOB_BITFLAGS type) because
         # it doesn't need any associated SQL triggers.
         custom_type_columns.remove(('relation', 'mapping_level'))
 
@@ -1147,7 +1147,7 @@ class TestConnectDb(TempDirTestCase):
             get_connection(path, required_permissions='badpermissions')
 
 
-class TestBitListConversionAndAdaptation(unittest.TestCase):
+class TestBitFlagsConversionAndAdaptation(unittest.TestCase):
     def setUp(self):
         self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
@@ -1177,20 +1177,20 @@ class TestBitListConversionAndAdaptation(unittest.TestCase):
         return [row[0] for row in self.cur.fetchall()]
 
     def test_basic_roundtrip(self):
-        bit_list = BitList([0, 1, 0, 0, 0, 1, 0, 1])
-        self.insert_mapping_level(bit_list)  # <- Store BitList as bytes.
-        result = self.get_mapping_levels()  # <- Retrieve BitList from bytes.
+        bit_list = BitFlags(0, 1, 0, 0, 0, 1, 0, 1)
+        self.insert_mapping_level(bit_list)  # <- Store BitFlags as bytes.
+        result = self.get_mapping_levels()  # <- Retrieve BitFlags from bytes.
 
-        self.assertIsInstance(result[0], BitList)
+        self.assertIsInstance(result[0], BitFlags)
         self.assertEqual(result, [bit_list])
 
     def test_raw_bytes(self):
         raw_bytes = b'\x45'
         self.insert_mapping_level(raw_bytes)  # <- Store raw bytes (as bytes).
-        result = self.get_mapping_levels()  # <- Retrieve BitList from bytes.
+        result = self.get_mapping_levels()  # <- Retrieve BitFlags from bytes.
 
-        self.assertIsInstance(result[0], BitList)
-        self.assertEqual(result, [BitList.from_bytes(raw_bytes)])
+        self.assertIsInstance(result[0], BitFlags)
+        self.assertEqual(result, [BitFlags.from_bytes(raw_bytes)])
 
 
 class TestJsonConversion(unittest.TestCase):

@@ -4,7 +4,7 @@ import unittest
 import warnings
 
 from toron.node import Node
-from toron._schema import BitList
+from toron._schema import BitFlags
 from toron._utils import (
     ToronWarning,
 )
@@ -649,24 +649,24 @@ class TestAddEdge(unittest.TestCase):
         con = self.node2._dal._get_connection()
         results = con.execute('SELECT * FROM main.relation').fetchall()
         expected = [
-            (1,  1, 1, 1, 12.5,    0.25,   BitList([1, 1, 0])),
-            (2,  1, 1, 2, 37.5,    0.75,   BitList([1, 1, 0])),
+            (1,  1, 1, 1, 12.5,    0.25,   BitFlags(1, 1, 0)),
+            (2,  1, 1, 2, 37.5,    0.75,   BitFlags(1, 1, 0)),
             (3,  1, 2, 3, 37.5,    1.0,    None),
             (4,  1, 3, 3, 62.5,    1.0,    None),
-            (5,  1, 4, 4, 19.6875, 0.25,   BitList([1, 0, 0])),
-            (6,  1, 4, 5, 59.0625, 0.75,   BitList([1, 0, 0])),
-            (7,  1, 5, 4, 6.5625,  0.25,   BitList([1, 0, 0])),
-            (8,  1, 5, 5, 19.6875, 0.75,   BitList([1, 0, 0])),
-            (9,  1, 6, 6, 28.125,  0.375,  BitList([1, 0, 0])),
-            (10, 1, 6, 8, 23.4375, 0.3125, BitList([1, 0, 0])),
-            (11, 1, 6, 9, 23.4375, 0.3125, BitList([1, 0, 0])),
+            (5,  1, 4, 4, 19.6875, 0.25,   BitFlags(1, 0, 0)),
+            (6,  1, 4, 5, 59.0625, 0.75,   BitFlags(1, 0, 0)),
+            (7,  1, 5, 4, 6.5625,  0.25,   BitFlags(1, 0, 0)),
+            (8,  1, 5, 5, 19.6875, 0.75,   BitFlags(1, 0, 0)),
+            (9,  1, 6, 6, 28.125,  0.375,  BitFlags(1, 0, 0)),
+            (10, 1, 6, 8, 23.4375, 0.3125, BitFlags(1, 0, 0)),
+            (11, 1, 6, 9, 23.4375, 0.3125, BitFlags(1, 0, 0)),
             (12, 1, 7, 7, 100.0,   1.0,    None),
-            (13, 1, 8, 6, 56.25,   0.375,  BitList([1, 0, 0])),
-            (14, 1, 8, 8, 46.875,  0.3125, BitList([1, 0, 0])),
-            (15, 1, 8, 9, 46.875,  0.3125, BitList([1, 0, 0])),
-            (16, 1, 9, 6, 28.125,  0.375,  BitList([1, 0, 0])),
-            (17, 1, 9, 8, 23.4375, 0.3125, BitList([1, 0, 0])),
-            (18, 1, 9, 9, 23.4375, 0.3125, BitList([1, 0, 0])),
+            (13, 1, 8, 6, 56.25,   0.375,  BitFlags(1, 0, 0)),
+            (14, 1, 8, 8, 46.875,  0.3125, BitFlags(1, 0, 0)),
+            (15, 1, 8, 9, 46.875,  0.3125, BitFlags(1, 0, 0)),
+            (16, 1, 9, 6, 28.125,  0.375,  BitFlags(1, 0, 0)),
+            (17, 1, 9, 8, 23.4375, 0.3125, BitFlags(1, 0, 0)),
+            (18, 1, 9, 9, 23.4375, 0.3125, BitFlags(1, 0, 0)),
             (19, 1, 0, 0, 0.0,     1.0,    None)
         ]
         self.assertEqual(results, expected)

@@ -104,7 +104,7 @@ _schema_script = """
         index_id INTEGER,
         relation_value REAL NOT NULL CHECK (0.0 <= relation_value),
         proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
-        mapping_level BLOB_BITLIST,
+        mapping_level BLOB_BITFLAGS,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
         FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (edge_id, other_index_id, index_id)
@@ -290,10 +290,6 @@ class BitList(UserList):
         return b''.join(int(x, 2).to_bytes(1, 'big') for x in eight_bit_chunks)
 
 
-sqlite3.register_adapter(BitList, bytes)
-sqlite3.register_converter('BLOB_BITLIST', BitList.from_bytes)
-
-
 class BitFlags(Sequence[Literal[0, 1]]):
     """A sequence of 0s and 1s used to encode multiple true/false or
     on/off values. This class can be registered with SQLite to support
@@ -443,6 +439,10 @@ class BitFlags(Sequence[Literal[0, 1]]):
 
     def __hash__(self):
         return hash((self.__class__, self._data))
+
+
+sqlite3.register_adapter(BitFlags, bytes)
+sqlite3.register_converter('BLOB_BITFLAGS', BitFlags.from_bytes)
 
 
 def normalize_identifier(value: str) -> str:
