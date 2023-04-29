@@ -17,7 +17,6 @@ from toron._utils import ToronError
 from toron._selectors import SimpleSelector
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
-    BitList,
     BitFlags,
     _user_json_object_keep,
     _user_json_valid,
@@ -39,114 +38,6 @@ from toron._schema import (
     _sql_function_exists,
     get_userfunc,
 )
-
-
-class TestBitList(unittest.TestCase):
-    def test_init(self):
-        list_of_values = [1, 1, 1, 1, 1, 1, 1, 1]
-        bits = BitList(list_of_values)
-        self.assertEqual(bits.data, list_of_values)
-
-        list_of_values = [1, 0, 0, 0, 0, 0, 0, 0]
-        bits = BitList(list_of_values)
-        self.assertEqual(bits.data, list_of_values)
-
-        list_of_values = [0, 0, 0, 0, 0, 0, 0, 1]
-        bits = BitList(list_of_values)
-        self.assertEqual(bits.data, list_of_values)
-
-        list_of_values = [0, 0, 0, 0, 0, 0, 0, 0]
-        bits = BitList(list_of_values)
-        self.assertEqual(bits.data, list_of_values)
-
-    def test_eq(self):
-        self.assertTrue(BitList([1, 1]) == BitList([1, 1]))
-        self.assertTrue(BitList([1, 1]) == BitList([1, 1, 0, 0]))
-        self.assertTrue(BitList([]) == BitList())
-        self.assertFalse(BitList([1, 1]) == BitList([0, 1]))
-        self.assertFalse(BitList([1, 1]) == 1234)
-        self.assertFalse(1234 == BitList([1, 1]))
-
-    def test_normalization(self):
-        list_of_values = ['', '', '', '', 'x', 'x', 'x', 'x']
-        bits = BitList(list_of_values)
-        msg = 'truthy and falsy values should normalize as integers'
-        self.assertEqual(bits.data, [0, 0, 0, 0, 1, 1, 1, 1], msg=msg)
-
-    def test_from_bytes(self):
-        bits = BitList.from_bytes(b'\xff')
-        self.assertEqual(bits.data, [1, 1, 1, 1, 1, 1, 1, 1])
-
-        bits = BitList.from_bytes(b'\x01')
-        self.assertEqual(bits.data, [0, 0, 0, 0, 0, 0, 0, 1])
-
-        bits = BitList.from_bytes(b'\x80\x00')
-        self.assertEqual(bits.data, [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-
-        bits = BitList.from_bytes(b'\x00\x01')
-        self.assertEqual(bits.data, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-
-        bits = BitList.from_bytes(b'')
-        self.assertEqual(bits.data, [])
-
-    def test_bytes_magic_method(self):
-        bits = BitList([1, 1, 1, 1, 1, 1, 1, 1])
-        self.assertEqual(bytes(bits), b'\xff')
-
-        bits = BitList([1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0])
-        msg = 'excess zeros are not included in bytes representation'
-        self.assertEqual(bytes(bits), b'\xff', msg=msg)
-
-        bits = BitList([0, 0, 0, 0, 0, 0, 0, 1])
-        self.assertEqual(bytes(bits), b'\x01')
-
-        bits = BitList([0, 0, 0, 0, 0, 0, 0, 0, 1])
-        self.assertEqual(bytes(bits), b'\x00\x80')
-
-        bits = BitList([1])
-        self.assertEqual(bytes(bits), b'\x80')
-
-        bits = BitList([])
-        self.assertEqual(bytes(bits), b'')
-
-        bits = BitList([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-        self.assertEqual(bytes(bits), b'')
-
-    def test_repr(self):
-        list_of_values = [1, 1, 1, 0, 0, 0, 0, 0]
-        bits = BitList(list_of_values)
-        self.assertEqual(repr(bits), 'BitList([1, 1, 1, 0, 0, 0, 0, 0])')
-
-    def test_addition_operations(self):
-        list_a = [1, 1]
-        list_b = [1, 1, 0, 0, 0]
-        expected = [1, 1, 1, 1, 0, 0, 0]
-
-        # Test __add__() behavior.
-        bits = BitList(list_a) + list_b
-        self.assertIsInstance(bits, BitList)
-        self.assertEqual(bits.data, expected)
-
-        # Test __radd__() behavior.
-        bits = list_a + BitList(list_b)
-        self.assertIsInstance(bits, BitList)
-        self.assertEqual(bits.data, expected)
-
-        # This also triggers BitList.__radd__().
-        bits = list_a
-        bits += BitList(list_b)
-        self.assertIsInstance(bits, BitList)
-        self.assertEqual(bits.data, expected)
-
-        # Test __iadd__() behavior (in-place addition).
-        bits = BitList(list_a)
-        bits += list_b
-        self.assertIsInstance(bits, BitList)
-        self.assertEqual(bits.data, expected)
-
-        # Verify that sample lists have not been changed (meta-test).
-        self.assertEqual(list_a, [1, 1])
-        self.assertEqual(list_b, [1, 1, 0, 0, 0])
 
 
 class TestBitFlags(unittest.TestCase):
