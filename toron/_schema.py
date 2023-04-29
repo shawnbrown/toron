@@ -382,6 +382,9 @@ class BitFlags(Sequence[Literal[0, 1]]):
         msg = f'{self.__class__.__name__!r} object does not support deletion'
         raise TypeError(msg)
 
+    def __hash__(self):
+        return hash((self.__class__, self._data))
+
 
 def normalize_identifier(value: str) -> str:
     """Normalize and return a delimited identifier suitable as a SQLite

@@ -230,6 +230,10 @@ class TestBitFlags(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, regex):
             del bits._data
 
+    def test_hashable(self):
+        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+        self.assertEqual(hash(bits), hash(bits))
+
 
 class TestNormalizeIdentifier(unittest.TestCase):
     values = [
