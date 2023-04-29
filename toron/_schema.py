@@ -299,15 +299,39 @@ class BitFlags(Sequence[Literal[0, 1]]):
     on/off values. This class can be registered with SQLite to support
     a "BLOB_BITFLAGS" data type.
 
-    Create a BitFlags object from arguments of 0 or 1::
+    Create a BitFlags object from arguments of 0 or 1 (bit sequences
+    are padded to the nearest multiple of 8)::
 
-        >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+        >>> BitFlags(1, 1, 0, 1, 0)
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
     Other values are converted to 0 and 1 based on their truth value::
 
         >>> BitFlags('x', 'x', '', 'x', '', '', '', '')
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+
+    Change a BitFlags object into bytes::
+
+        >>> bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+        >>> bytes(bits)
+        b'\xd0'
+
+    Create a BitFlags object from bytes::
+
+        >>> BitFlags.from_bytes(b'\xd0')
+        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+
+    When comparing BitFlags against other containers of ones and
+    zeros, trailing zeros are ignored::
+
+        >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0) == (1, 1, 0, 1, 0)
+        True
+
+    Register the BitFlags type with SQLite::
+
+        >>> import sqlite3
+        >>> sqlite3.register_adapter(BitFlags, bytes)
+        >>> sqlite3.register_converter('BLOB_BITFLAGS', BitFlags.from_bytes)
     """
     def __init__(self, *bits: Any) -> None:
         """Initialize a new BitFlags instance."""
