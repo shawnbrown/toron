@@ -50,7 +50,12 @@ class TestBitFlags(unittest.TestCase):
         ]
         for values in all_values:
             with self.subTest(values=values):
+                # Test multiple single-bit arguments.
                 bits = BitFlags(*values)
+                self.assertEqual(bits.data, values)
+
+                # Test one iterable argument containing multiple bits.
+                bits = BitFlags(values)
                 self.assertEqual(bits.data, values)
 
     def test_normalize_values(self):

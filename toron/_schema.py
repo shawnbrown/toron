@@ -214,6 +214,11 @@ class BitFlags(Sequence[Literal[0, 1]]):
         >>> BitFlags(1, 1, 0, 1, 0)
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
+    Create a BitFlags object from a single iterable argument::
+
+        >>> BitFlags([1, 1, 0, 1, 0])
+        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+
     Other values are converted to 0 and 1 based on their truth value::
 
         >>> BitFlags('x', 'x', '', 'x', '', '', '', '')
@@ -242,9 +247,17 @@ class BitFlags(Sequence[Literal[0, 1]]):
         >>> sqlite3.register_adapter(BitFlags, bytes)
         >>> sqlite3.register_converter('BLOB_BITFLAGS', BitFlags.from_bytes)
     """
-    def __init__(self, *bits: Any) -> None:
-        """Initialize a new BitFlags instance."""
-        data: List[Literal[0, 1]] = [(1 if x else 0) for x in bits]
+    def __init__(self, *args: Any) -> None:
+        """
+        BitFlags(iterable) -> None
+        BitFlags(bit1[, bit2[, ...]]) -> None
+
+        Initialize a new BitFlags instance.
+        """
+        if len(args) == 1 and isinstance(args[0], Iterable):
+            args = args[0]
+
+        data: List[Literal[0, 1]] = [(1 if x else 0) for x in args]
         data = self._normalize_length(data)
 
         self._data: Tuple[Literal[0, 1], ...]
