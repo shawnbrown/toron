@@ -234,6 +234,25 @@ class TestBitFlags(unittest.TestCase):
         bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
         self.assertEqual(hash(bits), hash(bits))
 
+    def test_from_bytes(self):
+        bits = BitFlags.from_bytes(b'\xff')
+        self.assertEqual(bits._data, (1, 1, 1, 1, 1, 1, 1, 1))
+
+        bits = BitFlags.from_bytes(b'\x01')
+        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 1))
+
+        bits = BitFlags.from_bytes(b'\x80\x00')
+        self.assertEqual(bits._data, (1, 0, 0, 0, 0, 0, 0, 0))
+
+        bits = BitFlags.from_bytes(b'\x00\x01')
+        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
+
+        bits = BitFlags.from_bytes(b'\x00')
+        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0))
+
+        bits = BitFlags.from_bytes(b'')
+        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0))
+
 
 class TestNormalizeIdentifier(unittest.TestCase):
     values = [

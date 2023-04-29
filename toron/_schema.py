@@ -317,6 +317,23 @@ class BitFlags(Sequence[Literal[0, 1]]):
         self._data: Tuple[Literal[0, 1], ...]
         super().__setattr__('_data', tuple(data))  # Assign to "immutable".
 
+    @classmethod
+    def from_bytes(cls, bytes_: bytes) -> 'BitFlags':
+        """Take a bytes object and return a new BitFlags."""
+        # Convert bytes to strings of 1s and 0s and slice-off '0b' prefix.
+        binary_strings = (bin(x)[2:] for x in bytes_)
+
+        # Format strings as big-endian, 8-bit words.
+        eight_bit_words = (x.rjust(8, '0') for x in binary_strings)
+
+        # Convert to iterable of integers (1s and 0s only).
+        ones_and_zeros = (int(x) for x in ''.join(eight_bit_words))
+
+        # Initialize and return a new BitFlags instance.
+        new_inst = cls.__new__(cls)
+        cls.__init__(new_inst, *ones_and_zeros)
+        return new_inst
+
     @staticmethod
     def _normalize_length(values: Iterable) -> List:
         data = list(values)
