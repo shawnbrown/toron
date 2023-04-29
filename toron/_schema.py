@@ -334,6 +334,24 @@ class BitFlags(Sequence[Literal[0, 1]]):
         cls.__init__(new_inst, *ones_and_zeros)
         return new_inst
 
+    def __bytes__(self) -> bytes:
+        """Return a bytes object representing the sequence of bits."""
+        bitstr = ''.join(str(x) for x in self._data)
+
+        # Make sure length of bits is a multiple of 8.
+        bitstr = bitstr.rstrip('0')
+        remainder = len(bitstr) % 8
+        if remainder:
+            bitstr = bitstr + '0' * (8 - remainder)
+
+        # If no data, set to zeros.
+        if not bitstr:
+            bitstr = '0' * 8
+
+        # Group into 8-bit chunks and convert to bytes.
+        eight_bit_chunks = (bitstr[i:i + 8] for i in range(0, len(bitstr), 8))
+        return b''.join(int(x, 2).to_bytes(1, 'big') for x in eight_bit_chunks)
+
     @staticmethod
     def _normalize_length(values: Iterable) -> List:
         data = list(values)

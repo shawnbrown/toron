@@ -253,6 +253,29 @@ class TestBitFlags(unittest.TestCase):
         bits = BitFlags.from_bytes(b'')
         self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0))
 
+    def test_convert_to_bytes(self):
+        bits = BitFlags(1, 1, 1, 1, 1, 1, 1, 1)
+        self.assertEqual(bytes(bits), b'\xff')
+
+        bits = BitFlags(1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0)
+        msg = 'excess zeros are not included in bytes representation'
+        self.assertEqual(bytes(bits), b'\xff', msg=msg)
+
+        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 1)
+        self.assertEqual(bytes(bits), b'\x01')
+
+        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 1)
+        self.assertEqual(bytes(bits), b'\x00\x80')
+
+        bits = BitFlags(1)
+        self.assertEqual(bytes(bits), b'\x80')
+
+        bits = BitFlags()
+        self.assertEqual(bytes(bits), b'\x00')
+
+        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        self.assertEqual(bytes(bits), b'\x00')
+
 
 class TestNormalizeIdentifier(unittest.TestCase):
     values = [
