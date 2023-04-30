@@ -915,10 +915,11 @@ class DataAccessLayer(object):
         """)
         old_mapping_levels = [x[0] for x in cursor]  # Unwrap single-item result.
 
-        # Make new mapping_level values.
-        selectors = tuple(col in names_remaining for col in column_names)
-        make_new_level = lambda bits: BitFlags(*compress(bits, selectors))
-        new_mapping_levels = [make_new_level(x) for x in old_mapping_levels]
+        # Make new mapping levels for remaining columns.
+        selectors = tuple((col in names_remaining) for col in column_names)
+        new_mapping_levels = [
+            BitFlags(compress(x, selectors)) for x in old_mapping_levels
+        ]
 
         # Update mapping_level values.
         parameters: Iterable[Tuple[BitFlags, BitFlags]]
