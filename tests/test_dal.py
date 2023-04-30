@@ -1201,6 +1201,47 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         ]
         self.assertEqual(actual, expected)
 
+    def test_abort_on_invalid_mapping_level(self):
+        """When preserving relations, should raise error if invalid
+        mapping levels.
+        """
+        self.load_data(
+            self.dal,
+            data=[
+                ('A', 'B', 'C', 'population'),
+                ('foo', 'x', 'a', 100),
+                ('foo', 'x', 'b', 100),
+                ('bar', 'y', 'c', 100),
+                ('bar', 'y', 'd', 100),
+                ('baz', 'z', 'e', 100),
+                ('baz', 'z', 'f', 100),
+            ],
+            index_cols=['A', 'B', 'C'],
+            categories=[{'A'}, {'B'}, {'C'}],
+            weight_col='population',
+        )
+
+        self.load_edge(
+            self.dal,
+            data=[                                       # other node -> this node
+                (11,  1, 100, 1.00, None),               # foo/x/a -> foo/x/a (exact match)
+                (12,  2, 100, 1.00, None),               # foo/x/b -> foo/x/b (exact match)
+                (13,  3,  50, 0.50, BitFlags(1, 0, 0)),  # bar/?/? -> bar/y/c
+                (13,  4,  50, 0.50, BitFlags(1, 0, 0)),  # bar/?/? -> bar/y/d
+                (14,  5,  25, 0.25, BitFlags(0, 1, 0)),  #   ?/x/? -> baz/x/e
+                (14,  6,  75, 0.75, BitFlags(0, 1, 0)),  #   ?/x/? -> baz/x/f
+            ],
+            edge_id=2,
+            name='population',
+            unique_id='222-22-22-2222',
+            filename_hint='myfile2.toron',
+            complete=1,
+        )
+
+        regex = 'cannot remove, columns are needed to preserve relations'
+        with self.assertRaisesRegex(ToronError, regex):
+            self.dal.remove_index_columns(['B'])  # <- Method under test.
+
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
 class TestRemoveIndexColumnsWithEdges(TestRemoveIndexColumnsWithEdgesMixin, unittest.TestCase):

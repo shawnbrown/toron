@@ -921,6 +921,17 @@ class DataAccessLayer(object):
             BitFlags(compress(x, selectors)) for x in old_mapping_levels
         ]
 
+        # Get the set of mapping levels allowed by the new structure.
+        cursor.execute('SELECT * FROM main.structure')
+        allowed_levels = {BitFlags(row[2:]) for row in cursor}
+        allowed_levels.remove(BitFlags())  # All 0s mapping_level not allowed.
+
+        # Check for invalid mapping levels and raise error if found.
+        for mapping_level in new_mapping_levels:
+            if mapping_level not in allowed_levels:
+                msg = 'cannot remove, columns are needed to preserve relations'
+                raise ToronError(msg)
+
         # Update mapping_level values.
         parameters: Iterable[Tuple[BitFlags, BitFlags]]
         parameters = zip(new_mapping_levels, old_mapping_levels)
