@@ -284,7 +284,7 @@ def parse_edge_shorthand(string):
     """Parse a string containing a special shorthand syntax used to
     describe edges between nodes. If the given syntax is valid, its
     contents are parsed and returned as a dictionary of strings. When
-    a string does not contain valid shorthand syntax, a ``None`` value
+    a string does not contain valid shorthand syntax, an empty dict
     is returned.
 
     Sample of the edge-description shorthand:
@@ -364,7 +364,7 @@ def parse_edge_shorthand(string):
     matched = re.match(pattern, string, re.VERBOSE)
     if matched:
         return matched.groupdict()
-    return None
+    return {}
 
 
 def make_hash(values: Iterable, sep: str = '|') -> Optional[str]:
