@@ -400,7 +400,7 @@ class TestWideToNarrow(unittest.TestCase):
 
 
 class TestMakeHash(unittest.TestCase):
-    # NOTE: The expected hash digests for each test case has been
+    # NOTE: The expected hash digests for each test case have been
     # independently verified.
 
     def test_sequence_of_strings(self):
