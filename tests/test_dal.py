@@ -1242,6 +1242,73 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         with self.assertRaisesRegex(ToronError, regex):
             self.dal.remove_index_columns(['B'])  # <- Method under test.
 
+    @unittest.expectedFailure
+    def test_rebuild_ambiguous_relations(self):
+        """When preserving relations, should raise error if invalid
+        mapping levels.
+        """
+        self.load_data(
+            self.dal,
+            data=[
+                ('A', 'B', 'C', 'population'),
+                ('foo', 'x', 'a', 125),
+                ('foo', 'x', 'b',  75),
+                ('foo', 'y', 'c', 100),
+                ('foo', 'y', 'd', 100),
+                ('bar', 'x', 'a',  50),
+                ('bar', 'x', 'b', 125),
+                ('bar', 'y', 'c', 125),
+                ('bar', 'y', 'd', 100),
+            ],
+            index_cols=['A', 'B', 'C'],
+            categories=[{'A'}, {'A', 'B'}, {'A', 'C'}],
+            weight_col='population',
+        )
+
+        self.load_edge(
+            self.dal,
+            data=[                                      # other node -> this node
+                (11, 1,  75, 0.75, BitFlags(1, 1, 0)),  # foo/x/? -> foo/x/?
+                (11, 2,  25, 0.25, BitFlags(1, 1, 0)),  # foo/x/? -> foo/x/?
+                (12, 3, 100, 1.00, None),               # foo/y/c -> foo/y/c (exact match)
+                (13, 4, 100, 1.00, BitFlags(1, 1, 0)),  # foo/y/? -> foo/y/?
+                (14, 5,  25, 0.25, BitFlags(1, 1, 0)),  # bar/x/? -> bar/x/?
+                (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/? -> bar/x/?
+                (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/?/? -> bar/?/?
+                (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/?/? -> bar/?/?
+            ],
+            edge_id=2,
+            name='population',
+            unique_id='222-22-22-2222',
+            filename_hint='myfile2.toron',
+            complete=1,
+        )
+
+        self.dal.remove_index_columns(['B'])  # <- Method under test.
+
+        self.cur.execute('SELECT * FROM main.relation')
+        actual = {row[2:] for row in self.cur}  # Slice off relation_id and edge_id.
+
+        expected = {
+            (11, 1,  37.5, 0.375, BitFlags(1, 0)),  # foo/x/ab -> foo/?
+            (11, 2,  12.5, 0.125, BitFlags(1, 0)),  # foo/x/ab -> foo/?
+            (11, 4,  50.0, 0.50,  BitFlags(1, 0)),  # foo/x/ab -> foo/?
+            (12, 3, 100.0, 1.00,  None),            # foo/y/c  -> foo/c (exact match)
+            (13, 1,  37.5, 0.375, BitFlags(1, 0)),  # foo/y/d  -> foo/?
+            (13, 2,  12.5, 0.125, BitFlags(1, 0)),  # foo/y/d  -> foo/?
+            (13, 4,  50.0, 0.50,  BitFlags(1, 0)),  # foo/y/d  -> foo/?
+            (14, 5,  12.5, 0.125, BitFlags(1, 0)),  # bar/x/ab    -> bar/?
+            (14, 6,  37.5, 0.375, BitFlags(1, 0)),  # bar/x/ab    -> bar/?
+            (14, 7,  25.0, 0.25,  BitFlags(1, 0)),  # bar/x/ab    -> bar/?
+            (14, 8,  25.0, 0.25,  BitFlags(1, 0)),  # bar/x/ab    -> bar/?
+            (15, 5,  12.5, 0.125, BitFlags(1, 0)),  # bar/xy/abcd -> bar/?
+            (15, 6,  37.5, 0.375, BitFlags(1, 0)),  # bar/xy/abcd -> bar/?
+            (15, 7,  25.0, 0.25,  BitFlags(1, 0)),  # bar/xy/abcd -> bar/?
+            (15, 8,  25.0, 0.25,  BitFlags(1, 0)),  # bar/zy/abcd -> bar/?
+        }
+        self.maxDiff = None
+        self.assertEqual(actual, expected)
+
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
 class TestRemoveIndexColumnsWithEdges(TestRemoveIndexColumnsWithEdgesMixin, unittest.TestCase):
