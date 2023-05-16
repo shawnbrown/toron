@@ -850,6 +850,8 @@ class DataAccessLayer(object):
         *,
         preserve_structure: bool,
         preserve_granularity: bool,
+        #preserve_edges: bool,
+        #match_limit: Optional[Union[int, float]] = 1,
     ) -> None:
         column_names = cls._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
@@ -940,6 +942,7 @@ class DataAccessLayer(object):
             'UPDATE main.relation SET mapping_level=? WHERE mapping_level=?',
             parameters,
         )
+        # TODO: Handle ambiguous mapping relations.
 
     def remove_index_columns(
         self,
