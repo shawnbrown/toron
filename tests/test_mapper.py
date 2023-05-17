@@ -17,6 +17,9 @@ class TestMapper(unittest.TestCase):
         ]
         mapper = Mapper(data, 'population')  # <- Matches name of column exactly.
 
+        self.assertEqual(mapper.left_keys, ['idx'])
+        self.assertEqual(mapper.right_keys, ['idx1', 'idx2'])
+
         mapper.cur.execute('SELECT * FROM temp.source_mapping')
         expected = {
             (1, '["A"]', '["A", "x"]', 70.0),
@@ -32,6 +35,9 @@ class TestMapper(unittest.TestCase):
             ['B', 80, 'B', 'y'],
         ]
         mapper = Mapper(data, 'population')  # <- Matches name in shorthand syntax.
+
+        self.assertEqual(mapper.left_keys, ['idx'])
+        self.assertEqual(mapper.right_keys, ['idx1', 'idx2'])
 
         mapper.cur.execute('SELECT * FROM temp.source_mapping')
         expected = {
