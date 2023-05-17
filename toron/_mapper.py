@@ -1,9 +1,6 @@
 """Tools for building correspondence mappings between label sets."""
 
 import sqlite3
-from itertools import (
-    compress,
-)
 from json import (
     dumps as _dumps,
 )
@@ -62,26 +59,21 @@ class Mapper(object):
         iterator = make_readerlike(data)
         fieldnames = [str(x).strip() for x in next(iterator)]
         name = name.strip()
-        try:
-            weight_pos = fieldnames.index(name)
-        except ValueError:
-            for i, x in enumerate(fieldnames):
-                if name == parse_edge_shorthand(x).get('edge_name'):
-                    weight_pos = i
-                    break
-            else:  # no break
-                msg = f'{name!r} is not in data, got header: {fieldnames!r}'
-                raise ValueError(msg)
 
-        left_mask = tuple(i < weight_pos for i in range(len(fieldnames)))
-        right_mask = tuple(i > weight_pos for i in range(len(fieldnames)))
+        for i, x in enumerate(fieldnames):
+            if name == x or name == parse_edge_shorthand(x).get('edge_name'):
+                weight_pos = i  # Get index position of weight column
+                break
+        else:  # no break
+            msg = f'{name!r} is not in data, got header: {fieldnames!r}'
+            raise ValueError(msg)
 
-        self.left_keys = list(compress(fieldnames, left_mask))
-        self.right_keys = list(compress(fieldnames, right_mask))
+        self.left_keys = fieldnames[:weight_pos]
+        self.right_keys = fieldnames[weight_pos+1:]
 
         for row in iterator:
-            left_labels = _dumps(list(compress(row, left_mask)))
-            right_labels = _dumps(list(compress(row, right_mask)))
+            left_labels = _dumps(row[:weight_pos])
+            right_labels = _dumps(row[weight_pos+1:])
             weight = row[weight_pos]
             sql = 'INSERT INTO temp.source_mapping VALUES (NULL, ?, ?, ?)'
             self.cur.execute(sql, (left_labels, right_labels, weight))
