@@ -469,7 +469,7 @@ class QuantityIterator(object):
 
     .. warning::
 
-        When an *_attribute_keys* value is given, it must contain the
+        When an *_attribute_keys* value is given, it MUST contain the
         set of dictionary keys from the 'attributes' column of every
         row in *data*. These values can be accessed later via the
         ``attribute_keys`` property which can be used to transform the
@@ -539,7 +539,7 @@ class QuantityIterator(object):
             finally:
                 # Space used by the temp table and temp file are reclaimed
                 # after the connection is closed (the associated file gets
-                # automatically removed).
+                # automatically removed some moments later).
                 cursor.close()
                 connection.close()
 
