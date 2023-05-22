@@ -113,3 +113,23 @@ class TestMapperFindMatches(unittest.TestCase):
             ([104], {'idx1': 'C'}, [(5, 'C', 'x'), (6, 'C', 'y')]),
         ]
         self.assertEqual(actual, expected)
+
+    def test_find_matches_format_data_none_found(self):
+        formatted = Mapper._find_matches_format_data(
+            self.node,
+            column_names=['idx1', 'idx2'],
+            iterable=[
+                ('["X", "xxx"]', 997),
+                ('["Y", "yyy"]', 998),
+                ('["Z", "zzz"]', 999),
+            ],
+        )
+
+        # Materialize generators as lists, check against `expected`.
+        actual = [(a, b, list(c)) for a, b, c in formatted]
+        expected = [
+            ([997], {'idx1': 'X', 'idx2': 'xxx'}, []),
+            ([998], {'idx1': 'Y', 'idx2': 'yyy'}, []),
+            ([999], {'idx1': 'Z', 'idx2': 'zzz'}, []),
+        ]
+        self.assertEqual(actual, expected)
