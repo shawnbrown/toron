@@ -80,7 +80,7 @@ class TestMapperFindMatches(unittest.TestCase):
             ],
         )
 
-        # Materialize generators as lists and check against `expected`.
+        # Materialize generators as lists, check against `expected`.
         actual = [(a, b, list(c)) for a, b, c in formatted]
         expected = [
             ([101], {'idx1': 'A', 'idx2': 'x'}, [(1, 'A', 'x')]),
@@ -89,5 +89,27 @@ class TestMapperFindMatches(unittest.TestCase):
             ([104], {'idx1': 'B', 'idx2': 'y'}, [(4, 'B', 'y')]),
             ([105], {'idx1': 'C', 'idx2': 'x'}, [(5, 'C', 'x')]),
             ([106], {'idx1': 'C', 'idx2': 'y'}, [(6, 'C', 'y')]),
+        ]
+        self.assertEqual(actual, expected)
+
+    def test_find_matches_format_data_ambiguous(self):
+        formatted = Mapper._find_matches_format_data(
+            self.node,
+            column_names=['idx1', 'idx2'],
+            iterable=[
+                ('["A", "x"]',  101),
+                ('["A", "y"]',  102),
+                ('["B", ""]',   103),  # <- Should match 2 index records.
+                ('["C", null]', 104),  # <- Should match 2 index records.
+            ],
+        )
+
+        # Materialize generators as lists, check against `expected`.
+        actual = [(a, b, list(c)) for a, b, c in formatted]
+        expected = [
+            ([101], {'idx1': 'A', 'idx2': 'x'}, [(1, 'A', 'x')]),
+            ([102], {'idx1': 'A', 'idx2': 'y'}, [(2, 'A', 'y')]),
+            ([103], {'idx1': 'B'}, [(3, 'B', 'x'), (4, 'B', 'y')]),
+            ([104], {'idx1': 'C'}, [(5, 'C', 'x'), (6, 'C', 'y')]),
         ]
         self.assertEqual(actual, expected)
