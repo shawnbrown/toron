@@ -96,7 +96,9 @@ class Mapper(object):
 
     @staticmethod
     def _find_matches_format_data(
-        node: 'Node', column_names: Sequence[str], iterable: Iterable[Tuple[str, int]]
+        node: 'Node',
+        column_names: Sequence[str],
+        iterable: Iterable[Tuple[str, int]],
     ) -> Iterator[Tuple[List[int], Dict[str, str], Iterator[Tuple]]]:
         """Takes a *node*, a sequence of label *keys*, and an *iterable*
         containing ``(label_values, run_id)`` records. Returns an
