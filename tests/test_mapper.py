@@ -48,7 +48,7 @@ class TestMapper(unittest.TestCase):
         self.assertEqual(set(mapper.cur.fetchall()), expected)
 
 
-class TestMapperFindMatches(unittest.TestCase):
+class TestFindMatchesFormatData(unittest.TestCase):
     def setUp(self):
         node = Node()
         node_data = [
