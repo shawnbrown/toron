@@ -13,6 +13,7 @@ from ._typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Sequence,
     Tuple,
     TYPE_CHECKING,
@@ -155,3 +156,16 @@ class Mapper(object):
         run_ids_where_dict_matches = ((x, y, z) for (x, (y, z)) in zipped)
 
         return run_ids_where_dict_matches
+
+    def find_matches(
+        self,
+        node: 'Node',
+        side: Literal['left', 'right'],
+    ) -> None:
+        if side == 'left':
+            column_names = self.left_keys
+        elif side == 'right':
+            column_names = self.right_keys
+        else:
+            msg = f"side must be 'left' or 'right', got {side!r}"
+            raise ValueError(msg)

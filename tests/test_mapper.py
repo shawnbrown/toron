@@ -133,3 +133,30 @@ class TestFindMatchesFormatData(unittest.TestCase):
             ([999], {'idx1': 'Z', 'idx2': 'zzz'}, []),
         ]
         self.assertEqual(actual, expected)
+
+
+class TestMapperFindMatches(unittest.TestCase):
+    def setUp(self):
+        node1 = Node()
+        data1 = [
+            ['idx', 'wght'],
+            ['A', 16],
+            ['B', 8],
+            ['C', 32],
+        ]
+        node1.add_index_columns(['idx'])
+        node1.add_index_records(data1)
+        node1.add_weights(data1, 'wght', selectors=['[attr1]'])
+        self.node1 = node1
+
+    def test_find_matches_side(self):
+        mapper = Mapper([['idx', 'dummy_weight', 'idx1']], 'dummy_weight')
+
+        # Check valid *side* arguments.
+        mapper.find_matches(self.node1, 'left')
+        mapper.find_matches(self.node1, 'right')
+
+        # Check invalid *side* argument.
+        regex = "side must be 'left' or 'right', got 'bad'"
+        with self.assertRaisesRegex(ValueError, regex):
+            mapper.find_matches(self.node1, 'bad')
