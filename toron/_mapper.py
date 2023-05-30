@@ -152,7 +152,10 @@ class Mapper(object):
         items = ((get_where_dict(k), get_run_ids(g)) for k, g in grouped)
 
         # Unzip items into separate where_dict and run_id containers.
-        where_dicts, grouped_run_ids = zip(*items)
+        try:
+            where_dicts, grouped_run_ids = zip(*items)
+        except ValueError:  # If no items to unpack, assign empty tuples.
+            where_dicts, grouped_run_ids = (), ()
 
         # Get node matches (NOTE: accessing internal ``_dal`` directly).
         grouped_matches = node._dal.index_records_grouped(where_dicts)
