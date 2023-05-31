@@ -178,16 +178,19 @@ class Mapper(object):
         first_match = next(matches, tuple())  # Empty tuple if no matches.
         num_of_matches = (1 if first_match else 0) + sum(1 for _ in matches)
 
-        info: Dict[str, int] = {}
+        info_dict: Dict[str, int] = {}
 
-        # Add exact matches to given matches table.
         if num_of_matches == 1:
+            # Add exact matches to given matches table.
             index_id, *_ = first_match  # Unpack index record (discards labels).
             parameters = ((run_id, index_id) for run_id in run_ids)
             sql = f'INSERT INTO temp.{side}_matches (run_id, index_id) VALUES (?, ?)'
             cursor.executemany(sql, parameters)
+        elif num_of_matches == 0:
+            # If no match, add to count.
+            info_dict['unresolvable_count'] = 1
 
-        return info
+        return info_dict
 
     def find_matches(
         self,

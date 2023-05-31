@@ -150,7 +150,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         """)
 
     def test_exact_match(self):
-        log_values = Mapper._match_exact_or_get_info(
+        info_dict = Mapper._match_exact_or_get_info(
             self.cursor,
             side='right',
             run_ids=[101],
@@ -158,11 +158,25 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
             matches=iter([(1, 'A', 'x')]),
         )
 
-        self.assertEqual(log_values, {}, msg='expecting empty dictionary')
+        self.assertEqual(info_dict, {}, msg='expecting empty dictionary')
 
         self.cursor.execute('SELECT * FROM temp.right_matches')
         expected = [(101, 1, None, None, None)]
         self.assertEqual(self.cursor.fetchall(), expected)
+
+    def test_no_match(self):
+        info_dict = Mapper._match_exact_or_get_info(
+            self.cursor,
+            side='right',
+            run_ids=[101],
+            key={'idx1': 'A', 'idx2': 'x'},
+            matches=iter([]),  # <- Empty matches iterator.
+        )
+
+        self.assertEqual(info_dict, {'unresolvable_count': 1})
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        self.assertEqual(self.cursor.fetchall(), [], msg='no record inserted')
 
 
 class TestMapperFindMatches(unittest.TestCase):
