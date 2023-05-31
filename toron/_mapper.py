@@ -166,6 +166,29 @@ class Mapper(object):
 
         return run_ids_where_dict_matches
 
+    @staticmethod
+    def _match_exact_or_get_info(
+        cursor: sqlite3.Cursor,
+        side: Literal['left', 'right'],
+        run_ids: List[int],
+        key: Dict[str, str],
+        matches: Iterator[Tuple],
+    ) -> Dict:
+        """Add exact match or return info."""
+        first_match = next(matches, tuple())  # Empty tuple if no matches.
+        num_of_matches = (1 if first_match else 0) + sum(1 for _ in matches)
+
+        info: Dict[str, int] = {}
+
+        # Add exact matches to given matches table.
+        if num_of_matches == 1:
+            index_id, *_ = first_match  # Unpack index record (discards labels).
+            parameters = ((run_id, index_id) for run_id in run_ids)
+            sql = f'INSERT INTO temp.{side}_matches (run_id, index_id) VALUES (?, ?)'
+            cursor.executemany(sql, parameters)
+
+        return info
+
     def find_matches(
         self,
         node: 'Node',

@@ -1,5 +1,6 @@
 """Tests for toron/_mapper.py module."""
 
+import sqlite3
 import unittest
 
 from toron.node import Node
@@ -133,6 +134,35 @@ class TestFindMatchesFormatData(unittest.TestCase):
             ([999], {'idx1': 'Z', 'idx2': 'zzz'}, []),
         ]
         self.assertEqual(actual, expected)
+
+
+class TestMatchExactOrGetInfo(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.cursor = self.connection.executescript("""
+            CREATE TEMP TABLE right_matches(
+                run_id INTEGER NOT NULL REFERENCES source_mapping(run_id),
+                index_id INTEGER,
+                weight_value REAL CHECK (0.0 <= weight_value),
+                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
+                mapping_level BLOB_BITFLAGS
+            );
+        """)
+
+    def test_exact_match(self):
+        log_values = Mapper._match_exact_or_get_info(
+            self.cursor,
+            side='right',
+            run_ids=[101],
+            key={'idx1': 'A', 'idx2': 'x'},
+            matches=iter([(1, 'A', 'x')]),
+        )
+
+        self.assertEqual(log_values, {}, msg='expecting empty dictionary')
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [(101, 1, None, None, None)]
+        self.assertEqual(self.cursor.fetchall(), expected)
 
 
 class TestMapperFindMatches(unittest.TestCase):
