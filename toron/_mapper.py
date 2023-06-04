@@ -202,6 +202,29 @@ class Mapper(object):
 
         return info_dict
 
+    @staticmethod
+    def _refresh_proportions(
+        cursor: sqlite3.Cursor, side: Literal['left', 'right']
+    ) -> None:
+        """Update 'proportion' values in left or right matches table."""
+        cursor.execute(f"""
+            WITH
+                SummedValues AS (
+                    SELECT
+                        run_id AS summed_run_id,
+                        SUM(weight_value) AS summed_weight_value
+                    FROM temp.{side}_matches
+                    GROUP BY run_id
+                )
+            UPDATE temp.{side}_matches
+            SET proportion=COALESCE(
+                (weight_value / (SELECT summed_weight_value
+                                 FROM SummedValues
+                                 WHERE run_id=summed_run_id)),
+                1.0
+            )
+        """)
+
     def find_matches(
         self,
         node: 'Node',

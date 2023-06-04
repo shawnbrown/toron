@@ -211,6 +211,84 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.assertEqual(self.cursor.fetchall(), [], msg='should be no records')
 
 
+class TestMatchRefreshProportions(unittest.TestCase):
+    def setUp(self):
+        connection = sqlite3.connect(':memory:')
+
+        # Create simplified dummy table for testing.
+        self.cursor = connection.execute("""
+            CREATE TEMP TABLE right_matches(
+                run_id, index_id, weight_value, proportion, mapping_level
+            )
+        """)
+
+    def test_one_to_one(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1, NULL, NULL, NULL),
+                (2, 2, NULL, NULL, NULL),
+                (3, 3, NULL, NULL, NULL),
+                (4, 4, NULL, NULL, NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (1, 1, None, 1.0, None),
+            (2, 2, None, 1.0, None),
+            (3, 3, None, 1.0, None),
+            (4, 4, None, 1.0, None),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
+    def test_many_to_one(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1, NULL, NULL, NULL),
+                (2, 1, NULL, NULL, NULL),
+                (3, 2, NULL, NULL, NULL),
+                (4, 2, NULL, NULL, NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (1, 1, None, 1.0, None),
+            (2, 1, None, 1.0, None),
+            (3, 2, None, 1.0, None),
+            (4, 2, None, 1.0, None),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
+    def test_one_to_many(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1, NULL, NULL, NULL),
+                (2, 2, NULL, NULL, NULL),
+                (3, 3, 12.5, NULL, X'C0'),
+                (3, 4, 37.5, NULL, X'C0')
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (1, 1, None, 1.0, None),
+            (2, 2, None, 1.0, None),
+            (3, 3, 12.5, 0.25, b'\xc0'),
+            (3, 4, 37.5, 0.75, b'\xc0'),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
+
 class TestMapperFindMatches(unittest.TestCase):
     def setUp(self):
         node1 = Node()
