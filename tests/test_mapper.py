@@ -288,6 +288,28 @@ class TestMatchRefreshProportions(unittest.TestCase):
         ]
         self.assertEqual(self.cursor.fetchall(), expected)
 
+    def test_many_to_many(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1, 20.0, NULL, X'80'),
+                (1, 2, 12.0, NULL, X'80'),
+                (2, 1, 12.5, NULL, X'C0'),
+                (2, 2, 37.5, NULL, X'C0')
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (1, 1, 20.0, 0.625, b'\x80'),
+            (1, 2, 12.0, 0.375, b'\x80'),
+            (2, 1, 12.5, 0.250, b'\xc0'),
+            (2, 2, 37.5, 0.750, b'\xc0'),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
 
 class TestMapperFindMatches(unittest.TestCase):
     def setUp(self):
