@@ -178,6 +178,38 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.cursor.execute('SELECT * FROM temp.right_matches')
         self.assertEqual(self.cursor.fetchall(), [], msg='no record inserted')
 
+    def test_ambiguous_match(self):
+        # Single record from Mapper._find_matches_format_data()
+        # result which contains two matched records.
+        record = ([103], {'idx1': 'B'}, [(3, 'B', 'x'), (4, 'B', 'y')])
+
+        # Unpack into separate values.
+        run_ids, key, matches = record
+
+        # Check using `match_limit=3`.
+        info_dict = Mapper._match_exact_or_get_info(
+            self.cursor, 'right', run_ids, key, iter(matches), match_limit=3
+        )
+        expected_dict = {
+            'ambiguous_matches': [([103], {'idx1': 'B'}, 2)],
+            'matched_category': ['idx1'],
+        }
+        self.assertEqual(info_dict, expected_dict)
+
+        # Check using default match limit (`match_limit=1`).
+        info_dict = Mapper._match_exact_or_get_info(
+            self.cursor, 'right', run_ids, key, iter(matches), match_limit=1
+        )
+        expected_dict = {
+            'num_of_matches': 2,
+            'overlimit_count': 1,
+        }
+        self.assertEqual(info_dict, expected_dict)
+
+        # Check that no records have been added.
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        self.assertEqual(self.cursor.fetchall(), [], msg='should be no records')
+
 
 class TestMapperFindMatches(unittest.TestCase):
     def setUp(self):

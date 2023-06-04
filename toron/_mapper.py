@@ -16,6 +16,7 @@ from ._typing import (
     Literal,
     Sequence,
     Tuple,
+    Union,
     TYPE_CHECKING,
 )
 
@@ -173,22 +174,31 @@ class Mapper(object):
         run_ids: List[int],
         key: Dict[str, str],
         matches: Iterator[Tuple],
+        match_limit: Union[int, float] = 1,
     ) -> Dict:
-        """Add exact match or return info."""
+        """Add exact match or return match info."""
         first_match = next(matches, tuple())  # Empty tuple if no matches.
         num_of_matches = (1 if first_match else 0) + sum(1 for _ in matches)
 
         info_dict: Dict[str, int] = {}
 
         if num_of_matches == 1:
-            # Add exact matches to given matches table.
+            # Insert the record, leave info_dict empty (found exact match).
             index_id, *_ = first_match  # Unpack index record (discards labels).
             parameters = ((run_id, index_id) for run_id in run_ids)
             sql = f'INSERT INTO temp.{side}_matches (run_id, index_id) VALUES (?, ?)'
             cursor.executemany(sql, parameters)
         elif num_of_matches == 0:
-            # If no match, add to count.
+            # Log count to info_dict (no matches found).
             info_dict['unresolvable_count'] = 1
+        elif num_of_matches <= match_limit:
+            # Log matches to info_dict for later (ambiguous but within limit).
+            info_dict['matched_category'] = list(key.keys())
+            info_dict['ambiguous_matches'] = [(run_ids, key, num_of_matches)]
+        else:
+            # Log counts to info_dict (ambiguous, too many matches).
+            info_dict['overlimit_count'] = 1
+            info_dict['num_of_matches'] = num_of_matches
 
         return info_dict
 
