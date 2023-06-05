@@ -9,6 +9,7 @@ from json import (
     loads as _loads,
 )
 from ._typing import (
+    Any,
     Dict,
     Iterable,
     Iterator,
@@ -180,7 +181,7 @@ class Mapper(object):
         first_match = next(matches, tuple())  # Empty tuple if no matches.
         num_of_matches = (1 if first_match else 0) + sum(1 for _ in matches)
 
-        info_dict: Dict[str, int] = {}
+        info_dict: Dict[str, Any] = {}
 
         if num_of_matches == 1:
             # Insert the record, leave info_dict empty (found exact match).
