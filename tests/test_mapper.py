@@ -178,31 +178,49 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.cursor.execute('SELECT * FROM temp.right_matches')
         self.assertEqual(self.cursor.fetchall(), [], msg='no record inserted')
 
-    def test_ambiguous_match(self):
+    def test_ambiguous_match_not_allowed(self):
+        """If match is ambiguous and over the limit, it is logged
+        using `'overlimit_count'` in the returned info_dict.
+        """
         # Single record from Mapper._find_matches_format_data()
-        # result which contains two matched records.
-        record = ([103], {'idx1': 'B'}, [(3, 'B', 'x'), (4, 'B', 'y')])
+        # is a three-tuple like `(run_ids, key, matches)`.
+        run_ids = [103]
+        key = {'idx1': 'B'}
+        matches = [(3, 'B', 'x'), (4, 'B', 'y')]
 
-        # Unpack into separate values.
-        run_ids, key, matches = record
-
-        # Check using `match_limit=3`.
-        info_dict = Mapper._match_exact_or_get_info(
-            self.cursor, 'right', run_ids, key, iter(matches), match_limit=3
-        )
-        expected_dict = {
-            'ambiguous_matches': [([103], {'idx1': 'B'}, 2)],
-            'matched_category': ['idx1'],
-        }
-        self.assertEqual(info_dict, expected_dict)
-
-        # Check using default match limit (`match_limit=1`).
+        # When no `match_limit` is given, it defaults to 1.
         info_dict = Mapper._match_exact_or_get_info(
             self.cursor, 'right', run_ids, key, iter(matches), match_limit=1
         )
         expected_dict = {
             'num_of_matches': 2,
             'overlimit_count': 1,
+        }
+        self.assertEqual(info_dict, expected_dict)
+
+        # Check that no records have been added.
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        self.assertEqual(self.cursor.fetchall(), [], msg='should be no records')
+
+    def test_ambiguous_match_allowed(self):
+        """If match is ambiguous but equal to or under the limit,
+        log the match using `'ambiguous_matches'` and also log the
+        column names used for the match using `'matched_category'`
+        in the returned info_dict.
+        """
+        # Single record from Mapper._find_matches_format_data()
+        # is a three-tuple like `(run_ids, key, matches)`.
+        run_ids = [103]
+        key = {'idx1': 'B'}
+        matches = [(3, 'B', 'x'), (4, 'B', 'y')]
+
+        # Check using `match_limit=3`.
+        info_dict = Mapper._match_exact_or_get_info(
+            self.cursor, 'right', run_ids, key, iter(matches), match_limit=2
+        )
+        expected_dict = {
+            'ambiguous_matches': [([103], {'idx1': 'B'}, 2)],
+            'matched_category': ['idx1'],
         }
         self.assertEqual(info_dict, expected_dict)
 
