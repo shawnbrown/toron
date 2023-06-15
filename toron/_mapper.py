@@ -176,7 +176,7 @@ class Mapper(object):
         key: Dict[str, str],
         matches: Iterator[Tuple],
         match_limit: Union[int, float] = 1,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Add exact match or return match info."""
         first_match = next(matches, tuple())  # Empty tuple if no matches.
         num_of_matches = (1 if first_match else 0) + sum(1 for _ in matches)
