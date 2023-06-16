@@ -3,6 +3,7 @@
 import sqlite3
 from itertools import (
     groupby,
+    product,
 )
 from json import (
     dumps as _dumps,
@@ -15,12 +16,14 @@ from ._typing import (
     Iterator,
     List,
     Literal,
+    Optional,
     Sequence,
     Tuple,
     Union,
     TYPE_CHECKING,
 )
 
+from ._schema import BitFlags
 from ._utils import (
     TabularData,
     make_readerlike,
@@ -200,6 +203,46 @@ class Mapper(object):
             # Log counts to info_dict (ambiguous, too many matches).
             info_dict['overlimit_count'] = 1
             info_dict['num_of_matches'] = num_of_matches
+
+        return info_dict
+
+    @staticmethod
+    def _match_ambiguous_or_get_info(
+        node: 'Node',
+        cursor: sqlite3.Cursor,
+        side: Literal['left', 'right'],
+        run_ids: List[int],
+        where_dict: Dict[str, str],
+        index_columns: Sequence[str],
+        weight_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Add ambiguous match or return match info."""
+        info_dict: Dict[str, Any] = {}
+
+        # Get records (NOTE: accessing internal ``_dal`` directly).
+        records = list(
+            node._dal.weight_records(weight_name, **where_dict)
+        )
+
+        # If any record is missing a weight value, skip to next match.
+        if any(weight is None for (_, weight) in records):
+            info_dict['unweighted_count'] = 1
+
+        # Build bit list to encode mapping level.
+        key_cols = where_dict.keys()
+        mapping_level = BitFlags(*((col in key_cols) for col in index_columns))
+
+        # Build iterator of parameters for executemany().
+        parameters: Iterable[Tuple]
+        parameters = product(run_ids, records)
+        parameters = ((a, b, c) for (a, (b, c)) in parameters)
+        parameters = ((a, b, c, mapping_level) for (a, b, c) in parameters)
+        sql = f"""
+            INSERT INTO temp.{side}_matches
+                (run_id, index_id, weight_value, mapping_level)
+            VALUES (?, ?, ?, ?)
+        """
+        cursor.executemany(sql, parameters)
 
         return info_dict
 
