@@ -149,7 +149,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
             );
         """)
 
-    def test_exact_match(self):
+    def test_matches_one_to_one(self):
         info_dict = Mapper._match_exact_or_get_info(
             self.cursor,
             side='right',
