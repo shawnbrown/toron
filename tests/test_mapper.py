@@ -229,6 +229,41 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.assertEqual(self.cursor.fetchall(), [], msg='should be no records')
 
 
+class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.cursor = self.connection.executescript("""
+            CREATE TEMP TABLE right_matches(
+                run_id INTEGER NOT NULL REFERENCES source_mapping(run_id),
+                index_id INTEGER,
+                weight_value REAL CHECK (0.0 <= weight_value),
+                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
+                mapping_level BLOB_BITFLAGS
+            );
+        """)
+
+        node = Node()
+        data = [
+            ['idx1', 'idx2', 'population'],
+            ['A', 'x', 3],
+            ['A', 'y', 15],
+            ['B', 'x', 3],
+            ['B', 'y', 7],
+            ['C', 'x', 13],
+            ['C', 'y', 22],
+        ]
+        node.add_index_columns(['idx1', 'idx2'])
+        node.add_index_records(data)
+        node.add_weights(data, 'population', selectors=['[attr1]'])
+        self.node = node
+
+    def test_matches_one_to_many(self):
+        raise NotImplementedError
+
+    def test_matches_many_to_many(self):
+        raise NotImplementedError
+
+
 class TestMatchRefreshProportions(unittest.TestCase):
     def setUp(self):
         connection = sqlite3.connect(':memory:')
