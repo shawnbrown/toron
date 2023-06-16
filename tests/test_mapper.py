@@ -164,6 +164,25 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         expected = [(101, 1, None, None, None)]
         self.assertEqual(self.cursor.fetchall(), expected)
 
+    def test_matches_many_to_one(self):
+        info_dict = Mapper._match_exact_or_get_info(
+            self.cursor,
+            side='right',
+            run_ids=[101, 102, 103],  # <- Many source records.
+            key={'idx1': 'A', 'idx2': 'x'},
+            matches=iter([(1, 'A', 'x')]),  # <- Exact destination match.
+        )
+
+        self.assertEqual(info_dict, {}, msg='expecting empty dictionary')
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (101, 1, None, None, None),
+            (102, 1, None, None, None),
+            (103, 1, None, None, None),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
     def test_no_match(self):
         info_dict = Mapper._match_exact_or_get_info(
             self.cursor,
