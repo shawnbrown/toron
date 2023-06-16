@@ -300,7 +300,29 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         self.assertEqual(self.cursor.fetchall(), expected)
 
     def test_matches_many_to_many(self):
-        raise NotImplementedError
+        ambiguous_match = ([2, 3], {'idx1': 'C'}, 2)
+        run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
+
+        info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
+            node=self.node,
+            cursor=self.cursor,
+            side='right',
+            run_ids=run_ids,
+            where_dict=where_dict,
+            index_columns=['idx1', 'idx2'],
+            weight_name='population',
+        )
+
+        self.assertEqual(info_dict, {}, msg='expecting empty dictionary')
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (2, 5, 13.0, None, b'\x80'),
+            (2, 6, 22.0, None, b'\x80'),
+            (3, 5, 13.0, None, b'\x80'),
+            (3, 6, 22.0, None, b'\x80')
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
 
 
 class TestMatchRefreshProportions(unittest.TestCase):
