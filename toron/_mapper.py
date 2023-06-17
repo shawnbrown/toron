@@ -224,25 +224,26 @@ class Mapper(object):
             node._dal.weight_records(weight_name, **where_dict)
         )
 
-        # If any record is missing a weight value, skip to next match.
         if any(weight is None for (_, weight) in records):
+            # If any record is missing a weight value, log it in the
+            # info_dict but don't insert any records.
             info_dict['unweighted_count'] = 1
+        else:
+            # Build bit list to encode mapping level.
+            key_cols = where_dict.keys()
+            mapping_level = BitFlags(*((col in key_cols) for col in index_columns))
 
-        # Build bit list to encode mapping level.
-        key_cols = where_dict.keys()
-        mapping_level = BitFlags(*((col in key_cols) for col in index_columns))
-
-        # Build iterator of parameters for executemany().
-        parameters: Iterable[Tuple]
-        parameters = product(run_ids, records)
-        parameters = ((a, b, c) for (a, (b, c)) in parameters)
-        parameters = ((a, b, c, mapping_level) for (a, b, c) in parameters)
-        sql = f"""
-            INSERT INTO temp.{side}_matches
-                (run_id, index_id, weight_value, mapping_level)
-            VALUES (?, ?, ?, ?)
-        """
-        cursor.executemany(sql, parameters)
+            # Build iterator of parameters for executemany().
+            parameters: Iterable[Tuple]
+            parameters = product(run_ids, records)
+            parameters = ((a, b, c) for (a, (b, c)) in parameters)
+            parameters = ((a, b, c, mapping_level) for (a, b, c) in parameters)
+            sql = f"""
+                INSERT INTO temp.{side}_matches
+                    (run_id, index_id, weight_value, mapping_level)
+                VALUES (?, ?, ?, ?)
+            """
+            cursor.executemany(sql, parameters)
 
         return info_dict
 
