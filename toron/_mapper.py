@@ -215,6 +215,7 @@ class Mapper(object):
         where_dict: Dict[str, str],
         index_columns: Sequence[str],
         weight_name: Optional[str] = None,
+        allow_overlapping: bool = False,
     ) -> Dict[str, Any]:
         """Add ambiguous match or return match info."""
         info_dict: Dict[str, Any] = {}
@@ -223,6 +224,22 @@ class Mapper(object):
         records = list(
             node._dal.weight_records(weight_name, **where_dict)
         )
+
+        # Optionally, filter to records that have not already been
+        # matched at a finer-grained/less-ambiguous level.
+        if not allow_overlapping:
+            index_ids = (f'({index_id})' for (index_id, _) in records)
+            sql = f"""
+                WITH ambiguous_match (index_id) AS (
+                    VALUES {', '.join(index_ids)}
+                )
+                SELECT index_id FROM ambiguous_match
+                EXCEPT
+                SELECT index_id FROM temp.{side}_matches
+            """
+            cursor.execute(sql)
+            no_overlap = [row[0] for row in cursor]
+            records = [(x, y) for (x, y) in records if x in no_overlap]
 
         if any(weight is None for (_, weight) in records):
             # If any record is missing a weight value, log it in the

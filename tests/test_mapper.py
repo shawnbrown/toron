@@ -324,6 +324,69 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         ]
         self.assertEqual(self.cursor.fetchall(), expected)
 
+    def test_allow_overlapping(self):
+        # Add an existing match.
+        info_dict = Mapper._match_exact_or_get_info(
+            self.cursor,
+            'right',
+            [101], {'idx1': 'C', 'idx2': 'x'}, iter([(5, 'C', 'x')]),
+        )
+
+        ambiguous_match = ([102], {'idx1': 'C'}, 2)
+        run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
+
+        info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
+            node=self.node,
+            cursor=self.cursor,
+            side='right',
+            run_ids=run_ids,
+            where_dict=where_dict,
+            index_columns=['idx1', 'idx2'],
+            weight_name='population',
+            allow_overlapping=True,  # <- Allows matches to overlap.
+        )
+
+        self.assertEqual(info_dict, {}, msg='expecting empty dictionary')
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (101, 5, None, None, None),     # <- Exact match (5).
+            (102, 5, 13.0, None, b'\x80'),  # <- Overlaps exact match (5).
+            (102, 6, 22.0, None, b'\x80'),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
+    def test_disallow_overlapping(self):
+        # Add an existing match.
+        info_dict = Mapper._match_exact_or_get_info(
+            self.cursor,
+            'right',
+            [101], {'idx1': 'C', 'idx2': 'x'}, iter([(5, 'C', 'x')]),
+        )
+
+        ambiguous_match = ([102], {'idx1': 'C'}, 2)
+        run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
+
+        info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
+            node=self.node,
+            cursor=self.cursor,
+            side='right',
+            run_ids=run_ids,
+            where_dict=where_dict,
+            index_columns=['idx1', 'idx2'],
+            weight_name='population',
+            allow_overlapping=False,  # <- False is the default.
+        )
+
+        self.assertEqual(info_dict, {}, msg='expecting empty dictionary')
+
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (101, 5, None, None, None),     # <- Exact match (5).
+            (102, 6, 22.0, None, b'\x80'),  # <- Only one record (overlap of 5 is omitted).
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
 
 class TestMatchRefreshProportions(unittest.TestCase):
     def setUp(self):
