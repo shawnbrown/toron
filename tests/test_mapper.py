@@ -2,8 +2,10 @@
 
 import sqlite3
 import unittest
+import warnings
 
 from toron.node import Node
+from toron._utils import ToronWarning
 from toron._mapper import (
     Mapper,
 )
@@ -486,6 +488,62 @@ class TestMatchRefreshProportions(unittest.TestCase):
             (2, 2, 37.5, 0.750, b'\xc0'),
         ]
         self.assertEqual(self.cursor.fetchall(), expected)
+
+
+class TestMapperWarnMatchStats(unittest.TestCase):
+    def test_no_warning(self):
+        """Check no warnings are raised when relevant args are 0."""
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            Mapper._warn_match_stats(
+                unresolvable_count=0,
+                invalid_count=0,
+                invalid_categories=set(),
+                overlimit_count=0,
+                overlimit_max=0,
+                match_limit=1,
+            )
+
+    def test_warn_unresolvable(self):
+        """Check warning for values with no matches."""
+        regex = 'skipped 11 values that matched no records'
+        with self.assertWarnsRegex(ToronWarning, regex):
+            Mapper._warn_match_stats(
+                unresolvable_count=11,
+            )
+
+    def test_warn_overlimit(self):
+        """Check warning for values matching too many records."""
+        regex = (
+            'skipped 7 values that matched too many records, '
+            'current match_limit is 3 but data includes values that match up to 5 records'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            Mapper._warn_match_stats(
+                overlimit_count=7,
+                overlimit_max=5,
+                match_limit=3,
+            )
+
+    def test_warn_multiple(self):
+        """Check warnings on all conditions."""
+        regex = (
+            'skipped 13 values that matched no records, '
+            'skipped 7 values that matched too many records, '
+            'current match_limit is 3 but data includes values that match up to 5 records, '
+            'skipped 11 values that used invalid categories:\n'
+            '  B\n'
+            '  B, C'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            Mapper._warn_match_stats(
+                unresolvable_count=13,
+                invalid_count=11,
+                invalid_categories={('B', 'C'), ('B',)},
+                overlimit_count=7,
+                overlimit_max=5,
+                match_limit=3,
+            )
 
 
 class TestMapperFindMatches(unittest.TestCase):

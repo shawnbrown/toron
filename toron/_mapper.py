@@ -18,6 +18,7 @@ from ._typing import (
     Literal,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Union,
     TYPE_CHECKING,
@@ -26,6 +27,7 @@ from ._typing import (
 from ._schema import BitFlags
 from ._utils import (
     TabularData,
+    ToronWarning,
     make_readerlike,
     parse_edge_shorthand,
 )
@@ -286,6 +288,53 @@ class Mapper(object):
                 1.0
             )
         """)
+
+    @staticmethod
+    def _warn_match_stats(
+        *,
+        unresolvable_count: int = 0,
+        overlimit_count: int = 0,
+        overlimit_max: int = 0,
+        match_limit: Union[int, float] = 1,
+        invalid_count: int = 0,
+        invalid_categories: Set[Tuple] = set(),
+        unweighted_count: int = 0,
+    ) -> None:
+        """If needed, emit ToronWarning with relevant information."""
+        messages = []
+
+        if unresolvable_count:
+            messages.append(
+                f'skipped {unresolvable_count} values that matched no records'
+            )
+
+        if overlimit_count:
+            messages.append(
+                f'skipped {overlimit_count} values that matched too many records'
+            )
+            messages.append(
+                f'current match_limit is {match_limit} but data includes values '
+                f'that match up to {overlimit_max} records'
+            )
+
+        if invalid_count:
+            category_list = [', '.join(c) for c in sorted(invalid_categories)]
+            category_string = '\n  '.join(category_list)
+            messages.append(
+                f'skipped {invalid_count} values that used invalid categories:\n'
+                f'  {category_string}\n'
+            )
+
+        if unweighted_count:
+            messages.append(
+                f'skipped {unweighted_count} values that ambiguously matched '
+                f'to one or more records that have no associated weight'
+            )
+
+        if messages:
+            import warnings
+            msg = ', '.join(messages)
+            warnings.warn(msg, category=ToronWarning, stacklevel=3)
 
     def find_matches(
         self,
