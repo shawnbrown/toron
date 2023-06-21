@@ -155,6 +155,8 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         info_dict = Mapper._match_exact_or_get_info(
             self.cursor,
             side='right',
+            index_columns=['idx1', 'idx2', 'idx3'],
+            structure_set={(0, 0, 0), (1, 1, 1)},
             run_ids=[101],
             key={'idx1': 'A', 'idx2': 'x'},
             matches=iter([(1, 'A', 'x')]),
@@ -170,6 +172,8 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         info_dict = Mapper._match_exact_or_get_info(
             self.cursor,
             side='right',
+            index_columns=['idx1', 'idx2', 'idx3'],
+            structure_set={(0, 0, 0), (1, 1, 1)},
             run_ids=[101, 102, 103],  # <- Many source records.
             key={'idx1': 'A', 'idx2': 'x'},
             matches=iter([(1, 'A', 'x')]),  # <- Exact destination match.
@@ -189,6 +193,8 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         info_dict = Mapper._match_exact_or_get_info(
             self.cursor,
             side='right',
+            index_columns=['idx1', 'idx2', 'idx3'],
+            structure_set={(0, 0, 0), (1, 1, 1)},
             run_ids=[101],
             key={'idx1': 'A', 'idx2': 'x'},
             matches=iter([]),  # <- Empty matches iterator.
@@ -211,7 +217,12 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
 
         # When no `match_limit` is given, it defaults to 1.
         info_dict = Mapper._match_exact_or_get_info(
-            self.cursor, 'right', run_ids, key, iter(matches), match_limit=1
+            self.cursor,
+            'right',
+            ['idx1', 'idx2', 'idx3'],
+            {(0, 0, 0), (1, 1, 1), (1, 0, 0)},
+            run_ids, key, iter(matches),
+            match_limit=1,
         )
         expected_dict = {
             'num_of_matches': 2,
@@ -237,7 +248,12 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
 
         # Check using `match_limit=3`.
         info_dict = Mapper._match_exact_or_get_info(
-            self.cursor, 'right', run_ids, key, iter(matches), match_limit=2
+            self.cursor,
+            'right',
+            ['idx1', 'idx2', 'idx3'],
+            {(0, 0, 0), (1, 1, 1), (1, 0, 0)},
+            run_ids, key, iter(matches),
+            match_limit=2,
         )
         expected_dict = {
             'ambiguous_matches': [([103], {'idx1': 'B'}, 2)],
@@ -331,6 +347,8 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         info_dict = Mapper._match_exact_or_get_info(
             self.cursor,
             'right',
+            ['idx1', 'idx2', 'idx3'],
+            {(0, 0, 0), (1, 1, 1), (1, 1, 0)},
             [101], {'idx1': 'C', 'idx2': 'x'}, iter([(5, 'C', 'x')]),
         )
 
@@ -363,6 +381,8 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         info_dict = Mapper._match_exact_or_get_info(
             self.cursor,
             'right',
+            ['idx1', 'idx2', 'idx3'],
+            {(0, 0, 0), (1, 1, 1), (1, 1, 0)},
             [101], {'idx1': 'C', 'idx2': 'x'}, iter([(5, 'C', 'x')]),
         )
 

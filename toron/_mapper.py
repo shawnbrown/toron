@@ -177,6 +177,8 @@ class Mapper(object):
     def _match_exact_or_get_info(
         cursor: sqlite3.Cursor,
         side: Literal['left', 'right'],
+        index_columns: Sequence[str],
+        structure_set: Set[Tuple[str]],
         run_ids: List[int],
         key: Dict[str, str],
         matches: Iterator[Tuple],
