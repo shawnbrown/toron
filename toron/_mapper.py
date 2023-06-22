@@ -199,14 +199,23 @@ class Mapper(object):
         elif num_of_matches == 0:
             # Log count to info_dict (no matches found).
             info_dict['unresolvable_count'] = 1
-        elif num_of_matches <= match_limit:
-            # Log matches to info_dict for later (ambiguous but within limit).
-            info_dict['matched_category'] = list(key.keys())
-            info_dict['ambiguous_matches'] = [(run_ids, key, num_of_matches)]
         else:
-            # Log counts to info_dict (ambiguous, too many matches).
-            info_dict['overlimit_count'] = 1
-            info_dict['num_of_matches'] = num_of_matches
+            # Check for allowed category structure (match is ambiguous).
+            where_cols = key.keys()
+            bitmask = tuple(int(col in where_cols) for col in index_columns)
+            if bitmask not in structure_set:
+                # Log count and invalid category (bitmask not allowed).
+                info_dict['invalid_count'] = 1
+                bad_category = (x for x, y in zip(index_columns, bitmask) if y)
+                info_dict['invalid_categories'] = {tuple(bad_category)}
+            elif num_of_matches <= match_limit:
+                # Log matches to info_dict for later (ambiguous but within limit).
+                info_dict['matched_category'] = list(key.keys())
+                info_dict['ambiguous_matches'] = [(run_ids, key, num_of_matches)]
+            else:
+                # Log counts to info_dict (ambiguous, too many matches).
+                info_dict['overlimit_count'] = 1
+                info_dict['num_of_matches'] = num_of_matches
 
         return info_dict
 

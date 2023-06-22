@@ -265,6 +265,27 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.cursor.execute('SELECT * FROM temp.right_matches')
         self.assertEqual(self.cursor.fetchall(), [], msg='should be no records')
 
+    def test_invalid_categories(self):
+        info_dict = Mapper._match_exact_or_get_info(
+            self.cursor,
+            side='right',
+            index_columns=['idx1', 'idx2', 'idx3'],
+            structure_set={(0, 0, 0), (1, 1, 1)},
+            run_ids=[103],
+            key={'idx1': 'B'},  # <- Matches on `idx1` but (1, 0, 0) is not valid.
+            matches=iter([(3, 'B', 'x'), (4, 'B', 'y')]),
+            match_limit=2,
+        )
+        expected_dict = {
+            'invalid_count': 1,
+            'invalid_categories': {('idx1',)},
+        }
+        self.assertEqual(info_dict, expected_dict)
+
+        # Check that no records have been added.
+        self.cursor.execute('SELECT * FROM temp.right_matches')
+        self.assertEqual(self.cursor.fetchall(), [], msg='should be no records')
+
 
 class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
     def setUp(self):
