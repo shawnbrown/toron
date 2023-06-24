@@ -257,7 +257,6 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         )
         expected_dict = {
             'ambiguous_matches': [([103], {'idx1': 'B'}, 2)],
-            'matched_category': ['idx1'],
         }
         self.assertEqual(info_dict, expected_dict)
 

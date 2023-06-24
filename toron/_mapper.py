@@ -210,7 +210,6 @@ class Mapper(object):
                 info_dict['invalid_categories'] = {tuple(bad_category)}
             elif num_of_matches <= match_limit:
                 # Log matches to info_dict for later (ambiguous but within limit).
-                info_dict['matched_category'] = list(key.keys())
                 info_dict['ambiguous_matches'] = [(run_ids, key, num_of_matches)]
             else:
                 # Log counts to info_dict (ambiguous, too many matches).
