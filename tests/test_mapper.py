@@ -200,14 +200,14 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
             matches=iter([]),  # <- Empty matches iterator.
         )
 
-        self.assertEqual(info_dict, {'unresolvable_count': 1})
+        self.assertEqual(info_dict, {'count_unmatchable': 1})
 
         self.cursor.execute('SELECT * FROM temp.right_matches')
         self.assertEqual(self.cursor.fetchall(), [], msg='no record inserted')
 
     def test_ambiguous_match_not_allowed(self):
         """If match is ambiguous and over the limit, it is logged
-        using `'overlimit_count'` in the returned info_dict.
+        using `'count_overlimit'` in the returned info_dict.
         """
         # Single record from Mapper._find_matches_format_data()
         # is a three-tuple like `(run_ids, key, matches)`.
@@ -226,7 +226,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         )
         expected_dict = {
             'num_of_matches': 2,
-            'overlimit_count': 1,
+            'count_overlimit': 1,
         }
         self.assertEqual(info_dict, expected_dict)
 
@@ -236,7 +236,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
 
     def test_ambiguous_match_allowed(self):
         """If match is ambiguous but equal to or under the limit,
-        log the match using `'ambiguous_matches'` and also log the
+        log the match using `'list_ambiguous'` and also log the
         column names used for the match using `'matched_category'`
         in the returned info_dict.
         """
@@ -256,7 +256,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
             match_limit=2,
         )
         expected_dict = {
-            'ambiguous_matches': [([103], {'idx1': 'B'}, 2)],
+            'list_ambiguous': [([103], {'idx1': 'B'}, 2)],
         }
         self.assertEqual(info_dict, expected_dict)
 
@@ -276,7 +276,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
             match_limit=2,
         )
         expected_dict = {
-            'invalid_count': 1,
+            'count_invalid': 1,
             'invalid_categories': {('idx1',)},
         }
         self.assertEqual(info_dict, expected_dict)
@@ -536,10 +536,10 @@ class TestMapperWarnMatchStats(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter('error')
             Mapper._warn_match_stats(
-                unresolvable_count=0,
-                invalid_count=0,
+                count_unmatchable=0,
+                count_invalid=0,
                 invalid_categories=set(),
-                overlimit_count=0,
+                count_overlimit=0,
                 overlimit_max=0,
                 match_limit=1,
             )
@@ -549,7 +549,7 @@ class TestMapperWarnMatchStats(unittest.TestCase):
         regex = 'skipped 11 values that matched no records'
         with self.assertWarnsRegex(ToronWarning, regex):
             Mapper._warn_match_stats(
-                unresolvable_count=11,
+                count_unmatchable=11,
             )
 
     def test_warn_overlimit(self):
@@ -560,7 +560,7 @@ class TestMapperWarnMatchStats(unittest.TestCase):
         )
         with self.assertWarnsRegex(ToronWarning, regex):
             Mapper._warn_match_stats(
-                overlimit_count=7,
+                count_overlimit=7,
                 overlimit_max=5,
                 match_limit=3,
             )
@@ -577,10 +577,10 @@ class TestMapperWarnMatchStats(unittest.TestCase):
         )
         with self.assertWarnsRegex(ToronWarning, regex):
             Mapper._warn_match_stats(
-                unresolvable_count=13,
-                invalid_count=11,
+                count_unmatchable=13,
+                count_invalid=11,
                 invalid_categories={('B', 'C'), ('B',)},
-                overlimit_count=7,
+                count_overlimit=7,
                 overlimit_max=5,
                 match_limit=3,
             )

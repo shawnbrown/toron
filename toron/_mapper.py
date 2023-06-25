@@ -198,22 +198,22 @@ class Mapper(object):
             cursor.executemany(sql, parameters)
         elif num_of_matches == 0:
             # Log count to info_dict (no matches found).
-            info_dict['unresolvable_count'] = 1
+            info_dict['count_unmatchable'] = 1
         else:
             # Check for allowed category structure (match is ambiguous).
             where_cols = key.keys()
             bitmask = tuple(int(col in where_cols) for col in index_columns)
             if bitmask not in structure_set:
                 # Log count and invalid category (bitmask not allowed).
-                info_dict['invalid_count'] = 1
+                info_dict['count_invalid'] = 1
                 bad_category = (x for x, y in zip(index_columns, bitmask) if y)
                 info_dict['invalid_categories'] = {tuple(bad_category)}
             elif num_of_matches <= match_limit:
                 # Log matches to info_dict for later (ambiguous but within limit).
-                info_dict['ambiguous_matches'] = [(run_ids, key, num_of_matches)]
+                info_dict['list_ambiguous'] = [(run_ids, key, num_of_matches)]
             else:
                 # Log counts to info_dict (ambiguous, too many matches).
-                info_dict['overlimit_count'] = 1
+                info_dict['count_overlimit'] = 1
                 info_dict['num_of_matches'] = num_of_matches
 
         return info_dict
@@ -256,7 +256,7 @@ class Mapper(object):
         if any(weight is None for (_, weight) in records):
             # If any record is missing a weight value, log it in the
             # info_dict but don't insert any records.
-            info_dict['unweighted_count'] = 1
+            info_dict['count_unweighted'] = 1
         else:
             # Build bit list to encode mapping level.
             key_cols = where_dict.keys()
@@ -302,42 +302,42 @@ class Mapper(object):
     @staticmethod
     def _warn_match_stats(
         *,
-        unresolvable_count: int = 0,
-        overlimit_count: int = 0,
+        count_unmatchable: int = 0,
+        count_overlimit: int = 0,
         overlimit_max: int = 0,
         match_limit: Union[int, float] = 1,
-        invalid_count: int = 0,
+        count_invalid: int = 0,
         invalid_categories: Set[Tuple] = set(),
-        unweighted_count: int = 0,
+        count_unweighted: int = 0,
     ) -> None:
         """If needed, emit ToronWarning with relevant information."""
         messages = []
 
-        if unresolvable_count:
+        if count_unmatchable:
             messages.append(
-                f'skipped {unresolvable_count} values that matched no records'
+                f'skipped {count_unmatchable} values that matched no records'
             )
 
-        if overlimit_count:
+        if count_overlimit:
             messages.append(
-                f'skipped {overlimit_count} values that matched too many records'
+                f'skipped {count_overlimit} values that matched too many records'
             )
             messages.append(
                 f'current match_limit is {match_limit} but data includes values '
                 f'that match up to {overlimit_max} records'
             )
 
-        if invalid_count:
+        if count_invalid:
             category_list = [', '.join(c) for c in sorted(invalid_categories)]
             category_string = '\n  '.join(category_list)
             messages.append(
-                f'skipped {invalid_count} values that used invalid categories:\n'
+                f'skipped {count_invalid} values that used invalid categories:\n'
                 f'  {category_string}\n'
             )
 
-        if unweighted_count:
+        if count_unweighted:
             messages.append(
-                f'skipped {unweighted_count} values that ambiguously matched '
+                f'skipped {count_unweighted} values that ambiguously matched '
                 f'to one or more records that have no associated weight'
             )
 
