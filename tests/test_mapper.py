@@ -586,7 +586,8 @@ class TestMapperWarnMatchStats(unittest.TestCase):
             )
 
 
-class TestMapperFindMatches(unittest.TestCase):
+class TwoNodesBaseTest(unittest.TestCase):
+    """A base class that provides two node fixtures."""
     def setUp(self):
         node1 = Node()
         data1 = [
@@ -615,6 +616,8 @@ class TestMapperFindMatches(unittest.TestCase):
         node2.add_weights(data2, 'wght', selectors=['[attr1]'])
         self.node2 = node2
 
+
+class TestMapperFindMatches(TwoNodesBaseTest):
     def test_find_matches_side(self):
         mapper = Mapper([['idx', 'dummy_weight', 'idx1']], 'dummy_weight')
 
