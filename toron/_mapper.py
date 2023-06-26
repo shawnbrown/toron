@@ -495,3 +495,11 @@ class Mapper(object):
             ORDER BY other_index_id, index_id, mapping_level
         """)
         return self.cur
+
+    def close(self) -> None:
+        try:
+            self.cur.close()  # Fails if Connection is not open.
+        except sqlite3.ProgrammingError:
+            pass
+
+        self.con.close()
