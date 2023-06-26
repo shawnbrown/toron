@@ -876,7 +876,7 @@ class TestMapperFindMatches2(unittest.TestCase):
         self.assertEqual(mapper.cur.fetchall(), expected)
 
 
-class TestEdgeMapper(TwoNodesBaseTest):
+class TestGetRelations(TwoNodesBaseTest):
     def test_get_relations(self):
         data = [
             ['idx', 'population', 'idx1', 'idx2'],
