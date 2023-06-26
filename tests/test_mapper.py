@@ -778,3 +778,96 @@ class TestMapperFindMatches2(unittest.TestCase):
         )
         with self.assertWarnsRegex(ToronWarning, regex):
             mapper.find_matches(self.node1, 'left')
+
+    def test_ambiguous_matches(self):
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['B', '',  '', 100, 'B', '', ''],
+            ['D', 'y', '', 50,  'D', 'y', 'h'],
+            ['D', 'y', '', 50,  'D', 'y', 'i'],
+        ]
+        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        mapper = Mapper(data, 'population')
+
+        mapper.find_matches(self.node1, 'left', match_limit=2)  # <- Method under test.
+
+        mapper.cur.execute('SELECT * FROM temp.left_matches')
+        expected = [
+            (1, 2, 37.5, 0.375, b'\x80'),
+            (1, 3, 62.5, 0.625, b'\x80'),
+            (2, 8, 12.5, 0.25,  b'\xc0'),
+            (2, 9, 37.5, 0.75,  b'\xc0'),
+            (3, 8, 12.5, 0.25,  b'\xc0'),
+            (3, 9, 37.5, 0.75,  b'\xc0')
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
+    def test_ambiguous_matches_no_missing_weight(self):
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['D', 'x', '', 100,  'D', 'x', ''],  # <- Matches D/x/f (weight: 18.75) and D/x/g (weight: None).
+            ['D', 'y', '', 100,  'D', 'y', ''],
+        ]
+        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        mapper = Mapper(data, 'population')
+
+        regex = (
+            'skipped 1 values that ambiguously matched to one or more '
+            'records that have no associated weight'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches(self.node1, 'left', match_limit=2)  # <- Method under test.
+
+        mapper.cur.execute('SELECT * FROM temp.left_matches')
+        expected = [
+            (2, 8, 12.5, 0.25, b'\xc0'),
+            (2, 9, 37.5, 0.75, b'\xc0'),
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected, msg="""
+            The left-hand node does not have a weight for index D/x/g.
+            This means that the left-side match to D/x does not have a
+            full set of weights and cannot be handled as an ambiguous
+            match. So the only records in the `expected` list are those
+            for D/y/h (weight: 12.5) and D/y/i (weight: 37.5).
+        """)
+
+    def test_ambiguous_matches_without_overlapping(self):
+        """Resolve overlapping matches."""
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['D', '',  '',  100, 'D', '',  ''],
+            ['D', 'x', 'g', 100, 'D', 'x', 'g'],
+            ['D', 'y', '',  100, 'D', 'y', ''],
+        ]
+        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        mapper = Mapper(data, 'population')
+
+        mapper.find_matches(self.node1, 'left', match_limit=4, allow_overlapping=False)  # <- Method under test.
+
+        mapper.cur.execute('SELECT * FROM temp.left_matches ORDER BY run_id')
+        expected = [
+            (1, 6, 18.75, 1.0,  b'\x80'),  # <- Matched by 'D'
+            (2, 7, None,  1.0,  None),     # <- Exact match.
+            (3, 8, 12.5,  0.25, b'\xc0'),  # <- Matched by 'D/y'
+            (3, 9, 37.5,  0.75, b'\xc0')   # <- Matched by 'D/y'
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
+    def test_ambiguous_matches_with_overlapping(self):
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['B', 'x', '',  100, 'B', 'x', ''],
+            ['B', '',  '',  100, 'B', '',  ''],
+        ]
+        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        mapper = Mapper(data, 'population')
+
+        mapper.find_matches(self.node1, 'left', match_limit=4, allow_overlapping=True)  # <- Method under test.
+
+        mapper.cur.execute('SELECT * FROM temp.left_matches ORDER BY run_id')
+        expected = [
+            (1, 2, None, 1.0,   None),     # <- Exact match.
+            (2, 2, 37.5, 0.375, b'\x80'),  # <- Matched by 'B' (overlaps the exact match)
+            (2, 3, 62.5, 0.625, b'\x80'),  # <- Matched by 'B'
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)

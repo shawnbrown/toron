@@ -351,6 +351,8 @@ class Mapper(object):
         node: 'Node',
         side: Literal['left', 'right'],
         match_limit: Union[int, float] = 1,
+        weight_name: Optional[str] = None,
+        allow_overlapping: bool = False,
     ) -> None:
         if side == 'left':
             column_names = self.left_keys
@@ -425,6 +427,26 @@ class Mapper(object):
             overlimit_max = match_stats['overlimit_max']
             num_of_matches = info_dict.get('num_of_matches', 0)
             match_stats['overlimit_max'] = max(overlimit_max, num_of_matches)
+
+        if list_ambiguous:
+            # Sort matches by count (from least to most ambiguous).
+            list_ambiguous = sorted(list_ambiguous, key=lambda x: x[2])
+
+            # Handle ambiguous matches.
+            for run_ids, where_dict, _ in list_ambiguous:
+                info_dict = Mapper._match_ambiguous_or_get_info(
+                    node=node,
+                    cursor=self.cur,
+                    side=side,
+                    run_ids=run_ids,
+                    where_dict=where_dict,
+                    index_columns=index_columns,
+                    weight_name=weight_name,
+                    allow_overlapping=allow_overlapping,
+                )
+
+                count_unweighted = info_dict.get('count_unweighted', 0)
+                match_stats['count_unweighted'] += count_unweighted
 
         self._refresh_proportions(self.cur, side)
 
