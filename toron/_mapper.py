@@ -360,6 +360,13 @@ class Mapper(object):
             msg = f"side must be 'left' or 'right', got {side!r}"
             raise ValueError(msg)
 
+        if not isinstance(match_limit, (int, float)):
+            msg = f'match_limit must be int or float, got {match_limit!r}'
+            raise TypeError(msg)
+        elif match_limit < 1:
+            msg = f'match_limit must be 1 or greater, got {match_limit!r}'
+            raise ValueError(msg)
+
         # Use "ORDER BY" to sort labels for _find_matches_format_data().
         self.cur.execute(f"""
             SELECT {side}_labels, run_id

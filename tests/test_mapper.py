@@ -686,3 +686,18 @@ class TestMapperFindMatches(unittest.TestCase):
         mapper.cur.execute('SELECT * FROM temp.left_matches')
         no_results = []
         self.assertEqual(mapper.cur.fetchall(), no_results)
+
+    def test_bad_match_limit(self):
+        data = [
+            ['idx', 'population', 'idx1', 'idx2'],
+            ['X', 10, 'X', 'X'],
+        ]
+        mapper = Mapper(data, 'population')
+
+        regex = 'match_limit must be 1 or greater, got 0'
+        with self.assertRaisesRegex(ValueError, regex):
+            mapper.find_matches(self.node1, 'left', match_limit=0)
+
+        regex = "match_limit must be int or float, got 'foo'"
+        with self.assertRaisesRegex(TypeError, regex):
+            mapper.find_matches(self.node1, 'left', match_limit='foo')
