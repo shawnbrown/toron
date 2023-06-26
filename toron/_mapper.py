@@ -451,3 +451,47 @@ class Mapper(object):
         self._refresh_proportions(self.cur, side)
 
         self._warn_match_stats(**match_stats)
+
+    def get_relations(
+        self, side: Literal['left', 'right']
+    ) -> Iterable[Tuple[int, int, float, Union[BitFlags, None]]]:
+        """Returns an iterable of relations going into the table on the
+        given *side* (coming from the other side).
+
+        The following example gets an iterable of incoming relations
+        for the right-side table (coming from the left and going to
+        the right)::
+
+            >>> relations = mapper.get_relations('right')
+        """
+        if side == 'left':
+            other_side = 'right'
+        elif side == 'right':
+            other_side = 'left'
+        else:
+            msg = f"side must be 'left' or 'right', got {side!r}"
+            raise ValueError(msg)
+
+        self.cur.execute(f"""
+            WITH
+                joint_probability AS (
+                    SELECT
+                        run_id,
+                        src.index_id AS other_index_id,
+                        dst.index_id AS index_id,
+                        src.proportion * dst.proportion AS proportion,
+                        dst.mapping_level AS mapping_level
+                    FROM temp.{other_side}_matches src
+                    JOIN temp.{side}_matches dst USING (run_id)
+                )
+            SELECT
+                other_index_id,
+                index_id,
+                SUM(weight * proportion) AS relation_value,
+                mapping_level
+            FROM temp.source_mapping
+            JOIN joint_probability USING (run_id)
+            GROUP BY other_index_id, index_id, mapping_level
+            ORDER BY other_index_id, index_id, mapping_level
+        """)
+        return self.cur
