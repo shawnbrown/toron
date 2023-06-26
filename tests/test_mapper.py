@@ -741,3 +741,40 @@ class TestMapperFindMatches2(unittest.TestCase):
         node2.add_index_records(node2_data)
         node2.add_weights(node2_data, 'wght', selectors=['[attr1]'])
         self.node2 = node2
+
+    def test_invalid_structure(self):
+        data = [
+            ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['',  'x', '', 100, 'A', 'x', 'a'],
+            ['D', '',  '', 100, 'D', 'y', 'h'],
+            ['D', 'x', '', 100, 'D', 'x', 'g'],
+        ]
+        mapper = Mapper(data, 'population')
+
+        regex = (
+            'skipped 3 values that used invalid categories:\n'
+            '  idx1\n'
+            '  idx1, idx2\n'
+            '  idx2'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches(self.node1, 'left')
+
+        # Add one of the missing categories and try again.
+        self.node1.add_discrete_categories([{'idx1'}])
+        regex = (
+            'skipped 2 values that used invalid categories:\n'
+            '  idx1, idx2\n'
+            '  idx2'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches(self.node1, 'left')
+
+        # Add another missing category and try again.
+        self.node1.add_discrete_categories([{'idx1', 'idx2'}])
+        regex = (
+            'skipped 1 values that used invalid categories:\n'
+            '  idx2'
+        )
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches(self.node1, 'left')
