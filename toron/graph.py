@@ -30,6 +30,7 @@ from ._utils import (
     NOVALUE,
     ToronWarning,
 )
+from ._mapper import Mapper
 from .node import Node
 
 
@@ -438,10 +439,10 @@ def add_edge(
     weight_name: Optional[str] = None,
     allow_overlapping: bool = False,
 ) -> None:
-    mapper = _EdgeMapper(data, name, left_node, right_node)
+    mapper = Mapper(data, name)
     try:
-        mapper.find_matches('left', match_limit, weight_name, allow_overlapping)
-        mapper.find_matches('right', match_limit, weight_name, allow_overlapping)
+        mapper.find_matches(left_node, 'left', match_limit, weight_name, allow_overlapping)
+        mapper.find_matches(right_node, 'right', match_limit, weight_name, allow_overlapping)
 
         if '<' in direction:
             relations = mapper.get_relations('left')
