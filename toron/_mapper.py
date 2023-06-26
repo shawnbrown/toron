@@ -350,6 +350,7 @@ class Mapper(object):
         self,
         node: 'Node',
         side: Literal['left', 'right'],
+        match_limit: Union[int, float] = 1,
     ) -> None:
         if side == 'left':
             column_names = self.left_keys
@@ -358,3 +359,66 @@ class Mapper(object):
         else:
             msg = f"side must be 'left' or 'right', got {side!r}"
             raise ValueError(msg)
+
+        # Use "ORDER BY" to sort labels for _find_matches_format_data().
+        self.cur.execute(f"""
+            SELECT {side}_labels, run_id
+            FROM temp.source_mapping
+            ORDER BY {side}_labels
+        """)
+
+        run_ids_key_matches = self._find_matches_format_data(
+            node=node,
+            column_names=column_names,
+            iterable=self.cur,
+        )
+
+        index_columns = node.index_columns()
+        structure_set = set(node.structure())
+
+        list_ambiguous = []
+        match_stats: Dict[str, Any] = {
+            'count_unmatchable': 0,
+            'count_unweighted': 0,
+            'count_invalid': 0,
+            'invalid_categories': set(),
+            'count_overlimit': 0,
+            'overlimit_max': 0,
+        }
+
+        for run_ids, key, matches in run_ids_key_matches:
+            info_dict = self._match_exact_or_get_info(
+                cursor=self.cur,
+                side=side,
+                index_columns=index_columns,
+                structure_set=structure_set,
+                run_ids=run_ids,
+                key=key,
+                matches=matches,
+                match_limit=match_limit,
+            )
+
+            if not info_dict:
+                continue
+
+            list_ambiguous.extend(info_dict.get('list_ambiguous', []))
+
+            count_invalid = info_dict.get('count_invalid', 0)
+            match_stats['count_invalid'] += count_invalid
+
+            invalid_categories = info_dict.get('invalid_categories', set())
+            match_stats['invalid_categories'].update(invalid_categories)
+
+            count_unmatchable = info_dict.get('count_unmatchable', 0)
+            match_stats['count_unmatchable'] += count_unmatchable
+
+            count_overlimit = info_dict.get('count_overlimit', 0)
+            match_stats['count_overlimit'] += count_overlimit
+
+            overlimit_max = match_stats['overlimit_max']
+            num_of_matches = info_dict.get('num_of_matches', 0)
+            match_stats['overlimit_max'] = max(overlimit_max, num_of_matches)
+
+        self._refresh_proportions(self.cur, side)
+
+        self._warn_match_stats(**match_stats)

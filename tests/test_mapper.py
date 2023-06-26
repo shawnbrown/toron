@@ -600,6 +600,21 @@ class TestMapperFindMatches(unittest.TestCase):
         node1.add_weights(data1, 'wght', selectors=['[attr1]'])
         self.node1 = node1
 
+        node2 = Node()
+        data2 = [
+            ['idx1', 'idx2', 'wght'],
+            ['A', 'x', 3],
+            ['A', 'y', 15],
+            ['B', 'x', 3],
+            ['B', 'y', 7],
+            ['C', 'x', 13],
+            ['C', 'y', 22],
+        ]
+        node2.add_index_columns(['idx1', 'idx2'])
+        node2.add_index_records(data2)
+        node2.add_weights(data2, 'wght', selectors=['[attr1]'])
+        self.node2 = node2
+
     def test_find_matches_side(self):
         mapper = Mapper([['idx', 'dummy_weight', 'idx1']], 'dummy_weight')
 
@@ -611,3 +626,63 @@ class TestMapperFindMatches(unittest.TestCase):
         regex = "side must be 'left' or 'right', got 'bad'"
         with self.assertRaisesRegex(ValueError, regex):
             mapper.find_matches(self.node1, 'bad')
+
+    def test_exact_matching(self):
+        mapper = Mapper(
+            data=[
+                ['idx', 'population', 'idx1', 'idx2'],
+                ['A', 10, 'A', 'x'],
+                ['A', 70, 'A', 'y'],
+                ['B', 20, 'B', 'x'],
+                ['B', 60, 'B', 'y'],
+                ['C', 30, 'C', 'x'],
+                ['C', 50, 'C', 'y'],
+            ],
+            name='population',
+        )
+
+        mapper.find_matches(self.node1, 'left')  # <- Method under test.
+        mapper.cur.execute('SELECT * FROM temp.left_matches')
+        expected = [
+            (1, 1, None, 1.0, None),
+            (2, 1, None, 1.0, None),
+            (3, 2, None, 1.0, None),
+            (4, 2, None, 1.0, None),
+            (5, 3, None, 1.0, None),
+            (6, 3, None, 1.0, None),
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
+        mapper.find_matches(self.node2, 'right')  # <- Method under test.
+        mapper.cur.execute('SELECT * FROM temp.right_matches')
+        expected = [
+            (1, 1, None, 1.0, None),
+            (2, 2, None, 1.0, None),
+            (3, 3, None, 1.0, None),
+            (4, 4, None, 1.0, None),
+            (5, 5, None, 1.0, None),
+            (6, 6, None, 1.0, None),
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
+        regex = "side must be 'left' or 'right', got 'blerg'"
+        with self.assertRaisesRegex(ValueError, regex):
+            mapper.find_matches(self.node1, 'blerg')  # <- Method under test.
+
+    def test_no_matches_found(self):
+        data = [
+            ['idx', 'population', 'idx1', 'idx2'],
+            ['X', 10, 'X', 'X'],
+            ['Y', 70, 'Y', 'Y'],
+            ['Z', 20, 'Z', 'Z'],
+        ]
+
+        mapper = Mapper(data, 'population')
+
+        regex = 'skipped 3 values that matched no records'
+        with self.assertWarnsRegex(ToronWarning, regex):
+            mapper.find_matches(self.node1, 'left')  # <- Method under test.
+
+        mapper.cur.execute('SELECT * FROM temp.left_matches')
+        no_results = []
+        self.assertEqual(mapper.cur.fetchall(), no_results)
