@@ -1167,13 +1167,13 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
 
         self.load_edge(
             self.dal,
-            data=[                                          # other node -> this node
+            data=[                                          # mapping vals -> matched records
                 (11,  1, 100, 1.00, None),                  # foo/x/1/a -> foo/x/1/a (exact match)
                 (12,  2, 100, 1.00, None),                  # foo/x/2/b -> foo/x/2/b (exact match)
-                (13,  3,  50, 0.50, BitFlags(1, 1, 1, 0)),  # foo/y/3/? -> foo/y/3/c
-                (13,  4,  50, 0.50, BitFlags(1, 1, 1, 0)),  # foo/y/3/? -> foo/y/3/d
-                (14,  5,  25, 0.25, BitFlags(1, 1, 0, 0)),  # bar/x/?/? -> bar/x/-/a
-                (14,  6,  75, 0.75, BitFlags(1, 1, 0, 0)),  # bar/x/?/? -> bar/x/-/b
+                (13,  3,  50, 0.50, BitFlags(1, 1, 1, 0)),  # foo/y/3/* -> foo/y/3/c
+                (13,  4,  50, 0.50, BitFlags(1, 1, 1, 0)),  # foo/y/3/* -> foo/y/3/d
+                (14,  5,  25, 0.25, BitFlags(1, 1, 0, 0)),  # bar/x/*/* -> bar/x/-/a
+                (14,  6,  75, 0.75, BitFlags(1, 1, 0, 0)),  # bar/x/*/* -> bar/x/-/b
             ],
             edge_id=1,
             name='population',
@@ -1223,13 +1223,13 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
 
         self.load_edge(
             self.dal,
-            data=[                                       # other node -> this node
+            data=[                                       # mapping vals -> matched records
                 (11,  1, 100, 1.00, None),               # foo/x/a -> foo/x/a (exact match)
                 (12,  2, 100, 1.00, None),               # foo/x/b -> foo/x/b (exact match)
-                (13,  3,  50, 0.50, BitFlags(1, 0, 0)),  # bar/?/? -> bar/y/c
-                (13,  4,  50, 0.50, BitFlags(1, 0, 0)),  # bar/?/? -> bar/y/d
-                (14,  5,  25, 0.25, BitFlags(0, 1, 0)),  #   ?/x/? -> baz/x/e
-                (14,  6,  75, 0.75, BitFlags(0, 1, 0)),  #   ?/x/? -> baz/x/f
+                (13,  3,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
+                (13,  4,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
+                (14,  5,  25, 0.25, BitFlags(0, 1, 0)),  #   */z/* -> baz/z/e
+                (14,  6,  75, 0.75, BitFlags(0, 1, 0)),  #   */z/* -> baz/z/f
             ],
             edge_id=2,
             name='population',
@@ -1267,15 +1267,15 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
 
         self.load_edge(
             self.dal,
-            data=[                                      # other node -> this node
-                (11, 1,  75, 0.75, BitFlags(1, 1, 0)),  # foo/x/? -> foo/x/?
-                (11, 2,  25, 0.25, BitFlags(1, 1, 0)),  # foo/x/? -> foo/x/?
+            data=[                                      # mapping vals -> matched records
+                (11, 1,  75, 0.75, BitFlags(1, 1, 0)),  # foo/x/* -> foo/x/a
+                (11, 2,  25, 0.25, BitFlags(1, 1, 0)),  # foo/x/* -> foo/x/b
                 (12, 3, 100, 1.00, None),               # foo/y/c -> foo/y/c (exact match)
-                (13, 4, 100, 1.00, BitFlags(1, 1, 0)),  # foo/y/? -> foo/y/?
-                (14, 5,  25, 0.25, BitFlags(1, 1, 0)),  # bar/x/? -> bar/x/?
-                (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/? -> bar/x/?
-                (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/?/? -> bar/?/?
-                (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/?/? -> bar/?/?
+                (13, 4, 100, 1.00, BitFlags(1, 1, 0)),  # foo/y/* -> foo/y/d
+                (14, 5,  25, 0.25, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/a
+                (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/b
+                (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
+                (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
             ],
             edge_id=2,
             name='population',
@@ -1289,22 +1289,22 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         self.cur.execute('SELECT * FROM main.relation')
         actual = {row[2:] for row in self.cur}  # Slice off relation_id and edge_id.
 
-        expected = {
-            (11, 1,  37.5, 0.375, BitFlags(1, 0)),  # foo/x/ab -> foo/?
-            (11, 2,  12.5, 0.125, BitFlags(1, 0)),  # foo/x/ab -> foo/?
-            (11, 4,  50.0, 0.50,  BitFlags(1, 0)),  # foo/x/ab -> foo/?
-            (12, 3, 100.0, 1.00,  None),            # foo/y/c  -> foo/c (exact match)
-            (13, 1,  37.5, 0.375, BitFlags(1, 0)),  # foo/y/d  -> foo/?
-            (13, 2,  12.5, 0.125, BitFlags(1, 0)),  # foo/y/d  -> foo/?
-            (13, 4,  50.0, 0.50,  BitFlags(1, 0)),  # foo/y/d  -> foo/?
-            (14, 5,  12.5, 0.125, BitFlags(1, 0)),  # bar/x/ab    -> bar/?
-            (14, 6,  37.5, 0.375, BitFlags(1, 0)),  # bar/x/ab    -> bar/?
-            (14, 7,  25.0, 0.25,  BitFlags(1, 0)),  # bar/x/ab    -> bar/?
-            (14, 8,  25.0, 0.25,  BitFlags(1, 0)),  # bar/x/ab    -> bar/?
-            (15, 5,  12.5, 0.125, BitFlags(1, 0)),  # bar/xy/abcd -> bar/?
-            (15, 6,  37.5, 0.375, BitFlags(1, 0)),  # bar/xy/abcd -> bar/?
-            (15, 7,  25.0, 0.25,  BitFlags(1, 0)),  # bar/xy/abcd -> bar/?
-            (15, 8,  25.0, 0.25,  BitFlags(1, 0)),  # bar/zy/abcd -> bar/?
+        expected = {                                # mapping vals -> matched records
+            (11, 1,  37.5, 0.375, BitFlags(1, 0)),  # foo/* -> foo/a
+            (11, 2,  12.5, 0.125, BitFlags(1, 0)),  # foo/* -> foo/b
+            (11, 4,  50.0, 0.50,  BitFlags(1, 0)),  # foo/* -> foo/d
+            (12, 3, 100.0, 1.00,  None),            # foo/c -> foo/c (exact match)
+            (13, 1,  37.5, 0.375, BitFlags(1, 0)),  # foo/* -> foo/a
+            (13, 2,  12.5, 0.125, BitFlags(1, 0)),  # foo/* -> foo/b
+            (13, 4,  50.0, 0.50,  BitFlags(1, 0)),  # foo/* -> foo/d
+            (14, 5,  12.5, 0.125, BitFlags(1, 0)),  # bar/* -> bar/a
+            (14, 6,  37.5, 0.375, BitFlags(1, 0)),  # bar/* -> bar/b
+            (14, 7,  25.0, 0.25,  BitFlags(1, 0)),  # bar/* -> bar/c
+            (14, 8,  25.0, 0.25,  BitFlags(1, 0)),  # bar/* -> bar/d
+            (15, 5,  12.5, 0.125, BitFlags(1, 0)),  # bar/* -> bar/a
+            (15, 6,  37.5, 0.375, BitFlags(1, 0)),  # bar/* -> bar/b
+            (15, 7,  25.0, 0.25,  BitFlags(1, 0)),  # bar/* -> bar/c
+            (15, 8,  25.0, 0.25,  BitFlags(1, 0)),  # bar/* -> bar/d
         }
         self.maxDiff = None
         self.assertEqual(actual, expected)
