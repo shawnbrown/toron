@@ -1244,8 +1244,8 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
 
     @unittest.expectedFailure
     def test_rebuild_ambiguous_relations(self):
-        """When preserving relations, should raise error if invalid
-        mapping levels.
+        """When dataset is coarsened, rebuild ambiguous relations when
+        possible.
         """
         self.load_data(
             self.dal,
