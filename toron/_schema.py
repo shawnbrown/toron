@@ -241,6 +241,12 @@ class BitFlags(Sequence[Literal[0, 1]]):
         >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0) == (1, 1, 0, 1, 0)
         True
 
+    Overlong bit sequences are truncated to the smallest multiple of 8
+    that preserves the given data::
+
+        >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+
     Register the BitFlags type with SQLite::
 
         >>> import sqlite3
