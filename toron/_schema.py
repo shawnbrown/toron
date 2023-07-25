@@ -500,6 +500,55 @@ def sql_column_def_structure_label(name: str) -> str:
     return f"{name} INTEGER CHECK ({name} IN (0, 1)) DEFAULT 0"
 
 
+def _user_apply_bit_flag(
+    value: str, bit_flags: Sequence[Literal[0, 1]], bit_index: int
+) -> Optional[str]:
+    """Return value or None depending on specified bit flag. This
+    function can be registered with SQLite to handle "mapping_level"
+    values (which are BLOB_BITFLAGS) in the "relation" table.
+
+    The given *bit_flags*, should contain a sequence of 0s and 1s.
+    And the *bit_index* specifies which of these bit flags to use.
+
+    When the bit flag value is 1, *value* is returned, when the bit
+    flag is 0, None is returned::
+
+        >>> bit_flags = BitFlags(1, 0, 1)
+        >>> _user_apply_bit_flag('foo', bit_flags, 0)
+        'foo'
+        >>> _user_apply_bit_flag('bar', bit_flags, 1)
+        None
+        >>> _user_apply_bit_flag('baz', bit_flags, 2)
+        'baz'
+
+    If *bit_flags* is None, then *bit_index* is ignored and the
+    *value* is returned::
+
+        >>> bit_flags = None
+        >>> _user_apply_bit_flag('foo', bit_flags, 1)
+        'foo'
+
+    Register with SQLite using::
+
+        >>> con = sqlite3.connect(...)
+        >>> con.create_function(
+        ...     'user_apply_bit_flag',
+        ...     3,
+        ...     _user_apply_bit_flag,
+        ...     deterministic=True,
+        ... )
+    """
+    if bit_flags is None:
+        return value  # <- EXIT!
+
+    try:
+        bit_flag = bit_flags[bit_index]
+    except IndexError:
+        bit_flag = 0
+
+    return value if bit_flag else None
+
+
 def _user_json_object_keep(
     json_obj: str, *keys: str
 ) -> Optional[str]:
