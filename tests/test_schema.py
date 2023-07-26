@@ -274,37 +274,37 @@ class TestSqlStringLiteral(unittest.TestCase):
 
 
 class TestUserApplyBitFlag(unittest.TestCase):
-    def setUp(self):
-        self.bit_flags = BitFlags(1, 0, 1)
+    def test_basic_handling(self):
+        bit_flags = BitFlags(1, 0, 1)
 
-    def test_basic_bit_flag_handling(self):
-        result = _user_apply_bit_flag('foo', self.bit_flags, 0)
+        result = _user_apply_bit_flag('foo', bit_flags, 0)
         self.assertEqual(result, 'foo')
 
-        result = _user_apply_bit_flag('bar', self.bit_flags, 1)
+        result = _user_apply_bit_flag('bar', bit_flags, 1)
         self.assertEqual(result, None)
 
-        result = _user_apply_bit_flag('baz', self.bit_flags, 2)
+        result = _user_apply_bit_flag('baz', bit_flags, 2)
         self.assertEqual(result, 'baz')
 
-    def test_generic_sequence(self):
-        bit_flags_tuple = (1, 0, 1)  # <- Using a tuple instead of BitFlags.
+    def test_generic_sequence_handling(self):
+        tuple_bit_flags = (1, 0, 1)  # <- Using a tuple instead of BitFlags.
 
-        result = _user_apply_bit_flag('foo', bit_flags_tuple, 0)
+        result = _user_apply_bit_flag('foo', tuple_bit_flags, 0)
         self.assertEqual(result, 'foo')
 
-        result = _user_apply_bit_flag('bar', bit_flags_tuple, 1)
+        result = _user_apply_bit_flag('bar', tuple_bit_flags, 1)
         self.assertEqual(result, None)
 
-        result = _user_apply_bit_flag('baz', bit_flags_tuple, 2)
+        result = _user_apply_bit_flag('baz', tuple_bit_flags, 2)
         self.assertEqual(result, 'baz')
 
     def test_bit_flags_is_none(self):
         result = _user_apply_bit_flag('foo', None, 1)  # <- bit_flags is None
         self.assertEqual(result, 'foo')
 
-    def test_out_of_range_index(self):
-        result = _user_apply_bit_flag('qux', self.bit_flags, 9)  # <- No index `9` in `self.bit_flags`.
+    def test_index_out_of_range(self):
+        bit_flags = BitFlags(1, 0, 1)
+        result = _user_apply_bit_flag('qux', bit_flags, 9)  # <- No index `9` in `self.bit_flags`.
         self.assertEqual(result, None)
 
 
