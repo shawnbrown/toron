@@ -541,6 +541,9 @@ def _user_apply_bit_flag(
     if bit_flags is None:
         return value  # <- EXIT!
 
+    if isinstance(bit_flags, bytes):
+        bit_flags = BitFlags.from_bytes(bit_flags)
+
     try:
         bit_flag = bit_flags[bit_index]
     except IndexError:
