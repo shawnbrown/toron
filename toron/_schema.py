@@ -272,6 +272,12 @@ class BitFlags(Sequence[Literal[0, 1]]):
     @classmethod
     def from_bytes(cls, bytes_: bytes) -> 'BitFlags':
         """Take a bytes object and return a new BitFlags."""
+        # Enforce type to prevent iteration over non-bytes objects.
+        if not isinstance(bytes_, bytes):
+            cls_name = bytes_.__class__.__name__
+            msg = f'expected bytes object, got {cls_name}: {bytes_!r}'
+            raise TypeError(msg)
+
         # Convert bytes to strings of 1s and 0s and slice-off '0b' prefix.
         binary_strings = (bin(x)[2:] for x in bytes_)
 

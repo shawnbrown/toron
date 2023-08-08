@@ -150,6 +150,10 @@ class TestBitFlags(unittest.TestCase):
         bits = BitFlags.from_bytes(b'')
         self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0))
 
+        regex = r"expected bytes object, got list: \['a', '', 'c'\]"
+        with self.assertRaisesRegex(TypeError, regex):
+            bits = BitFlags.from_bytes(['a', '', 'c'])
+
     def test_convert_to_bytes(self):
         bits = BitFlags(1, 1, 1, 1, 1, 1, 1, 1)
         self.assertEqual(bytes(bits), b'\xff')
