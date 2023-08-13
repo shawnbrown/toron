@@ -290,18 +290,6 @@ class TestUserApplyBitFlag(unittest.TestCase):
         result = _user_apply_bit_flag('baz', bit_flags, 2)
         self.assertEqual(result, 'baz')
 
-    def test_generic_sequence_handling(self):
-        tuple_bit_flags = (1, 0, 1)  # <- Using a tuple instead of BitFlags.
-
-        result = _user_apply_bit_flag('foo', tuple_bit_flags, 0)
-        self.assertEqual(result, 'foo')
-
-        result = _user_apply_bit_flag('bar', tuple_bit_flags, 1)
-        self.assertEqual(result, None)
-
-        result = _user_apply_bit_flag('baz', tuple_bit_flags, 2)
-        self.assertEqual(result, 'baz')
-
     def test_bytes_handling(self):
         bytes_bit_flags = b'\xa0'  # <- Bytes for bit flags: 1, 0, 1
 

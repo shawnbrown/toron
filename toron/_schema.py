@@ -508,15 +508,16 @@ def sql_column_def_structure_label(name: str) -> str:
 
 def _user_apply_bit_flag(
     value: str,
-    bit_flags: Sequence[Literal[0, 1]],
+    bit_flags: Optional[Union[bytes, BitFlags]],
     bit_index: int,
 ) -> Optional[str]:
     """Return value or None depending on specified bit flag. This
     function can be registered with SQLite to handle "mapping_level"
     values (which are BLOB_BITFLAGS) in the "relation" table.
 
-    The given *bit_flags*, should contain a sequence of 0s and 1s.
-    And the *bit_index* specifies which of these bit flags to use.
+    :param bit_flags: A bytes object, suitable for interpretation as
+        a sequence of bits, or a BitFlags object.
+    :param bit_index: An int that specifies which bit flag to use.
 
     When the bit flag value is 1, *value* is returned, when the bit
     flag is 0, None is returned::
@@ -549,7 +550,7 @@ def _user_apply_bit_flag(
     if bit_flags is None:
         return value  # <- EXIT!
 
-    if isinstance(bit_flags, bytes):
+    if not isinstance(bit_flags, BitFlags):
         bit_flags = BitFlags.from_bytes(bit_flags)
 
     try:
