@@ -2432,7 +2432,7 @@ class DataAccessLayer(object):
         cursor.execute(sql, (edge_id,))
 
         # Set proportion to 1.0 for the relation between the incoming
-        # undefined point and the locally undefined point (both ID 0).
+        # undefined point (ID 0) and the locally undefined point (ID 0).
         sql = """
             UPDATE main.relation
             SET proportion=1.0
