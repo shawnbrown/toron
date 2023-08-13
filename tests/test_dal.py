@@ -4362,6 +4362,63 @@ class TestEditIncomingEdge(unittest.TestCase):
         self.assertEqual(get_results(), expected)
 
 
+class TestGetIncomingEdgeMakeSql(unittest.TestCase):
+    def setUp(self):
+        self._get_incoming_edge_make_sql = dal_class._get_incoming_edge_make_sql
+        self.maxDiff = None
+
+    def test_sql_and_parameters(self):
+        """Should reconstruct ambiguous relations from original mapping."""
+        sql, parameters = self._get_incoming_edge_make_sql(
+            name='population',
+            other_unique_id='222-22-22-2222',
+            column_names=['A', 'B', 'C'],
+        )
+
+        expected_sql = """
+            WITH
+                RelationValues AS (
+                    SELECT
+                        a.other_index_id,
+                        a.index_id,
+                        a.relation_value,
+                        a.mapping_level
+                    FROM main.relation a
+                    JOIN main.edge b USING (edge_id)
+                    WHERE
+                        b.name=:edge_name
+                        AND b.other_unique_id=:other_unique_id
+                ),
+                ReconstructedLevels AS (
+                    SELECT
+                        b.other_index_id,
+                        b.relation_value,
+                        user_apply_bit_flag(a."A", b.mapping_level, 0) AS "A", user_apply_bit_flag(a."B", b.mapping_level, 1) AS "B", user_apply_bit_flag(a."C", b.mapping_level, 2) AS "C"
+                    FROM main.node_index a
+                    LEFT JOIN RelationValues b USING (index_id)
+                ),
+                ReconstructedMapping AS (
+                    SELECT
+                        other_index_id,
+                        SUM(relation_value) AS relation_value,
+                        "A", "B", "C"
+                    FROM ReconstructedLevels
+                    GROUP BY
+                        other_index_id,
+                        "A", "B", "C"
+                )
+            SELECT *
+            FROM ReconstructedMapping
+        """
+        self.assertEqual(dedent(sql), dedent(expected_sql))
+
+        expected_parameters = {
+            'edge_name': 'population',
+            'other_unique_id': '222-22-22-2222',
+        }
+        self.assertEqual(parameters, expected_parameters)
+
+
 class TestTranslate(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()

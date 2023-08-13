@@ -2601,6 +2601,77 @@ class DataAccessLayer(object):
                 cur.execute(sql, {'unique_id': unique_id, 'name': name})
 
     @staticmethod
+    def _get_incoming_edge_make_sql(
+        name: str,
+        other_unique_id: str,
+        column_names: Sequence[str],
+    ) -> Tuple[str, Dict[str, str]]:
+        """Return a SQL string and parameter dictionary to get incoming
+        edge--for use with a cursor.execute() call.
+
+        .. code-block:: python
+
+            >>> sql, parameters = self._get_incoming_edge_make_sql(
+            ...     name='population',
+            ...     other_unique_id='222-22-22-2222',
+            ...     column_names=['A', 'B', 'C'],
+            ... )
+            >>> self.cur.execute(sql, parameters)
+
+        The SQL query returned by this function requires the user
+        defined function "user_apply_bit_flag". Executing this query
+        uses any "relation.mapping_level" bit flags to reconstruct
+        ambiguous mappings as they were originally given.
+        """
+        normalized_labels = [_schema.normalize_identifier(x) for x in column_names]
+        func = lambda i, x: f'user_apply_bit_flag(a.{x}, b.mapping_level, {i}) AS {x}'
+        bit_flag_masks = [func(i, x) for (i, x) in enumerate(normalized_labels)]
+
+        formatted_labels = f', '.join(normalized_labels)
+        formatted_bit_flag_masks = f', '.join(bit_flag_masks)
+
+        sql = f"""
+            WITH
+                RelationValues AS (
+                    SELECT
+                        a.other_index_id,
+                        a.index_id,
+                        a.relation_value,
+                        a.mapping_level
+                    FROM main.relation a
+                    JOIN main.edge b USING (edge_id)
+                    WHERE
+                        b.name=:edge_name
+                        AND b.other_unique_id=:other_unique_id
+                ),
+                ReconstructedLevels AS (
+                    SELECT
+                        b.other_index_id,
+                        b.relation_value,
+                        {formatted_bit_flag_masks}
+                    FROM main.node_index a
+                    LEFT JOIN RelationValues b USING (index_id)
+                ),
+                ReconstructedMapping AS (
+                    SELECT
+                        other_index_id,
+                        SUM(relation_value) AS relation_value,
+                        {formatted_labels}
+                    FROM ReconstructedLevels
+                    GROUP BY
+                        other_index_id,
+                        {formatted_labels}
+                )
+            SELECT *
+            FROM ReconstructedMapping
+        """
+        parameters = {
+            'edge_name': name,
+            'other_unique_id': other_unique_id,
+        }
+        return sql, parameters
+
+    @staticmethod
     def _translate_generator(
         cursor: sqlite3.Cursor, data: QuantityIterator
     ) -> Iterable[Tuple[int, Dict[str, str], float]]:
