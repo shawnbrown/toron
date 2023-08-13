@@ -507,7 +507,9 @@ def sql_column_def_structure_label(name: str) -> str:
 
 
 def _user_apply_bit_flag(
-    value: str, bit_flags: Sequence[Literal[0, 1]], bit_index: int
+    value: str,
+    bit_flags: Sequence[Literal[0, 1]],
+    bit_index: int,
 ) -> Optional[str]:
     """Return value or None depending on specified bit flag. This
     function can be registered with SQLite to handle "mapping_level"
