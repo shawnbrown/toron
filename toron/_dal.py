@@ -2602,17 +2602,18 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _get_incoming_edge_make_sql(
-        name: str,
         other_unique_id: str,
+        name: str,
         column_names: Sequence[str],
     ) -> Tuple[str, Dict[str, str]]:
         """Return a SQL string and parameter dictionary to get incoming
         edge--for use with a cursor.execute() call.
 
-        :param name: The "edge.name" value of the incoming edge.
         :param other_unique_id: The unique ID of the node where the
             edge is coming from (the tail). Please note that the local
             node is always where the edge is going to (the head).
+        :param name: The "edge.name" value of the incoming edge (there
+            can be multiple edges between the same nodes).
         :param column_names: The full list of node_index label columns
             used by the local node.
 
@@ -2656,8 +2657,8 @@ class DataAccessLayer(object):
                     FROM main.relation a
                     JOIN main.edge b USING (edge_id)
                     WHERE
-                        b.name=:edge_name
-                        AND b.other_unique_id=:other_unique_id
+                        b.other_unique_id=:other_unique_id
+                        AND b.name=:edge_name
                 ),
                 ReconstructedLevels AS (
                     SELECT
@@ -2681,8 +2682,8 @@ class DataAccessLayer(object):
             FROM ReconstructedMapping
         """
         parameters = {
-            'edge_name': name,
             'other_unique_id': other_unique_id,
+            'edge_name': name,
         }
         return sql, parameters
 

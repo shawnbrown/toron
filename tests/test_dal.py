@@ -4370,8 +4370,8 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
     def test_sql_and_parameters(self):
         """Should reconstruct ambiguous relations from original mapping."""
         sql, parameters = self._get_incoming_edge_make_sql(
-            name='population',
             other_unique_id='222-22-22-2222',
+            name='population',
             column_names=['A', 'B', 'C'],
         )
 
@@ -4386,8 +4386,8 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
                     FROM main.relation a
                     JOIN main.edge b USING (edge_id)
                     WHERE
-                        b.name=:edge_name
-                        AND b.other_unique_id=:other_unique_id
+                        b.other_unique_id=:other_unique_id
+                        AND b.name=:edge_name
                 ),
                 ReconstructedLevels AS (
                     SELECT
@@ -4413,8 +4413,8 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
         self.assertEqual(dedent(sql), dedent(expected_sql))
 
         expected_parameters = {
-            'edge_name': 'population',
             'other_unique_id': '222-22-22-2222',
+            'edge_name': 'population',
         }
         self.assertEqual(parameters, expected_parameters)
 
