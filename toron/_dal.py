@@ -2609,6 +2609,21 @@ class DataAccessLayer(object):
         """Return a SQL string and parameter dictionary to get incoming
         edge--for use with a cursor.execute() call.
 
+        :param name: The "edge.name" value of the incoming edge.
+        :param other_unique_id: The unique ID of the node where the
+            edge is coming from (the tail). Please note that the local
+            node is always where the edge is going to (the head).
+        :param column_names: The full list of node_index label columns
+            used by the local node.
+
+        .. warning::
+            For proper operation, the given *column_names* MUST include
+            all label columns defined in the local node's "node_index"
+            table and they must appear in the same order in which they
+            are currently defined in the table. If this requirement is
+            not satisfied, the accuracy of reconstructed ambiguous
+            mappings cannot be guaranteed.
+
         .. code-block:: python
 
             >>> sql, parameters = self._get_incoming_edge_make_sql(
