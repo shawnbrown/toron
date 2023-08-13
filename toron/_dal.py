@@ -2622,8 +2622,8 @@ class DataAccessLayer(object):
             all label columns defined in the local node's "node_index"
             table and they must appear in the same order in which they
             are currently defined in the table. If this requirement is
-            not satisfied, the accuracy of reconstructed ambiguous
-            mappings cannot be guaranteed.
+            not satisfied, ambiguous mappings cannot be reconstructed
+            with any degree of certainty.
 
         .. code-block:: python
 
