@@ -2689,6 +2689,74 @@ class DataAccessLayer(object):
         return sql, parameters
 
     @staticmethod
+    def _get_incoming_edge_reified_make_sql(
+        other_unique_id: str,
+        name: str,
+        column_names: Sequence[str],
+    ) -> Tuple[str, Dict[str, str]]:
+        """Return a SQL statement and parameters suitable for building
+        a reified correspondence mapping.
+
+        :param other_unique_id: The unique ID of the node where the
+            edge is coming from (the tail). Please note that the local
+            node is always where the edge is going to (the head).
+        :param name: The "edge.name" value of the incoming edge (there
+            can be multiple edges between the same nodes).
+        :param column_names: The full list of node_index label columns
+            used by the local node.
+
+        .. warning::
+            For proper operation, the given *column_names* MUST include
+            all label columns defined in the local node's "node_index"
+            table. If this requirement is not satisfied, then the query
+            cannot reliably build a distinct correspondence mapping to
+            match the node's index records.
+
+        .. code-block:: python
+
+            >>> sql, parameters = self._get_incoming_edge_reified_make_sql(
+            ...     name='population',
+            ...     other_unique_id='222-22-22-2222',
+            ...     column_names=['A', 'B', 'C'],
+            ... )
+            >>> self.cur.execute(sql, parameters)
+        """
+        normalized_labels = [_schema.normalize_identifier(x) for x in column_names]
+
+        sql = f"""
+            WITH
+                RelationValues AS (
+                    SELECT
+                        a.other_index_id,
+                        a.index_id,
+                        a.relation_value,
+                        a.mapping_level
+                    FROM main.relation a
+                    JOIN main.edge b USING (edge_id)
+                    WHERE
+                        b.other_unique_id=:other_unique_id
+                        AND b.name=:edge_name
+                ),
+                ReifiedMapping AS (
+                    SELECT
+                        b.other_index_id,
+                        b.relation_value,
+                        {f', '.join(f'a.{x}' for x in normalized_labels)},
+                        b.mapping_level
+                    FROM main.node_index a
+                    LEFT JOIN RelationValues b USING (index_id)
+                )
+            SELECT *
+            FROM ReifiedMapping
+            ORDER BY {f', '.join(normalized_labels)}
+        """
+        parameters = {
+            'other_unique_id': other_unique_id,
+            'edge_name': name,
+        }
+        return sql, parameters
+
+    @staticmethod
     def _translate_generator(
         cursor: sqlite3.Cursor, data: QuantityIterator
     ) -> Iterable[Tuple[int, Dict[str, str], float]]:

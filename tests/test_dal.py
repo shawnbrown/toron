@@ -4420,6 +4420,53 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
         self.assertEqual(parameters, expected_parameters)
 
 
+class TestGetIncomingEdgeReifiedMakeSql(unittest.TestCase):
+    maxDiff = None
+
+    def test_sql_and_parameters(self):
+        """SQL and params to build reified mapping."""
+        sql, parameters = dal_class._get_incoming_edge_reified_make_sql(
+            other_unique_id='222-22-22-2222',
+            name='population',
+            column_names=['A', 'B', 'C'],
+        )
+
+        expected_sql = """
+            WITH
+                RelationValues AS (
+                    SELECT
+                        a.other_index_id,
+                        a.index_id,
+                        a.relation_value,
+                        a.mapping_level
+                    FROM main.relation a
+                    JOIN main.edge b USING (edge_id)
+                    WHERE
+                        b.other_unique_id=:other_unique_id
+                        AND b.name=:edge_name
+                ),
+                ReifiedMapping AS (
+                    SELECT
+                        b.other_index_id,
+                        b.relation_value,
+                        a."A", a."B", a."C",
+                        b.mapping_level
+                    FROM main.node_index a
+                    LEFT JOIN RelationValues b USING (index_id)
+                )
+            SELECT *
+            FROM ReifiedMapping
+            ORDER BY "A", "B", "C"
+        """
+        self.assertEqual(dedent(sql), dedent(expected_sql))
+
+        expected_parameters = {
+            'other_unique_id': '222-22-22-2222',
+            'edge_name': 'population',
+        }
+        self.assertEqual(parameters, expected_parameters)
+
+
 class TestTranslate(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
