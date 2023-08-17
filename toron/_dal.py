@@ -2601,7 +2601,7 @@ class DataAccessLayer(object):
                 cur.execute(sql, {'unique_id': unique_id, 'name': name})
 
     @staticmethod
-    def _get_incoming_edge_make_sql(
+    def _get_incoming_edge_reconstructed_make_sql(
         other_unique_id: str,
         name: str,
         column_names: Sequence[str],
@@ -2627,7 +2627,7 @@ class DataAccessLayer(object):
 
         .. code-block:: python
 
-            >>> sql, parameters = self._get_incoming_edge_make_sql(
+            >>> sql, parameters = self._get_incoming_edge_reconstructed_make_sql(
             ...     name='population',
             ...     other_unique_id='222-22-22-2222',
             ...     column_names=['A', 'B', 'C'],

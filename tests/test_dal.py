@@ -4364,12 +4364,12 @@ class TestEditIncomingEdge(unittest.TestCase):
 
 class TestGetIncomingEdgeMakeSql(unittest.TestCase):
     def setUp(self):
-        self._get_incoming_edge_make_sql = dal_class._get_incoming_edge_make_sql
+        self._get_incoming_edge_reconstructed_make_sql = dal_class._get_incoming_edge_reconstructed_make_sql
         self.maxDiff = None
 
     def test_sql_and_parameters(self):
         """Should reconstruct ambiguous relations from original mapping."""
-        sql, parameters = self._get_incoming_edge_make_sql(
+        sql, parameters = self._get_incoming_edge_reconstructed_make_sql(
             other_unique_id='222-22-22-2222',
             name='population',
             column_names=['A', 'B', 'C'],
