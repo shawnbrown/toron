@@ -4409,6 +4409,7 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
                 )
             SELECT *
             FROM ReconstructedMapping
+            ORDER BY "A", "B", "C"
         """
         self.assertEqual(dedent(sql), dedent(expected_sql))
 

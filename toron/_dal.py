@@ -2640,11 +2640,11 @@ class DataAccessLayer(object):
         ambiguous mappings as they were originally given.
         """
         normalized_labels = [_schema.normalize_identifier(x) for x in column_names]
+
         func = lambda i, x: f'user_apply_bit_flag(a.{x}, b.mapping_level, {i}) AS {x}'
-        bit_flag_masks = [func(i, x) for (i, x) in enumerate(normalized_labels)]
+        qualified_bit_flag_masks = [func(i, x) for (i, x) in enumerate(normalized_labels)]
 
         formatted_labels = f', '.join(normalized_labels)
-        formatted_bit_flag_masks = f', '.join(bit_flag_masks)
 
         sql = f"""
             WITH
@@ -2664,7 +2664,7 @@ class DataAccessLayer(object):
                     SELECT
                         b.other_index_id,
                         b.relation_value,
-                        {formatted_bit_flag_masks}
+                        {f', '.join(qualified_bit_flag_masks)}
                     FROM main.node_index a
                     LEFT JOIN RelationValues b USING (index_id)
                 ),
@@ -2680,6 +2680,7 @@ class DataAccessLayer(object):
                 )
             SELECT *
             FROM ReconstructedMapping
+            ORDER BY {formatted_labels}
         """
         parameters = {
             'other_unique_id': other_unique_id,
