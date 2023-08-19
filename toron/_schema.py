@@ -853,6 +853,12 @@ def _add_functions_and_triggers(connection):
     """
     try:
         connection.create_function(
+            'user_apply_bit_flag', 3, _user_apply_bit_flag, deterministic=True)
+    except TypeError:
+        connection.create_function('user_apply_bit_flag', 3, _user_apply_bit_flag)
+
+    try:
+        connection.create_function(
             'user_json_object_keep', -1, _user_json_object_keep, deterministic=True)
     except TypeError:
         connection.create_function('user_json_object_keep', -1, _user_json_object_keep)

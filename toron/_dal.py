@@ -31,6 +31,7 @@ from ._typing import (
     Dict,
     Generator,
     Iterable,
+    Iterator,
     List,
     Literal,
     Mapping,
@@ -2792,7 +2793,15 @@ class DataAccessLayer(object):
             column_names = column_names[1:]  # Slice-off 'index_id'.
 
             if not reified:
-                raise NotImplementedError
+                # Query data for reconstructed mapping and define header.
+                sql, parameters = self._get_incoming_edge_reconstructed_make_sql(
+                    other_unique_id=other_unique_id,
+                    name=name,
+                    column_names=column_names,
+                )
+                cur.execute(sql, parameters)
+                query_results: Iterator = cur
+                header = tuple(chain(['other_index_id', name], column_names))
             else:
                 # Query data for reified mapping.
                 sql, parameters = self._get_incoming_edge_reified_make_sql(

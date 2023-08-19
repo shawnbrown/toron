@@ -4544,6 +4544,22 @@ class TestGetIncomingEdge(unittest.TestCase):
             complete=1,
         )
 
+    def test_reconstructed_mapping(self):
+        result = self.dal.get_incoming_edge(
+            other_unique_id='222-22-22-2222',
+            name='population',
+        )
+        expected = [
+            ('other_index_id', 'population', 'A', 'B', 'C'),
+            (0,    0.0, '-',   '-',  '-'),
+            (15, 100.0, 'bar', None, None),
+            (14, 100.0, 'bar', 'x',  None),
+            (11, 100.0, 'foo', 'x',  None),
+            (13, 100.0, 'foo', 'y',  None),
+            (12, 100.0, 'foo', 'y',  'c'),
+        ]
+        self.assertEqual(list(result), expected)
+
     def test_reified_mapping(self):
         result = self.dal.get_incoming_edge(
             other_unique_id='222-22-22-2222',
