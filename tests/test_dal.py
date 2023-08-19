@@ -4462,6 +4462,109 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
         self.assertEqual(parameters, expected_parameters)
 
 
+class TestGetIncomingEdge(unittest.TestCase):
+    maxDiff = None
+
+    @staticmethod
+    def load_data(dal, data, index_cols, categories, weight_col):
+        """Helper function to load node data."""
+        dal.set_data({'add_index_columns': index_cols})
+        dal.add_discrete_categories(categories)
+        dal.add_index_records(data)
+        dal.add_weights(data, name=weight_col, selectors=None)
+
+    @staticmethod
+    def load_edge(dal, data, edge_id, name, unique_id, filename_hint, complete):
+        """Helper function to insert edge and relation data."""
+        con = dal._get_connection()
+        cur = con.cursor()
+
+        # Insert edge record.
+        cur.execute("""
+            INSERT INTO main.edge (
+                edge_id,
+                name,
+                other_unique_id,
+                other_filename_hint,
+                is_locally_complete
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (edge_id, name, unique_id, filename_hint, complete))
+
+        # Insert relation records.
+        parameters = [(edge_id,) + row for row in data]
+        cur.executemany("""
+            INSERT INTO main.relation (
+                edge_id,
+                other_index_id,
+                index_id,
+                relation_value,
+                proportion,
+                mapping_level
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, parameters)
+
+    def setUp(self):
+        self.dal = dal_class()
+        self.load_data(
+            self.dal,
+            data=[
+                ('A', 'B', 'C', 'population'),
+                ('foo', 'x', 'a', 125),
+                ('foo', 'x', 'b',  75),
+                ('foo', 'y', 'c', 100),
+                ('foo', 'y', 'd', 100),
+                ('bar', 'x', 'a',  50),
+                ('bar', 'x', 'b', 125),
+                ('bar', 'y', 'c', 125),
+                ('bar', 'y', 'd', 100),
+            ],
+            index_cols=['A', 'B', 'C'],
+            categories=[{'A'}, {'A', 'B'}, {'A', 'C'}],
+            weight_col='population',
+        )
+        self.load_edge(
+            self.dal,
+            data=[                                      # mapping vals -> matched records
+                (11, 1,  75, 0.75, BitFlags(1, 1, 0)),  # foo/x/* -> foo/x/a
+                (11, 2,  25, 0.25, BitFlags(1, 1, 0)),  # foo/x/* -> foo/x/b
+                (12, 3, 100, 1.00, None),               # foo/y/c -> foo/y/c (exact match)
+                (13, 4, 100, 1.00, BitFlags(1, 1, 0)),  # foo/y/* -> foo/y/d
+                (14, 5,  25, 0.25, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/a
+                (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/b
+                (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
+                (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
+                (0,  0,   0, 1.00, None),               # -/-/- -> -/-/- (undefined point)
+            ],
+            edge_id=2,
+            name='population',
+            unique_id='222-22-22-2222',
+            filename_hint='myfile2.toron',
+            complete=1,
+        )
+
+    def test_reified_mapping(self):
+        result = self.dal.get_incoming_edge(
+            other_unique_id='222-22-22-2222',
+            name='population',
+            reified=True,
+        )
+        expected = [
+            ('other_index_id', 'population', 'A', 'B', 'C', 'ambiguous_mapping'),
+            (0,    0.0, '-',   '-', '-', None),
+            (14,  25.0, 'bar', 'x', 'a', 'A, B'),
+            (14,  75.0, 'bar', 'x', 'b', 'A, B'),
+            (15,  50.0, 'bar', 'y', 'c', 'A'),
+            (15,  50.0, 'bar', 'y', 'd', 'A'),
+            (11,  75.0, 'foo', 'x', 'a', 'A, B'),
+            (11,  25.0, 'foo', 'x', 'b', 'A, B'),
+            (12, 100.0, 'foo', 'y', 'c', None),
+            (13, 100.0, 'foo', 'y', 'd', 'A, B'),
+        ]
+        self.assertEqual(list(result), expected)
+
+
 class TestTranslate(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
