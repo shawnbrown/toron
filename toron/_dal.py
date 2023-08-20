@@ -2818,7 +2818,7 @@ class DataAccessLayer(object):
                     mapping_level = row[-1]  # Last value is BitFlags or None.
                     if mapping_level is None:
                         return row  # <- EXIT! Return unchanged.
-                    inverted_level = [0 if x else 1 for x in mapping_level]
+                    inverted_level = [(not bit) for bit in mapping_level]
                     ambiguous_columns = compress(column_names, inverted_level)
                     ambiguous_desc = ', '.join(ambiguous_columns)
                     return tuple(chain(row[:-1], [ambiguous_desc]))
