@@ -2768,14 +2768,14 @@ class DataAccessLayer(object):
         By default, any ambiguous relations will be returned in their
         collapsed, partially specified form. Optionally, users can set
         ``reified=True`` to see the concretized, individual relations
-        and their calculated weights which are created by ambiguous
+        and their calculated weights which are created by the ambiguous
         relations.
 
         :param other_unique_id: Unique identifier of the source node.
         :param name: Name of the incoming edge.
         :param reified: Optional flag indicating whether to return
-            reified mapping data. If True, the mapping level of any
-            ambiguous relations will be included in the results.
+            reified mapping data. If True, the ambiguous columns will
+            be noted in the result records.
         :return: A generator that yields tuple rows (including a header
             row) for each individual relation in the edge.
 
@@ -2811,20 +2811,22 @@ class DataAccessLayer(object):
                 )
                 cur.execute(sql, parameters)
 
-                # Define and apply helper function to format mapping level
-                # used in the selected SQL results.
+                # Define and apply helper function to build a description
+                # of the columns that were left unspecified in the original
+                # mapping description.
                 def func(row):
                     mapping_level = row[-1]  # Last value is BitFlags or None.
                     if mapping_level is None:
                         return row  # <- EXIT! Return unchanged.
-                    mapping_columns = compress(column_names, mapping_level)
-                    mapping_desc = ', '.join(mapping_columns)
-                    return tuple(chain(row[:-1], [mapping_desc]))
+                    inverted_level = [0 if x else 1 for x in mapping_level]
+                    ambiguous_columns = compress(column_names, inverted_level)
+                    ambiguous_desc = ', '.join(ambiguous_columns)
+                    return tuple(chain(row[:-1], [ambiguous_desc]))
 
                 query_results = (func(row) for row in cur)  # Apply func().
 
                 header = tuple(chain(
-                    ['other_index_id', name], column_names, ['ambiguous_mapping']
+                    ['other_index_id', name], column_names, ['ambiguous_columns']
                 ))
 
             # Yield header row and query results.

@@ -4567,16 +4567,16 @@ class TestGetIncomingEdge(unittest.TestCase):
             reified=True,
         )
         expected = [
-            ('other_index_id', 'population', 'A', 'B', 'C', 'ambiguous_mapping'),
+            ('other_index_id', 'population', 'A', 'B', 'C', 'ambiguous_columns'),
             (0,    0.0, '-',   '-', '-', None),
-            (14,  25.0, 'bar', 'x', 'a', 'A, B'),
-            (14,  75.0, 'bar', 'x', 'b', 'A, B'),
-            (15,  50.0, 'bar', 'y', 'c', 'A'),
-            (15,  50.0, 'bar', 'y', 'd', 'A'),
-            (11,  75.0, 'foo', 'x', 'a', 'A, B'),
-            (11,  25.0, 'foo', 'x', 'b', 'A, B'),
+            (14,  25.0, 'bar', 'x', 'a', 'C'),
+            (14,  75.0, 'bar', 'x', 'b', 'C'),
+            (15,  50.0, 'bar', 'y', 'c', 'B, C'),
+            (15,  50.0, 'bar', 'y', 'd', 'B, C'),
+            (11,  75.0, 'foo', 'x', 'a', 'C'),
+            (11,  25.0, 'foo', 'x', 'b', 'C'),
             (12, 100.0, 'foo', 'y', 'c', None),
-            (13, 100.0, 'foo', 'y', 'd', 'A, B'),
+            (13, 100.0, 'foo', 'y', 'd', 'C'),
         ]
         self.assertEqual(list(result), expected)
 
