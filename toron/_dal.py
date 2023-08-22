@@ -2774,7 +2774,7 @@ class DataAccessLayer(object):
         :param other_unique_id: Unique identifier of the source node.
         :param name: Name of the incoming edge.
         :param reified: Optional flag indicating whether to return
-            reified mapping data. If True, the ambiguous columns will
+            reified mapping data. If True, the ambiguous fields will
             be noted in the result records.
         :return: A generator that yields tuple rows (including a header
             row) for each individual relation in the edge.
@@ -2819,14 +2819,14 @@ class DataAccessLayer(object):
                     if mapping_level is None:
                         return row  # <- EXIT! Return unchanged.
                     inverted_level = [(not bit) for bit in mapping_level]
-                    ambiguous_columns = compress(column_names, inverted_level)
-                    ambiguous_desc = ', '.join(ambiguous_columns)
+                    ambiguous_fields = compress(column_names, inverted_level)
+                    ambiguous_desc = ', '.join(ambiguous_fields)
                     return tuple(chain(row[:-1], [ambiguous_desc]))
 
                 query_results = (func(row) for row in cur)  # Apply func().
 
                 header = tuple(chain(
-                    ['other_index_id', name], column_names, ['ambiguous_columns']
+                    ['other_index_id', name], column_names, ['ambiguous_fields']
                 ))
 
             # Yield header row and query results.

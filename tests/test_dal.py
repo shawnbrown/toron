@@ -4567,7 +4567,7 @@ class TestGetIncomingEdge(unittest.TestCase):
             reified=True,
         )
         expected = [
-            ('other_index_id', 'population', 'A', 'B', 'C', 'ambiguous_columns'),
+            ('other_index_id', 'population', 'A', 'B', 'C', 'ambiguous_fields'),
             (0,    0.0, '-',   '-', '-', None),
             (14,  25.0, 'bar', 'x', 'a', 'C'),
             (14,  75.0, 'bar', 'x', 'b', 'C'),
