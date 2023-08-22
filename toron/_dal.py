@@ -2838,6 +2838,18 @@ class DataAccessLayer(object):
     def _translate_generator(
         cursor: sqlite3.Cursor, data: QuantityIterator
     ) -> Iterable[Tuple[int, Dict[str, str], float]]:
+        """Translate incoming *data* to use index_id values from the
+        database associated with the given *cursor*. Data records are
+        matched to an edge by the matching data.unique_id (the unique
+        ID of the source node) and each record's attribute dictionary.
+        If a record's attribute dictionary cannot be matched to an
+        edge, the default edge is used instead.
+
+        :param cursor: Cursor object for local node instance.
+        :param data: Incoming data iterator.
+        :return: A generator that yields tuple rows suitable for
+            constructing a new QuantityIterator instance.
+        """
         # Get default 'edge_id' for matching 'other_unique_id'.
         sql = """
             SELECT edge_id, name, is_locally_complete
