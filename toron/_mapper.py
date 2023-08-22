@@ -178,7 +178,7 @@ class Mapper(object):
         cursor: sqlite3.Cursor,
         side: Literal['left', 'right'],
         index_columns: Sequence[str],
-        structure_set: Set[Tuple[str]],
+        structure_set: Set[Tuple[Literal[0, 1], ...]],
         run_ids: List[int],
         key: Dict[str, str],
         matches: Iterator[Tuple],
@@ -383,7 +383,7 @@ class Mapper(object):
         )
 
         index_columns = node.index_columns()
-        structure_set = set(node.structure())
+        structure_set: Set[Tuple[Literal[0, 1], ...]] = set(node.structure())
 
         list_ambiguous = []
         match_stats: Dict[str, Any] = {
