@@ -261,7 +261,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
         Initialize a new BitFlags instance.
         """
         if len(args) == 1 and isinstance(args[0], Iterable):
-            args = args[0]
+            args = tuple(args[0])
 
         data: List[Literal[0, 1]] = [(1 if x else 0) for x in args]
         data = self._normalize_length(data)
