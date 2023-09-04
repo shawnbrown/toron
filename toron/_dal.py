@@ -929,11 +929,16 @@ class DataAccessLayer(object):
         allowed_levels = {BitFlags(row[2:]) for row in cursor}
         allowed_levels.remove(BitFlags())  # All 0s mapping_level not allowed.
 
-        # Check for invalid mapping levels and raise error if found.
-        for mapping_level in new_mapping_levels:
-            if mapping_level not in allowed_levels:
-                msg = 'cannot remove, columns are needed to preserve relations'
-                raise ToronError(msg)
+        # Find all invalid mapping levels.
+        invalid_levels = []
+        for old_level, new_level in zip(old_mapping_levels, new_mapping_levels):
+            if new_level not in allowed_levels:
+                invalid_levels.append((old_level, new_level))
+
+        # Handle invalid mapping levels.
+        if invalid_levels:
+            msg = 'cannot remove, columns are needed to preserve relations'
+            raise ToronError(msg)
 
         # Update mapping_level values.
         parameters: Iterable[Tuple[BitFlags, BitFlags]]
