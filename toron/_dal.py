@@ -929,32 +929,32 @@ class DataAccessLayer(object):
         allowed_levels = {BitFlags(row[2:]) for row in cursor}
         allowed_levels.remove(BitFlags())  # All 0s mapping_level not allowed.
 
-        # Find all invalid mapping levels.
-        invalid_levels = []
+        # Find mapping levels that would become unrepresentable.
+        unrepresentable = []
         for old_level, new_level in zip(old_mapping_levels, new_mapping_levels):
             if new_level not in allowed_levels:
-                invalid_levels.append((old_level, new_level))
+                unrepresentable.append(old_level)
 
-        # Handle invalid mapping levels.
-        if invalid_levels:
+        if unrepresentable:
             if preserve_edges:
-                def func(item):
-                    old_bits, _ = item
-                    old_names = compress(column_names, old_bits)
+                # Raise error, cancelling column removal.
+                def func(old_level):
+                    old_names = compress(column_names, old_level)
                     old_names = (repr(name) for name in old_names)
                     return f"  * {', '.join(old_names)}"
 
-                unrepresentable = '\n'.join(func(x) for x in invalid_levels)
+                msg_levels = '\n'.join(func(x) for x in unrepresentable)
                 raise ToronError(
                     f'cannot remove; columns are needed to preserve ambiguous '
                     f'relations that use the following levels of granularity:\n\n'
-                    f'{unrepresentable}\n\nTo remove columns, reify the edges or '
-                    f'use `preserve_edges=False` to delete unrepresentable relations.'
+                    f'{msg_levels}\n\nTo remove columns, reify the edges or use '
+                    f'`preserve_edges=False` to delete unrepresentable relations.'
                 )
             else:
+                # Delete unrepresentable relations and continue.
                 cursor.executemany(
                     'DELETE FROM main.relation WHERE mapping_level=?',
-                    ([old_bits] for (old_bits, _) in invalid_levels)
+                    ([old_level] for old_level in unrepresentable)
                 )
 
         # Update mapping_level values.
