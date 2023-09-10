@@ -851,7 +851,7 @@ class DataAccessLayer(object):
         *,
         preserve_structure: bool,
         preserve_granularity: bool,
-        #preserve_edges: bool,
+        preserve_edges: bool,
         #match_limit: Optional[Union[int, float]] = 1,
     ) -> None:
         column_names = cls._get_column_names(cursor, 'node_index')
@@ -937,21 +937,27 @@ class DataAccessLayer(object):
 
         # Handle invalid mapping levels.
         if invalid_levels:
-            def func(item):
-                old_bits, _ = item
-                old_names = compress(column_names, old_bits)
-                old_names = (repr(name) for name in old_names)
-                return f"  * {', '.join(old_names)}"
+            if preserve_edges:
+                def func(item):
+                    old_bits, _ = item
+                    old_names = compress(column_names, old_bits)
+                    old_names = (repr(name) for name in old_names)
+                    return f"  * {', '.join(old_names)}"
 
-            unrepresentable = '\n'.join(func(x) for x in invalid_levels)
+                unrepresentable = '\n'.join(func(x) for x in invalid_levels)
 
-            msg = (
-                f'cannot remove; columns are needed to preserve ambiguous '
-                f'relations that use the following levels of granularity:\n\n'
-                f'{unrepresentable}\n\nTo remove columns, reify the edges or '
-                f'use `preserve_edges=False` to delete unrepresentable relations.'
-            )
-            raise ToronError(msg)
+                msg = (
+                    f'cannot remove; columns are needed to preserve ambiguous '
+                    f'relations that use the following levels of granularity:\n\n'
+                    f'{unrepresentable}\n\nTo remove columns, reify the edges or '
+                    f'use `preserve_edges=False` to delete unrepresentable relations.'
+                )
+                raise ToronError(msg)
+            else:
+                cursor.executemany(
+                    'DELETE FROM main.relation WHERE mapping_level=?',
+                    ([old_bits] for (old_bits, _) in invalid_levels)
+                )
 
         # Update mapping_level values.
         parameters: Iterable[Tuple[BitFlags, BitFlags]]
@@ -969,6 +975,7 @@ class DataAccessLayer(object):
         *,
         preserve_structure: bool = True,
         preserve_granularity: bool = True,
+        preserve_edges: bool = True,
     ) -> None:
         with self._transaction() as cur:
             self._remove_index_columns_execute_sql(
@@ -976,6 +983,7 @@ class DataAccessLayer(object):
                 columns,
                 preserve_structure=preserve_structure,
                 preserve_granularity=preserve_granularity,
+                preserve_edges=preserve_edges,
             )
 
     @classmethod
@@ -3004,6 +3012,7 @@ class DataAccessLayerPre35(DataAccessLayer):
         *,
         preserve_structure: bool = True,
         preserve_granularity: bool = True,
+        preserve_edges: bool = True,
     ) -> None:
         # In versions earlier than SQLite 3.35.0, there was no support for
         # the DROP COLUMN command. This method (and other related methods
@@ -3020,6 +3029,7 @@ class DataAccessLayerPre35(DataAccessLayer):
                     columns,
                     preserve_structure=preserve_structure,
                     preserve_granularity=preserve_granularity,
+                    preserve_edges=preserve_edges,
                 )
 
                 cur.execute('PRAGMA main.foreign_key_check')

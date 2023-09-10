@@ -1201,10 +1201,16 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         ]
         self.assertEqual(actual, expected)
 
-    def test_abort_on_invalid_mapping_level(self):
-        """When preserving relations, should raise error if invalid
-        mapping levels.
+    def test_preserve_edges_handling(self):
+        """Sometimes, edges contain relations that would be
+        unrepresentable if certain index columns were removed. When
+        this happens, an error should be raised if the `preserve_edges`
+        argument is True. But if `preserve_edges` is False, then
+        all unrepresentable relations should be deleted and the
+        column removal should continue.
         """
+        self.maxDiff = None
+
         self.load_data(
             self.dal,
             data=[
@@ -1238,6 +1244,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             complete=1,
         )
 
+        # Check error when preserving edge relations.
         regex = (
             'cannot remove; columns are needed to preserve ambiguous relations '
             'that use the following levels of granularity:\n'
@@ -1249,6 +1256,18 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         )
         with self.assertRaisesRegex(ToronError, regex):
             self.dal.remove_index_columns(['B'])  # <- Method under test.
+
+        # Check result when deleting unrepresentable relations.
+        self.dal.remove_index_columns(['B'], preserve_edges=False)  # <- Method under test.
+        self.cur.execute('SELECT * FROM main.relation')
+        expected = [
+            (1, 2, 11,  1, 100.0, 1.00, None),
+            (2, 2, 12,  2, 100.0, 1.00, None),
+            (3, 2, 13,  3,  50.0, 0.50, BitFlags(1, 0, 0)),
+            (4, 2, 13,  4,  50.0, 0.50, BitFlags(1, 0, 0)),
+            # rows 5 and 6 deleted because they were unrepresentable
+        ]
+        self.assertEqual(self.cur.fetchall(), expected)
 
     @unittest.expectedFailure
     def test_rebuild_ambiguous_relations(self):
