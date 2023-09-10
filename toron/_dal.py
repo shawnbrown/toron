@@ -937,7 +937,20 @@ class DataAccessLayer(object):
 
         # Handle invalid mapping levels.
         if invalid_levels:
-            msg = 'cannot remove, columns are needed to preserve relations'
+            def func(item):
+                old_bits, _ = item
+                old_names = compress(column_names, old_bits)
+                old_names = (repr(name) for name in old_names)
+                return f"  * {', '.join(old_names)}"
+
+            unrepresentable = '\n'.join(func(x) for x in invalid_levels)
+
+            msg = (
+                f'cannot remove; columns are needed to preserve ambiguous '
+                f'relations that use the following levels of granularity:\n\n'
+                f'{unrepresentable}\n\nTo remove columns, reify the edges or '
+                f'use `preserve_edges=False` to delete unrepresentable relations.'
+            )
             raise ToronError(msg)
 
         # Update mapping_level values.

@@ -1238,7 +1238,15 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             complete=1,
         )
 
-        regex = 'cannot remove, columns are needed to preserve relations'
+        regex = (
+            'cannot remove; columns are needed to preserve ambiguous relations '
+            'that use the following levels of granularity:\n'
+            '\n'
+            '  \\* \'B\'\n'
+            '\n'
+            'To remove columns, reify the edges or use `preserve_edges=False` '
+            'to delete unrepresentable relations.'
+        )
         with self.assertRaisesRegex(ToronError, regex):
             self.dal.remove_index_columns(['B'])  # <- Method under test.
 
