@@ -1265,7 +1265,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             (2, 2, 12,  2, 100.0, 1.00, None),
             (3, 2, 13,  3,  50.0, 0.50, BitFlags(1, 0, 0)),
             (4, 2, 13,  4,  50.0, 0.50, BitFlags(1, 0, 0)),
-            # rows 5 and 6 deleted because they were unrepresentable
+            # NOTE: Rows 5 and 6 deleted because they are now unrepresentable.
         ]
         self.assertEqual(self.cur.fetchall(), expected)
 
