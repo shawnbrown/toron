@@ -945,14 +945,12 @@ class DataAccessLayer(object):
                     return f"  * {', '.join(old_names)}"
 
                 unrepresentable = '\n'.join(func(x) for x in invalid_levels)
-
-                msg = (
+                raise ToronError(
                     f'cannot remove; columns are needed to preserve ambiguous '
                     f'relations that use the following levels of granularity:\n\n'
                     f'{unrepresentable}\n\nTo remove columns, reify the edges or '
                     f'use `preserve_edges=False` to delete unrepresentable relations.'
                 )
-                raise ToronError(msg)
             else:
                 cursor.executemany(
                     'DELETE FROM main.relation WHERE mapping_level=?',
