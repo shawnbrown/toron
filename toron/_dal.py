@@ -2786,8 +2786,9 @@ class DataAccessLayer(object):
         other_unique_id: str,
         name: str,
         reified: bool = False,
-    ):
-        """Yields correspondence mapping rows for a specified edge.
+    ) -> Generator[Tuple, None, None]:
+        """Yields row tuples of correspondence mapping coming from edge
+        specified by *other_unique_id* and *name*.
 
         By default, any ambiguous relations will be returned in their
         collapsed, partially specified form. Optionally, users can set
