@@ -2783,14 +2783,14 @@ class DataAccessLayer(object):
 
     def _get_incoming_edge(
         self,
-        cur,
+        cursor: sqlite3.Cursor,
         other_unique_id: str,
         name: str,
         reified: bool = False,
     ) -> Generator[Tuple, None, None]:
 
         # Get column names for local geography.
-        column_names = self._get_column_names(cur, 'node_index')
+        column_names = self._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
 
         if not reified:
@@ -2800,8 +2800,8 @@ class DataAccessLayer(object):
                 name=name,
                 column_names=column_names,
             )
-            cur.execute(sql, parameters)
-            query_results: Iterator = cur
+            cursor.execute(sql, parameters)
+            query_results: Iterator = cursor
             header = tuple(chain(['other_index_id', name], column_names))
         else:
             # Query data for reified mapping.
@@ -2810,7 +2810,7 @@ class DataAccessLayer(object):
                 name=name,
                 column_names=column_names,
             )
-            cur.execute(sql, parameters)
+            cursor.execute(sql, parameters)
 
             # Define and apply helper function to build a description
             # of the columns that were left unspecified in the original
@@ -2824,7 +2824,7 @@ class DataAccessLayer(object):
                 ambiguous_desc = ', '.join(ambiguous_fields)
                 return tuple(chain(row[:-1], [ambiguous_desc]))
 
-            query_results = (func(row) for row in cur)  # Apply func().
+            query_results = (func(row) for row in cursor)  # Apply func().
 
             header = tuple(chain(
                 ['other_index_id', name], column_names, ['ambiguous_fields']
@@ -2869,7 +2869,7 @@ class DataAccessLayer(object):
         """
         with self._transaction(method=None) as cur:
             generator = self._get_incoming_edge(
-                cur=cur,
+                cursor=cur,
                 other_unique_id=other_unique_id,
                 name=name,
                 reified=reified,
