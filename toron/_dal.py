@@ -2781,6 +2781,60 @@ class DataAccessLayer(object):
         }
         return sql, parameters
 
+    def _get_incoming_edge(
+        self,
+        cur,
+        other_unique_id: str,
+        name: str,
+        reified: bool = False,
+    ) -> Generator[Tuple, None, None]:
+
+        # Get column names for local geography.
+        column_names = self._get_column_names(cur, 'node_index')
+        column_names = column_names[1:]  # Slice-off 'index_id'.
+
+        if not reified:
+            # Query data for reconstructed mapping and define header.
+            sql, parameters = self._get_incoming_edge_reconstructed_make_sql(
+                other_unique_id=other_unique_id,
+                name=name,
+                column_names=column_names,
+            )
+            cur.execute(sql, parameters)
+            query_results: Iterator = cur
+            header = tuple(chain(['other_index_id', name], column_names))
+        else:
+            # Query data for reified mapping.
+            sql, parameters = self._get_incoming_edge_reified_make_sql(
+                other_unique_id=other_unique_id,
+                name=name,
+                column_names=column_names,
+            )
+            cur.execute(sql, parameters)
+
+            # Define and apply helper function to build a description
+            # of the columns that were left unspecified in the original
+            # mapping description.
+            def func(row):
+                mapping_level = row[-1]  # Last value is BitFlags or None.
+                if mapping_level is None:
+                    return row  # <- EXIT! Return unchanged.
+                inverted_level = [(not bit) for bit in mapping_level]
+                ambiguous_fields = compress(column_names, inverted_level)
+                ambiguous_desc = ', '.join(ambiguous_fields)
+                return tuple(chain(row[:-1], [ambiguous_desc]))
+
+            query_results = (func(row) for row in cur)  # Apply func().
+
+            header = tuple(chain(
+                ['other_index_id', name], column_names, ['ambiguous_fields']
+            ))
+
+        # Yield header row and query results.
+        yield header
+        for row in query_results:
+            yield row
+
     def get_incoming_edge(
         self,
         other_unique_id: str,
@@ -2814,49 +2868,13 @@ class DataAccessLayer(object):
             >>>     print(row)
         """
         with self._transaction(method=None) as cur:
-            column_names = self._get_column_names(cur, 'node_index')
-            column_names = column_names[1:]  # Slice-off 'index_id'.
-
-            if not reified:
-                # Query data for reconstructed mapping and define header.
-                sql, parameters = self._get_incoming_edge_reconstructed_make_sql(
-                    other_unique_id=other_unique_id,
-                    name=name,
-                    column_names=column_names,
-                )
-                cur.execute(sql, parameters)
-                query_results: Iterator = cur
-                header = tuple(chain(['other_index_id', name], column_names))
-            else:
-                # Query data for reified mapping.
-                sql, parameters = self._get_incoming_edge_reified_make_sql(
-                    other_unique_id=other_unique_id,
-                    name=name,
-                    column_names=column_names,
-                )
-                cur.execute(sql, parameters)
-
-                # Define and apply helper function to build a description
-                # of the columns that were left unspecified in the original
-                # mapping description.
-                def func(row):
-                    mapping_level = row[-1]  # Last value is BitFlags or None.
-                    if mapping_level is None:
-                        return row  # <- EXIT! Return unchanged.
-                    inverted_level = [(not bit) for bit in mapping_level]
-                    ambiguous_fields = compress(column_names, inverted_level)
-                    ambiguous_desc = ', '.join(ambiguous_fields)
-                    return tuple(chain(row[:-1], [ambiguous_desc]))
-
-                query_results = (func(row) for row in cur)  # Apply func().
-
-                header = tuple(chain(
-                    ['other_index_id', name], column_names, ['ambiguous_fields']
-                ))
-
-            # Yield header row and query results.
-            yield header
-            for row in query_results:
+            generator = self._get_incoming_edge(
+                cur=cur,
+                other_unique_id=other_unique_id,
+                name=name,
+                reified=reified,
+            )
+            for row in generator:
                 yield row
 
     @staticmethod
