@@ -2794,7 +2794,7 @@ class DataAccessLayer(object):
         column_names = column_names[1:]  # Slice-off 'index_id'.
 
         if not reified:
-            # Query data for reconstructed mapping and define header.
+            # Query data for reconstructed mapping.
             sql, parameters = self._get_incoming_edge_reconstructed_make_sql(
                 other_unique_id=other_unique_id,
                 name=name,
@@ -2802,6 +2802,8 @@ class DataAccessLayer(object):
             )
             cursor.execute(sql, parameters)
             query_results: Iterator = cursor
+
+            # Define header for reconstructed mapping.
             header = tuple(chain(['other_index_id', name], column_names))
         else:
             # Query data for reified mapping.
@@ -2812,9 +2814,8 @@ class DataAccessLayer(object):
             )
             cursor.execute(sql, parameters)
 
-            # Define and apply helper function to build a description
-            # of the columns that were left unspecified in the original
-            # mapping description.
+            # Define helper function to replace BitFlags with description
+            # of columns that were left unspecified in original mapping.
             def func(row):
                 mapping_level = row[-1]  # Last value is BitFlags or None.
                 if mapping_level is None:
@@ -2826,6 +2827,7 @@ class DataAccessLayer(object):
 
             query_results = (func(row) for row in cursor)  # Apply func().
 
+            # Define header for reified mapping.
             header = tuple(chain(
                 ['other_index_id', name], column_names, ['ambiguous_fields']
             ))
