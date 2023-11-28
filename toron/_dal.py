@@ -2837,6 +2837,7 @@ class DataAccessLayer(object):
         for row in query_results:
             yield row
 
+    @eagerly_initialize
     def get_incoming_edge(
         self,
         other_unique_id: str,
