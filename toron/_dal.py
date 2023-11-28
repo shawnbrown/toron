@@ -2778,7 +2778,7 @@ class DataAccessLayer(object):
                 column_names=column_names,
             )
             cursor.execute(sql, parameters)
-            query_results: Iterator = cursor
+            query_results: Iterator = eagerly_initialize(cursor)
 
             # Define header for reconstructed mapping.
             header = tuple(chain(['other_index_id', value_column_name], column_names))
@@ -2802,6 +2802,7 @@ class DataAccessLayer(object):
                 return tuple(chain(row[:-1], [ambiguous_desc]))
 
             query_results = (func(row) for row in cursor)  # Apply func().
+            query_results = eagerly_initialize(query_results)
 
             # Define header for reified mapping.
             header = tuple(chain(
@@ -2813,7 +2814,6 @@ class DataAccessLayer(object):
         for row in query_results:
             yield row
 
-    @eagerly_initialize
     def get_incoming_edge(
         self,
         other_unique_id: str,
