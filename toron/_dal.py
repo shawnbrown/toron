@@ -2629,7 +2629,7 @@ class DataAccessLayer(object):
     def _get_incoming_edge_reconstructed_make_sql(
         edge_id: int,
         column_names: Sequence[str],
-    ) -> Tuple[str, Dict[str, str]]:
+    ) -> Tuple[str, Dict[str, int]]:
         """Return a SQL string and parameter dictionary to get incoming
         edge--for use with a cursor.execute() call.
 
@@ -2707,7 +2707,7 @@ class DataAccessLayer(object):
     def _get_incoming_edge_reified_make_sql(
         edge_id: int,
         column_names: Sequence[str],
-    ) -> Tuple[str, Dict[str, str]]:
+    ) -> Tuple[str, Dict[str, int]]:
         """Return a SQL statement and parameters suitable for building
         a reified correspondence mapping.
 
