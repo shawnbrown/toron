@@ -29,6 +29,7 @@ from ._typing import (
     Iterator,
     Mapping,
     Optional,
+    overload,
     Sequence,
     Set,
     Tuple,
@@ -391,9 +392,13 @@ def make_hash(values: Iterable, sep: str = '|') -> Optional[str]:
     return sha256.hexdigest()
 
 
-def eagerly_initialize(
-    genfunc: Callable[..., Generator]
-) -> Callable[..., Iterator]:
+@overload
+def eagerly_initialize(func_or_iter: Callable[..., Generator]) -> Callable[..., Iterator]:
+    ...
+@overload
+def eagerly_initialize(func_or_iter: Iterator) -> Iterator:
+    ...
+def eagerly_initialize(func_or_iter):
     """A decorator to eagerly initialize a generator object.
 
     On instantiation, this decorator will execute all code up to the
@@ -402,16 +407,27 @@ def eagerly_initialize(
     handling, logging, etc.) rather than passively waiting until the
     object is iterated over.
     """
-    @wraps(genfunc)
-    def wrapped_genfunc(*args, **kwds) -> Iterator:
-        generator = genfunc(*args, **kwds)
+    def do_initialize(generator: Iterator) -> Iterator:  # <-  Helper function.
         sentinel_value = object()
         first_item = next(generator, sentinel_value)
         if first_item is sentinel_value:
             return chain()  # <- Empty chain() for consistent return type.
         return chain([first_item], generator)
 
-    return wrapped_genfunc
+    # Decorate generator function.
+    if isinstance(func_or_iter, Callable):
+        @wraps(func_or_iter)
+        def wrapped_genfunc(*args, **kwds) -> Iterator:
+            generator = func_or_iter(*args, **kwds)
+            return do_initialize(generator)
+        return wrapped_genfunc  # <- EXIT!
+
+    # Eagerly initialize generator instance.
+    if isinstance(func_or_iter, Iterator):
+        return do_initialize(func_or_iter)  # <- EXIT!
+
+    msg = f'unhandled type: {func_or_iter.__class__.__name__}'
+    raise Exception(msg)
 
 
 # Define and instantiate NOVALUE inline (keeps class reference out of scope).
