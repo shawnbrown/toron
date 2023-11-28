@@ -4396,8 +4396,7 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
     def test_reconstructed_query(self):
         """Check SQL for reconstructing ambiguous relations."""
         sql, parameters = dal_class._get_incoming_edge_reconstructed_make_sql(
-            other_unique_id='222-22-22-2222',
-            name='population',
+            edge_id=42,
             column_names=['A', 'B', 'C'],
         )
 
@@ -4412,8 +4411,7 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
                     FROM main.relation a
                     JOIN main.edge b USING (edge_id)
                     WHERE
-                        b.other_unique_id=:other_unique_id
-                        AND b.name=:edge_name
+                        b.edge_id=:edge_id
                 ),
                 ReconstructedLevels AS (
                     SELECT
@@ -4439,17 +4437,13 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
         """
         self.assertEqual(dedent(sql), dedent(expected_sql))
 
-        expected_parameters = {
-            'other_unique_id': '222-22-22-2222',
-            'edge_name': 'population',
-        }
+        expected_parameters = {'edge_id': 42}
         self.assertEqual(parameters, expected_parameters)
 
     def test_reified_query(self):
         """Check SQL for constructing reified relations."""
         sql, parameters = dal_class._get_incoming_edge_reified_make_sql(
-            other_unique_id='222-22-22-2222',
-            name='population',
+            edge_id=42,
             column_names=['A', 'B', 'C'],
         )
 
@@ -4464,8 +4458,7 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
                     FROM main.relation a
                     JOIN main.edge b USING (edge_id)
                     WHERE
-                        b.other_unique_id=:other_unique_id
-                        AND b.name=:edge_name
+                        b.edge_id=:edge_id
                 ),
                 ReifiedMapping AS (
                     SELECT
@@ -4482,10 +4475,7 @@ class TestGetIncomingEdgeMakeSql(unittest.TestCase):
         """
         self.assertEqual(dedent(sql), dedent(expected_sql))
 
-        expected_parameters = {
-            'other_unique_id': '222-22-22-2222',
-            'edge_name': 'population',
-        }
+        expected_parameters = {'edge_id': 42}
         self.assertEqual(parameters, expected_parameters)
 
 

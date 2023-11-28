@@ -2627,18 +2627,13 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _get_incoming_edge_reconstructed_make_sql(
-        other_unique_id: str,
-        name: str,
+        edge_id: int,
         column_names: Sequence[str],
     ) -> Tuple[str, Dict[str, str]]:
         """Return a SQL string and parameter dictionary to get incoming
         edge--for use with a cursor.execute() call.
 
-        :param other_unique_id: The unique ID of the node where the
-            edge is coming from (the tail). Please note that the local
-            node is always where the edge is going to (the head).
-        :param name: The "edge.name" value of the incoming edge (there
-            can be multiple edges between the same nodes).
+        :param edge_id: The "edge.edge_id" of the incoming edge.
         :param column_names: The full list of node_index label columns
             used by the local node.
 
@@ -2653,8 +2648,7 @@ class DataAccessLayer(object):
         .. code-block:: python
 
             >>> sql, parameters = self._get_incoming_edge_reconstructed_make_sql(
-            ...     name='population',
-            ...     other_unique_id='222-22-22-2222',
+            ...     edge_id=42,
             ...     column_names=['A', 'B', 'C'],
             ... )
             >>> self.cur.execute(sql, parameters)
@@ -2682,8 +2676,7 @@ class DataAccessLayer(object):
                     FROM main.relation a
                     JOIN main.edge b USING (edge_id)
                     WHERE
-                        b.other_unique_id=:other_unique_id
-                        AND b.name=:edge_name
+                        b.edge_id=:edge_id
                 ),
                 ReconstructedLevels AS (
                     SELECT
@@ -2707,26 +2700,18 @@ class DataAccessLayer(object):
             FROM ReconstructedMapping
             ORDER BY {formatted_labels}
         """
-        parameters = {
-            'other_unique_id': other_unique_id,
-            'edge_name': name,
-        }
+        parameters = {'edge_id': edge_id}
         return sql, parameters
 
     @staticmethod
     def _get_incoming_edge_reified_make_sql(
-        other_unique_id: str,
-        name: str,
+        edge_id: int,
         column_names: Sequence[str],
     ) -> Tuple[str, Dict[str, str]]:
         """Return a SQL statement and parameters suitable for building
         a reified correspondence mapping.
 
-        :param other_unique_id: The unique ID of the node where the
-            edge is coming from (the tail). Please note that the local
-            node is always where the edge is going to (the head).
-        :param name: The "edge.name" value of the incoming edge (there
-            can be multiple edges between the same nodes).
+        :param edge_id: The "edge.edge_id" of the incoming edge.
         :param column_names: The full list of node_index label columns
             used by the local node.
 
@@ -2740,8 +2725,7 @@ class DataAccessLayer(object):
         .. code-block:: python
 
             >>> sql, parameters = self._get_incoming_edge_reified_make_sql(
-            ...     name='population',
-            ...     other_unique_id='222-22-22-2222',
+            ...     edge_id=42,
             ...     column_names=['A', 'B', 'C'],
             ... )
             >>> self.cur.execute(sql, parameters)
@@ -2759,8 +2743,7 @@ class DataAccessLayer(object):
                     FROM main.relation a
                     JOIN main.edge b USING (edge_id)
                     WHERE
-                        b.other_unique_id=:other_unique_id
-                        AND b.name=:edge_name
+                        b.edge_id=:edge_id
                 ),
                 ReifiedMapping AS (
                     SELECT
@@ -2775,17 +2758,14 @@ class DataAccessLayer(object):
             FROM ReifiedMapping
             ORDER BY {f', '.join(normalized_labels)}
         """
-        parameters = {
-            'other_unique_id': other_unique_id,
-            'edge_name': name,
-        }
+        parameters = {'edge_id': edge_id}
         return sql, parameters
 
     def _get_incoming_edge(
         self,
         cursor: sqlite3.Cursor,
-        other_unique_id: str,
-        name: str,
+        edge_id: int,
+        value_column_name: str = 'value',
         reified: bool = False,
     ) -> Generator[Tuple, None, None]:
 
@@ -2796,20 +2776,18 @@ class DataAccessLayer(object):
         if not reified:
             # Query data for reconstructed mapping.
             sql, parameters = self._get_incoming_edge_reconstructed_make_sql(
-                other_unique_id=other_unique_id,
-                name=name,
+                edge_id=edge_id,
                 column_names=column_names,
             )
             cursor.execute(sql, parameters)
             query_results: Iterator = cursor
 
             # Define header for reconstructed mapping.
-            header = tuple(chain(['other_index_id', name], column_names))
+            header = tuple(chain(['other_index_id', value_column_name], column_names))
         else:
             # Query data for reified mapping.
             sql, parameters = self._get_incoming_edge_reified_make_sql(
-                other_unique_id=other_unique_id,
-                name=name,
+                edge_id=edge_id,
                 column_names=column_names,
             )
             cursor.execute(sql, parameters)
@@ -2829,7 +2807,7 @@ class DataAccessLayer(object):
 
             # Define header for reified mapping.
             header = tuple(chain(
-                ['other_index_id', name], column_names, ['ambiguous_fields']
+                ['other_index_id', value_column_name], column_names, ['ambiguous_fields']
             ))
 
         # Yield header row and query results.
@@ -2871,12 +2849,26 @@ class DataAccessLayer(object):
             >>>     print(row)
         """
         with self._transaction(method=None) as cur:
+            # Get edge_id from 'other_unique_id' and 'name'.
+            cur.execute(
+                """
+                    SELECT edge_id
+                    FROM main.edge
+                    WHERE
+                        other_unique_id=:other_unique_id
+                        AND name=:edge_name
+                """,
+                {'other_unique_id': other_unique_id, 'edge_name': name}
+            )
+            edge_id = cur.fetchone()[0]
+
             generator = self._get_incoming_edge(
                 cursor=cur,
-                other_unique_id=other_unique_id,
-                name=name,
+                edge_id=edge_id,
+                value_column_name=name,
                 reified=reified,
             )
+
             for row in generator:
                 yield row
 
