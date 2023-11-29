@@ -2831,8 +2831,10 @@ class DataAccessLayer(object):
         and their calculated weights which are created by the ambiguous
         relations.
 
-        :param other_unique_id: Unique identifier of the source node.
-        :param name: Name of the incoming edge.
+        :param other_unique_id: Unique identifier of the connected node.
+        :param name: Name of the incoming edge--there can be multiple
+            edges between the same two nodes (each with a different
+            name).
         :param reified: Optional flag indicating whether to return
             reified mapping data. If True, the ambiguous fields will
             be noted in the result records.
