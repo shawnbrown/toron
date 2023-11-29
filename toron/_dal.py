@@ -2866,7 +2866,7 @@ class DataAccessLayer(object):
             >>>     print(row)
         """
         with self._transaction(method=None) as cur:
-            # Get edge_id from 'other_unique_id' and 'name'.
+            # Get edge_id using `edge.other_unique_id` and `edge.name`.
             cur.execute(
                 """
                     SELECT edge_id
@@ -2879,14 +2879,17 @@ class DataAccessLayer(object):
             )
             edge_id = cur.fetchone()[0]
 
+            # Get generator for specified edge.
             generator = self._get_incoming_edge(
                 cursor=cur,
                 edge_id=edge_id,
                 value_column_name=name,
                 reified=reified,
             )
-            for row in generator:
-                yield row
+
+            # Yield relations (includes header row as first item).
+            for relation in generator:
+                yield relation
 
     @staticmethod
     def _translate_generator(
