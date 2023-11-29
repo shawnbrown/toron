@@ -2766,10 +2766,12 @@ class DataAccessLayer(object):
         cls,
         cursor: sqlite3.Cursor,
         edge_id: int,
-        column_names: Sequence[str],
         value_column_name: str = 'value',
         reified: bool = False,
     ) -> Generator[Tuple, None, None]:
+        # Get column names for local geography.
+        column_names = cls._get_column_names(cursor, 'node_index')
+        column_names = column_names[1:]  # Slice-off 'index_id'.
 
         if not reified:
             # Query data for reconstructed mapping.
@@ -2860,18 +2862,12 @@ class DataAccessLayer(object):
             )
             edge_id = cur.fetchone()[0]
 
-            # Get column names for local geography.
-            column_names = self._get_column_names(cur, 'node_index')
-            column_names = column_names[1:]  # Slice-off 'index_id'.
-
             generator = self._get_incoming_edge(
                 cursor=cur,
                 edge_id=edge_id,
-                column_names=column_names,
                 value_column_name=name,
                 reified=reified,
             )
-
             for row in generator:
                 yield row
 
