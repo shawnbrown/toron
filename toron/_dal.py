@@ -2769,6 +2769,21 @@ class DataAccessLayer(object):
         value_column_name: str = 'value',
         reified: bool = False,
     ) -> Generator[Tuple, None, None]:
+        """Yields row tuples of correspondence mapping coming from edge
+        specified by *other_unique_id* and *name*.
+
+        :param cursor: Cursor object for local node instance.
+        :param edge_id: The `edge.edge_id` for the specified edge.
+        :param value_column_name: The column name to use for the
+            edge's relation values.
+        :param reified: Optional flag indicating whether to return
+            reified mapping data. If True, the ambiguous fields will
+            be noted in the result records.
+        :return: A generator that yields tuple rows (including a header
+            row) for each individual relation in the edge.
+
+        See :meth:`DataAccessLayer.get_incoming_edge` for related info.
+        """
         # Get column names for local geography.
         column_names = cls._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
