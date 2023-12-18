@@ -2769,8 +2769,8 @@ class DataAccessLayer(object):
         value_column_name: str = 'value',
         reified: bool = False,
     ) -> Generator[Tuple, None, None]:
-        """Yields row tuples of correspondence mapping coming from edge
-        specified by *other_unique_id* and *name*.
+        """Yields row tuples from the correspondence mapping of the
+        edge specified by *edge_id*.
 
         :param cursor: Cursor object for local node instance.
         :param edge_id: The `edge.edge_id` for the specified edge.
@@ -2779,8 +2779,8 @@ class DataAccessLayer(object):
         :param reified: Optional flag indicating whether to return
             reified mapping data. If True, the ambiguous fields will
             be noted in the result records.
-        :return: A generator that yields tuple rows (including a header
-            row) for each individual relation in the edge.
+        :return: A generator that yields a header tuple followed by
+            row tuples for each individual relation in the edge.
 
         See :meth:`DataAccessLayer.get_incoming_edge` for related info.
         """
@@ -2837,8 +2837,8 @@ class DataAccessLayer(object):
         name: str,
         reified: bool = False,
     ) -> Generator[Tuple, None, None]:
-        """Yields row tuples of correspondence mapping coming from edge
-        specified by *other_unique_id* and *name*.
+        """Yields row tuples from the correspondence mapping of the
+        edge specified by *other_unique_id* and *name*.
 
         By default, any ambiguous relations will be returned in their
         collapsed, partially specified form. Optionally, users can set
@@ -2853,8 +2853,8 @@ class DataAccessLayer(object):
         :param reified: Optional flag indicating whether to return
             reified mapping data. If True, the ambiguous fields will
             be noted in the result records.
-        :return: A generator that yields tuple rows (including a header
-            row) for each individual relation in the edge.
+        :return: A generator that yields a header tuple followed by
+            row tuples for each individual relation in the edge.
 
         .. code-block:: python
 
