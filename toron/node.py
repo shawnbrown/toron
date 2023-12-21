@@ -34,7 +34,10 @@ class Node(object):
         .. code-block::
 
             >>> node = toron.Node()
-            >>> node.add_index_columns(['state', 'county', 'mcd'])
+            >>> node.add_index_columns(['state', 'county', 'town'])
+
+        Index columns are used to store the labels for individual
+        records.
         """
         data = self._dal.get_data(['discrete_categories', 'index_columns'])
 
@@ -112,8 +115,11 @@ class Node(object):
         .. code-block::
 
             >>> node = Node(...)
-            >>> node.add_index_columns(['state', 'county', 'mcd'])
+            >>> node.add_index_columns(['state', 'county', 'town'])
             >>> node.add_discrete_categories([{'state'}, {'state', 'county'}])
+
+        A node's discrete categories are the basis for its levels of
+        granularity.
 
         **Understanding Discrete Categories**
 
@@ -162,7 +168,10 @@ class Node(object):
         .. code-block::
 
             >>> node = Node(...)
-            >>> node.remove_discrete_categories([{'county'}, {'state', 'mcd'}])
+            >>> node.remove_discrete_categories([{'county'}, {'state', 'town'}])
+
+        A node's discrete categories are the basis for its levels of
+        granularity.
         """
         self._dal.remove_discrete_categories(discrete_categories)
 
