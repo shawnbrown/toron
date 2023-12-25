@@ -96,11 +96,21 @@ class Mapper(object):
         self.right_keys = fieldnames[weight_pos+1:]
 
         for row in iterator:
-            left_labels = _dumps(row[:weight_pos])
-            right_labels = _dumps(row[weight_pos+1:])
-            weight = row[weight_pos]
-            sql = 'INSERT INTO temp.source_mapping VALUES (NULL, ?, ?, ?)'
-            self.cur.execute(sql, (left_labels, right_labels, weight))
+            sql = """
+                INSERT INTO temp.source_mapping
+                  (left_labels, right_labels, weight)
+                  VALUES (:left_labels, :right_labels, :weight)
+            """
+            parameters = {
+                'left_labels': _dumps(row[:weight_pos]),
+                'right_labels': _dumps(row[weight_pos+1:]),
+                'weight': row[weight_pos],
+            }
+            try:
+                self.cur.execute(sql, parameters)
+            except sqlite3.IntegrityError as err:
+                msg = f'{err}\nfailed to insert:\n  {tuple(parameters.values())}'
+                raise sqlite3.IntegrityError(msg) from err
 
     @staticmethod
     def _find_matches_format_data(
