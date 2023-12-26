@@ -4541,6 +4541,8 @@ class TestGetIncomingEdge(unittest.TestCase):
             categories=[{'A'}, {'A', 'B'}, {'A', 'C'}],
             weight_col='population',
         )
+
+        # Load complete edge for testing.
         self.load_edge(
             self.dal,
             data=[                                      # mapping vals -> matched records
@@ -4561,7 +4563,25 @@ class TestGetIncomingEdge(unittest.TestCase):
             complete=1,
         )
 
-    def test_reconstructed_mapping(self):
+        # Load partial edge for testing.
+        self.load_edge(
+            self.dal,
+            data=[                                      # mapping vals -> matched records
+                (14, 5,  25, 0.25, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/a
+                (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/b
+                (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
+                (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
+                (0,  0,   0, 1.00, None),               # -/-/- -> -/-/- (undefined point)
+                # Partially complete (items 1, 2, 3, and 4 are not mapped)
+            ],
+            edge_id=3,
+            name='alternate_population',
+            unique_id='222-22-22-2222',
+            filename_hint='myfile2.toron',
+            complete=0,
+        )
+
+    def test_reconstructed_complete_mapping(self):
         result = self.dal.get_incoming_edge(
             other_unique_id='222-22-22-2222',
             name='population',
@@ -4577,7 +4597,25 @@ class TestGetIncomingEdge(unittest.TestCase):
         ]
         self.assertEqual(list(result), expected)
 
-    def test_reified_mapping(self):
+    def test_reconstructed_partial_mapping(self):
+        result = self.dal.get_incoming_edge(
+            other_unique_id='222-22-22-2222',
+            name='alternate_population',
+        )
+        expected = [
+            ('other_index_id', 'alternate_population', 'A', 'B', 'C'),
+            (0,     0.0, '-',   '-',  '-'),
+            (15,  100.0, 'bar', None, None),
+            (14,  100.0, 'bar', 'x',  None),
+            (None, None, 'foo', 'x', 'a'),  # <- Unmapped
+            (None, None, 'foo', 'x', 'b'),  # <- Unmapped
+            (None, None, 'foo', 'y', 'c'),  # <- Unmapped
+            (None, None, 'foo', 'y', 'd'),  # <- Unmapped
+        ]
+        msg = 'the id and weight for unmapped items should be None'
+        self.assertEqual(list(result), expected, msg=msg)
+
+    def test_reified_complete_mapping(self):
         result = self.dal.get_incoming_edge(
             other_unique_id='222-22-22-2222',
             name='population',
@@ -4596,6 +4634,27 @@ class TestGetIncomingEdge(unittest.TestCase):
             (13, 100.0, 'foo', 'y', 'd', 'C'),
         ]
         self.assertEqual(list(result), expected)
+
+    def test_reified_partial_mapping(self):
+        result = self.dal.get_incoming_edge(
+            other_unique_id='222-22-22-2222',
+            name='alternate_population',
+            reified=True,
+        )
+        expected = [
+            ('other_index_id', 'alternate_population', 'A', 'B', 'C', 'ambiguous_fields'),
+            (0,     0.0, '-',   '-', '-', None),
+            (14,   25.0, 'bar', 'x', 'a', 'C'),
+            (14,   75.0, 'bar', 'x', 'b', 'C'),
+            (15,   50.0, 'bar', 'y', 'c', 'B, C'),
+            (15,   50.0, 'bar', 'y', 'd', 'B, C'),
+            (None, None, 'foo', 'x', 'a', None),  # <- Unmapped
+            (None, None, 'foo', 'x', 'b', None),  # <- Unmapped
+            (None, None, 'foo', 'y', 'c', None),  # <- Unmapped
+            (None, None, 'foo', 'y', 'd', None),  # <- Unmapped
+        ]
+        msg = 'the id and weight for unmapped items should be None'
+        self.assertEqual(list(result), expected, msg=msg)
 
 
 class TestTranslate(unittest.TestCase):
