@@ -319,7 +319,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
 
         info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
-            node=self.node,
+            dal_or_node=self.node,
             cursor=self.cursor,
             side='right',
             run_ids=run_ids,
@@ -342,7 +342,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
 
         info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
-            node=self.node,
+            dal_or_node=self.node,
             cursor=self.cursor,
             side='right',
             run_ids=run_ids,
@@ -376,7 +376,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
 
         info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
-            node=self.node,
+            dal_or_node=self.node,
             cursor=self.cursor,
             side='right',
             run_ids=run_ids,
@@ -410,7 +410,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
 
         info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
-            node=self.node,
+            dal_or_node=self.node,
             cursor=self.cursor,
             side='right',
             run_ids=run_ids,

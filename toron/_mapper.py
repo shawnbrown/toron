@@ -33,7 +33,17 @@ from ._utils import (
 )
 
 if TYPE_CHECKING:
+    from ._dal import DataAccessLayer
     from .node import Node
+
+
+def _get_dal(
+    dal_or_node: Union['DataAccessLayer', 'Node']
+) -> 'DataAccessLayer':
+    """Helper function to return DataAccessLayer."""
+    if hasattr(dal_or_node, '_dal'):
+        return dal_or_node._dal
+    return dal_or_node
 
 
 class Mapper(object):
@@ -114,7 +124,7 @@ class Mapper(object):
 
     @staticmethod
     def _find_matches_format_data(
-        node: 'Node',
+        dal_or_node: Union['DataAccessLayer', 'Node'],
         column_names: Sequence[str],
         iterable: Iterable[Tuple[str, int]],
     ) -> Iterator[Tuple[List[int], Dict[str, str], Iterator[Tuple]]]:
@@ -175,8 +185,9 @@ class Mapper(object):
         except ValueError:  # If no items to unpack, assign empty tuples.
             where_dicts, grouped_run_ids = (), ()
 
-        # Get node matches (NOTE: accessing internal ``_dal`` directly).
-        grouped_matches = node._dal.index_records_grouped(where_dicts)
+        # Get node matches.
+        dal = _get_dal(dal_or_node)
+        grouped_matches = dal.index_records_grouped(where_dicts)
 
         # Reformat records for output.
         zipped = zip(grouped_run_ids, grouped_matches)
@@ -231,7 +242,7 @@ class Mapper(object):
 
     @staticmethod
     def _match_ambiguous_or_get_info(
-        node: 'Node',
+        dal_or_node: Union['DataAccessLayer', 'Node'],
         cursor: sqlite3.Cursor,
         side: Literal['left', 'right'],
         run_ids: List[int],
@@ -243,10 +254,9 @@ class Mapper(object):
         """Add ambiguous match or return match info."""
         info_dict: Dict[str, Any] = {}
 
-        # Get records (NOTE: accessing internal ``_dal`` directly).
-        records = list(
-            node._dal.weight_records(weight_name, **where_dict)
-        )
+        # Get records.
+        dal = _get_dal(dal_or_node)
+        records = list(dal.weight_records(weight_name, **where_dict))
 
         # Optionally, filter to records that have not already been
         # matched at a finer-grained/less-ambiguous level.
@@ -359,12 +369,14 @@ class Mapper(object):
 
     def find_matches(
         self,
-        node: 'Node',
+        dal_or_node: Union['DataAccessLayer', 'Node'],
         side: Literal['left', 'right'],
         match_limit: Union[int, float] = 1,
         weight_name: Optional[str] = None,
         allow_overlapping: bool = False,
     ) -> None:
+        dal = _get_dal(dal_or_node)
+
         if side == 'left':
             column_names = self.left_keys
         elif side == 'right':
@@ -388,13 +400,13 @@ class Mapper(object):
         """)
 
         run_ids_key_matches = self._find_matches_format_data(
-            node=node,
+            dal_or_node=dal,
             column_names=column_names,
             iterable=self.cur,
         )
 
-        index_columns = node.index_columns()
-        structure_set: Set[Tuple[Literal[0, 1], ...]] = set(node.structure())
+        index_columns = dal.index_columns()
+        structure_set: Set[Tuple[Literal[0, 1], ...]] = set(dal.structure())
 
         list_ambiguous = []
         match_stats: Dict[str, Any] = {
@@ -446,7 +458,7 @@ class Mapper(object):
             # Handle ambiguous matches.
             for run_ids, where_dict, _ in list_ambiguous:
                 info_dict = Mapper._match_ambiguous_or_get_info(
-                    node=node,
+                    dal_or_node=dal,
                     cursor=self.cur,
                     side=side,
                     run_ids=run_ids,
