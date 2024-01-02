@@ -1174,6 +1174,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
                 (13,  4,  50, 0.50, BitFlags(1, 1, 1, 0)),  # foo/y/3/* -> foo/y/3/d
                 (14,  5,  25, 0.25, BitFlags(1, 1, 0, 0)),  # bar/x/*/* -> bar/x/-/a
                 (14,  6,  75, 0.75, BitFlags(1, 1, 0, 0)),  # bar/x/*/* -> bar/x/-/b
+                (0,   0,   0, 1.00, None),                  # undefined -> undefined
             ],
             edge_id=1,
             name='population',
@@ -1198,6 +1199,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             (13, 4,  50.0, 0.5,  BitFlags(1, 1, 0)),  # <- Changed from [1, 1, 1, 0]
             (14, 5,  25.0, 0.25, BitFlags(1, 1, 0)),  # <- Unchanged.
             (14, 6,  75.0, 0.75, BitFlags(1, 1, 0)),  # <- Unchanged.
+            ( 0, 0,   0.0, 1.00, None),               # <- Unchanged.
         ]
         self.assertEqual(actual, expected)
 
@@ -1236,6 +1238,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
                 (13,  4,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
                 (14,  5,  25, 0.25, BitFlags(0, 1, 0)),  #   */z/* -> baz/z/e
                 (14,  6,  75, 0.75, BitFlags(0, 1, 0)),  #   */z/* -> baz/z/f
+                (0,   0,   0, 1.00, None),               # undefined -> undefined
             ],
             edge_id=2,
             name='population',
@@ -1303,6 +1306,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
                 (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/b
                 (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
                 (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
+                (0,  0,   0, 1.00, None),               # -/-/- -> -/-/- (undefined point)
             ],
             edge_id=2,
             name='population',
@@ -1332,6 +1336,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             (15, 6,  37.5, 0.375, BitFlags(1, 0)),  # bar/* -> bar/b
             (15, 7,  25.0, 0.25,  BitFlags(1, 0)),  # bar/* -> bar/c
             (15, 8,  25.0, 0.25,  BitFlags(1, 0)),  # bar/* -> bar/d
+            (0,  0,   0.0, 1.00,  None),            # -/- -> -/- (undefined point)
         }
         self.maxDiff = None
         self.assertEqual(actual, expected)
