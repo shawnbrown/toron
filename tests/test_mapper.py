@@ -876,6 +876,40 @@ class TestMapperFindMatches2(unittest.TestCase):
         self.assertEqual(mapper.cur.fetchall(), expected)
 
 
+class TestMapperAssignMatchesById(unittest.TestCase):
+    def test_other_index_id(self):
+        data = [
+            ('other_index_id', 'population', 'A', 'B'),
+            (0,     0.0, '-',   '-'),
+            (101, 100.0, 'foo', 'x'),
+            (102, 100.0, 'bar', 'y'),
+            (103, 100.0, 'baz', 'z'),
+        ]
+        mapper = Mapper(data, 'population')
+        mapper.assign_matches_by_id(side='left')
+
+        mapper.cur.execute('SELECT * FROM left_matches')
+        expected = [
+            (1, 0, 0.0, 1.0, None),
+            (2, 101, 100.0, 1.0, None),
+            (3, 102, 100.0, 1.0, None),
+            (4, 103, 100.0, 1.0, None),
+        ]
+        self.assertEqual(mapper.cur.fetchall(), expected)
+
+    def test_bad_column_name(self):
+        data = [
+            ('unknown_id', 'population', 'A', 'B'),
+            (101, 100.0, 'foo', 'x'),
+            (102, 100.0, 'bar', 'y'),
+        ]
+        mapper = Mapper(data, 'population')
+
+        regex = "expected 'other_index_id' or 'index_id', got 'unknown_id'"
+        with self.assertRaisesRegex(Exception, regex):
+            mapper.assign_matches_by_id(side='left')
+
+
 class TestGetRelations(TwoNodesBaseTest):
     def test_get_relations(self):
         data = [

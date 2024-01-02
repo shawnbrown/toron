@@ -475,6 +475,40 @@ class Mapper(object):
 
         self._warn_match_stats(**match_stats)
 
+    def assign_matches_by_id(self, side: Literal['left', 'right']) -> None:
+        """Assign matches from "other_index_id" or "index_id" values."""
+        if side == 'left':
+            column_names = self.left_keys
+        elif side == 'right':
+            column_names = self.right_keys
+        else:
+            msg = f"side must be 'left' or 'right', got {side!r}"
+            raise ValueError(msg)
+
+        # Verify that first column is 'other_index_id' or 'index_id.
+        if column_names[0] not in ('other_index_id', 'index_id'):
+            msg = f"expected 'other_index_id' or 'index_id', got {column_names[0]!r}"
+            raise Exception(msg)
+
+        # Prepare parameters for INSERT statement.
+        self.cur.execute(f"""
+            SELECT run_id, {side}_labels, weight
+            FROM temp.source_mapping
+        """)
+        func = lambda row: {'run_id': row[0],
+                            'index_id': _loads(row[1])[0],
+                            'weight_value': row[2]}
+        parameters = [func(row) for row in self.cur]
+
+        # Build and execute INSERT statement.
+        sql = f"""
+            INSERT INTO temp.{side}_matches
+                (run_id, index_id, weight_value, proportion, mapping_level)
+            VALUES
+                (:run_id, :index_id, :weight_value, 1.0, NULL)
+        """
+        self.cur.executemany(sql, parameters)
+
     def get_relations(
         self, side: Literal['left', 'right']
     ) -> Iterable[Tuple[int, int, float, Union[BitFlags, None]]]:
