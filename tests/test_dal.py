@@ -1157,8 +1157,8 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
                 ('foo', 'x', '2', 'b', 100),
                 ('foo', 'y', '3', 'c', 100),
                 ('foo', 'y', '3', 'd', 100),
-                ('bar', 'x', '-', 'a', 100),
-                ('bar', 'x', '-', 'b', 100),
+                ('bar', 'x', '-', 'a',  50),
+                ('bar', 'x', '-', 'b', 150),
             ],
             index_cols=['A', 'B', 'C', 'D'],
             categories=[{'A'}, {'A', 'B'}, {'A', 'B', 'C'}, {'A', 'B', 'D'}],
@@ -1190,17 +1190,17 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         self.dal.remove_index_columns(['C'])  # <- Method under test.
 
         self.cur.execute('SELECT * FROM main.relation')
-        actual = [row[2:] for row in self.cur]  # Slice off relation_id and edge_id.
+        actual = {row[2:] for row in self.cur}  # Slice off relation_id and edge_id.
 
-        expected = [
+        expected = {
             (11, 1, 100.0, 1.0,  None),               # <- Unchanged.
             (12, 2, 100.0, 1.0,  None),               # <- Unchanged.
             (13, 3,  50.0, 0.5,  BitFlags(1, 1, 0)),  # <- Changed from [1, 1, 1, 0]
             (13, 4,  50.0, 0.5,  BitFlags(1, 1, 0)),  # <- Changed from [1, 1, 1, 0]
             (14, 5,  25.0, 0.25, BitFlags(1, 1, 0)),  # <- Unchanged.
             (14, 6,  75.0, 0.75, BitFlags(1, 1, 0)),  # <- Unchanged.
-            ( 0, 0,   0.0, 1.00, None),               # <- Unchanged.
-        ]
+            ( 0, 0,   0.0, 1.0,  None),               # <- Unchanged.
+        }
         self.assertEqual(actual, expected)
 
     def test_preserve_edges_handling(self):
@@ -1262,16 +1262,22 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
 
         # Check result when deleting unrepresentable relations.
         self.dal.remove_index_columns(['B'], preserve_edges=False)  # <- Method under test.
-        self.cur.execute('SELECT * FROM main.relation')
-        expected = [
-            (1, 2, 11,  1, 100.0, 1.00, None),
-            (2, 2, 12,  2, 100.0, 1.00, None),
-            (3, 2, 13,  3,  50.0, 0.50, BitFlags(1, 0, 0)),
-            (4, 2, 13,  4,  50.0, 0.50, BitFlags(1, 0, 0)),
-            # NOTE: Rows 5 and 6 deleted because they are now unrepresentable.
-        ]
-        self.assertEqual(self.cur.fetchall(), expected)
 
+        self.cur.execute('SELECT * FROM main.relation')
+        actual = {row[2:] for row in self.cur}  # Slice off relation_id and edge_id.
+
+        expected = {
+            (11, 1, 100.0, 1.0, None),
+            (12, 2, 100.0, 1.0, None),
+            (13, 3,  50.0, 0.5, BitFlags(1, 0, 0)),
+            (13, 4,  50.0, 0.5, BitFlags(1, 0, 0)),
+            ( 0, 0,   0.0, 1.0, None),
+            # NOTE: Local IDs 5 and 6 are not included in the
+            # new mapping because they are now unrepresentable.
+        }
+        self.assertEqual(actual, expected)
+
+    # PICK-UP HERE!!!
     @unittest.expectedFailure
     def test_rebuild_ambiguous_relations(self):
         """When dataset is coarsened, rebuild ambiguous relations when
@@ -4559,7 +4565,7 @@ class TestGetIncomingEdge(unittest.TestCase):
                 (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/b
                 (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
                 (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
-                (0,  0,   0, 1.00, None),               # -/-/- -> -/-/- (undefined point)
+                (0,  0,   0, 1.00, None),               # undefined -> undefined
             ],
             edge_id=2,
             name='population',
@@ -4576,8 +4582,8 @@ class TestGetIncomingEdge(unittest.TestCase):
                 (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/b
                 (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
                 (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
-                (0,  0,   0, 1.00, None),               # -/-/- -> -/-/- (undefined point)
-                # Partially complete (items 1, 2, 3, and 4 are not mapped)
+                (0,  0,   0, 1.00, None),               # undefined -> undefined
+                # Partially complete (items 1, 2, 3, and 4 are not included)
             ],
             edge_id=3,
             name='alternate_population',
