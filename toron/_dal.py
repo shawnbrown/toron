@@ -52,6 +52,7 @@ from . import _schema
 from ._schema import BitFlags
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
+from ._mapper import Mapper
 from ._utils import (
     ToronError,
     ToronWarning,
@@ -843,9 +844,8 @@ class DataAccessLayer(object):
 
         return sql_statements
 
-    @classmethod
     def _remove_index_columns_execute_sql(
-        cls,
+        self,
         cursor: sqlite3.Cursor,
         columns: Iterable[str],
         *,
@@ -854,7 +854,7 @@ class DataAccessLayer(object):
         preserve_edges: bool,
         #match_limit: Optional[Union[int, float]] = 1,
     ) -> None:
-        column_names = cls._get_column_names(cursor, 'node_index')
+        column_names = self._get_column_names(cursor, 'node_index')
         column_names = column_names[1:]  # Slice-off 'index_id'.
 
         names_to_remove = sorted(set(columns).intersection(column_names))
@@ -863,7 +863,7 @@ class DataAccessLayer(object):
 
         names_remaining = [col for col in column_names if col not in columns]
 
-        categories = cls._get_data_property(cursor, 'discrete_categories') or []
+        categories = self._get_data_property(cursor, 'discrete_categories') or []
         categories = [set(cat) for cat in categories]
         cats_filtered = [cat for cat in categories if not cat.intersection(columns)]
 
@@ -895,20 +895,20 @@ class DataAccessLayer(object):
                 msg = 'cannot remove, columns are needed to preserve granularity'
                 raise ToronError(msg)
 
-            for stmnt in cls._coarsen_records_make_sql(names_remaining):
+            for stmnt in self._coarsen_records_make_sql(names_remaining):
                 cursor.execute(stmnt)
 
-            cls._refresh_index_hash(cursor)
+            self._refresh_index_hash(cursor)
 
         # Clear `structure` table to prevent duplicates when removing columns.
         cursor.execute('DELETE FROM main.structure')
 
         # Remove specified columns.
-        for stmnt in cls._remove_index_columns_make_sql(column_names, names_to_remove):
+        for stmnt in self._remove_index_columns_make_sql(column_names, names_to_remove):
             cursor.execute(stmnt)
 
         # Rebuild categories property and structure table.
-        cls._update_categories_and_structure(cursor, new_categories)
+        self._update_categories_and_structure(cursor, new_categories)
 
         # Get old mapping_level values.
         cursor.execute("""
@@ -965,7 +965,74 @@ class DataAccessLayer(object):
             'UPDATE main.relation SET mapping_level=? WHERE mapping_level=?',
             parameters,
         )
-        # TODO: Handle ambiguous mapping relations.
+
+        # Get edges that contain ambiguous relations.
+        cursor.execute("""
+            SELECT *
+            FROM main.edge
+            WHERE edge_id IN (
+                SELECT DISTINCT edge_id
+                FROM main.relation
+                WHERE mapping_level IS NOT NULL
+            )
+        """)
+        colnames = tuple(x[0] for x in cursor.description)
+        edges_with_ambiguity = [dict(zip(colnames, x)) for x in cursor]
+
+        for edge_dict in edges_with_ambiguity:
+            # Get edge and filter to defined relations (no unmapped records).
+            incoming_edge = self._get_incoming_edge(
+                cursor,
+                edge_dict['edge_id'],
+                edge_dict['name']
+            )
+            defined_relations = (x for x in incoming_edge if x[0] is not None)
+
+            # Load relations into Mapper object and rebuild them.
+            mapper = Mapper(data=defined_relations, name=edge_dict['name'])
+            mapper.assign_matches_by_id('left')
+            mapper.find_matches(
+                dal_or_node=self,
+                side='right',
+                match_limit=12,  # <- Hard-coded value for development only.
+                weight_name=edge_dict['name'],
+                allow_overlapping=False,
+            )
+            rebuilt_relations = mapper.get_relations('right')
+
+            # Delete old edge (deletion cascades to relation records).
+            cursor.execute(
+                'DELETE FROM main.edge WHERE edge_id=?',
+                [edge_dict['edge_id']],
+            )
+
+            # If foreign keys are off, deletion will not cascade and
+            # we need to delete the associated relations explicitly.
+            # This happens when using versions of SQLite older than
+            # 3.35.0 which do not support the DROP COLUMN command.
+            cursor.execute('PRAGMA foreign_keys')
+            foreign_keys_off = not cursor.fetchone()[0]
+            if foreign_keys_off:
+                cursor.execute(
+                    'DELETE FROM main.relation WHERE edge_id=?',
+                    [edge_dict['edge_id']],
+                )
+
+            # Add new edge and rebuilt relations.
+            new_edge_id = self._add_edge_get_new_id(
+                cursor=cursor,
+                unique_id=edge_dict['other_unique_id'],
+                name=edge_dict['name'],
+                description=edge_dict['description'],
+                selectors=edge_dict['selectors'],
+                filename_hint=edge_dict['other_filename_hint'],
+                is_default=edge_dict['is_default'],
+                #user_properties=edge_dict['user_properties'],  # <- ADD THIS!
+            )
+            self._add_edge_relations(cursor, new_edge_id, rebuilt_relations)
+            self._refresh_proportions(cursor, new_edge_id)
+            self._refresh_other_index_hash(cursor, new_edge_id)
+            self._refresh_is_locally_complete(cursor, new_edge_id)
 
     def remove_index_columns(
         self,

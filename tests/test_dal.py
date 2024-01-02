@@ -1277,23 +1277,22 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         }
         self.assertEqual(actual, expected)
 
-    # PICK-UP HERE!!!
-    @unittest.expectedFailure
-    def test_rebuild_ambiguous_relations(self):
-        """When dataset is coarsened, rebuild ambiguous relations when
-        possible.
+    def test_coarsening_relations_and_increasing_ambiguity(self):
+        """When ambiguous relations are made *more* ambiguous by the
+        coarsening of a dataset, the relations should be rebuilt to
+        use the remaining labels.
         """
         self.load_data(
             self.dal,
             data=[
                 ('A', 'B', 'C', 'population'),
-                ('foo', 'x', 'a', 125),
-                ('foo', 'x', 'b',  75),
+                ('foo', 'x', 'a', 150),
+                ('foo', 'x', 'b',  50),
                 ('foo', 'y', 'c', 100),
-                ('foo', 'y', 'd', 100),
+                ('foo', 'y', 'd', 200),
                 ('bar', 'x', 'a',  50),
-                ('bar', 'x', 'b', 125),
-                ('bar', 'y', 'c', 125),
+                ('bar', 'x', 'b', 150),
+                ('bar', 'y', 'c', 100),
                 ('bar', 'y', 'd', 100),
             ],
             index_cols=['A', 'B', 'C'],
@@ -1312,7 +1311,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
                 (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/b
                 (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
                 (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
-                (0,  0,   0, 1.00, None),               # -/-/- -> -/-/- (undefined point)
+                ( 0, 0,   0, 1.00, None),               # undefined -> undefined
             ],
             edge_id=2,
             name='population',
@@ -1342,7 +1341,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
             (15, 6,  37.5, 0.375, BitFlags(1, 0)),  # bar/* -> bar/b
             (15, 7,  25.0, 0.25,  BitFlags(1, 0)),  # bar/* -> bar/c
             (15, 8,  25.0, 0.25,  BitFlags(1, 0)),  # bar/* -> bar/d
-            (0,  0,   0.0, 1.00,  None),            # -/- -> -/- (undefined point)
+            (0,  0,   0.0, 1.00,  None),            # undefined -> undefined
         }
         self.maxDiff = None
         self.assertEqual(actual, expected)
