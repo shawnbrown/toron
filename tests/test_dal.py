@@ -1277,9 +1277,9 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         }
         self.assertEqual(actual, expected)
 
-    def test_coarsening_relations_and_increasing_ambiguity(self):
+    def test_increasing_ambiguity(self):
         """When ambiguous relations are made *more* ambiguous by the
-        coarsening of a dataset, the relations should be rebuilt to
+        removal of an index column, the relations should be rebuilt to
         use the remaining labels.
         """
         self.load_data(
