@@ -690,10 +690,61 @@ class DataAccessLayer(object):
             )
         ''')
 
-        # TODO: Add missing `relation.index_id` values needed for aggregation.
-        # TODO: Assign summed `proportion` to `relation` records being kept.
-        # TODO: Discard old `relation` records.
-        # TODO: Update `relation.mapping_level` codes.
+        # Add any missing `edge_id`, `other_index_id`, `mapping_level`
+        # and `index_id` values needed for aggregation to the `relation`
+        # table. This is necessary because not every `other_index_id`
+        # is guaranteed to have every possible combination of `index_id`
+        # and `mapping_level` values. And the coarsening process may
+        # aggregate records using a combination of `index_id` and
+        # `mapping_level` values that are not currently defined in the
+        # `relation` table.
+        sql_statements.append('''
+            WITH
+                MatchingRecords AS (
+                    SELECT edge_id, other_index_id, mapping_level, index_id, new_index_id
+                    FROM main.relation
+                    JOIN temp.old_to_new_index_id USING (index_id)
+                ),
+                MissingIDs AS (
+                    SELECT DISTINCT edge_id, other_index_id, mapping_level, new_index_id FROM MatchingRecords
+                    EXCEPT
+                    SELECT DISTINCT edge_id, other_index_id, mapping_level, index_id FROM MatchingRecords
+                )
+            INSERT INTO main.relation (edge_id, other_index_id, mapping_level, index_id, relation_value, proportion)
+            SELECT edge_id, other_index_id, mapping_level, new_index_id, 0.0, 0.0
+            FROM MissingIDs
+        ''')
+
+        # Assign summed values and proportions to `relation` records being kept.
+        sql_statements.append('''
+            UPDATE main.relation
+            SET relation_value=summed_value, proportion=summed_proportion
+            FROM (
+                SELECT edge_id AS old_edge_id,
+                       other_index_id AS old_other_index_id,
+                       mapping_level AS old_mapping_level,
+                       new_index_id,
+                       SUM(relation_value) AS summed_value,
+                       SUM(proportion) AS summed_proportion
+                FROM main.relation
+                JOIN temp.old_to_new_index_id USING (index_id)
+                GROUP BY edge_id, other_index_id, mapping_level, new_index_id
+            )
+            WHERE edge_id=old_edge_id
+                  AND other_index_id=old_other_index_id
+                  AND mapping_level IS old_mapping_level
+                  AND index_id=new_index_id
+        ''')
+
+        # Discard old `relation` records.
+        sql_statements.append('''
+            DELETE FROM main.relation
+            WHERE index_id IN (
+                SELECT index_id
+                FROM temp.old_to_new_index_id
+                WHERE index_id != new_index_id
+            )
+        ''')
 
         # Discard old `node_index` records.
         sql_statements.append('''

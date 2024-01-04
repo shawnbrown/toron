@@ -1346,6 +1346,117 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         self.maxDiff = None
         self.assertEqual(actual, expected)
 
+    def test_coarsen_with_exact_relations(self):
+        self.load_data(
+            self.dal,
+            data=[
+                ('A', 'B', 'C', 'population'),
+                ('foo', 'x', 'a', 150),
+                ('foo', 'x', 'b',  50),
+                ('foo', 'y', 'c', 100),
+                ('foo', 'y', 'd', 200),
+                ('bar', 'x', 'a',  50),
+                ('bar', 'x', 'b', 150),
+                ('bar', 'y', 'c', 100),
+                ('bar', 'y', 'd', 100),
+            ],
+            index_cols=['A', 'B', 'C'],
+            categories=[{'A'}, {'A', 'B'}],
+            weight_col='population',
+        )
+
+        self.load_edge(
+            self.dal,
+            data=[
+                (11, 1,  75, 0.75, None),  # foo/x/a
+                (11, 2,  25, 0.25, None),  # foo/x/b
+                (12, 3, 100, 1.00, None),  # foo/y/c
+                (13, 4, 100, 1.00, None),  # foo/y/d
+                (14, 5,  25, 0.25, None),  # bar/x/a
+                (14, 6,  75, 0.75, None),  # bar/x/b
+                (15, 7,  50, 0.50, None),  # bar/y/c
+                (15, 8,  50, 0.50, None),  # bar/y/d
+                ( 0, 0,   0, 1.00, None),  # undefined
+            ],
+            edge_id=2,
+            name='population',
+            unique_id='222-22-22-2222',
+            filename_hint='myfile2.toron',
+            complete=1,
+        )
+
+        self.dal.remove_index_columns(['C'], preserve_granularity=False)  # <- Method under test.
+
+        self.cur.execute('SELECT * FROM main.relation')
+        actual = {row[2:] for row in self.cur}  # Slice off relation_id and edge_id.
+
+        expected = {
+            (11, 1, 100, 1.0, None),  # foo/x
+            (12, 3, 100, 1.0, None),  # foo/y
+            (13, 3, 100, 1.0, None),  # foo/y (old id 4 aggregated to id 3)
+            (14, 5, 100, 1.0, None),  # bar/x
+            (15, 7, 100, 1.0, None),  # bar/y
+            ( 0, 0,   0, 1.0, None),  # undefined
+        }
+        self.maxDiff = None
+        self.assertEqual(actual, expected)
+
+    def test_coarsen_with_ambiguous_relations(self):
+        self.load_data(
+            self.dal,
+            data=[
+                ('A', 'B', 'C', 'population'),
+                ('foo', 'x', 'a', 150),
+                ('foo', 'x', 'b',  50),
+                ('foo', 'y', 'c', 100),
+                ('foo', 'y', 'd', 200),
+                ('bar', 'x', 'a',  50),
+                ('bar', 'x', 'b', 150),
+                ('bar', 'y', 'c', 100),
+                ('bar', 'y', 'd', 100),
+            ],
+            index_cols=['A', 'B', 'C'],
+            categories=[{'A'}, {'A', 'B'}],
+            weight_col='population',
+        )
+
+        self.load_edge(
+            self.dal,
+            data=[                                      # mapping vals -> matched records
+                (11, 1,  75, 0.75, BitFlags(1, 1, 0)),  # foo/x/* -> foo/x/a
+                (11, 2,  25, 0.25, BitFlags(1, 1, 0)),  # foo/x/* -> foo/x/b
+                (12, 3,  50, 0.50, BitFlags(1, 0, 0)),  # foo/*/* -> foo/y/c
+                (12, 4,  50, 0.50, BitFlags(1, 0, 0)),  # foo/*/* -> foo/y/c
+                (13, 4, 100, 1.00, BitFlags(1, 0, 0)),  # foo/*/* -> foo/y/d
+                (14, 5,  25, 0.25, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/a
+                (14, 6,  75, 0.75, BitFlags(1, 1, 0)),  # bar/x/* -> bar/x/b
+                (15, 7,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/c
+                (15, 8,  50, 0.50, BitFlags(1, 0, 0)),  # bar/*/* -> bar/y/d
+                ( 0, 0,   0, 1.00, None),               # undefined -> undefined
+            ],
+            edge_id=2,
+            name='population',
+            unique_id='222-22-22-2222',
+            filename_hint='myfile2.toron',
+            complete=1,
+        )
+
+        self.dal.remove_index_columns(['C'], preserve_granularity=False)  # <- Method under test.
+
+        self.cur.execute('SELECT * FROM main.relation')
+        actual = {row[2:] for row in self.cur}  # Slice off relation_id and edge_id.
+
+        expected = {                            # mapping vals -> matched records
+            (11, 1, 100, 1.0, None),            # foo/x -> foo/x
+            (12, 3, 100, 1.0, BitFlags(1, 0)),  # foo/* -> foo/x
+            (13, 3, 100, 1.0, BitFlags(1, 0)),  # foo/* -> foo/y (old id 4 aggregated to id 3)
+            (14, 5, 100, 1.0, None),            # bar/x -> bar/x
+            (15, 7, 100, 1.0, BitFlags(1, 0)),  # bar/* -> bar/y
+            ( 0, 0,   0, 1.0, None),            # undefined -> undefined
+        }
+        self.maxDiff = None
+        self.assertEqual(actual, expected)
+
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
 class TestRemoveIndexColumnsWithEdges(TestRemoveIndexColumnsWithEdgesMixin, unittest.TestCase):
