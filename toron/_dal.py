@@ -716,25 +716,64 @@ class DataAccessLayer(object):
         ''')
 
         # Assign summed values and proportions to `relation` records being kept.
-        sql_statements.append('''
-            UPDATE main.relation
-            SET relation_value=summed_value, proportion=summed_proportion
-            FROM (
-                SELECT edge_id AS old_edge_id,
-                       other_index_id AS old_other_index_id,
-                       mapping_level AS old_mapping_level,
-                       new_index_id,
-                       SUM(relation_value) AS summed_value,
-                       SUM(proportion) AS summed_proportion
-                FROM main.relation
-                JOIN temp.old_to_new_index_id USING (index_id)
-                GROUP BY edge_id, other_index_id, mapping_level, new_index_id
-            )
-            WHERE edge_id=old_edge_id
-                  AND other_index_id=old_other_index_id
-                  AND mapping_level IS old_mapping_level
-                  AND index_id=new_index_id
-        ''')
+        if _SQLITE_VERSION_INFO >= (3, 33, 0):
+            # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
+            sql_statements.append('''
+                UPDATE main.relation
+                SET relation_value=summed_value, proportion=summed_proportion
+                FROM (
+                    SELECT edge_id AS old_edge_id,
+                        other_index_id AS old_other_index_id,
+                        mapping_level AS old_mapping_level,
+                        new_index_id,
+                        SUM(relation_value) AS summed_value,
+                        SUM(proportion) AS summed_proportion
+                    FROM main.relation
+                    JOIN temp.old_to_new_index_id USING (index_id)
+                    GROUP BY edge_id, other_index_id, mapping_level, new_index_id
+                )
+                WHERE edge_id=old_edge_id
+                    AND other_index_id=old_other_index_id
+                    AND mapping_level IS old_mapping_level
+                    AND index_id=new_index_id
+            ''')
+        else:
+            sql_statements.append('''
+                WITH
+                    SummedValues AS (
+                        SELECT a.edge_id,
+                               a.other_index_id,
+                               b.new_index_id,
+                               SUM(a.relation_value) AS summed_relation_value,
+                               SUM(a.proportion) AS summed_proportion,
+                               a.mapping_level
+                        FROM main.relation a
+                        JOIN temp.old_to_new_index_id b ON (a.index_id=b.index_id)
+                        GROUP BY a.edge_id, a.other_index_id, b.new_index_id, a.mapping_level
+                    ),
+                    RecordsToUpdate AS (
+                        SELECT a.relation_id AS record_id,
+                               b.summed_relation_value,
+                               b.summed_proportion
+                        FROM main.relation a
+                        JOIN SummedValues b ON (a.edge_id=b.edge_id
+                                                AND a.other_index_id=b.other_index_id
+                                                AND a.index_id=b.new_index_id
+                                                AND a.mapping_level IS b.mapping_level)
+                    )
+                UPDATE main.relation
+                SET relation_value = (
+                        SELECT summed_relation_value
+                        FROM RecordsToUpdate
+                        WHERE relation_id=record_id
+                    ),
+                    proportion = (
+                        SELECT summed_proportion
+                        FROM RecordsToUpdate
+                        WHERE relation_id=record_id
+                    )
+                WHERE relation_id IN (SELECT record_id FROM RecordsToUpdate)
+            ''')
 
         # Discard old `relation` records.
         sql_statements.append('''
