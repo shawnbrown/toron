@@ -972,7 +972,7 @@ class DataAccessLayer(object):
             new_categories = []
             for cat in categories:
                 cat = cat.difference(names_to_remove)
-                if cat and cat not in new_categories:
+                if cat and (cat not in new_categories):
                     new_categories.append(cat)
         else:
             new_categories = cats_filtered
