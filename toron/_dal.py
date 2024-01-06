@@ -877,14 +877,17 @@ class DataAccessLayer(object):
             # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
             sql_statements.append('''
                 UPDATE main.quantity
-                SET quantity_value=summed_value
-                FROM (SELECT attributes AS old_attributes,
-                             new_location_id,
-                             SUM(quantity_value) AS summed_value
-                      FROM main.quantity
-                      JOIN temp.old_to_new_location_id USING (_location_id)
-                      GROUP BY attributes, new_location_id)
-                WHERE attributes=old_attributes AND _location_id=new_location_id
+                SET quantity_value=c.summed_value
+                FROM (
+                    SELECT a.attributes,
+                           b.new_location_id,
+                           SUM(a.quantity_value) AS summed_value
+                    FROM main.quantity a
+                    JOIN temp.old_to_new_location_id b USING (_location_id)
+                    GROUP BY a.attributes, b.new_location_id
+                ) AS c
+                WHERE main.quantity.attributes=c.attributes
+                      AND _location_id=c.new_location_id
             ''')
         else:
             sql_statements.append('''
