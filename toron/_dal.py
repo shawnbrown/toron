@@ -647,14 +647,17 @@ class DataAccessLayer(object):
             # The "UPDATE FROM" syntax was introduced in SQLite 3.33.0.
             sql_statements.append('''
                 UPDATE main.weight
-                SET weight_value=summed_value
-                FROM (SELECT weighting_id AS old_weighting_id,
-                             new_index_id,
-                             SUM(weight_value) AS summed_value
-                      FROM main.weight
-                      JOIN temp.old_to_new_index_id USING (index_id)
-                      GROUP BY weighting_id, new_index_id)
-                WHERE weighting_id=old_weighting_id AND index_id=new_index_id
+                SET weight_value=c.summed_weight_value
+                FROM (
+                    SELECT a.weighting_id,
+                           b.new_index_id,
+                           SUM(a.weight_value) AS summed_weight_value
+                      FROM main.weight a
+                      JOIN temp.old_to_new_index_id b USING (index_id)
+                      GROUP BY a.weighting_id, b.new_index_id
+                ) AS c
+                WHERE main.weight.weighting_id=c.weighting_id
+                      AND main.weight.index_id=c.new_index_id
             ''')
         else:
             sql_statements.append('''
