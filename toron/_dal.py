@@ -663,20 +663,20 @@ class DataAccessLayer(object):
             sql_statements.append('''
                 WITH
                     SummedValues AS (
-                        SELECT weighting_id, new_index_id, SUM(weight_value) AS summed_value
-                        FROM main.weight
-                        JOIN temp.old_to_new_index_id USING (index_id)
-                        GROUP BY weighting_id, new_index_id
+                        SELECT a.weighting_id, b.new_index_id, SUM(a.weight_value) AS summed_weight_value
+                        FROM main.weight a
+                        JOIN temp.old_to_new_index_id b USING (index_id)
+                        GROUP BY a.weighting_id, b.new_index_id
                     ),
                     RecordsToUpdate AS (
-                        SELECT weight_id AS record_id, summed_value
+                        SELECT a.weight_id AS record_id, b.summed_weight_value
                         FROM main.weight a
                         JOIN SummedValues b
                         ON (a.weighting_id=b.weighting_id AND a.index_id=b.new_index_id)
                     )
                 UPDATE main.weight
                 SET weight_value = (
-                    SELECT summed_value
+                    SELECT summed_weight_value
                     FROM RecordsToUpdate
                     WHERE weight_id=record_id
                 )
