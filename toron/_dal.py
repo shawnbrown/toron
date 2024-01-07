@@ -1487,10 +1487,10 @@ class DataAccessLayer(object):
         cursor.execute(select_sql, values)
         location_id = cursor.fetchone()
         if location_id:
-            if cursor.fetchone() is not None:
-                raise RuntimeError(
-                    f'multiple location ids for given labels: {dict(labels)!r}'
-                )
+            second_location_id = cursor.fetchone()
+            if second_location_id:
+                msg  = f'multiple location ids for given labels: {dict(labels)!r}'
+                raise RuntimeError(msg)
             return location_id[0]  # <- EXIT!
 
         insert_sql = f"""
