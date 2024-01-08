@@ -1503,6 +1503,32 @@ class DataAccessLayer(object):
         return cursor.lastrowid
 
     @staticmethod
+    def _add_quantities_get_attribute_id(
+        cursor: sqlite3.Cursor,
+        attribute_value: str,
+    ) -> int:
+        """Return attribute_id for given attribute value. If attribute
+        does not exist, create it and return its id.
+        """
+        # If attribute already exists, return its attribute_id.
+        select_sql = """
+            SELECT attribute_id
+            FROM main.attribute
+            WHERE attribute_value=?
+        """
+        cursor.execute(select_sql, (attribute_value,))
+        attribute_id = cursor.fetchone()
+        if attribute_id:
+            return attribute_id[0]  # <- EXIT!
+
+        # If attribute does not exist, add it and return its attribute_id.
+        insert_sql = 'INSERT INTO main.attribute(attribute_value) VALUES(?)'
+        cursor.execute(insert_sql, (attribute_value,))
+        if not cursor.lastrowid:
+            raise RuntimeError('record just inserted, lastrowid should not be None')
+        return cursor.lastrowid
+
+    @staticmethod
     def _add_quantities_warn(
         missing_attrs_count: int,
         missing_vals_count: int,
