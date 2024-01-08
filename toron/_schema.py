@@ -128,6 +128,12 @@ _schema_script = """
         /* label columns added programmatically */
     );
 
+    CREATE TABLE main.attribute(
+        attribute_id INTEGER PRIMARY KEY,
+        attribute_value TEXT_ATTRIBUTES NOT NULL,
+        UNIQUE (attribute_value)
+    );
+
     CREATE TABLE main.quantity(
         quantity_id INTEGER PRIMARY KEY,
         _location_id INTEGER,
