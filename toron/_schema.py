@@ -8,20 +8,22 @@ and pipe characters ('-' and '|'). Other, more complex relationships
 are represented with bullet points ('•') and these are enforced at
 the application layer:
 
-                                 +----------------+
- +----------------------+        | relation       |
- | edge                 |        +----------------+
- +----------------------+        | relation_id    |     ••••• <Other Node>
- | edge_id              |------->| edge_id        |     •
- | name                 |  ••••••| other_index_id |<•••••
- | description          |  •  •••| index_id       |<-+     +----------------+
- | selectors            |  •  •  | relation_value |  |     | quantity       |
- | user_properties      |  •  •  | proportion*    |  |     +----------------+
- | other_unique_id      |  •  •  | mapping_level* |  |     | quantity_id    |
- | other_filename_hint  |  •  •  +----------------+  |  +->| _location_id   |
- | other_index_hash*    |<••  •                      |  |  | attributes     |
- | is_locally_complete* |<•••••                      |  |  | quantity_value |
- | is_default           |          +-----------------+  |  +----------------+
+                                    <Other Node> ••••••••
+                                                        •  +-----------------+
+                                 +----------------+     •  | attribute       |
+ +----------------------+        | relation       |     •  +-----------------+
+ | edge                 |        +----------------+     •  | attribute_id    |--+
+ +----------------------+        | relation_id    |     •  | attribute_value |  |
+ | edge_id              |------->| edge_id        |     •  +-----------------+  |
+ | name                 |  ••••••| other_index_id |<•••••                       |
+ | description          |  •  •••| index_id       |<-+     +-----------------+  |
+ | selectors            |  •  •  | relation_value |  |     | quantity        |  |
+ | user_properties      |  •  •  | proportion*    |  |     +-----------------+  |
+ | other_unique_id      |  •  •  | mapping_level* |  |     | quantity_id     |  |
+ | other_filename_hint  |  •  •  +----------------+  |  +->| _location_id    |  |
+ | other_index_hash*    |<••  •                      |  |  | attribute_id    |<-+
+ | is_locally_complete* |<•••••                      |  |  | quantity_value  |
+ | is_default           |          +-----------------+  |  +-----------------+
  +----------------------+          |                    |
                                    |                    |  +---------------+
                    +------------+  |  +--------------+  |  | structure     |
