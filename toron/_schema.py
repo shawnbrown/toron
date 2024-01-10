@@ -137,9 +137,10 @@ _schema_script = """
     CREATE TABLE main.quantity(
         quantity_id INTEGER PRIMARY KEY,
         _location_id INTEGER,
-        attributes TEXT_ATTRIBUTES NOT NULL,
+        attribute_id INTEGER,
         quantity_value NUMERIC NOT NULL,
-        FOREIGN KEY(_location_id) REFERENCES location(_location_id)
+        FOREIGN KEY(_location_id) REFERENCES location(_location_id),
+        FOREIGN KEY(attribute_id) REFERENCES attribute(attribute_id) ON DELETE CASCADE
     );
 
     CREATE TABLE main.weighting(
@@ -906,8 +907,8 @@ def _add_functions_and_triggers(connection):
     connection.execute(_sql_trigger_validate_userproperties('INSERT', 'edge', 'user_properties'))
     connection.execute(_sql_trigger_validate_userproperties('UPDATE', 'edge', 'user_properties'))
 
-    connection.execute(_sql_trigger_validate_attributes('INSERT', 'quantity', 'attributes'))
-    connection.execute(_sql_trigger_validate_attributes('UPDATE', 'quantity', 'attributes'))
+    connection.execute(_sql_trigger_validate_attributes('INSERT', 'attribute', 'attribute_value'))
+    connection.execute(_sql_trigger_validate_attributes('UPDATE', 'attribute', 'attribute_value'))
 
     connection.execute(_sql_trigger_validate_selectors('INSERT', 'edge', 'selectors'))
     connection.execute(_sql_trigger_validate_selectors('UPDATE', 'edge', 'selectors'))
