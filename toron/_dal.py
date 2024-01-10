@@ -3376,14 +3376,14 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
 
         # Build WHERE clause if *filter_attrs_func* was given.
         if filter_attrs_func:
-            where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
+            where_clause = f'\n            WHERE {filter_attrs_func}(t1b.attribute_value)=1'
         else:
             where_clause = ''
 
         statement = f"""
             SELECT
                 t3.index_id,
-                t1.attributes,
+                t1b.attribute_value,
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / (
                         SELECT SUM(sub4.weight_value)
@@ -3403,11 +3403,12 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                     ))
                 ) AS quantity_value
             FROM main.quantity t1
+            JOIN main.attribute t1b USING (attribute_id)
             JOIN main.location t2 USING (_location_id)
             JOIN main.node_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
-                AND t4.weighting_id={match_selector_func}(t1.attributes)
+                AND t4.weighting_id={match_selector_func}(t1b.attribute_value)
             ){where_clause}
         """
         return statement
@@ -3439,7 +3440,7 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
 
         # Build WHERE clause if *filter_attrs_func* was given.
         if filter_attrs_func:
-            where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
+            where_clause = f'\n            WHERE {filter_attrs_func}(t1b.attribute_value)=1'
         else:
             where_clause = ''
 
@@ -3456,23 +3457,24 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
         statement = f"""
             SELECT
                 t3.index_id,
-                t1.attributes,
+                t1b.attribute_value,
                 t1.quantity_value * COALESCE(
                     (COALESCE(t5.weight_value, 0.0) / (
                         SELECT SUM(sub4.weight_value)
                         FROM main.quantity sub1
+                        JOIN main.attribute sub1b USING (attribute_id)
                         JOIN main.location sub2 USING (_location_id)
                         JOIN main.node_index sub3 ON ({subquery_join_constraints})
                         LEFT JOIN (
                             SELECT
                                 sub4sub.index_id,
-                                user_json_object_keep(sub4sub.attributes{keys_to_keep}) AS attrs_subset,
+                                user_json_object_keep(sub4sub.attribute_value{keys_to_keep}) AS attrs_subset,
                                 SUM(sub4sub.quantity_value) AS weight_value
                             FROM {adaptive_weight_table} sub4sub
-                            GROUP BY sub4sub.index_id, user_json_object_keep(sub4sub.attributes{keys_to_keep})
+                            GROUP BY sub4sub.index_id, user_json_object_keep(sub4sub.attribute_value{keys_to_keep})
                         ) sub4 ON (
                             sub3.index_id=sub4.index_id
-                            AND sub4.attrs_subset=user_json_object_keep(sub1.attributes{keys_to_keep})
+                            AND sub4.attrs_subset=user_json_object_keep(sub1b.attribute_value{keys_to_keep})
                         )
                         WHERE sub1.quantity_id=t1.quantity_id
                     )),
@@ -3494,25 +3496,26 @@ class DataAccessLayerPre25(DataAccessLayerPre35):
                     ))
                 ) AS quantity_value
             FROM main.quantity t1
+            JOIN main.attribute t1b USING (attribute_id)
             JOIN main.location t2 USING (_location_id)
             JOIN main.node_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
-                AND t4.weighting_id={match_selector_func}(t1.attributes)
+                AND t4.weighting_id={match_selector_func}(t1b.attribute_value)
             )
             LEFT JOIN (
                 SELECT
                     t5sub.index_id,
-                    user_json_object_keep(t5sub.attributes{keys_to_keep}) AS attrs_subset,
+                    user_json_object_keep(t5sub.attribute_value{keys_to_keep}) AS attrs_subset,
                     SUM(t5sub.quantity_value) AS weight_value
                 FROM {adaptive_weight_table} t5sub
-                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attributes{keys_to_keep})
+                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attribute_value{keys_to_keep})
             ) t5 ON (
                 t3.index_id=t5.index_id
-                AND t5.attrs_subset=user_json_object_keep(t1.attributes{keys_to_keep})
+                AND t5.attrs_subset=user_json_object_keep(t1b.attribute_value{keys_to_keep})
             ){where_clause}
             UNION ALL
-            SELECT index_id, attributes, quantity_value FROM {adaptive_weight_table}
+            SELECT index_id, attribute_value, quantity_value FROM {adaptive_weight_table}
         """
         return statement
 
