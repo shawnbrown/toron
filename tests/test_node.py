@@ -231,11 +231,19 @@ class TestNodeWrapperMethods(unittest.TestCase):
         ]
         self.assertEqual(self.cursor.fetchall(), expected)
 
+        self.cursor.execute('SELECT * FROM attribute')
+        expected = [
+            (1, {'attr1': 'foo', 'attr2': 'corge'}),
+            (2, {'attr1': 'bar', 'attr2': 'qux'}),
+            (3, {'attr1': 'baz', 'attr2': 'quux'}),
+        ]
+        self.assertEqual(self.cursor.fetchall(), expected)
+
         self.cursor.execute('SELECT * FROM quantity')
         expected = [
-            (1, 1, {'attr1': 'foo', 'attr2': 'corge'}, 12),
-            (2, 2, {'attr1': 'bar', 'attr2': 'qux'}, 10),
-            (3, 3, {'attr1': 'baz', 'attr2': 'quux'}, 15),
+            (1, 1, 1, 12),
+            (2, 2, 2, 10),
+            (3, 3, 3, 15),
         ]
         self.assertEqual(self.cursor.fetchall(), expected)
 

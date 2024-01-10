@@ -983,10 +983,11 @@ class TestRemoveIndexColumnsMixin(object):
         )
 
         actual = self.cur.execute('''
-            SELECT a.*, b.attributes, b.quantity_value
+            SELECT a.*, c.attribute_value, b.quantity_value
             FROM location a
             JOIN quantity b USING (_location_id)
-            ORDER BY a._location_id, b.attributes
+            JOIN attribute c USING (attribute_id)
+            ORDER BY a._location_id, c.attribute_value
         ''').fetchall()
         expected = [
             (1, 'AZ', {'attr': 'foo'}, 1000),
@@ -2154,11 +2155,16 @@ class TestAddQuantities(unittest.TestCase):
         (2, 'OH', 'FRANKLIN')
     ]
 
+    sample_attribute_records = [
+        (1, {'census': 'TOT_MALE'}),
+        (2, {'census': 'TOT_FEMALE'}),
+    ]
+
     sample_quantity_records = [
-        (1, 1, {'census': 'TOT_MALE'}, 180140),
-        (2, 1, {'census': 'TOT_FEMALE'}, 187990),
-        (3, 2, {'census': 'TOT_MALE'}, 566499),
-        (4, 2, {'census': 'TOT_FEMALE'}, 596915)
+        (1, 1, 1, 180140),
+        (2, 1, 2, 187990),
+        (3, 2, 1, 566499),
+        (4, 2, 2, 596915)
     ]
 
     def test_header(self):
@@ -2174,6 +2180,9 @@ class TestAddQuantities(unittest.TestCase):
         records = self.cursor.execute('SELECT * FROM location').fetchall()
         self.assertEqual(records, self.sample_location_records)
 
+        records = self.cursor.execute('SELECT * FROM attribute').fetchall()
+        self.assertEqual(records, self.sample_attribute_records)
+
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, self.sample_quantity_records)
 
@@ -2188,6 +2197,9 @@ class TestAddQuantities(unittest.TestCase):
 
         records = self.cursor.execute('SELECT * FROM location').fetchall()
         self.assertEqual(records, self.sample_location_records)
+
+        records = self.cursor.execute('SELECT * FROM attribute').fetchall()
+        self.assertEqual(records, self.sample_attribute_records)
 
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, self.sample_quantity_records)
@@ -2220,6 +2232,9 @@ class TestAddQuantities(unittest.TestCase):
         records = self.cursor.execute('SELECT * FROM location').fetchall()
         self.assertEqual(records, self.sample_location_records)
 
+        records = self.cursor.execute('SELECT * FROM attribute').fetchall()
+        self.assertEqual(records, self.sample_attribute_records)
+
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, self.sample_quantity_records)
 
@@ -2236,6 +2251,9 @@ class TestAddQuantities(unittest.TestCase):
 
         records = self.cursor.execute('SELECT * FROM location').fetchall()
         self.assertEqual(records, self.sample_location_records)
+
+        records = self.cursor.execute('SELECT * FROM attribute').fetchall()
+        self.assertEqual(records, self.sample_attribute_records)
 
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, self.sample_quantity_records)
@@ -2254,6 +2272,9 @@ class TestAddQuantities(unittest.TestCase):
         records = self.cursor.execute('SELECT * FROM location').fetchall()
         self.assertEqual(records, self.sample_location_records)
 
+        records = self.cursor.execute('SELECT * FROM attribute').fetchall()
+        self.assertEqual(records, self.sample_attribute_records)
+
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         self.assertEqual(records, self.sample_quantity_records)
 
@@ -2268,10 +2289,16 @@ class TestAddQuantities(unittest.TestCase):
         with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows.*inserted 2 rows'):
             self.dal.add_quantities(data, 'counts')  # <- Method under test.
 
+        records = self.cursor.execute('SELECT * FROM attribute').fetchall()
+        expected_attribute_records = [
+            (1, {'census': 'TOT_FEMALE'}),
+        ]
+        self.assertEqual(records, expected_attribute_records)
+
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         expected_quantity_records = [
-            (1, 1, {'census': 'TOT_FEMALE'}, 187990),
-            (2, 2, {'census': 'TOT_FEMALE'}, 596915)
+            (1, 1, 1, 187990),
+            (2, 2, 1, 596915)
         ]
         self.assertEqual(records, expected_quantity_records)
 
@@ -2307,10 +2334,16 @@ class TestAddQuantities(unittest.TestCase):
         with self.assertWarnsRegex(ToronWarning, 'skipped 2 rows.*inserted 2 rows'):
             self.dal.add_quantities(data, 'counts')  # <- Method under test.
 
+        records = self.cursor.execute('SELECT * FROM attribute').fetchall()
+        expected_quantity_records = [
+            (1, {'census': 'TOT_MALE'}),
+        ]
+        self.assertEqual(records, expected_quantity_records)
+
         records = self.cursor.execute('SELECT * FROM quantity').fetchall()
         expected_quantity_records = [
-            (1, 1, {'census': 'TOT_MALE'}, 0),
-            (2, 2, {'census': 'TOT_MALE'}, 566499),
+            (1, 1, 1, 0),
+            (2, 2, 1, 566499),
         ]
         self.assertEqual(records, expected_quantity_records)
 
@@ -2538,9 +2571,9 @@ class TestDeleteRawQuantities(unittest.TestCase):
         self.dal.delete_raw_quantities(county='FRANKLIN')
 
         self.assertRemainingQuantities([
-            (1, 1, {'census': 'TOT_MALE'},   180140),
-            (2, 1, {'census': 'TOT_FEMALE'}, 187990),
-            (5, 3, {'census': 'TOT_ALL'},    1531544)
+            (1, 1, 1,  180140),
+            (2, 1, 2,  187990),
+            (5, 3, 3, 1531544)
         ])
 
         self.assertRemainingLocations([
@@ -2552,10 +2585,10 @@ class TestDeleteRawQuantities(unittest.TestCase):
         self.dal.delete_raw_quantities(census='TOT_ALL')
 
         self.assertRemainingQuantities([
-            (1, 1, {'census': 'TOT_MALE'},   180140),
-            (2, 1, {'census': 'TOT_FEMALE'}, 187990),
-            (3, 2, {'census': 'TOT_MALE'},   566499),
-            (4, 2, {'census': 'TOT_FEMALE'}, 596915),
+            (1, 1, 1, 180140),
+            (2, 1, 2, 187990),
+            (3, 2, 1, 566499),
+            (4, 2, 2, 596915),
         ])
 
         self.assertRemainingLocations([
@@ -2567,10 +2600,10 @@ class TestDeleteRawQuantities(unittest.TestCase):
         self.dal.delete_raw_quantities(county='FRANKLIN', census='TOT_MALE')
 
         self.assertRemainingQuantities([
-            (1, 1, {'census': 'TOT_MALE'},   180140),
-            (2, 1, {'census': 'TOT_FEMALE'}, 187990),
-            (4, 2, {'census': 'TOT_FEMALE'}, 596915),
-            (5, 3, {'census': 'TOT_ALL'},    1531544),
+            (1, 1, 1, 180140),
+            (2, 1, 2, 187990),
+            (4, 2, 2, 596915),
+            (5, 3, 3, 1531544),
         ])
 
         self.assertRemainingLocations([
@@ -2586,11 +2619,11 @@ class TestDeleteRawQuantities(unittest.TestCase):
 
     def test_no_rows_deleted(self):
         expected_quantities = [
-            (1, 1, {'census': 'TOT_MALE'},   180140),
-            (2, 1, {'census': 'TOT_FEMALE'}, 187990),
-            (3, 2, {'census': 'TOT_MALE'},   566499),
-            (4, 2, {'census': 'TOT_FEMALE'}, 596915),
-            (5, 3, {'census': 'TOT_ALL'},    1531544),
+            (1, 1, 1, 180140),
+            (2, 1, 2, 187990),
+            (3, 2, 1, 566499),
+            (4, 2, 2, 596915),
+            (5, 3, 3, 1531544),
         ]
         expected_locations = [
             (1, 'OH', 'BUTLER'),
@@ -2642,6 +2675,8 @@ class TestDisaggregateHelpers(unittest.TestCase):
             dal_class._disaggregate_make_sql_constraints(columns, bad_bitmask, 't2', 't3')
 
     def test_disaggregate_make_sql(self):
+        self.maxDiff = None
+
         columns = ['"A"', '"B"', '"C"', '"D"']  # <- Should be normalized identifiers.
         bitmask = [1, 0, 1, 0]
         match_selector_func = 'USER_FUNC_NAME'
@@ -2649,17 +2684,18 @@ class TestDisaggregateHelpers(unittest.TestCase):
         expected = """
             SELECT
                 t3.index_id,
-                t1.attributes,
+                t1b.attribute_value,
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS quantity_value
             FROM main.quantity t1
+            JOIN main.attribute t1b USING (attribute_id)
             JOIN main.location t2 USING (_location_id)
             JOIN main.node_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
-                AND t4.weighting_id=USER_FUNC_NAME(t1.attributes)
+                AND t4.weighting_id=USER_FUNC_NAME(t1b.attribute_value)
             )
         """
         self.assertEqual(result, expected)
@@ -2678,19 +2714,20 @@ class TestDisaggregateHelpers(unittest.TestCase):
         expected = """
             SELECT
                 t3.index_id,
-                t1.attributes,
+                t1b.attribute_value,
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS quantity_value
             FROM main.quantity t1
+            JOIN main.attribute t1b USING (attribute_id)
             JOIN main.location t2 USING (_location_id)
             JOIN main.node_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
-                AND t4.weighting_id=USER_FUNC_NAME1(t1.attributes)
+                AND t4.weighting_id=USER_FUNC_NAME1(t1b.attribute_value)
             )
-            WHERE USER_FUNC_NAME2(t1.attributes)=1
+            WHERE USER_FUNC_NAME2(t1b.attribute_value)=1
         """
         self.maxDiff = None
         self.assertEqual(result, expected)
@@ -2972,32 +3009,33 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         expected = """
             SELECT
                 t3.index_id,
-                t1.attributes,
+                t1b.attribute_value,
                 t1.quantity_value * COALESCE(
                     (COALESCE(t5.weight_value, 0.0) / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS quantity_value
             FROM main.quantity t1
+            JOIN main.attribute t1b USING (attribute_id)
             JOIN main.location t2 USING (_location_id)
             JOIN main.node_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
-                AND t4.weighting_id=UserFuncName(t1.attributes)
+                AND t4.weighting_id=UserFuncName(t1b.attribute_value)
             )
             LEFT JOIN (
                 SELECT
                     t5sub.index_id,
-                    user_json_object_keep(t5sub.attributes) AS attrs_subset,
+                    user_json_object_keep(t5sub.attribute_value) AS attrs_subset,
                     SUM(t5sub.quantity_value) AS weight_value
                 FROM AdaptiveWeightTable t5sub
-                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attributes)
+                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attribute_value)
             ) t5 ON (
                 t3.index_id=t5.index_id
-                AND t5.attrs_subset=user_json_object_keep(t1.attributes)
+                AND t5.attrs_subset=user_json_object_keep(t1b.attribute_value)
             )
             UNION ALL
-            SELECT index_id, attributes, quantity_value FROM AdaptiveWeightTable
+            SELECT index_id, attribute_value, quantity_value FROM AdaptiveWeightTable
         """
         self.assertEqual(result.strip(), expected.strip())
 
@@ -3021,33 +3059,34 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         expected = """
             SELECT
                 t3.index_id,
-                t1.attributes,
+                t1b.attribute_value,
                 t1.quantity_value * COALESCE(
                     (COALESCE(t5.weight_value, 0.0) / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS quantity_value
             FROM main.quantity t1
+            JOIN main.attribute t1b USING (attribute_id)
             JOIN main.location t2 USING (_location_id)
             JOIN main.node_index t3 ON (t2."A"=t3."A" AND t2."B"='' AND t2."C"=t3."C" AND t2."D"='')
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
-                AND t4.weighting_id=UserFuncName(t1.attributes)
+                AND t4.weighting_id=UserFuncName(t1b.attribute_value)
             )
             LEFT JOIN (
                 SELECT
                     t5sub.index_id,
-                    user_json_object_keep(t5sub.attributes) AS attrs_subset,
+                    user_json_object_keep(t5sub.attribute_value) AS attrs_subset,
                     SUM(t5sub.quantity_value) AS weight_value
                 FROM AdaptiveWeightTable t5sub
-                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attributes)
+                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attribute_value)
             ) t5 ON (
                 t3.index_id=t5.index_id
-                AND t5.attrs_subset=user_json_object_keep(t1.attributes)
+                AND t5.attrs_subset=user_json_object_keep(t1b.attribute_value)
             )
-            WHERE USER_FUNC_NAME2(t1.attributes)=1
+            WHERE USER_FUNC_NAME2(t1b.attribute_value)=1
             UNION ALL
-            SELECT index_id, attributes, quantity_value FROM AdaptiveWeightTable
+            SELECT index_id, attribute_value, quantity_value FROM AdaptiveWeightTable
         """
         self.maxDiff = None
         self.assertEqual(result.strip(), expected.strip())

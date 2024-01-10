@@ -579,54 +579,50 @@ class TestUserAttributesValid(unittest.TestCase, CheckAttributesMixin):
 
 
 class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
-    """Check trigger behavior for `quantity.attributes` column with the
-    TEXT_ATTRIBUTES declared type.
+    """Check trigger behavior for `attribute.attribute_value` column
+    with the TEXT_ATTRIBUTES declared type.
     """
     def setUp(self):
         self.con = get_connection(':memory:', None)
         self.cur = self.con.cursor()
-        self.cur.execute("INSERT INTO location (_location_id) VALUES (1)")
         self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
-        self.sql_insert = 'INSERT INTO quantity (_location_id, attributes, quantity_value) VALUES (?, ?, ?)'
+        self.sql_insert = 'INSERT INTO attribute (attribute_value) VALUES (?)'
 
     def test_valid_values(self):
-        for attributes in self.valid_values:
-            with self.subTest(attributes=attributes):
-                parameters = (1, attributes, 100)
-                self.cur.execute(self.sql_insert, parameters)
+        for attribute_value in self.valid_values:
+            with self.subTest(attribute_value=attribute_value):
+                self.cur.execute(self.sql_insert, [attribute_value])
 
     def test_non_string_values(self):
         regex = 'must be a JSON object with text values'
-        for attributes in self.non_string_values:
-            with self.subTest(attributes=attributes):
+        for attribute_value in self.non_string_values:
+            with self.subTest(attribute_value=attribute_value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (1, attributes, 100)
-                    self.cur.execute(self.sql_insert, parameters)
+                    self.cur.execute(self.sql_insert, [attribute_value])
 
     def test_not_an_object(self):
         regex = 'must be a JSON object with text values'
-        for attributes in self.not_an_object:
-            with self.subTest(attributes=attributes):
+        for attribute_value in self.not_an_object:
+            with self.subTest(attribute_value=attribute_value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (1, attributes, 100)
-                    self.cur.execute(self.sql_insert, parameters)
+                    self.cur.execute(self.sql_insert, [attribute_value])
 
     def test_malformed_json(self):
         regex = 'must be a JSON object with text values'
-        for attributes in self.malformed_json:
-            with self.subTest(attributes=attributes):
+        for attribute_value in self.malformed_json:
+            with self.subTest(attribute_value=attribute_value):
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-                    parameters = (1, attributes, 100)
-                    self.cur.execute(self.sql_insert, parameters)
+                    self.cur.execute(self.sql_insert, [attribute_value])
 
     def test_none(self):
-        """The `quantity.attributes` column should not accept NULL values."""
+        """The `attribute.attribute_value` column should not accept
+        NULL values.
+        """
         regex = 'NOT NULL constraint failed'
-        parameters = (1, None, 100)
         with self.assertRaisesRegex(sqlite3.IntegrityError, regex):
-            self.cur.execute(self.sql_insert, parameters)
+            self.cur.execute(self.sql_insert, [None])
 
 
 class CheckSelectorsMixin(object):
@@ -954,6 +950,7 @@ class TestConnectDb(TempDirTestCase):
         tables.discard('sqlite_sequence')  # <- Table added by SQLite.
 
         expected = {
+            'attribute',
             'edge',
             'location',
             'node_index',
@@ -1148,14 +1145,15 @@ class TestJsonConversion(unittest.TestCase):
 
     def test_text_attributes(self):
         """Selecting TEXT_ATTRIBUTES should convert strings into objects."""
-        self.cur.execute('INSERT INTO location (_location_id) VALUES (1)')
+        string_value = '{"foo": "bar"}'
+        dict_value = {'foo': 'bar'}
 
         self.cur.execute(
-            'INSERT INTO quantity VALUES (?, ?, ?, ?)',
-            (1, 1, '{"foo": "bar"}', 100)
+            'INSERT INTO attribute VALUES (?, ?)',
+            (1, string_value),
         )
-        self.cur.execute("SELECT attributes FROM quantity WHERE quantity_id=1")
-        self.assertEqual(self.cur.fetchall(), [({'foo': 'bar'},)])
+        self.cur.execute("SELECT attribute_value FROM attribute")
+        self.assertEqual(self.cur.fetchall(), [(dict_value,)])
 
     def test_text_selectors(self):
         """Selecting TEXT_SELECTORS should convert strings into objects."""

@@ -861,17 +861,17 @@ class DataAccessLayer(object):
         sql_statements.append('''
             WITH
                 MatchingRecords AS (
-                    SELECT attributes, _location_id, new_location_id
+                    SELECT attribute_id, _location_id, new_location_id
                     FROM main.quantity
                     JOIN temp.old_to_new_location_id USING (_location_id)
                 ),
                 MissingAttributes AS (
-                    SELECT DISTINCT attributes, new_location_id FROM MatchingRecords
+                    SELECT DISTINCT attribute_id, new_location_id FROM MatchingRecords
                     EXCEPT
-                    SELECT DISTINCT attributes, _location_id FROM MatchingRecords
+                    SELECT DISTINCT attribute_id, _location_id FROM MatchingRecords
                 )
-            INSERT INTO main.quantity (attributes, _location_id, quantity_value)
-            SELECT attributes, new_location_id, 0
+            INSERT INTO main.quantity (attribute_id, _location_id, quantity_value)
+            SELECT attribute_id, new_location_id, 0
             FROM MissingAttributes;
         ''')
 
@@ -882,29 +882,29 @@ class DataAccessLayer(object):
                 UPDATE main.quantity
                 SET quantity_value=c.summed_value
                 FROM (
-                    SELECT a.attributes,
+                    SELECT a.attribute_id,
                            b.new_location_id,
                            SUM(a.quantity_value) AS summed_value
                     FROM main.quantity a
                     JOIN temp.old_to_new_location_id b USING (_location_id)
-                    GROUP BY a.attributes, b.new_location_id
+                    GROUP BY a.attribute_id, b.new_location_id
                 ) AS c
-                WHERE main.quantity.attributes=c.attributes
+                WHERE main.quantity.attribute_id=c.attribute_id
                       AND _location_id=c.new_location_id
             ''')
         else:
             sql_statements.append('''
                 WITH
                     SummedValues AS (
-                        SELECT a.attributes, b.new_location_id, SUM(a.quantity_value) AS summed_quantity_value
+                        SELECT a.attribute_id, b.new_location_id, SUM(a.quantity_value) AS summed_quantity_value
                         FROM main.quantity a
                         JOIN temp.old_to_new_location_id b USING (_location_id)
-                        GROUP BY a.attributes, b.new_location_id
+                        GROUP BY a.attribute_id, b.new_location_id
                     ),
                     RecordsToUpdate AS (
                         SELECT a.quantity_id AS record_id, b.summed_quantity_value
                         FROM main.quantity a
-                        JOIN SummedValues b ON (a.attributes=b.attributes
+                        JOIN SummedValues b ON (a.attribute_id=b.attribute_id
                                                 AND a._location_id=b.new_location_id)
                     )
                 UPDATE main.quantity
@@ -1642,11 +1642,13 @@ class DataAccessLayer(object):
                         missing_vals_count += 1
                         continue
 
+                    attribute_id = self._add_quantities_get_attribute_id(cur, attr)
+
                     statement = """
-                        INSERT INTO main.quantity (_location_id, attributes, quantity_value)
+                        INSERT INTO main.quantity (_location_id, attribute_id, quantity_value)
                             VALUES(?, ?, ?)
                     """
-                    cur.execute(statement, (loc_id, attr, val))
+                    cur.execute(statement, (loc_id, attribute_id, val))
                     inserted_rows_count += 1
 
             self._add_quantities_warn(
@@ -1786,8 +1788,9 @@ class DataAccessLayer(object):
         # Build SQL query.
         normalized = [_schema.normalize_identifier(x) for x in location_cols]
         statement = f"""
-            SELECT {', '.join(normalized)}, attributes, quantity_value
+            SELECT {', '.join(normalized)}, attribute_value, quantity_value
             FROM main.quantity
+            JOIN main.attribute USING (attribute_id)
             JOIN main.location USING (_location_id)
             {'WHERE ' if where_items else ''}{' AND '.join(where_items)}
         """
@@ -1812,7 +1815,7 @@ class DataAccessLayer(object):
 
             if attr_func:
                 func_name = _schema.get_userfunc(cur, attr_func)
-                where_items.append(f'{func_name}(attributes)=1')
+                where_items.append(f'{func_name}(attribute_value)=1')
 
             yield from self._get_raw_quantities_execute(
                 cur, location_cols, where_items, parameters
@@ -1831,12 +1834,15 @@ class DataAccessLayer(object):
             WHERE quantity_id IN (
                 SELECT quantity_id
                 FROM main.quantity
+                JOIN main.attribute USING (attribute_id)
                 JOIN main.location USING (_location_id)
                 WHERE {' AND '.join(where_items)}
             )
         """
         cursor.execute(statement, parameters)
         deleted_rowcount = cursor.rowcount
+
+        # TODO: Check if we need to delete unused attribute records.
 
         # Delete any unused location records.
         statement = """
@@ -1866,7 +1872,7 @@ class DataAccessLayer(object):
 
             if attr_func:
                 func_name = _schema.get_userfunc(cur, attr_func)
-                where_items.append(f'{func_name}(attributes)=1')
+                where_items.append(f'{func_name}(attribute_value)=1')
 
             self._delete_raw_quantities_execute(cur, where_items, parameters)
 
@@ -1942,7 +1948,7 @@ class DataAccessLayer(object):
 
         # Build WHERE clause if *filter_attrs_func* was given.
         if filter_attrs_func:
-            where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
+            where_clause = f'\n            WHERE {filter_attrs_func}(t1b.attribute_value)=1'
         else:
             where_clause = ''
 
@@ -1950,17 +1956,18 @@ class DataAccessLayer(object):
         statement = f"""
             SELECT
                 t3.index_id,
-                t1.attributes,
+                t1b.attribute_value,
                 t1.quantity_value * IFNULL(
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS quantity_value
             FROM main.quantity t1
+            JOIN main.attribute t1b USING (attribute_id)
             JOIN main.location t2 USING (_location_id)
             JOIN main.node_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
-                AND t4.weighting_id={match_selector_func}(t1.attributes)
+                AND t4.weighting_id={match_selector_func}(t1b.attribute_value)
             ){where_clause}
         """
         return statement
@@ -2028,10 +2035,10 @@ class DataAccessLayer(object):
                     all_quantities AS (
                         {disaggregated_quantities}
                     )
-                SELECT t1.index_id, t2.attributes, SUM(t2.quantity_value) AS quantity_value
+                SELECT t1.index_id, t2.attribute_value, SUM(t2.quantity_value) AS quantity_value
                 FROM main.node_index t1
                 JOIN all_quantities t2 USING (index_id){where_clause}
-                GROUP BY {', '.join(f't1.{x}' for x in normalized_cols)}, t2.attributes
+                GROUP BY {', '.join(f't1.{x}' for x in normalized_cols)}, t2.attribute_value
             """
             cur.execute(final_sql, parameters)
 
@@ -2060,7 +2067,7 @@ class DataAccessLayer(object):
 
         # Build WHERE clause if *filter_attrs_func* was given.
         if filter_attrs_func:
-            where_clause = f'\n            WHERE {filter_attrs_func}(t1.attributes)=1'
+            where_clause = f'\n            WHERE {filter_attrs_func}(t1b.attribute_value)=1'
         else:
             where_clause = ''
 
@@ -2077,32 +2084,33 @@ class DataAccessLayer(object):
         statement = f"""
             SELECT
                 t3.index_id,
-                t1.attributes,
+                t1b.attribute_value,
                 t1.quantity_value * COALESCE(
                     (COALESCE(t5.weight_value, 0.0) / SUM(t5.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (t4.weight_value / SUM(t4.weight_value) OVER (PARTITION BY t1.quantity_id)),
                     (1.0 / COUNT(1) OVER (PARTITION BY t1.quantity_id))
                 ) AS quantity_value
             FROM main.quantity t1
+            JOIN main.attribute t1b USING (attribute_id)
             JOIN main.location t2 USING (_location_id)
             JOIN main.node_index t3 ON ({join_constraints})
             JOIN main.weight t4 ON (
                 t3.index_id=t4.index_id
-                AND t4.weighting_id={match_selector_func}(t1.attributes)
+                AND t4.weighting_id={match_selector_func}(t1b.attribute_value)
             )
             LEFT JOIN (
                 SELECT
                     t5sub.index_id,
-                    user_json_object_keep(t5sub.attributes{keys_to_keep}) AS attrs_subset,
+                    user_json_object_keep(t5sub.attribute_value{keys_to_keep}) AS attrs_subset,
                     SUM(t5sub.quantity_value) AS weight_value
                 FROM {adaptive_weight_table} t5sub
-                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attributes{keys_to_keep})
+                GROUP BY t5sub.index_id, user_json_object_keep(t5sub.attribute_value{keys_to_keep})
             ) t5 ON (
                 t3.index_id=t5.index_id
-                AND t5.attrs_subset=user_json_object_keep(t1.attributes{keys_to_keep})
+                AND t5.attrs_subset=user_json_object_keep(t1b.attribute_value{keys_to_keep})
             ){where_clause}
             UNION ALL
-            SELECT index_id, attributes, quantity_value FROM {adaptive_weight_table}
+            SELECT index_id, attribute_value, quantity_value FROM {adaptive_weight_table}
         """
         return statement
 
@@ -2188,10 +2196,10 @@ class DataAccessLayer(object):
             final_sql = f"""
                 WITH
                     {all_cte_statements}
-                SELECT t1.index_id, t2.attributes, SUM(t2.quantity_value) AS quantity_value
+                SELECT t1.index_id, t2.attribute_value, SUM(t2.quantity_value) AS quantity_value
                 FROM main.node_index t1
                 JOIN {current_cte} t2 USING (index_id){where_clause}
-                GROUP BY t2.index_id, t2.attributes
+                GROUP BY t2.index_id, t2.attribute_value
             """
             cur.execute(final_sql, parameters)
 
