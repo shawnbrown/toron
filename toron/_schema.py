@@ -168,7 +168,7 @@ _schema_script = """
     );
 
     /* Set properties for Toron schema and application versions. */
-    INSERT INTO main.property VALUES ('toron_schema_version', '"0.1.0"');
+    INSERT INTO main.property VALUES ('toron_schema_version', '"0.2.0"');
     INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
 
     /* Reserve id zero for an "undefined" record. */
@@ -1073,7 +1073,7 @@ def get_connection(
     schema_version, *_ = cur.fetchone() or (None,)
     cur.close()
 
-    if schema_version != '0.1.0':  # When schema version is unsupported.
+    if schema_version != '0.2.0':  # When schema version is unsupported.
         msg = f'Unsupported Toron node format: schema version {schema_version}'
         raise ToronError(msg)
 
