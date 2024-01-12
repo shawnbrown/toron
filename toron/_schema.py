@@ -1,54 +1,56 @@
 """Database schema functions and information for Toron node files.
 
-Toron nodes are stored as individual files. The file format is
-managed, internally, as a relational database. The schema for this
-database is shown below as a simplified ERD (entity relationship
-diagram). SQL foreign key relationships are represented with hyphen
-and pipe characters ('-' and '|'). Other, more complex relationships
-are represented with bullet points ('•') and these are enforced at
-the application layer:
+Toron nodes are stored as individual files. The file format is managed,
+internally, as a relational database. The schema for this database is
+shown below as a simplified ERD (entity relationship diagram). SQL
+foreign key relationships are represented with hyphen and pipe
+characters (``---`` and ``|``). Other, more complex relationships are
+represented with bullet points (``•••``) and these are enforced at the
+application layer:
 
-                                    <Other Node> ••••••••
-                                                        •  +-----------------+
-                                 +----------------+     •  | attribute       |
- +----------------------+        | relation       |     •  +-----------------+
- | edge                 |        +----------------+     •  | attribute_id    |--+
- +----------------------+        | relation_id    |     •  | attribute_value |  |
- | edge_id              |------->| edge_id        |     •  +-----------------+  |
- | name                 |  ••••••| other_index_id |<•••••                       |
- | description          |  •  •••| index_id       |<-+     +-----------------+  |
- | selectors            |  •  •  | relation_value |  |     | quantity        |  |
- | user_properties      |  •  •  | proportion*    |  |     +-----------------+  |
- | other_unique_id      |  •  •  | mapping_level* |  |     | quantity_id     |  |
- | other_filename_hint  |  •  •  +----------------+  |  +->| _location_id    |  |
- | other_index_hash*    |<••  •                      |  |  | attribute_id    |<-+
- | is_locally_complete* |<•••••                      |  |  | quantity_value  |
- | is_default           |          +-----------------+  |  +-----------------+
- +----------------------+          |                    |
-                                   |                    |  +---------------+
-                   +------------+  |  +--------------+  |  | structure     |
-                   | node_index |  |  | location     |  |  +---------------+
-                   +------------+  |  +--------------+  |  | _structure_id |
-                +--| index_id   |--+  | _location_id |--+  | _granularity* |
-                |  | label_a    |••••>| label_a      |<••••| label_a*      |
-                |  | label_b    |••••>| label_b      |<••••| label_b*      |
-                |  | label_c    |••••>| label_c      |<••••| label_c*      |
-                |  | ...        |••••>| ...          |<••••| ...           |
-                |  +------------+     +--------------+     +---------------+
-                |
-                |  +--------------+                          +----------+
-                |  | weight       |     +--------------+     | property |
-                |  +--------------+     | weighting    |     +----------+
-                |  | weight_id    |     +--------------+     | key      |
-                |  | weighting_id |<----| weighting_id |     | value    |
-                +->| index_id     |•••  | name         |     +----------+
-                   | weight_value |  •  | description  |
-                   +--------------+  •  | selectors    |
-                                     ••>| is_complete* |
-                                        +--------------+
+.. code-block:: text
 
-Asterisks (*) denote values that are computed at the application layer
-using data from elsewhere in the schema. Toron may automatically
+                                       <Other Node> ••••••••
+                                                           •  +-----------------+
+                                    +----------------+     •  | attribute       |
+    +----------------------+        | relation       |     •  +-----------------+
+    | edge                 |        +----------------+     •  | attribute_id    |--+
+    +----------------------+        | relation_id    |     •  | attribute_value |  |
+    | edge_id              |------->| edge_id        |     •  +-----------------+  |
+    | name                 |  ••••••| other_index_id |<•••••                       |
+    | description          |  •  •••| index_id       |<-+     +-----------------+  |
+    | selectors            |  •  •  | relation_value |  |     | quantity        |  |
+    | user_properties      |  •  •  | proportion*    |  |     +-----------------+  |
+    | other_unique_id      |  •  •  | mapping_level* |  |     | quantity_id     |  |
+    | other_filename_hint  |  •  •  +----------------+  |  +->| _location_id    |  |
+    | other_index_hash*    |<••  •                      |  |  | attribute_id    |<-+
+    | is_locally_complete* |<•••••                      |  |  | quantity_value  |
+    | is_default           |          +-----------------+  |  +-----------------+
+    +----------------------+          |                    |
+                                      |                    |  +---------------+
+                      +------------+  |  +--------------+  |  | structure     |
+                      | node_index |  |  | location     |  |  +---------------+
+                      +------------+  |  +--------------+  |  | _structure_id |
+                   +--| index_id   |--+  | _location_id |--+  | _granularity* |
+                   |  | label_a    |••••>| label_a      |<••••| label_a*      |
+                   |  | label_b    |••••>| label_b      |<••••| label_b*      |
+                   |  | label_c    |••••>| label_c      |<••••| label_c*      |
+                   |  | ...        |••••>| ...          |<••••| ...           |
+                   |  +------------+     +--------------+     +---------------+
+                   |
+                   |  +--------------+                          +----------+
+                   |  | weight       |     +--------------+     | property |
+                   |  +--------------+     | weighting    |     +----------+
+                   |  | weight_id    |     +--------------+     | key      |
+                   |  | weighting_id |<----| weighting_id |     | value    |
+                   +->| index_id     |•••  | name         |     +----------+
+                      | weight_value |  •  | description  |
+                      +--------------+  •  | selectors    |
+                                        ••>| is_complete* |
+                                           +--------------+
+
+Asterisks (``*``) denote values that are computed at the application
+layer using data from elsewhere in the schema. Toron may automatically
 recompute these values as records and columns are added or removed
 from certain tables.
 """
