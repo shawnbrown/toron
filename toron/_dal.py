@@ -812,7 +812,7 @@ class DataAccessLayer(object):
                 IndexCounts AS (
                     SELECT COUNT(*) AS index_count
                     FROM main.node_index
-                    WHERE index_id > 0
+                    WHERE index_id > 0  /* <- exclude undefined record */
                 ),
                 NewStatus AS (
                     SELECT
@@ -2592,7 +2592,11 @@ class DataAccessLayer(object):
         edge_id: int,
         relations: Iterable[Tuple[int, int, float, Union[BitFlags, None]]],
     ) -> None:
-        """Add incoming edge from other node."""
+        """Add incoming edge from other node.
+
+        The undefined-to-undefined relation is always included with a
+        weight of 0.
+        """
         sql = """
             INSERT OR REPLACE INTO main.relation (
                 edge_id,
@@ -2698,7 +2702,12 @@ class DataAccessLayer(object):
     def _refresh_is_locally_complete(
         cursor: sqlite3.Cursor, edge_id: int
     ) -> None:
-        """Refresh 'edge.is_locally_complete' (sets to 1 or 0, True/False)."""
+        """Refresh 'edge.is_locally_complete' (sets to 1 or 0, True/False).
+
+        NOTE: When determining if edges are locally complete, the
+        undefined record (index_id 0) should always be included in
+        the count.
+        """
         sql = """
             UPDATE main.edge
             SET is_locally_complete=((SELECT COUNT(DISTINCT index_id)
