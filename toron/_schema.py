@@ -297,7 +297,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
         # Convert bytes to strings of 1s and 0s and slice-off '0b' prefix.
         binary_strings = (bin(x)[2:] for x in bytes_)
 
-        # Format strings as big-endian, 8-bit words.
+        # Pad strings with leading "0"s to form 8-bit words.
         eight_bit_words = (x.rjust(8, '0') for x in binary_strings)
 
         # Convert to iterable of integers (1s and 0s only).
