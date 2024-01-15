@@ -1715,7 +1715,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
             INSERT INTO main.weight (weighting_id, index_id, weight_value)
             SELECT ? AS weighting_id, index_id, ? AS weight_value
             FROM main.node_index
-            WHERE "state"=? AND "county"=? AND "town"=?
+            WHERE index_id > 0 AND "state"=? AND "county"=? AND "town"=?
             GROUP BY "state", "county", "town"
             HAVING COUNT(*)=1
         """
@@ -1731,7 +1731,7 @@ class TestAddWeightsMakeSql(unittest.TestCase):
             INSERT INTO main.weight (weighting_id, index_id, weight_value)
             SELECT ? AS weighting_id, index_id, ? AS weight_value
             FROM main.node_index
-            WHERE "state"=? AND "county"=?
+            WHERE index_id > 0 AND "state"=? AND "county"=?
             GROUP BY "state", "county"
             HAVING COUNT(*)=1
         """
@@ -1939,6 +1939,40 @@ class TestAddWeights(unittest.TestCase):
             ('12', '019', 62),
         ]
         self.assertEqual(set(result), set(expected))
+
+    def test_skip_undefined_record(self):
+        """Undefined record (index_id 0) should never receive a weight."""
+        data = [
+            ('state', 'county', 'tract', 'pop10'),
+            ('12', '001', '000200', 110),
+            ('12', '003', '040101', 212),
+            ('12', '003', '040102',  17),
+            ( '-',   '-',      '-', 999),  # <- Undefined record should not get loaded.
+        ]
+        self.dal.add_weights(data, name='pop10', selectors=None)  # <- Method under test.
+
+        self.cursor.execute('SELECT * FROM weighting')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(1, 'pop10', None, None, 0)],  # <- is_complete is 0
+        )
+
+        self.cursor.execute("""
+            SELECT state, county, tract, weight_value
+            FROM node_index
+            NATURAL JOIN weight
+            WHERE weighting_id=1
+        """)
+
+        # Expected result only includes three records, the fourth
+        # weight (for the undefined record) should not be loaded.
+        expected = {
+            ('12', '001', '000200', 110),
+            ('12', '003', '040101', 212),
+            ('12', '003', '040102',  17),
+        }
+        self.assertEqual(set(self.cursor.fetchall()), expected)
+
 
     @unittest.expectedFailure
     def test_match_by_index_id(self):

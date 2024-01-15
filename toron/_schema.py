@@ -157,7 +157,7 @@ _schema_script = """
     CREATE TABLE main.weight(
         weight_id INTEGER PRIMARY KEY,
         weighting_id INTEGER,
-        index_id INTEGER,
+        index_id INTEGER CHECK (index_id > 0),
         weight_value REAL NOT NULL,
         FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
         FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,

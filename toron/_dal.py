@@ -1341,7 +1341,7 @@ class DataAccessLayer(object):
             INSERT INTO main.weight (weighting_id, index_id, weight_value)
             SELECT ? AS weighting_id, index_id, ? AS weight_value
             FROM main.node_index
-            WHERE {where_clause}
+            WHERE index_id > 0 AND {where_clause}
             GROUP BY {groupby_clause}
             HAVING COUNT(*)=1
         """
