@@ -99,6 +99,11 @@ _schema_script = """
         is_default INTEGER CHECK (is_default IS NULL OR is_default=1) DEFAULT NULL,
         UNIQUE (name, other_unique_id),
         UNIQUE (is_default, other_unique_id)
+        /* Note: The column `is_default` uses 1 and NULL (instead
+           of 1 and 0) so that the UNIQUE constraint can limit each
+           `other_unique_id` to a single 1 but allow for multple
+           NULLs since a NULL value does not test as equal to other
+           NULL values. */
     );
 
     CREATE TABLE main.relation(
