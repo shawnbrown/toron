@@ -65,7 +65,7 @@ class TestDataAccessLayerInit(TempDirTestCase):
 
         # Check for DAL functionality.
         result = dal.get_data(['toron_schema_version'])
-        expected = {'toron_schema_version': '0.1.0'}
+        expected = {'toron_schema_version': '0.2.0'}
         self.assertEqual(result, expected)
 
     def test_cache_to_drive(self):
@@ -79,7 +79,7 @@ class TestDataAccessLayerInit(TempDirTestCase):
 
         # Check for DAL functionality.
         result = dal.get_data(['toron_schema_version'])
-        expected = {'toron_schema_version': '0.1.0'}
+        expected = {'toron_schema_version': '0.2.0'}
         self.assertEqual(result, expected)
 
 
