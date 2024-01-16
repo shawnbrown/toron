@@ -830,7 +830,35 @@ class DataAccessLayer(object):
             WHERE weighting_id IN (SELECT record_id FROM NewStatus)
         ''')
 
-        # TODO: Update `is_locally_complete` for incomplete `edge` records.
+        # Update `is_locally_complete` for incomplete `edge` records.
+        sql_statements.append('''
+            WITH
+                EdgeCounts AS (
+                    SELECT edge_id, COUNT(DISTINCT index_id) AS mapped_count
+                    FROM main.edge
+                    JOIN main.relation USING (edge_id)
+                    WHERE is_locally_complete=0
+                    GROUP BY edge_id
+                ),
+                IndexCounts AS (
+                    SELECT COUNT(*) AS index_count
+                    FROM main.node_index
+                ),
+                NewStatus AS (
+                    SELECT
+                        edge_id AS record_id,
+                        mapped_count=index_count AS is_locally_complete
+                    FROM EdgeCounts
+                    CROSS JOIN IndexCounts
+                )
+            UPDATE main.edge
+            SET is_locally_complete = (
+                SELECT is_locally_complete
+                FROM NewStatus
+                WHERE edge_id=record_id
+            )
+            WHERE edge_id IN (SELECT record_id FROM NewStatus)
+        ''')
 
         # Remove old-to-new temporary table for `index_id` mapping.
         sql_statements.append('DROP TABLE temp.old_to_new_index_id')
@@ -2704,7 +2732,7 @@ class DataAccessLayer(object):
     ) -> None:
         """Refresh 'edge.is_locally_complete' (sets to 1 or 0, True/False).
 
-        NOTE: When determining if edges are locally complete, the
+        Note: When determining if edges are locally complete, the
         undefined record (index_id 0) should always be included in
         the count.
         """

@@ -1458,6 +1458,76 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
         self.maxDiff = None
         self.assertEqual(actual, expected)
 
+    def test_coarsen_to_make_edge_complete(self):
+        """If an incomplete edge is made complete through coarsening,
+        then `edge.is_locally_complete` should be updated to reflect
+        this.
+        """
+        self.load_data(
+            self.dal,
+            data=[
+                ('A', 'B', 'C', 'population'),
+                ('foo', 'x', 'a', 150),
+                ('foo', 'x', 'b',  50),
+                ('foo', 'y', 'c', 100),
+                ('foo', 'y', 'd', 200),
+                ('bar', 'x', 'a',  50),
+                ('bar', 'x', 'b', 150),
+                ('bar', 'y', 'c', 100),
+                ('bar', 'y', 'd', 100),
+            ],
+            index_cols=['A', 'B', 'C'],
+            categories=[{'A'}, {'A', 'B'}],
+            weight_col='population',
+        )
+
+        self.load_edge(
+            self.dal,
+            data=[
+                (11, 1, 100, 1.0, None),  # foo/x/a
+                                          # foo/x/b  <- missing from edge
+                (12, 3, 100, 1.0, None),  # foo/y/c
+                (13, 4, 100, 1.0, None),  # foo/y/d
+                                          # bar/x/a  <- missing from edge
+                (14, 6, 100, 1.0, None),  # bar/x/b
+                                          # bar/y/c  <- missing from edge
+                (15, 8, 100, 1.0, None),  # bar/y/d
+                ( 0, 0,   0, 1.0, None),  # undefined-to-undefined
+            ],
+            edge_id=2,
+            name='population',
+            unique_id='222-22-22-2222',
+            filename_hint='myfile2.toron',
+            complete=0,
+        )
+
+        # Confirm initial `is_locally_complete` value before removing column.
+        self.cur.execute('SELECT is_locally_complete FROM main.edge')
+        self.assertEqual(self.cur.fetchone(), (0,))  # Should be incomplete (0).
+
+        # Call remove_index_columns() method to check behavior.
+        self.dal.remove_index_columns(['C'], preserve_granularity=False)
+
+        # Deleting column "C" causes several index records to collapse
+        # together. This causes this edge to be complete through the
+        # coarsening process. The remaining indexes are: 1, 3, 5, 7,
+        # and 0:
+        self.cur.execute('SELECT * FROM main.relation')
+        actual = {row[2:] for row in self.cur}  # Slice off relation_id and edge_id.
+        expected = {
+            (11, 1, 100, 1.0, None),  # foo/x (old id 2 collapsed with id 1)
+            (12, 3, 100, 1.0, None),  # foo/y
+            (13, 3, 100, 1.0, None),  # foo/y (old id 4 collapsed with id 3)
+            (14, 5, 100, 1.0, None),  # bar/x (old id 6 collapsed with id 5)
+            (15, 7, 100, 1.0, None),  # bar/y (old id 8 collapsed with id 7)
+            ( 0, 0,   0, 1.0, None),  # undefined-to-undefined unchanged
+        }
+        self.assertEqual(actual, expected)
+
+        # Check that `is_locally_complete` has been updated.
+        self.cur.execute('SELECT is_locally_complete FROM main.edge')
+        self.assertEqual(self.cur.fetchone(), (1,))  # Should be complete (1).
+
 
 @unittest.skipIf(SQLITE_VERSION_INFO < (3, 35, 0), 'requires 3.35.0 or newer')
 class TestRemoveIndexColumnsWithEdges(TestRemoveIndexColumnsWithEdgesMixin, unittest.TestCase):
