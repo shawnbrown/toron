@@ -1038,8 +1038,13 @@ def get_raw_connection(
             uri=is_uri_path,
         )
     except sqlite3.OperationalError as err:
-        msg = str(err).replace('database file', f'node file {path!r}')
-        raise ToronError(msg)
+        error_text = str(err)
+        if ('unable to open database' in error_text
+                or 'Could not open database' in error_text):
+            msg = f'unable to open node file {path!r}'
+            raise ToronError(msg)
+        else:
+            raise
 
     return con
 
