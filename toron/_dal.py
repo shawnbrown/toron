@@ -447,7 +447,14 @@ class DataAccessLayer(object):
             with transaction_cm(cur):
                 yield cur
         finally:
-            cur.close()
+            try:
+                cur.close()
+            except sqlite3.ProgrammingError as err:
+                if str(err) == 'Cannot operate on a closed database.':
+                    pass  # SQLite raises this error in PyPy, ignore it.
+                else:
+                    raise
+
             if self._absolute_working_path:
                 con.close()  # Close connection if database is on-drive.
 
