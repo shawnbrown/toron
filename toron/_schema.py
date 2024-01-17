@@ -1210,10 +1210,9 @@ def _sql_create_function(
 
     # Call with `deterministic` arg (new in Python 3.8) or fallback.
     try:
-        con.create_function(name, narg=1, func=func, deterministic=True)
+        con.create_function(name, 1, func, deterministic=True)
     except TypeError:
-        con.create_function(name, narg=1, func=func)
-
+        con.create_function(name, 1, func)
 
 def get_userfunc(cursor: sqlite3.Cursor, func: Callable) -> str:
     """Get user-defined SQL function name (registers SQL function
