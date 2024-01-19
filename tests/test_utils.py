@@ -5,7 +5,10 @@ import io
 import unittest
 from collections.abc import Iterator
 
-import pandas
+try:
+    import pandas
+except ModuleNotFoundError:
+    pandas = None
 
 from toron._utils import ToronError
 from toron._utils import (
@@ -100,6 +103,7 @@ class TestMakeReaderLike(unittest.TestCase):
             result = make_readerlike(data)
 
 
+@unittest.skipUnless(pandas, 'requires pandas')
 class TestMakeReaderLikePandas(unittest.TestCase):
     def setUp(self):
         self.df = pandas.DataFrame({
@@ -233,6 +237,7 @@ class TestMakeDictReaderLike(unittest.TestCase):
         ]
         self.assertEqual(list(result), expected)
 
+    @unittest.skipUnless(pandas, 'requires pandas')
     def test_pandas_dataframe(self):
         df = pandas.DataFrame({
             'col1': (1, 2, 3),
