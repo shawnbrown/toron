@@ -300,8 +300,8 @@ class BitFlags(Sequence[Literal[0, 1]]):
         # Pad strings with leading "0"s to form 8-bit words.
         eight_bit_words = (x.rjust(8, '0') for x in binary_strings)
 
-        # Convert to iterable of integers (1s and 0s only).
-        ones_and_zeros = (int(x) for x in ''.join(eight_bit_words))
+        # Convert to a stream of integers (1s and 0s only).
+        ones_and_zeros = (int(x) for x in itertools.chain(*eight_bit_words))
 
         # Initialize and return a new BitFlags instance.
         new_inst = cls.__new__(cls)
