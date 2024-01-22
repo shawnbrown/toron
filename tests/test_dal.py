@@ -3713,9 +3713,8 @@ class TestRefreshGranularity(unittest.TestCase):
         sql = dal._refresh_granularity_sql(['A', 'B'])  # <- Method under test.
 
         # Define parameters and execute SQL.
-        node_cardnality = 6
-        structure_id = 2
-        connection.execute(sql, (node_cardnality, structure_id))
+        parameters = {'partition_cardinality': 6, 'structure_id': 2}
+        connection.execute(sql, parameters)
 
         # Check for expected result.
         calculated = connection.execute(
