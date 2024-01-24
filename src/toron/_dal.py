@@ -1130,7 +1130,7 @@ class DataAccessLayer(object):
                 weight_name=edge_dict['name'],
                 allow_overlapping=False,
             )
-            rebuilt_relations = mapper.get_relations('right')
+            mapper_relations = mapper.get_relations('right')
 
             # Delete old edge (deletion cascades to relation records).
             cursor.execute(
@@ -1161,7 +1161,8 @@ class DataAccessLayer(object):
                 is_default=edge_dict['is_default'],
                 #user_properties=edge_dict['user_properties'],  # <- ADD THIS!
             )
-            self._add_edge_relations(cursor, new_edge_id, rebuilt_relations)
+            self._add_edge_relations(cursor, new_edge_id, mapper_relations)
+            mapper.close()  # Close database connection inside Mapper.
             self._refresh_proportions(cursor, new_edge_id)
             self._refresh_other_index_hash(cursor, new_edge_id)
             self._refresh_is_locally_complete(cursor, new_edge_id)

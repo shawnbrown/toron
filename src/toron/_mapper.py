@@ -560,3 +560,6 @@ class Mapper(object):
             pass
 
         self.con.close()
+
+    def __del__(self):
+        self.close()
