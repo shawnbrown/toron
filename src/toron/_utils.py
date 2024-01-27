@@ -513,10 +513,11 @@ class QuantityIterator(object):
         """
         self.unique_id = unique_id
 
-        # Create a connection and a temporary table.
-        connection = sqlite3.connect('')  # <- Using '' makes a temp file.
+        # Connect to private, on-drive temp file (using '' makes temp file).
+        self._connection = sqlite3.connect('')
 
-        cursor = connection.execute("""
+        # Create a temporary table.
+        cursor = self._connection.execute("""
             CREATE TEMP TABLE temp_quantities (
                 index_id INTEGER NOT NULL,
                 attributes TEXT NOT NULL,
@@ -531,51 +532,49 @@ class QuantityIterator(object):
             cursor.executemany(sql, iterator)
             self._attribute_keys = set(_attribute_keys)
         else:
+            # If no *_attribute_keys* given, get them when inserting rows.
             _attribute_keys = set()
             for a, b, c in data:
                 _attribute_keys.update(b.keys())  # Accumulate keys.
                 cursor.execute(sql, (a, _dumps(b, sort_keys=True), c))
             self._attribute_keys = _attribute_keys
 
-        # Define a generator to wrap the connection and cursor objects
-        # and close them after iteration.
-        def generator(connection, cursor):
-            cursor.execute("""
-                SELECT
-                    index_id,
-                    attributes,
-                    SUM(quantity_value) AS quantity_value
-                FROM temp_quantities
-                GROUP BY index_id, attributes
-                ORDER BY index_id
-            """)
-            try:
-                for index_id, attributes, quantity_value in cursor:
-                    yield index_id, _loads(attributes), quantity_value
-            finally:
-                # Space used by the temp table and temp file are reclaimed
-                # after the connection is closed (the associated file gets
-                # automatically removed some moments later).
-                cursor.close()
-                connection.close()
+        # Run query to group and order quantity data.
+        cursor.execute("""
+            SELECT
+                index_id,
+                attributes,
+                SUM(quantity_value) AS quantity_value
+            FROM temp.temp_quantities
+            GROUP BY index_id, attributes
+            ORDER BY index_id
+        """)
+        self._results_cursor = cursor
 
-        self._generator = generator(connection, cursor)
+    def close(self) -> None:
+        """Close iterator (removes data from drive).
+
+        Drive space used by the iterator is reclaimed after it is
+        closed--the associated temporary file gets automatically
+        removed some moments later.
+        """
+        try:
+            self._results_cursor.close()
+        except sqlite3.ProgrammingError:
+            pass
+        self._connection.close()
+
+    def __next__(self) -> Tuple[int, Dict[str, str], float]:
+        index_id, attributes, quantity_value = next(self._results_cursor)
+        return index_id, _loads(attributes), quantity_value
+
+    def __iter__(self):
+        return self
 
     @property
     def attribute_keys(self) -> Set[str]:
         """The keys used by 'attributes' values contained in data."""
         return self._attribute_keys
 
-    def close(self) -> None:
-        """Close iterator early (removes data from drive).
-
-        Once the iterator is exhausted, it is automatically cleaned-up
-        and calls to the ``close()`` method have no additional effect.
-        """
-        self._generator.close()
-
-    def __next__(self) -> Tuple[int, Dict[str, str], float]:
-        return next(self._generator)
-
-    def __iter__(self):
-        return self
+    def __del__(self) -> None:
+        self.close()
