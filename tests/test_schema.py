@@ -9,6 +9,7 @@ import sys
 import unittest
 import weakref
 from collections import namedtuple, OrderedDict, UserString
+from contextlib import closing
 from stat import S_IRUSR, S_IWUSR
 from .common import TempDirTestCase
 
@@ -943,10 +944,11 @@ class TestConnectDb(TempDirTestCase):
         path = 'mynode.node'
         get_connection(path, required_permissions=None).close()  # Creates Toron db at given path.
 
-        con = sqlite3.connect(path)
-        cur = con.cursor()
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = {row[0] for row in cur}
+        with closing(sqlite3.connect(path)) as con:
+            cur = con.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = {row[0] for row in cur}
+
         tables.discard('sqlite_sequence')  # <- Table added by SQLite.
 
         expected = {
@@ -985,14 +987,14 @@ class TestConnectDb(TempDirTestCase):
 
     def test_unknown_schema(self):
         """Database files with unknown schemas should fail."""
-        # Build a non-Toron SQLite database file.
         path = 'mydata.db'
-        con = sqlite3.connect(path)
-        con.executescript('''
-            CREATE TABLE mytable(col1, col2);
-            INSERT INTO mytable VALUES ('a', 1), ('b', 2), ('c', 3);
-        ''')
-        con.close()
+
+        # Build a non-Toron SQLite database file.
+        with closing(sqlite3.connect(path)) as con:
+            con.executescript('''
+                CREATE TABLE mytable(col1, col2);
+                INSERT INTO mytable VALUES ('a', 1), ('b', 2), ('c', 3);
+            ''')
 
         with self.assertRaises(ToronError):
             get_connection(path, required_permissions=None)
@@ -1001,10 +1003,9 @@ class TestConnectDb(TempDirTestCase):
         """Unsupported schema version should fail."""
         path = 'mynode.toron'
 
-        con = get_connection(path, required_permissions=None)
-        con.execute("INSERT OR REPLACE INTO property VALUES ('toron_schema_version', '999')")
-        con.commit()
-        con.close()
+        with closing(get_connection(path, required_permissions=None)) as con:
+            con.execute("INSERT OR REPLACE INTO property VALUES ('toron_schema_version', '999')")
+            con.commit()
 
         regex = 'Unsupported Toron node format: schema version 999'
         with self.assertRaisesRegex(ToronError, regex):
@@ -1244,14 +1245,14 @@ class TestSavepoint(unittest.TestCase):
         self.assertEqual(cur.fetchall(), [('one',), ('three',)])
 
     def test_bad_isolation_level(self):
-        connection = sqlite3.connect(':memory:')
-        connection.isolation_level = 'DEFERRED'  # <- Incompatible isolation level.
-        cur = connection.cursor()
+        with closing(sqlite3.connect(':memory:')) as connection:
+            connection.isolation_level = 'DEFERRED'  # <- Incompatible isolation level.
+            cur = connection.cursor()
 
-        regex = "isolation_level must be None, got: 'DEFERRED'"
-        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
-            with savepoint(cur):  # <- Should raise error.
-                pass
+            regex = "isolation_level must be None, got: 'DEFERRED'"
+            with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+                with savepoint(cur):  # <- Should raise error.
+                    pass
 
 
 class TestBegin(unittest.TestCase):
@@ -1321,14 +1322,14 @@ class TestBegin(unittest.TestCase):
         self.assertEqual(cur.fetchall(), [], 'Table should exist but contain no records.')
 
     def test_bad_isolation_level(self):
-        connection = sqlite3.connect(':memory:')
-        connection.isolation_level = 'DEFERRED'  # <- Incompatible isolation level.
-        cur = connection.cursor()
+        with closing(sqlite3.connect(':memory:')) as connection:
+            connection.isolation_level = 'DEFERRED'  # <- Incompatible isolation level.
+            cur = connection.cursor()
 
-        regex = "isolation_level must be None, got: 'DEFERRED'"
-        with self.assertRaisesRegex(sqlite3.OperationalError, regex):
-            with begin(cur):  # <- Should raise error.
-                pass
+            regex = "isolation_level must be None, got: 'DEFERRED'"
+            with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+                with begin(cur):  # <- Should raise error.
+                    pass
 
 
 class TestGetUserfunc(unittest.TestCase):
@@ -1409,4 +1410,3 @@ class TestGetUserfunc(unittest.TestCase):
         name1 = get_userfunc(first_con.cursor(), newfunc)
         name2 = get_userfunc(second_con.cursor(), newfunc)
         self.assertEqual(name1, name2, msg='should get same name even on different connections')
-

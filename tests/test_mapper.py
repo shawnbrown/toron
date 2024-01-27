@@ -150,6 +150,8 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
                 mapping_level BLOB_BITFLAGS
             );
         """)
+        self.addCleanup(self.connection.close)
+        self.addCleanup(self.cursor.close)
 
     def test_matches_one_to_one(self):
         info_dict = Mapper._match_exact_or_get_info(
@@ -298,6 +300,8 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
                 mapping_level BLOB_BITFLAGS
             );
         """)
+        self.addCleanup(self.connection.close)
+        self.addCleanup(self.cursor.close)
 
         node = Node()
         data = [
@@ -433,6 +437,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
 class TestMatchRefreshProportions(unittest.TestCase):
     def setUp(self):
         connection = sqlite3.connect(':memory:')
+        self.addCleanup(connection.close)
 
         # Create simplified dummy table for testing.
         self.cursor = connection.execute("""

@@ -9,6 +9,7 @@ import stat
 import tempfile
 import unittest
 from collections import OrderedDict
+from contextlib import closing
 from stat import S_IRUSR, S_IWUSR
 from textwrap import dedent
 
@@ -54,6 +55,10 @@ def get_dal_filepath(dal):
 
     cur = con.execute('PRAGMA database_list')
     _, name, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
+
+    if dal._absolute_working_path:
+        con.close()
+
     if name != 'main':
         raise Exception(f"expected 'main' database: got {name!r}")
     return file
@@ -127,10 +132,10 @@ class TestUniqueId(TempDirTestCase):
 class TestDataAccessLayerFromFile(TempDirTestCase):
     def setUp(self):
         self.existing_path = 'existing_node.toron'
-        con = get_connection(self.existing_path, 'readwrite')
-        params = ('testkey', '"testval"')
-        con.execute("INSERT INTO main.property(key, value) VALUES(?, ?)", params)
-        con.close()
+        with closing(get_connection(self.existing_path, 'readwrite')) as con:
+            params = ('testkey', '"testval"')
+            con.execute("INSERT INTO main.property(key, value) VALUES(?, ?)", params)
+
         self.addCleanup(self.cleanup_temp_files)
 
     def test_load_in_memory(self):
@@ -351,14 +356,17 @@ class TestTransaction(TempDirTestCase):
             cur = connection.cursor()
         except sqlite3.ProgrammingError:
             self.fail(msg or 'connection is not open')
-        cur.close()  # Close unused cursor.
+        finally:
+            cur.close()  # Close unused cursor.
 
     def assertConnectionClosed(self, connection, msg=None):
         try:
             cur = connection.cursor()
         except sqlite3.ProgrammingError:
-            return
-        cur.close()  # Close unused cursor.
+            return  # Return without error when connection is closed.
+
+        # If connection is open, close cursor and fail.
+        cur.close()
         self.fail(msg or 'connection is not closed')
 
     def test_transaction_commit(self):
@@ -602,6 +610,7 @@ class TestRenameIndexColumnsApplyMapper(unittest.TestCase):
         self.dal.set_data({'add_index_columns': ['state', 'county', 'town']})
         self.con = self.dal._connection
         self.cur = self.con.cursor()
+        self.addCleanup(self.con.close)
         self.addCleanup(self.cur.close)
 
     def test_mapper_callable(self):
@@ -2512,27 +2521,25 @@ class TestFormatSelectParams(unittest.TestCase):
         self.assertEqual(parameters, {})
 
     def test_integration(self):
-        con = sqlite3.connect(':memory:')
-        con.executescript("""
-            CREATE TABLE mytable(
-                "state" TEXT,
-                "town" TEXT,
-                "neighborhood" TEXT
-            );
-            INSERT INTO mytable
-            VALUES
-                ('IL', 'Chicago', 'River North'),
-                ('IL', 'Chicago', 'Streeterville'),
-                ('IL', 'Chicago', 'The Loop'),
-                ('IL', 'Springfield', 'Downtown'),
-                ('IL', 'Springfield', 'Harvard Park'),
-                ('IL', 'Springfield', 'Lincoln Park')
-        """)
-
-        where_expr, parameters = dal_class._format_select_params(self.where)
-
-        sql = f'SELECT * FROM mytable WHERE {where_expr}'
-        results = con.execute(sql, parameters).fetchall()
+        with closing(sqlite3.connect(':memory:')) as con:
+            con.executescript("""
+                CREATE TABLE mytable(
+                    "state" TEXT,
+                    "town" TEXT,
+                    "neighborhood" TEXT
+                );
+                INSERT INTO mytable
+                VALUES
+                    ('IL', 'Chicago', 'River North'),
+                    ('IL', 'Chicago', 'Streeterville'),
+                    ('IL', 'Chicago', 'The Loop'),
+                    ('IL', 'Springfield', 'Downtown'),
+                    ('IL', 'Springfield', 'Harvard Park'),
+                    ('IL', 'Springfield', 'Lincoln Park');
+            """)
+            where_expr, parameters = dal_class._format_select_params(self.where)
+            sql = f'SELECT * FROM mytable WHERE {where_expr}'
+            results = con.execute(sql, parameters).fetchall()
 
         expected = [
             ('IL', 'Chicago', 'River North'),
