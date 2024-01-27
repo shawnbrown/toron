@@ -565,7 +565,10 @@ class QuantityIterator(object):
         self._connection.close()
 
     def __next__(self) -> Tuple[int, Dict[str, str], float]:
-        index_id, attributes, quantity_value = next(self._results_cursor)
+        try:
+            index_id, attributes, quantity_value = next(self._results_cursor)
+        except sqlite3.ProgrammingError:
+            raise StopIteration  # Raise StopIteration if cursor is closed.
         return index_id, _loads(attributes), quantity_value
 
     def __iter__(self):

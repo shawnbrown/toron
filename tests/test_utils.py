@@ -470,6 +470,14 @@ class TestQuantityIterator(unittest.TestCase):
         self.assertIs(iter(iterator), iter(iterator))
         self.assertIsInstance(iterator, Iterator)
 
+        list(iterator)  # Consume iterator.
+        with self.assertRaises(StopIteration):
+            next(iterator)
+
+        iterator.close()  # Close internal database connection.
+        with self.assertRaises(StopIteration, msg='Should raise StopIteration, not sqlite3 error.'):
+            next(iterator)
+
     def test_unchanged_data(self):
         data = [
             (1, {'a': 'foo'}, 4.5),
