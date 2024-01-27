@@ -1086,6 +1086,7 @@ def get_connection(
     cur.close()
 
     if schema_version != '0.2.0':  # When schema version is unsupported.
+        con.close()
         msg = f'Unsupported Toron node format: schema version {schema_version}'
         raise ToronError(msg)
 
