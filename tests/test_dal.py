@@ -37,7 +37,14 @@ SQLITE_VERSION_INFO = sqlite3.sqlite_version_info
 
 
 def get_dal_filepath(dal):
-    """Helper function returns path of DAL's db file (if any)."""
+    """Helper function returns path of DAL's db file (if any).
+
+    We are using `PRAGMA database_list` to check the actual file
+    path as understood by the database connection. The attribute
+    `_absolute_working_path` should not be returned directly since
+    its value is managed at the application level and if there's
+    an application level bug, the value could be wrong.
+    """
     if hasattr(dal, '_connection'):
         con = dal._connection
     elif dal._absolute_working_path:
