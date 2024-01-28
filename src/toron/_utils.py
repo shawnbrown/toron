@@ -15,7 +15,7 @@ import hashlib
 import re
 import sqlite3
 from functools import wraps
-from itertools import chain
+from itertools import chain, zip_longest
 from json import (
     dumps as _dumps,
     loads as _loads,
@@ -626,6 +626,33 @@ class BitFlags(Sequence[Literal[0, 1]]):
 class BitFlags2(Sequence[Literal[0, 1]]):
     def __init__(self, args: bytes) -> None:
         self._bytes = args.rstrip(b'\x00') or b'\x00'
+
+    @staticmethod
+    def _bitstream_to_bytes(stream: Iterable[Any]) -> bytes:
+        """Return a bytes object representing the *stream* of bits.
+
+        .. code-block::
+
+            >>> BitFlags._bitstream_to_bytes([1, 1, 1, 1, 0, 0, 0, 0])
+            b'\xf0'
+
+        Trailing bytes of zeros are removed from final byte string.
+
+        Elements in the incoming stream are handled as zeros and ones
+        based on their truth values (falsy elements as 0s and truthy
+        elements as 1s).
+        """
+        normalized = ((1 if x else 0) for x in stream)  # Must be exhaustible.
+        eight_bit_words = zip_longest(*([normalized] * 8), fillvalue=0)
+
+        byte_list = []
+        for byte in eight_bit_words:
+            decimal_number = 0
+            for bit in byte:
+                decimal_number = (decimal_number << 1) | bit
+            byte_list.append(decimal_number.to_bytes(1, 'big'))
+
+        return b''.join(byte_list).rstrip(b'\x00') or b'\x00'
 
     def __getitem__(self, index):
         return NotImplemented
