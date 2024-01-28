@@ -654,6 +654,28 @@ class BitFlags2(Sequence[Literal[0, 1]]):
 
         return b''.join(byte_list).rstrip(b'\x00') or b'\x00'
 
+    @staticmethod
+    def _bytes_to_bitstream(
+        byte_string: bytes
+    ) -> Generator[Literal[0, 1], None, None]:
+        """Generate a stream of bits (0s and 1s) from *byte_string*.
+
+        .. code-block::
+
+            >>> stream = BitFlags._bytes_to_bitstream(b'\xf0')
+            >>> tuple(stream)
+            (1, 1, 1, 1, 0, 0, 0, 0)
+
+        Note: Unlike _bitstream_to_bytes() method, trailing bytes of
+        zeros are *not* removed from the final bit stream. This method
+        is indended to be used on byte strings that have already been
+        normalized.
+        """
+        for byte in byte_string:
+            for i in range (7, -1, -1):  # range() yields 7 thru 0.
+                # Shift right and yield the right-most bit.
+                yield (byte >> i) & 1
+
     def __getitem__(self, index):
         return NotImplemented
 

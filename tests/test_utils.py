@@ -639,6 +639,23 @@ class TestBitFlags2(unittest.TestCase):
                 result = BitFlags2._bitstream_to_bytes(bitstream)
                 self.assertEqual(result, expected)
 
+    def test_bytes_to_bitstream(self):
+        all_values = [
+            (b'\x00', (0, 0, 0, 0, 0, 0, 0, 0)),
+            (b'\x01', (0, 0, 0, 0, 0, 0, 0, 1)),
+            (b'\x0f', (0, 0, 0, 0, 1, 1, 1, 1)),
+            (b'\x10', (0, 0, 0, 1, 0, 0, 0, 0)),
+            (b'\x80', (1, 0, 0, 0, 0, 0, 0, 0)),
+            (b'\xf0', (1, 1, 1, 1, 0, 0, 0, 0)),
+            (b'\xff', (1, 1, 1, 1, 1, 1, 1, 1)),
+            (b'\x00\x00', (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+            (b'\x00\x80', (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0)),
+        ]
+        for byte_string, expected in all_values:
+            with self.subTest(input=byte_string):
+                result = BitFlags2._bytes_to_bitstream(byte_string)
+                self.assertEqual(tuple(result), expected)
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):
