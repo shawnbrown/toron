@@ -59,7 +59,6 @@ import itertools
 import os
 import re
 import sqlite3
-from collections import UserList
 from contextlib import contextmanager
 from json import loads as _loads
 from json import dumps as _dumps
