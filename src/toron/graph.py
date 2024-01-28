@@ -23,12 +23,12 @@ from ._typing import (
     Union,
 )
 
-from ._schema import BitFlags
 from ._utils import (
     TabularData,
     make_readerlike,
     NOVALUE,
     ToronWarning,
+    BitFlags,
 )
 from ._mapper import Mapper
 from .node import Node

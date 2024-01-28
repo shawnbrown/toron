@@ -24,12 +24,12 @@ from ._typing import (
     TYPE_CHECKING,
 )
 
-from ._schema import BitFlags
 from ._utils import (
     TabularData,
     ToronWarning,
     make_readerlike,
     parse_edge_shorthand,
+    BitFlags,
 )
 
 if TYPE_CHECKING:

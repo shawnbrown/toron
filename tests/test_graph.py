@@ -4,9 +4,9 @@ import unittest
 import warnings
 
 from toron.node import Node
-from toron._schema import BitFlags
 from toron._utils import (
     ToronWarning,
+    BitFlags,
 )
 from toron.graph import (
     add_edge,

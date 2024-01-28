@@ -49,7 +49,6 @@ except ImportError:
     fcntl = None  # type: ignore
 
 from . import _schema
-from ._schema import BitFlags
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
 from ._mapper import Mapper
@@ -62,6 +61,7 @@ from ._utils import (
     make_hash,
     eagerly_initialize,
     NOVALUE,
+    BitFlags,
     QuantityIterator,
 )
 

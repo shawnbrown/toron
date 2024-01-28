@@ -19,7 +19,6 @@ from .common import TempDirTestCase
 from toron._schema import get_connection
 from toron._schema import _schema_script
 from toron._schema import _add_functions_and_triggers
-from toron._schema import BitFlags
 from toron._selectors import SimpleSelector
 from toron._dal import DataAccessLayer
 from toron._dal import DataAccessLayerPre24
@@ -30,6 +29,7 @@ from toron._dal import _temp_files_to_delete_atexit
 from toron._utils import (
     ToronError,
     ToronWarning,
+    BitFlags,
     QuantityIterator,
 )
 

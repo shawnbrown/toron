@@ -14,11 +14,10 @@ from stat import S_IRUSR, S_IWUSR
 from .common import TempDirTestCase
 
 from toron._typing import Generator
-from toron._utils import ToronError
+from toron._utils import ToronError, BitFlags
 from toron._selectors import SimpleSelector
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
-    BitFlags,
     _user_apply_bit_flag,
     _user_json_object_keep,
     _user_json_valid,
@@ -40,143 +39,6 @@ from toron._schema import (
     _sql_function_exists,
     get_userfunc,
 )
-
-
-class TestBitFlags(unittest.TestCase):
-    def test_init(self):
-        all_values = [
-            (1, 1, 1, 1, 1, 1, 1, 1),
-            (1, 0, 0, 0, 0, 0, 0, 0),
-            (0, 0, 0, 0, 0, 0, 0, 1),
-            (0, 0, 0, 0, 0, 0, 0, 0),
-        ]
-        for values in all_values:
-            with self.subTest(values=values):
-                # Test multiple single-bit arguments.
-                bits = BitFlags(*values)
-                self.assertEqual(bits.data, values)
-
-                # Test one iterable argument containing multiple bits.
-                bits = BitFlags(values)
-                self.assertEqual(bits.data, values)
-
-    def test_normalize_values(self):
-        values = ('x', 'x', '', 'x', '', '', '', '')
-        bits = BitFlags(*values)
-        msg = 'values should be normalized as 0s and 1s'
-        self.assertEqual(bits.data, (1, 1, 0, 1, 0, 0, 0, 0), msg=msg)
-
-    def test_normalize_length(self):
-        self.assertEqual(
-            BitFlags(1, 1, 0, 1).data,
-            (1, 1, 0, 1, 0, 0, 0, 0),
-            msg='bits should be padded to multiple of eight',
-        )
-
-        self.assertEqual(
-            BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 1).data,
-            (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0),
-            msg='bits should be padded to multiple of eight',
-        )
-
-        self.assertEqual(
-            BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).data,
-            (1, 1, 0, 1, 0, 0, 0, 0),
-            msg='excess trailing 0s should be removed',
-        )
-
-    def test_repr(self):
-        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
-        self.assertEqual(repr(bits), 'BitFlags(1, 1, 0, 1, 0, 0, 0, 0)')
-
-    def test_eq(self):
-        equal_values = [
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1, 0, 0, 0, 0]],
-            [(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-            [[1, 1, 0, 1, 0, 0, 0, 0], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1]],
-            [(1, 1, 0, 1), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-            [[1, 1, 0, 1], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-        ]
-        for a, b in equal_values:
-            with self.subTest(a=a, b=b):
-                self.assertTrue(a == b)
-
-        not_equal_values = [
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 1, 1, 1, 1, 1, 1)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 1, 1, 1, 1, 1, 1)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), ('x', 'x', '', 'x', '', '', '', '')],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 1, 1, 1, 1, 1, 1]],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), 1234],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), 'blerg'],
-        ]
-        for a, b in not_equal_values:
-            with self.subTest(a=a, b=b):
-                self.assertFalse(a == b)
-
-    def test_immutable(self):
-        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
-
-        regex = "'BitFlags' object does not support assignment"
-        with self.assertRaisesRegex(TypeError, regex):
-            bits._data = (1, 1, 1, 1, 1, 1, 1, 1)
-
-        regex = "'BitFlags' object does not support deletion"
-        with self.assertRaisesRegex(TypeError, regex):
-            del bits._data
-
-    def test_hashable(self):
-        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
-        self.assertEqual(hash(bits), hash(bits))
-
-    def test_from_bytes(self):
-        bits = BitFlags.from_bytes(b'\xff')
-        self.assertEqual(bits._data, (1, 1, 1, 1, 1, 1, 1, 1))
-
-        bits = BitFlags.from_bytes(b'\x01')
-        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 1))
-
-        bits = BitFlags.from_bytes(b'\x80\x00')
-        self.assertEqual(bits._data, (1, 0, 0, 0, 0, 0, 0, 0))
-
-        bits = BitFlags.from_bytes(b'\x00\x01')
-        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
-
-        bits = BitFlags.from_bytes(b'\x00')
-        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0))
-
-        bits = BitFlags.from_bytes(b'')
-        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0))
-
-        regex = r"expected bytes object, got list: \['a', '', 'c'\]"
-        with self.assertRaisesRegex(TypeError, regex):
-            bits = BitFlags.from_bytes(['a', '', 'c'])
-
-    def test_convert_to_bytes(self):
-        bits = BitFlags(1, 1, 1, 1, 1, 1, 1, 1)
-        self.assertEqual(bytes(bits), b'\xff')
-
-        bits = BitFlags(1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0)
-        msg = 'excess zeros are not included in bytes representation'
-        self.assertEqual(bytes(bits), b'\xff', msg=msg)
-
-        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 1)
-        self.assertEqual(bytes(bits), b'\x01')
-
-        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 1)
-        self.assertEqual(bytes(bits), b'\x00\x80')
-
-        bits = BitFlags(1)
-        self.assertEqual(bytes(bits), b'\x80')
-
-        bits = BitFlags()
-        self.assertEqual(bytes(bits), b'\x00')
-
-        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        self.assertEqual(bytes(bits), b'\x00')
 
 
 class TestNormalizeIdentifier(unittest.TestCase):
