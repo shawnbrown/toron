@@ -18,6 +18,7 @@ from toron._utils import (
     make_hash,
     eagerly_initialize,
     BitFlags,
+    BitFlags2,
     QuantityIterator,
 )
 
@@ -595,6 +596,23 @@ class TestBitFlags(unittest.TestCase):
 
         bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.assertEqual(bytes(bits), b'\x00')
+
+
+class TestBitFlags2(unittest.TestCase):
+    def test_init_from_bytes(self):
+        all_values = [
+            (b'\xff',     b'\xff'),  # (1, 1, 1, 1, 1, 1, 1, 1)
+            (b'\x80',     b'\x80'),  # (1, 0, 0, 0, 0, 0, 0, 0)
+            (b'\x01',     b'\x01'),  # (0, 0, 0, 0, 0, 0, 0, 1)
+            (b'\x01\x00', b'\x01'),  # (0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)
+            (b'',         b'\x00'),  # (0, 0, 0, 0, 0, 0, 0, 0)
+            (b'\x00',     b'\x00'),  # (0, 0, 0, 0, 0, 0, 0, 0)
+            (b'\x00\x00', b'\x00'),  # (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        ]
+        for original, normalized in all_values:
+            with self.subTest(byte_string=original):
+                bits = BitFlags2(original)
+                self.assertEqual(bits._bytes, normalized)
 
 
 class TestQuantityIterator(unittest.TestCase):

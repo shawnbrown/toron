@@ -623,6 +623,17 @@ class BitFlags(Sequence[Literal[0, 1]]):
         return hash((self.__class__, self._data))
 
 
+class BitFlags2(Sequence[Literal[0, 1]]):
+    def __init__(self, args: bytes) -> None:
+        self._bytes = args.rstrip(b'\x00') or b'\x00'
+
+    def __getitem__(self, index):
+        return NotImplemented
+
+    def __len__(self):
+        return NotImplemented
+
+
 class QuantityIterator(object):
     """An iterator to temporarily store disaggregated quantity data.
 
