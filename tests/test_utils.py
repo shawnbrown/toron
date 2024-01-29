@@ -757,6 +757,14 @@ class TestBitFlags2(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, regex):
             bits['foo']
 
+    def test_iter(self):
+        bit_list = [1, 1, 0, 1, 0, 0, 0, 0]
+        bits = BitFlags2(bit_list)
+
+        self.assertIsInstance(iter(bits), Iterator)
+
+        self.assertEqual(list(bits), bit_list)
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):

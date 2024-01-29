@@ -731,6 +731,10 @@ class BitFlags2(Sequence[Literal[0, 1]]):
         """Return len() of bit flags data."""
         return len(self._bytes) * 8
 
+    def __iter__(self) -> Iterator[Literal[0, 1]]:
+        """Return iterator of 0s and 1s."""
+        return self._bytes_to_bitstream(self._bytes)
+
     def __repr__(self) -> str:
         """Return string representation of BitFlags object."""
         bitstream = self._bytes_to_bitstream(self._bytes)
