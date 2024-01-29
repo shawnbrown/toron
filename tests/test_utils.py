@@ -674,6 +674,34 @@ class TestBitFlags2(unittest.TestCase):
         bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)
         self.assertEqual(repr(bits), 'BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)')
 
+    def test_eq(self):
+        equal_values = [
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1, 0, 0, 0, 0]],
+            [(1, 1, 0, 1, 0, 0, 0, 0), BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
+            [[1, 1, 0, 1, 0, 0, 0, 0], BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1)],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1]],
+            [(1, 1, 0, 1), BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
+            [[1, 1, 0, 1], BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), ('x', 'x', '', 'x', '', '', '', '')],
+        ]
+        for a, b in equal_values:
+            with self.subTest(a=a, b=b):
+                self.assertTrue(a == b)
+
+        not_equal_values = [
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), BitFlags2(1, 1, 1, 1, 1, 1, 1, 1)],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 1, 1, 1, 1, 1, 1)],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 1, 1, 1, 1, 1, 1]],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), 1234],
+            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), 'blerg'],
+        ]
+        for a, b in not_equal_values:
+            with self.subTest(a=a, b=b):
+                self.assertFalse(a == b)
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):

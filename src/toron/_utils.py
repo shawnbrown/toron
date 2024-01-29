@@ -703,6 +703,17 @@ class BitFlags2(Sequence[Literal[0, 1]]):
         formatted = ', '.join(str(x) for x in bitstream)
         return f'{self.__class__.__name__}({formatted})'
 
+    def __eq__(self, other: Any) -> bool:
+        """Return True if BitFlags == other."""
+        if isinstance(other, self.__class__):
+            return self._bytes == other._bytes
+
+        if isinstance(other, Iterable):
+            other_bytes = self._bitstream_to_bytes(other)
+            return self._bytes == other_bytes
+
+        return NotImplemented
+
 
 class QuantityIterator(object):
     """An iterator to temporarily store disaggregated quantity data.
