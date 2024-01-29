@@ -624,6 +624,8 @@ class BitFlags(Sequence[Literal[0, 1]]):
 
 
 class BitFlags2(Sequence[Literal[0, 1]]):
+    __slots__ = ('_bytes',)
+
     def __init__(self, *args: Any) -> None:
         """
         BitFlags(byte_string) -> None
