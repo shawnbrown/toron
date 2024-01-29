@@ -695,7 +695,8 @@ class BitFlags2(Sequence[Literal[0, 1]]):
         return NotImplemented
 
     def __len__(self):
-        return NotImplemented
+        """Return len() of bit flags data."""
+        return len(self._bytes) * 8
 
     def __repr__(self) -> str:
         """Return string representation of BitFlags object."""

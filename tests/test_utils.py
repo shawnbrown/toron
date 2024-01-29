@@ -706,6 +706,13 @@ class TestBitFlags2(unittest.TestCase):
         bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)
         self.assertEqual(hash(bits), hash(bits))
 
+    def test_len(self):
+        self.assertEqual(len(BitFlags2(1, 1, 0, 1)), 8)
+        self.assertEqual(len(BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)), 8)
+        self.assertEqual(len(BitFlags2(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)), 8)
+        self.assertEqual(len(BitFlags2(1, 1, 0, 1, 0, 0, 0, 0, 1)), 16)
+        self.assertEqual(len(BitFlags2(0, 0, 0, 0)), 8)
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):
