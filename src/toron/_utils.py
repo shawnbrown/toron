@@ -624,8 +624,23 @@ class BitFlags(Sequence[Literal[0, 1]]):
 
 
 class BitFlags2(Sequence[Literal[0, 1]]):
-    def __init__(self, args: bytes) -> None:
-        self._bytes = args.rstrip(b'\x00') or b'\x00'
+    def __init__(self, *args: Any) -> None:
+        """
+        BitFlags(byte_string) -> None
+        BitFlags(iterable) -> None
+        BitFlags(bit1[, bit2[, ...]]) -> None
+
+        Initialize a new BitFlags instance.
+        """
+        self._bytes: bytes
+
+        if len(args) == 1:
+            if isinstance(args[0], bytes):
+                self._bytes = args[0].rstrip(b'\x00') or b'\x00'
+            elif isinstance(args[0], Iterable):
+                self._bytes = self._bitstream_to_bytes(args[0])
+        else:
+            self._bytes = self._bitstream_to_bytes(args)
 
     @staticmethod
     def _bitstream_to_bytes(stream: Iterable[Any]) -> bytes:

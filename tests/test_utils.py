@@ -636,6 +636,17 @@ class TestBitFlags2(unittest.TestCase):
                 bits = BitFlags2(original)
                 self.assertEqual(bits._bytes, normalized)
 
+    def test_init_from_iterable_of_bits(self):
+        for bitstream, expected in self.bits_to_bytestring:
+            with self.subTest(input=bitstream):
+                # Using bitstream as single argument.
+                bit_flags = BitFlags2(bitstream)
+                self.assertEqual(bit_flags._bytes, expected)
+
+                # Using unpacked bitstream as multiple arguments.
+                bit_flags = BitFlags2(*bitstream)
+                self.assertEqual(bit_flags._bytes, expected)
+
     def test_bitstream_to_bytes(self):
         for bitstream, expected in self.bits_to_bytestring:
             with self.subTest(input=bitstream):
