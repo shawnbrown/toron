@@ -713,6 +713,41 @@ class TestBitFlags2(unittest.TestCase):
         self.assertEqual(len(BitFlags2(1, 1, 0, 1, 0, 0, 0, 0, 1)), 16)
         self.assertEqual(len(BitFlags2(0, 0, 0, 0)), 8)
 
+    def test_getitem(self):
+        bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0)
+
+        self.assertEqual(bits[0], 1)
+        self.assertEqual(bits[1], 1)
+        self.assertEqual(bits[2], 0)
+        self.assertEqual(bits[3], 1)
+        self.assertEqual(bits[4], 0)
+        self.assertEqual(bits[5], 0)
+        self.assertEqual(bits[6], 0)
+        self.assertEqual(bits[7], 0)
+        self.assertEqual(bits[8], 1)
+
+        # Reverse index.
+        self.assertEqual(bits[-8],  1)
+        self.assertEqual(bits[-9],  0)
+        self.assertEqual(bits[-10], 0)
+        self.assertEqual(bits[-11], 0)
+        self.assertEqual(bits[-12], 0)
+        self.assertEqual(bits[-13], 1)
+        self.assertEqual(bits[-14], 0)
+        self.assertEqual(bits[-15], 1)
+        self.assertEqual(bits[-16], 1)
+
+        # Check for index out of range.
+        with self.assertRaises(IndexError):
+            bits[16]
+
+        with self.assertRaises(IndexError):
+            bits[-17]
+
+        # Check slice behavior.
+        sliced = bits[2:]
+        self.assertEqual(sliced, BitFlags2(0, 1, 0, 0, 0, 0, 1, 0))
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):

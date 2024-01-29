@@ -691,8 +691,36 @@ class BitFlags2(Sequence[Literal[0, 1]]):
                 # Shift right and yield the right-most bit.
                 yield (byte >> i) & 1  # type: ignore [misc]
 
+    @overload
+    def __getitem__(self, index: int) -> Literal[0, 1]:
+        ...
+    @overload
+    def __getitem__(self, index: slice) -> 'BitFlags2':
+        ...
     def __getitem__(self, index):
-        return NotImplemented
+        """Return value at index position or slice."""
+        if isinstance(index, int):
+            len_self = len(self)
+
+            if index < 0:
+                index = len_self + index  # Convert negative index to positive.
+
+            if not (0 <= index < len_self):
+                raise IndexError('index out of range')
+
+            byte = self._bytes[index // 8]  # Get byte containing requested bit.
+            shift_count = 7 - (index % 8)  # Get position of bit within byte.
+            return (byte >> shift_count) & 1  # Shift right & get right-most bit.
+
+        if isinstance(index, slice):
+            tuple_of_bits = tuple(self._bytes_to_bitstream(self._bytes))
+            sliced_bits = tuple_of_bits[index]  # Get slice.
+            return self.__class__(sliced_bits)
+
+        slf_cls = self.__class__.__name__
+        idx_cls = index.__class__.__name__
+        msg = f'{slf_cls} indices must be integers or slices, not {idx_cls}'
+        raise TypeError(msg)
 
     def __len__(self):
         """Return len() of bit flags data."""
