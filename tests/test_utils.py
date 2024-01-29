@@ -702,6 +702,10 @@ class TestBitFlags2(unittest.TestCase):
             with self.subTest(a=a, b=b):
                 self.assertFalse(a == b)
 
+    def test_hashable(self):
+        bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)
+        self.assertEqual(hash(bits), hash(bits))
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):

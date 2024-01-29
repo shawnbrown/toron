@@ -714,6 +714,9 @@ class BitFlags2(Sequence[Literal[0, 1]]):
 
         return NotImplemented
 
+    def __hash__(self):
+        return hash((self.__class__, self._bytes))
+
 
 class QuantityIterator(object):
     """An iterator to temporarily store disaggregated quantity data.
