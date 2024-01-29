@@ -748,6 +748,11 @@ class TestBitFlags2(unittest.TestCase):
         sliced = bits[2:]
         self.assertEqual(sliced, BitFlags2(0, 1, 0, 0, 0, 0, 1, 0))
 
+        # Bad index type.
+        regex = 'must be integers or slices, not str'
+        with self.assertRaisesRegex(TypeError, regex):
+            bits['foo']
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):
