@@ -625,6 +625,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
 
 class BitFlags2(Sequence[Literal[0, 1]]):
     __slots__ = ('_bytes',)
+    _bytes: bytes
 
     def __init__(self, *args: Any) -> None:
         """
@@ -634,8 +635,6 @@ class BitFlags2(Sequence[Literal[0, 1]]):
 
         Initialize a new BitFlags instance.
         """
-        self._bytes: bytes
-
         if len(args) == 1:
             if isinstance(args[0], bytes):
                 self._bytes = args[0].rstrip(b'\x00') or b'\x00'
