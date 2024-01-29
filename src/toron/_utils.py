@@ -691,6 +691,10 @@ class BitFlags2(Sequence[Literal[0, 1]]):
                 # Shift right and yield the right-most bit.
                 yield (byte >> i) & 1  # type: ignore [misc]
 
+    def __bytes__(self) -> bytes:
+        """Return a bytes object representing the sequence of bits."""
+        return self._bytes
+
     @overload
     def __getitem__(self, index: int) -> Literal[0, 1]:
         ...
