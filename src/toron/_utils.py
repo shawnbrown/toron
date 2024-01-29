@@ -674,7 +674,7 @@ class BitFlags2(Sequence[Literal[0, 1]]):
         for byte in byte_string:
             for i in range (7, -1, -1):  # range() yields 7 thru 0.
                 # Shift right and yield the right-most bit.
-                yield (byte >> i) & 1
+                yield (byte >> i) & 1  # type: ignore [misc]
 
     def __getitem__(self, index):
         return NotImplemented
