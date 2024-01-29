@@ -684,7 +684,7 @@ class BitFlags2(Sequence[Literal[0, 1]]):
 
         Note: Unlike _bitstream_to_bytes() method, trailing bytes of
         zeros are *not* removed from the final bit stream. This method
-        is indended to be used on byte strings that have already been
+        is intended to be used on byte strings that have already been
         normalized.
         """
         for byte in byte_string:
@@ -715,7 +715,7 @@ class BitFlags2(Sequence[Literal[0, 1]]):
 
             byte = self._bytes[index // 8]  # Get byte containing requested bit.
             shift_count = 7 - (index % 8)  # Get position of bit within byte.
-            return (byte >> shift_count) & 1  # Shift right & get right-most bit.
+            return (byte >> shift_count) & 1  # Shift right and get right-most bit.
 
         if isinstance(index, slice):
             tuple_of_bits = tuple(self._bytes_to_bitstream(self._bytes))
