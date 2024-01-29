@@ -637,25 +637,6 @@ class TestBitFlags2(unittest.TestCase):
                 self.assertEqual(bits._bytes, normalized)
 
     def test_bitstream_to_bytes(self):
-        all_values = [
-            ((0, 0, 0, 0), b'\x00'),
-            (tuple(),      b'\x00'),
-            ((0, 0, 0, 1), b'\x10'),
-            ((1, 0, 0, 0), b'\x80'),
-            ((1, 1, 1, 1), b'\xf0'),
-            ((0, 0, 0, 0, 0, 0, 0, 0), b'\x00'),
-            ((0, 0, 0, 0, 0, 0, 0, 1), b'\x01'),
-            ((1, 0, 0, 0, 0, 0, 0, 0), b'\x80'),
-            ((0, 0, 0, 0, 1, 1, 1, 1), b'\x0f'),
-            ((1, 1, 1, 1, 1, 1, 1, 1), b'\xff'),
-            ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), b'\x00'),
-            ((0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0), b'\x01'),
-            ((1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), b'\x80'),
-            ((0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0), b'\x00\x80'),
-            ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), b'\x00'),
-            ((0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0), b'\x01'),
-            ((0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0), b'\x00\x80'),
-        ]
         for bitstream, expected in self.bits_to_bytestring:
             with self.subTest(input=bitstream):
                 result = BitFlags2._bitstream_to_bytes(bitstream)
