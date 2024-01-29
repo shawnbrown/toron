@@ -697,6 +697,12 @@ class BitFlags2(Sequence[Literal[0, 1]]):
     def __len__(self):
         return NotImplemented
 
+    def __repr__(self) -> str:
+        """Return string representation of BitFlags object."""
+        bitstream = self._bytes_to_bitstream(self._bytes)
+        formatted = ', '.join(str(x) for x in bitstream)
+        return f'{self.__class__.__name__}({formatted})'
+
 
 class QuantityIterator(object):
     """An iterator to temporarily store disaggregated quantity data.

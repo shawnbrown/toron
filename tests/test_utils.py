@@ -670,6 +670,10 @@ class TestBitFlags2(unittest.TestCase):
                 result = BitFlags2._bytes_to_bitstream(byte_string)
                 self.assertEqual(tuple(result), expected)
 
+    def test_repr(self):
+        bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)
+        self.assertEqual(repr(bits), 'BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)')
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):
