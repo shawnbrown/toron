@@ -513,6 +513,12 @@ class TestBitFlags(unittest.TestCase):
                 bit_flags = BitFlags(*bitstream)
                 self.assertEqual(bit_flags._bytes, expected)
 
+    def test_init_from_single_nonbyte_noniterable(self):
+        self.assertEqual(BitFlags(0)._bytes, b'')
+        self.assertEqual(BitFlags(1)._bytes, b'\x80')
+        self.assertEqual(BitFlags(None)._bytes, b'')
+        self.assertEqual(BitFlags(object())._bytes,  b'\x80')
+
     def test_bitstream_to_bytes(self):
         for bitstream, expected in self.bits_to_bytestring:
             with self.subTest(input=bitstream):

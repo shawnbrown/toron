@@ -513,6 +513,8 @@ class BitFlags(Sequence[Literal[0, 1]]):
                 self._bytes = args[0].rstrip(b'\x00')
             elif isinstance(args[0], Iterable):
                 self._bytes = self._bitstream_to_bytes(args[0])
+            else:
+                self._bytes = self._bitstream_to_bytes(args)
         else:
             self._bytes = self._bitstream_to_bytes(args)
 
