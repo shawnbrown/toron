@@ -281,7 +281,7 @@ class Mapper(object):
         else:
             # Build bit list to encode mapping level.
             key_cols = where_dict.keys()
-            mapping_level = BitFlags(*((col in key_cols) for col in index_columns))
+            mapping_level = BitFlags((col in key_cols) for col in index_columns)
 
             # Build iterator of parameters for executemany().
             parameters: Iterable[Tuple]
