@@ -464,21 +464,21 @@ class TestBitFlags(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.bits_to_bytestring = [
-            ((0, 0, 0, 0), b'\x00'),
-            (tuple(),      b'\x00'),
+            ((0, 0, 0, 0), b''),
+            (tuple(),      b''),
             ((0, 0, 0, 1), b'\x10'),
             ((1, 0, 0, 0), b'\x80'),
             ((1, 1, 1, 1), b'\xf0'),
-            ((0, 0, 0, 0, 0, 0, 0, 0), b'\x00'),
+            ((0, 0, 0, 0, 0, 0, 0, 0), b''),
             ((0, 0, 0, 0, 0, 0, 0, 1), b'\x01'),
             ((1, 0, 0, 0, 0, 0, 0, 0), b'\x80'),
             ((0, 0, 0, 0, 1, 1, 1, 1), b'\x0f'),
             ((1, 1, 1, 1, 1, 1, 1, 1), b'\xff'),
-            ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), b'\x00'),
+            ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), b''),
             ((0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0), b'\x01'),
             ((1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), b'\x80'),
             ((0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0), b'\x00\x80'),
-            ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), b'\x00'),
+            ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), b''),
             ((0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0), b'\x01'),
             ((0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0), b'\x00\x80'),
         ]
@@ -489,9 +489,9 @@ class TestBitFlags(unittest.TestCase):
             (b'\x80',     b'\x80'),  # (1, 0, 0, 0, 0, 0, 0, 0)
             (b'\x01',     b'\x01'),  # (0, 0, 0, 0, 0, 0, 0, 1)
             (b'\x01\x00', b'\x01'),  # (0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)
-            (b'',         b'\x00'),  # (0, 0, 0, 0, 0, 0, 0, 0)
-            (b'\x00',     b'\x00'),  # (0, 0, 0, 0, 0, 0, 0, 0)
-            (b'\x00\x00', b'\x00'),  # (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            (b'',         b''),      # (0, 0, 0, 0, 0, 0, 0, 0)
+            (b'\x00',     b''),      # (0, 0, 0, 0, 0, 0, 0, 0)
+            (b'\x00\x00', b''),      # (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         ]
         for original, normalized in all_values:
             with self.subTest(byte_string=original):
@@ -521,6 +521,7 @@ class TestBitFlags(unittest.TestCase):
 
     def test_bytes_to_bitstream(self):
         all_values = [
+            (b'',     tuple()),
             (b'\x00', (0, 0, 0, 0, 0, 0, 0, 0)),
             (b'\x01', (0, 0, 0, 0, 0, 0, 0, 1)),
             (b'\x0f', (0, 0, 0, 0, 1, 1, 1, 1)),
@@ -552,6 +553,8 @@ class TestBitFlags(unittest.TestCase):
             [(1, 1, 0, 1), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
             [[1, 1, 0, 1], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
             [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), ('x', 'x', '', 'x', '', '', '', '')],
+            [BitFlags(), (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)],
+            [[], BitFlags(0, 0, 0, 0, 0, 0, 0, 0)],
         ]
         for a, b in equal_values:
             with self.subTest(a=a, b=b):
@@ -577,7 +580,11 @@ class TestBitFlags(unittest.TestCase):
         self.assertEqual(len(BitFlags(1, 1, 0, 1, 0, 0, 0, 0)), 8)
         self.assertEqual(len(BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)), 8)
         self.assertEqual(len(BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 1)), 16)
-        self.assertEqual(len(BitFlags(0, 0, 0, 0)), 8)
+        self.assertEqual(len(BitFlags(0, 0, 0, 0, 0, 0, 0, 0)), 0)
+
+    def test_truth_value(self):
+        self.assertTrue(BitFlags(0, 0, 0, 1))
+        self.assertFalse(BitFlags(0, 0, 0, 0), msg='Empty should test as False.')
 
     def test_getitem(self):
         bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0)

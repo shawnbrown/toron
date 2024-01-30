@@ -510,7 +510,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
         """
         if len(args) == 1:
             if isinstance(args[0], bytes):
-                self._bytes = args[0].rstrip(b'\x00') or b'\x00'
+                self._bytes = args[0].rstrip(b'\x00')
             elif isinstance(args[0], Iterable):
                 self._bytes = self._bitstream_to_bytes(args[0])
         else:
@@ -541,7 +541,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
                 decimal_number = (decimal_number << 1) | bit
             byte_list.append(decimal_number.to_bytes(1, 'big'))
 
-        return b''.join(byte_list).rstrip(b'\x00') or b'\x00'
+        return b''.join(byte_list).rstrip(b'\x00')
 
     @staticmethod
     def _bytes_to_bitstream(
