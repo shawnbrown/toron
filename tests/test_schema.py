@@ -986,7 +986,7 @@ class TestBitFlagsConversionAndAdaptation(unittest.TestCase):
         result = self.get_mapping_levels()  # <- Retrieve BitFlags from bytes.
 
         self.assertIsInstance(result[0], BitFlags)
-        self.assertEqual(result, [BitFlags.from_bytes(raw_bytes)])
+        self.assertEqual(result, [BitFlags(raw_bytes)])
 
 
 class TestJsonConversion(unittest.TestCase):

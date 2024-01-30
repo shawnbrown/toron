@@ -217,7 +217,7 @@ sqlite3.register_converter('TEXT_SELECTORS', convert_text_selectors)
 sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 
 sqlite3.register_adapter(BitFlags, bytes)
-sqlite3.register_converter('BLOB_BITFLAGS', BitFlags.from_bytes)
+sqlite3.register_converter('BLOB_BITFLAGS', BitFlags)
 
 
 def normalize_identifier(value: str) -> str:
@@ -388,7 +388,7 @@ def _user_apply_bit_flag(
         return value  # <- EXIT!
 
     if not isinstance(bit_flags, BitFlags):
-        bit_flags = BitFlags.from_bytes(bit_flags)
+        bit_flags = BitFlags(bit_flags)
 
     try:
         bit_flag = bit_flags[bit_index]

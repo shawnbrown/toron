@@ -468,16 +468,16 @@ class BitFlags(Sequence[Literal[0, 1]]):
         >>> BitFlags('x', 'x', '', 'x', '', '', '', '')
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
+    Create a BitFlags object from bytes::
+
+        >>> BitFlags(b'\xd0')
+        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+
     Change a BitFlags object into bytes::
 
         >>> bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
         >>> bytes(bits)
         b'\xd0'
-
-    Create a BitFlags object from bytes::
-
-        >>> BitFlags.from_bytes(b'\xd0')
-        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
     When comparing BitFlags against other containers of ones and
     zeros, trailing zeros are ignored::
@@ -495,135 +495,8 @@ class BitFlags(Sequence[Literal[0, 1]]):
 
         >>> import sqlite3
         >>> sqlite3.register_adapter(BitFlags, bytes)
-        >>> sqlite3.register_converter('BLOB_BITFLAGS', BitFlags.from_bytes)
+        >>> sqlite3.register_converter('BLOB_BITFLAGS', BitFlags)
     """
-    def __init__(self, *args: Any) -> None:
-        """
-        BitFlags(iterable) -> None
-        BitFlags(bit1[, bit2[, ...]]) -> None
-
-        Initialize a new BitFlags instance.
-        """
-        if len(args) == 1 and isinstance(args[0], Iterable):
-            args = tuple(args[0])
-
-        data: List[Literal[0, 1]] = [(1 if x else 0) for x in args]
-        data = self._normalize_length(data)
-
-        self._data: Tuple[Literal[0, 1], ...]
-        super().__setattr__('_data', tuple(data))  # Assign to "immutable".
-
-    @classmethod
-    def from_bytes(cls, bytes_: bytes) -> 'BitFlags':
-        """Take a bytes object and return a new BitFlags."""
-        # Enforce type to prevent iteration over non-bytes objects.
-        if not isinstance(bytes_, bytes):
-            cls_name = bytes_.__class__.__name__
-            msg = f'expected bytes object, got {cls_name}: {bytes_!r}'
-            raise TypeError(msg)
-
-        # Convert bytes to strings of 1s and 0s and slice-off '0b' prefix.
-        binary_strings = (bin(x)[2:] for x in bytes_)
-
-        # Pad strings with leading "0"s to form 8-bit words.
-        eight_bit_words = (x.rjust(8, '0') for x in binary_strings)
-
-        # Convert to a stream of integers (1s and 0s only).
-        ones_and_zeros = (int(x) for x in chain(*eight_bit_words))
-
-        # Initialize and return a new BitFlags instance.
-        new_inst = cls.__new__(cls)
-        cls.__init__(new_inst, *ones_and_zeros)
-        return new_inst
-
-    def __bytes__(self) -> bytes:
-        """Return a bytes object representing the sequence of bits."""
-        bitstr = ''.join(str(x) for x in self._data)
-
-        # Make sure length of bits is a multiple of 8.
-        bitstr = bitstr.rstrip('0')
-        remainder = len(bitstr) % 8
-        if remainder:
-            bitstr = bitstr + '0' * (8 - remainder)
-
-        # If no data, set to zeros.
-        if not bitstr:
-            bitstr = '0' * 8
-
-        # Group into 8-bit chunks and convert to bytes.
-        eight_bit_chunks = (bitstr[i:i + 8] for i in range(0, len(bitstr), 8))
-        return b''.join(int(x, 2).to_bytes(1, 'big') for x in eight_bit_chunks)
-
-    @staticmethod
-    def _normalize_length(values: Iterable) -> List:
-        data = list(values)
-
-        # Remove excess trailing 0 bits.
-        while data:
-            if data[-1] == 0:
-                data.pop()
-            else:
-                break
-
-        # Pad bits to a multiple of eight.
-        remainder = len(data) % 8
-        if remainder:
-            data = data + [0] * (8 - remainder)
-
-        # If no data, set to zeros.
-        if not data:
-            data = [0] * 8
-
-        return data
-
-    @property
-    def data(self) -> Tuple[Literal[0, 1], ...]:
-        """A tuple containing the contents of the BitFlags object."""
-        return self._data
-
-    @overload
-    def __getitem__(self, key: int) -> Literal[0, 1]:
-        ...
-    @overload
-    def __getitem__(self, key: slice) -> 'BitFlags':
-        ...
-    def __getitem__(self, key):
-        """Return value at index position or slice."""
-        return self._data[key]
-
-    def __len__(self):
-        """Return len() of bit flags data."""
-        return len(self._data)
-
-    def __repr__(self) -> str:
-        """Return string representation of BitFlags object."""
-        bits = ', '.join(str(x) for x in self._data)
-        return f'{self.__class__.__name__}({bits})'
-
-    def __eq__(self, other: Any) -> bool:
-        """Return True if BitFlags == other."""
-        if isinstance(other, self.__class__):
-            return self._data == other._data
-
-        if isinstance(other, Iterable):
-            other = self._normalize_length(other)
-            return self._data == tuple(other)
-
-        return NotImplemented
-
-    def __setattr__(self, *args):
-        msg = f'{self.__class__.__name__!r} object does not support assignment'
-        raise TypeError(msg)
-
-    def __delattr__(self, *args):
-        msg = f'{self.__class__.__name__!r} object does not support deletion'
-        raise TypeError(msg)
-
-    def __hash__(self):
-        return hash((self.__class__, self._data))
-
-
-class BitFlags2(Sequence[Literal[0, 1]]):
     __slots__ = ('_bytes',)
     _bytes: bytes
 
@@ -700,7 +573,7 @@ class BitFlags2(Sequence[Literal[0, 1]]):
     def __getitem__(self, index: int) -> Literal[0, 1]:
         ...
     @overload
-    def __getitem__(self, index: slice) -> 'BitFlags2':
+    def __getitem__(self, index: slice) -> 'BitFlags':
         ...
     def __getitem__(self, index):
         """Return value at index position or slice."""

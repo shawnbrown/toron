@@ -18,7 +18,6 @@ from toron._utils import (
     make_hash,
     eagerly_initialize,
     BitFlags,
-    BitFlags2,
     QuantityIterator,
 )
 
@@ -462,143 +461,6 @@ class TestEagerlyInitialize(unittest.TestCase):
 
 
 class TestBitFlags(unittest.TestCase):
-    def test_init(self):
-        all_values = [
-            (1, 1, 1, 1, 1, 1, 1, 1),
-            (1, 0, 0, 0, 0, 0, 0, 0),
-            (0, 0, 0, 0, 0, 0, 0, 1),
-            (0, 0, 0, 0, 0, 0, 0, 0),
-        ]
-        for values in all_values:
-            with self.subTest(values=values):
-                # Test multiple single-bit arguments.
-                bits = BitFlags(*values)
-                self.assertEqual(bits.data, values)
-
-                # Test one iterable argument containing multiple bits.
-                bits = BitFlags(values)
-                self.assertEqual(bits.data, values)
-
-    def test_normalize_values(self):
-        values = ('x', 'x', '', 'x', '', '', '', '')
-        bits = BitFlags(*values)
-        msg = 'values should be normalized as 0s and 1s'
-        self.assertEqual(bits.data, (1, 1, 0, 1, 0, 0, 0, 0), msg=msg)
-
-    def test_normalize_length(self):
-        self.assertEqual(
-            BitFlags(1, 1, 0, 1).data,
-            (1, 1, 0, 1, 0, 0, 0, 0),
-            msg='bits should be padded to multiple of eight',
-        )
-
-        self.assertEqual(
-            BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 1).data,
-            (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0),
-            msg='bits should be padded to multiple of eight',
-        )
-
-        self.assertEqual(
-            BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).data,
-            (1, 1, 0, 1, 0, 0, 0, 0),
-            msg='excess trailing 0s should be removed',
-        )
-
-    def test_repr(self):
-        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
-        self.assertEqual(repr(bits), 'BitFlags(1, 1, 0, 1, 0, 0, 0, 0)')
-
-    def test_eq(self):
-        equal_values = [
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1, 0, 0, 0, 0]],
-            [(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-            [[1, 1, 0, 1, 0, 0, 0, 0], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1]],
-            [(1, 1, 0, 1), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-            [[1, 1, 0, 1], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
-        ]
-        for a, b in equal_values:
-            with self.subTest(a=a, b=b):
-                self.assertTrue(a == b)
-
-        not_equal_values = [
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 1, 1, 1, 1, 1, 1)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 1, 1, 1, 1, 1, 1)],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), ('x', 'x', '', 'x', '', '', '', '')],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 1, 1, 1, 1, 1, 1]],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), 1234],
-            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), 'blerg'],
-        ]
-        for a, b in not_equal_values:
-            with self.subTest(a=a, b=b):
-                self.assertFalse(a == b)
-
-    def test_immutable(self):
-        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
-
-        regex = "'BitFlags' object does not support assignment"
-        with self.assertRaisesRegex(TypeError, regex):
-            bits._data = (1, 1, 1, 1, 1, 1, 1, 1)
-
-        regex = "'BitFlags' object does not support deletion"
-        with self.assertRaisesRegex(TypeError, regex):
-            del bits._data
-
-    def test_hashable(self):
-        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
-        self.assertEqual(hash(bits), hash(bits))
-
-    def test_from_bytes(self):
-        bits = BitFlags.from_bytes(b'\xff')
-        self.assertEqual(bits._data, (1, 1, 1, 1, 1, 1, 1, 1))
-
-        bits = BitFlags.from_bytes(b'\x01')
-        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 1))
-
-        bits = BitFlags.from_bytes(b'\x80\x00')
-        self.assertEqual(bits._data, (1, 0, 0, 0, 0, 0, 0, 0))
-
-        bits = BitFlags.from_bytes(b'\x00\x01')
-        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
-
-        bits = BitFlags.from_bytes(b'\x00')
-        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0))
-
-        bits = BitFlags.from_bytes(b'')
-        self.assertEqual(bits._data, (0, 0, 0, 0, 0, 0, 0, 0))
-
-        regex = r"expected bytes object, got list: \['a', '', 'c'\]"
-        with self.assertRaisesRegex(TypeError, regex):
-            bits = BitFlags.from_bytes(['a', '', 'c'])
-
-    def test_convert_to_bytes(self):
-        bits = BitFlags(1, 1, 1, 1, 1, 1, 1, 1)
-        self.assertEqual(bytes(bits), b'\xff')
-
-        bits = BitFlags(1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0)
-        msg = 'excess zeros are not included in bytes representation'
-        self.assertEqual(bytes(bits), b'\xff', msg=msg)
-
-        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 1)
-        self.assertEqual(bytes(bits), b'\x01')
-
-        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 1)
-        self.assertEqual(bytes(bits), b'\x00\x80')
-
-        bits = BitFlags(1)
-        self.assertEqual(bytes(bits), b'\x80')
-
-        bits = BitFlags()
-        self.assertEqual(bytes(bits), b'\x00')
-
-        bits = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        self.assertEqual(bytes(bits), b'\x00')
-
-
-class TestBitFlags2(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.bits_to_bytestring = [
@@ -633,28 +495,28 @@ class TestBitFlags2(unittest.TestCase):
         ]
         for original, normalized in all_values:
             with self.subTest(byte_string=original):
-                bits = BitFlags2(original)
+                bits = BitFlags(original)
                 self.assertEqual(bits._bytes, normalized)
 
     def test_convert_to_bytes(self):
-        bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)
+        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
         self.assertEqual(bytes(bits), b'\xd0')
 
     def test_init_from_iterable_of_bits(self):
         for bitstream, expected in self.bits_to_bytestring:
             with self.subTest(input=bitstream):
                 # Using bitstream as single argument.
-                bit_flags = BitFlags2(bitstream)
+                bit_flags = BitFlags(bitstream)
                 self.assertEqual(bit_flags._bytes, expected)
 
                 # Using unpacked bitstream as multiple arguments.
-                bit_flags = BitFlags2(*bitstream)
+                bit_flags = BitFlags(*bitstream)
                 self.assertEqual(bit_flags._bytes, expected)
 
     def test_bitstream_to_bytes(self):
         for bitstream, expected in self.bits_to_bytestring:
             with self.subTest(input=bitstream):
-                result = BitFlags2._bitstream_to_bytes(bitstream)
+                result = BitFlags._bitstream_to_bytes(bitstream)
                 self.assertEqual(result, expected)
 
     def test_bytes_to_bitstream(self):
@@ -671,54 +533,54 @@ class TestBitFlags2(unittest.TestCase):
         ]
         for byte_string, expected in all_values:
             with self.subTest(input=byte_string):
-                result = BitFlags2._bytes_to_bitstream(byte_string)
+                result = BitFlags._bytes_to_bitstream(byte_string)
                 self.assertEqual(tuple(result), expected)
 
     def test_repr(self):
-        bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)
-        self.assertEqual(repr(bits), 'BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)')
+        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+        self.assertEqual(repr(bits), 'BitFlags(1, 1, 0, 1, 0, 0, 0, 0)')
 
     def test_eq(self):
         equal_values = [
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1, 0, 0, 0, 0]],
-            [(1, 1, 0, 1, 0, 0, 0, 0), BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
-            [[1, 1, 0, 1, 0, 0, 0, 0], BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1)],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1]],
-            [(1, 1, 0, 1), BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
-            [[1, 1, 0, 1], BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), ('x', 'x', '', 'x', '', '', '', '')],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1, 0, 0, 0, 0]],
+            [(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
+            [[1, 1, 0, 1, 0, 0, 0, 0], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 0, 1)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 0, 1]],
+            [(1, 1, 0, 1), BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
+            [[1, 1, 0, 1], BitFlags(1, 1, 0, 1, 0, 0, 0, 0)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), ('x', 'x', '', 'x', '', '', '', '')],
         ]
         for a, b in equal_values:
             with self.subTest(a=a, b=b):
                 self.assertTrue(a == b)
 
         not_equal_values = [
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), BitFlags2(1, 1, 1, 1, 1, 1, 1, 1)],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 1, 1, 1, 1, 1, 1)],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 1, 1, 1, 1, 1, 1]],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), 1234],
-            [BitFlags2(1, 1, 0, 1, 0, 0, 0, 0), 'blerg'],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), BitFlags(1, 1, 1, 1, 1, 1, 1, 1)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), (1, 1, 1, 1, 1, 1, 1, 1)],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), [1, 1, 1, 1, 1, 1, 1, 1]],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), 1234],
+            [BitFlags(1, 1, 0, 1, 0, 0, 0, 0), 'blerg'],
         ]
         for a, b in not_equal_values:
             with self.subTest(a=a, b=b):
                 self.assertFalse(a == b)
 
     def test_hashable(self):
-        bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)
+        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
         self.assertEqual(hash(bits), hash(bits))
 
     def test_len(self):
-        self.assertEqual(len(BitFlags2(1, 1, 0, 1)), 8)
-        self.assertEqual(len(BitFlags2(1, 1, 0, 1, 0, 0, 0, 0)), 8)
-        self.assertEqual(len(BitFlags2(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)), 8)
-        self.assertEqual(len(BitFlags2(1, 1, 0, 1, 0, 0, 0, 0, 1)), 16)
-        self.assertEqual(len(BitFlags2(0, 0, 0, 0)), 8)
+        self.assertEqual(len(BitFlags(1, 1, 0, 1)), 8)
+        self.assertEqual(len(BitFlags(1, 1, 0, 1, 0, 0, 0, 0)), 8)
+        self.assertEqual(len(BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0)), 8)
+        self.assertEqual(len(BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 1)), 16)
+        self.assertEqual(len(BitFlags(0, 0, 0, 0)), 8)
 
     def test_getitem(self):
-        bits = BitFlags2(1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0)
+        bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0)
 
         self.assertEqual(bits[0], 1)
         self.assertEqual(bits[1], 1)
@@ -750,7 +612,7 @@ class TestBitFlags2(unittest.TestCase):
 
         # Check slice behavior.
         sliced = bits[2:]
-        self.assertEqual(sliced, BitFlags2(0, 1, 0, 0, 0, 0, 1, 0))
+        self.assertEqual(sliced, BitFlags(0, 1, 0, 0, 0, 0, 1, 0))
 
         # Bad index type.
         regex = 'must be integers or slices, not str'
@@ -759,7 +621,7 @@ class TestBitFlags2(unittest.TestCase):
 
     def test_iter(self):
         bit_list = [1, 1, 0, 1, 0, 0, 0, 0]
-        bits = BitFlags2(bit_list)
+        bits = BitFlags(bit_list)
 
         self.assertIsInstance(iter(bits), Iterator)
 
