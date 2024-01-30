@@ -727,8 +727,8 @@ class BitFlags2(Sequence[Literal[0, 1]]):
         msg = f'{slf_cls} indices must be integers or slices, not {idx_cls}'
         raise TypeError(msg)
 
-    def __len__(self):
-        """Return len() of bit flags data."""
+    def __len__(self) -> int:
+        """Return number of bits contained in instance."""
         return len(self._bytes) * 8
 
     def __iter__(self) -> Iterator[Literal[0, 1]]:
@@ -752,7 +752,8 @@ class BitFlags2(Sequence[Literal[0, 1]]):
 
         return NotImplemented
 
-    def __hash__(self):
+    def __hash__(self) -> int:
+        """Return hash integer of instance."""
         return hash((self.__class__, self._bytes))
 
 
