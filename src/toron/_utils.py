@@ -540,6 +540,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
         for byte in eight_bit_words:
             decimal_number = 0
             for bit in byte:
+                # Shift left and set the right-most bit.
                 decimal_number = (decimal_number << 1) | bit
             byte_list.append(decimal_number.to_bytes(1, 'big'))
 
@@ -564,7 +565,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
         """
         for byte in byte_string:
             for i in range (7, -1, -1):  # range() yields 7 thru 0.
-                # Shift right and yield the right-most bit.
+                # Shift right and get the right-most bit.
                 yield (byte >> i) & 1  # type: ignore [misc]
 
     def __bytes__(self) -> bytes:
@@ -589,7 +590,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
                 raise IndexError('index out of range')
 
             byte = self._bytes[index // 8]  # Get byte containing requested bit.
-            shift_count = 7 - (index % 8)  # Get position of bit within byte.
+            shift_count = 7 - (index % 8)  # Get offset minus bit position.
             return (byte >> shift_count) & 1  # Shift right and get right-most bit.
 
         if isinstance(index, slice):
