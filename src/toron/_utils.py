@@ -455,17 +455,12 @@ class BitFlags(Sequence[Literal[0, 1]]):
     Create a BitFlags object from arguments of 0 or 1 (bit sequences
     are padded to the nearest multiple of 8)::
 
-        >>> BitFlags(1, 1, 0, 1, 0)
+        >>> BitFlags(1, 1, 0, 1)
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
     Create a BitFlags object from a single iterable argument::
 
-        >>> BitFlags([1, 1, 0, 1, 0])
-        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
-
-    Other values are converted to 0 and 1 based on their truth value::
-
-        >>> BitFlags('x', 'x', '', 'x', '', '', '', '')
+        >>> BitFlags([1, 1, 0, 1])
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
     Create a BitFlags object from bytes::
@@ -473,20 +468,25 @@ class BitFlags(Sequence[Literal[0, 1]]):
         >>> BitFlags(b'\xd0')
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
-    Change a BitFlags object into bytes::
+    Convert a BitFlags object into bytes::
 
         >>> bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
         >>> bytes(bits)
         b'\xd0'
 
-    When comparing BitFlags against other containers of ones and
-    zeros, trailing zeros are ignored::
+    Other values are converted to 0 and 1 based on their truth value::
 
-        >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0) == (1, 1, 0, 1, 0)
+        >>> BitFlags('x', 'x', '', 'x', '', '', '', '')
+        BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+
+    When comparing BitFlags against other containers, trailing zeros
+    are ignored and objects are compared by their truth values::
+
+        >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0) == (1, 1, 0, 1)
         True
 
     Overlong bit sequences are truncated to the smallest multiple of 8
-    that preserves the given data::
+    that preserves the given bits::
 
         >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
