@@ -10,7 +10,7 @@ from typing import (
     Union,
 )
 
-from ._dal import dal_class
+from ._dal import dal_class, PathType
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
 from ._utils import TabularData
@@ -19,6 +19,17 @@ from ._utils import TabularData
 class Node(object):
     def __init__(self, cache_to_drive: bool = False) -> None:
         self._dal = dal_class(cache_to_drive=cache_to_drive)
+
+    @classmethod
+    def from_file(
+        cls, path: PathType, cache_to_drive: bool = False
+    ) -> 'Node':
+        obj = cls.__new__(cls)
+        obj._dal = dal_class.from_file(
+            path=path,
+            cache_to_drive=cache_to_drive,
+        )
+        return obj
 
     @property
     def path(self):
