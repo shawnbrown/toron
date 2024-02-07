@@ -33,3 +33,25 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/shawnbrown/toron"
+
+[tool.tox]
+legacy_tox_ini = """
+  [tox]
+  minversion = 4.0.0
+  envlist = mypy,py{37,38,39,310,311,312,313},pypy39,pypy310
+  skip_missing_interpreters = true
+
+  [testenv]
+  skip_install = true
+  deps = -r requirements-dev.txt
+  commands =
+    python -c 'import sqlite3;print(sqlite3.sqlite_version)'
+    python run-tests.py
+
+  [testenv:mypy]
+  deps =
+    -r requirements-dev.txt
+    mypy
+    pandas-stubs
+  commands = mypy src/toron
+"""
