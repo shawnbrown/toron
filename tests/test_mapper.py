@@ -50,6 +50,23 @@ class TestMapper(unittest.TestCase):
         }
         self.assertEqual(set(mapper.cur.fetchall()), expected)
 
+    def test_skipping_empty_rows(self):
+        """Empty rows should be skipped."""
+        data = [
+            ['idx1', 'population', 'idx1', 'idx2'],
+            ['A', 70, 'A', 'x'],
+            [],
+            ['B', 80, 'B', 'y'],
+        ]
+        mapper = Mapper(data, 'population')
+
+        mapper.cur.execute('SELECT * FROM temp.source_mapping')
+        expected = {
+            (1, '["A"]', '["A", "x"]', 70.0),
+            (2, '["B"]', '["B", "y"]', 80.0),
+        }
+        self.assertEqual(set(mapper.cur.fetchall()), expected)
+
 
 class TestFindMatchesFormatData(unittest.TestCase):
     def setUp(self):

@@ -106,6 +106,9 @@ class Mapper(object):
         self.right_keys = fieldnames[weight_pos+1:]
 
         for row in iterator:
+            if not row:
+                continue  # If row is empty, skip to next.
+
             sql = """
                 INSERT INTO temp.source_mapping
                   (left_labels, right_labels, weight)
