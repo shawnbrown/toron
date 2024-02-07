@@ -13,7 +13,7 @@ args = [
     '-m', 'unittest',            # Run the unittest module as a script.
 ]
 
-# Append arguments passed to script or configure test discovery.
+# Include arguments passed to script or configure test discovery.
 args.extend(sys.argv[1:] or ['discover', '-s', 'tests', '-t', '.'])
 
 # Get working directory for subprocess.
