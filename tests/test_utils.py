@@ -2,6 +2,7 @@
 
 import csv
 import io
+import sqlite3
 import unittest
 from collections.abc import Iterator
 
@@ -708,3 +709,15 @@ class TestQuantityIterator(unittest.TestCase):
             _attribute_keys={'a', 'b', 'c'},
         )
         self.assertEqual(iterator2.attribute_keys, {'a', 'b', 'c'})
+
+    def test_failure_to_load(self):
+        bogus_data = [
+            (1, {'a': 'foo'}, 4.5),
+            (2, {'a': 'bar'}, 2.5),
+            (3, {'b': 'baz'}, None),  # <- Will violate NOT NULL constraint.
+            (4, {'c': 'qux'}, 9.0),
+        ]
+
+        msg = 'failure to load should only raise a sqlite3.IntegrityError'
+        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+            QuantityIterator('0000-00-00-00-000000', bogus_data)

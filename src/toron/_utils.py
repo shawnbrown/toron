@@ -704,9 +704,10 @@ class QuantityIterator(object):
 
         # Connect to private, on-drive temp file (using '' makes temp file).
         self._connection = sqlite3.connect('')
+        self._cursor = self._connection.cursor()
 
         # Create a temporary table.
-        cursor = self._connection.execute("""
+        self._cursor = self._cursor.execute("""
             CREATE TEMP TABLE temp_quantities (
                 index_id INTEGER NOT NULL,
                 attributes TEXT NOT NULL,
@@ -718,18 +719,18 @@ class QuantityIterator(object):
         sql = 'INSERT INTO temp.temp_quantities VALUES(?, ?, ?)'
         if _attribute_keys:
             iterator = ((a, _dumps(b, sort_keys=True), c) for a, b, c in data)
-            cursor.executemany(sql, iterator)
+            self._cursor.executemany(sql, iterator)
             self._attribute_keys = set(_attribute_keys)
         else:
             # If no *_attribute_keys* given, get them when inserting rows.
             _attribute_keys = set()
             for a, b, c in data:
                 _attribute_keys.update(b.keys())  # Accumulate keys.
-                cursor.execute(sql, (a, _dumps(b, sort_keys=True), c))
+                self._cursor.execute(sql, (a, _dumps(b, sort_keys=True), c))
             self._attribute_keys = _attribute_keys
 
         # Run query to group and order quantity data.
-        cursor.execute("""
+        self._cursor.execute("""
             SELECT
                 index_id,
                 attributes,
@@ -738,7 +739,6 @@ class QuantityIterator(object):
             GROUP BY index_id, attributes
             ORDER BY index_id
         """)
-        self._results_cursor = cursor
 
     def close(self) -> None:
         """Close iterator (removes data from drive).
@@ -748,14 +748,14 @@ class QuantityIterator(object):
         removed some moments later.
         """
         try:
-            self._results_cursor.close()
+            self._cursor.close()
         except sqlite3.ProgrammingError:
             pass
         self._connection.close()
 
     def __next__(self) -> Tuple[int, Dict[str, str], float]:
         try:
-            index_id, attributes, quantity_value = next(self._results_cursor)
+            index_id, attributes, quantity_value = next(self._cursor)
         except sqlite3.ProgrammingError:
             raise StopIteration  # Raise StopIteration if cursor is closed.
         return index_id, _loads(attributes), quantity_value
