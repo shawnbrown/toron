@@ -567,14 +567,14 @@ class GetMatchingKey(object):
     """
     def __init__(
         self,
-        selectors: Union[Mapping[Any, List[SelectorBase]],
-                         Iterable[Tuple[Any, List[SelectorBase]]]],
+        selectors: Union[Mapping[Any, Optional[List[SelectorBase]]],
+                         Iterable[Tuple[Any, Optional[List[SelectorBase]]]]],
         default: Any,
     ):
         if isinstance(selectors, Mapping):
             selectors = selectors.items()  # Normalize as key-value item pairs.
 
-        self._selector_items = frozenset((k, frozenset(v)) for k, v in selectors)
+        self._selector_items = frozenset((k, frozenset(v)) for k, v in selectors if v)
         self._default = default
 
     def __call__(self, row_dict: Union[AnyStr, Mapping[str, str]]) -> Any:

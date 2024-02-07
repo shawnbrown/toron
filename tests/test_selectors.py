@@ -989,3 +989,18 @@ class TestGetMatchingKey(unittest.TestCase):
         matcher = GetMatchingKey({1: [SimpleSelector('A')]}, default=1)
         self.assertNotEqual(matcher, [1, 2, 3])
 
+    def test_missing_selector(self):
+        """Selectors are not required and may be omitted."""
+        key_selector_dict = {
+            1: None,  # <- Selector for item 1 has been omitted.
+            2: [SimpleSelector('B', '=', 'yyy')],
+        }
+        get_matching_key = GetMatchingKey(key_selector_dict, default=1)
+
+        expected = frozenset({
+            (2, frozenset({SimpleSelector('B', '=', 'yyy')}))  # <- Only includes item 2.
+        })
+        self.assertEqual(get_matching_key._selector_items, expected)
+
+        msg = 'default should still be 1 despite not have a selector'
+        self.assertEqual(get_matching_key._default, 1, msg=msg)
