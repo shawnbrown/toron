@@ -707,7 +707,7 @@ class QuantityIterator(object):
         self._cursor = self._connection.cursor()
 
         # Create a temporary table.
-        self._cursor = self._cursor.execute("""
+        self._cursor.execute("""
             CREATE TEMP TABLE temp_quantities (
                 index_id INTEGER NOT NULL,
                 attributes TEXT NOT NULL,
