@@ -537,9 +537,9 @@ class BitFlags(Sequence[Literal[0, 1]]):
         eight_bit_words = zip_longest(*([normalized] * 8), fillvalue=0)
 
         byte_list = []
-        for byte in eight_bit_words:
+        for binary_word in eight_bit_words:
             decimal_number = 0
-            for bit in byte:
+            for bit in binary_word:
                 # Shift left and set the right-most bit.
                 decimal_number = (decimal_number << 1) | bit
             byte_list.append(decimal_number.to_bytes(1, 'big'))
