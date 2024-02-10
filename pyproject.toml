@@ -51,7 +51,7 @@ legacy_tox_ini = """
   [testenv:mypy]
   deps =
     -r requirements-dev.txt
-    mypy
-    pandas-stubs
+    mypy >= 0.990
+    pandas-stubs >= 1.1.0.13
   commands = mypy src/toron
 """
