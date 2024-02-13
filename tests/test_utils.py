@@ -6,11 +6,6 @@ import sqlite3
 import unittest
 from collections.abc import Iterator
 
-try:
-    import pandas
-except ModuleNotFoundError:
-    pandas = None
-
 from toron._utils import (
     ToronError,
     make_readerlike,
@@ -105,84 +100,6 @@ class TestMakeReaderLike(unittest.TestCase):
             result = make_readerlike(data)
 
 
-@unittest.skipUnless(pandas, 'requires pandas')
-class TestMakeReaderLikePandas(unittest.TestCase):
-    def setUp(self):
-        self.df = pandas.DataFrame({
-            'col1': (1, 2, 3),
-            'col2': ('a', 'b', 'c'),
-        })
-
-    def test_rangeindex_unnamed(self):
-        normalized = make_readerlike(self.df)
-        expected = [
-            ['col1', 'col2'],
-            [1, 'a'],
-            [2, 'b'],
-            [3, 'c'],
-        ]
-        self.assertEqual(list(normalized), expected)
-
-    def test_rangeindex_named(self):
-        self.df.index.name = 'col0'
-
-        normalized = make_readerlike(self.df)
-        expected = [
-            ['col0', 'col1', 'col2'],
-            [0, 1, 'a'],
-            [1, 2, 'b'],
-            [2, 3, 'c'],
-        ]
-        self.assertEqual(list(normalized), expected)
-
-    def test_index_unnamed(self):
-        self.df.index = pandas.Index(['x', 'y', 'z'])
-
-        normalized = make_readerlike(self.df)
-        expected = [
-            ['col1', 'col2'],
-            [1, 'a'],
-            [2, 'b'],
-            [3, 'c'],
-        ]
-        self.assertEqual(list(normalized), expected)
-
-    def test_index_named(self):
-        self.df.index = pandas.Index(['x', 'y', 'z'], name='col0')
-
-        normalized = make_readerlike(self.df)
-        expected = [
-            ['col0', 'col1', 'col2'],
-            ['x', 1, 'a'],
-            ['y', 2, 'b'],
-            ['z', 3, 'c'],
-        ]
-        self.assertEqual(list(normalized), expected)
-
-    def test_multiindex_unnamed(self):
-        index_values = [('x', 'one'), ('x', 'two'), ('y', 'three')]
-        index = pandas.MultiIndex.from_tuples(index_values)
-        self.df.index = index
-
-        regex = r"MultiIndex names must not be None, got \[None, None\]"
-        with self.assertRaisesRegex(ValueError, regex):
-            normalized = make_readerlike(self.df)
-
-    def test_multiindex_named(self):
-        index_values = [('x', 'one'), ('x', 'two'), ('y', 'three')]
-        index = pandas.MultiIndex.from_tuples(index_values, names=['A', 'B'])
-        self.df.index = index
-
-        normalized = make_readerlike(self.df)
-        expected = [
-            ['A', 'B', 'col1', 'col2'],
-            ['x', 'one', 1, 'a'],
-            ['x', 'two', 2, 'b'],
-            ['y', 'three', 3, 'c'],
-        ]
-        self.assertEqual(list(normalized), expected)
-
-
 class TestMakeDictReaderLike(unittest.TestCase):
     def test_csv_dictreader(self):
         dictreader = csv.DictReader(io.StringIO(
@@ -236,21 +153,6 @@ class TestMakeDictReaderLike(unittest.TestCase):
         expected = [
             {'a': 1, 'b': 2, 'c': 3},
             {'a': 4, 'b': 5, 'c': 6},
-        ]
-        self.assertEqual(list(result), expected)
-
-    @unittest.skipUnless(pandas, 'requires pandas')
-    def test_pandas_dataframe(self):
-        df = pandas.DataFrame({
-            'col1': (1, 2, 3),
-            'col2': ('a', 'b', 'c'),
-        })
-        result = make_dictreaderlike(df)
-
-        expected = [
-            {'col1': 1, 'col2': 'a'},
-            {'col1': 2, 'col2': 'b'},
-            {'col1': 3, 'col2': 'c'},
         ]
         self.assertEqual(list(result), expected)
 

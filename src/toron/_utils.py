@@ -38,17 +38,12 @@ from ._typing import (
     Tuple,
     TypeAlias,
     Union,
-    TYPE_CHECKING,
 )
-
-if TYPE_CHECKING:
-    import pandas
 
 
 TabularData : TypeAlias = Union[
     Iterable[Sequence],
     Iterable[Mapping],
-    'pandas.DataFrame',
 ]
 
 TabularData.__doc__ = """
@@ -58,7 +53,6 @@ Valid tabular data sources include:
 
 * an iterable of sequences (uses first item as a "header" row)
 * an iterable of dictionary rows (expects uniform dictionaries)
-* ``pandas.DataFrame``
 
 This includes ``csv.reader(...)`` (an iterable of sequences)
 and ``csv.DictReader`` (an iterable of dictionary rows).
@@ -83,27 +77,6 @@ def make_readerlike(data: TabularData) -> Iterator[Sequence]:
         fieldnames = list(data.fieldnames)  # type: ignore [arg-type]
         make_row = lambda dictrow: [dictrow.get(x, None) for x in fieldnames]
         return chain([fieldnames], (make_row(x) for x in data))
-
-    # Handle pandas.DataFrame() objects.
-    if data.__class__.__name__ == 'DataFrame' \
-            and data.__class__.__module__.partition('.')[0] == 'pandas':
-        df_index = data.index            # type: ignore [union-attr]
-        df_columns = data.columns        # type: ignore [union-attr]
-        df_to_records = data.to_records  # type: ignore [union-attr]
-
-        if df_index.names == [None]:
-            fieldnames = list(df_columns)
-            records = (list(x) for x in df_to_records(index=False))
-            return chain([fieldnames], records)
-        else:
-            if any(x is None for x in df_index.names):
-                type_name = df_index.__class__.__name__
-                index_names = list(df_index.names)
-                msg = f'{type_name} names must not be None, got {index_names!r}'
-                raise ValueError(msg)
-            fieldnames = list(df_index.names) + list(df_columns)
-            records = (list(x) for x in df_to_records(index=True))
-            return chain([fieldnames], records)
 
     try:
         iterator = iter(data)
@@ -148,13 +121,6 @@ def make_dictreaderlike(data: TabularData) -> Iterator[Mapping]:
     if isinstance(data, csv.DictReader):
         return data
 
-    # Handle pandas.DataFrame() objects.
-    if data.__class__.__name__ == 'DataFrame' \
-            and data.__class__.__module__.partition('.')[0] == 'pandas':
-        reader = make_readerlike(data)
-        fieldnames = next(reader)
-        return (dict(zip(fieldnames, row)) for row in reader)
-
     try:
         iterator = iter(data)
     except TypeError:
@@ -190,7 +156,7 @@ def wide_to_narrow(
     Parameters
     ----------
 
-    data : Iterable[Sequence] | Iterable[Mapping] | pandas.DataFrame
+    data : Iterable[Sequence] | Iterable[Mapping]
         Wide-format tabular data.
     cols_to_stack : sequence of str
         Name of column(s) to stack.

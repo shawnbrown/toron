@@ -4,5 +4,4 @@
 #
 
 lark>=0.10.1
-pandas>=1.1.5
 typing_extensions>=3.10.0.0; python_version < "3.10"

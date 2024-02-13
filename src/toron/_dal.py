@@ -1600,7 +1600,7 @@ class DataAccessLayer(object):
 
         Parameters
         ----------
-        data : Iterable[Sequence] | Iterable[Mapping] | pandas.DataFrame
+        data : Iterable[Sequence] | Iterable[Mapping]
             Tabular data values--must contain one or more index columns,
             one or more `attribute` columns, and a single `value`
             column.
