@@ -42,11 +42,11 @@ legacy_tox_ini = """
   skip_missing_interpreters = true
 
   [testenv]
-  skip_install = true
-  deps = -r requirements-dev.txt
+  deps =
+    -r requirements-dev.txt
   commands =
     python -c 'import sqlite3;print(sqlite3.sqlite_version)'
-    python run-tests.py
+    python -O -W default -m unittest
 
   [testenv:mypy]
   deps =
