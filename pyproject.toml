@@ -58,6 +58,6 @@ legacy_tox_ini = """
     build
     twine
   commands =
-    python -m build
+    python -m build --no-isolation
     python -m twine check --strict dist/*
 """
