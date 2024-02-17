@@ -50,4 +50,14 @@ legacy_tox_ini = """
   deps =
     mypy >= 0.990
   commands = mypy src/toron
+
+  [testenv:build]
+  # Build source-distribution and wheel in the 'dist/' directory.
+  skip_install = true
+  deps =
+    build
+    twine
+  commands =
+    python -m build
+    python -m twine check --strict dist/*
 """
