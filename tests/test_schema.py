@@ -792,10 +792,10 @@ class TestMakeSqliteUriFilepath(unittest.TestCase):
         expected = 'file:/C:/path/to/myno%3Ade.toron'
         self.assertEqual(_make_sqlite_uri_filepath(path, mode=None), expected)
 
-        path = r'C:mynode.toron'  # <- Relative path with drive letter.
-        expected = f'file:/{os.getcwd()}/mynode.toron'.replace("\\", "/")
+        path = r'C:mynode.toron'  # <- Relative to CWD on C: drive (not simply C:\mynode.toron).
+        c_drive_cwd = os.path.dirname(os.path.abspath(path))
+        expected = f'file:/{c_drive_cwd}/mynode.toron'.replace('\\', '/')
         self.assertEqual(_make_sqlite_uri_filepath(path, mode=None), expected)
-
 
 class TestConnectDb(TempDirTestCase):
     def setUp(self):
