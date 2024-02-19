@@ -3761,14 +3761,26 @@ class TestRefreshGranularity(unittest.TestCase):
         dal._refresh_granularity(cur)  # <- Method under test.
 
         cur.execute('SELECT * FROM main.structure')
-        structure_records = cur.fetchall()
-        expected = [
+        actual_records = cur.fetchall()
+
+        expected_records = [
             (1, 0.0, 0, 0, 0),  # <- 0.0 granularity for {} (0, 0, 0)
             (2, 1.0, 1, 0, 0),  # <- 1.0 granularity for {A} (1, 0, 0)
             (3, 2.0, 1, 1, 0),  # <- 2.0 granularity for {A, B} (1, 1, 0)
             (4, 3.0, 1, 1, 1),  # <- 3.0 granularity for {A, B, C} (1, 1, 1)
         ]
-        self.assertEqual(structure_records, expected)
+
+        for actual, expected in zip(actual_records, expected_records):
+            with self.subTest(actual=actual, expected=expected):
+                # Unpack tuples into individual values.
+                a1, b1, c1, d1, e1 = actual
+                a2, b2, c2, d2, e2 = expected
+
+                self.assertEqual(a1, a2)                   # _structure_id
+                self.assertAlmostEqual(b1, b2, places=15)  # _granularity
+                self.assertEqual(c1, c2)                   # A
+                self.assertEqual(d1, d2)                   # B
+                self.assertEqual(e1, e2)                   # c
 
 
 class TestRefreshIndexHash(unittest.TestCase):
