@@ -83,9 +83,9 @@ class TestDataAccessLayerInit(TempDirTestCase):
     def test_cache_to_drive(self):
         dal = dal_class(cache_to_drive=True)  # <- Writes to temporary file.
 
-        # Check file path of underlying database.
-        filepath = get_dal_filepath(dal)
-        tempdir = os.path.realpath(tempfile.gettempdir())  # Using realpath in case of symlink.
+        # Check file path of underlying database (using realpath in case of symlinks).
+        filepath = os.path.realpath(get_dal_filepath(dal))
+        tempdir = os.path.realpath(tempfile.gettempdir())
         tempdir = tempdir.replace('\\', '\\\\')  # Escape any "\" chars for regex.
         regex = f'^{tempdir}.+\\.toron$'
         self.assertRegex(filepath, regex, msg='expecting tempfile path for on-drive DAL')
