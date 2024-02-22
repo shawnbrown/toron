@@ -66,7 +66,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: .tox
-        key: tox-directory-${{ inputs.platform }}-${{ hashFiles('.github/workflows/test.yml', 'pyproject.toml', 'requirements-dev.txt') }}
+        key: tox-directory-${{ matrix.os }}-${{ hashFiles('.github/workflows/test.yml', 'pyproject.toml', 'requirements-dev.txt') }}
     - name: Print base Python version
       run: python --version
     - name: Upgrade pip
