@@ -1,9 +1,15 @@
 # Run tests for all supported Python versions.
+#
+# * On `push` this workflow tests Ubuntu, Windows, and macOS.
+# * When triggered manually, one specific OS can be selected.
+
 name: Tests
 
 run-name: "${{ inputs.platform && format('Test {0} on {1}, commit: {2}, timeout: {3} minutes', github.ref_name, inputs.platform, github.sha, inputs.timeout || 10) }}"
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       platform:
@@ -31,8 +37,11 @@ on:
 
 jobs:
   run-tox-envs:
-    name: tox envs on ${{ inputs.platform }}
-    runs-on: ${{ inputs.platform }}
+    strategy:
+      matrix:
+        os: ${{ fromJSON(format('["{0}"]', (inputs.platform || 'ubuntu-latest", "windows-latest", "macos-latest'))) }}
+    name: tox envs on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     timeout-minutes: ${{ inputs.timeout && fromJSON(inputs.timeout) || 10 }}
