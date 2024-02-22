@@ -1,7 +1,7 @@
 # Run tests for all supported Python versions.
 name: Tests
 
-run-name: 'Run "${{ github.workflow }}" on ${{ inputs.platform }}, timeout ${{ (fromJSON(inputs.timeout) < 1) && 1 || ((fromJSON(inputs.timeout) > 360) && 360 || fromJSON(inputs.timeout)) }} minutes, commit: ${{ github.sha }}'
+run-name: "${{ inputs.platform && format('Test {0} on {1}, commit: {2}, timeout: {3} minutes', github.ref_name, inputs.platform, github.sha, inputs.timeout || 10) }}"
 
 on:
   workflow_dispatch:
