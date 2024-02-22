@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ inputs.platform }}
     permissions:
       contents: read
-    timeout-minutes: ${{ (fromJSON(inputs.timeout) < 1) && 1 || ((fromJSON(inputs.timeout) > 360) && 360 || fromJSON(inputs.timeout)) }}
+    timeout-minutes: ${{ inputs.timeout && fromJSON(inputs.timeout) || 10 }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
