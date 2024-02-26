@@ -2,14 +2,30 @@
 
 import tempfile
 import unittest
+from abc import ABC, abstractmethod
+from types import SimpleNamespace
 
 from toron._data_access.base_classes import BaseDataConnector
 from toron._data_access.data_connector import DataConnector
 
 
-class TestDataConnector(unittest.TestCase):
-    def test_inheritance(self):
-        self.assertTrue(issubclass(DataConnector, BaseDataConnector))
+class Bases(SimpleNamespace):
+    """Wrapping TestCase base classes to prevent test discovery."""
+
+    class TestDataConnector(ABC, unittest.TestCase):
+        @property
+        @abstractmethod
+        def connector_class(self):
+            return NotImplemented
+
+        def test_inheritance(self):
+            self.assertTrue(issubclass(self.connector_class, BaseDataConnector))
+
+
+class TestDataConnector(Bases.TestDataConnector):
+    @property
+    def connector_class(self):
+        return DataConnector
 
     def test_current_working_path(self):
         connector = DataConnector()  # <- Creates in-memory database.
