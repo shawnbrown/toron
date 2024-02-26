@@ -7,7 +7,10 @@ from abc import ABC, abstractmethod
 from types import SimpleNamespace
 
 from toron._data_access.base_classes import BaseDataConnector
-from toron._data_access.data_connector import DataConnector
+from toron._data_access.data_connector import (
+    _cleanup_leftover_temp_files,
+    DataConnector,
+)
 
 
 class Bases(SimpleNamespace):
@@ -44,4 +47,14 @@ class TestDataConnector(Bases.TestDataConnector):
         self.assertTrue(os.path.exists(working_path))
 
         connector.__del__()  # Call magic method directly only for testing.
+        self.assertFalse(os.path.exists(working_path))
+
+    def test_atexit_cleanup(self):
+        connector = DataConnector(cache_to_drive=True)
+        connector._cleanup_funcs = []  # <- Clear cleanup funcs for testing.
+        working_path = connector._current_working_path
+
+        self.assertTrue(os.path.exists(working_path))
+
+        _cleanup_leftover_temp_files()
         self.assertFalse(os.path.exists(working_path))
