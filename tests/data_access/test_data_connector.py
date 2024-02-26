@@ -1,5 +1,6 @@
 """Tests for toron/_data_access/data_connector.py module."""
 
+import os
 import tempfile
 import unittest
 from abc import ABC, abstractmethod
@@ -35,3 +36,12 @@ class TestDataConnector(Bases.TestDataConnector):
         tempdir = tempfile.gettempdir()
         self.assertTrue(connector._current_working_path.startswith(tempdir))
         self.assertTrue(connector._current_working_path.endswith('.toron'))
+
+    def test_tempfile_cleanup(self):
+        connector = DataConnector(cache_to_drive=True)
+        working_path = connector._current_working_path
+
+        self.assertTrue(os.path.exists(working_path))
+
+        connector.__del__()  # Call magic method directly only for testing.
+        self.assertFalse(os.path.exists(working_path))
