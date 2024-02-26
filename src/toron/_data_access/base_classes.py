@@ -5,5 +5,5 @@ from abc import ABC, abstractmethod
 
 class BaseDataConnector(ABC):
     @abstractmethod
-    def __init__(self, cache_to_drive: bool = False) -> None:
+    def __init__(self) -> None:
         """Initialize a new node instance."""
