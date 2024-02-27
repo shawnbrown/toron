@@ -2,11 +2,14 @@
 
 import atexit
 import os
+import re
 import tempfile
+import urllib
 
 from toron._typing import (
     Callable,
     List,
+    Literal,
     Optional,
     Set,
 )
@@ -42,6 +45,35 @@ def _cleanup_leftover_temp_files():
             import warnings
             msg = f'cannot remove temporary file {path!r}, {e.__class__.__name__}'
             warnings.warn(msg, RuntimeWarning)
+
+
+def make_sqlite_uri_filepath(
+        path: str, mode: Literal['ro', 'rw', 'rwc', None]
+    ) -> str:
+    """Return a SQLite compatible URI file path.
+
+    Unlike pathlib's URI handling, SQLite accepts relative URI paths.
+    For details, see:
+
+        https://www.sqlite.org/uri.html#the_uri_path
+    """
+    if os.name == 'nt':  # Windows
+        if re.match(r'^[a-zA-Z]:', path):
+            path = os.path.abspath(path)  # Paths with drive-letter must be absolute.
+            drive_prefix = f'/{path[:2]}'  # Must not url-quote colon after drive-letter.
+            path = path[2:]
+        else:
+            drive_prefix = ''
+        path = path.replace('\\', '/')
+        path = urllib.parse.quote(path)
+        path = f'{drive_prefix}{path}'
+    else:
+        path = urllib.parse.quote(path)
+
+    path = re.sub('/+', '/', path)
+    if mode:
+        return f'file:{path}?mode={mode}'
+    return f'file:{path}'
 
 
 class DataConnector(BaseDataConnector):

@@ -9,8 +9,60 @@ from types import SimpleNamespace
 from toron._data_access.base_classes import BaseDataConnector
 from toron._data_access.data_connector import (
     _cleanup_leftover_temp_files,
+    make_sqlite_uri_filepath,
     DataConnector,
 )
+
+
+class TestMakeSqliteUriFilepath(unittest.TestCase):
+    def test_cases_without_mode(self):
+        self.assertEqual(
+            make_sqlite_uri_filepath('mynode.toron', mode=None),
+            'file:mynode.toron',
+        )
+        self.assertEqual(
+            make_sqlite_uri_filepath('my?node.toron', mode=None),
+            'file:my%3Fnode.toron',
+        )
+        self.assertEqual(
+            make_sqlite_uri_filepath('path///to//mynode.toron', mode=None),
+            'file:path/to/mynode.toron',
+        )
+
+    def test_cases_with_mode(self):
+        self.assertEqual(
+            make_sqlite_uri_filepath('mynode.toron', mode='ro'),
+            'file:mynode.toron?mode=ro',
+        )
+        self.assertEqual(
+            make_sqlite_uri_filepath('my?node.toron', mode='rw'),
+            'file:my%3Fnode.toron?mode=rw',
+        )
+        self.assertEqual(
+            make_sqlite_uri_filepath('path///to//mynode.toron', mode='rwc'),
+            'file:path/to/mynode.toron?mode=rwc',
+        )
+
+    def test_windows_specifics(self):
+        if os.name != 'nt':
+            return
+
+        path = r'path\to\mynode.toron'
+        expected = 'file:path/to/mynode.toron'
+        self.assertEqual(make_sqlite_uri_filepath(path, mode=None), expected)
+
+        path = r'C:\path\to\my node.toron'
+        expected = 'file:/C:/path/to/my%20node.toron'
+        self.assertEqual(make_sqlite_uri_filepath(path, mode=None), expected)
+
+        path = r'C:\path\to\myno:de.toron'  # <- Errant ":".
+        expected = 'file:/C:/path/to/myno%3Ade.toron'
+        self.assertEqual(make_sqlite_uri_filepath(path, mode=None), expected)
+
+        path = r'C:mynode.toron'  # <- Relative to CWD on C: drive (not simply C:\mynode.toron).
+        c_drive_cwd = os.path.dirname(os.path.abspath(path))
+        expected = f'file:/{c_drive_cwd}/mynode.toron'.replace('\\', '/').replace('//', '/')
+        self.assertEqual(make_sqlite_uri_filepath(path, mode=None), expected)
 
 
 class Bases(SimpleNamespace):
