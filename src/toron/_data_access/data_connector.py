@@ -3,6 +3,7 @@
 import atexit
 import os
 import re
+import sqlite3
 import tempfile
 import urllib
 
@@ -15,6 +16,7 @@ from toron._typing import (
 )
 
 from .base_classes import BaseDataConnector
+from .._utils import ToronError
 
 
 _tempfiles_to_remove_at_exit: Set[str] = set()
@@ -74,6 +76,56 @@ def make_sqlite_uri_filepath(
     if mode:
         return f'file:{path}?mode={mode}'
     return f'file:{path}'
+
+
+def get_sqlite3_connection(
+    path: str,
+    access_mode: Literal['ro', 'rw', 'rwc', None] = None,
+) -> sqlite3.Connection:
+    """Get a SQLite connection to *path* with appropriate config.
+
+    The returned connection will be configured with ``isolation_level``
+    set to None (never implicitly open transactions) and
+    ``detect_types`` set to PARSE_DECLTYPES (parse declared column
+    type for query results).
+
+    If *path* is a file, it is opened using the *access_mode* if
+    specified:
+
+    * ``'ro'``: read-only
+    * ``'rw'``: read-write
+    * ``'rwc'``: read-write and create if it doesn't exist
+
+    If *path* is ``':memory:'`` or ``''``, then *access_mode* is
+    ignored.
+
+    .. important::
+
+        This method should only establish a connection, it should
+        not execute queries of any kind.
+    """
+    if path == ':memory:' or path == '':  # In-memory or on-drive temp db.
+        normalized_path = path
+        is_uri_path = False
+    else:
+        normalized_path = make_sqlite_uri_filepath(path, access_mode)
+        is_uri_path = True
+
+    try:
+        return sqlite3.connect(
+            database=normalized_path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+            uri=is_uri_path,
+        )
+    except sqlite3.OperationalError as err:
+        error_text = str(err)
+        matches = ['unable to open database', 'Could not open database']
+        if any(x in error_text for x in matches):
+            msg = f'unable to open node file {path!r}'
+            raise ToronError(msg)
+        else:
+            raise
 
 
 class DataConnector(BaseDataConnector):

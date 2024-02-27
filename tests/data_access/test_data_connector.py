@@ -1,15 +1,18 @@
 """Tests for toron/_data_access/data_connector.py module."""
 
 import os
+import sqlite3
 import tempfile
 import unittest
 from abc import ABC, abstractmethod
+from contextlib import closing
 from types import SimpleNamespace
 
 from toron._data_access.base_classes import BaseDataConnector
 from toron._data_access.data_connector import (
     _cleanup_leftover_temp_files,
     make_sqlite_uri_filepath,
+    get_sqlite3_connection,
     DataConnector,
 )
 
@@ -63,6 +66,41 @@ class TestMakeSqliteUriFilepath(unittest.TestCase):
         c_drive_cwd = os.path.dirname(os.path.abspath(path))
         expected = f'file:/{c_drive_cwd}/mynode.toron'.replace('\\', '/').replace('//', '/')
         self.assertEqual(make_sqlite_uri_filepath(path, mode=None), expected)
+
+
+class TestGetSqlite3Connection(unittest.TestCase):
+    def test_in_memory(self):
+        con = get_sqlite3_connection(':memory:')
+
+        with closing(con):
+            self.assertEqual(con.execute('SELECT 123').fetchall(), [(123,)])
+
+    def test_implicit_tempfile(self):
+        con = get_sqlite3_connection('')
+
+        with closing(con):
+            self.assertEqual(con.execute('SELECT 123').fetchall(), [(123,)])
+
+    def test_explicit_tempfile(self):
+        with closing(tempfile.NamedTemporaryFile(delete=False)) as temp_f:
+            database_path = os.path.abspath(temp_f.name)
+            self.addCleanup(lambda: os.unlink(database_path))
+
+        con = get_sqlite3_connection(database_path)
+
+        with closing(con):
+            self.assertEqual(con.execute('SELECT 123').fetchall(), [(123,)])
+
+    def test_read_only_access_mode(self):
+        with closing(tempfile.NamedTemporaryFile(delete=False)) as temp_f:
+            database_path = os.path.abspath(temp_f.name)
+            self.addCleanup(lambda: os.unlink(database_path))
+
+        con = get_sqlite3_connection(database_path, access_mode='ro')
+
+        with self.assertRaises(sqlite3.OperationalError):
+            with closing(con):
+                con.execute('CREATE TABLE t1(a, b)')  # Should raise error.
 
 
 class Bases(SimpleNamespace):
