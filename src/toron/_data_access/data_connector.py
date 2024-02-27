@@ -78,7 +78,7 @@ def make_sqlite_uri_filepath(
     return f'file:{path}'
 
 
-def get_sqlite3_connection(
+def get_sqlite_connection(
     path: str,
     access_mode: Literal['ro', 'rw', 'rwc', None] = None,
 ) -> sqlite3.Connection:

@@ -12,7 +12,7 @@ from toron._data_access.base_classes import BaseDataConnector
 from toron._data_access.data_connector import (
     _cleanup_leftover_temp_files,
     make_sqlite_uri_filepath,
-    get_sqlite3_connection,
+    get_sqlite_connection,
     DataConnector,
 )
 
@@ -70,13 +70,13 @@ class TestMakeSqliteUriFilepath(unittest.TestCase):
 
 class TestGetSqlite3Connection(unittest.TestCase):
     def test_in_memory(self):
-        con = get_sqlite3_connection(':memory:')
+        con = get_sqlite_connection(':memory:')
 
         with closing(con):
             self.assertEqual(con.execute('SELECT 123').fetchall(), [(123,)])
 
     def test_implicit_tempfile(self):
-        con = get_sqlite3_connection('')
+        con = get_sqlite_connection('')
 
         with closing(con):
             self.assertEqual(con.execute('SELECT 123').fetchall(), [(123,)])
@@ -86,7 +86,7 @@ class TestGetSqlite3Connection(unittest.TestCase):
             database_path = os.path.abspath(temp_f.name)
             self.addCleanup(lambda: os.unlink(database_path))
 
-        con = get_sqlite3_connection(database_path)
+        con = get_sqlite_connection(database_path)
 
         with closing(con):
             self.assertEqual(con.execute('SELECT 123').fetchall(), [(123,)])
@@ -96,7 +96,7 @@ class TestGetSqlite3Connection(unittest.TestCase):
             database_path = os.path.abspath(temp_f.name)
             self.addCleanup(lambda: os.unlink(database_path))
 
-        con = get_sqlite3_connection(database_path, access_mode='ro')
+        con = get_sqlite_connection(database_path, access_mode='ro')
 
         with self.assertRaises(sqlite3.OperationalError):
             with closing(con):
