@@ -104,20 +104,20 @@ def get_sqlite_connection(
         This method should only establish a connection, it should
         not execute queries of any kind.
     """
-    if path == ':memory:' or path == '':  # In-memory or on-drive temp db.
-        normalized_path = path
-        is_uri_path = False
-    else:
-        normalized_path = make_sqlite_uri_filepath(path, access_mode)
-        is_uri_path = True
-
     try:
-        return sqlite3.connect(
-            database=normalized_path,
-            detect_types=sqlite3.PARSE_DECLTYPES,
-            isolation_level=None,
-            uri=is_uri_path,
-        )
+        if path == ':memory:' or path == '':  # In-memory or on-drive temp db.
+            return sqlite3.connect(
+                database=path,
+                detect_types=sqlite3.PARSE_DECLTYPES,
+                isolation_level=None,
+            )
+        else:
+            return sqlite3.connect(
+                database=make_sqlite_uri_filepath(path, access_mode),
+                detect_types=sqlite3.PARSE_DECLTYPES,
+                isolation_level=None,
+                uri=True,
+            )
     except sqlite3.OperationalError as err:
         error_text = str(err)
         matches = ['unable to open database', 'Could not open database']
