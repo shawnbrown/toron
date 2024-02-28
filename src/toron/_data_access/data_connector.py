@@ -4,8 +4,9 @@ import atexit
 import os
 import re
 import sqlite3
-import tempfile
 import urllib
+from contextlib import closing
+from tempfile import NamedTemporaryFile
 
 from toron._typing import (
     Callable,
@@ -138,9 +139,9 @@ class DataConnector(BaseDataConnector):
         self._cleanup_funcs = []
 
         if cache_to_drive:
-            temp_f = tempfile.NamedTemporaryFile(suffix='.toron', delete=False)
-            temp_f.close()
-            database_path = os.path.abspath(temp_f.name)
+            # Create temp file and set current working path.
+            with closing(NamedTemporaryFile(suffix='.toron', delete=False)) as f:
+                database_path = os.path.abspath(f.name)
             self._current_working_path = database_path
 
             _tempfiles_to_remove_at_exit.add(database_path)
