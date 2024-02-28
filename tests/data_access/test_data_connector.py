@@ -121,14 +121,16 @@ class TestDataConnector(Bases.TestDataConnector):
     def connector_class(self):
         return DataConnector
 
-    def test_current_working_path(self):
-        connector = DataConnector()  # <- Creates in-memory database.
+    def test_in_memory_database(self):
+        connector = DataConnector()  # <- In-memory database.
         self.assertIsNone(connector._current_working_path)
+        self.assertIsInstance(connector._in_memory_connection, sqlite3.Connection)
 
-        connector = DataConnector(cache_to_drive=True)  # <- Creates on-drive database.
-        tempdir = tempfile.gettempdir()
-        self.assertTrue(connector._current_working_path.startswith(tempdir))
+    def test_on_drive_database(self):
+        connector = DataConnector(cache_to_drive=True)  # <- On-drive database.
+        self.assertTrue(connector._current_working_path.startswith(tempfile.gettempdir()))
         self.assertTrue(connector._current_working_path.endswith('.toron'))
+        self.assertIsNone(connector._in_memory_connection)
 
     def test_tempfile_cleanup(self):
         connector = DataConnector(cache_to_drive=True)

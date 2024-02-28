@@ -132,6 +132,7 @@ def get_sqlite_connection(
 class DataConnector(BaseDataConnector):
     # Absolute path of class instance's database (None if file in memory).
     _current_working_path: Optional[str] = None
+    _in_memory_connection: Optional[sqlite3.Connection]
     _cleanup_funcs: List[Callable]
 
     def __init__(self, cache_to_drive: bool = False) -> None:
@@ -144,14 +145,36 @@ class DataConnector(BaseDataConnector):
                 database_path = os.path.abspath(f.name)
             self._current_working_path = database_path
 
+            # Connect to database and create Toron node schema.
+            connection = get_sqlite_connection(database_path)
+            #connection.executescript(schema.create_node_schema)
+            connection.close()  # Close (only opened when accessed).
+
+            # For on-drive database, in-memory connection is None.
+            self._in_memory_connection = None
+
+            # Define clean-up actions (called by garbage collection).
             _tempfiles_to_remove_at_exit.add(database_path)
             self._cleanup_funcs.extend([
                 lambda: _tempfiles_to_remove_at_exit.discard(database_path),
                 lambda: os.unlink(database_path),
             ])
+
         else:
+            # For in-memory database, current working path is None.
             database_path = ':memory:'
             self._current_working_path = None
+
+            # Connect to database and create Toron node schema.
+            connection = get_sqlite_connection(database_path)
+            #connection.executescript(schema.create_node_schema)
+            #schema.create_functions_and_temporary_triggers(connection)
+
+            # Keep in-memory connection open.
+            self._in_memory_connection = connection
+
+            # Close connection at clean-up (called by garbage collection).
+            self._cleanup_funcs.append(connection.close)
 
     def __del__(self):
         while self._cleanup_funcs:
