@@ -131,13 +131,12 @@ def get_sqlite_connection(
 
 
 class DataConnector(BaseDataConnector):
-    # Absolute path of class instance's database (None if file in memory).
-    _current_working_path: Optional[str] = None
-    _in_memory_connection: Optional[sqlite3.Connection]
-    _cleanup_funcs: List[Callable]
-
     def __init__(self, cache_to_drive: bool = False) -> None:
         """Initialize a new node instance."""
+        self._cleanup_funcs: List[Callable]
+        self._current_working_path: Optional[str]
+        self._in_memory_connection: Optional[sqlite3.Connection]
+
         self._cleanup_funcs = []
 
         if cache_to_drive:
