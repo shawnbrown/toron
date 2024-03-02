@@ -64,6 +64,35 @@ from toron._typing import (
 )
 
 
+with closing(sqlite3.connect(':memory:')) as _con:
+    # Check for SQLite compile-time options. When SQLite is compiled,
+    # certain features can be enabled or omitted. When available, Toron
+    # makes use of:
+    #
+    # * JSON Functions And Operators:
+    #    - https://www.sqlite.org/json1.html#compiling_in_json_support
+    #    - https://www.sqlite.org/compile.html#enable_json1
+    # * Built-In Mathematical SQL Functions:
+    #    - https://www.sqlite.org/lang_mathfunc.html#overview
+    #    - https://www.sqlite.org/compile.html#enable_math_functions
+    #
+    # When these features are not available, Toron creates user-defined
+    # functions to achieve the same functionality.
+
+    def _succeeds(sql: str) -> bool:
+        try:
+            _con.execute(sql)
+            return True
+        except sqlite3.OperationalError:
+            return False
+
+    SQLITE_ENABLE_JSON1: Final[bool] = _succeeds("SELECT json_valid('123')")
+    SQLITE_ENABLE_MATH_FUNCTIONS: Final[bool] = _succeeds('SELECT log2(64)')
+
+    del _succeeds
+    del _con
+
+
 def create_node_schema(connection: sqlite3.Connection) -> None:
     """Creates tables and sets starting values for Toron node schema.
 
@@ -178,35 +207,6 @@ def create_node_schema(connection: sqlite3.Connection) -> None:
         /* Reserve id zero for an "undefined" record. */
         INSERT INTO main.node_index (index_id) VALUES (0);
     """)
-
-
-# Check for SQLite compile-time options. When SQLite is compiled,
-# certain features can be enabled or omitted. When available, Toron
-# makes use of:
-#
-# * JSON Functions And Operators:
-#    - https://www.sqlite.org/json1.html#compiling_in_json_support
-#    - https://www.sqlite.org/compile.html#enable_json1
-# * Built-In Mathematical SQL Functions:
-#    - https://www.sqlite.org/lang_mathfunc.html#overview
-#    - https://www.sqlite.org/compile.html#enable_math_functions
-#
-# When these features are not available, Toron creates user-defined
-# functions to achieve the same functionality.
-
-with closing(sqlite3.connect(':memory:')) as _con:
-    def _succeeds(sql: str) -> bool:
-        try:
-            _con.execute(sql)
-            return True
-        except sqlite3.OperationalError:
-            return False
-
-    SQLITE_ENABLE_JSON1: Final[bool] = _succeeds("SELECT json_valid('123')")
-    SQLITE_ENABLE_MATH_FUNCTIONS: Final[bool] = _succeeds('SELECT log2(64)')
-
-    del _succeeds
-    del _con
 
 
 def create_sql_function(
