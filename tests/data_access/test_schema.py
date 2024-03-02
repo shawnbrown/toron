@@ -5,6 +5,8 @@ from contextlib import closing
 
 from toron._data_access.schema import (
     create_node_schema,
+    SQLITE_ENABLE_JSON1,
+    SQLITE_ENABLE_MATH_FUNCTIONS,
     create_sql_function,
 )
 
@@ -57,6 +59,12 @@ class TestCreateNodeSchema(unittest.TestCase):
         regex = "database must be empty; found tables: 'dummy_table'"
         with self.assertRaisesRegex(RuntimeError, regex):
             create_node_schema(self.connection)
+
+
+class TestCompileTimeOptions(unittest.TestCase):
+    def test_module_attributes(self):
+        self.assertIsInstance(SQLITE_ENABLE_JSON1, bool)
+        self.assertIsInstance(SQLITE_ENABLE_MATH_FUNCTIONS, bool)
 
 
 class TestCreateSqlFunction(unittest.TestCase):
