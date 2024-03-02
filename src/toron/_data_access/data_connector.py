@@ -16,6 +16,7 @@ from toron._typing import (
     Set,
 )
 
+from . import schema
 from .base_classes import BaseDataConnector
 from .._utils import ToronError
 
@@ -146,9 +147,8 @@ class DataConnector(BaseDataConnector):
             self._current_working_path = database_path
 
             # Connect to database and create Toron node schema.
-            connection = get_sqlite_connection(database_path)
-            #connection.executescript(schema.create_node_schema)
-            connection.close()  # Close (only opened when accessed).
+            with closing(get_sqlite_connection(database_path)) as con:
+                schema.create_node_schema(con)
 
             # For on-drive database, in-memory connection is None.
             self._in_memory_connection = None
@@ -166,15 +166,15 @@ class DataConnector(BaseDataConnector):
             self._current_working_path = None
 
             # Connect to database and create Toron node schema.
-            connection = get_sqlite_connection(database_path)
-            #connection.executescript(schema.create_node_schema)
-            #schema.create_functions_and_temporary_triggers(connection)
+            con = get_sqlite_connection(database_path)
+            schema.create_node_schema(con)
+            #schema.create_functions_and_temporary_triggers(con)
 
             # Keep in-memory connection open.
-            self._in_memory_connection = connection
+            self._in_memory_connection = con
 
             # Close connection at clean-up (called by garbage collection).
-            self._cleanup_funcs.append(connection.close)
+            self._cleanup_funcs.append(con.close)
 
     def __del__(self):
         while self._cleanup_funcs:
