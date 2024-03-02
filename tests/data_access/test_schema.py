@@ -5,6 +5,7 @@ from contextlib import closing
 
 from toron._data_access.schema import (
     create_node_schema,
+    create_sql_function,
 )
 
 
@@ -56,3 +57,31 @@ class TestCreateNodeSchema(unittest.TestCase):
         regex = "database must be empty; found tables: 'dummy_table'"
         with self.assertRaisesRegex(RuntimeError, regex):
             create_node_schema(self.connection)
+
+
+class TestCreateSqlFunction(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+
+    def test_creation(self):
+        create_sql_function(
+            self.connection,           # <- positional `connection`
+            'title_case',              # <- positional `name`
+            1,                         # <- positional `narg`
+            lambda x: str(x).title(),  # <- positional `func`
+            deterministic=True,        # <- keyword only argument
+        )
+
+        cur = self.connection.execute("SELECT title_case('hello world')")
+        self.assertEqual(cur.fetchall(), [('Hello World',)])
+
+    def test_error(self):
+        """Errors from function should not receive special handling."""
+        def bad_func(x):
+            raise Exception
+
+        create_sql_function(self.connection, 'bad_func_name', 1, bad_func)
+
+        with self.assertRaises(sqlite3.OperationalError):
+            self.connection.execute("SELECT bad_func_name('hello world')")

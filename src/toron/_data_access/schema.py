@@ -58,6 +58,10 @@ from certain tables.
 import sqlite3
 from contextlib import closing
 
+from toron._typing import (
+    Callable,
+)
+
 
 def create_node_schema(connection: sqlite3.Connection) -> None:
     """Creates tables and sets starting values for Toron node schema.
@@ -173,3 +177,22 @@ def create_node_schema(connection: sqlite3.Connection) -> None:
         /* Reserve id zero for an "undefined" record. */
         INSERT INTO main.node_index (index_id) VALUES (0);
     """)
+
+
+def create_sql_function(
+    connection: sqlite3.Connection,
+    name: str,
+    narg: int,
+    func: Callable,
+    *,
+    deterministic: bool = False,
+) -> None:
+    """Create a user-defined SQL function."""
+    try:  # `deterministic` argument added in Python 3.8
+        connection.create_function(name, narg, func, deterministic=deterministic)
+    except TypeError:
+        connection.create_function(name, narg, func)
+
+    # Note: SQLite versions older than 3.8.3 will raise a NotSupportedError
+    # if the `deterministic` argument is used but Toron does not currently
+    # support SQLite versions older than 3.21.0.
