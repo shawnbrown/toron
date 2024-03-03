@@ -354,4 +354,7 @@ def create_functions_and_temporary_triggers(
     """
     if not SQLITE_ENABLE_JSON1:
         create_json_valid(connection)
+        create_user_attributes_valid(connection)
+
     create_sql_triggers_property_value(connection)
+    create_sql_triggers_attribute_value(connection)
