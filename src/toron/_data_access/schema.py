@@ -255,3 +255,20 @@ def create_json_valid(
                         narg=1,
                         func=json_valid,
                         deterministic=True)
+
+
+def create_sql_triggers_property_value(connection: sqlite3.Connection) -> None:
+    """Add temp triggers to validate ``property.value`` column."""
+    sql = """
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{event}_property_value
+        BEFORE {event} ON main.property FOR EACH ROW
+        WHEN
+            NEW.value IS NOT NULL
+            AND json_valid(NEW.value) = 0
+        BEGIN
+            SELECT RAISE(ABORT, 'property.value must be well-formed JSON');
+        END;
+    """
+    with closing(connection.cursor()) as cur:
+        cur.execute(sql.format(event='INSERT'))
+        cur.execute(sql.format(event='UPDATE'))

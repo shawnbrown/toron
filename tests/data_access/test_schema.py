@@ -9,6 +9,7 @@ from toron._data_access.schema import (
     create_node_schema,
     create_sql_function,
     create_json_valid,
+    create_sql_triggers_property_value,
 )
 
 
@@ -143,3 +144,33 @@ class TestCreateJsonValid(BaseJsonValidTestCase):
     def test_none(self):
         cur = self.connection.execute('SELECT user_json_valid(NULL)')
         self.assertEqual(cur.fetchall(), [(0,)])
+
+
+class TestCreateSqlTriggersPropertyValue(BaseJsonValidTestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+
+        create_node_schema(self.connection)
+        if not SQLITE_ENABLE_JSON1:
+            create_json_valid(self.connection)
+        create_sql_triggers_property_value(self.connection)
+
+    def test_insert_wellformed(self):
+        cur = self.connection.executemany(
+            'INSERT INTO property VALUES (?, ?)',
+            [(str(key), val) for key, val in enumerate(self.wellformed_json)],
+        )
+        self.assertEqual(cur.rowcount, 8, msg='should insert all eight records')
+
+    def test_insert_malformed(self):
+        regex = 'property.value must be well-formed JSON'
+
+        for value, desc in self.malformed_json:
+            with self.subTest(value=value):
+                msg = f'should raise IntegrityError, JSON {value!r} {desc}'
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
+                    self.connection.execute(
+                        'INSERT INTO property VALUES (?, ?)',
+                        ('key1', value),
+                    )
