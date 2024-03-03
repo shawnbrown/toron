@@ -11,6 +11,7 @@ from toron._data_access.schema import (
     create_json_valid,
     create_sql_triggers_property_value,
     create_user_attributes_valid,
+    create_sql_triggers_attribute_value,
 )
 
 
@@ -223,3 +224,33 @@ class TestCreateUserAttributeValid(BaseAttributesValidTestCase):
                 cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
                 msg = f'should be 0, TEXT_ATTRIBUTES {value!r} {desc}'
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
+
+
+class TestCreateSqlTriggersAttributeValue(BaseAttributesValidTestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+
+        create_node_schema(self.connection)
+        if not SQLITE_ENABLE_JSON1:
+            create_user_attributes_valid(self.connection)
+        create_sql_triggers_attribute_value(self.connection)
+
+    def test_insert_valid_attributes(self):
+        cur = self.connection.executemany(
+            'INSERT INTO attribute VALUES (?, ?)',
+            [(i, val) for i, val in enumerate(self.valid_attributes)],
+        )
+        self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
+
+    def test_insert_invalid_attributes(self):
+        regex = 'attribute.attribute_value must be a JSON object with text values'
+
+        for value, desc in self.invalid_attributes:
+            with self.subTest(value=value):
+                msg = f'should raise IntegrityError, TEXT_ATTRIBUTES {value!r} {desc}'
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
+                    self.connection.execute(
+                        'INSERT INTO attribute VALUES (?, ?)',
+                        (1, value),
+                    )

@@ -302,6 +302,45 @@ def create_user_attributes_valid(connection: sqlite3.Connection) -> None:
                         deterministic=True)
 
 
+def create_sql_triggers_attribute_value(connection: sqlite3.Connection) -> str:
+    """Add temp triggers to validate ``attribute.attribute_value`` column.
+
+    The ``attribute_value`` column is of the type TEXT_ATTRIBUTES which
+    must be a well-formed JSON "object" containing "text" values.
+
+    The trigger will raise an error if the value is:
+
+      * not wellformed JSON
+      * not an "object" type
+      * an "object" type that contains one or more "integer", "real",
+        "true", "false", "null", "object" or "array" types
+    """
+    if SQLITE_ENABLE_JSON1:
+        attributes_are_invalid = """
+            (json_valid(NEW.attribute_value) = 0
+                 OR json_type(NEW.attribute_value) != 'object'
+                 OR (SELECT COUNT(*)
+                     FROM json_each(NEW.attribute_value)
+                     WHERE json_each.type != 'text') != 0)
+        """.strip()
+    else:
+        attributes_are_invalid = f'user_attributes_valid(NEW.attribute_value) = 0'
+
+    sql = f"""
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_attribute_attribute_value
+        BEFORE {{event}} ON main.attribute FOR EACH ROW
+        WHEN
+            NEW.attribute_value IS NOT NULL
+            AND {attributes_are_invalid}
+        BEGIN
+            SELECT RAISE(ABORT, 'attribute.attribute_value must be a JSON object with text values');
+        END;
+    """
+    with closing(connection.cursor()) as cur:
+        cur.execute(sql.format(event='INSERT'))
+        cur.execute(sql.format(event='UPDATE'))
+
+
 def create_functions_and_temporary_triggers(
     connection: sqlite3.Connection
 ) -> None:
