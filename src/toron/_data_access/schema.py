@@ -57,10 +57,12 @@ from certain tables.
 
 import sqlite3
 from contextlib import closing
+from json import loads as json_loads
 
 from toron._typing import (
     Callable,
     Final,
+    Optional,
 )
 
 
@@ -226,3 +228,30 @@ def create_sql_function(
     # Note: SQLite versions older than 3.8.3 will raise a NotSupportedError
     # if the `deterministic` argument is used but Toron does not currently
     # support SQLite versions older than 3.21.0.
+
+
+def create_json_valid(
+    connection: sqlite3.Connection, alt_name: Optional[str] = None
+) -> None:
+    """Create a user defined SQL function named ``json_valid``.
+
+    This should serve as a drop-in replacement for basic JSON
+    validation when the built-in ``json_valid`` function is not
+    available:
+
+        https://www.sqlite.org/json1.html#jvalid
+
+    An *alt_name* can be given for testing and debugging.
+    """
+    def json_valid(x):
+        try:
+            json_loads(x)
+        except (ValueError, TypeError):
+            return 0
+        return 1
+
+    create_sql_function(connection,
+                        name=alt_name or 'json_valid',
+                        narg=1,
+                        func=json_valid,
+                        deterministic=True)

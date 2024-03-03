@@ -8,6 +8,7 @@ from toron._data_access.schema import (
     SQLITE_ENABLE_MATH_FUNCTIONS,
     create_node_schema,
     create_sql_function,
+    create_json_valid,
 )
 
 
@@ -93,3 +94,44 @@ class TestCreateSqlFunction(unittest.TestCase):
 
         with self.assertRaises(sqlite3.OperationalError):
             self.connection.execute("SELECT bad_func_name('hello world')")
+
+
+class TestCreateJsonValid(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+        create_json_valid(self.connection, alt_name='user_json_valid')
+
+    def test_wellformed_json(self):
+        values = [
+            '123',
+            '1.23',
+            '"abc"',
+            'true',
+            'false',
+            'null',
+            '[1, 2.0, "3"]',
+            '{"a": 1, "b": [2, 3]}',
+        ]
+        for value in values:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_json_valid(?)', [value])
+                self.assertEqual(cur.fetchall(), [(1,)])
+
+    def test_malformed_json(self):
+        values = [
+            '{"a": "one", "b": "two"',   # <- No closing curly-brace.
+            '{"a": "one", "b": "two}',   # <- No closing quote.
+            '[1, 2',                     # <- No closing bracket.
+            "{'a': 'one', 'b': 'two'}",  # <- Requires double quotes.
+            'abc',                       # <- Not quoted.
+            '',                          # <- No contents.
+        ]
+        for value in values:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_json_valid(?)', [value])
+                self.assertEqual(cur.fetchall(), [(0,)])
+
+    def test_none(self):
+        cur = self.connection.execute('SELECT user_json_valid(NULL)')
+        self.assertEqual(cur.fetchall(), [(0,)])
