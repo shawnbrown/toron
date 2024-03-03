@@ -274,6 +274,34 @@ def create_sql_triggers_property_value(connection: sqlite3.Connection) -> None:
         cur.execute(sql.format(event='UPDATE'))
 
 
+def create_user_attributes_valid(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``user_attributes_valid``.
+
+    Returns True if *x* is a wellformed TEXT_ATTRIBUTES value or return
+    False if it is not wellformed. A TEXT_ATTRIBUTES value should be a
+    JSON object that contains only string values.
+
+    This is used when JSON functions are not available in SQLite.
+    """
+    def user_attributes_valid(x):
+        try:
+            obj = json_loads(x)
+        except (ValueError, TypeError):
+            return 0
+        if not isinstance(obj, dict):
+            return 0
+        for value in obj.values():
+            if not isinstance(value, str):
+                return 0
+        return 1
+
+    create_sql_function(connection,
+                        name='user_attributes_valid',
+                        narg=1,
+                        func=user_attributes_valid,
+                        deterministic=True)
+
+
 def create_functions_and_temporary_triggers(
     connection: sqlite3.Connection
 ) -> None:

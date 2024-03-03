@@ -10,6 +10,7 @@ from toron._data_access.schema import (
     create_sql_function,
     create_json_valid,
     create_sql_triggers_property_value,
+    create_user_attributes_valid,
 )
 
 
@@ -174,3 +175,72 @@ class TestCreateSqlTriggersPropertyValue(BaseJsonValidTestCase):
                         'INSERT INTO property VALUES (?, ?)',
                         ('key1', value),
                     )
+
+
+class BaseAttributesValidTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Valid TEXT_ATTRIBUTES values must be JSON objects with string values."""
+        cls.valid_values = [
+            '{"a": "one", "b": "two"}',
+            '{"c": "three"}',
+        ]
+        cls.non_string_values = [
+            '{"a": "one", "b": 2}',  # <- contains integer
+            '{"a": {"b": "two"}}',   # <- contains nested object
+        ]
+        cls.not_an_object = [
+            '["one", "two"]',  # <- array
+            '"one"',           # <- text
+            '123',             # <- integer
+            '3.14',            # <- real
+            'true',            # <- boolean
+        ]
+        cls.malformed_json = [
+            '{"a": "one", "b": "two"',   # <- No closing curly-brace.
+            '{"a": "one", "b": "two}',   # <- No closing quote.
+            '[1, 2',                     # <- No closing bracket.
+            "{'a': 'one', 'b': 'two'}",  # <- Requires double quotes.
+            'abc',                       # <- Not quoted.
+            '',                          # <- No contents.
+        ]
+
+
+class TestCreateUserAttributeValid(BaseAttributesValidTestCase):
+    """Check application defined SQL function for TEXT_ATTRIBUTES."""
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+        create_user_attributes_valid(self.connection)
+
+    def test_valid_values(self):
+        for value in self.valid_values:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
+                msg = f'should be 1 for well-formed TEXT_ATTRIBUTES: {value!r}'
+                self.assertEqual(cur.fetchall(), [(1,)], msg=msg)
+
+    def test_non_string_values(self):
+        for value in self.non_string_values:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
+                msg = f'should be 0 if TEXT_ATTRIBUTES values are not strings: {value!r}'
+                self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
+
+    def test_not_an_object(self):
+        for value in self.not_an_object:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
+                msg = f'should be 0 if TEXT_ATTRIBUTES are not JSON objects: {value!r}'
+                self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
+
+    def test_malformed_json(self):
+        for value in self.malformed_json:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
+                msg = f'should be 0 if TEXT_ATTRIBUTES value is malformed: {value!r}'
+                self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
+
+    def test_none(self):
+        cur = self.connection.execute('SELECT user_attributes_valid(?)', [None])
+        self.assertEqual(cur.fetchall(), [(0,)])
