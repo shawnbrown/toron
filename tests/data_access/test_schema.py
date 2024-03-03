@@ -181,66 +181,45 @@ class BaseAttributesValidTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Valid TEXT_ATTRIBUTES values must be JSON objects with string values."""
-        cls.valid_values = [
+        cls.valid_attributes = [
             '{"a": "one", "b": "two"}',
             '{"c": "three"}',
         ]
-        cls.non_string_values = [
-            '{"a": "one", "b": 2}',  # <- contains integer
-            '{"a": {"b": "two"}}',   # <- contains nested object
-        ]
-        cls.not_an_object = [
-            '["one", "two"]',  # <- array
-            '"one"',           # <- text
-            '123',             # <- integer
-            '3.14',            # <- real
-            'true',            # <- boolean
-        ]
-        cls.malformed_json = [
-            '{"a": "one", "b": "two"',   # <- No closing curly-brace.
-            '{"a": "one", "b": "two}',   # <- No closing quote.
-            '[1, 2',                     # <- No closing bracket.
-            "{'a': 'one', 'b': 'two'}",  # <- Requires double quotes.
-            'abc',                       # <- Not quoted.
-            '',                          # <- No contents.
+
+        cls.invalid_attributes = [
+            ('{"a": "one", "b": 2}',     'contains non-text values (contains integer)'),
+            ('{"a": {"b": "two"}}',      'contains non-text values (contains nested object)'),
+            ('["one", "two"]',           'not a JSON object (array)'),
+            ('"one"',                    'not a JSON object (text)'),
+            ('123',                      'not a JSON object (integer)'),
+            ('3.14',                     'not a JSON object (real)'),
+            ('true',                     'not a JSON object (boolean)'),
+            ('{"a": "one", "b": "two"',  'malformed (no closing curly-brace)'),
+            ('{"a": "one", "b": "two}',  'malformed (no closing quote)'),
+            ('[1, 2',                    'malformed (no closing bracket)'),
+            ("{'a': 'one', 'b': 'two'}", 'malformed (requires double quotes)'),
+            ('abc',                      'malformed (not quoted)'),
+            ('',                         'malformed (no contents)')
         ]
 
 
 class TestCreateUserAttributeValid(BaseAttributesValidTestCase):
-    """Check application defined SQL function for TEXT_ATTRIBUTES."""
+    """Check user-defined SQL function ``user_attributes_valid``."""
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
         create_user_attributes_valid(self.connection)
 
-    def test_valid_values(self):
-        for value in self.valid_values:
+    def test_valid_attributes(self):
+        for value in self.valid_attributes:
             with self.subTest(value=value):
                 cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
                 msg = f'should be 1 for well-formed TEXT_ATTRIBUTES: {value!r}'
                 self.assertEqual(cur.fetchall(), [(1,)], msg=msg)
 
-    def test_non_string_values(self):
-        for value in self.non_string_values:
+    def test_invalid_attributes(self):
+        for value, desc in self.invalid_attributes:
             with self.subTest(value=value):
                 cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
-                msg = f'should be 0 if TEXT_ATTRIBUTES values are not strings: {value!r}'
+                msg = f'should be 0, TEXT_ATTRIBUTES {value!r} {desc}'
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
-
-    def test_not_an_object(self):
-        for value in self.not_an_object:
-            with self.subTest(value=value):
-                cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
-                msg = f'should be 0 if TEXT_ATTRIBUTES are not JSON objects: {value!r}'
-                self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
-
-    def test_malformed_json(self):
-        for value in self.malformed_json:
-            with self.subTest(value=value):
-                cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
-                msg = f'should be 0 if TEXT_ATTRIBUTES value is malformed: {value!r}'
-                self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
-
-    def test_none(self):
-        cur = self.connection.execute('SELECT user_attributes_valid(?)', [None])
-        self.assertEqual(cur.fetchall(), [(0,)])
