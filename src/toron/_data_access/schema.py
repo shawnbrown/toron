@@ -341,6 +341,27 @@ def create_sql_triggers_attribute_value(connection: sqlite3.Connection) -> str:
         cur.execute(sql.format(event='UPDATE'))
 
 
+def create_user_userproperties_valid(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``user_userproperties_valid``.
+
+    Returns 1 if *x* is a wellformed TEXT_USERPROPERTIES value or return
+    0 if it is not wellformed. A wellformed TEXT_USERPROPERTIES value is
+    JSON formatted "object" containing values of any type.
+    """
+    def user_userproperties_valid(x):
+        try:
+            obj = json_loads(x)
+        except (ValueError, TypeError):
+            return 0
+        return 1 if isinstance(obj, dict) else 0
+
+    create_sql_function(connection,
+                        name='user_userproperties_valid',
+                        narg=1,
+                        func=user_userproperties_valid,
+                        deterministic=True)
+
+
 def create_functions_and_temporary_triggers(
     connection: sqlite3.Connection
 ) -> None:

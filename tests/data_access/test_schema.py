@@ -12,6 +12,7 @@ from toron._data_access.schema import (
     create_sql_triggers_property_value,
     create_user_attributes_valid,
     create_sql_triggers_attribute_value,
+    create_user_userproperties_valid,
 )
 
 
@@ -254,3 +255,50 @@ class TestCreateSqlTriggersAttributeValue(BaseAttributesValidTestCase):
                         'INSERT INTO attribute VALUES (?, ?)',
                         (1, value),
                     )
+
+
+class BaseUserpropertiesValidTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Valid TEXT_USERPROPERTIES values must be JSON objects."""
+        cls.valid_userproperties = [
+            '{"a": "one", "b": "two"}',          # <- object with text
+            '{"a": 1, "b": 2.0}',                # <- object with integer and real
+            '{"a": [1, 2], "b": {"three": 3}}',  # <- object with array and object
+        ]
+
+        cls.invalid_userproperties = [
+            ('["one", "two"]',           'not an object (array)'),
+            ('"one"',                    'not an object (text)'),
+            ('123',                      'not an object (integer)'),
+            ('3.14',                     'not an object (real)'),
+            ('true',                     'not an object (boolean)'),
+            ('{"a": "one", "b": "two"',  'malformed (no closing curly-brace)'),
+            ('{"a": "one", "b": "two}',  'malformed (no closing quote)'),
+            ('[1, 2',                    'malformed (no closing bracket)'),
+            ("{'a': 'one', 'b': 'two'}", 'malformed (requires double quotes)'),
+            ('abc',                      'malformed (not quoted)'),
+            ('',                         'malformed (no contents)')
+        ]
+
+
+class TestUserUserpropertiesValid(BaseUserpropertiesValidTestCase):
+    """Check application defined SQL function for TEXT_USERPROPERTIES."""
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+        create_user_userproperties_valid(self.connection)
+
+    def test_valid_userproperties(self):
+        for value in self.valid_userproperties:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_userproperties_valid(?)', [value])
+                msg = f'should be 1 for well-formed TEXT_USERPROPERTIES: {value!r}'
+                self.assertEqual(cur.fetchall(), [(1,)], msg=msg)
+
+    def test_invalid_attributes(self):
+        for value, desc in self.invalid_userproperties:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_userproperties_valid(?)', [value])
+                msg = f'should be 0, TEXT_USERPROPERTIES {value!r} {desc}'
+                self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
