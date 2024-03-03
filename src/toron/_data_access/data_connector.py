@@ -167,7 +167,7 @@ class DataConnector(BaseDataConnector):
             # Connect to database and create Toron node schema.
             con = get_sqlite_connection(database_path)
             schema.create_node_schema(con)
-            #schema.create_functions_and_temporary_triggers(con)
+            schema.create_functions_and_temporary_triggers(con)
 
             # Keep in-memory connection open.
             self._in_memory_connection = con

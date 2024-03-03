@@ -272,3 +272,19 @@ def create_sql_triggers_property_value(connection: sqlite3.Connection) -> None:
     with closing(connection.cursor()) as cur:
         cur.execute(sql.format(event='INSERT'))
         cur.execute(sql.format(event='UPDATE'))
+
+
+def create_functions_and_temporary_triggers(
+    connection: sqlite3.Connection
+) -> None:
+    """Create SQL functions and temporary triggers for Toron schema.
+
+    .. important::
+
+        This function should only be called with a *connection* to a
+        Toron node SQL schema. It should not be called on an empty
+        database or a database containing some other schema.
+    """
+    if not SQLITE_ENABLE_JSON1:
+        create_json_valid(connection)
+    create_sql_triggers_property_value(connection)
