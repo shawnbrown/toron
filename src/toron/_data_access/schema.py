@@ -500,3 +500,6 @@ def create_functions_and_temporary_triggers(
     create_triggers_attribute_value(connection)
     create_triggers_user_properties(connection)
     create_triggers_selectors(connection)
+
+    if not SQLITE_ENABLE_MATH_FUNCTIONS:
+        create_log2(connection)
