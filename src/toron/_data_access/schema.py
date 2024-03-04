@@ -362,6 +362,35 @@ def create_user_userproperties_valid(connection: sqlite3.Connection) -> None:
                         deterministic=True)
 
 
+def create_sql_triggers_user_properties(connection: sqlite3.Connection) -> None:
+    """Add temp triggers to validate ``edge.user_properties`` column.
+
+    A well-formed TEXT_USERPROPERTIES value is a string containing
+    a JSON object type.
+
+    The trigger will pass without error if the value is well-formed.
+    """
+    if SQLITE_ENABLE_JSON1:
+        userproperties_are_invalid = \
+            f"(json_valid(NEW.user_properties) = 0 OR json_type(NEW.user_properties) != 'object')"
+    else:
+        userproperties_are_invalid = f'user_userproperties_valid(NEW.user_properties) = 0'
+
+    sql = f"""
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_edge_user_properties
+        BEFORE {{event}} ON main.edge FOR EACH ROW
+        WHEN
+            NEW.user_properties IS NOT NULL
+            AND {userproperties_are_invalid}
+        BEGIN
+            SELECT RAISE(ABORT, 'edge.user_properties must be well-formed JSON object type');
+        END;
+    """
+    with closing(connection.cursor()) as cur:
+        cur.execute(sql.format(event='INSERT'))
+        cur.execute(sql.format(event='UPDATE'))
+
+
 def create_functions_and_temporary_triggers(
     connection: sqlite3.Connection
 ) -> None:

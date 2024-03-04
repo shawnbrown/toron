@@ -13,6 +13,7 @@ from toron._data_access.schema import (
     create_user_attributes_valid,
     create_sql_triggers_attribute_value,
     create_user_userproperties_valid,
+    create_sql_triggers_user_properties,
 )
 
 
@@ -278,7 +279,7 @@ class BaseUserpropertiesValidTestCase(unittest.TestCase):
             ('[1, 2',                    'malformed (no closing bracket)'),
             ("{'a': 'one', 'b': 'two'}", 'malformed (requires double quotes)'),
             ('abc',                      'malformed (not quoted)'),
-            ('',                         'malformed (no contents)')
+            ('',                         'malformed (no contents)'),
         ]
 
 
@@ -302,3 +303,33 @@ class TestUserUserpropertiesValid(BaseUserpropertiesValidTestCase):
                 cur = self.connection.execute('SELECT user_userproperties_valid(?)', [value])
                 msg = f'should be 0, TEXT_USERPROPERTIES {value!r} {desc}'
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
+
+
+class TestCreateSqlTriggersUserpropertiesValue(BaseUserpropertiesValidTestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+
+        create_node_schema(self.connection)
+        if not SQLITE_ENABLE_JSON1:
+            create_user_userproperties_valid(self.connection)
+        create_sql_triggers_user_properties(self.connection)
+
+    def test_insert_valid_userproperties(self):
+        cur = self.connection.executemany(
+            'INSERT INTO edge (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
+            [(val, 'name', str(i)) for i, val in enumerate(self.valid_userproperties)],
+        )
+        self.assertEqual(cur.rowcount, 3, msg='should insert all three records')
+
+    def test_insert_invalid_userproperties(self):
+        regex = 'edge.user_properties must be well-formed JSON object type'
+
+        for value, desc in self.invalid_userproperties:
+            with self.subTest(value=value):
+                msg = f'should raise IntegrityError, TEXT_USERPROPERTIES {value!r} {desc}'
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
+                    self.connection.execute(
+                        "INSERT INTO edge (user_properties, name, other_unique_id) VALUES (?, ?, ?)",
+                        (value, 'foo', '1'),
+                    )
