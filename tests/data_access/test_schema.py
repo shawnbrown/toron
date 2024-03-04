@@ -3,6 +3,7 @@ import sqlite3
 import unittest
 from contextlib import closing
 
+from toron._selectors import SimpleSelector
 from toron._utils import BitFlags
 from toron._data_access.schema import (
     SQLITE_ENABLE_JSON1,
@@ -556,3 +557,56 @@ class TestCreateToronJsonObjectKeep(unittest.TestCase):
                 'SELECT toron_json_object_keep(?, ?, ?)',
                 ('{"a": "one}', 'a', 'b'),  # <- No closing quote.
             )
+
+
+class TestRegisteredConverters(unittest.TestCase):
+    """Should convert SQLite objects into appropriate Python objects."""
+    def setUp(self):
+        self.connection = sqlite3.connect(
+            database=':memory:',
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+        )
+        self.addCleanup(self.connection.close)
+        create_node_schema(self.connection)
+
+    def test_converter_text_json(self):
+        cur = self.connection.execute(
+            'INSERT INTO property (key, value) VALUES (?, ?)',
+            ('mykey', '{"abc": 123}'),
+        )
+        cur.execute("SELECT * FROM property WHERE key='mykey'")
+        self.assertEqual(cur.fetchall(), [('mykey', {'abc': 123})])
+
+    def test_converter_text_attributes(self):
+        cur = self.connection.execute(
+            'INSERT INTO attribute (attribute_id, attribute_value) VALUES (?, ?)',
+            (1, '{"foo": "one", "bar": "two"}'),
+        )
+        cur.execute('SELECT * FROM attribute')
+        self.assertEqual(cur.fetchall(), [(1, {'foo': 'one', 'bar': 'two'})])
+
+    def test_converter_text_userproperties(self):
+        cur = self.connection.execute(
+            'INSERT INTO edge (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
+            ('{"a": [1, 2], "b": {"three": 3}}', 'name', '1111-111-1111'),
+        )
+        cur.execute('SELECT user_properties FROM edge')
+        self.assertEqual(cur.fetchall(), [({'a': [1, 2], 'b': {'three': 3}},)])
+
+    def test_converter_text_selectors(self):
+        cur = self.connection.execute(
+            'INSERT INTO weighting (name, selectors) VALUES (?, ?)',
+            ('myname', r'["[a=\"one\"]", "[b]"]'),
+        )
+        cur.execute('SELECT selectors FROM weighting')
+        self.assertEqual(cur.fetchall(), [([SimpleSelector('a', '=', 'one'), SimpleSelector('b')],)])
+
+    def test_converter_blob_bitflags(self):
+        cur = self.connection.executescript("""
+            INSERT INTO node_index (index_id) VALUES (1);
+            INSERT INTO edge (edge_id, name, other_unique_id) VALUES (1, 'name', '11-1-11');
+            INSERT INTO relation (edge_id, other_index_id, index_id, relation_value, mapping_level) VALUES (1, 1, 1, 25.0, X'A0');
+        """)
+        cur.execute('SELECT mapping_level FROM relation')
+        self.assertEqual(cur.fetchall(), [(BitFlags(1, 0, 1),)])
