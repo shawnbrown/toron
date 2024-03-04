@@ -385,14 +385,14 @@ def create_triggers_user_properties(connection: sqlite3.Connection) -> None:
         cur.execute(sql.format(event='UPDATE'))
 
 
-def create_user_selectors_valid(connection: sqlite3.Connection) -> None:
-    """Create a user defined SQL function named ``user_selectors_valid``.
+def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``toron_check_selectors``.
 
     Returns 1 if *x* is a wellformed TEXT_SELECTORS value or return
     0 if it is not wellformed. A wellformed TEXT_SELECTORS value is
     JSON formatted "array" containing "string" values.
     """
-    def user_selectors_valid(x):
+    def toron_check_selectors(x):
         try:
             obj = json_loads(x)
         except (ValueError, TypeError):
@@ -405,13 +405,13 @@ def create_user_selectors_valid(connection: sqlite3.Connection) -> None:
         return 1
 
     create_sql_function(connection,
-                        name='user_selectors_valid',
+                        name='toron_check_selectors',
                         narg=1,
-                        func=user_selectors_valid,
+                        func=toron_check_selectors,
                         deterministic=True)
 
 
-def create_sql_triggers_selectors(connection: sqlite3.Connection) -> None:
+def create_triggers_selectors(connection: sqlite3.Connection) -> None:
     """Add temp triggers to validate ``edge.selectors`` and
     ``weighting.selectors`` columns.
 
@@ -433,7 +433,7 @@ def create_sql_triggers_selectors(connection: sqlite3.Connection) -> None:
                      WHERE json_each.type != 'text') != 0)
         """.strip()
     else:
-        selectors_are_invalid = 'user_selectors_valid(NEW.selectors) = 0'
+        selectors_are_invalid = 'toron_check_selectors(NEW.selectors) = 0'
 
     sql = f"""
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_{{table}}_selectors
@@ -467,9 +467,9 @@ def create_functions_and_temporary_triggers(
         create_toron_check_property_value(connection)
         create_toron_check_attribute_value(connection)
         create_toron_check_user_properties(connection)
-        create_user_selectors_valid(connection)
+        create_toron_check_selectors(connection)
 
     create_triggers_property_value(connection)
     create_triggers_attribute_value(connection)
     create_triggers_user_properties(connection)
-    create_sql_triggers_selectors(connection)
+    create_triggers_selectors(connection)

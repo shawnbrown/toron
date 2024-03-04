@@ -14,8 +14,8 @@ from toron._data_access.schema import (
     create_triggers_attribute_value,
     create_toron_check_user_properties,
     create_triggers_user_properties,
-    create_user_selectors_valid,
-    create_sql_triggers_selectors,
+    create_toron_check_selectors,
+    create_triggers_selectors,
 )
 
 
@@ -362,37 +362,37 @@ class BaseUserSelectorsValidTestCase(unittest.TestCase):
         ]
 
 
-class TestUserSelectorsValid(BaseUserSelectorsValidTestCase):
+class TestCreateToronCheckSelectors(BaseUserSelectorsValidTestCase):
     """Check application defined SQL function for TEXT_SELECTORS."""
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
-        create_user_selectors_valid(self.connection)
+        create_toron_check_selectors(self.connection)
 
     def test_valid_selectors(self):
         for value in self.valid_selector_json:
             with self.subTest(value=value):
-                cur = self.connection.execute('SELECT user_selectors_valid(?)', [value])
+                cur = self.connection.execute('SELECT toron_check_selectors(?)', [value])
                 msg = f'should be 1 for well-formed TEXT_SELECTORS: {value!r}'
                 self.assertEqual(cur.fetchall(), [(1,)], msg=msg)
 
     def test_invalid_attributes(self):
         for value, desc in self.invalid_selector_json:
             with self.subTest(value=value):
-                cur = self.connection.execute('SELECT user_selectors_valid(?)', [value])
+                cur = self.connection.execute('SELECT toron_check_selectors(?)', [value])
                 msg = f'should be 0, TEXT_SELECTORS {value!r} {desc}'
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
 
 
-class TestCreateSqlTriggersSelectors(BaseUserSelectorsValidTestCase):
+class TestCreateTriggersSelectors(BaseUserSelectorsValidTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
 
         create_node_schema(self.connection)
         if not SQLITE_ENABLE_JSON1:
-            create_user_selectors_valid(self.connection)
-        create_sql_triggers_selectors(self.connection)
+            create_toron_check_selectors(self.connection)
+        create_triggers_selectors(self.connection)
 
     def test_insert_valid_edge_selectors(self):
         cur = self.connection.executemany(
