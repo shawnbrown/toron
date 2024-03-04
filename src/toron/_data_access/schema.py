@@ -302,7 +302,7 @@ def create_user_attributes_valid(connection: sqlite3.Connection) -> None:
                         deterministic=True)
 
 
-def create_sql_triggers_attribute_value(connection: sqlite3.Connection) -> str:
+def create_sql_triggers_attribute_value(connection: sqlite3.Connection) -> None:
     """Add temp triggers to validate ``attribute.attribute_value`` column.
 
     The ``attribute_value`` column is of the type TEXT_ATTRIBUTES which
