@@ -108,7 +108,7 @@ class TestCreateSqlFunction(unittest.TestCase):
             self.connection.execute("SELECT bad_func_name('hello world')")
 
 
-class BaseJsonValidTestCase(unittest.TestCase):
+class BasePropertyValueTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.wellformed_json = [
@@ -132,7 +132,7 @@ class BaseJsonValidTestCase(unittest.TestCase):
         ]
 
 
-class TestCreateToronCheckPropertyValue(BaseJsonValidTestCase):
+class TestCreateToronCheckPropertyValue(BasePropertyValueTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
@@ -157,7 +157,7 @@ class TestCreateToronCheckPropertyValue(BaseJsonValidTestCase):
         self.assertEqual(cur.fetchall(), [(0,)])
 
 
-class TestCreateTriggersPropertyValue(BaseJsonValidTestCase):
+class TestCreateTriggersPropertyValue(BasePropertyValueTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
@@ -187,7 +187,7 @@ class TestCreateTriggersPropertyValue(BaseJsonValidTestCase):
                     )
 
 
-class BaseAttributesValidTestCase(unittest.TestCase):
+class BaseAttributeValueTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Valid TEXT_ATTRIBUTES values must be JSON objects with string values."""
@@ -213,7 +213,7 @@ class BaseAttributesValidTestCase(unittest.TestCase):
         ]
 
 
-class TestCreateToronCheckAttributeValue(BaseAttributesValidTestCase):
+class TestCreateToronCheckAttributeValue(BaseAttributeValueTestCase):
     """Check user-defined SQL function ``user_attributes_valid``."""
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
@@ -235,7 +235,7 @@ class TestCreateToronCheckAttributeValue(BaseAttributesValidTestCase):
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
 
 
-class TestCreateTriggersAttributeValue(BaseAttributesValidTestCase):
+class TestCreateTriggersAttributeValue(BaseAttributeValueTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
@@ -265,7 +265,7 @@ class TestCreateTriggersAttributeValue(BaseAttributesValidTestCase):
                     )
 
 
-class BaseUserpropertiesValidTestCase(unittest.TestCase):
+class BaseUserPropertiesTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Valid TEXT_USERPROPERTIES values must be JSON objects."""
@@ -290,7 +290,7 @@ class BaseUserpropertiesValidTestCase(unittest.TestCase):
         ]
 
 
-class TestCreateToronCheckUserProperties(BaseUserpropertiesValidTestCase):
+class TestCreateToronCheckUserProperties(BaseUserPropertiesTestCase):
     """Check application defined SQL function for TEXT_USERPROPERTIES."""
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
@@ -312,7 +312,7 @@ class TestCreateToronCheckUserProperties(BaseUserpropertiesValidTestCase):
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
 
 
-class TestCreateTriggersUserProperties(BaseUserpropertiesValidTestCase):
+class TestCreateTriggersUserProperties(BaseUserPropertiesTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
@@ -342,7 +342,7 @@ class TestCreateTriggersUserProperties(BaseUserpropertiesValidTestCase):
                     )
 
 
-class BaseUserSelectorsValidTestCase(unittest.TestCase):
+class BaseSelectorsTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Valid TEXT_SELECTORS values must be JSON arrays with string values."""
@@ -367,7 +367,7 @@ class BaseUserSelectorsValidTestCase(unittest.TestCase):
         ]
 
 
-class TestCreateToronCheckSelectors(BaseUserSelectorsValidTestCase):
+class TestCreateToronCheckSelectors(BaseSelectorsTestCase):
     """Check application defined SQL function for TEXT_SELECTORS."""
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
@@ -389,7 +389,7 @@ class TestCreateToronCheckSelectors(BaseUserSelectorsValidTestCase):
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
 
 
-class TestCreateTriggersSelectors(BaseUserSelectorsValidTestCase):
+class TestCreateTriggersSelectors(BaseSelectorsTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
