@@ -391,6 +391,32 @@ def create_sql_triggers_user_properties(connection: sqlite3.Connection) -> None:
         cur.execute(sql.format(event='UPDATE'))
 
 
+def create_user_selectors_valid(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``user_selectors_valid``.
+
+    Returns 1 if *x* is a wellformed TEXT_SELECTORS value or return
+    0 if it is not wellformed. A wellformed TEXT_SELECTORS value is
+    JSON formatted "array" containing "string" values.
+    """
+    def user_selectors_valid(x):
+        try:
+            obj = json_loads(x)
+        except (ValueError, TypeError):
+            return 0
+        if not isinstance(obj, list):
+            return 0
+        for value in obj:
+            if not isinstance(value, str):
+                return 0
+        return 1
+
+    create_sql_function(connection,
+                        name='user_selectors_valid',
+                        narg=1,
+                        func=user_selectors_valid,
+                        deterministic=True)
+
+
 def create_functions_and_temporary_triggers(
     connection: sqlite3.Connection
 ) -> None:

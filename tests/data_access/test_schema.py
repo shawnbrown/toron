@@ -14,6 +14,7 @@ from toron._data_access.schema import (
     create_sql_triggers_attribute_value,
     create_user_userproperties_valid,
     create_sql_triggers_user_properties,
+    create_user_selectors_valid,
 )
 
 
@@ -333,3 +334,50 @@ class TestCreateSqlTriggersUserpropertiesValue(BaseUserpropertiesValidTestCase):
                         "INSERT INTO edge (user_properties, name, other_unique_id) VALUES (?, ?, ?)",
                         (value, 'foo', '1'),
                     )
+
+
+class BaseUserSelectorsValidTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Valid TEXT_SELECTORS values must be JSON arrays with string values."""
+        cls.valid_selector_json = [
+            r'["[a=\"one\"]", "[b=\"two\"]"]',
+            r'["[c]"]',
+        ]
+
+        cls.invalid_selector_json = [
+            (r'["[a=\"one\"]", 2]',               'contains non-string value (integer)'),
+            (r'["[a=\"one\"]", ["[b=\"two\"]"]]', 'contains non-string value (nested object)'),
+            ('{"a": "one", "b": "two"}',          'not an array (object)'),
+            ('"one"',                             'not an array (text)'),
+            ('123',                               'not an array (integer)'),
+            ('3.14',                              'not an array (real)'),
+            ('true',                              'not an array (boolean)'),
+            (r'["[a=\"one\"]", "[b=\"two\"]"',    'malformed (no closing bracket)'),
+            (r'["[a=\"one\"]", "[b=\"two\"]]',    'malformed (no closing quote)'),
+            (r"['[a=\"one\"]', '[b=\"two\"]']",   'malformed (requires double quotes)'),
+            ('abc',                               'malformed (not quoted)'),
+            ('',                                  'no contents'),
+        ]
+
+
+class TestUserSelectorsValid(BaseUserSelectorsValidTestCase):
+    """Check application defined SQL function for TEXT_SELECTORS."""
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+        create_user_selectors_valid(self.connection)
+
+    def test_valid_selectors(self):
+        for value in self.valid_selector_json:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_selectors_valid(?)', [value])
+                msg = f'should be 1 for well-formed TEXT_SELECTORS: {value!r}'
+                self.assertEqual(cur.fetchall(), [(1,)], msg=msg)
+
+    def test_invalid_attributes(self):
+        for value, desc in self.invalid_selector_json:
+            with self.subTest(value=value):
+                cur = self.connection.execute('SELECT user_selectors_valid(?)', [value])
+                msg = f'should be 0, TEXT_SELECTORS {value!r} {desc}'
+                self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
