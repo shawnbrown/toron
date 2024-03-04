@@ -335,14 +335,14 @@ def create_triggers_attribute_value(connection: sqlite3.Connection) -> None:
         cur.execute(sql.format(event='UPDATE'))
 
 
-def create_user_userproperties_valid(connection: sqlite3.Connection) -> None:
-    """Create a user defined SQL function named ``user_userproperties_valid``.
+def create_toron_check_user_properties(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``toron_check_user_properties``.
 
     Returns 1 if *x* is a wellformed TEXT_USERPROPERTIES value or return
     0 if it is not wellformed. A wellformed TEXT_USERPROPERTIES value is
     JSON formatted "object" containing values of any type.
     """
-    def user_userproperties_valid(x):
+    def toron_check_user_properties(x):
         try:
             obj = json_loads(x)
         except (ValueError, TypeError):
@@ -350,13 +350,13 @@ def create_user_userproperties_valid(connection: sqlite3.Connection) -> None:
         return 1 if isinstance(obj, dict) else 0
 
     create_sql_function(connection,
-                        name='user_userproperties_valid',
+                        name='toron_check_user_properties',
                         narg=1,
-                        func=user_userproperties_valid,
+                        func=toron_check_user_properties,
                         deterministic=True)
 
 
-def create_sql_triggers_user_properties(connection: sqlite3.Connection) -> None:
+def create_triggers_user_properties(connection: sqlite3.Connection) -> None:
     """Add temp triggers to validate ``edge.user_properties`` column.
 
     A well-formed TEXT_USERPROPERTIES value is a string containing
@@ -368,7 +368,7 @@ def create_sql_triggers_user_properties(connection: sqlite3.Connection) -> None:
         userproperties_are_invalid = \
             f"(json_valid(NEW.user_properties) = 0 OR json_type(NEW.user_properties) != 'object')"
     else:
-        userproperties_are_invalid = f'user_userproperties_valid(NEW.user_properties) = 0'
+        userproperties_are_invalid = f'toron_check_user_properties(NEW.user_properties) = 0'
 
     sql = f"""
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_edge_user_properties
@@ -466,10 +466,10 @@ def create_functions_and_temporary_triggers(
     if not SQLITE_ENABLE_JSON1:
         create_toron_check_property_value(connection)
         create_toron_check_attribute_value(connection)
-        create_user_userproperties_valid(connection)
+        create_toron_check_user_properties(connection)
         create_user_selectors_valid(connection)
 
     create_triggers_property_value(connection)
     create_triggers_attribute_value(connection)
-    create_sql_triggers_user_properties(connection)
+    create_triggers_user_properties(connection)
     create_sql_triggers_selectors(connection)
