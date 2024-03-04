@@ -268,8 +268,8 @@ def create_triggers_property_value(connection: sqlite3.Connection) -> None:
         cur.execute(sql.format(event='UPDATE'))
 
 
-def create_user_attributes_valid(connection: sqlite3.Connection) -> None:
-    """Create a user defined SQL function named ``user_attributes_valid``.
+def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``toron_check_attribute_value``.
 
     Returns True if *x* is a wellformed TEXT_ATTRIBUTES value or return
     False if it is not wellformed. A TEXT_ATTRIBUTES value should be a
@@ -277,7 +277,7 @@ def create_user_attributes_valid(connection: sqlite3.Connection) -> None:
 
     This is used when JSON functions are not available in SQLite.
     """
-    def user_attributes_valid(x):
+    def toron_check_attribute_value(x):
         try:
             obj = json_loads(x)
         except (ValueError, TypeError):
@@ -290,13 +290,13 @@ def create_user_attributes_valid(connection: sqlite3.Connection) -> None:
         return 1
 
     create_sql_function(connection,
-                        name='user_attributes_valid',
+                        name='toron_check_attribute_value',
                         narg=1,
-                        func=user_attributes_valid,
+                        func=toron_check_attribute_value,
                         deterministic=True)
 
 
-def create_sql_triggers_attribute_value(connection: sqlite3.Connection) -> None:
+def create_triggers_attribute_value(connection: sqlite3.Connection) -> None:
     """Add temp triggers to validate ``attribute.attribute_value`` column.
 
     The ``attribute_value`` column is of the type TEXT_ATTRIBUTES which
@@ -318,7 +318,7 @@ def create_sql_triggers_attribute_value(connection: sqlite3.Connection) -> None:
                      WHERE json_each.type != 'text') != 0)
         """.strip()
     else:
-        attributes_are_invalid = f'user_attributes_valid(NEW.attribute_value) = 0'
+        attributes_are_invalid = f'toron_check_attribute_value(NEW.attribute_value) = 0'
 
     sql = f"""
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_attribute_attribute_value
@@ -465,11 +465,11 @@ def create_functions_and_temporary_triggers(
     """
     if not SQLITE_ENABLE_JSON1:
         create_toron_check_property_value(connection)
-        create_user_attributes_valid(connection)
+        create_toron_check_attribute_value(connection)
         create_user_userproperties_valid(connection)
         create_user_selectors_valid(connection)
 
     create_triggers_property_value(connection)
-    create_sql_triggers_attribute_value(connection)
+    create_triggers_attribute_value(connection)
     create_sql_triggers_user_properties(connection)
     create_sql_triggers_selectors(connection)

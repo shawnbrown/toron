@@ -10,8 +10,8 @@ from toron._data_access.schema import (
     create_sql_function,
     create_toron_check_property_value,
     create_triggers_property_value,
-    create_user_attributes_valid,
-    create_sql_triggers_attribute_value,
+    create_toron_check_attribute_value,
+    create_triggers_attribute_value,
     create_user_userproperties_valid,
     create_sql_triggers_user_properties,
     create_user_selectors_valid,
@@ -208,37 +208,37 @@ class BaseAttributesValidTestCase(unittest.TestCase):
         ]
 
 
-class TestCreateUserAttributeValid(BaseAttributesValidTestCase):
+class TestCreateToronCheckAttributeValue(BaseAttributesValidTestCase):
     """Check user-defined SQL function ``user_attributes_valid``."""
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
-        create_user_attributes_valid(self.connection)
+        create_toron_check_attribute_value(self.connection)
 
     def test_valid_attributes(self):
         for value in self.valid_attributes:
             with self.subTest(value=value):
-                cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
+                cur = self.connection.execute('SELECT toron_check_attribute_value(?)', [value])
                 msg = f'should be 1 for well-formed TEXT_ATTRIBUTES: {value!r}'
                 self.assertEqual(cur.fetchall(), [(1,)], msg=msg)
 
     def test_invalid_attributes(self):
         for value, desc in self.invalid_attributes:
             with self.subTest(value=value):
-                cur = self.connection.execute('SELECT user_attributes_valid(?)', [value])
+                cur = self.connection.execute('SELECT toron_check_attribute_value(?)', [value])
                 msg = f'should be 0, TEXT_ATTRIBUTES {value!r} {desc}'
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
 
 
-class TestCreateSqlTriggersAttributeValue(BaseAttributesValidTestCase):
+class TestCreateTriggersAttributeValue(BaseAttributesValidTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
 
         create_node_schema(self.connection)
         if not SQLITE_ENABLE_JSON1:
-            create_user_attributes_valid(self.connection)
-        create_sql_triggers_attribute_value(self.connection)
+            create_toron_check_attribute_value(self.connection)
+        create_triggers_attribute_value(self.connection)
 
     def test_insert_valid_attributes(self):
         cur = self.connection.executemany(
