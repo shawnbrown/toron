@@ -15,6 +15,7 @@ from toron._data_access.schema import (
     create_user_userproperties_valid,
     create_sql_triggers_user_properties,
     create_user_selectors_valid,
+    create_sql_triggers_selectors,
 )
 
 
@@ -381,3 +382,52 @@ class TestUserSelectorsValid(BaseUserSelectorsValidTestCase):
                 cur = self.connection.execute('SELECT user_selectors_valid(?)', [value])
                 msg = f'should be 0, TEXT_SELECTORS {value!r} {desc}'
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
+
+
+class TestCreateSqlTriggersSelectors(BaseUserSelectorsValidTestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+
+        create_node_schema(self.connection)
+        if not SQLITE_ENABLE_JSON1:
+            create_user_selectors_valid(self.connection)
+        create_sql_triggers_selectors(self.connection)
+
+    def test_insert_valid_edge_selectors(self):
+        cur = self.connection.executemany(
+            'INSERT INTO edge (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
+            [(val, 'name', str(i)) for i, val in enumerate(self.valid_selector_json)],
+        )
+        self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
+
+    def test_insert_valid_weighting_selectors(self):
+        cur = self.connection.executemany(
+            'INSERT INTO weighting (name, selectors) VALUES (?, ?)',
+            [(str(i), sel) for i, sel in enumerate(self.valid_selector_json)],
+        )
+        self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
+
+    def test_insert_invalid_edge_selectors(self):
+        regex = 'edge.selectors must be a JSON array with text values'
+
+        for value, desc in self.invalid_selector_json:
+            with self.subTest(value=value):
+                msg = f'should raise IntegrityError, TEXT_SELECTORS {value!r} {desc}'
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
+                    self.connection.execute(
+                        'INSERT INTO edge (selectors, name, other_unique_id) VALUES (?, ?, ?)',
+                        (value, 'foo', '1'),
+                    )
+
+    def test_insert_invalid_weighting_selectors(self):
+        regex = 'weighting.selectors must be a JSON array with text values'
+
+        for value, desc in self.invalid_selector_json:
+            with self.subTest(value=value):
+                msg = f'should raise IntegrityError, TEXT_SELECTORS {value!r} {desc}'
+                with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
+                    self.connection.execute(
+                        'INSERT INTO weighting (name, selectors) VALUES (?, ?)',
+                        ('1', value),
+                    )

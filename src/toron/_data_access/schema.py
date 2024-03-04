@@ -417,6 +417,47 @@ def create_user_selectors_valid(connection: sqlite3.Connection) -> None:
                         deterministic=True)
 
 
+def create_sql_triggers_selectors(connection: sqlite3.Connection) -> None:
+    """Add temp triggers to validate ``edge.selectors`` and
+    ``weighting.selectors`` columns.
+
+    The trigger will pass without error when the value is a wellformed
+    JSON "array" containing "text" elements.
+
+    The trigger will raise an error when the value is:
+      * not wellformed JSON
+      * not an "array" type
+      * an "array" type that contains one or more "integer", "real",
+        "true", "false", "null", "object" or "array" elements
+    """
+    if SQLITE_ENABLE_JSON1:
+        selectors_are_invalid = """
+            (json_valid(NEW.selectors) = 0
+                 OR json_type(NEW.selectors) != 'array'
+                 OR (SELECT COUNT(*)
+                     FROM json_each(NEW.selectors)
+                     WHERE json_each.type != 'text') != 0)
+        """.strip()
+    else:
+        selectors_are_invalid = 'user_selectors_valid(NEW.selectors) = 0'
+
+    sql = f"""
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_{{table}}_selectors
+        BEFORE {{event}} ON main.{{table}} FOR EACH ROW
+        WHEN
+            NEW.selectors IS NOT NULL
+            AND {selectors_are_invalid}
+        BEGIN
+            SELECT RAISE(ABORT, '{{table}}.selectors must be a JSON array with text values');
+        END;
+    """
+    with closing(connection.cursor()) as cur:
+        cur.execute(sql.format(event='INSERT', table='edge'))
+        cur.execute(sql.format(event='UPDATE', table='edge'))
+        cur.execute(sql.format(event='INSERT', table='weighting'))
+        cur.execute(sql.format(event='UPDATE', table='weighting'))
+
+
 def create_functions_and_temporary_triggers(
     connection: sqlite3.Connection
 ) -> None:
