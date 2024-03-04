@@ -8,8 +8,8 @@ from toron._data_access.schema import (
     SQLITE_ENABLE_MATH_FUNCTIONS,
     create_node_schema,
     create_sql_function,
-    create_json_valid,
-    create_sql_triggers_property_value,
+    create_toron_check_property_value,
+    create_triggers_property_value,
     create_user_attributes_valid,
     create_sql_triggers_attribute_value,
     create_user_userproperties_valid,
@@ -127,40 +127,40 @@ class BaseJsonValidTestCase(unittest.TestCase):
         ]
 
 
-class TestCreateJsonValid(BaseJsonValidTestCase):
+class TestCreateToronCheckPropertyValue(BaseJsonValidTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
-        create_json_valid(self.connection, alt_name='user_json_valid')
+        create_toron_check_property_value(self.connection)
 
     def test_wellformed_json(self):
         for value in self.wellformed_json:
             with self.subTest(value=value):
-                cur = self.connection.execute('SELECT user_json_valid(?)', [value])
+                cur = self.connection.execute('SELECT toron_check_property_value(?)', [value])
                 msg = f'should be 1 for well-formed JSON: {value!r}'
                 self.assertEqual(cur.fetchall(), [(1,)], msg=msg)
 
     def test_malformed_json(self):
         for value, desc in self.malformed_json:
             with self.subTest(value=value):
-                cur = self.connection.execute('SELECT user_json_valid(?)', [value])
+                cur = self.connection.execute('SELECT toron_check_property_value(?)', [value])
                 msg = f'should be 0, JSON {value!r} {desc}'
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
 
     def test_none(self):
-        cur = self.connection.execute('SELECT user_json_valid(NULL)')
+        cur = self.connection.execute('SELECT toron_check_property_value(NULL)')
         self.assertEqual(cur.fetchall(), [(0,)])
 
 
-class TestCreateSqlTriggersPropertyValue(BaseJsonValidTestCase):
+class TestCreateTriggersPropertyValue(BaseJsonValidTestCase):
     def setUp(self):
         self.connection = sqlite3.connect(':memory:')
         self.addCleanup(self.connection.close)
 
         create_node_schema(self.connection)
         if not SQLITE_ENABLE_JSON1:
-            create_json_valid(self.connection)
-        create_sql_triggers_property_value(self.connection)
+            create_toron_check_property_value(self.connection)
+        create_triggers_property_value(self.connection)
 
     def test_insert_wellformed(self):
         cur = self.connection.executemany(

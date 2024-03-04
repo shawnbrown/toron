@@ -230,20 +230,9 @@ def create_sql_function(
     # support SQLite versions older than 3.21.0.
 
 
-def create_json_valid(
-    connection: sqlite3.Connection, alt_name: Optional[str] = None
-) -> None:
-    """Create a user defined SQL function named ``json_valid``.
-
-    This should serve as a drop-in replacement for basic JSON
-    validation when the built-in ``json_valid`` function is not
-    available:
-
-        https://www.sqlite.org/json1.html#jvalid
-
-    An *alt_name* can be given for testing and debugging.
-    """
-    def json_valid(x):
+def create_toron_check_property_value(connection: sqlite3.Connection) -> None:
+    """Create a app-defined SQL function named ``toron_check_property_value``."""
+    def toron_check_property_value(x):
         try:
             json_loads(x)
         except (ValueError, TypeError):
@@ -251,20 +240,25 @@ def create_json_valid(
         return 1
 
     create_sql_function(connection,
-                        name=alt_name or 'json_valid',
+                        name='toron_check_property_value',
                         narg=1,
-                        func=json_valid,
+                        func=toron_check_property_value,
                         deterministic=True)
 
 
-def create_sql_triggers_property_value(connection: sqlite3.Connection) -> None:
+def create_triggers_property_value(connection: sqlite3.Connection) -> None:
     """Add temp triggers to validate ``property.value`` column."""
-    sql = """
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{event}_property_value
-        BEFORE {event} ON main.property FOR EACH ROW
+    if SQLITE_ENABLE_JSON1:
+        check_function = 'json_valid'
+    else:
+        check_function = 'toron_check_property_value'
+
+    sql = f"""
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_property_value
+        BEFORE {{event}} ON main.property FOR EACH ROW
         WHEN
             NEW.value IS NOT NULL
-            AND json_valid(NEW.value) = 0
+            AND {check_function}(NEW.value) = 0
         BEGIN
             SELECT RAISE(ABORT, 'property.value must be well-formed JSON');
         END;
@@ -470,12 +464,12 @@ def create_functions_and_temporary_triggers(
         database or a database containing some other schema.
     """
     if not SQLITE_ENABLE_JSON1:
-        create_json_valid(connection)
+        create_toron_check_property_value(connection)
         create_user_attributes_valid(connection)
         create_user_userproperties_valid(connection)
         create_user_selectors_valid(connection)
 
-    create_sql_triggers_property_value(connection)
+    create_triggers_property_value(connection)
     create_sql_triggers_attribute_value(connection)
     create_sql_triggers_user_properties(connection)
     create_sql_triggers_selectors(connection)
