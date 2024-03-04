@@ -57,7 +57,10 @@ from certain tables.
 
 import sqlite3
 from contextlib import closing
-from json import loads as json_loads
+from json import (
+    dumps as json_dumps,
+    loads as json_loads,
+)
 
 from toron._typing import (
     Callable,
@@ -525,6 +528,58 @@ def create_toron_apply_bit_flag(connection: sqlite3.Connection) -> None:
                         name='toron_apply_bit_flag',
                         narg=3,
                         func=toron_apply_bit_flag,
+                        deterministic=True)
+
+
+def create_toron_json_object_keep(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``toron_json_object_keep``.
+
+    Return a JSON object keeping only the given *keys*::
+
+        >>> cur.execute(
+        ...    'SELECT toron_json_object_keep(?, ?, ?)',
+        ...    ('{"a": "one", "b": "two", "c": "three"}', 'a', 'b'),
+        ... )
+        >>> cur.fetchall()
+        [('{"a": "one", "b": "two"}',)]
+
+    If no *keys* are given, returns a complete and normalized JSON
+    object::
+
+        >>> cur.execute(
+        ...    'SELECT toron_json_object_keep(?)',
+        ...    ('{"a": "one", "b": "two", "c": "three"}',),
+        ... )
+        >>> cur.fetchall()
+        [('{"a": "one", "b": "two", "c": "three"}',)]
+
+    If *keys* are given but none of them match the keys in the JSON
+    object, then None is returned::
+
+        >>> cur.execute(
+        ...    'SELECT toron_json_object_keep(?, ?, ?, ?)',
+        ...    ('{"a": "one", "b": "two", "c": "three"}', 'x', 'y', 'z'),
+        ... )
+        >>> cur.fetchall()
+        [(None,)]
+    """
+    def toron_json_object_keep(json_obj, *keys):
+        obj = json_loads(json_obj)
+        if not isinstance(obj, dict):
+            class_name = obj.__class__.__name__
+            msg = f'expected JSON object type, got {class_name}: {json_obj}'
+            raise ValueError(msg)
+        if not keys:
+            return json_dumps(obj, sort_keys=True)
+        obj_subset = {k: obj[k] for k in keys if k in obj}
+        if obj_subset:
+            return json_dumps(obj_subset, sort_keys=True)
+        return None
+
+    create_sql_function(connection,
+                        name='toron_json_object_keep',
+                        narg=-1,  # Using -1 to indicate variable args.
+                        func=toron_json_object_keep,
                         deterministic=True)
 
 

@@ -19,6 +19,7 @@ from toron._data_access.schema import (
     create_triggers_selectors,
     create_log2,
     create_toron_apply_bit_flag,
+    create_toron_json_object_keep,
 )
 
 
@@ -496,3 +497,62 @@ class TestCreateToronApplyBitFlag(unittest.TestCase):
             ('bar', bit_flags, 9),  # <- No index `9` in bit flags
         )
         self.assertEqual(cur.fetchall(), [(None,)])
+
+
+class TestCreateToronJsonObjectKeep(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+        create_toron_json_object_keep(self.connection)
+
+    def test_matching_keys(self):
+        """Should keep given keys and return a new obj in alpha order."""
+        cur = self.connection.execute(
+            'SELECT toron_json_object_keep(?, ?, ?)',
+            ('{"b": "two", "c": "three", "a": "one"}', 'b', 'a'),
+        )
+        self.assertEqual(cur.fetchall(), [('{"a": "one", "b": "two"}',)])
+
+    def test_matching_and_nonmatching_keys(self):
+        """As long as at least one key matches, a result is returned."""
+        cur = self.connection.execute(
+            'SELECT toron_json_object_keep(?, ?, ?, ?)',
+            ('{"b": "two", "c": "three", "a": "one"}', 'x', 'c', 'y'),  # <- Only "c", no "x" or "y" in JSON obj.
+        )
+        self.assertEqual(cur.fetchall(), [('{"c": "three"}',)])
+
+    def test_no_matching_keys(self):
+        """When keys are given but none of them match keys in the
+        json_obj, then None should be returned.
+        """
+        cur = self.connection.execute(
+            'SELECT toron_json_object_keep(?, ?, ?, ?)',
+            ('{"b": "two", "c": "three", "a": "one"}', 'x', 'y', 'z'),
+        )
+        self.assertEqual(cur.fetchall(), [(None,)])
+
+    def test_no_keys_given(self):
+        """When no keys are given, a normalized verison of the complete
+        JSON object should be returned.
+        """
+        cur = self.connection.execute(
+            'SELECT toron_json_object_keep(?)',
+            ('{"b": "two", "c": "three", "a": "one"}',),  # <- No keys given!
+        )
+        self.assertEqual(cur.fetchall(), [('{"a": "one", "b": "two", "c": "three"}',)])  # <- Full obj with keys in alpha order.
+
+    def test_unsupported_json_type(self):
+        """Invalid JSON type should trigger an error."""
+        with self.assertRaises(sqlite3.OperationalError):
+            self.connection.execute(
+                'SELECT toron_json_object_keep(?, ?, ?)',
+                ('"a string value"', 'a', 'b'),  # <- JSON should be object, not string.
+            )
+
+    def test_malformed_json(self):
+        """JSON decode errors should trigger an error."""
+        with self.assertRaises(sqlite3.OperationalError):
+            self.connection.execute(
+                'SELECT toron_json_object_keep(?, ?, ?)',
+                ('{"a": "one}', 'a', 'b'),  # <- No closing quote.
+            )
