@@ -3,6 +3,7 @@ import sqlite3
 import unittest
 from contextlib import closing
 
+from toron._utils import BitFlags
 from toron._data_access.schema import (
     SQLITE_ENABLE_JSON1,
     SQLITE_ENABLE_MATH_FUNCTIONS,
@@ -17,6 +18,7 @@ from toron._data_access.schema import (
     create_toron_check_selectors,
     create_triggers_selectors,
     create_log2,
+    create_toron_apply_bit_flag,
 )
 
 
@@ -449,4 +451,48 @@ class TestCreateLog2(unittest.TestCase):
         self.assertEqual(cur.fetchall(), [(None,)])
 
         cur = self.connection.execute("SELECT user_log2('foo')")  # <- TypeError
+        self.assertEqual(cur.fetchall(), [(None,)])
+
+
+class TestCreateToronApplyBitFlag(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+        create_toron_apply_bit_flag(self.connection)
+
+    def test_basic_handling(self):
+        bit_flags = BitFlags(1, 0, 1)
+
+        cur = self.connection.execute(
+            'SELECT toron_apply_bit_flag(?, ?, ?)',
+            ('foo', bit_flags, 0),
+        )
+        self.assertEqual(cur.fetchall(), [('foo',)])
+
+        cur = self.connection.execute(
+            'SELECT toron_apply_bit_flag(?, ?, ?)',
+            ('bar', bit_flags, 1),
+        )
+        self.assertEqual(cur.fetchall(), [(None,)])
+
+        cur = self.connection.execute(
+            'SELECT toron_apply_bit_flag(?, ?, ?)',
+            ('baz', bit_flags, 2),
+        )
+        self.assertEqual(cur.fetchall(), [('baz',)])
+
+    def test_bit_flags_is_none(self):
+        cur = self.connection.execute(
+            'SELECT toron_apply_bit_flag(?, ?, ?)',
+            ('foo', None, 1),  # <- bit_flags is None
+        )
+        self.assertEqual(cur.fetchall(), [('foo',)])
+
+    def test_index_out_of_range(self):
+        bit_flags = BitFlags(1, 0, 1)
+
+        cur = self.connection.execute(
+            'SELECT toron_apply_bit_flag(?, ?, ?)',
+            ('bar', bit_flags, 9),  # <- No index `9` in bit flags
+        )
         self.assertEqual(cur.fetchall(), [(None,)])

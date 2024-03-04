@@ -64,7 +64,10 @@ from toron._typing import (
     Final,
     Optional,
 )
+from toron._utils import BitFlags
 
+
+sqlite3.register_adapter(BitFlags, bytes)
 
 with closing(sqlite3.connect(':memory:')) as _con:
     # Check for SQLite compile-time options. When SQLite is compiled,
@@ -476,6 +479,52 @@ def create_log2(
                         name=alt_name or 'log2',
                         narg=1,
                         func=log2,
+                        deterministic=True)
+
+
+def create_toron_apply_bit_flag(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``toron_apply_bit_flag``.
+
+    The SQL function has the following signature:
+
+        toron_apply_bit_flag(VALUE, BIT_FLAGS, INDEX)
+
+    The BIT_FLAGS value is a binary blob suitable for interpretation
+    as a BitFlags object. If the bit at the given INDEX is 1, then
+    VALUE is returned, if the bit at the given INDEX is 0, then None
+    is returned. If BIT_FLAGS itself is None, then VALUE is returned.
+
+    The following example uses BitFlags(1, 0, 1) in its binary blob
+    form ``X'A0'``::
+
+        >>> cur.execute("SELECT toron_apply_bit_flag('foo', X'A0', 0)")
+        >>> cur.fetchall()
+        [('foo',)]
+        >>> cur.execute("SELECT toron_apply_bit_flag('bar', X'A0', 1)")
+        >>> cur.fetchall()
+        [(None,)]
+        >>> cur.execute("SELECT toron_apply_bit_flag('baz', X'A0', 2)")
+        >>> cur.fetchall()
+        [('baz',)]
+
+    The bit at INDEX 0 is 1 so 'foo' is returned. The bit at INDEX 1
+    is 0, so None is returned. And the bit at INDEX 2 is 1, so 'baz'
+    is returned.
+    """
+    def toron_apply_bit_flag(value, bytes_bit_flags, bit_index):
+        if bytes_bit_flags is None:
+            return value  # <- EXIT!
+        bit_flags = BitFlags(bytes_bit_flags)
+        try:
+            bit_flag = bit_flags[bit_index]
+        except IndexError:
+            bit_flag = 0
+        return value if bit_flag else None
+
+    create_sql_function(connection,
+                        name='toron_apply_bit_flag',
+                        narg=3,
+                        func=toron_apply_bit_flag,
                         deterministic=True)
 
 
