@@ -552,3 +552,5 @@ def create_functions_and_temporary_triggers(
 
     if not SQLITE_ENABLE_MATH_FUNCTIONS:
         create_log2(connection)
+
+    create_toron_apply_bit_flag(connection)
