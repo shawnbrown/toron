@@ -609,3 +609,4 @@ def create_functions_and_temporary_triggers(
         create_log2(connection)
 
     create_toron_apply_bit_flag(connection)
+    create_toron_json_object_keep(connection)
