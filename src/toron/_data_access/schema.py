@@ -473,7 +473,9 @@ def create_functions_and_temporary_triggers(
         create_json_valid(connection)
         create_user_attributes_valid(connection)
         create_user_userproperties_valid(connection)
+        create_user_selectors_valid(connection)
 
     create_sql_triggers_property_value(connection)
     create_sql_triggers_attribute_value(connection)
     create_sql_triggers_user_properties(connection)
+    create_sql_triggers_selectors(connection)
