@@ -8,6 +8,7 @@ from toron._data_access.schema import (
     SQLITE_ENABLE_MATH_FUNCTIONS,
     create_node_schema,
     create_sql_function,
+    create_log2,
     create_toron_check_property_value,
     create_triggers_property_value,
     create_toron_check_attribute_value,
@@ -101,6 +102,24 @@ class TestCreateSqlFunction(unittest.TestCase):
 
         with self.assertRaises(sqlite3.OperationalError):
             self.connection.execute("SELECT bad_func_name('hello world')")
+
+
+class TestCreateLog2(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect(':memory:')
+        self.addCleanup(self.connection.close)
+        create_log2(self.connection, alt_name='user_log2')
+
+    def test_func(self):
+        cur = self.connection.execute('SELECT user_log2(64)')
+        self.assertEqual(cur.fetchall(), [(6.0,)])
+
+    def test_errors(self):
+        cur = self.connection.execute('SELECT user_log2(0)')  # <- ValueError
+        self.assertEqual(cur.fetchall(), [(None,)])
+
+        cur = self.connection.execute("SELECT user_log2('foo')")  # <- TypeError
+        self.assertEqual(cur.fetchall(), [(None,)])
 
 
 class BaseJsonValidTestCase(unittest.TestCase):

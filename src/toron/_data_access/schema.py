@@ -230,6 +230,33 @@ def create_sql_function(
     # support SQLite versions older than 3.21.0.
 
 
+def create_log2(
+    connection: sqlite3.Connection, alt_name: Optional[str] = None
+) -> None:
+    """Create a user defined SQL function named ``log2``.
+
+    This function should serve as a drop-in replacement when the
+    built-in ``log2`` function is not available:
+
+        https://www.sqlite.org/lang_mathfunc.html#log2
+
+    An *alt_name* can be given for testing and debugging.
+    """
+    from math import log2 as _log2  # Import math only if needed.
+
+    def log2(x):
+        try:
+            return _log2(x)
+        except (ValueError, TypeError):  # Return None on error to match
+            return None                  # SQLite's log2 behavior.
+
+    create_sql_function(connection,
+                        name=alt_name or 'log2',
+                        narg=1,
+                        func=log2,
+                        deterministic=True)
+
+
 def create_toron_check_property_value(connection: sqlite3.Connection) -> None:
     """Create a app-defined SQL function named ``toron_check_property_value``."""
     def toron_check_property_value(x):
