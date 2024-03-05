@@ -575,16 +575,16 @@ class TestRegisteredConverters(unittest.TestCase):
             'INSERT INTO property (key, value) VALUES (?, ?)',
             ('mykey', '{"abc": 123}'),
         )
-        cur.execute("SELECT * FROM property WHERE key='mykey'")
-        self.assertEqual(cur.fetchall(), [('mykey', {'abc': 123})])
+        cur.execute("SELECT value FROM property WHERE key='mykey'")
+        self.assertEqual(cur.fetchall(), [({'abc': 123},)])
 
     def test_converter_text_attributes(self):
         cur = self.connection.execute(
             'INSERT INTO attribute (attribute_id, attribute_value) VALUES (?, ?)',
             (1, '{"foo": "one", "bar": "two"}'),
         )
-        cur.execute('SELECT * FROM attribute')
-        self.assertEqual(cur.fetchall(), [(1, {'foo': 'one', 'bar': 'two'})])
+        cur.execute('SELECT attribute_value FROM attribute')
+        self.assertEqual(cur.fetchall(), [({'foo': 'one', 'bar': 'two'},)])
 
     def test_converter_text_userproperties(self):
         cur = self.connection.execute(
