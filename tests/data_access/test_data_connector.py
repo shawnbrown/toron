@@ -117,6 +117,13 @@ class Bases(SimpleNamespace):
             """Should subclass from BaseDataConnector."""
             self.assertTrue(issubclass(self.connector_class, BaseDataConnector))
 
+        def test_instantiation(self):
+            """Without args, should create an empty node structure."""
+            try:
+                connector = self.connector_class()
+            except Exception:
+                self.fail('should instantiate with no args')
+
 
 class TestDataConnector(Bases.TestDataConnector):
     @property
