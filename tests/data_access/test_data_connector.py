@@ -124,6 +124,15 @@ class Bases(SimpleNamespace):
             except Exception:
                 self.fail('should instantiate with no args')
 
+        def test_acquire_release_interoperation(self):
+            """The acquire and release methods should interoperate."""
+            connector = self.connector_class()
+            try:
+                resource = connector.acquire_resource()
+                connector.release_resource(resource)
+            except Exception:
+                self.fail('acquired resource should be releasable')
+
 
 class TestDataConnector(Bases.TestDataConnector):
     @property
