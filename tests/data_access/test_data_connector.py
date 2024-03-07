@@ -110,9 +110,11 @@ class Bases(SimpleNamespace):
         @property
         @abstractmethod
         def connector_class(self):
+            """The concrete class to be tested."""
             return NotImplemented
 
         def test_inheritance(self):
+            """Should subclass from BaseDataConnector."""
             self.assertTrue(issubclass(self.connector_class, BaseDataConnector))
 
 
