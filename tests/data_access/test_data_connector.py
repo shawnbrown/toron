@@ -168,3 +168,50 @@ class TestDataConnector(Bases.TestDataConnector):
 
         _cleanup_leftover_temp_files()
         self.assertFalse(os.path.exists(working_path))
+
+    def test_acquire_resource_in_memory(self):
+        """Connection should be same instance as _in_memory_connection."""
+        connector = DataConnector()
+        con = connector.acquire_resource()  # <- Method under test.
+        self.addCleanup(con.close)
+
+        self.assertIs(con, connector._in_memory_connection)
+        self.assertIsNone(connector._current_working_path)
+
+    def test_acquire_resource_on_drive(self):
+        """Connection's file should match _current_working_path."""
+        connector = DataConnector(cache_to_drive=True)
+        con = connector.acquire_resource()  # <- Method under test.
+        self.addCleanup(con.close)
+        cur = con.execute('PRAGMA database_list')
+        _, _, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
+
+        self.assertEqual(
+            os.path.realpath(file),
+            os.path.realpath(connector._current_working_path),
+            msg='should be the same file',
+        )
+        self.assertIsNone(connector._in_memory_connection)
+
+    def test_release_resource_in_memory(self):
+        """Connection to temporary database should remain open."""
+        connector = DataConnector()
+        con = connector.acquire_resource()
+        connector.release_resource(con)  # <- Method under test.
+
+        try:
+            con.execute('SELECT 1')
+        except sqlite3.ProgrammingError as err:
+            if 'closed database' not in str(err):
+                raise  # Re-raise error if it's something else.
+            self.fail('the connection should not be closed')
+
+    def test_release_resource_on_drive(self):
+        """Connection to persistent database should be closed."""
+        connector = DataConnector(cache_to_drive=True)
+        con = connector.acquire_resource()
+        connector.release_resource(con)  # <- Method under test.
+
+        regex = 'closed database'
+        with self.assertRaisesRegex(sqlite3.ProgrammingError, regex):
+            con.execute('SELECT 1')

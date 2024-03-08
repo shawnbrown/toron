@@ -130,7 +130,7 @@ def get_sqlite_connection(
             raise
 
 
-class DataConnector(BaseDataConnector):
+class DataConnector(BaseDataConnector[sqlite3.Connection]):
     def __init__(self, cache_to_drive: bool = False) -> None:
         """Initialize a new node instance."""
         self._cleanup_funcs: List[Callable]
@@ -179,3 +179,20 @@ class DataConnector(BaseDataConnector):
         while self._cleanup_funcs:
             func = self._cleanup_funcs.pop()
             func()
+
+    def acquire_resource(self) -> sqlite3.Connection:
+        """Return a connection to the node's SQLite database."""
+        if self._in_memory_connection:
+            return self._in_memory_connection
+
+        if self._current_working_path:
+            connection = get_sqlite_connection(self._current_working_path)
+            schema.create_functions_and_temporary_triggers(connection)
+            return connection
+
+        raise RuntimeError('unable to acquire data resource')
+
+    def release_resource(self, resource: sqlite3.Connection) -> None:
+        """Close the database connection if node is stored on drive."""
+        if self._current_working_path:
+            resource.close()
