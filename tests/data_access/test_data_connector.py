@@ -1,5 +1,6 @@
 """Tests for toron/_data_access/data_connector.py module."""
 
+import gc
 import os
 import sqlite3
 import tempfile
@@ -10,7 +11,6 @@ from types import SimpleNamespace
 
 from toron._data_access.base_classes import BaseDataConnector
 from toron._data_access.data_connector import (
-    _cleanup_leftover_temp_files,
     make_sqlite_uri_filepath,
     get_sqlite_connection,
     DataConnector,
@@ -156,17 +156,9 @@ class TestDataConnector(Bases.TestDataConnector):
 
         self.assertTrue(os.path.exists(working_path))
 
-        connector.__del__()  # Call magic method directly only for testing.
-        self.assertFalse(os.path.exists(working_path))
+        del connector  # Delete connector and explicitly trigger full
+        gc.collect()   # garbage collection.
 
-    def test_atexit_cleanup(self):
-        connector = DataConnector(cache_to_drive=True)
-        connector._cleanup_funcs = []  # <- Clear cleanup funcs for testing.
-        working_path = connector._current_working_path
-
-        self.assertTrue(os.path.exists(working_path))
-
-        _cleanup_leftover_temp_files()
         self.assertFalse(os.path.exists(working_path))
 
     def test_acquire_resource_in_memory(self):

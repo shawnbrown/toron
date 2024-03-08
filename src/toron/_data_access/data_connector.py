@@ -1,54 +1,22 @@
 """DataConnector and related objects using SQLite."""
 
-import atexit
 import os
 import re
 import sqlite3
 import urllib
+import weakref
 from contextlib import closing
 from tempfile import NamedTemporaryFile
 
 from toron._typing import (
-    Callable,
     List,
     Literal,
     Optional,
-    Set,
 )
 
 from . import schema
 from .base_classes import BaseDataConnector
 from .._utils import ToronError
-
-
-_tempfiles_to_remove_at_exit: Set[str] = set()
-
-
-@atexit.register  # <- Register with `atexit` module.
-def _cleanup_leftover_temp_files():
-    """Remove temporary files left-over from `cache_to_drive` usage.
-
-    The DataConnector class cleans-up files when __del__() is called
-    but the Python documentation states:
-
-        It is not guaranteed that __del__() methods are called
-        for objects that still exist when the interpreter exits.
-
-    For more details see:
-
-        https://docs.python.org/3/reference/datamodel.html#object.__del__
-
-    This function is intended to be registered with the `atexit` module
-    and executed only once when the interpreter exits.
-    """
-    while _tempfiles_to_remove_at_exit:
-        path = _tempfiles_to_remove_at_exit.pop()
-        try:
-            os.unlink(path)
-        except Exception as e:
-            import warnings
-            msg = f'cannot remove temporary file {path!r}, {e.__class__.__name__}'
-            warnings.warn(msg, RuntimeWarning)
 
 
 def make_sqlite_uri_filepath(
@@ -133,52 +101,35 @@ def get_sqlite_connection(
 class DataConnector(BaseDataConnector[sqlite3.Connection]):
     def __init__(self, cache_to_drive: bool = False) -> None:
         """Initialize a new node instance."""
-        self._cleanup_funcs: List[Callable]
         self._current_working_path: Optional[str]
         self._in_memory_connection: Optional[sqlite3.Connection]
 
-        self._cleanup_funcs = []
-
         if cache_to_drive:
-            # Create temp file and set current working path.
+            # Create temporary file and get path.
             with closing(NamedTemporaryFile(suffix='.toron', delete=False)) as f:
                 database_path = os.path.abspath(f.name)
-            self._current_working_path = database_path
+            weakref.finalize(self, os.unlink, database_path)
 
-            # Connect to database and create Toron node schema.
+            # Create Toron node schema and close connection.
             with closing(get_sqlite_connection(database_path)) as con:
                 schema.create_node_schema(con)
 
-            # For on-drive database, in-memory connection is None.
+            # Keep file path, no in-memory connection.
+            self._current_working_path = database_path
             self._in_memory_connection = None
 
-            # Define clean-up actions (called by garbage collection).
-            _tempfiles_to_remove_at_exit.add(database_path)
-            self._cleanup_funcs.extend([
-                lambda: _tempfiles_to_remove_at_exit.discard(database_path),
-                lambda: os.unlink(database_path),
-            ])
-
         else:
-            # For in-memory database, current working path is None.
-            database_path = ':memory:'
-            self._current_working_path = None
+            # Connect to in-memory database.
+            con = get_sqlite_connection(':memory:')
+            weakref.finalize(self, con.close)
 
-            # Connect to database and create Toron node schema.
-            con = get_sqlite_connection(database_path)
+            # Create Toron node schema, functions, and temp triggers.
             schema.create_node_schema(con)
             schema.create_functions_and_temporary_triggers(con)
 
-            # Keep in-memory connection open.
+            # No working file path, keep in-memory connection open.
+            self._current_working_path = None
             self._in_memory_connection = con
-
-            # Close connection at clean-up (called by garbage collection).
-            self._cleanup_funcs.append(con.close)
-
-    def __del__(self):
-        while self._cleanup_funcs:
-            func = self._cleanup_funcs.pop()
-            func()
 
     def acquire_resource(self) -> sqlite3.Connection:
         """Return a connection to the node's SQLite database."""
