@@ -12,6 +12,7 @@ from toron._typing import (
     List,
     Literal,
     Optional,
+    Type,
 )
 
 from . import schema
@@ -51,6 +52,7 @@ def make_sqlite_uri_filepath(
 def get_sqlite_connection(
     path: str,
     access_mode: Literal['ro', 'rw', 'rwc', None] = None,
+    factory: Optional[Type[sqlite3.Connection]] = None,
 ) -> sqlite3.Connection:
     """Get a SQLite connection to *path* with appropriate config.
 
@@ -69,23 +71,33 @@ def get_sqlite_connection(
     If *path* is ``':memory:'`` or ``''``, then *access_mode* is
     ignored.
 
+    If given, *factory* must be a subclass of :py:class:`sqlite3.Connection`
+    and will be used to create the database connection instance.
+
     .. important::
 
         This method should only establish a connection, it should
         not execute queries of any kind.
     """
+    if factory and not issubclass(factory, sqlite3.Connection):
+        raise TypeError(
+            f'requires subclass of sqlite3.Connection, got {factory.__name__}'
+        )
+
     try:
         if path == ':memory:' or path == '':  # In-memory or on-drive temp db.
             return sqlite3.connect(
                 database=path,
                 detect_types=sqlite3.PARSE_DECLTYPES,
                 isolation_level=None,
+                factory=factory or sqlite3.Connection,
             )
         else:
             return sqlite3.connect(
                 database=make_sqlite_uri_filepath(path, access_mode),
                 detect_types=sqlite3.PARSE_DECLTYPES,
                 isolation_level=None,
+                factory=factory or sqlite3.Connection,
                 uri=True,
             )
     except sqlite3.OperationalError as err:

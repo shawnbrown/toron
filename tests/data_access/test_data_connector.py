@@ -102,6 +102,24 @@ class TestGetSqlite3Connection(unittest.TestCase):
             with closing(con):
                 con.execute('CREATE TABLE t1(a, b)')  # Should raise error.
 
+    def test_factory_subclass(self):
+        class MyConnection(sqlite3.Connection):
+            pass
+
+        con = get_sqlite_connection(':memory:', factory=MyConnection)
+
+        with closing(con):
+            self.assertIsInstance(con, MyConnection)
+
+    def test_factory_error(self):
+        class BadConnection(object):
+            def __init__(self, *args, **kwds):
+                pass
+
+        msg = 'should fail when *factory* is not a subclass of sqlite3.Connection'
+        with self.assertRaises(TypeError, msg=msg):
+            get_sqlite_connection(':memory:', factory=BadConnection)
+
 
 class Bases(SimpleNamespace):
     """Wrapping TestCase base classes to prevent test discovery."""
