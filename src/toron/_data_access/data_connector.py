@@ -13,6 +13,7 @@ from toron._typing import (
     Literal,
     Optional,
     Type,
+    overload,
 )
 
 from . import schema
@@ -57,11 +58,21 @@ class ToronSqlite3Connection(sqlite3.Connection):
         )
 
 
+@overload
+def get_sqlite_connection(
+    path: str,
+    access_mode: Literal['ro', 'rw', 'rwc', None] = None,
+    factory: Type[ToronSqlite3Connection] = ToronSqlite3Connection,
+) -> ToronSqlite3Connection:
+    ...
+@overload
 def get_sqlite_connection(
     path: str,
     access_mode: Literal['ro', 'rw', 'rwc', None] = None,
     factory: Optional[Type[sqlite3.Connection]] = None,
 ) -> sqlite3.Connection:
+    ...
+def get_sqlite_connection(path, access_mode=None, factory=None):
     """Get a SQLite connection to *path* with appropriate config.
 
     The returned connection will be configured with ``isolation_level``
@@ -118,11 +129,11 @@ def get_sqlite_connection(
             raise
 
 
-class DataConnector(BaseDataConnector[sqlite3.Connection]):
+class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
     def __init__(self, cache_to_drive: bool = False) -> None:
         """Initialize a new node instance."""
         self._current_working_path: Optional[str]
-        self._in_memory_connection: Optional[sqlite3.Connection]
+        self._in_memory_connection: Optional[ToronSqlite3Connection]
 
         if cache_to_drive:
             # Create temporary file and get path.
@@ -140,8 +151,8 @@ class DataConnector(BaseDataConnector[sqlite3.Connection]):
 
         else:
             # Connect to in-memory database.
-            con = get_sqlite_connection(':memory:')
-            weakref.finalize(self, con.close)
+            con = get_sqlite_connection(':memory:', factory=ToronSqlite3Connection)
+            weakref.finalize(self, super(ToronSqlite3Connection, con).close)
 
             # Create Toron node schema, functions, and temp triggers.
             schema.create_node_schema(con)
@@ -151,19 +162,22 @@ class DataConnector(BaseDataConnector[sqlite3.Connection]):
             self._current_working_path = None
             self._in_memory_connection = con
 
-    def acquire_resource(self) -> sqlite3.Connection:
+    def acquire_resource(self) -> ToronSqlite3Connection:
         """Return a connection to the node's SQLite database."""
         if self._in_memory_connection:
             return self._in_memory_connection
 
         if self._current_working_path:
-            connection = get_sqlite_connection(self._current_working_path)
+            connection = get_sqlite_connection(
+                self._current_working_path,
+                factory=ToronSqlite3Connection,
+            )
             schema.create_functions_and_temporary_triggers(connection)
             return connection
 
         raise RuntimeError('unable to acquire data resource')
 
-    def release_resource(self, resource: sqlite3.Connection) -> None:
+    def release_resource(self, resource: ToronSqlite3Connection) -> None:
         """Close the database connection if node is stored on drive."""
         if self._current_working_path:
-            resource.close()
+            super(ToronSqlite3Connection, resource).close()

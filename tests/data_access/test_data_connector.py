@@ -202,7 +202,7 @@ class TestDataConnector(Bases.TestDataConnector):
         """Connection should be same instance as _in_memory_connection."""
         connector = DataConnector()
         con = connector.acquire_resource()  # <- Method under test.
-        self.addCleanup(con.close)
+        self.addCleanup(super(ToronSqlite3Connection, con).close)
 
         self.assertIs(con, connector._in_memory_connection)
         self.assertIsNone(connector._current_working_path)
@@ -211,7 +211,8 @@ class TestDataConnector(Bases.TestDataConnector):
         """Connection's file should match _current_working_path."""
         connector = DataConnector(cache_to_drive=True)
         con = connector.acquire_resource()  # <- Method under test.
-        self.addCleanup(con.close)
+        self.addCleanup(super(ToronSqlite3Connection, con).close)
+
         cur = con.execute('PRAGMA database_list')
         _, _, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
 
