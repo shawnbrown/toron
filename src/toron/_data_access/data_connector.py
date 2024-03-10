@@ -49,6 +49,14 @@ def make_sqlite_uri_filepath(
     return f'file:{path}'
 
 
+class ToronSqlite3Connection(sqlite3.Connection):
+    """SQLite connection wrapper to prevent accidental closing."""
+    def close(self):
+        raise RuntimeError(
+            "cannot close directly. Did you mean: 'release_resource(...)'?"
+        )
+
+
 def get_sqlite_connection(
     path: str,
     access_mode: Literal['ro', 'rw', 'rwc', None] = None,

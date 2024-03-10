@@ -13,6 +13,7 @@ from toron._data_access.base_classes import BaseDataConnector
 from toron._data_access.data_connector import (
     make_sqlite_uri_filepath,
     get_sqlite_connection,
+    ToronSqlite3Connection,
     DataConnector,
 )
 
@@ -119,6 +120,24 @@ class TestGetSqlite3Connection(unittest.TestCase):
         msg = 'should fail when *factory* is not a subclass of sqlite3.Connection'
         with self.assertRaises(TypeError, msg=msg):
             get_sqlite_connection(':memory:', factory=BadConnection)
+
+
+class TestToronSqlite3Connection(unittest.TestCase):
+    def test_closing_error(self):
+        con = ToronSqlite3Connection(':memory:')
+        self.addCleanup(super(con.__class__, con).close)
+
+        regex = 'cannot close directly'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            con.close()
+
+    def test_closing_success(self):
+        con = ToronSqlite3Connection(':memory:')
+
+        try:
+            super(con.__class__, con).close()
+        except Exception:
+            self.fail('should close via superclass close() method')
 
 
 class Bases(SimpleNamespace):
