@@ -61,6 +61,7 @@ from json import (
     dumps as json_dumps,
     loads as json_loads,
 )
+from uuid import uuid4
 
 from toron._typing import (
     Callable,
@@ -114,15 +115,7 @@ def create_node_schema(connection: sqlite3.Connection) -> None:
     This function expects a *connection* to a newly-created, or
     otherwise empty database.
     """
-    with closing(connection.cursor()) as cur:
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = {row[0] for row in cur if row[0] != 'sqlite_sequence'}
-        if tables:
-            formatted = ', '.join(repr(x) for x in sorted(tables))
-            msg = f'database must be empty; found tables: {formatted}'
-            raise RuntimeError(msg)
-
-    connection.executescript("""
+    node_sql_script = """
         PRAGMA foreign_keys = ON;
 
         CREATE TABLE main.edge(
@@ -219,9 +212,26 @@ def create_node_schema(connection: sqlite3.Connection) -> None:
         INSERT INTO main.property VALUES ('toron_schema_version', '"0.2.0"');
         INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
 
-        /* Reserve id zero for an "undefined" record. */
+        /* Reserve id zero for the "undefined" record. */
         INSERT INTO main.node_index (index_id) VALUES (0);
-    """)
+    """
+
+    with closing(connection.cursor()) as cur:
+        # Verify that database is empty (aside from internal schema objects).
+        # https://www.sqlite.org/fileformat2.html#internal_schema_objects
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
+        if tables:
+            formatted = ', '.join(repr(x) for x in sorted(tables))
+            msg = f'database must be empty; found tables: {formatted}'
+            raise RuntimeError(msg)
+
+        cur.executescript(node_sql_script)  # Create node schema tables.
+
+        cur.execute(
+            'INSERT INTO main.property (key, value) VALUES (?, ?)',
+            ('unique_id', json_dumps(str(uuid4()))),  # uuid4() for most random value.
+        )
 
 
 def create_sql_function(

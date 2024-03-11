@@ -79,6 +79,22 @@ class TestCreateNodeSchema(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, regex):
             create_node_schema(self.connection)
 
+    def test_unique_id(self):
+        """Each node should get its own 'unique_id' value."""
+        sql = "SELECT value FROM property WHERE key='unique_id'"
+
+        with closing(sqlite3.connect(':memory:')) as con:
+            create_node_schema(con)
+            with closing(con.execute(sql)) as cur:
+                unique_id1 = cur.fetchone()
+
+        with closing(sqlite3.connect(':memory:')) as con:
+            create_node_schema(con)
+            with closing(con.execute(sql)) as cur:
+                unique_id2 = cur.fetchone()
+
+        self.assertNotEqual(unique_id1, unique_id2)
+
 
 class TestCreateSqlFunction(unittest.TestCase):
     def setUp(self):
