@@ -161,6 +161,12 @@ class Bases(SimpleNamespace):
             except Exception:
                 self.fail('should instantiate with no args')
 
+        def test_unique_id(self):
+            """Each node should get a unique ID value."""
+            connector1 = self.connector_class()
+            connector2 = self.connector_class()
+            self.assertNotEqual(connector1.unique_id, connector2.unique_id)
+
         def test_acquire_release_interoperation(self):
             """The acquire and release methods should interoperate."""
             connector = self.connector_class()

@@ -16,6 +16,11 @@ class BaseDataConnector(ABC, Generic[T]):
     def __init__(self) -> None:
         """Initialize a new node instance."""
 
+    @property
+    @abstractmethod
+    def unique_id(self) -> str:
+        """Unique identifier for the node object."""
+
     @abstractmethod
     def acquire_resource(self) -> T:
         """Return an appropriate object to interact with a node's data.
