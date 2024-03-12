@@ -9,6 +9,7 @@ from toron._data_access.schema import (
     SQLITE_ENABLE_JSON1,
     SQLITE_ENABLE_MATH_FUNCTIONS,
     create_node_schema,
+    get_unique_id,
     create_sql_function,
     create_toron_check_property_value,
     create_triggers_property_value,
@@ -81,17 +82,16 @@ class TestCreateNodeSchema(unittest.TestCase):
 
     def test_unique_id(self):
         """Each node should get its own 'unique_id' value."""
-        sql = "SELECT value FROM property WHERE key='unique_id'"
+        make_connection = \
+            lambda: sqlite3.connect(':memory:', detect_types=sqlite3.PARSE_DECLTYPES)
 
-        with closing(sqlite3.connect(':memory:')) as con:
+        with closing(make_connection()) as con:
             create_node_schema(con)
-            with closing(con.execute(sql)) as cur:
-                unique_id1 = cur.fetchone()
+            unique_id1 = get_unique_id(con)
 
-        with closing(sqlite3.connect(':memory:')) as con:
+        with closing(make_connection()) as con:
             create_node_schema(con)
-            with closing(con.execute(sql)) as cur:
-                unique_id2 = cur.fetchone()
+            unique_id2 = get_unique_id(con)
 
         self.assertNotEqual(unique_id1, unique_id2)
 

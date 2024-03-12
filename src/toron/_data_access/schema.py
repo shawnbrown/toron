@@ -234,6 +234,13 @@ def create_node_schema(connection: sqlite3.Connection) -> None:
         )
 
 
+def get_unique_id(connection: sqlite3.Connection) -> str:
+    """Get 'unique_id' from the data connection."""
+    sql = "SELECT value FROM main.property WHERE key='unique_id'"
+    with closing(connection.execute(sql)) as cur:
+        return cur.fetchone()[0]
+
+
 def create_sql_function(
     connection: sqlite3.Connection,
     name: str,
