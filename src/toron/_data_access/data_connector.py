@@ -253,34 +253,26 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
         with closing(NamedTemporaryFile(
             suffix='.temp',
             prefix=f'{os.path.splitext(os.path.basename(dst_path))[0]}-',
-            dir=dst_dirname,  # <- Use same dir as dst_path to assure that
-            delete=False,     #    tmp and dst are on the same filesystem.
-        )) as tmp_f:
+            dir=dst_dirname,  # <- Use same dir as dst_path to ensure that
+            delete=False,     #    tmp and dst are on the same filesystem
+        )) as tmp_f:          #    (guarantees `os.replace()` is atomic).
             tmp_path = os.path.realpath(tmp_f.name)  # Use realpath() in case of symlink.
 
-        # While the SQLite docs currently say that VACUUM INTO "does not
-        # invoke fsync() or FlushFileBuffers() on the generated database"
-        # this is not accurate. As of SQLite version 3.40.0, VACUUM INTO
-        # now "honors the PRAGMA synchronous setting". For details, see:
+        # As of SQLite version 3.40.0, VACUUM INTO now "honors the
+        # PRAGMA synchronous setting". For details, see:
         #
         # - https://www.sqlite.org/changes.html#version_3_40_0
         # - https://sqlite.org/src/info/86cb21ca12581cae
         # - https://sqlite.org/forum/info/8c83764a7355f6cc8208cdf96e533dd2f91f939770c193d20980fa45140e8908
-        #
-        # If fsync is True, this method will set the "synchronous" flag
-        # to "EXTRA" before calling VACUUM INTO.
-        #
-        # If fsync is False, this method will run VACUUM INTO using the
-        # database's current synchronous setting. Depending on the setting,
-        # SQLite may very well run fsync but this method will not take
-        # extra steps to assure this.
         supports_vacuum_fsync = sqlite3.sqlite_version_info >= (3, 40, 0)
 
         try:
-            con = self.acquire_resource()
-            try:
-                with closing(con.cursor()) as cur:
-                    if fsync and supports_vacuum_fsync:
+            if fsync and supports_vacuum_fsync:
+                # When fsync is True, set "synchronous" flag to "EXTRA"
+                # before calling VACUUM INTO.
+                con = self.acquire_resource()
+                try:
+                    with closing(con.cursor()) as cur:
                         cur.execute('PRAGMA main.synchronous')
                         original_sync = cur.fetchone()[0]
 
@@ -294,16 +286,19 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
                         finally:
                             cur.execute(f'PRAGMA main.synchronous={original_sync}')
                             cur.execute(f'PRAGMA fullfsync={original_fullfsync}')
-                    else:
+                finally:
+                    self.release_resource(con)
+
+                os.replace(tmp_path, dst_path)
+
+            elif fsync and not supports_vacuum_fsync:
+                con = self.acquire_resource()
+                try:
+                    with closing(con.cursor()) as cur:
                         cur.execute('VACUUM main INTO ?', (tmp_path,))
+                finally:
+                    self.release_resource(con)
 
-            finally:
-                self.release_resource(con)
-
-            # Move file to final path. The `tmp_path` and `dst_path` files
-            # should be on the same file system to assure that `os.replace()`
-            # will be an atomic operation.
-            if fsync and not supports_vacuum_fsync:
                 # Flush buffered data to permanent storage. For more info,
                 # see "Ensuring data reaches disk" by Jeff Moyer:
                 #  - https://lwn.net/Articles/457667/).
@@ -311,7 +306,19 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
                 os.replace(tmp_path, dst_path)
                 if sys.platform != 'win32':  # Windows cannot fsync a directory.
                     best_effort_fsync(dst_dirname, isdir=True)
+
             else:
+                # When fsync is False, no extra steps are taken to ensure
+                # that the data is flushed to drive. Although SQLite could
+                # still call fsync in versions 3.40.0 and newer, depending
+                # on the database's initial synchronous setting.
+                con = self.acquire_resource()
+                try:
+                    with closing(con.cursor()) as cur:
+                        cur.execute('VACUUM main INTO ?', (tmp_path,))
+                finally:
+                    self.release_resource(con)
+
                 os.replace(tmp_path, dst_path)
 
         except Exception:
