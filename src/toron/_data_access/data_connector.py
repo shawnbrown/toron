@@ -256,7 +256,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
             dir=dst_dirname,  # <- Use same dir as dst_path to assure that
             delete=False,     #    tmp and dst are on the same filesystem.
         )) as tmp_f:
-            tmp_path = tmp_f.name
+            tmp_path = os.path.realpath(tmp_f.name)  # Use realpath() in case of symlink.
 
         # While the SQLite docs currently say that VACUUM INTO "does not
         # invoke fsync() or FlushFileBuffers() on the generated database"
