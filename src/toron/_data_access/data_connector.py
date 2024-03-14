@@ -3,6 +3,7 @@
 import os
 import re
 import sqlite3
+import sys
 import urllib
 import weakref
 from contextlib import closing
@@ -127,6 +128,42 @@ def get_sqlite_connection(path, access_mode=None, factory=None):
             raise ToronError(msg)
         else:
             raise
+
+
+if sys.platform == 'darwin':
+    # If running on macOS, try to fsync using F_FULLFSYNC. From the
+    # macOS man page for FSYNC(2):
+    #
+    #   For applications that require tighter guarantees about the
+    #   integrity of their data, Mac OS X provides the F_FULLFSYNC
+    #   fcntl.  The F_FULLFSYNC fcntl asks the drive to flush all
+    #   buffered data to permanent storage.
+    #
+    # Also see:
+    # - https://github.com/libuv/libuv/pull/2135
+    # - https://github.com/python/cpython/issues/47767 (patch accepted)
+    # - https://github.com/python/cpython/issues/56086 (patch rejected)
+
+    import fcntl
+
+    def best_effort_fsync(path: str, isdir: bool = False) -> None:
+        fd = os.open(path, flags=(os.O_RDONLY if isdir else os.O_RDWR))
+        try:
+            r = fcntl.fcntl(fd, fcntl.F_FULLFSYNC)
+            if r != 0:  # If F_FULLFSYNC is not working or failed.
+                os.fsync(fd)  # Fall back to os.fsync().
+        except AttributeError:
+            os.fsync(fd)  # Fall back to os.fsync().
+        finally:
+            os.close(fd)
+
+else:
+    def best_effort_fsync(path: str, isdir: bool = False) -> None:
+        fd = os.open(path, flags=(os.O_RDONLY if isdir else os.O_RDWR))
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
 
 
 class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
