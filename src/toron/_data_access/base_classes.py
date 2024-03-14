@@ -1,10 +1,12 @@
 """Abstract base classes for data access objects."""
 
+import os
 from abc import ABC, abstractmethod
 
 from toron._typing import (
     Generic,
     TypeVar,
+    Union,
 )
 
 
@@ -43,4 +45,22 @@ class BaseDataConnector(ABC, Generic[T]):
         persistent storage, then this method should release it to
         free up system resources (file handles, network connections,
         etc.).
+        """
+
+    @abstractmethod
+    def to_file(
+        self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
+    ) -> None:
+        """Write node data to a file.
+
+        Parameters
+        ----------
+        path : :py:term:`path-like-object`
+            File path where the node data should be saved.
+        fsync : bool, default True
+            Immediately flush any cached data to drive storage.
+
+            On systems where it's not possible to guarantee that data
+            is flushed, this method should still make a best-effort
+            attempt to do so.
         """

@@ -176,6 +176,18 @@ class Bases(SimpleNamespace):
             except Exception:
                 self.fail('acquired resource should be releasable')
 
+        def test_to_file(self):
+            with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+                file_path = os.path.join(tmpdir, 'mynode.toron')
+                self.assertFalse(os.path.exists(file_path))
+
+                connector = self.connector_class()
+                connector.to_file(file_path, fsync=True)
+                self.assertTrue(os.path.exists(file_path))
+
+                file_size = os.path.getsize(file_path)
+                self.assertGreater(file_size, 0, msg='file should not be empty')
+
 
 class TestDataConnector(Bases.TestDataConnector):
     @property
