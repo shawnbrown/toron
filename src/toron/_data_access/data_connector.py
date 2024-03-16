@@ -297,7 +297,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
                     with closing(con.cursor()) as cur:
                         cur.execute('VACUUM main INTO ?', (tmp_path,))
                 except sqlite3.OperationalError:  # No `VACUUM INTO` before SQLite 3.27.0.
-                    with closing(get_sqlite_connection(tmp_path) as tmp_con:
+                    with closing(get_sqlite_connection(tmp_path)) as tmp_con:
                         con.backup(tmp_con)
                 finally:
                     self.release_resource(con)
@@ -320,7 +320,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
                     with closing(con.cursor()) as cur:
                         cur.execute('VACUUM main INTO ?', (tmp_path,))
                 except sqlite3.OperationalError:  # No `VACUUM INTO` before SQLite 3.27.0.
-                    with closing(get_sqlite_connection(tmp_path) as tmp_con:
+                    with closing(get_sqlite_connection(tmp_path)) as tmp_con:
                         con.backup(tmp_con)
                 finally:
                     self.release_resource(con)
