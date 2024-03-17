@@ -9,6 +9,7 @@ from toron._data_access.schema import (
     SQLITE_ENABLE_JSON1,
     SQLITE_ENABLE_MATH_FUNCTIONS,
     create_node_schema,
+    verify_node_schema,
     get_unique_id,
     create_sql_function,
     create_toron_check_property_value,
@@ -94,6 +95,40 @@ class TestCreateNodeSchema(unittest.TestCase):
             unique_id2 = get_unique_id(con)
 
         self.assertNotEqual(unique_id1, unique_id2)
+
+
+class TestVerifyNodeSchema(unittest.TestCase):
+    def setUp(self):
+        self.con = sqlite3.connect(':memory:')
+        self.addCleanup(self.con.close)
+
+    def test_passing(self):
+        create_node_schema(self.con)
+
+        try:
+            verify_node_schema(self.con)
+        except Exception:
+            self.fail('database with node schema should pass without error')
+
+    def test_missing_table(self):
+        create_node_schema(self.con)
+        self.con.execute('DROP TABLE property')
+
+        with self.assertRaises(RuntimeError):
+            verify_node_schema(self.con)
+
+    def test_extra_table(self):
+        create_node_schema(self.con)
+        self.con.execute('CREATE TABLE mytable(col_a INTEGER, col_b TEXT)')
+
+        with self.assertRaises(RuntimeError):
+            verify_node_schema(self.con)
+
+    def test_not_a_connection(self):
+        some_random_object = object()
+
+        with self.assertRaises(RuntimeError):
+            verify_node_schema(some_random_object)
 
 
 class TestCreateSqlFunction(unittest.TestCase):

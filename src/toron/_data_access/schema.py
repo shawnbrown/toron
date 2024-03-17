@@ -235,6 +235,40 @@ def create_node_schema(connection: sqlite3.Connection) -> None:
         )
 
 
+def verify_node_schema(connection) -> None:
+    """Raise RuntimeError if connected db does no have node tables.
+
+    This function performs a quick check--it does not verify columns
+    or database integrity. If you already know that a connected database
+    contains a Toron node schema, there is no benefit to running this
+    function.
+    """
+    msg = 'unknown or unsupported file format'
+    try:
+        cur = connection.cursor()
+        try:
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
+            node_tables = {
+                'attribute',
+                'edge',
+                'location',
+                'node_index',
+                'property',
+                'quantity',
+                'relation',
+                'structure',
+                'weight',
+                'weighting',
+            }
+            if tables != node_tables:
+                raise RuntimeError(msg)
+        finally:
+            cur.close()
+    except (AttributeError, sqlite3.DatabaseError):
+        raise RuntimeError(msg)
+
+
 def get_unique_id(connection: sqlite3.Connection) -> str:
     """Get 'unique_id' from the data connection."""
     sql = "SELECT value FROM main.property WHERE key='unique_id'"
