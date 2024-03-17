@@ -229,17 +229,18 @@ class TestDataConnector(Bases.TestDataConnector):
         """Connection's file should match _current_working_path."""
         connector = DataConnector(cache_to_drive=True)
         con = connector.acquire_resource()  # <- Method under test.
-        self.addCleanup(super(ToronSqlite3Connection, con).close)
+        try:
+            cur = con.execute('PRAGMA database_list')
+            _, _, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
 
-        cur = con.execute('PRAGMA database_list')
-        _, _, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
-
-        self.assertEqual(
-            os.path.realpath(file),
-            os.path.realpath(connector._current_working_path),
-            msg='should be the same file',
-        )
-        self.assertIsNone(connector._in_memory_connection)
+            self.assertEqual(
+                os.path.realpath(file),
+                os.path.realpath(connector._current_working_path),
+                msg='should be the same file',
+            )
+            self.assertIsNone(connector._in_memory_connection)
+        finally:
+            super(ToronSqlite3Connection, con).close()
 
     def test_release_resource_in_memory(self):
         """Connection to temporary database should remain open."""
