@@ -56,6 +56,7 @@ from certain tables.
 """
 
 import sqlite3
+import sys
 from contextlib import closing
 from json import (
     dumps as json_dumps,
@@ -241,23 +242,31 @@ def get_unique_id(connection: sqlite3.Connection) -> str:
         return cur.fetchone()[0]
 
 
-def create_sql_function(
-    connection: sqlite3.Connection,
-    name: str,
-    narg: int,
-    func: Callable,
-    *,
-    deterministic: bool = False,
-) -> None:
-    """Create a user-defined SQL function."""
-    try:  # `deterministic` argument added in Python 3.8
+if sys.version_info >= (3, 8):
+    def create_sql_function(
+        connection: sqlite3.Connection,
+        name: str,
+        narg: int,
+        func: Callable,
+        *,
+        deterministic: bool = False,
+    ) -> None:
+        """Create a user-defined SQL function."""
         connection.create_function(name, narg, func, deterministic=deterministic)
-    except TypeError:
+        # Note: Versions older than SQLite 3.8.3 will raise a NotSupportedError
+        # if the `deterministic` argument is used but Toron does not currently
+        # support versions older than SQLite 3.21.0.
+else:
+    def create_sql_function(
+        connection: sqlite3.Connection,
+        name: str,
+        narg: int,
+        func: Callable,
+        *,
+        deterministic: bool = False,
+    ) -> None:
+        """Create a user-defined SQL function."""
         connection.create_function(name, narg, func)
-
-    # Note: SQLite versions older than 3.8.3 will raise a NotSupportedError
-    # if the `deterministic` argument is used but Toron does not currently
-    # support SQLite versions older than 3.21.0.
 
 
 def create_toron_check_property_value(connection: sqlite3.Connection) -> None:
