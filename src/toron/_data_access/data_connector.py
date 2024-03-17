@@ -258,18 +258,15 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
         )) as tmp_f:          #    (guarantees `os.replace()` is atomic).
             tmp_path = os.path.realpath(tmp_f.name)  # Use realpath() in case of symlink.
 
-        # As of SQLite version 3.40.0, VACUUM INTO now "honors the
-        # PRAGMA synchronous setting". For details, see:
-        #
-        # - https://www.sqlite.org/changes.html#version_3_40_0
-        # - https://sqlite.org/src/info/86cb21ca12581cae
-        # - https://sqlite.org/forum/info/8c83764a7355f6cc8208cdf96e533dd2f91f939770c193d20980fa45140e8908
-        supports_vacuum_fsync = sqlite3.sqlite_version_info >= (3, 40, 0)
-
+        # Write data to temp file, then perform atomic `os.replace()`.
         try:
-            if fsync and supports_vacuum_fsync:
-                # When fsync is True, set "synchronous" flag to "EXTRA"
-                # before calling VACUUM INTO.
+            if fsync and sqlite3.sqlite_version_info >= (3, 40, 0):
+                # Save data to file and use SQLite's "synchronous" flag to
+                # flush buffered data to permanent storage. For details, see:
+                #
+                # - https://www.sqlite.org/changes.html#version_3_40_0
+                # - https://sqlite.org/src/info/86cb21ca12581cae
+                # - https://sqlite.org/forum/info/8c83764a7355f6cc8208cdf96e533dd2f91f939770c193d20980fa45140e8908
                 con = self.acquire_resource()
                 try:
                     with closing(con.cursor()) as cur:
@@ -291,7 +288,11 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
 
                 os.replace(tmp_path, dst_path)
 
-            elif fsync and not supports_vacuum_fsync:
+            elif fsync:
+                # Save data to file and use best_effort_fsync() to flush
+                # buffered data to permanent storage. For more info, see
+                # "Ensuring data reaches disk" by Jeff Moyer:
+                #  - https://lwn.net/Articles/457667/).
                 con = self.acquire_resource()
                 try:
                     with closing(con.cursor()) as cur:
@@ -302,9 +303,6 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
                 finally:
                     self.release_resource(con)
 
-                # Flush buffered data to permanent storage. For more info,
-                # see "Ensuring data reaches disk" by Jeff Moyer:
-                #  - https://lwn.net/Articles/457667/).
                 best_effort_fsync(tmp_path)
                 os.replace(tmp_path, dst_path)
                 if sys.platform != 'win32':  # Windows cannot fsync a directory.
