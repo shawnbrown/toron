@@ -188,6 +188,33 @@ class Bases(SimpleNamespace):
                 file_size = os.path.getsize(file_path)
                 self.assertGreater(file_size, 0, msg='file should not be empty')
 
+        def test_from_file(self):
+            with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+                file_path = os.path.join(tmpdir, 'mynode.toron')
+                original = self.connector_class()
+                original.to_file(file_path)
+
+                loadedfromfile = self.connector_class.from_file(file_path)
+                self.assertEqual(original.unique_id, loadedfromfile.unique_id)
+
+        def test_from_file_missing(self):
+            """Should raise FileNotFoundError if file doesn't exist."""
+            with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+                file_path = os.path.join(tmpdir, 'does_not_exist.toron')
+
+                with self.assertRaises(FileNotFoundError):
+                    self.connector_class.from_file(file_path)
+
+        def test_from_file_unknown_format(self):
+            """Should raise RuntimeError if file uses unknown format."""
+            with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+                file_path = os.path.join(tmpdir, 'unknown_format.xyz')
+                with closing(open(file_path, 'w')) as f:
+                    f.write('Hello World\n')
+
+                with self.assertRaises(RuntimeError):
+                    self.connector_class.from_file(file_path)
+
 
 class TestDataConnector(Bases.TestDataConnector):
     @property

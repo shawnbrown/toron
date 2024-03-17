@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 
 from toron._typing import (
     Generic,
+    Self,
     TypeVar,
     Union,
 )
@@ -63,4 +64,17 @@ class BaseDataConnector(ABC, Generic[T]):
             On systems where it's not possible to guarantee that data
             is flushed, this method should still make a best-effort
             attempt to do so.
+        """
+
+    @classmethod
+    @abstractmethod
+    def from_file(
+        cls, path: Union[str, bytes, os.PathLike]
+    ) -> Self:
+        """Read a node file into a new data connector object.
+
+        Parameters
+        ----------
+        path : :py:term:`path-like-object`
+            File path containing the node data.
         """
