@@ -293,7 +293,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
                 # Save data to file and use best_effort_fsync() to flush
                 # buffered data to permanent storage. For more info, see
                 # "Ensuring data reaches disk" by Jeff Moyer:
-                #  - https://lwn.net/Articles/457667/).
+                #  - https://lwn.net/Articles/457667/
                 con = self.acquire_resource()
                 try:
                     with closing(con.cursor()) as cur:
