@@ -13,6 +13,7 @@ from toron._typing import (
     List,
     Literal,
     Optional,
+    Self,
     Type,
     Union,
     overload,
@@ -328,3 +329,57 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
         except Exception:
             os.unlink(tmp_path)  # Remove temporary file.
             raise  # Re-raise error.
+
+    @classmethod
+    def from_file(
+        cls,
+        path: Union[str, bytes, os.PathLike],
+        cache_to_drive: bool = False,
+    ) -> Self:
+        """Read a node file into a new data connector object.
+
+        Parameters
+        ----------
+        path : :py:term:`path-like-object`
+            File path containing the node data.
+        """
+        src_path = os.path.abspath(os.fsdecode(path))
+        if not os.path.isfile(path):
+            raise FileNotFoundError(src_path)
+
+        instance = cls.__new__(cls)
+
+        if cache_to_drive:
+            # Create temporary file and get path.
+            with closing(NamedTemporaryFile(suffix='.toron', delete=False)) as f:
+                database_path = os.path.abspath(f.name)
+            weakref.finalize(instance, os.unlink, database_path)
+
+            # Read data from file into node database, then close all connections.
+            with closing(get_sqlite_connection(database_path)) as con:
+                with closing(get_sqlite_connection(src_path)) as src_con:
+                    schema.verify_node_schema(src_con)
+                    src_con.backup(con)
+                instance._unique_id = schema.get_unique_id(con)
+
+            # Keep file path, no in-memory connection.
+            instance._current_working_path = database_path
+            instance._in_memory_connection = None
+
+        else:
+            # Connect to in-memory database.
+            con = get_sqlite_connection(':memory:', factory=ToronSqlite3Connection)
+            weakref.finalize(instance, super(ToronSqlite3Connection, con).close)
+
+            # Read data from file into node database and close source connection.
+            with closing(get_sqlite_connection(src_path)) as src_con:
+                schema.verify_node_schema(src_con)
+                src_con.backup(con)
+            schema.create_functions_and_temporary_triggers(con)
+            instance._unique_id = schema.get_unique_id(con)
+
+            # No working file path, keep in-memory connection open.
+            instance._current_working_path = None
+            instance._in_memory_connection = con
+
+        return instance
