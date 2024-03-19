@@ -223,7 +223,7 @@ def verify_permissions(
             pass  # Accepts read-only or read-write.
         else:
             raise ValueError(
-                f"`required_permissions` must be 'ro', 'rw', or None; "
+                f"required_permissions must be 'ro', 'rw', or None; "
                 f"got {required_permissions!r}"
             )
     else:
@@ -243,7 +243,7 @@ def verify_permissions(
                 )
         else:
             raise ValueError(
-                f"`required_permissions` must be 'ro', 'rw', or None; "
+                f"required_permissions must be 'ro', 'rw', or None; "
                 f"got {required_permissions!r}"
             )
 

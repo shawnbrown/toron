@@ -207,6 +207,11 @@ class TestVerifyPermissions(unittest.TestCase):
         except Exception:
             self.fail('requiring None on a new file should not fail')
 
+    def test_bad_permissions(self):
+        regex = "must be 'ro', 'rw', or None"
+        with self.assertRaisesRegex(ValueError, regex):
+            verify_permissions(self.rw_path, required_permissions='badpermissions')
+
 
 class Bases(SimpleNamespace):
     """Wrapping TestCase base classes to prevent test discovery."""
