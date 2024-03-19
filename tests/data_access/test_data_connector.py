@@ -418,3 +418,29 @@ class TestFromLiveData(unittest.TestCase):
             connector = DataConnector.from_live_data(file_path, 'ro')
         except Exception:
             self.fail("read-only file should open with 'ro' permissions")
+
+    def test_acquire_resource_readonly(self):
+        """Connections from a read-only connector should remain
+        read-only even if drive permissions on the underlying file
+        are changed after instantiation.
+        """
+        # Create a new node, save to drive, and set permissions to read-only.
+        file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
+        DataConnector().to_file(file_path)
+        os.chmod(file_path, stat.S_IRUSR)
+
+        # Create a connector requiring read-only permissions.
+        connector = DataConnector.from_live_data(file_path, required_permissions='ro')
+
+        # Change on-drive permissions to read-write.
+        os.chmod(file_path, stat.S_IRUSR | stat.S_IWUSR)
+
+        # Try to write data to the node (should fail even though the
+        # on-drive permissions now allow writing).
+        con = connector.acquire_resource()
+        try:
+            regex='attempt to write a readonly database'
+            with self.assertRaisesRegex(sqlite3.OperationalError, regex):
+                con.execute("INSERT INTO property VALUES ('my_key', '\"my_value\"')")
+        finally:
+            connector.release_resource(con)
