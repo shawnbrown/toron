@@ -463,3 +463,43 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
             instance._in_memory_connection = con
 
         return instance
+
+    @classmethod
+    def from_live_data(
+        cls,
+        path: Union[str, bytes, os.PathLike],
+        required_permissions: Literal['ro', 'rw', None] = 'ro',
+    ) -> Self:
+        """Open a node directly from drive (does not load into memory).
+
+        Parameters
+        ----------
+        path : :py:term:`path-like-object`
+            File path containing the node data.
+        required_permissions : 'ro' | 'rw' | None, default 'ro'
+            Required file permissions on drive.
+
+        .. warning::
+
+            Use caution when changing a node that has been opened
+            directly in read-write mode. Changes are applied
+            **immediately** to the file on drive and cannot be undone.
+        """
+        database_path = os.path.abspath(os.fsdecode(path))
+        verify_permissions(database_path, required_permissions)
+
+        if os.path.exists(database_path):
+            with closing(get_sqlite_connection(database_path)) as con:
+                schema.verify_node_schema(con)
+                unique_id = schema.get_unique_id(con)
+        else:
+            with closing(get_sqlite_connection(database_path)) as con:
+                schema.create_node_schema(con)
+                unique_id = schema.get_unique_id(con)
+
+        instance = cls.__new__(cls)
+        instance._unique_id = unique_id
+        instance._current_working_path = database_path
+        instance._in_memory_connection = None
+
+        return instance
