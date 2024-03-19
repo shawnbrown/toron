@@ -3,6 +3,8 @@
 import gc
 import os
 import sqlite3
+import stat
+import sys
 import tempfile
 import unittest
 from abc import ABC, abstractmethod
@@ -13,6 +15,7 @@ from toron._data_access.base_classes import BaseDataConnector
 from toron._data_access.data_connector import (
     make_sqlite_uri_filepath,
     get_sqlite_connection,
+    verify_permissions,
     ToronSqlite3Connection,
     DataConnector,
 )
@@ -138,6 +141,71 @@ class TestToronSqlite3Connection(unittest.TestCase):
             super(con.__class__, con).close()
         except Exception:
             self.fail('should close via superclass close() method')
+
+
+class TestVerifyPermissions(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
+        if sys.version_info >= (3, 8, 0):
+            cls.addClassCleanup(cls.temp_dir.cleanup)
+
+        cls.rw_path = os.path.join(cls.temp_dir.name, 'readwrite.toron')
+        open(cls.rw_path, 'w').close()
+
+        cls.ro_path = os.path.join(cls.temp_dir.name, 'readonly.toron')
+        open(cls.ro_path, 'w').close()
+        os.chmod(cls.ro_path, stat.S_IRUSR)  # Make sure file is read-only.
+
+        # Define path but don't create a file (file should not exist).
+        cls.new_path = os.path.join(cls.temp_dir.name, 'new_file.toron')
+
+    if sys.version_info < (3, 8, 0):
+        @classmethod
+        def tearDownClass(cls):
+            cls.temp_dir.cleanup()
+
+    def test_readonly_required(self):
+        try:
+            verify_permissions(self.ro_path, required_permissions='ro')
+        except Exception:
+            self.fail("requiring 'ro' on read-only file should not fail")
+
+        with self.assertRaises(PermissionError):
+            verify_permissions(self.rw_path, required_permissions='ro')
+
+        with self.assertRaises(FileNotFoundError):
+            verify_permissions(self.new_path, required_permissions='ro')
+
+    def test_readwrite_required(self):
+        try:
+            verify_permissions(self.rw_path, required_permissions='rw')
+        except Exception:
+            self.fail("requiring 'rw' on read-write file should not fail")
+
+        with self.assertRaises(PermissionError):
+            verify_permissions(self.ro_path, required_permissions='rw')
+
+        try:
+            verify_permissions(self.new_path, required_permissions='rw')
+        except Exception:
+            self.fail("requiring 'rw' to create a new file should not fail")
+
+    def test_none_required(self):
+        try:
+            verify_permissions(self.rw_path, required_permissions=None)
+        except Exception:
+            self.fail('requiring None on read-write file should not fail')
+
+        try:
+            verify_permissions(self.ro_path, required_permissions=None)
+        except Exception:
+            self.fail('requiring None on read-only file should not fail')
+
+        try:
+            verify_permissions(self.new_path, required_permissions=None)
+        except Exception:
+            self.fail('requiring None on a new file should not fail')
 
 
 class Bases(SimpleNamespace):

@@ -168,6 +168,86 @@ else:
             os.close(fd)
 
 
+def verify_permissions(
+    path: str,
+    required_permissions: Literal['ro', 'rw', None],
+) -> None:
+    """Raise error if file does not have required permissions.
+
+    Toron Nodes are often opened in memory or from a temporary file
+    cache, which can condition users to treat nodes as ephemeral
+    objects that are always safe to modify. But when Toron files are
+    opened directly from drive, changes are applied immediately and
+    cannot be undone. To prevent users from accidentally altering
+    on-drive files, they should be opened using read-only mode
+    (``'ro'``) by default.
+
+    .. important::
+
+        While SQLite can open files using the read-only access mode,
+        doing so does not ensure that the database file on the drive
+        will always remain safe to copy. At this time, SQLite makes no
+        guarantees that use of the "ro" URI access mode is equivalent
+        to using a database with read-only permissions enforced by the
+        filesystem.
+
+        In a high availability computing environment, it's possible
+        that an automated backup system could copy a database file
+        while a transaction is in progress. For related information,
+        see section 1.2 of "How To Corrupt An SQLite Database File":
+
+            https://www.sqlite.org/howtocorrupt.html
+
+        Out of an abundance of caution, when opening an existing
+        database directly on drive, Toron defaults to read-only file
+        permissions to mitigate the chance that a backup process makes
+        a corrupted copy.
+    """
+    if os.path.exists(path):
+        # Check for read permissions.
+        if not os.access(path, os.R_OK):
+            raise PermissionError(f'insufficient permissions to read {path!r}')
+
+        # Check for required write permissions.
+        if required_permissions == 'ro':
+            if os.access(path, os.W_OK):
+                raise PermissionError(
+                    f'{path!r} should be read-only but has read-write permissions'
+                )
+        elif required_permissions == 'rw':
+            if not os.access(path, os.W_OK):
+                raise PermissionError(
+                    f'{path!r} should be read-write but has read-only permissions'
+                )
+        elif required_permissions is None:
+            pass  # Accepts read-only or read-write.
+        else:
+            raise ValueError(
+                f"`required_permissions` must be 'ro', 'rw', or None; "
+                f"got {required_permissions!r}"
+            )
+    else:
+        # When file doesn't exist, must have permissions to write new file.
+        if required_permissions == 'ro':
+            msg = f"no file named {path!r}, open in 'rw' mode to create a new file"
+            raise FileNotFoundError(msg)
+        elif required_permissions == 'rw' or required_permissions is None:
+            dir_name = os.path.dirname(path) + os.sep
+            if not os.access(dir_name, os.R_OK):
+                raise PermissionError(
+                    f'insufficient permissions to read from directory {dir_name!r}'
+                )
+            if not os.access(dir_name, os.W_OK):
+                raise PermissionError(
+                    f'insufficient permissions to write to directory {dir_name!r}'
+                )
+        else:
+            raise ValueError(
+                f"`required_permissions` must be 'ro', 'rw', or None; "
+                f"got {required_permissions!r}"
+            )
+
+
 class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
     def __init__(self, cache_to_drive: bool = False) -> None:
         """Initialize a new node instance."""
