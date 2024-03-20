@@ -146,7 +146,7 @@ class TestToronSqlite3Connection(unittest.TestCase):
 class TestVerifyPermissions(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
+        cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
         if sys.version_info >= (3, 8, 0):
             cls.addClassCleanup(cls.temp_dir.cleanup)
 
@@ -368,7 +368,7 @@ class TestDataConnector(Bases.TestDataConnector):
 
 class TestFromLiveData(unittest.TestCase):
     def setUp(cls):
-        cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
+        cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
         cls.addCleanup(cls.temp_dir.cleanup)
 
     def test_new_file_readwrite(self):
