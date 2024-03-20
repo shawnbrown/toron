@@ -163,6 +163,8 @@ class TestVerifyPermissions(unittest.TestCase):
     if sys.version_info < (3, 8, 0):
         @classmethod
         def tearDownClass(cls):
+            # Make file read-write (old bug https://github.com/python/cpython/issues/70847)
+            os.chmod(cls.ro_path, stat.S_IRUSR | stat.S_IWUSR)
             cls.temp_dir.cleanup()
 
     def test_readonly_required(self):
@@ -370,6 +372,17 @@ class TestFromLiveData(unittest.TestCase):
     def setUp(cls):
         cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
         cls.addCleanup(cls.temp_dir.cleanup)
+
+        if sys.version_info < (3, 7, 17):
+            # Fix for old bug https://github.com/python/cpython/issues/70847
+            def make_files_readwrite():
+                root_dir = cls.temp_dir.name
+                for f in os.listdir(root_dir):
+                    f_path = os.path.join(root_dir, f)
+                    print(f_path)
+                    os.chmod(f_path, stat.S_IRUSR | stat.S_IWUSR)
+
+            cls.addCleanup(make_files_readwrite)
 
     def test_new_file_readwrite(self):
         """In read-write mode, nodes can be created directly on drive."""
