@@ -251,10 +251,10 @@ def verify_permissions(
 class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
     def __init__(self, cache_to_drive: bool = False) -> None:
         """Initialize a new node instance."""
+        self._unique_id: str
         self._access_mode: Literal['ro', 'rw', None]
         self._current_working_path: Optional[str]
         self._in_memory_connection: Optional[ToronSqlite3Connection]
-        self._unique_id: str
 
         if cache_to_drive:
             # Create temporary file and get path.
@@ -265,9 +265,10 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
             # Create Toron node schema and close connection.
             with closing(get_sqlite_connection(database_path)) as con:
                 schema.create_node_schema(con)
-                self._unique_id = schema.get_unique_id(con)
+                unique_id = schema.get_unique_id(con)
 
             # Keep file path, no in-memory connection.
+            self._unique_id = unique_id
             self._access_mode = None
             self._current_working_path = database_path
             self._in_memory_connection = None
@@ -280,9 +281,9 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
             # Create Toron node schema, functions, and temp triggers.
             schema.create_node_schema(con)
             schema.create_functions_and_temporary_triggers(con)
-            self._unique_id = schema.get_unique_id(con)
 
             # No working file path, keep in-memory connection open.
+            self._unique_id = schema.get_unique_id(con)
             self._access_mode = None
             self._current_working_path = None
             self._in_memory_connection = con
@@ -444,9 +445,10 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
                 with closing(get_sqlite_connection(src_path)) as src_con:
                     schema.verify_node_schema(src_con)
                     src_con.backup(con)
-                instance._unique_id = schema.get_unique_id(con)
+                unique_id = schema.get_unique_id(con)
 
             # Keep file path, no in-memory connection.
+            instance._unique_id = unique_id
             instance._access_mode = None
             instance._current_working_path = database_path
             instance._in_memory_connection = None
@@ -461,9 +463,9 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
                 schema.verify_node_schema(src_con)
                 src_con.backup(con)
             schema.create_functions_and_temporary_triggers(con)
-            instance._unique_id = schema.get_unique_id(con)
 
             # No working file path, keep in-memory connection open.
+            instance._unique_id = schema.get_unique_id(con)
             instance._access_mode = None
             instance._current_working_path = None
             instance._in_memory_connection = con
