@@ -1,4 +1,4 @@
-"""Tests for property repository."""
+"""Tests for toron/_data_access/property_repository.py module."""
 
 import unittest
 from abc import ABC, abstractmethod
@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 from toron._data_access.data_connector import DataConnector
 from toron._data_access.base_classes import BasePropertyRepository
+from toron._data_access.property_repository import PropertyRepository
 
 
 class Bases(SimpleNamespace):
@@ -73,3 +74,43 @@ class Bases(SimpleNamespace):
 
             repository.delete('foo')
             self.assertIsNone(repository.get('foo'))
+
+
+class TestPropertyRepository(Bases.TestPropertyRepository):
+    @property
+    def repository_class(self):
+        return PropertyRepository
+
+    def test_add(self):
+        repository = PropertyRepository(self.cursor)
+
+        repository.add('foo', 'bar')
+
+        self.cursor.execute("SELECT * FROM property WHERE key='foo'")
+        self.assertEqual(self.cursor.fetchall(), [('foo', 'bar')])
+
+    def test_get(self):
+        repository = PropertyRepository(self.cursor)
+        self.cursor.execute("INSERT INTO property VALUES ('foo', '\"bar\"')")
+
+        value = repository.get('foo')
+
+        self.assertEqual(value, 'bar')
+
+    def test_update(self):
+        repository = PropertyRepository(self.cursor)
+        self.cursor.execute("INSERT INTO property VALUES ('foo', '\"bar\"')")
+
+        repository.update('foo', 'baz')
+
+        self.cursor.execute("SELECT * FROM property WHERE key='foo'")
+        self.assertEqual(self.cursor.fetchall(), [('foo', 'baz')])
+
+    def test_delete(self):
+        repository = PropertyRepository(self.cursor)
+        self.cursor.execute("INSERT INTO property VALUES ('foo', '\"bar\"')")
+
+        repository.delete('foo')
+
+        self.cursor.execute("SELECT * FROM property WHERE key='foo'")
+        self.assertEqual(self.cursor.fetchall(), [])
