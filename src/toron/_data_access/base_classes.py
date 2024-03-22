@@ -4,14 +4,21 @@ import os
 from abc import ABC, abstractmethod
 
 from toron._typing import (
+    Any,
+    Dict,
     Generic,
+    List,
     Self,
+    TypeAlias,
     TypeVar,
     Union,
 )
 
 
 T = TypeVar('T')
+JsonTypes: TypeAlias = Union[
+    Dict[str, 'JsonTypes'], List['JsonTypes'], str, int, float, bool, None
+]
 
 
 class BaseDataConnector(ABC, Generic[T]):
@@ -78,3 +85,31 @@ class BaseDataConnector(ABC, Generic[T]):
         path : :py:term:`path-like-object`
             File path containing the node data.
         """
+
+
+class BasePropertyRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new PropertyRepository instance.
+
+        If a node's storage backend is a database, the *data_reader*
+        might be a DBAPI2 Cursor. If other storage backends are
+        implemented, the *data_reader* could be an HDF5 dataset, a
+        Parquet table, etc.
+        """
+
+    @abstractmethod
+    def add(self, key: str, value: JsonTypes) -> None:
+        """Add an item to the repository."""
+
+    @abstractmethod
+    def get(self, key: str) -> JsonTypes:
+        """Retrieve an item from the repository."""
+
+    @abstractmethod
+    def update(self, key: str, value: JsonTypes) -> None:
+        """Update an item in the repository."""
+
+    @abstractmethod
+    def delete(self, key: str):
+        """Remove an item from the repository."""
