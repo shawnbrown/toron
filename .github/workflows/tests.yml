@@ -5,7 +5,8 @@
 
 name: Tests
 
-run-name: "${{ inputs.platform && format('Test {0} on {1}, commit: {2}, timeout: {3} minutes', github.ref_name, inputs.platform, github.sha, inputs.timeout || 10) }}"
+#run-name: "${{ inputs.platform && format('Test {0} on {1}, commit: {2}, timeout: {3} minutes', github.ref_name, inputs.platform, github.sha, inputs.timeout || 10) }}"
+run-name: "${{ inputs.platform && format('Test {0}, commit: {1}, timeout: {2} minutes', inputs.platform, github.sha, inputs.timeout || 10) }}"
 
 on:
   push:
