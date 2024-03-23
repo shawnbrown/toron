@@ -43,7 +43,8 @@ legacy_tox_ini = """
 
   [testenv]
   commands =
-    python -c 'import sqlite3;print(sqlite3.sqlite_version)'
+    python --version
+    python -c 'import sqlite3; print(f"SQLite {sqlite3.sqlite_version}")'
     python -O -W default -m unittest
 
   [testenv:mypy]
