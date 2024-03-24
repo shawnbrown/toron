@@ -111,9 +111,16 @@ class TestIndexRepository(Bases.TestIndexRepository):
         actual = [row[1] for row in self.cursor.fetchall()]
         self.assertEqual(actual, ['index_id', 'foo', 'bar'])
 
-    @unittest.skip('not implemented')
     def test_get_columns(self):
-        raise NotImplementedError
+        repository = IndexRepository(self.cursor)
+
+        actual = repository.get_columns()
+        self.assertEqual(actual, tuple(), msg='should be empty tuple when no label columns')
+
+        self.cursor.execute("ALTER TABLE node_index ADD COLUMN 'foo'")
+        self.cursor.execute("ALTER TABLE node_index ADD COLUMN 'bar'")
+        actual = repository.get_columns()
+        self.assertEqual(actual, ('foo', 'bar'), msg='should be label columns only, no index_id')
 
     #def test_update_columns(self):
     #    raise NotImplementedError

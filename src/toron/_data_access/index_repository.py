@@ -55,4 +55,6 @@ class IndexRepository(BaseIndexRepository):
 
     def get_columns(self) -> Tuple[str, ...]:
         """Get a tuple of column names from the repository."""
-        raise NotImplementedError
+        self._cursor.execute(f"PRAGMA main.table_info('node_index')")
+        columns = tuple(row[1] for row in self._cursor.fetchall())
+        return columns[1:]  # Return columns (slicing-off index_id).
