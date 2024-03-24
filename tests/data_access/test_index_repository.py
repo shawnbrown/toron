@@ -98,9 +98,18 @@ class TestIndexRepository(Bases.TestIndexRepository):
     #def test_find(self):
     #    raise NotImplementedError
 
-    @unittest.skip('not implemented')
     def test_add_columns(self):
-        raise NotImplementedError
+        repository = IndexRepository(self.cursor)
+
+        self.cursor.execute(f"PRAGMA main.table_info('node_index')")
+        actual = [row[1] for row in self.cursor.fetchall()]
+        self.assertEqual(actual, ['index_id'], msg='should start with "index_id"')
+
+        repository.add_columns('foo', 'bar')
+
+        self.cursor.execute(f"PRAGMA main.table_info('node_index')")
+        actual = [row[1] for row in self.cursor.fetchall()]
+        self.assertEqual(actual, ['index_id', 'foo', 'bar'])
 
     @unittest.skip('not implemented')
     def test_get_columns(self):

@@ -34,6 +34,24 @@ class IndexRepository(BaseIndexRepository):
 
     def add_columns(self, *columns: str):
         """Add new columns to the repository."""
+        self._cursor.execute("""
+            DROP INDEX IF EXISTS main.unique_nodeindex_index
+        """)
+
+        for column in columns:
+            self._cursor.execute(f"""
+                ALTER TABLE main.node_index
+                  ADD COLUMN {column}
+                  TEXT
+                  NOT NULL
+                  CHECK ({column} != '')
+                  DEFAULT '-'
+            """)
+
+        self._cursor.execute(f"""
+            CREATE UNIQUE INDEX main.unique_nodeindex_index
+              ON node_index({', '.join(columns)})
+        """)
 
     def get_columns(self) -> Tuple[str, ...]:
         """Get a tuple of column names from the repository."""
