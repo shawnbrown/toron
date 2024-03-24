@@ -108,11 +108,10 @@ class Index(object):
     def __init__(self, id: int, *, values: Tuple[str, ...]) -> None:
         ...
     def __init__(self, id, *args, values=tuple()):
-        if (args and not values) or (values and not args):
-            self.id = id
-            self.values = args or values
-
-        raise TypeError('must provide either *args or values')
+        if args and values:
+            raise TypeError('must provide either *args or values')
+        self.id = id
+        self.values = args or values
 
 
 class BaseIndexRepository(ABC):
