@@ -174,7 +174,7 @@ class BaseIndexRepository(ABC):
     #    """Find all records in the repository that match criteria."""
 
     @abstractmethod
-    def add_columns(self, columns: Sequence[str]):
+    def add_columns(self, *columns: str):
         """Add new columns to the repository."""
 
     @abstractmethod
