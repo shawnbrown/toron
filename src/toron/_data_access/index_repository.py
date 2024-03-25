@@ -8,6 +8,7 @@ from toron._typing import (
     Tuple,
 )
 
+from . import schema
 from .base_classes import Index, BaseIndexRepository
 
 
@@ -52,9 +53,7 @@ class IndexRepository(BaseIndexRepository):
 
     def add_columns(self, *columns: str):
         """Add new columns to the repository."""
-        self._cursor.execute("""
-            DROP INDEX IF EXISTS main.unique_nodeindex_index
-        """)
+        schema.drop_schema_index_constraints(self._cursor)
 
         for column in columns:
             self._cursor.execute(f"""
@@ -66,10 +65,7 @@ class IndexRepository(BaseIndexRepository):
                   DEFAULT '-'
             """)
 
-        self._cursor.execute(f"""
-            CREATE UNIQUE INDEX main.unique_nodeindex_index
-              ON node_index({', '.join(columns)})
-        """)
+        schema.create_schema_index_constraints(self._cursor)
 
     def get_columns(self) -> Tuple[str, ...]:
         """Get a tuple of column names from the repository."""
