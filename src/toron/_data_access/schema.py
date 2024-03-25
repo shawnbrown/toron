@@ -110,13 +110,9 @@ with closing(sqlite3.connect(':memory:')) as _con:
     del _con
 
 
-def create_node_schema(cur: sqlite3.Cursor) -> None:
-    """Creates tables and sets starting values for Toron node schema.
-
-    This function expects a *cursor* to a newly-created, or otherwise
-    empty database.
-    """
-    node_sql_script = """
+def create_schema_tables(cur: sqlite3.Cursor) -> None:
+    """Create tables and set starting values for Toron node schema."""
+    cur.executescript("""
         PRAGMA foreign_keys = ON;
 
         CREATE TABLE main.edge(
@@ -215,18 +211,62 @@ def create_node_schema(cur: sqlite3.Cursor) -> None:
 
         /* Reserve index_id 0 for the "undefined" and add triggers. */
         INSERT INTO main.node_index (index_id) VALUES (0);
+    """)
 
+    cur.execute(
+        'INSERT INTO main.property (key, value) VALUES (?, ?)',
+        ('unique_id', json_dumps(str(uuid4()))),  # uuid4() for most random value.
+    )
+
+
+def create_schema_index_constraints(cur: sqlite3.Cursor) -> None:
+    """Add indexes and triggers to the `node_index` table.
+
+    Unlike temporary triggers and functions, these constraints are
+    persistent and only need to be recreated if they were explicitly
+    removed.
+    """
+    # Create UNIQUE constraint for label columns.
+    cur.execute(f"PRAGMA main.table_info('node_index')")
+    label_columns = [row[1] for row in cur.fetchall()[1:]]
+    if label_columns:
+        cur.execute(f"""
+            CREATE UNIQUE INDEX IF NOT EXISTS main.unique_index_label_columns
+                ON node_index({', '.join(label_columns)})
+        """)
+
+    # Create UPDATE trigger to prevent changes to undefined record.
+    cur.execute("""
         CREATE TRIGGER IF NOT EXISTS main.trigger_on_update_for_undefined
         BEFORE UPDATE ON main.node_index FOR EACH ROW WHEN OLD.index_id = 0
         BEGIN
             SELECT RAISE(FAIL, 'cannot modify undefined record (index_id 0)');
-        END;
+        END
+    """)
 
+    # Create DELETE trigger to prevent removal of undefined record.
+    cur.execute("""
         CREATE TRIGGER IF NOT EXISTS main.trigger_on_delete_for_undefined
         BEFORE DELETE ON main.node_index FOR EACH ROW WHEN OLD.index_id = 0
         BEGIN
             SELECT RAISE(FAIL, 'cannot delete undefined record (index_id 0)');
-        END;
+        END
+    """)
+
+
+def drop_schema_index_constraints(cur: sqlite3.Cursor) -> None:
+    """Remove indexes and triggers from the `node_index` table."""
+    cur.execute('DROP INDEX IF EXISTS main.unique_index_label_columns')
+    cur.execute('DROP TRIGGER IF EXISTS main.trigger_on_update_for_undefined')
+    cur.execute('DROP TRIGGER IF EXISTS main.trigger_on_delete_for_undefined')
+
+
+def create_node_schema(cur: sqlite3.Cursor) -> None:
+    """Creates schema, initial values, indexes, and persistent triggers
+    for a Toron node dataset.
+
+    This function expects a *cursor* to a newly-created, or otherwise
+    empty database.
     """
     # Verify that database is empty (aside from internal schema objects).
     # https://www.sqlite.org/fileformat2.html#internal_schema_objects
@@ -237,12 +277,8 @@ def create_node_schema(cur: sqlite3.Cursor) -> None:
         msg = f'database must be empty; found tables: {formatted}'
         raise RuntimeError(msg)
 
-    cur.executescript(node_sql_script)  # Create node schema tables.
-
-    cur.execute(
-        'INSERT INTO main.property (key, value) VALUES (?, ?)',
-        ('unique_id', json_dumps(str(uuid4()))),  # uuid4() for most random value.
-    )
+    create_schema_tables(cur)
+    create_schema_index_constraints(cur)
 
 
 def verify_node_schema(cur: sqlite3.Cursor) -> None:
