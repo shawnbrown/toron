@@ -504,16 +504,14 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
         database_path = os.path.abspath(os.fsdecode(path))
         verify_permissions(database_path, required_permissions)
 
-        if os.path.exists(database_path):
-            with closing(get_sqlite_connection(database_path)) as con:
-                with closing(con.cursor()) as cur:
+        path_exists = os.path.exists(database_path)
+        with closing(get_sqlite_connection(database_path)) as con:
+            with closing(con.cursor()) as cur:
+                if path_exists:
                     schema.verify_node_schema(cur)
-                    unique_id = schema.get_unique_id(cur)
-        else:
-            with closing(get_sqlite_connection(database_path)) as con:
-                with closing(con.cursor()) as cur:
+                else:
                     schema.create_node_schema(cur)
-                    unique_id = schema.get_unique_id(cur)
+                unique_id = schema.get_unique_id(cur)
 
         instance = cls.__new__(cls)
         instance._unique_id = unique_id
