@@ -28,7 +28,13 @@ class IndexRepository(BaseIndexRepository):
 
     def get(self, id: int) -> Optional[Index]:
         """Get a record from the repository."""
-        raise NotImplementedError
+        self._cursor.execute(
+            'SELECT * FROM main.node_index WHERE index_id=?', (id,)
+        )
+        record = self._cursor.fetchone()
+        if record:
+            return Index(*record)
+        return None
 
     def update(self, record: Index) -> None:
         """Update a record in the repository."""

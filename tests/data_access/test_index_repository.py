@@ -100,9 +100,21 @@ class TestIndexRepository(Bases.TestIndexRepository):
         with self.assertRaises(ValueError, msg=msg):
             repository.add('foo', '')
 
-    @unittest.skip('not implemented')
     def test_get(self):
-        raise NotImplementedError
+        repository = IndexRepository(self.cursor)
+        self.cursor.executescript("""
+            DROP INDEX IF EXISTS unique_nodeindex_index;
+            ALTER TABLE node_index ADD COLUMN A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
+            ALTER TABLE node_index ADD COLUMN B TEXT NOT NULL CHECK (B != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_nodeindex_index ON node_index(A, B);
+            INSERT INTO node_index VALUES (1, 'foo', 'bar');
+            INSERT INTO node_index VALUES (2, 'foo', 'baz');
+        """)
+
+        self.assertEqual(repository.get(0), Index(0, '-', '-'))
+        self.assertEqual(repository.get(1), Index(1, 'foo', 'bar'))
+        self.assertEqual(repository.get(2), Index(2, 'foo', 'baz'))
+        self.assertIsNone(repository.get(3), msg='should be None if no matching id')
 
     @unittest.skip('not implemented')
     def test_update(self):
