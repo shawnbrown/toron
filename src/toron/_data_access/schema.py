@@ -110,11 +110,11 @@ with closing(sqlite3.connect(':memory:')) as _con:
     del _con
 
 
-def create_node_schema(connection: sqlite3.Connection) -> None:
+def create_node_schema(cur: sqlite3.Cursor) -> None:
     """Creates tables and sets starting values for Toron node schema.
 
-    This function expects a *connection* to a newly-created, or
-    otherwise empty database.
+    This function expects a *cursor* to a newly-created, or otherwise
+    empty database.
     """
     node_sql_script = """
         PRAGMA foreign_keys = ON;
@@ -216,38 +216,36 @@ def create_node_schema(connection: sqlite3.Connection) -> None:
         /* Reserve index_id 0 for the "undefined" and add triggers. */
         INSERT INTO main.node_index (index_id) VALUES (0);
 
-        CREATE TRIGGER IF NOT EXISTS trigger_check_update_undefined_record
+        CREATE TRIGGER IF NOT EXISTS main.trigger_on_update_for_undefined
         BEFORE UPDATE ON main.node_index FOR EACH ROW WHEN OLD.index_id = 0
         BEGIN
             SELECT RAISE(FAIL, 'cannot modify undefined record (index_id 0)');
         END;
 
-        CREATE TRIGGER IF NOT EXISTS trigger_check_delete_undefined_record
+        CREATE TRIGGER IF NOT EXISTS main.trigger_on_delete_for_undefined
         BEFORE DELETE ON main.node_index FOR EACH ROW WHEN OLD.index_id = 0
         BEGIN
             SELECT RAISE(FAIL, 'cannot delete undefined record (index_id 0)');
         END;
     """
+    # Verify that database is empty (aside from internal schema objects).
+    # https://www.sqlite.org/fileformat2.html#internal_schema_objects
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
+    if tables:
+        formatted = ', '.join(repr(x) for x in sorted(tables))
+        msg = f'database must be empty; found tables: {formatted}'
+        raise RuntimeError(msg)
 
-    with closing(connection.cursor()) as cur:
-        # Verify that database is empty (aside from internal schema objects).
-        # https://www.sqlite.org/fileformat2.html#internal_schema_objects
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
-        if tables:
-            formatted = ', '.join(repr(x) for x in sorted(tables))
-            msg = f'database must be empty; found tables: {formatted}'
-            raise RuntimeError(msg)
+    cur.executescript(node_sql_script)  # Create node schema tables.
 
-        cur.executescript(node_sql_script)  # Create node schema tables.
-
-        cur.execute(
-            'INSERT INTO main.property (key, value) VALUES (?, ?)',
-            ('unique_id', json_dumps(str(uuid4()))),  # uuid4() for most random value.
-        )
+    cur.execute(
+        'INSERT INTO main.property (key, value) VALUES (?, ?)',
+        ('unique_id', json_dumps(str(uuid4()))),  # uuid4() for most random value.
+    )
 
 
-def verify_node_schema(connection) -> None:
+def verify_node_schema(cur: sqlite3.Cursor) -> None:
     """Raise RuntimeError if connected db does no have node tables.
 
     This function performs a quick check--it does not verify columns
@@ -257,35 +255,30 @@ def verify_node_schema(connection) -> None:
     """
     msg = 'unknown or unsupported file format'
     try:
-        cur = connection.cursor()
-        try:
-            cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
-            node_tables = {
-                'attribute',
-                'edge',
-                'location',
-                'node_index',
-                'property',
-                'quantity',
-                'relation',
-                'structure',
-                'weight',
-                'weighting',
-            }
-            if tables != node_tables:
-                raise RuntimeError(msg)
-        finally:
-            cur.close()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
+        node_tables = {
+            'attribute',
+            'edge',
+            'location',
+            'node_index',
+            'property',
+            'quantity',
+            'relation',
+            'structure',
+            'weight',
+            'weighting',
+        }
+        if tables != node_tables:
+            raise RuntimeError(msg)
     except (AttributeError, sqlite3.DatabaseError):
         raise RuntimeError(msg)
 
 
-def get_unique_id(connection: sqlite3.Connection) -> str:
-    """Get 'unique_id' from the data connection."""
-    sql = "SELECT value FROM main.property WHERE key='unique_id'"
-    with closing(connection.execute(sql)) as cur:
-        return cur.fetchone()[0]
+def get_unique_id(cur: sqlite3.Cursor) -> str:
+    """Get 'unique_id' from the database cursor."""
+    cur.execute("SELECT value FROM main.property WHERE key='unique_id'")
+    return cur.fetchone()[0]
 
 
 if sys.version_info >= (3, 8):
@@ -331,7 +324,7 @@ def create_toron_check_property_value(connection: sqlite3.Connection) -> None:
                         deterministic=True)
 
 
-def create_triggers_property_value(connection: sqlite3.Connection) -> None:
+def create_triggers_property_value(cur: sqlite3.Cursor) -> None:
     """Add temp triggers to validate ``property.value`` column."""
     if SQLITE_ENABLE_JSON1:
         check_function = 'json_valid'
@@ -348,9 +341,8 @@ def create_triggers_property_value(connection: sqlite3.Connection) -> None:
             SELECT RAISE(ABORT, 'property.value must be well-formed JSON');
         END;
     """
-    with closing(connection.cursor()) as cur:
-        cur.execute(sql.format(event='INSERT'))
-        cur.execute(sql.format(event='UPDATE'))
+    cur.execute(sql.format(event='INSERT'))
+    cur.execute(sql.format(event='UPDATE'))
 
 
 def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
@@ -381,7 +373,7 @@ def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
                         deterministic=True)
 
 
-def create_triggers_attribute_value(connection: sqlite3.Connection) -> None:
+def create_triggers_attribute_value(cur: sqlite3.Cursor) -> None:
     """Add temp triggers to validate ``attribute.attribute_value`` column.
 
     The ``attribute_value`` column is of the type TEXT_ATTRIBUTES which
@@ -415,9 +407,8 @@ def create_triggers_attribute_value(connection: sqlite3.Connection) -> None:
             SELECT RAISE(ABORT, 'attribute.attribute_value must be a JSON object with text values');
         END;
     """
-    with closing(connection.cursor()) as cur:
-        cur.execute(sql.format(event='INSERT'))
-        cur.execute(sql.format(event='UPDATE'))
+    cur.execute(sql.format(event='INSERT'))
+    cur.execute(sql.format(event='UPDATE'))
 
 
 def create_toron_check_user_properties(connection: sqlite3.Connection) -> None:
@@ -441,7 +432,7 @@ def create_toron_check_user_properties(connection: sqlite3.Connection) -> None:
                         deterministic=True)
 
 
-def create_triggers_user_properties(connection: sqlite3.Connection) -> None:
+def create_triggers_user_properties(cur: sqlite3.Cursor) -> None:
     """Add temp triggers to validate ``edge.user_properties`` column.
 
     A well-formed TEXT_USERPROPERTIES value is a string containing
@@ -465,9 +456,8 @@ def create_triggers_user_properties(connection: sqlite3.Connection) -> None:
             SELECT RAISE(ABORT, 'edge.user_properties must be well-formed JSON object type');
         END;
     """
-    with closing(connection.cursor()) as cur:
-        cur.execute(sql.format(event='INSERT'))
-        cur.execute(sql.format(event='UPDATE'))
+    cur.execute(sql.format(event='INSERT'))
+    cur.execute(sql.format(event='UPDATE'))
 
 
 def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
@@ -496,7 +486,7 @@ def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
                         deterministic=True)
 
 
-def create_triggers_selectors(connection: sqlite3.Connection) -> None:
+def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
     """Add temp triggers to validate ``edge.selectors`` and
     ``weighting.selectors`` columns.
 
@@ -530,11 +520,10 @@ def create_triggers_selectors(connection: sqlite3.Connection) -> None:
             SELECT RAISE(ABORT, '{{table}}.selectors must be a JSON array with text values');
         END;
     """
-    with closing(connection.cursor()) as cur:
-        cur.execute(sql.format(event='INSERT', table='edge'))
-        cur.execute(sql.format(event='UPDATE', table='edge'))
-        cur.execute(sql.format(event='INSERT', table='weighting'))
-        cur.execute(sql.format(event='UPDATE', table='weighting'))
+    cur.execute(sql.format(event='INSERT', table='edge'))
+    cur.execute(sql.format(event='UPDATE', table='edge'))
+    cur.execute(sql.format(event='INSERT', table='weighting'))
+    cur.execute(sql.format(event='UPDATE', table='weighting'))
 
 
 def create_log2(
@@ -679,10 +668,11 @@ def create_functions_and_temporary_triggers(
         create_toron_check_user_properties(connection)
         create_toron_check_selectors(connection)
 
-    create_triggers_property_value(connection)
-    create_triggers_attribute_value(connection)
-    create_triggers_user_properties(connection)
-    create_triggers_selectors(connection)
+    with closing(connection.cursor()) as cur:
+        create_triggers_property_value(cur)
+        create_triggers_attribute_value(cur)
+        create_triggers_user_properties(cur)
+        create_triggers_selectors(cur)
 
     if not SQLITE_ENABLE_MATH_FUNCTIONS:
         create_log2(connection)
