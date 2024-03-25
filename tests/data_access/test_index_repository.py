@@ -78,7 +78,12 @@ class TestIndexRepository(Bases.TestIndexRepository):
 
     def test_add(self):
         repository = IndexRepository(self.cursor)
-        repository.add_columns('A', 'B')
+        self.cursor.executescript("""
+            DROP INDEX IF EXISTS unique_nodeindex_index;
+            ALTER TABLE node_index ADD COLUMN A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
+            ALTER TABLE node_index ADD COLUMN B TEXT NOT NULL CHECK (B != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_nodeindex_index ON node_index(A, B);
+        """)
 
         repository.add('foo', 'bar')
 
