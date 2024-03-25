@@ -94,11 +94,11 @@ class TestIndexRepository(Bases.TestIndexRepository):
         )
 
         msg = "should not add ('foo', 'bar') again, duplicates not allowed"
-        with self.assertRaises(ValueError, msg=msg):
+        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.add('foo', 'bar')
 
         msg = "adding ('foo', '') should fail, empty strings not allowed"
-        with self.assertRaises(ValueError, msg=msg):
+        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.add('foo', '')
 
     def test_get(self):
@@ -132,7 +132,7 @@ class TestIndexRepository(Bases.TestIndexRepository):
         records = self.cursor.fetchall()
         self.assertEqual(records, [(0, '-', '-'), (1, 'qux', 'quux')])
 
-        with self.assertRaises(ValueError, msg='2 columns but only 1 value'):
+        with self.assertRaises(sqlite3.OperationalError, msg='2 columns but only 1 value'):
             repository.update(Index(1, 'corge'))
 
         repository.update(Index(2, 'corge', 'blerg'))  # <- No index_id 2 exists.

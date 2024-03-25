@@ -19,12 +19,9 @@ class IndexRepository(BaseIndexRepository):
     def add(self, value: str, *values: str) -> None:
         """Add a record to the repository."""
         values = (value,) + values
-        try:
-            qmarks = ", ".join("?" * len(values))
-            sql = f'INSERT INTO node_index VALUES (NULL, {qmarks})'
-            self._cursor.execute(sql, values)
-        except sqlite3.IntegrityError as err:
-            raise ValueError(str(err))
+        qmarks = ", ".join("?" * len(values))
+        sql = f'INSERT INTO node_index VALUES (NULL, {qmarks})'
+        self._cursor.execute(sql, values)
 
     def get(self, id: int) -> Optional[Index]:
         """Get a record from the repository."""
@@ -45,10 +42,7 @@ class IndexRepository(BaseIndexRepository):
             SET ({columns}) = ({qmarks})
             WHERE index_id=?
         """
-        try:
-            self._cursor.execute(sql, record.values + (record.id,))
-        except sqlite3.OperationalError as err:
-            raise ValueError(str(err))
+        self._cursor.execute(sql, record.values + (record.id,))
 
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
