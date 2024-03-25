@@ -38,7 +38,17 @@ class IndexRepository(BaseIndexRepository):
 
     def update(self, record: Index) -> None:
         """Update a record in the repository."""
-        raise NotImplementedError
+        columns = ', '.join(self.get_columns())
+        qmarks = ', '.join('?' * len(record.values))
+        sql = f"""
+            UPDATE main.node_index
+            SET ({columns}) = ({qmarks})
+            WHERE index_id=?
+        """
+        try:
+            self._cursor.execute(sql, record.values + (record.id,))
+        except sqlite3.OperationalError as err:
+            raise ValueError(str(err))
 
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
