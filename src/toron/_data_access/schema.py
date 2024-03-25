@@ -317,6 +317,14 @@ def get_unique_id(cur: sqlite3.Cursor) -> str:
     return cur.fetchone()[0]
 
 
+#######################################################################
+# APPLICATION-DEFINED SQL FUNCTIONS AND TEMPORARY TRIGGERS (BELOW).
+#
+# The database objects created by these functions are ephemeral and
+# need to be re-created each time a connection is established.
+#######################################################################
+
+
 if sys.version_info >= (3, 8):
     def create_sql_function(
         connection: sqlite3.Connection,
