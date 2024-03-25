@@ -140,9 +140,30 @@ class TestIndexRepository(Bases.TestIndexRepository):
         msg = 'there is no index_id 2, records should be unchanged'
         self.assertEqual(records, [(0, '-', '-'), (1, 'qux', 'quux')], msg=msg)
 
-    @unittest.skip('not implemented')
     def test_delete(self):
-        raise NotImplementedError
+        repository = IndexRepository(self.cursor)
+        self.cursor.executescript("""
+            DROP INDEX IF EXISTS unique_nodeindex_index;
+            ALTER TABLE node_index ADD COLUMN A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
+            ALTER TABLE node_index ADD COLUMN B TEXT NOT NULL CHECK (B != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_nodeindex_index ON node_index(A, B);
+            INSERT INTO node_index VALUES (1, 'foo', 'bar');
+            INSERT INTO node_index VALUES (2, 'foo', 'baz');
+        """)
+
+        repository.delete(2)
+        self.cursor.execute('SELECT * FROM node_index')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(0, '-', '-'), (1, 'foo', 'bar')],
+        )
+
+        repository.delete(1)
+        self.cursor.execute('SELECT * FROM node_index')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(0, '-', '-')],
+        )
 
     #def test_get_all(self):
     #    raise NotImplementedError

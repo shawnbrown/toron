@@ -52,7 +52,9 @@ class IndexRepository(BaseIndexRepository):
 
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
-        raise NotImplementedError
+        self._cursor.execute(
+            'DELETE FROM main.node_index WHERE index_id=?', (id,)
+        )
 
     def add_columns(self, *columns: str):
         """Add new columns to the repository."""
