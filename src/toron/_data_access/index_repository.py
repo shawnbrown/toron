@@ -18,7 +18,13 @@ class IndexRepository(BaseIndexRepository):
 
     def add(self, value: str, *values: str) -> None:
         """Add a record to the repository."""
-        raise NotImplementedError
+        values = (value,) + values
+        try:
+            qmarks = ", ".join("?" * len(values))
+            sql = f'INSERT INTO node_index VALUES (NULL, {qmarks})'
+            self._cursor.execute(sql, values)
+        except sqlite3.IntegrityError as err:
+            raise ValueError(str(err))
 
     def get(self, id: int) -> Optional[Index]:
         """Get a record from the repository."""

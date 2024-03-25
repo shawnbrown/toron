@@ -76,9 +76,24 @@ class TestIndexRepository(Bases.TestIndexRepository):
     def repository_class(self):
         return IndexRepository
 
-    @unittest.skip('not implemented')
     def test_add(self):
-        raise NotImplementedError
+        repository = IndexRepository(self.cursor)
+        repository.add_columns('A', 'B')
+
+        repository.add('foo', 'bar')
+
+        self.cursor.execute('SELECT * FROM node_index')
+        self.assertEqual(
+            self.cursor.fetchall(), [(0, '-', '-'), (1, 'foo', 'bar')],
+        )
+
+        msg = "should not add ('foo', 'bar') again, duplicates not allowed"
+        with self.assertRaises(ValueError, msg=msg):
+            repository.add('foo', 'bar')
+
+        msg = "adding ('foo', '') should fail, empty strings not allowed"
+        with self.assertRaises(ValueError, msg=msg):
+            repository.add('foo', '')
 
     @unittest.skip('not implemented')
     def test_get(self):
