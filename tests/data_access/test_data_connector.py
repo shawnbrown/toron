@@ -379,7 +379,6 @@ class TestFromLiveData(unittest.TestCase):
                 root_dir = cls.temp_dir.name
                 for f in os.listdir(root_dir):
                     f_path = os.path.join(root_dir, f)
-                    print(f_path)
                     os.chmod(f_path, stat.S_IRUSR | stat.S_IWUSR)
 
             cls.addCleanup(make_files_readwrite)
