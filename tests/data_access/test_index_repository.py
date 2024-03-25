@@ -1,5 +1,6 @@
 """Tests for toron/_data_access/index_repository.py module."""
 
+import sqlite3
 import unittest
 from abc import ABC, abstractmethod
 from types import SimpleNamespace
@@ -140,6 +141,10 @@ class TestIndexRepository(Bases.TestIndexRepository):
         msg = 'there is no index_id 2, records should be unchanged'
         self.assertEqual(records, [(0, '-', '-'), (1, 'qux', 'quux')], msg=msg)
 
+        msg = 'should fail to modify undefined record (index_id 0)'
+        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+            repository.update(Index(0, 'x', 'x'))
+
     def test_delete(self):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
@@ -164,6 +169,10 @@ class TestIndexRepository(Bases.TestIndexRepository):
             self.cursor.fetchall(),
             [(0, '-', '-')],
         )
+
+        msg = 'should fail to delete undefined record (index_id 0)'
+        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+            repository.delete(0)
 
     #def test_get_all(self):
     #    raise NotImplementedError

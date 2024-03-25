@@ -213,8 +213,20 @@ def create_node_schema(connection: sqlite3.Connection) -> None:
         INSERT INTO main.property VALUES ('toron_schema_version', '"0.2.0"');
         INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
 
-        /* Reserve id zero for the "undefined" record. */
+        /* Reserve index_id 0 for the "undefined" and add triggers. */
         INSERT INTO main.node_index (index_id) VALUES (0);
+
+        CREATE TRIGGER IF NOT EXISTS trigger_check_update_undefined_record
+        BEFORE UPDATE ON main.node_index FOR EACH ROW WHEN OLD.index_id = 0
+        BEGIN
+            SELECT RAISE(FAIL, 'cannot modify undefined record (index_id 0)');
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS trigger_check_delete_undefined_record
+        BEFORE DELETE ON main.node_index FOR EACH ROW WHEN OLD.index_id = 0
+        BEGIN
+            SELECT RAISE(FAIL, 'cannot delete undefined record (index_id 0)');
+        END;
     """
 
     with closing(connection.cursor()) as cur:
