@@ -150,7 +150,7 @@ class BaseIndexRepository(ABC):
         """
 
     @abstractmethod
-    def add(self, values: Sequence[str]) -> None:
+    def add(self, value: str, *values: str) -> None:
         """Add a record to the repository."""
 
     @abstractmethod

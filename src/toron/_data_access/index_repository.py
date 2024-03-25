@@ -16,7 +16,7 @@ class IndexRepository(BaseIndexRepository):
         """Initialize a new IndexRepository instance."""
         self._cursor = data_reader
 
-    def add(self, values: Sequence[str]) -> None:
+    def add(self, value: str, *values: str) -> None:
         """Add a record to the repository."""
         raise NotImplementedError
 
