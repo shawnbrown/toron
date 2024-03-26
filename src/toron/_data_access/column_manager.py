@@ -19,7 +19,7 @@ class ColumnManager(BaseColumnManager):
 
     def add_columns(self, column: str, *columns: str) -> None:
         """Add new label columns."""
-        schema.drop_schema_index_constraints(self._cursor)
+        schema.drop_schema_constraints(self._cursor)
 
         columns = (column,) + columns
         for column in columns:
@@ -32,7 +32,7 @@ class ColumnManager(BaseColumnManager):
                   DEFAULT '-'
             """)
 
-        schema.create_schema_index_constraints(self._cursor)
+        schema.create_schema_constraints(self._cursor)
 
     def get_columns(self) -> Tuple[str, ...]:
         """Get a tuple of label column names."""

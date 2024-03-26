@@ -219,7 +219,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     )
 
 
-def create_schema_index_constraints(cur: sqlite3.Cursor) -> None:
+def create_schema_constraints(cur: sqlite3.Cursor) -> None:
     """Add indexes and triggers to the `node_index` table.
 
     Unlike temporary triggers and functions, these constraints are
@@ -254,7 +254,7 @@ def create_schema_index_constraints(cur: sqlite3.Cursor) -> None:
     """)
 
 
-def drop_schema_index_constraints(cur: sqlite3.Cursor) -> None:
+def drop_schema_constraints(cur: sqlite3.Cursor) -> None:
     """Remove indexes and triggers from the `node_index` table."""
     cur.execute('DROP INDEX IF EXISTS main.unique_index_label_columns')
     cur.execute('DROP TRIGGER IF EXISTS main.trigger_on_update_for_undefined')
@@ -278,7 +278,7 @@ def create_node_schema(cur: sqlite3.Cursor) -> None:
         raise RuntimeError(msg)
 
     create_schema_tables(cur)
-    create_schema_index_constraints(cur)
+    create_schema_constraints(cur)
 
 
 def verify_node_schema(cur: sqlite3.Cursor) -> None:
