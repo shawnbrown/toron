@@ -100,7 +100,7 @@ class BaseColumnManager(ABC):
         """Initialize a new instance."""
 
     @abstractmethod
-    def add_columns(self, *columns: str) -> None:
+    def add_columns(self, column: str, *columns: str) -> None:
         """Add new label columns."""
 
     @abstractmethod

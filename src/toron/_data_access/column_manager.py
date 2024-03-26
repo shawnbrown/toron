@@ -17,10 +17,11 @@ class ColumnManager(BaseColumnManager):
         """Initialize a new instance."""
         self._cursor = data_reader
 
-    def add_columns(self, *columns: str) -> None:
+    def add_columns(self, column: str, *columns: str) -> None:
         """Add new label columns."""
         schema.drop_schema_index_constraints(self._cursor)
 
+        columns = (column,) + columns
         for column in columns:
             self._cursor.execute(f"""
                 ALTER TABLE main.node_index
