@@ -36,7 +36,8 @@ class IndexRepository(BaseIndexRepository):
 
     def update(self, record: Index) -> None:
         """Update a record in the repository."""
-        columns = ', '.join(self.get_columns())
+        self._cursor.execute(f"PRAGMA main.table_info('node_index')")
+        columns = ', '.join(row[1] for row in self._cursor.fetchall()[1:])
         qmarks = ', '.join('?' * len(record.values))
         sql = f"""
             UPDATE main.node_index
