@@ -8,6 +8,7 @@ from toron._typing import (
     Any,
     Dict,
     Generic,
+    Iterable,
     List,
     Optional,
     Self,
@@ -92,6 +93,29 @@ class BaseDataConnector(ABC, Generic[T]):
         """
 
 
+class BaseColumnManager(ABC):
+    """Manage node's label columns (add, get, update, and delete)."""
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new instance."""
+
+    @abstractmethod
+    def add_columns(self, *columns: str) -> None:
+        """Add new label columns."""
+
+    @abstractmethod
+    def get_columns(self) -> Tuple[str, ...]:
+        """Get a tuple of label column names."""
+
+    @abstractmethod
+    def update_columns(self, mapping: Dict[str, str]) -> None:
+        """Update label column names."""
+
+    @abstractmethod
+    def delete_columns(self, columns: Iterable[str]) -> None:
+        """Delete label columns."""
+
+
 @dataclass(init=False)
 class Index(object):
     """
@@ -172,22 +196,6 @@ class BaseIndexRepository(ABC):
     #@abstractmethod
     #def find(self, **criteria: str) -> Iterator[Index]:
     #    """Find all records in the repository that match criteria."""
-
-    @abstractmethod
-    def add_columns(self, *columns: str):
-        """Add new columns to the repository."""
-
-    @abstractmethod
-    def get_columns(self) -> Tuple[str, ...]:
-        """Get a tuple of column names from the repository."""
-
-    #@abstractmethod
-    #def update_columns(self, mapping: Dict[str, str]):
-    #    """Update column names in the repository."""
-
-    #@abstractmethod
-    #def delete_columns(self, columns: Iterable[str]):
-    #    """Delete columns from the repository."""
 
 
 class BasePropertyRepository(ABC):

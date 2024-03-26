@@ -55,22 +55,6 @@ class Bases(SimpleNamespace):
         #def test_find(self):
         #    ...
 
-        @abstractmethod
-        def test_add_columns(self):
-            ...
-
-        @abstractmethod
-        def test_get_columns(self):
-            ...
-
-        #@abstractmethod
-        #def test_update_columns(self):
-        #    ...
-
-        #@abstractmethod
-        #def test_delete_columns(self):
-        #    ...
-
 
 class TestIndexRepository(Bases.TestIndexRepository):
     @property
