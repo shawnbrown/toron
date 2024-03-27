@@ -220,11 +220,11 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
 
 
 def create_schema_constraints(cur: sqlite3.Cursor) -> None:
-    """Add indexes and triggers to the `node_index` table.
+    """Add indexes and triggers to the 'node_index', 'location',
+    and 'structure' tables.
 
-    Unlike temporary triggers and functions, these constraints are
-    persistent and only need to be recreated if they were explicitly
-    removed.
+    These constraints are persistent and only need to be re-created
+    if they were explicitly removed.
     """
     # Label columns in the `node_index`, `location`, and `structure`
     # tables must all be the same--so we can fetch them from table
@@ -268,7 +268,9 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
 
 
 def drop_schema_constraints(cur: sqlite3.Cursor) -> None:
-    """Remove indexes and triggers from the `node_index` table."""
+    """Remove indexes and triggers from the 'node_index', 'location',
+    and 'structure' tables.
+    """
     cur.execute('DROP INDEX IF EXISTS main.unique_index_label_columns')
     cur.execute('DROP INDEX IF EXISTS main.unique_location_label_columns')
     cur.execute('DROP INDEX IF EXISTS main.unique_structure_label_columns')
