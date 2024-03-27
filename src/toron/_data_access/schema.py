@@ -219,6 +219,26 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     )
 
 
+def format_identifier(value: str) -> str:
+    """Format and return a delimited identifier suitable as a SQLite
+    column name.
+    """
+    value.encode('utf-8', errors='strict')  # Raise error on surrogate codes.
+
+    if '\x00' in value:  # Raise error on NUL characters.
+        nul_pos = value.find('\x00')
+        raise UnicodeEncodeError(
+            'utf-8',            # encoding
+            value,              # object
+            nul_pos,            # start position
+            nul_pos + 1,        # end position
+            'NUL not allowed',  # reason
+        )
+
+    value = value.replace('"', '""')
+    return f'"{value}"'
+
+
 def create_schema_constraints(cur: sqlite3.Cursor) -> None:
     """Add indexes and triggers to the 'node_index', 'location',
     and 'structure' tables.

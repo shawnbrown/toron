@@ -9,6 +9,7 @@ from toron._data_access.schema import (
     SQLITE_ENABLE_JSON1,
     SQLITE_ENABLE_MATH_FUNCTIONS,
     create_node_schema,
+    format_identifier,
     verify_node_schema,
     get_unique_id,
     create_sql_function,
@@ -136,6 +137,35 @@ class TestVerifyNodeSchema(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             verify_node_schema(some_random_object)
+
+
+class TestFormatIdentifier(unittest.TestCase):
+    def test_quoting(self):
+        values = [
+            ('abc',        '"abc"'),
+            ('a b c',      '"a b c"'),      # whitepsace
+            ("a 'b' c",    '"a \'b\' c"'),  # single quotes
+            ('a "b" c',    '"a ""b"" c"'),  # double quotes
+        ]
+        for input_value, result in values:
+            with self.subTest(input_value=input_value, expected_output=result):
+                self.assertEqual(format_identifier(input_value), result)
+
+    def test_surrogate_codes(self):
+        """Should only allow clean UTF-8 (no surrogate codes)."""
+        # Create a surrogate pair by mismatching encodings.
+        bytes_value = 'tamaño'.encode('iso-8859-1')  # "tamaño" is Spanish for "size"
+        string_with_surrogate = bytes_value.decode('utf-8', 'surrogateescape')
+
+        with self.assertRaises(UnicodeEncodeError):
+            format_identifier(string_with_surrogate)
+
+    def test_nul_byte(self):
+        """Should not allow NUL bytes in strings."""
+        contains_nul = 'zip\x00 code'
+
+        with self.assertRaises(UnicodeEncodeError):
+            format_identifier(contains_nul)
 
 
 class TestCreateSqlFunction(unittest.TestCase):
