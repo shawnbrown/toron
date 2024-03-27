@@ -23,18 +23,17 @@ class ColumnManager(BaseColumnManager):
 
         columns = (column,) + columns
         for column in columns:
-            column = schema.format_identifier(column)
             self._cursor.execute(f"""
-                ALTER TABLE main.node_index ADD COLUMN {column} TEXT
-                    NOT NULL CHECK ({column} != '') DEFAULT '-'
+                ALTER TABLE main.node_index ADD COLUMN
+                    {schema.column_def_node_index(column)}
             """)
             self._cursor.execute(f"""
-                ALTER TABLE main.location ADD COLUMN {column} TEXT
-                    NOT NULL DEFAULT ''
+                ALTER TABLE main.location ADD COLUMN
+                    {schema.column_def_location(column)}
             """)
             self._cursor.execute(f"""
-                ALTER TABLE main.structure ADD COLUMN {column} INTEGER
-                    CHECK ({column} IN (0, 1)) DEFAULT 0
+                ALTER TABLE main.structure ADD COLUMN
+                    {schema.column_def_structure(column)}
             """)
 
         schema.create_schema_constraints(self._cursor)

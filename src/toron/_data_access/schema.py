@@ -239,6 +239,24 @@ def format_identifier(value: str) -> str:
     return f'"{value}"'
 
 
+def column_def_node_index(column: str) -> str:
+    """Get SQL column definition for 'node_index' label column."""
+    column = format_identifier(column)
+    return f"{column} TEXT NOT NULL CHECK ({column} != '') DEFAULT '-'"
+
+
+def column_def_location(column: str) -> str:
+    """Get SQL column definition for 'location' label column."""
+    column = format_identifier(column)
+    return f"{column} TEXT NOT NULL DEFAULT ''"
+
+
+def column_def_structure(column: str) -> str:
+    """Get SQL column definition for 'structure' label column."""
+    column = format_identifier(column)
+    return f"{column} INTEGER CHECK ({column} IN (0, 1)) DEFAULT 0"
+
+
 def create_schema_constraints(cur: sqlite3.Cursor) -> None:
     """Add indexes and triggers to the 'node_index', 'location',
     and 'structure' tables.
