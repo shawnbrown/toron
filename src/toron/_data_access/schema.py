@@ -226,13 +226,26 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
     persistent and only need to be recreated if they were explicitly
     removed.
     """
-    # Create UNIQUE constraint for label columns.
+    # Label columns in the `node_index`, `location`, and `structure`
+    # tables must all be the same--so we can fetch them from table
+    # and trust that they also exist in the others.
     cur.execute(f"PRAGMA main.table_info('node_index')")
-    label_columns = [row[1] for row in cur.fetchall()[1:]]
+    label_columns = cur.fetchall()[1:]  # Fetch all but first column.
+
+    # Create UNIQUE constraint for label columns.
     if label_columns:
+        columns = ', '.join(row[1] for row in label_columns)
         cur.execute(f"""
-            CREATE UNIQUE INDEX IF NOT EXISTS main.unique_index_label_columns
-                ON node_index({', '.join(label_columns)})
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                main.unique_index_label_columns ON node_index({columns})
+        """)
+        cur.execute(f"""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                main.unique_location_label_columns ON location({columns})
+        """)
+        cur.execute(f"""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                main.unique_structure_label_columns ON structure({columns})
         """)
 
     # Create UPDATE trigger to prevent changes to undefined record.
@@ -257,6 +270,8 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
 def drop_schema_constraints(cur: sqlite3.Cursor) -> None:
     """Remove indexes and triggers from the `node_index` table."""
     cur.execute('DROP INDEX IF EXISTS main.unique_index_label_columns')
+    cur.execute('DROP INDEX IF EXISTS main.unique_location_label_columns')
+    cur.execute('DROP INDEX IF EXISTS main.unique_structure_label_columns')
     cur.execute('DROP TRIGGER IF EXISTS main.trigger_on_update_for_undefined')
     cur.execute('DROP TRIGGER IF EXISTS main.trigger_on_delete_for_undefined')
 
