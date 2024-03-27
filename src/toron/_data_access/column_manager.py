@@ -23,6 +23,7 @@ class ColumnManager(BaseColumnManager):
 
         columns = (column,) + columns
         for column in columns:
+            column = schema.format_identifier(column)
             self._cursor.execute(f"""
                 ALTER TABLE main.node_index ADD COLUMN {column} TEXT
                     NOT NULL CHECK ({column} != '') DEFAULT '-'

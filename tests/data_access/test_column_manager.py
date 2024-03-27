@@ -66,10 +66,11 @@ class TestColumnManager(Bases.TestColumnManager):
         self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity'], msg=msg)
 
         manager.add_columns('foo', 'bar')
+        manager.add_columns('x "y"')  # <- Check special characters (space and quotes).
 
-        self.assertEqual(self.get_columns('node_index'), ['index_id', 'foo', 'bar'])
-        self.assertEqual(self.get_columns('location'), ['_location_id', 'foo', 'bar'])
-        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'foo', 'bar'])
+        self.assertEqual(self.get_columns('node_index'), ['index_id', 'foo', 'bar', 'x "y"'])
+        self.assertEqual(self.get_columns('location'), ['_location_id', 'foo', 'bar', 'x "y"'])
+        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'foo', 'bar', 'x "y"'])
 
     def test_get_columns(self):
         manager = ColumnManager(self.cursor)
@@ -79,8 +80,8 @@ class TestColumnManager(Bases.TestColumnManager):
 
         # Only add to node_index for testing.
         self.cursor.executescript("""
-            ALTER TABLE node_index ADD COLUMN 'foo';
-            ALTER TABLE node_index ADD COLUMN 'bar';
+            ALTER TABLE node_index ADD COLUMN "foo";
+            ALTER TABLE node_index ADD COLUMN "bar";
         """)
 
         actual = manager.get_columns()

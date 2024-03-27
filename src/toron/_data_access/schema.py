@@ -254,7 +254,7 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
 
     # Create UNIQUE constraint for label columns.
     if label_columns:
-        columns = ', '.join(row[1] for row in label_columns)
+        columns = ', '.join(format_identifier(row[1]) for row in label_columns)
         cur.execute(f"""
             CREATE UNIQUE INDEX IF NOT EXISTS
                 main.unique_index_label_columns ON node_index({columns})
