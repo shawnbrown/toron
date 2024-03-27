@@ -24,12 +24,16 @@ class ColumnManager(BaseColumnManager):
         columns = (column,) + columns
         for column in columns:
             self._cursor.execute(f"""
-                ALTER TABLE main.node_index
-                  ADD COLUMN {column}
-                  TEXT
-                  NOT NULL
-                  CHECK ({column} != '')
-                  DEFAULT '-'
+                ALTER TABLE main.node_index ADD COLUMN {column} TEXT
+                    NOT NULL CHECK ({column} != '') DEFAULT '-'
+            """)
+            self._cursor.execute(f"""
+                ALTER TABLE main.location ADD COLUMN {column} TEXT
+                    NOT NULL DEFAULT ''
+            """)
+            self._cursor.execute(f"""
+                ALTER TABLE main.structure ADD COLUMN {column} INTEGER
+                    CHECK ({column} IN (0, 1)) DEFAULT 0
             """)
 
         schema.create_schema_constraints(self._cursor)

@@ -53,18 +53,23 @@ class TestColumnManager(Bases.TestColumnManager):
     def concrete_class(self):
         return ColumnManager
 
+    def get_columns(self, table_name):
+        self.cursor.execute(f"PRAGMA main.table_info('{table_name}')")
+        return [row[1] for row in self.cursor.fetchall()]
+
     def test_add_columns(self):
         manager = ColumnManager(self.cursor)
 
-        self.cursor.execute(f"PRAGMA main.table_info('node_index')")
-        actual = [row[1] for row in self.cursor.fetchall()]
-        self.assertEqual(actual, ['index_id'], msg='only "index_id", no label columns')
+        msg = 'before adding label columns, should only contain functional columns'
+        self.assertEqual(self.get_columns('node_index'), ['index_id'], msg=msg)
+        self.assertEqual(self.get_columns('location'), ['_location_id'], msg=msg)
+        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity'], msg=msg)
 
         manager.add_columns('foo', 'bar')
 
-        self.cursor.execute(f"PRAGMA main.table_info('node_index')")
-        actual = [row[1] for row in self.cursor.fetchall()]
-        self.assertEqual(actual, ['index_id', 'foo', 'bar'])
+        self.assertEqual(self.get_columns('node_index'), ['index_id', 'foo', 'bar'])
+        self.assertEqual(self.get_columns('location'), ['_location_id', 'foo', 'bar'])
+        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'foo', 'bar'])
 
     def test_get_columns(self):
         manager = ColumnManager(self.cursor)
@@ -72,8 +77,12 @@ class TestColumnManager(Bases.TestColumnManager):
         actual = manager.get_columns()
         self.assertEqual(actual, tuple(), msg='should be empty tuple when no label columns')
 
-        self.cursor.execute("ALTER TABLE node_index ADD COLUMN 'foo'")
-        self.cursor.execute("ALTER TABLE node_index ADD COLUMN 'bar'")
+        # Only add to node_index for testing.
+        self.cursor.executescript("""
+            ALTER TABLE node_index ADD COLUMN 'foo';
+            ALTER TABLE node_index ADD COLUMN 'bar';
+        """)
+
         actual = manager.get_columns()
         self.assertEqual(actual, ('foo', 'bar'), msg='should be label columns only, no index_id')
 
