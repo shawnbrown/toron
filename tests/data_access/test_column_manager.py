@@ -172,6 +172,39 @@ class TestColumnManager(Bases.TestColumnManager):
         with self.assertRaisesRegex(RuntimeError, regex):
             manager.update_columns({'foo': 'qux', 'bar': 'quux'})
 
-    @unittest.skip('not implemented')
     def test_delete_columns(self):
-        raise NotImplementedError
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar', 'baz', 'qux')
+        self.cursor.executescript("""
+            INSERT INTO node_index VALUES (NULL, 'a', 'x', '111', 'one');
+            INSERT INTO node_index VALUES (NULL, 'b', 'y', '222', 'two');
+            INSERT INTO node_index VALUES (NULL, 'c', 'z', '333', 'three');
+        """)
+
+        manager.delete_columns('bar')
+
+        self.assertEqual(self.get_columns('node_index'), ['index_id', 'foo', 'baz', 'qux'])
+        self.assertEqual(self.get_columns('location'), ['_location_id', 'foo', 'baz', 'qux'])
+        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'foo', 'baz', 'qux'])
+
+        self.cursor.execute('SELECT * FROM node_index')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(0, '-', '-', '-'), (1, 'a', '111', 'one'), (2, 'b', '222', 'two'), (3, 'c', '333', 'three')],
+        )
+
+        manager.delete_columns('baz', 'qux')
+
+        self.assertEqual(self.get_columns('node_index'), ['index_id', 'foo'])
+        self.assertEqual(self.get_columns('location'), ['_location_id', 'foo'])
+        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'foo'])
+
+        self.cursor.execute('SELECT * FROM node_index')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
+        )
+
+        regex = 'cannot delete all columns'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            manager.delete_columns('foo')
