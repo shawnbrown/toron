@@ -141,9 +141,36 @@ class TestColumnManager(Bases.TestColumnManager):
         actual = manager.get_columns()
         self.assertEqual(actual, ('foo', 'bar'), msg='should be label columns only, no index_id')
 
-    @unittest.skip('not implemented')
     def test_update_columns(self):
-        raise NotImplementedError
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar')
+        self.cursor.executescript("""
+            INSERT INTO node_index VALUES (NULL, 'a', 'x');
+            INSERT INTO node_index VALUES (NULL, 'b', 'y');
+            INSERT INTO node_index VALUES (NULL, 'c', 'z');
+        """)
+
+        manager.update_columns({'foo': 'qux', 'bar': 'quux'})
+
+        actual = self.get_columns('node_index')
+        self.assertEqual(actual, ['index_id', 'qux', 'quux'])
+
+        self.cursor.execute('SELECT * FROM node_index')
+        self.assertEqual(
+            self.cursor.fetchall(),
+            [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')]
+        )
+
+    def test_update_columns_bad_transaction_state(self):
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar')
+
+        self.cursor.execute('BEGIN TRANSACTION')
+        self.addCleanup(lambda: self.cursor.execute('ROLLBACK TRANSACTION'))
+
+        regex = 'existing transaction'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            manager.update_columns({'foo': 'qux', 'bar': 'quux'})
 
     @unittest.skip('not implemented')
     def test_delete_columns(self):

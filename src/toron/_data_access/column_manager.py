@@ -73,7 +73,79 @@ class ColumnManager(BaseColumnManager):
 
     def update_columns(self, mapping: Dict[str, str]) -> None:
         """Update label column names."""
-        raise NotImplementedError
+        # The RENAME COLUMN command was added in SQLite 3.25.0 (2018-09-15).
+        # This implementation works on older versions of SQLite and uses a
+        # sequence of operations to rebuild the tables with renamed columns
+        # (see https://www.sqlite.org/lang_altertable.html#otheralter).
+
+        if self._cursor.connection.in_transaction:
+            msg = 'cannot update columns inside an existing transaction'
+            raise RuntimeError(msg)
+
+        # Build a list of new column names.
+        new_columns = []
+        for old_col in self.get_columns():
+            new_col = mapping.get(old_col, old_col)  # Get new name or default to old.
+            if new_col in new_columns:
+                raise ValueError(f'cannot create duplicate columns: {new_col}')
+            new_columns.append(new_col)
+
+        self._cursor.execute('PRAGMA foreign_keys=OFF')
+        try:
+            self._cursor.execute('BEGIN TRANSACTION')
+            schema.drop_schema_constraints(self._cursor)
+
+            # Rebuild 'node_index' table with new column names.
+            self._cursor.execute(f"""
+                CREATE TABLE main.new_node_index(
+                    index_id INTEGER PRIMARY KEY AUTOINCREMENT,  /* <- Must not reuse id values. */
+                    {', '.join(schema.column_def_node_index(x) for x in new_columns)}
+                )
+            """)
+            self._cursor.execute(
+                'INSERT INTO main.new_node_index SELECT * FROM main.node_index'
+            )
+            self._cursor.execute('DROP TABLE main.node_index')
+            self._cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
+
+            # Rebuild 'location' table with new column names.
+            self._cursor.execute(f"""
+                CREATE TABLE main.new_location(
+                    _location_id INTEGER PRIMARY KEY,
+                    {', '.join(schema.column_def_location(x) for x in new_columns)}
+                )
+            """)
+            self._cursor.execute(
+                'INSERT INTO main.new_location SELECT * FROM main.location'
+            )
+            self._cursor.execute('DROP TABLE main.location')
+            self._cursor.execute('ALTER TABLE main.new_location RENAME TO location')
+
+            # Rebuild 'structure' table with new column names.
+            self._cursor.execute(f"""
+                CREATE TABLE main.new_structure(
+                    _structure_id INTEGER PRIMARY KEY,
+                    _granularity REAL,
+                    {', '.join(schema.column_def_structure(x) for x in new_columns)}
+                )
+            """)
+            self._cursor.execute(
+                'INSERT INTO main.new_structure SELECT * FROM main.structure'
+            )
+            self._cursor.execute('DROP TABLE main.structure')
+            self._cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
+
+            # Check integrity, re-create constraints and commit transaction.
+            verify_foreign_key_check(self._cursor)
+            schema.create_schema_constraints(self._cursor)
+            self._cursor.execute('COMMIT TRANSACTION')
+
+        except Exception as err:
+            self._cursor.execute('ROLLBACK TRANSACTION')
+            raise  # Re-raise exception.
+
+        finally:
+            self._cursor.execute('PRAGMA foreign_keys=ON')
 
     def delete_columns(self, columns: Iterable[str]) -> None:
         """Delete label columns."""
