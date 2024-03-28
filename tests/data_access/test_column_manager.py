@@ -152,13 +152,14 @@ class TestColumnManager(Bases.TestColumnManager):
 
         manager.update_columns({'foo': 'qux', 'bar': 'quux'})
 
-        actual = self.get_columns('node_index')
-        self.assertEqual(actual, ['index_id', 'qux', 'quux'])
+        self.assertEqual(self.get_columns('node_index'), ['index_id', 'qux', 'quux'])
+        self.assertEqual(self.get_columns('location'), ['_location_id', 'qux', 'quux'])
+        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'qux', 'quux'])
 
         self.cursor.execute('SELECT * FROM node_index')
         self.assertEqual(
             self.cursor.fetchall(),
-            [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')]
+            [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')],
         )
 
     def test_update_columns_bad_transaction_state(self):
