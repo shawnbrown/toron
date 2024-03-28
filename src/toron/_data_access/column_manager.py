@@ -217,7 +217,7 @@ class ColumnManager(BaseColumnManager):
             self._cursor.execute(f"""
                 CREATE TABLE main.new_node_index(
                     index_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    {',\n'.join(schema.column_def_node_index(x) for x in columns_to_keep)}
+                    {', '.join(schema.column_def_node_index(x) for x in columns_to_keep)}
                 )
             """)
             self._cursor.execute(f"""
@@ -232,7 +232,7 @@ class ColumnManager(BaseColumnManager):
             self._cursor.execute(f"""
                 CREATE TABLE main.new_location(
                     _location_id INTEGER PRIMARY KEY,
-                    {',\n'.join(schema.column_def_location(x) for x in columns_to_keep)}
+                    {', '.join(schema.column_def_location(x) for x in columns_to_keep)}
                 )
             """)
             self._cursor.execute(f"""
@@ -248,7 +248,7 @@ class ColumnManager(BaseColumnManager):
                 CREATE TABLE main.new_structure(
                     _structure_id INTEGER PRIMARY KEY,
                     _granularity REAL,
-                    {',\n'.join(schema.column_def_structure(x) for x in columns_to_keep)}
+                    {', '.join(schema.column_def_structure(x) for x in columns_to_keep)}
                 )
             """)
             self._cursor.execute(f"""
