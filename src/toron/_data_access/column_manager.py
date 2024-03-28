@@ -12,6 +12,33 @@ from . import schema
 from .base_classes import BaseColumnManager
 
 
+def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
+    """Run SQLite's "PRAGMA foreign_key_check" to verify that schema
+    changes did not break any foreign key constraints. If there are
+    foreign key violations, raise a RuntimeError--if not, then pass
+    without error.
+    """
+    cursor.execute('PRAGMA main.foreign_key_check')
+    first_ten_violations = cursor.fetchmany(size=1)
+
+    if not first_ten_violations:
+        return  # <- EXIT!
+
+    formatted = '\n  '.join(str(x) for x in first_ten_violations)
+    msg = (
+        f'Legacy support for SQLite {sqlite3.sqlite_version} encountered '
+        f'unexpected foreign key violations:\n  {formatted}'
+    )
+    additional_count = sum(1 for row in cursor)  # Count remaining.
+    if additional_count:
+        msg = (
+            f'{msg}\n'
+            f'  ...\n'
+            f'  Additionally, {additional_count} more violations occurred.'
+        )
+    raise RuntimeError(msg)
+
+
 class ColumnManager(BaseColumnManager):
     def __init__(self, data_reader: sqlite3.Cursor) -> None:
         """Initialize a new instance."""
