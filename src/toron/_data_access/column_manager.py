@@ -4,7 +4,6 @@ import sqlite3
 
 from toron._typing import (
     Dict,
-    Iterable,
     Tuple,
 )
 
@@ -181,6 +180,6 @@ class ColumnManager(BaseColumnManager):
             finally:
                 self._cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
 
-    def delete_columns(self, columns: Iterable[str]) -> None:
+    def delete_columns(self, column: str, *columns: str) -> None:
         """Delete label columns."""
         raise NotImplementedError

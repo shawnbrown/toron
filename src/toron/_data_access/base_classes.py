@@ -8,7 +8,6 @@ from toron._typing import (
     Any,
     Dict,
     Generic,
-    Iterable,
     List,
     Optional,
     Self,
@@ -112,7 +111,7 @@ class BaseColumnManager(ABC):
         """Update label column names."""
 
     @abstractmethod
-    def delete_columns(self, columns: Iterable[str]) -> None:
+    def delete_columns(self, column: str, *columns: str) -> None:
         """Delete label columns."""
 
 
