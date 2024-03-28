@@ -124,7 +124,7 @@ class ColumnManager(BaseColumnManager):
                     raise ValueError(f'cannot create duplicate columns: {new_col}')
                 new_columns.append(new_col)
 
-            self._cursor.execute('PRAGMA foreign_keys=OFF')  # <- Is no-op within transaction
+            self._cursor.execute('PRAGMA foreign_keys=OFF')  # <- Must be outside transaction.
             try:
                 self._cursor.execute('BEGIN TRANSACTION')
                 schema.drop_schema_constraints(self._cursor)
@@ -179,7 +179,7 @@ class ColumnManager(BaseColumnManager):
                 raise  # Re-raise exception.
 
             finally:
-                self._cursor.execute('PRAGMA foreign_keys=ON')
+                self._cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
 
     def delete_columns(self, columns: Iterable[str]) -> None:
         """Delete label columns."""
