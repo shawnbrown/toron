@@ -197,6 +197,38 @@ class BaseIndexRepository(ABC):
     #    """Find all records in the repository that match criteria."""
 
 
+class Location(Index):
+    """
+    Location(1, 'foo', 'bar')
+    Location(id=1, values=('foo', 'bar'))
+    """
+
+
+class BaseLocationRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new LocationRepository instance."""
+
+    @abstractmethod
+    def add(self, value: str, *values: str) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Location]:
+        """Get a record from the repository."""
+
+    @abstractmethod
+    def update(self, record: Location) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int):
+        """Delete a record from the repository."""
+
+    #def filter_by_structure(self, structure: Structure) -> Iterable[Location]:
+    #    """Filter to records that match the given structure."""
+
+
 class BasePropertyRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
