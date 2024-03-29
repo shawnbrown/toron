@@ -9,6 +9,7 @@ from toron._typing import (
     Dict,
     Generic,
     List,
+    Literal,
     Optional,
     Self,
     Sequence,
@@ -227,6 +228,56 @@ class BaseLocationRepository(ABC):
 
     #def filter_by_structure(self, structure: Structure) -> Iterable[Location]:
     #    """Filter to records that match the given structure."""
+
+
+@dataclass(init=False)
+class Structure(object):
+    """
+    Structure(1, None, 1, 0)
+    Structure(id=1, None, values=(1, 0))
+    """
+    id: int
+    granularity: Union[float, None]
+    values: Tuple[Literal[0, 1], ...]
+
+    @overload
+    def __init__(self, id: int, granularity: Union[float, None], *args: Literal[0, 1]) -> None:
+        ...
+    @overload
+    def __init__(self, id: int, granularity: Union[float, None], *, values: Tuple[Literal[0, 1], ...]) -> None:
+        ...
+    def __init__(self, id, granularity, *args, values=tuple()):
+        if args and values:
+            raise TypeError('must provide either *args or values')
+        self.id = id
+        self.granularity = granularity
+        self.values = args or values
+
+
+class BaseStructureRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new StructureRepository instance."""
+
+    @abstractmethod
+    def add(self, value: str, *values: str) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Structure]:
+        """Get a record from the repository."""
+
+    #@abstractmethod
+    #def get_all(self) -> Iterable[Structure]:
+    #    """Get all records sorted from most to least granular."""
+
+    @abstractmethod
+    def update(self, record: Structure) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int):
+        """Delete a record from the repository."""
 
 
 class BasePropertyRepository(ABC):
