@@ -2,11 +2,7 @@
 
 import sqlite3
 
-from toron._typing import (
-    Optional,
-    Sequence,
-    Tuple,
-)
+from toron._typing import Optional
 
 from . import schema
 from .base_classes import Index, BaseIndexRepository
