@@ -17,7 +17,7 @@ class IndexRepository(BaseIndexRepository):
         """Add a record to the repository."""
         values = (value,) + values
         qmarks = ", ".join("?" * len(values))
-        sql = f'INSERT INTO node_index VALUES (NULL, {qmarks})'
+        sql = f'INSERT INTO main.node_index VALUES (NULL, {qmarks})'
         self._cursor.execute(sql, values)
 
     def get(self, id: int) -> Optional[Index]:
