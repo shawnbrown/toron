@@ -241,10 +241,21 @@ class Structure(object):
     values: Tuple[Literal[0, 1], ...]
 
     @overload
-    def __init__(self, id: int, granularity: Union[float, None], *args: Literal[0, 1]) -> None:
+    def __init__(
+        self,
+        id: int,
+        granularity: Union[float, None],
+        *args: Literal[0, 1],
+    ) -> None:
         ...
     @overload
-    def __init__(self, id: int, granularity: Union[float, None], *, values: Tuple[Literal[0, 1], ...]) -> None:
+    def __init__(
+        self,
+        id: int,
+        granularity: Union[float, None],
+        *,
+        values: Tuple[Literal[0, 1], ...],
+    ) -> None:
         ...
     def __init__(self, id, granularity, *args, values=tuple()):
         if args and values:
