@@ -138,4 +138,4 @@ class TestLocationRepository(Bases.TestLocationRepository):
         try:
             repository.delete(42)
         except Exception as err:
-            self.fail(f'deleting non-existant ids should raise errors, got {err!r}')
+            self.fail(f'deleting non-existant ids should not raise errors, got {err!r}')
