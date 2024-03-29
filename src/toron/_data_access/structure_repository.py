@@ -34,11 +34,9 @@ class StructureRepository(BaseStructureRepository):
 
     def get_all(self) -> List[Structure]:
         """Get all records sorted from most to least granular."""
-        self._cursor.execute("""
-            SELECT *
-            FROM main.structure
-            ORDER BY _granularity DESC NULLS LAST
-        """)
+        self._cursor.execute(
+            'SELECT * FROM main.structure ORDER BY _granularity DESC'
+        )
         return self._cursor.fetchall()
 
     def update(self, record: Structure) -> None:
