@@ -278,9 +278,9 @@ class BaseStructureRepository(ABC):
     def get(self, id: int) -> Optional[Structure]:
         """Get a record from the repository."""
 
-    #@abstractmethod
-    #def get_all(self) -> Iterable[Structure]:
-    #    """Get all records sorted from most to least granular."""
+    @abstractmethod
+    def get_all(self) -> List[Structure]:
+        """Get all records sorted from most to least granular."""
 
     @abstractmethod
     def update(self, record: Structure) -> None:

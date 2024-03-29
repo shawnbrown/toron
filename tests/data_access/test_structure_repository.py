@@ -40,9 +40,9 @@ class Bases(SimpleNamespace):
         def test_get(self):
             ...
 
-        #@abstractmethod
-        #def test_get_all(self):
-        #    ...
+        @abstractmethod
+        def test_get_all(self):
+            ...
 
         @abstractmethod
         def test_update(self):
@@ -104,9 +104,19 @@ class TestStructureRepository(Bases.TestStructureRepository):
         self.assertIsNone(repository.get(37), msg='should be None if no matching id')
         self.assertIsNone(repository.get(0), msg='should be None if no matching id')
 
-    @unittest.skip('not implemented')
     def test_get_all(self):
-        raise NotImplementedError
+        repository = StructureRepository(self.cursor)
+        self.cursor.executescript("""
+            INSERT INTO structure VALUES (1, 0.0, 0, 0, 0);
+            INSERT INTO structure VALUES (2, 7.0, 1, 1, 0);
+            INSERT INTO structure VALUES (3, NULL, 1, 0, 0);
+            INSERT INTO structure VALUES (4, 9.0, 1, 1, 1);
+        """)
+
+        self.assertEqual(
+            repository.get_all(),
+            [(4, 9.0, 1, 1, 1), (2, 7.0, 1, 1, 0), (1, 0.0, 0, 0, 0), (3, None, 1, 0, 0)]
+        )
 
     def test_update(self):
         repository = StructureRepository(self.cursor)

@@ -2,7 +2,10 @@
 
 import sqlite3
 
-from toron._typing import Optional
+from toron._typing import (
+    List,
+    Optional,
+)
 
 from .base_classes import Structure, BaseStructureRepository
 
@@ -29,10 +32,14 @@ class StructureRepository(BaseStructureRepository):
             return Structure(*record)
         return None
 
-    #@abstractmethod
-    #def get_all(self) -> Iterable[Structure]:
-    #    """Get all records sorted from most to least granular."""
-    #    raise NotImplementedError
+    def get_all(self) -> List[Structure]:
+        """Get all records sorted from most to least granular."""
+        self._cursor.execute("""
+            SELECT *
+            FROM main.structure
+            ORDER BY _granularity DESC NULLS LAST
+        """)
+        return self._cursor.fetchall()
 
     def update(self, record: Structure) -> None:
         """Update a record in the repository."""
