@@ -254,7 +254,7 @@ def column_def_location(column: str) -> str:
 def column_def_structure(column: str) -> str:
     """Get SQL column definition for 'structure' label column."""
     column = format_identifier(column)
-    return f"{column} INTEGER CHECK ({column} IN (0, 1)) DEFAULT 0"
+    return f"{column} INTEGER NOT NULL CHECK ({column} IN (0, 1)) DEFAULT 0"
 
 
 def create_schema_constraints(cur: sqlite3.Cursor) -> None:
