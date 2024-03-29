@@ -64,10 +64,10 @@ class TestIndexRepository(Bases.TestIndexRepository):
     def test_add(self):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
-            DROP INDEX IF EXISTS unique_nodeindex_index;
-            ALTER TABLE node_index ADD COLUMN A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
-            ALTER TABLE node_index ADD COLUMN B TEXT NOT NULL CHECK (B != '') DEFAULT '-';
-            CREATE UNIQUE INDEX unique_nodeindex_index ON node_index(A, B);
+            DROP INDEX IF EXISTS unique_index_label_columns;
+            ALTER TABLE node_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
+            ALTER TABLE node_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
         """)
 
         repository.add('foo', 'bar')
@@ -88,10 +88,10 @@ class TestIndexRepository(Bases.TestIndexRepository):
     def test_get(self):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
-            DROP INDEX IF EXISTS unique_nodeindex_index;
-            ALTER TABLE node_index ADD COLUMN A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
-            ALTER TABLE node_index ADD COLUMN B TEXT NOT NULL CHECK (B != '') DEFAULT '-';
-            CREATE UNIQUE INDEX unique_nodeindex_index ON node_index(A, B);
+            DROP INDEX IF EXISTS unique_index_label_columns;
+            ALTER TABLE node_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
+            ALTER TABLE node_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
             INSERT INTO node_index VALUES (1, 'foo', 'bar');
             INSERT INTO node_index VALUES (2, 'foo', 'baz');
         """)
@@ -104,10 +104,10 @@ class TestIndexRepository(Bases.TestIndexRepository):
     def test_update(self):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
-            DROP INDEX IF EXISTS unique_nodeindex_index;
-            ALTER TABLE node_index ADD COLUMN A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
-            ALTER TABLE node_index ADD COLUMN B TEXT NOT NULL CHECK (B != '') DEFAULT '-';
-            CREATE UNIQUE INDEX unique_nodeindex_index ON node_index(A, B);
+            DROP INDEX IF EXISTS unique_index_label_columns;
+            ALTER TABLE node_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
+            ALTER TABLE node_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
             INSERT INTO node_index VALUES (1, 'foo', 'bar');
         """)
 
@@ -132,10 +132,10 @@ class TestIndexRepository(Bases.TestIndexRepository):
     def test_delete(self):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
-            DROP INDEX IF EXISTS unique_nodeindex_index;
-            ALTER TABLE node_index ADD COLUMN A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
-            ALTER TABLE node_index ADD COLUMN B TEXT NOT NULL CHECK (B != '') DEFAULT '-';
-            CREATE UNIQUE INDEX unique_nodeindex_index ON node_index(A, B);
+            DROP INDEX IF EXISTS unique_index_label_columns;
+            ALTER TABLE node_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
+            ALTER TABLE node_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
             INSERT INTO node_index VALUES (1, 'foo', 'bar');
             INSERT INTO node_index VALUES (2, 'foo', 'baz');
         """)
