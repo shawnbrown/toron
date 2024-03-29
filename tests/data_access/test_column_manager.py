@@ -107,39 +107,50 @@ class TestColumnManager(Bases.TestColumnManager):
     def concrete_class(self):
         return ColumnManager
 
-    def get_columns(self, table_name):
+    def assertColumnsEqual(self, table_name, expected_columns, msg=None):
         self.cursor.execute(f"PRAGMA main.table_info('{table_name}')")
-        return [row[1] for row in self.cursor.fetchall()]
+        actual_columns = [row[1] for row in self.cursor.fetchall()]
+        self.assertEqual(actual_columns, expected_columns, msg=msg)
+
+    def assertRecordsEqual(self, table_name, expected_records, msg=None):
+        self.cursor.execute(f"SELECT * FROM {table_name}")
+        actual_records = self.cursor.fetchall()
+        self.assertEqual(actual_records, expected_records, msg=msg)
 
     def test_add_columns(self):
         manager = ColumnManager(self.cursor)
 
-        msg = 'before adding label columns, should only contain functional columns'
-        self.assertEqual(self.get_columns('node_index'), ['index_id'], msg=msg)
-        self.assertEqual(self.get_columns('location'), ['_location_id'], msg=msg)
-        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity'], msg=msg)
-
         manager.add_columns('foo', 'bar')
+
+        self.assertColumnsEqual('node_index', ['index_id', 'foo', 'bar'])
+        self.assertColumnsEqual('location', ['_location_id', 'foo', 'bar'])
+        self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'bar'])
+
+    def test_add_columns_special_chars(self):
+        manager = ColumnManager(self.cursor)
+
         manager.add_columns('x "y"')  # <- Check special characters (space and quotes).
 
-        self.assertEqual(self.get_columns('node_index'), ['index_id', 'foo', 'bar', 'x "y"'])
-        self.assertEqual(self.get_columns('location'), ['_location_id', 'foo', 'bar', 'x "y"'])
-        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'foo', 'bar', 'x "y"'])
+        self.assertColumnsEqual('node_index', ['index_id', 'x "y"'])
+        self.assertColumnsEqual('location', ['_location_id', 'x "y"'])
+        self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'x "y"'])
 
     def test_get_columns(self):
+        # Only add to node_index for testing.
+        self.cursor.execute('ALTER TABLE node_index ADD COLUMN "foo"')
+        self.cursor.execute('ALTER TABLE node_index ADD COLUMN "bar"')
         manager = ColumnManager(self.cursor)
 
         actual = manager.get_columns()
-        self.assertEqual(actual, tuple(), msg='should be empty tuple when no label columns')
 
-        # Only add to node_index for testing.
-        self.cursor.executescript("""
-            ALTER TABLE node_index ADD COLUMN "foo";
-            ALTER TABLE node_index ADD COLUMN "bar";
-        """)
+        self.assertEqual(actual, ('foo', 'bar'), msg='should be label columns only, no index_id')
+
+    def test_get_columns_empty(self):
+        manager = ColumnManager(self.cursor)
 
         actual = manager.get_columns()
-        self.assertEqual(actual, ('foo', 'bar'), msg='should be label columns only, no index_id')
+
+        self.assertEqual(actual, tuple(), msg='should be empty tuple when no label columns')
 
     def test_update_columns(self):
         manager = ColumnManager(self.cursor)
@@ -152,13 +163,11 @@ class TestColumnManager(Bases.TestColumnManager):
 
         manager.update_columns({'foo': 'qux', 'bar': 'quux'})
 
-        self.assertEqual(self.get_columns('node_index'), ['index_id', 'qux', 'quux'])
-        self.assertEqual(self.get_columns('location'), ['_location_id', 'qux', 'quux'])
-        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'qux', 'quux'])
-
-        self.cursor.execute('SELECT * FROM node_index')
-        self.assertEqual(
-            self.cursor.fetchall(),
+        self.assertColumnsEqual('node_index', ['index_id', 'qux', 'quux'])
+        self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
+        self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'qux', 'quux'])
+        self.assertRecordsEqual(
+            'node_index',
             [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')],
         )
 
@@ -182,30 +191,30 @@ class TestColumnManager(Bases.TestColumnManager):
             INSERT INTO node_index VALUES (NULL, 'c', 'z', '333', 'three');
         """)
 
-        manager.delete_columns('bar')
+        manager.delete_columns('bar')  # <- Delete 1 column.
 
-        self.assertEqual(self.get_columns('node_index'), ['index_id', 'foo', 'baz', 'qux'])
-        self.assertEqual(self.get_columns('location'), ['_location_id', 'foo', 'baz', 'qux'])
-        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'foo', 'baz', 'qux'])
-
-        self.cursor.execute('SELECT * FROM node_index')
-        self.assertEqual(
-            self.cursor.fetchall(),
+        self.assertColumnsEqual('node_index', ['index_id', 'foo', 'baz', 'qux'])
+        self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
+        self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'baz', 'qux'])
+        self.assertRecordsEqual(
+            'node_index',
             [(0, '-', '-', '-'), (1, 'a', '111', 'one'), (2, 'b', '222', 'two'), (3, 'c', '333', 'three')],
         )
 
-        manager.delete_columns('baz', 'qux')
+        manager.delete_columns('baz', 'qux')  # <- Delete 2 more columns at the same time.
 
-        self.assertEqual(self.get_columns('node_index'), ['index_id', 'foo'])
-        self.assertEqual(self.get_columns('location'), ['_location_id', 'foo'])
-        self.assertEqual(self.get_columns('structure'), ['_structure_id', '_granularity', 'foo'])
-
-        self.cursor.execute('SELECT * FROM node_index')
-        self.assertEqual(
-            self.cursor.fetchall(),
+        self.assertColumnsEqual('node_index', ['index_id', 'foo'])
+        self.assertColumnsEqual('location', ['_location_id', 'foo'])
+        self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo'])
+        self.assertRecordsEqual(
+            'node_index',
             [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
         )
 
+    def test_delete_columns_all(self):
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar')
+
         regex = 'cannot delete all columns'
         with self.assertRaisesRegex(RuntimeError, regex):
-            manager.delete_columns('foo')
+            manager.delete_columns('foo', 'bar')
