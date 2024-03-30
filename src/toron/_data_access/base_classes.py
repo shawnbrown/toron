@@ -21,13 +21,15 @@ from toron._typing import (
 )
 
 
-T = TypeVar('T')
+T1 = TypeVar('T1')
+T2 = TypeVar('T2')
+
 JsonTypes: TypeAlias = Union[
     Dict[str, 'JsonTypes'], List['JsonTypes'], str, int, float, bool, None
 ]
 
 
-class BaseDataConnector(ABC, Generic[T]):
+class BaseDataConnector(ABC, Generic[T1, T2]):
     @abstractmethod
     def __init__(self) -> None:
         """Initialize a new node instance."""
@@ -38,7 +40,7 @@ class BaseDataConnector(ABC, Generic[T]):
         """Unique identifier for the node object."""
 
     @abstractmethod
-    def acquire_resource(self) -> T:
+    def acquire_resource(self) -> T1:
         """Return an appropriate object to interact with a node's data.
 
         If a node's storage backend is a database, the resource
@@ -48,7 +50,7 @@ class BaseDataConnector(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def release_resource(self, resource: T) -> None:
+    def release_resource(self, resource: T1) -> None:
         """Release the acquired data *resource*.
 
         This method should release the given data *resource* object
@@ -59,6 +61,29 @@ class BaseDataConnector(ABC, Generic[T]):
         persistent storage, then this method should release it to
         free up system resources (file handles, network connections,
         etc.).
+        """
+
+    @abstractmethod
+    def acquire_data_reader(self, resource: T1) -> T2:
+        """Return an appropriate object to interact with a node's data.
+
+        If a node's storage backend is a relational database, the
+        *data_reader* might be a DBAPI2 Cursor. If other storage
+        backends are implemented, the *data_reader* could be an HDF5
+        dataset, a Parquet table, etc.
+
+        For certain backends, the "resource" and the "data_reader"
+        might be the same object. If this is the case, then this
+        method should simply return the resource given to it.
+        """
+
+    @abstractmethod
+    def release_data_reader(self, data_reader: T2) -> None:
+        """Release the acquired data *data_reader*.
+
+        If the "resource" and "data_reader" are the same object,
+        this method should pass without doing anything to the object
+        and allow ``release_resource()`` to do the final clean-up.
         """
 
     @abstractmethod
@@ -165,13 +190,7 @@ class BaseIndexRepository(ABC):
     """
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
-        """Initialize a new IndexRepository instance.
-
-        If a node's storage backend is a relational database, the
-        *data_reader* might be a DBAPI2 Cursor. If other storage
-        backends are implemented, the *data_reader* could be an HDF5
-        dataset, a Parquet table, etc.
-        """
+        """Initialize a new IndexRepository instance."""
 
     @abstractmethod
     def add(self, value: str, *values: str) -> None:

@@ -248,7 +248,7 @@ def verify_permissions(
             )
 
 
-class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
+class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
     def __init__(self, cache_to_drive: bool = False) -> None:
         """Initialize a new node instance."""
         self._unique_id: str
@@ -317,6 +317,16 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection]):
         """Close the database connection if node is stored on drive."""
         if self._current_working_path:
             super(ToronSqlite3Connection, resource).close()
+
+    def acquire_data_reader(
+        self, resource: ToronSqlite3Connection
+    ) -> sqlite3.Cursor:
+        """Return a cursor from the given connection."""
+        return resource.cursor()
+
+    def release_data_reader(self, data_reader: sqlite3.Cursor) -> None:
+        """Close the database cursor."""
+        return data_reader.close()
 
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
