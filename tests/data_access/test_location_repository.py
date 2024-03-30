@@ -9,10 +9,6 @@ from toron._data_access.location_repository import LocationRepository
 
 
 class TestLocationRepository(unittest.TestCase):
-    @property
-    def repository_class(self):
-        return LocationRepository
-
     def setUp(self):
         connector = DataConnector()
         resource = connector.acquire_resource()
