@@ -310,6 +310,41 @@ class BaseStructureRepository(ABC):
         """Delete a record from the repository."""
 
 
+@dataclass
+class Weight(object):
+    """Weight record."""
+    id: int
+    weighting_id: int
+    index_id: int
+    value: float
+
+
+class BaseWeightRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new repository instance."""
+
+    @abstractmethod
+    def add(self, weighting_id: int, index_id: int, value: int) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Weight]:
+        """Get a record from the repository."""
+
+    @abstractmethod
+    def update(self, record: Weight) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int):
+        """Delete a record from the repository."""
+
+    #@abstractmethod
+    #def find_by_weighting_id(self, weighting_id: int) -> Iterable[Weight]:
+    #    """Filter to records associated with the given weighting."""
+
+
 class BasePropertyRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
