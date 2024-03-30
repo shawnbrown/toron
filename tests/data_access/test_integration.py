@@ -11,6 +11,7 @@ from contextlib import closing
 #######################################################################
 
 from toron._data_access.base_classes import BaseDataConnector
+from toron._data_access.base_classes import BasePropertyRepository
 
 
 class DataConnectorBaseTest(ABC):
@@ -86,14 +87,80 @@ class DataConnectorBaseTest(ABC):
                 self.connector_class.from_file(file_path)
 
 
+class PropertyRepositoryBaseTest(ABC):
+    @property
+    @abstractmethod
+    def connector_class(self):
+        ...
+
+    @property
+    @abstractmethod
+    def repository_class(self):
+        ...
+
+    def setUp(self):
+        connector = self.connector_class()
+        resource = connector.acquire_resource()
+        self.addCleanup(lambda: connector.release_resource(resource))
+
+        data_reader = connector.acquire_data_reader(resource)
+        self.addCleanup(lambda: connector.release_resource(data_reader))
+
+        self.repository = self.repository_class(data_reader)
+
+    def test_inheritance(self):
+        """Should subclass from appropriate abstract base class."""
+        self.assertTrue(issubclass(self.repository_class, BasePropertyRepository))
+
+    def test_initial_properties(self):
+        """Before adding any new properties, a newly-created node
+        should have three pre-set keys:
+
+        * toron_schema_version
+        * toron_app_version
+        * unique_id
+        """
+        repository = self.repository
+
+        self.assertIsNotNone(repository.get('toron_schema_version'))
+        self.assertIsNotNone(repository.get('toron_app_version'))
+        self.assertIsNotNone(repository.get('unique_id'))
+
+    def test_integration(self):
+        """Test interoperation of add, get, update, and delete."""
+        repository = self.repository
+
+        value = {'foo': ['bar', 1234, 1234.5, True, False, None]}
+        repository.add('foo', value)
+        self.assertEqual(repository.get('foo'), value)
+
+        value = {'baz': 42, 'qux': [True, False]}
+        repository.update('foo', value)
+        self.assertEqual(repository.get('foo'), value)
+
+        repository.delete('foo')
+        self.assertIsNone(repository.get('foo'))
+
+
 #######################################################################
 # Concrete Test Cases for SQLite Backend
 #######################################################################
 
 from toron._data_access.data_connector import DataConnector
+from toron._data_access.property_repository import PropertyRepository
 
 
 class TestDataConnectorSqlite(DataConnectorBaseTest, unittest.TestCase):
     @property
     def connector_class(self):
         return DataConnector
+
+
+class PropertyRepositorySqlite(PropertyRepositoryBaseTest, unittest.TestCase):
+    @property
+    def connector_class(self):
+        return DataConnector
+
+    @property
+    def repository_class(self):
+        return PropertyRepository
