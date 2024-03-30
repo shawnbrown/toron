@@ -345,6 +345,44 @@ class BaseWeightRepository(ABC):
     #    """Filter to records associated with the given weighting."""
 
 
+@dataclass
+class Weighting(object):
+    """Weighting record."""
+    id: int
+    name: str
+    description: Optional[str]
+    selectors: Optional[Sequence[str]]
+    is_complete: bool = False
+
+
+class BaseWeightingRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new repository instance."""
+
+    @abstractmethod
+    def add(
+        self,
+        name: str,
+        description: Optional[str],
+        selectors: Optional[Union[Sequence[str], str]],
+        is_complete: bool = False,
+    ) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Weighting]:
+        """Get a record from the repository."""
+
+    @abstractmethod
+    def update(self, record: Weighting) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int):
+        """Delete a record from the repository."""
+
+
 class BasePropertyRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
