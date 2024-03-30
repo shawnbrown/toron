@@ -2,8 +2,6 @@
 
 import sqlite3
 import unittest
-from abc import ABC, abstractmethod
-from types import SimpleNamespace
 
 from toron._data_access.data_connector import DataConnector
 from toron._data_access.base_classes import BaseColumnManager
@@ -64,48 +62,23 @@ class TestVerifyForeignKeyCheck(unittest.TestCase):
             verify_foreign_key_check(self.cursor)
 
 
-class Bases(SimpleNamespace):
-    """Wrapping TestCase base classes to prevent test discovery."""
-
-    class TestColumnManager(ABC, unittest.TestCase):
-        @property
-        @abstractmethod
-        def concrete_class(self):
-            """The concrete class to be tested."""
-            return NotImplemented
-
-        def setUp(self):
-            connector = DataConnector()
-            resource = connector.acquire_resource()
-            self.addCleanup(lambda: connector.release_resource(resource))
-
-            self.cursor = resource.cursor()
-
-        def test_inheritance(self):
-            """Should subclass from appropriate abstract base class."""
-            self.assertTrue(issubclass(self.concrete_class, BaseColumnManager))
-
-        @abstractmethod
-        def test_add_columns(self):
-            ...
-
-        @abstractmethod
-        def test_get_columns(self):
-            ...
-
-        @abstractmethod
-        def test_update_columns(self):
-            ...
-
-        @abstractmethod
-        def test_delete_columns(self):
-            ...
-
-
-class TestColumnManager(Bases.TestColumnManager):
+class TestColumnManager(unittest.TestCase):
     @property
     def concrete_class(self):
         return ColumnManager
+
+    def setUp(self):
+        connector = DataConnector()
+        resource = connector.acquire_resource()
+        self.addCleanup(lambda: connector.release_resource(resource))
+
+        self.cursor = resource.cursor()
+        self.addCleanup(self.cursor.close)
+
+    def test_inheritance(self):
+        """Should subclass from appropriate abstract base class."""
+        manager = ColumnManager(self.cursor)
+        self.assertTrue(isinstance(manager, BaseColumnManager))
 
     def assertColumnsEqual(self, table_name, expected_columns, msg=None):
         self.cursor.execute(f"PRAGMA main.table_info('{table_name}')")

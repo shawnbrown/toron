@@ -2,64 +2,28 @@
 
 import sqlite3
 import unittest
-from abc import ABC, abstractmethod
-from types import SimpleNamespace
 
 from toron._data_access.data_connector import DataConnector
 from toron._data_access.base_classes import Index, BaseIndexRepository
 from toron._data_access.index_repository import IndexRepository
 
 
-class Bases(SimpleNamespace):
-    """Wrapping TestCase base classes to prevent test discovery."""
-
-    class TestIndexRepository(ABC, unittest.TestCase):
-        @property
-        @abstractmethod
-        def repository_class(self):
-            """The concrete class to be tested."""
-            return NotImplemented
-
-        def setUp(self):
-            connector = DataConnector()
-            resource = connector.acquire_resource()
-            self.addCleanup(lambda: connector.release_resource(resource))
-
-            self.cursor = resource.cursor()
-
-        def test_inheritance(self):
-            """Should subclass from appropriate abstract base class."""
-            self.assertTrue(issubclass(self.repository_class, BaseIndexRepository))
-
-        @abstractmethod
-        def test_add(self):
-            ...
-
-        @abstractmethod
-        def test_get(self):
-            ...
-
-        @abstractmethod
-        def test_update(self):
-            ...
-
-        @abstractmethod
-        def test_delete(self):
-            ...
-
-        #@abstractmethod
-        #def test_get_all(self):
-        #    ...
-
-        #@abstractmethod
-        #def test_find(self):
-        #    ...
-
-
-class TestIndexRepository(Bases.TestIndexRepository):
+class TestIndexRepository(unittest.TestCase):
     @property
     def repository_class(self):
         return IndexRepository
+
+    def setUp(self):
+        connector = DataConnector()
+        resource = connector.acquire_resource()
+        self.addCleanup(lambda: connector.release_resource(resource))
+
+        self.cursor = resource.cursor()
+        self.addCleanup(self.cursor.close)
+
+    def test_inheritance(self):
+        """Should subclass from appropriate abstract base class."""
+        self.assertTrue(issubclass(IndexRepository, BaseIndexRepository))
 
     def test_add(self):
         repository = IndexRepository(self.cursor)
