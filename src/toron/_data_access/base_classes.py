@@ -451,6 +451,52 @@ class BaseAttributeRepository(ABC):
     #    """Filter to records associated matching the given criteria."""
 
 
+@dataclass
+class Relation(object):
+    """Relation record."""
+    id: int
+    edge_id: int
+    other_index_id: int
+    index_id: int
+    value: float
+    proportion: Optional[float] = None
+    mapping_level: Optional[bytes] = None
+
+
+class BaseRelationRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new repository instance."""
+
+    @abstractmethod
+    def add(
+        self,
+        edge_id: int,
+        other_index_id: int,
+        index_id: int,
+        value: float,
+        proportion: Optional[float] = None,
+        mapping_level: Optional[bytes] = None,
+    ) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Relation]:
+        """Get a record from the repository."""
+
+    @abstractmethod
+    def update(self, record: Relation) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int):
+        """Delete a record from the repository."""
+
+    #@abstractmethod
+    #def find_by_edge_id(self, edge_id: int) -> Iterable[Relation]:
+    #    """Filter to records associated with the given edge."""
+
+
 class BasePropertyRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
