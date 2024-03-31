@@ -211,7 +211,7 @@ class TestNodeWrapperMethods(unittest.TestCase):
 
         self.cursor.execute('SELECT * FROM weighting')
         expected = [
-            (1, 'wght1', None, [SimpleSelector('attr1')], 1),
+            (1, 'wght1', None, ['[attr1]'], 1),
         ]
         self.assertEqual(self.cursor.fetchall(), expected)
 

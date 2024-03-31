@@ -23,6 +23,7 @@ from ._selectors import (
     CompoundSelector,
     SimpleSelector,
     accepts_json_input,
+    parse_selector,
     GetMatchingKey,
 )
 from ._typing import (
@@ -2021,7 +2022,11 @@ class DataAccessLayer(object):
                 FROM main.weighting
                 WHERE is_complete=1
             """)
-            match_weighting_id = GetMatchingKey(cur.fetchall(), default=1)
+
+            ## TEMPORARY PATCH FOR REFACTORING
+            parse_all = lambda y: [parse_selector(z) for z in y]
+            list_of_selectors = [(x, parse_all(y)) for (x, y) in cur.fetchall()]
+            match_weighting_id = GetMatchingKey(list_of_selectors, default=1)  # type: ignore [arg-type]
             weighting_func_name = _schema.get_userfunc(cur, match_weighting_id)
 
             # Get column names from 'location'.
@@ -2168,7 +2173,11 @@ class DataAccessLayer(object):
                 FROM main.weighting
                 WHERE is_complete=1
             """)
-            match_weighting_id = GetMatchingKey(cur.fetchall(), default=1)
+
+            ## TEMPORARY PATCH FOR REFACTORING
+            parse_all = lambda y: [parse_selector(z) for z in y]
+            list_of_selectors = [(x, parse_all(y)) for (x, y) in cur.fetchall()]
+            match_weighting_id = GetMatchingKey(list_of_selectors, default=1)  # type: ignore [arg-type]
             weighting_func_name = _schema.get_userfunc(cur, match_weighting_id)
 
             # Get bitmask levels from structure table.
@@ -3169,7 +3178,11 @@ class DataAccessLayer(object):
             WHERE other_unique_id=? AND is_locally_complete=1
         """
         cursor.execute(sql, (data.unique_id,))
-        get_edge_id = GetMatchingKey(cursor.fetchall(), default=default_edge_id)
+
+        ## TEMPORARY PATCH FOR REFACTORING
+        parse_all = lambda y: [parse_selector(z) for z in y]
+        list_of_selectors = [(x, parse_all(y)) for (x, y) in cursor.fetchall()]
+        get_edge_id = GetMatchingKey(list_of_selectors, default=default_edge_id)  # type: ignore [arg-type]
 
         grouped = groupby(data, key=lambda x: x[0])  # Group by other_index_id.
 

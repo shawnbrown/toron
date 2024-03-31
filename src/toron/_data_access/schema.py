@@ -69,14 +69,13 @@ from toron._typing import (
     Final,
     Optional,
 )
-from toron._selectors import convert_text_selectors
 from toron._utils import BitFlags
 
 
 sqlite3.register_converter('TEXT_JSON', json_loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', json_loads)
 sqlite3.register_converter('TEXT_USERPROPERTIES', json_loads)
-sqlite3.register_converter('TEXT_SELECTORS', convert_text_selectors)
+sqlite3.register_converter('TEXT_SELECTORS', json_loads)
 sqlite3.register_converter('BLOB_BITFLAGS', BitFlags)
 
 sqlite3.register_adapter(BitFlags, bytes)

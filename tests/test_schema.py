@@ -1025,7 +1025,7 @@ class TestJsonConversion(unittest.TestCase):
             ('foo', r'["[bar=\"baz\"]"]')
         )
         self.cur.execute("SELECT selectors FROM weighting WHERE name='foo'")
-        self.assertEqual(self.cur.fetchall(), [([SimpleSelector('bar', '=', 'baz')],)])
+        self.assertEqual(self.cur.fetchall(), [(['[bar="baz"]'],)])
 
 
 class TestSavepoint(unittest.TestCase):

@@ -700,7 +700,7 @@ class TestRegisteredConverters(unittest.TestCase):
             ('myname', r'["[a=\"one\"]", "[b]"]'),
         )
         cur.execute('SELECT selectors FROM weighting')
-        self.assertEqual(cur.fetchall(), [([SimpleSelector('a', '=', 'one'), SimpleSelector('b')],)])
+        self.assertEqual(cur.fetchall(), [(['[a="one"]', '[b]'],)])
 
     def test_converter_blob_bitflags(self):
         cur = self.cur.executescript("""

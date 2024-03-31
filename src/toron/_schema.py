@@ -78,7 +78,6 @@ from ._typing import (
 from urllib.parse import quote as urllib_parse_quote
 
 from ._utils import ToronError, BitFlags
-from ._selectors import convert_text_selectors
 
 
 _schema_script = """
@@ -213,7 +212,7 @@ finally:
 
 sqlite3.register_converter('TEXT_JSON', _loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
-sqlite3.register_converter('TEXT_SELECTORS', convert_text_selectors)
+sqlite3.register_converter('TEXT_SELECTORS', _loads)
 sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 
 sqlite3.register_adapter(BitFlags, bytes)

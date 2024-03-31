@@ -1769,7 +1769,7 @@ class TestAddWeightsGetNewId(unittest.TestCase):
         weighting_id = func(self.cur, name, selectors=selectors, description=description)  # <- Test the function.
 
         actual = self.cur.execute('SELECT * FROM weighting').fetchall()
-        expected = [(1, name, description, [SimpleSelector('category', '=', 'stuff')], 0)]
+        expected = [(1, name, description, ['[category="stuff"]'], 0)]
         self.assertEqual(actual, expected)
 
         msg = 'retrieved weighting_id should be same as returned from function'
@@ -2059,7 +2059,6 @@ class TestAddWeights(unittest.TestCase):
             ('12', '003', '040102',  17),
         }
         self.assertEqual(set(self.cursor.fetchall()), expected)
-
 
     @unittest.expectedFailure
     def test_match_by_index_id(self):
@@ -3838,7 +3837,7 @@ class TestAddEdgeGetNewId(unittest.TestCase):
             1,                                      # edge_id
             'edge 1',                               # name
             'Edge number one.',                     # description
-            [SimpleSelector('foo', '=', 'bar')],    # selectors
+            ['[foo="bar"]'],                        # selectors
             None,                                   # user_properties
             '00000000-0000-0000-0000-000000000000', # other_unique_id
             'other-node-1.toron',                   # other_filename_hint
@@ -4361,7 +4360,7 @@ class TestAddEdge(unittest.TestCase):
             1,
             'edge 1',
             'Edge one description.',
-            [SimpleSelector('foo', '=', 'bar')],
+            ['[foo="bar"]'],
             None,
             '00000000-0000-0000-0000-000000000000',
             'other-file.toron',
@@ -4532,7 +4531,7 @@ class TestEditIncomingEdge(unittest.TestCase):
             1,
             'edge 1',
             'An updated description for Edge One.',
-            [SimpleSelector('foo', '=', 'baz')],
+            ['[foo="baz"]'],
             None,
             '0000-00-00-00-000000',
             'updated-file-name.toron',
@@ -4579,7 +4578,7 @@ class TestEditIncomingEdge(unittest.TestCase):
             1,
             'edge 1',
             'An updated description for Edge One.',  # <- Updated description.
-            [SimpleSelector('foo', '=', 'bar')],
+            ['[foo="bar"]'],
             None,
             '0000-00-00-00-000000',
             'other-file.toron',
@@ -4601,7 +4600,7 @@ class TestEditIncomingEdge(unittest.TestCase):
             1,
             'edge 1',
             'A description of Edge One.',
-            [SimpleSelector('foo', '=', 'baz')],  # <- Updated selectors.
+            ['[foo="baz"]'],  # <- Updated selectors.
             None,
             '0000-00-00-00-000000',
             'other-file.toron',
@@ -4623,7 +4622,7 @@ class TestEditIncomingEdge(unittest.TestCase):
             1,
             'edge 1',
             'A description of Edge One.',
-            [SimpleSelector('foo', '=', 'bar')],
+            ['[foo="bar"]'],
             None,
             '0000-00-00-00-000000',
             'updated-file-name.toron',  # <- Updated filename_hint.
