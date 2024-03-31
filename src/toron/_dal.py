@@ -62,9 +62,9 @@ from ._utils import (
     make_hash,
     eagerly_initialize,
     NOVALUE,
-    BitFlags,
     QuantityIterator,
 )
+from ._schema import BitFlags2
 
 
 NoValueType: TypeAlias = NOVALUE.__class__
@@ -1054,13 +1054,13 @@ class DataAccessLayer(object):
         # Make new mapping levels for remaining columns.
         selectors = tuple((col in names_remaining) for col in column_names)
         new_mapping_levels = [
-            BitFlags(compress(x, selectors)) for x in old_mapping_levels
+            BitFlags2(compress(x, selectors)) for x in old_mapping_levels
         ]
 
         # Get the set of mapping levels allowed by the new structure.
         cursor.execute('SELECT * FROM main.structure')
-        allowed_levels = {BitFlags(row[2:]) for row in cursor}
-        allowed_levels.remove(BitFlags())  # All 0s mapping_level not allowed.
+        allowed_levels = {BitFlags2(row[2:]) for row in cursor}
+        allowed_levels.remove(BitFlags2())  # All 0s mapping_level not allowed.
 
         # Find mapping levels that would become unrepresentable.
         unrepresentable = []
@@ -1091,7 +1091,7 @@ class DataAccessLayer(object):
                 )
 
         # Update mapping_level values.
-        parameters: Iterable[Tuple[BitFlags, BitFlags]]
+        parameters: Iterable[Tuple[BitFlags2, BitFlags2]]
         parameters = zip(new_mapping_levels, old_mapping_levels)
         parameters = ((a, b) for (a, b) in parameters if a != b)
         cursor.executemany(
@@ -2635,7 +2635,7 @@ class DataAccessLayer(object):
     def _add_edge_relations(
         cursor: sqlite3.Cursor,
         edge_id: int,
-        relations: Iterable[Tuple[int, int, float, Union[BitFlags, None]]],
+        relations: Iterable[Tuple[int, int, float, Union[BitFlags2, None]]],
     ) -> None:
         """Add incoming edge from other node.
 
@@ -2767,7 +2767,7 @@ class DataAccessLayer(object):
         self,
         unique_id: str,
         name: str,
-        relations: Iterable[Tuple[int, int, float, Union[BitFlags, None]]],
+        relations: Iterable[Tuple[int, int, float, Union[BitFlags2, None]]],
         description: Union[str, None, NoValueType] = NOVALUE,
         selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
         filename_hint: Union[str, None, NoValueType] = NOVALUE,
@@ -2782,7 +2782,7 @@ class DataAccessLayer(object):
             from.
         name : str
             A name used to identify the edge.
-        relations : Iterable[Tuple[int, int, float, Union[BitFlags, None]]]
+        relations : Iterable[Tuple[int, int, float, Union[BitFlags2, None]]]
             An iterable of tuples containing the relationship
             information. Each tuple should contain four items:
             (other_index_id, index_id, relation_value, mapping_level)
@@ -3059,10 +3059,10 @@ class DataAccessLayer(object):
             )
             cursor.execute(sql, parameters)
 
-            # Define helper function to replace BitFlags with description
+            # Define helper function to replace BitFlags2 with description
             # of columns that were left unspecified in original mapping.
             def func(row):
-                mapping_level = row[-1]  # Last value is BitFlags or None.
+                mapping_level = row[-1]  # Last value is BitFlags2 or None.
                 if mapping_level is None:
                     return row  # <- EXIT! Return unchanged.
                 inverted_level = [(not bit) for bit in mapping_level]

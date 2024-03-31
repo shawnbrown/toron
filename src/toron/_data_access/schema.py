@@ -76,9 +76,7 @@ sqlite3.register_converter('TEXT_JSON', json_loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', json_loads)
 sqlite3.register_converter('TEXT_USERPROPERTIES', json_loads)
 sqlite3.register_converter('TEXT_SELECTORS', json_loads)
-sqlite3.register_converter('BLOB_BITFLAGS', BitFlags)
 
-sqlite3.register_adapter(BitFlags, bytes)
 
 with closing(sqlite3.connect(':memory:')) as _con:
     # Check for SQLite compile-time options. When SQLite is compiled,

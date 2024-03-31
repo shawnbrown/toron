@@ -559,7 +559,7 @@ class TestCreateToronApplyBitFlag(unittest.TestCase):
         create_toron_apply_bit_flag(self.con)
 
     def test_basic_handling(self):
-        bit_flags = BitFlags(1, 0, 1)
+        bit_flags = bytes(BitFlags(1, 0, 1))
 
         cur = self.con.execute(
             'SELECT toron_apply_bit_flag(?, ?, ?)',
@@ -587,7 +587,7 @@ class TestCreateToronApplyBitFlag(unittest.TestCase):
         self.assertEqual(cur.fetchall(), [('foo',)])
 
     def test_index_out_of_range(self):
-        bit_flags = BitFlags(1, 0, 1)
+        bit_flags = bytes(BitFlags(1, 0, 1))
 
         cur = self.con.execute(
             'SELECT toron_apply_bit_flag(?, ?, ?)',
@@ -703,10 +703,16 @@ class TestRegisteredConverters(unittest.TestCase):
         self.assertEqual(cur.fetchall(), [(['[a="one"]', '[b]'],)])
 
     def test_converter_blob_bitflags(self):
+        # NOTE: Toron used to use a BitFlags converter but not any more.
+        # The blob should be returned unchanged (as a bytes object).
         cur = self.cur.executescript("""
-            INSERT INTO node_index (index_id) VALUES (1);
-            INSERT INTO edge (edge_id, name, other_unique_id) VALUES (1, 'name', '11-1-11');
-            INSERT INTO relation (edge_id, other_index_id, index_id, relation_value, mapping_level) VALUES (1, 1, 1, 25.0, X'A0');
+            INSERT INTO node_index (index_id)
+                VALUES (1);
+            INSERT INTO edge (edge_id, name, other_unique_id)
+                VALUES (1, 'name', '11-1-11');
+            INSERT INTO relation (edge_id, other_index_id, index_id, relation_value, mapping_level)
+                VALUES (1, 1, 1, 25.0, X'A0');
         """)
         cur.execute('SELECT mapping_level FROM relation')
-        self.assertEqual(cur.fetchall(), [(BitFlags(1, 0, 1),)])
+        #self.assertEqual(cur.fetchall(), [(BitFlags(1, 0, 1),)])
+        self.assertEqual(cur.fetchall(), [(b'\xa0',)])

@@ -110,7 +110,7 @@ _schema_script = """
         index_id INTEGER,
         relation_value REAL NOT NULL CHECK (0.0 <= relation_value),
         proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
-        mapping_level BLOB_BITFLAGS,
+        mapping_level BLOB_BITFLAGS2,
         FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
         FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
         UNIQUE (edge_id, other_index_id, index_id)
@@ -215,8 +215,11 @@ sqlite3.register_converter('TEXT_ATTRIBUTES', _loads)
 sqlite3.register_converter('TEXT_SELECTORS', _loads)
 sqlite3.register_converter('TEXT_USERPROPERTIES', _loads)
 
-sqlite3.register_adapter(BitFlags, bytes)
-sqlite3.register_converter('BLOB_BITFLAGS', BitFlags)
+
+# PATCH FOR REFACTORING
+class BitFlags2(BitFlags): pass
+sqlite3.register_adapter(BitFlags2, bytes)
+sqlite3.register_converter('BLOB_BITFLAGS2', BitFlags2)
 
 
 def normalize_identifier(value: str) -> str:
@@ -349,7 +352,7 @@ def _user_apply_bit_flag(
 ) -> Optional[str]:
     """Return value or None depending on specified bit flag. This
     function can be registered with SQLite to handle "mapping_level"
-    values (which are BLOB_BITFLAGS) in the "relation" table.
+    values (which are BLOB_BITFLAGS2) in the "relation" table.
 
     :param bit_flags: A bytes object, suitable for interpretation as
         a sequence of bits, or a BitFlags object.

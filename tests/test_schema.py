@@ -14,7 +14,7 @@ from stat import S_IRUSR, S_IWUSR
 from .common import TempDirTestCase
 
 from toron._typing import Generator
-from toron._utils import ToronError, BitFlags
+from toron._utils import ToronError
 from toron._selectors import SimpleSelector
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
@@ -38,6 +38,7 @@ from toron._schema import (
     _USERFUNC_NAME_GENERATOR,
     _sql_function_exists,
     get_userfunc,
+    BitFlags2,
 )
 
 
@@ -142,7 +143,7 @@ class TestSqlStringLiteral(unittest.TestCase):
 
 class TestUserApplyBitFlag(unittest.TestCase):
     def test_basic_handling(self):
-        bit_flags = BitFlags(1, 0, 1)
+        bit_flags = BitFlags2(1, 0, 1)
 
         result = _user_apply_bit_flag('foo', bit_flags, 0)
         self.assertEqual(result, 'foo')
@@ -170,7 +171,7 @@ class TestUserApplyBitFlag(unittest.TestCase):
         self.assertEqual(result, 'foo')
 
     def test_index_out_of_range(self):
-        bit_flags = BitFlags(1, 0, 1)
+        bit_flags = BitFlags2(1, 0, 1)
         result = _user_apply_bit_flag('qux', bit_flags, 9)  # <- No index `9` in `self.bit_flags`.
         self.assertEqual(result, None)
 
@@ -973,11 +974,11 @@ class TestBitFlagsConversionAndAdaptation(unittest.TestCase):
         return [row[0] for row in self.cur.fetchall()]
 
     def test_basic_roundtrip(self):
-        bit_list = BitFlags(0, 1, 0, 0, 0, 1, 0, 1)
+        bit_list = BitFlags2(0, 1, 0, 0, 0, 1, 0, 1)
         self.insert_mapping_level(bit_list)  # <- Store BitFlags as bytes.
         result = self.get_mapping_levels()  # <- Retrieve BitFlags from bytes.
 
-        self.assertIsInstance(result[0], BitFlags)
+        self.assertIsInstance(result[0], BitFlags2)
         self.assertEqual(result, [bit_list])
 
     def test_raw_bytes(self):
@@ -985,8 +986,8 @@ class TestBitFlagsConversionAndAdaptation(unittest.TestCase):
         self.insert_mapping_level(raw_bytes)  # <- Store raw bytes (as bytes).
         result = self.get_mapping_levels()  # <- Retrieve BitFlags from bytes.
 
-        self.assertIsInstance(result[0], BitFlags)
-        self.assertEqual(result, [BitFlags(raw_bytes)])
+        self.assertIsInstance(result[0], BitFlags2)
+        self.assertEqual(result, [BitFlags2(raw_bytes)])
 
 
 class TestJsonConversion(unittest.TestCase):
