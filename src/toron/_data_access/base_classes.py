@@ -418,6 +418,39 @@ class BaseQuantityRepository(ABC):
     #    """Filter to records associated with the given attribute."""
 
 
+@dataclass
+class Attribute(object):
+    """Attribute record."""
+    id: int
+    value: Dict[str, str]
+
+
+class BaseAttributeRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new repository instance."""
+
+    @abstractmethod
+    def add(self, value: Dict[str, str]) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Attribute]:
+        """Get a record from the repository."""
+
+    @abstractmethod
+    def update(self, record: Attribute) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int):
+        """Delete a record from the repository."""
+
+    #@abstractmethod
+    #def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
+    #    """Filter to records associated matching the given criteria."""
+
+
 class BasePropertyRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
