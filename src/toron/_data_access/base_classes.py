@@ -398,7 +398,7 @@ class BaseQuantityRepository(ABC):
         """Initialize a new repository instance."""
 
     @abstractmethod
-    def add(self, location_id: int, attribute_id: int, value: int) -> None:
+    def add(self, location_id: int, attribute_id: int, value: float) -> None:
         """Add a record to the repository."""
 
     @abstractmethod

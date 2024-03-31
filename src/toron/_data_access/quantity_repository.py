@@ -13,7 +13,7 @@ class QuantityRepository(BaseQuantityRepository):
         """Initialize a new repository instance."""
         self._cursor = data_reader
 
-    def add(self, location_id: int, attribute_id: int, value: int) -> None:
+    def add(self, location_id: int, attribute_id: int, value: float) -> None:
         """Add a record to the repository."""
         sql = """
             INSERT INTO main.quantity (_location_id, attribute_id, quantity_value)
