@@ -383,6 +383,41 @@ class BaseWeightingRepository(ABC):
         """Delete a record from the repository."""
 
 
+@dataclass
+class Quantity(object):
+    """Quantity record."""
+    id: int
+    location_id: int
+    attribute_id: int
+    value: float
+
+
+class BaseQuantityRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new repository instance."""
+
+    @abstractmethod
+    def add(self, location_id: int, attribute_id: int, value: int) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Quantity]:
+        """Get a record from the repository."""
+
+    @abstractmethod
+    def update(self, record: Quantity) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int):
+        """Delete a record from the repository."""
+
+    #@abstractmethod
+    #def find_by_attribute_id(self, attribute_id: int) -> Iterable[Quantity]:
+    #    """Filter to records associated with the given attribute."""
+
+
 class BasePropertyRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
