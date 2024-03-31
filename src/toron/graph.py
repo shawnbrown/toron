@@ -54,12 +54,13 @@ def add_edge(
         mapper.find_matches(left_node, 'left', match_limit, weight_name, allow_overlapping)
         mapper.find_matches(right_node, 'right', match_limit, weight_name, allow_overlapping)
 
+        # NOTE: `type: ignore` comments added for refactoring--remove when finished.
         if '<' in direction:
             relations = mapper.get_relations('left')
             left_node._dal.add_incoming_edge(
                 unique_id=right_node._dal.unique_id,
                 name=name,
-                relations=relations,
+                relations=relations,  # type: ignore [arg-type]
                 selectors=selectors,
                 filename_hint=right_node._dal.data_source or NOVALUE,
             )
@@ -69,7 +70,7 @@ def add_edge(
             right_node._dal.add_incoming_edge(
                 unique_id=left_node._dal.unique_id,
                 name=name,
-                relations=relations,
+                relations=relations,  # type: ignore [arg-type]
                 selectors=selectors,
                 filename_hint=left_node._dal.data_source or NOVALUE,
             )
