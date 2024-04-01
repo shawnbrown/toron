@@ -38,7 +38,7 @@ class AttributeRepository(BaseAttributeRepository):
             (json_dumps(record.value, sort_keys=True), record.id),
         )
 
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
             'DELETE FROM main.attribute WHERE attribute_id=?', (id,)

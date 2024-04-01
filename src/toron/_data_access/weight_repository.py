@@ -43,7 +43,7 @@ class WeightRepository(BaseWeightRepository):
         """
         self._cursor.execute(sql, asdict(record))
 
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
             'DELETE FROM main.weight WHERE weight_id=?', (id,)

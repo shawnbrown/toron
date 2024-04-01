@@ -52,7 +52,7 @@ class StructureRepository(BaseStructureRepository):
         parameters = (record.granularity,) + record.values + (record.id,)
         self._cursor.execute(sql, parameters)
 
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
             'DELETE FROM main.structure WHERE _structure_id=?', (id,)

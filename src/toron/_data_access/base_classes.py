@@ -205,7 +205,7 @@ class BaseIndexRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
     #@abstractmethod
@@ -242,7 +242,7 @@ class BaseLocationRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
     #def filter_by_structure(self, structure: Structure) -> Iterable[Location]:
@@ -306,7 +306,7 @@ class BaseStructureRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
 
@@ -337,7 +337,7 @@ class BaseWeightRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
     #@abstractmethod
@@ -379,7 +379,7 @@ class BaseWeightingRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
 
@@ -410,7 +410,7 @@ class BaseQuantityRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
     #@abstractmethod
@@ -443,7 +443,7 @@ class BaseAttributeRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
     #@abstractmethod
@@ -489,7 +489,7 @@ class BaseRelationRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
     #@abstractmethod
@@ -521,5 +521,5 @@ class BasePropertyRepository(ABC):
         """Update an item in the repository."""
 
     @abstractmethod
-    def delete(self, key: str):
+    def delete(self, key: str) -> None:
         """Remove an item from the repository."""
