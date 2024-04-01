@@ -4,8 +4,8 @@ import sqlite3
 from json import dumps as json_dumps
 
 from toron._typing import (
+    List,
     Optional,
-    Sequence,
     Union,
 )
 
@@ -21,7 +21,7 @@ class WeightingRepository(BaseWeightingRepository):
         self,
         name: str,
         description: Optional[str] = None,
-        selectors: Optional[Union[Sequence[str], str]] = None,
+        selectors: Optional[Union[List[str], str]] = None,
         is_complete: bool = False,
     ) -> None:
         """Add a record to the repository."""

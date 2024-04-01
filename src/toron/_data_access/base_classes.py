@@ -12,7 +12,6 @@ from toron._typing import (
     Literal,
     Optional,
     Self,
-    Sequence,
     Tuple,
     TypeAlias,
     TypeVar,
@@ -351,7 +350,7 @@ class Weighting(object):
     id: int
     name: str
     description: Optional[str]
-    selectors: Optional[Sequence[str]]
+    selectors: Optional[List[str]]
     is_complete: bool = False
 
 
@@ -365,7 +364,7 @@ class BaseWeightingRepository(ABC):
         self,
         name: str,
         description: Optional[str],
-        selectors: Optional[Union[Sequence[str], str]],
+        selectors: Optional[Union[List[str], str]],
         is_complete: bool = False,
     ) -> None:
         """Add a record to the repository."""
