@@ -496,6 +496,55 @@ class BaseRelationRepository(ABC):
     #    """Filter to records associated with the given edge."""
 
 
+@dataclass
+class Edge(object):
+    """Edge record."""
+    id: int
+    name: str
+    other_unique_id: str
+    other_filename_hint: Optional[str] = None
+    other_index_hash: Optional[str] = None
+    description: Optional[str] = None
+    selectors: Optional[List[str]] = None
+    user_properties: Optional[Dict[str, JsonTypes]] = None
+    is_locally_complete: bool = False
+    is_default: bool = False
+
+
+class BaseEdgeRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new repository instance."""
+
+    @abstractmethod
+    def add(
+        self,
+        name: str,
+        other_unique_id: str,
+        *,
+        other_filename_hint: Optional[str] = None,
+        other_index_hash: Optional[str] = None,
+        description: Optional[str] = None,
+        selectors: Optional[Union[List[str], str]] = None,
+        user_properties: Optional[Dict[str, JsonTypes]] = None,
+        is_locally_complete: bool = False,
+        is_default: bool = False,
+    ) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Edge]:
+        """Get a record from the repository."""
+
+    @abstractmethod
+    def update(self, record: Edge) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int) -> None:
+        """Delete a record from the repository."""
+
+
 class BasePropertyRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
