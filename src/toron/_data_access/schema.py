@@ -72,10 +72,10 @@ from toron._typing import (
 from toron._utils import BitFlags
 
 
-sqlite3.register_converter('TEXT_JSON', json_loads)
+sqlite3.register_converter('TEXT_SELECTORS', json_loads)
 sqlite3.register_converter('TEXT_ATTRIBUTES', json_loads)
 sqlite3.register_converter('TEXT_USERPROPERTIES', json_loads)
-sqlite3.register_converter('TEXT_SELECTORS', json_loads)
+sqlite3.register_converter('TEXT_JSON', json_loads)
 
 
 with closing(sqlite3.connect(':memory:')) as _con:
@@ -112,6 +112,56 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     cur.executescript("""
         PRAGMA foreign_keys = ON;
 
+        CREATE TABLE main.node_index(
+            index_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
+            /* label columns added programmatically */
+        );
+
+        CREATE TABLE main.location(
+            _location_id INTEGER PRIMARY KEY
+            /* label columns added programmatically */
+        );
+
+        CREATE TABLE main.structure(
+            _structure_id INTEGER PRIMARY KEY,
+            _granularity REAL
+            /* label columns added programmatically */
+        );
+
+        CREATE TABLE main.weighting(
+            weighting_id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            selectors TEXT_SELECTORS,
+            is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
+            UNIQUE (name)
+        );
+
+        CREATE TABLE main.weight(
+            weight_id INTEGER PRIMARY KEY,
+            weighting_id INTEGER,
+            index_id INTEGER CHECK (index_id > 0),
+            weight_value REAL NOT NULL,
+            FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
+            FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
+            UNIQUE (index_id, weighting_id)
+        );
+
+        CREATE TABLE main.attribute(
+            attribute_id INTEGER PRIMARY KEY,
+            attribute_value TEXT_ATTRIBUTES NOT NULL,
+            UNIQUE (attribute_value)
+        );
+
+        CREATE TABLE main.quantity(
+            quantity_id INTEGER PRIMARY KEY,
+            _location_id INTEGER,
+            attribute_id INTEGER,
+            quantity_value NUMERIC NOT NULL,
+            FOREIGN KEY(_location_id) REFERENCES location(_location_id),
+            FOREIGN KEY(attribute_id) REFERENCES attribute(attribute_id) ON DELETE CASCADE
+        );
+
         CREATE TABLE main.edge(
             edge_id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
@@ -147,67 +197,17 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             UNIQUE (edge_id, other_index_id, index_id)
         );
 
-        CREATE TABLE main.node_index(
-            index_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
-            /* label columns added programmatically */
-        );
-
-        CREATE TABLE main.location(
-            _location_id INTEGER PRIMARY KEY
-            /* label columns added programmatically */
-        );
-
-        CREATE TABLE main.structure(
-            _structure_id INTEGER PRIMARY KEY,
-            _granularity REAL
-            /* label columns added programmatically */
-        );
-
-        CREATE TABLE main.attribute(
-            attribute_id INTEGER PRIMARY KEY,
-            attribute_value TEXT_ATTRIBUTES NOT NULL,
-            UNIQUE (attribute_value)
-        );
-
-        CREATE TABLE main.quantity(
-            quantity_id INTEGER PRIMARY KEY,
-            _location_id INTEGER,
-            attribute_id INTEGER,
-            quantity_value NUMERIC NOT NULL,
-            FOREIGN KEY(_location_id) REFERENCES location(_location_id),
-            FOREIGN KEY(attribute_id) REFERENCES attribute(attribute_id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE main.weighting(
-            weighting_id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            selectors TEXT_SELECTORS,
-            is_complete INTEGER NOT NULL CHECK (is_complete IN (0, 1)) DEFAULT 0,
-            UNIQUE (name)
-        );
-
-        CREATE TABLE main.weight(
-            weight_id INTEGER PRIMARY KEY,
-            weighting_id INTEGER,
-            index_id INTEGER CHECK (index_id > 0),
-            weight_value REAL NOT NULL,
-            FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
-            FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
-            UNIQUE (index_id, weighting_id)
-        );
-
         CREATE TABLE main.property(
             key TEXT PRIMARY KEY NOT NULL,
             value TEXT_JSON
         );
 
+        /* Reserve index_id 0 for the "undefined" and add triggers. */
+        INSERT INTO main.node_index (index_id) VALUES (0);
+
         /* Set properties for Toron schema and application versions. */
         INSERT INTO main.property VALUES ('toron_schema_version', '"0.2.0"');
         INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
-
-        /* Reserve index_id 0 for the "undefined" and add triggers. */
-        INSERT INTO main.node_index (index_id) VALUES (0);
     """)
 
     cur.execute(
@@ -404,41 +404,70 @@ else:
         connection.create_function(name, narg, func)
 
 
-def create_toron_check_property_value(connection: sqlite3.Connection) -> None:
-    """Create a app-defined SQL function named ``toron_check_property_value``."""
-    def toron_check_property_value(x):
+def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``toron_check_selectors``.
+
+    Returns 1 if *x* is a wellformed TEXT_SELECTORS value or return
+    0 if it is not wellformed. A wellformed TEXT_SELECTORS value is
+    JSON formatted "array" containing "string" values.
+    """
+    def toron_check_selectors(x):
         try:
-            json_loads(x)
+            obj = json_loads(x)
         except (ValueError, TypeError):
             return 0
+        if not isinstance(obj, list):
+            return 0
+        for value in obj:
+            if not isinstance(value, str):
+                return 0
         return 1
 
     create_sql_function(connection,
-                        name='toron_check_property_value',
+                        name='toron_check_selectors',
                         narg=1,
-                        func=toron_check_property_value,
+                        func=toron_check_selectors,
                         deterministic=True)
 
 
-def create_triggers_property_value(cur: sqlite3.Cursor) -> None:
-    """Add temp triggers to validate ``property.value`` column."""
+def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
+    """Add temp triggers to validate ``edge.selectors`` and
+    ``weighting.selectors`` columns.
+
+    The trigger will pass without error when the value is a wellformed
+    JSON "array" containing "text" elements.
+
+    The trigger will raise an error when the value is:
+      * not wellformed JSON
+      * not an "array" type
+      * an "array" type that contains one or more "integer", "real",
+        "true", "false", "null", "object" or "array" elements
+    """
     if SQLITE_ENABLE_JSON1:
-        check_function = 'json_valid'
+        selectors_are_invalid = """
+            (json_valid(NEW.selectors) = 0
+                 OR json_type(NEW.selectors) != 'array'
+                 OR (SELECT COUNT(*)
+                     FROM json_each(NEW.selectors)
+                     WHERE json_each.type != 'text') != 0)
+        """.strip()
     else:
-        check_function = 'toron_check_property_value'
+        selectors_are_invalid = 'toron_check_selectors(NEW.selectors) = 0'
 
     sql = f"""
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_property_value
-        BEFORE {{event}} ON main.property FOR EACH ROW
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_{{table}}_selectors
+        BEFORE {{event}} ON main.{{table}} FOR EACH ROW
         WHEN
-            NEW.value IS NOT NULL
-            AND {check_function}(NEW.value) = 0
+            NEW.selectors IS NOT NULL
+            AND {selectors_are_invalid}
         BEGIN
-            SELECT RAISE(ABORT, 'property.value must be well-formed JSON');
+            SELECT RAISE(ABORT, '{{table}}.selectors must be a JSON array with text values');
         END;
     """
-    cur.execute(sql.format(event='INSERT'))
-    cur.execute(sql.format(event='UPDATE'))
+    cur.execute(sql.format(event='INSERT', table='weighting'))
+    cur.execute(sql.format(event='UPDATE', table='weighting'))
+    cur.execute(sql.format(event='INSERT', table='edge'))
+    cur.execute(sql.format(event='UPDATE', table='edge'))
 
 
 def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
@@ -556,70 +585,41 @@ def create_triggers_user_properties(cur: sqlite3.Cursor) -> None:
     cur.execute(sql.format(event='UPDATE'))
 
 
-def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
-    """Create a user defined SQL function named ``toron_check_selectors``.
-
-    Returns 1 if *x* is a wellformed TEXT_SELECTORS value or return
-    0 if it is not wellformed. A wellformed TEXT_SELECTORS value is
-    JSON formatted "array" containing "string" values.
-    """
-    def toron_check_selectors(x):
+def create_toron_check_property_value(connection: sqlite3.Connection) -> None:
+    """Create a app-defined SQL function named ``toron_check_property_value``."""
+    def toron_check_property_value(x):
         try:
-            obj = json_loads(x)
+            json_loads(x)
         except (ValueError, TypeError):
             return 0
-        if not isinstance(obj, list):
-            return 0
-        for value in obj:
-            if not isinstance(value, str):
-                return 0
         return 1
 
     create_sql_function(connection,
-                        name='toron_check_selectors',
+                        name='toron_check_property_value',
                         narg=1,
-                        func=toron_check_selectors,
+                        func=toron_check_property_value,
                         deterministic=True)
 
 
-def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
-    """Add temp triggers to validate ``edge.selectors`` and
-    ``weighting.selectors`` columns.
-
-    The trigger will pass without error when the value is a wellformed
-    JSON "array" containing "text" elements.
-
-    The trigger will raise an error when the value is:
-      * not wellformed JSON
-      * not an "array" type
-      * an "array" type that contains one or more "integer", "real",
-        "true", "false", "null", "object" or "array" elements
-    """
+def create_triggers_property_value(cur: sqlite3.Cursor) -> None:
+    """Add temp triggers to validate ``property.value`` column."""
     if SQLITE_ENABLE_JSON1:
-        selectors_are_invalid = """
-            (json_valid(NEW.selectors) = 0
-                 OR json_type(NEW.selectors) != 'array'
-                 OR (SELECT COUNT(*)
-                     FROM json_each(NEW.selectors)
-                     WHERE json_each.type != 'text') != 0)
-        """.strip()
+        check_function = 'json_valid'
     else:
-        selectors_are_invalid = 'toron_check_selectors(NEW.selectors) = 0'
+        check_function = 'toron_check_property_value'
 
     sql = f"""
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_{{table}}_selectors
-        BEFORE {{event}} ON main.{{table}} FOR EACH ROW
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_property_value
+        BEFORE {{event}} ON main.property FOR EACH ROW
         WHEN
-            NEW.selectors IS NOT NULL
-            AND {selectors_are_invalid}
+            NEW.value IS NOT NULL
+            AND {check_function}(NEW.value) = 0
         BEGIN
-            SELECT RAISE(ABORT, '{{table}}.selectors must be a JSON array with text values');
+            SELECT RAISE(ABORT, 'property.value must be well-formed JSON');
         END;
     """
-    cur.execute(sql.format(event='INSERT', table='edge'))
-    cur.execute(sql.format(event='UPDATE', table='edge'))
-    cur.execute(sql.format(event='INSERT', table='weighting'))
-    cur.execute(sql.format(event='UPDATE', table='weighting'))
+    cur.execute(sql.format(event='INSERT'))
+    cur.execute(sql.format(event='UPDATE'))
 
 
 def create_log2(
@@ -759,16 +759,16 @@ def create_functions_and_temporary_triggers(
         database or a database containing some other schema.
     """
     if not SQLITE_ENABLE_JSON1:
-        create_toron_check_property_value(connection)
+        create_toron_check_selectors(connection)
         create_toron_check_attribute_value(connection)
         create_toron_check_user_properties(connection)
-        create_toron_check_selectors(connection)
+        create_toron_check_property_value(connection)
 
     with closing(connection.cursor()) as cur:
-        create_triggers_property_value(cur)
+        create_triggers_selectors(cur)
         create_triggers_attribute_value(cur)
         create_triggers_user_properties(cur)
-        create_triggers_selectors(cur)
+        create_triggers_property_value(cur)
 
     if not SQLITE_ENABLE_MATH_FUNCTIONS:
         create_log2(connection)

@@ -310,41 +310,6 @@ class BaseStructureRepository(ABC):
 
 
 @dataclass
-class Weight(object):
-    """Weight record."""
-    id: int
-    weighting_id: int
-    index_id: int
-    value: float
-
-
-class BaseWeightRepository(ABC):
-    @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
-        """Initialize a new repository instance."""
-
-    @abstractmethod
-    def add(self, weighting_id: int, index_id: int, value: int) -> None:
-        """Add a record to the repository."""
-
-    @abstractmethod
-    def get(self, id: int) -> Optional[Weight]:
-        """Get a record from the repository."""
-
-    @abstractmethod
-    def update(self, record: Weight) -> None:
-        """Update a record in the repository."""
-
-    @abstractmethod
-    def delete(self, id: int) -> None:
-        """Delete a record from the repository."""
-
-    #@abstractmethod
-    #def find_by_weighting_id(self, weighting_id: int) -> Iterable[Weight]:
-    #    """Filter to records associated with the given weighting."""
-
-
-@dataclass
 class Weighting(object):
     """Weighting record."""
     id: int
@@ -383,29 +348,29 @@ class BaseWeightingRepository(ABC):
 
 
 @dataclass
-class Quantity(object):
-    """Quantity record."""
+class Weight(object):
+    """Weight record."""
     id: int
-    location_id: int
-    attribute_id: int
+    weighting_id: int
+    index_id: int
     value: float
 
 
-class BaseQuantityRepository(ABC):
+class BaseWeightRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
         """Initialize a new repository instance."""
 
     @abstractmethod
-    def add(self, location_id: int, attribute_id: int, value: float) -> None:
+    def add(self, weighting_id: int, index_id: int, value: int) -> None:
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Quantity]:
+    def get(self, id: int) -> Optional[Weight]:
         """Get a record from the repository."""
 
     @abstractmethod
-    def update(self, record: Quantity) -> None:
+    def update(self, record: Weight) -> None:
         """Update a record in the repository."""
 
     @abstractmethod
@@ -413,8 +378,8 @@ class BaseQuantityRepository(ABC):
         """Delete a record from the repository."""
 
     #@abstractmethod
-    #def find_by_attribute_id(self, attribute_id: int) -> Iterable[Quantity]:
-    #    """Filter to records associated with the given attribute."""
+    #def find_by_weighting_id(self, weighting_id: int) -> Iterable[Weight]:
+    #    """Filter to records associated with the given weighting."""
 
 
 @dataclass
@@ -451,40 +416,29 @@ class BaseAttributeRepository(ABC):
 
 
 @dataclass
-class Relation(object):
-    """Relation record."""
+class Quantity(object):
+    """Quantity record."""
     id: int
-    edge_id: int
-    other_index_id: int
-    index_id: int
+    location_id: int
+    attribute_id: int
     value: float
-    proportion: Optional[float] = None
-    mapping_level: Optional[bytes] = None
 
 
-class BaseRelationRepository(ABC):
+class BaseQuantityRepository(ABC):
     @abstractmethod
     def __init__(self, data_reader: Any) -> None:
         """Initialize a new repository instance."""
 
     @abstractmethod
-    def add(
-        self,
-        edge_id: int,
-        other_index_id: int,
-        index_id: int,
-        value: float,
-        proportion: Optional[float] = None,
-        mapping_level: Optional[bytes] = None,
-    ) -> None:
+    def add(self, location_id: int, attribute_id: int, value: float) -> None:
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Relation]:
+    def get(self, id: int) -> Optional[Quantity]:
         """Get a record from the repository."""
 
     @abstractmethod
-    def update(self, record: Relation) -> None:
+    def update(self, record: Quantity) -> None:
         """Update a record in the repository."""
 
     @abstractmethod
@@ -492,8 +446,8 @@ class BaseRelationRepository(ABC):
         """Delete a record from the repository."""
 
     #@abstractmethod
-    #def find_by_edge_id(self, edge_id: int) -> Iterable[Relation]:
-    #    """Filter to records associated with the given edge."""
+    #def find_by_attribute_id(self, attribute_id: int) -> Iterable[Quantity]:
+    #    """Filter to records associated with the given attribute."""
 
 
 @dataclass
@@ -543,6 +497,52 @@ class BaseEdgeRepository(ABC):
     @abstractmethod
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
+
+
+@dataclass
+class Relation(object):
+    """Relation record."""
+    id: int
+    edge_id: int
+    other_index_id: int
+    index_id: int
+    value: float
+    proportion: Optional[float] = None
+    mapping_level: Optional[bytes] = None
+
+
+class BaseRelationRepository(ABC):
+    @abstractmethod
+    def __init__(self, data_reader: Any) -> None:
+        """Initialize a new repository instance."""
+
+    @abstractmethod
+    def add(
+        self,
+        edge_id: int,
+        other_index_id: int,
+        index_id: int,
+        value: float,
+        proportion: Optional[float] = None,
+        mapping_level: Optional[bytes] = None,
+    ) -> None:
+        """Add a record to the repository."""
+
+    @abstractmethod
+    def get(self, id: int) -> Optional[Relation]:
+        """Get a record from the repository."""
+
+    @abstractmethod
+    def update(self, record: Relation) -> None:
+        """Update a record in the repository."""
+
+    @abstractmethod
+    def delete(self, id: int) -> None:
+        """Delete a record from the repository."""
+
+    #@abstractmethod
+    #def find_by_edge_id(self, edge_id: int) -> Iterable[Relation]:
+    #    """Filter to records associated with the given edge."""
 
 
 class BasePropertyRepository(ABC):
