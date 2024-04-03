@@ -147,7 +147,7 @@ class PropertyRepositoryBaseTest(ABC):
 #######################################################################
 
 from toron._data_access.data_connector import DataConnector
-from toron._data_access.property_repository import PropertyRepository
+from toron._data_access.repositories import PropertyRepository
 
 
 class TestDataConnectorSqlite(DataConnectorBaseTest, unittest.TestCase):

@@ -3,7 +3,7 @@
 import unittest
 
 from toron._data_access.data_connector import DataConnector
-from toron._data_access.property_repository import PropertyRepository
+from toron._data_access.repositories import PropertyRepository
 
 
 class TestPropertyRepository(unittest.TestCase):
