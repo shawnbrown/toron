@@ -5,6 +5,7 @@ from dataclasses import asdict
 from json import dumps as json_dumps
 
 from toron._typing import (
+    Dict,
     List,
     Optional,
     Union,
@@ -17,6 +18,7 @@ from .base_classes import (
     Structure, BaseStructureRepository,
     Weighting, BaseWeightingRepository,
     Weight, BaseWeightRepository,
+    Attribute, BaseAttributeRepository,
 )
 
 
@@ -255,19 +257,6 @@ class WeightRepository(BaseWeightRepository):
 
     #def find_by_weighting_id(self, weighting_id: int) -> Iterable[Weight]:
     #    """Filter to records associated with the given weighting."""
-
-
-"""AttributeRepository and related objects using SQLite."""
-
-import sqlite3
-from json import dumps as json_dumps
-
-from toron._typing import (
-    Dict,
-    Optional,
-)
-
-from .base_classes import Attribute, BaseAttributeRepository
 
 
 class AttributeRepository(BaseAttributeRepository):
