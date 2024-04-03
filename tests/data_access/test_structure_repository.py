@@ -1,11 +1,11 @@
-"""Tests for toron/_data_access/structure_repository.py module."""
+"""Tests for StructureRepository class."""
 
 import sqlite3
 import unittest
 
 from toron._data_access.data_connector import DataConnector
 from toron._data_access.base_classes import Structure, BaseStructureRepository
-from toron._data_access.structure_repository import StructureRepository
+from toron._data_access.repositories import StructureRepository
 
 
 class TestStructureRepository(unittest.TestCase):
