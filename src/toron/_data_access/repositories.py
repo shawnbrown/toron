@@ -13,6 +13,7 @@ from toron._typing import (
 
 from . import schema
 from .base_classes import (
+    JsonTypes,
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
     Structure, BaseStructureRepository,
@@ -20,6 +21,7 @@ from .base_classes import (
     Weight, BaseWeightRepository,
     Attribute, BaseAttributeRepository,
     Quantity, BaseQuantityRepository,
+    Edge, BaseEdgeRepository,
 )
 
 
@@ -337,21 +339,6 @@ class QuantityRepository(BaseQuantityRepository):
 
     #def find_by_attribute_id(self, attribute_id: int) -> Iterable[Quantity]:
     #    """Filter to records associated with the given attribute."""
-
-
-"""EdgeRepository and related objects using SQLite."""
-
-import sqlite3
-from json import dumps as json_dumps
-
-from toron._typing import (
-    Dict,
-    List,
-    Optional,
-    Union,
-)
-
-from .base_classes import JsonTypes, Edge, BaseEdgeRepository
 
 
 class EdgeRepository(BaseEdgeRepository):
