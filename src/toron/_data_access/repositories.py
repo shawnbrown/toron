@@ -2,12 +2,16 @@
 
 import sqlite3
 
-from toron._typing import Optional
+from toron._typing import (
+    List,
+    Optional,
+)
 
 from . import schema
 from .base_classes import (
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
+    Structure, BaseStructureRepository,
 )
 
 
@@ -91,18 +95,6 @@ class LocationRepository(BaseLocationRepository):
         self._cursor.execute(
             'DELETE FROM main.location WHERE _location_id=?', (id,)
         )
-
-
-"""StructureRepository and related objects using SQLite."""
-
-import sqlite3
-
-from toron._typing import (
-    List,
-    Optional,
-)
-
-from .base_classes import Structure, BaseStructureRepository
 
 
 class StructureRepository(BaseStructureRepository):
