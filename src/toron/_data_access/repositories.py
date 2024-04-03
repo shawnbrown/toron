@@ -19,6 +19,7 @@ from .base_classes import (
     Weighting, BaseWeightingRepository,
     Weight, BaseWeightRepository,
     Attribute, BaseAttributeRepository,
+    Quantity, BaseQuantityRepository,
 )
 
 
@@ -291,16 +292,6 @@ class AttributeRepository(BaseAttributeRepository):
         self._cursor.execute(
             'DELETE FROM main.attribute WHERE attribute_id=?', (id,)
         )
-
-
-"""QuantityRepository and related objects using SQLite."""
-
-import sqlite3
-from dataclasses import asdict
-
-from toron._typing import Optional
-
-from .base_classes import Quantity, BaseQuantityRepository
 
 
 class QuantityRepository(BaseQuantityRepository):
