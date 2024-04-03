@@ -1,10 +1,12 @@
 """IndexRepository and related objects using SQLite."""
 
 import sqlite3
+from json import dumps as json_dumps
 
 from toron._typing import (
     List,
     Optional,
+    Union,
 )
 
 from . import schema
@@ -12,6 +14,7 @@ from .base_classes import (
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
     Structure, BaseStructureRepository,
+    Weighting, BaseWeightingRepository,
 )
 
 
@@ -144,20 +147,6 @@ class StructureRepository(BaseStructureRepository):
         self._cursor.execute(
             'DELETE FROM main.structure WHERE _structure_id=?', (id,)
         )
-
-
-"""WeightingRepository and related objects using SQLite."""
-
-import sqlite3
-from json import dumps as json_dumps
-
-from toron._typing import (
-    List,
-    Optional,
-    Union,
-)
-
-from .base_classes import Weighting, BaseWeightingRepository
 
 
 class WeightingRepository(BaseWeightingRepository):
