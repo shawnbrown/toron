@@ -5,7 +5,7 @@ import unittest
 
 from toron._data_access.data_connector import DataConnector
 from toron._data_access.base_classes import Weight, BaseWeightRepository
-from toron._data_access.weight_repository import WeightRepository
+from toron._data_access.repositories import WeightRepository
 
 
 class TestWeightRepository(unittest.TestCase):
