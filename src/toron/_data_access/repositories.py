@@ -1,6 +1,7 @@
 """IndexRepository and related objects using SQLite."""
 
 import sqlite3
+from dataclasses import asdict
 from json import dumps as json_dumps
 
 from toron._typing import (
@@ -15,6 +16,7 @@ from .base_classes import (
     Location, BaseLocationRepository,
     Structure, BaseStructureRepository,
     Weighting, BaseWeightingRepository,
+    Weight, BaseWeightRepository,
 )
 
 
@@ -208,16 +210,6 @@ class WeightingRepository(BaseWeightingRepository):
         self._cursor.execute(
             'DELETE FROM main.weighting WHERE weighting_id=?', (id,)
         )
-
-
-"""WeightRepository and related objects using SQLite."""
-
-import sqlite3
-from dataclasses import asdict
-
-from toron._typing import Optional
-
-from .base_classes import Weight, BaseWeightRepository
 
 
 class WeightRepository(BaseWeightRepository):
