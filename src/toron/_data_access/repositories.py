@@ -22,6 +22,7 @@ from .base_classes import (
     Attribute, BaseAttributeRepository,
     Quantity, BaseQuantityRepository,
     Edge, BaseEdgeRepository,
+    Relation, BaseRelationRepository,
 )
 
 
@@ -436,15 +437,6 @@ class EdgeRepository(BaseEdgeRepository):
         self._cursor.execute(
             'DELETE FROM main.edge WHERE edge_id=?', (id,)
         )
-
-
-"""RelationRepository and related objects using SQLite."""
-
-import sqlite3
-
-from toron._typing import Optional
-
-from .base_classes import Relation, BaseRelationRepository
 
 
 class RelationRepository(BaseRelationRepository):
