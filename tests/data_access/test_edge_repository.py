@@ -5,7 +5,7 @@ import unittest
 
 from toron._data_access.data_connector import DataConnector
 from toron._data_access.base_classes import Edge
-from toron._data_access.edge_repository import EdgeRepository
+from toron._data_access.repositories import EdgeRepository
 
 
 class TestEdgeRepository(unittest.TestCase):
