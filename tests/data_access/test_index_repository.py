@@ -1,11 +1,11 @@
-"""Tests for toron/_data_access/index_repository.py module."""
+"""Tests for IndexRepository class."""
 
 import sqlite3
 import unittest
 
-from toron._data_access.data_connector import DataConnector
+from toron._dal1.data_connector import DataConnector
 from toron._data_models import Index, BaseIndexRepository
-from toron._data_access.repositories import IndexRepository
+from toron._dal1.repositories import IndexRepository
 
 
 class TestIndexRepository(unittest.TestCase):

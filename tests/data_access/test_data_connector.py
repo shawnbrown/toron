@@ -1,4 +1,4 @@
-"""Tests for toron/_data_access/data_connector.py module."""
+"""Tests for DataConnector class."""
 
 import gc
 import os
@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from contextlib import closing
 
-from toron._data_access.data_connector import (
+from toron._dal1.data_connector import (
     make_sqlite_uri_filepath,
     get_sqlite_connection,
     verify_permissions,

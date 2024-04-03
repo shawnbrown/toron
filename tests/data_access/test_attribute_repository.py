@@ -1,12 +1,12 @@
-"""Tests for toron/_data_access/attribute_repository.py module."""
+"""Tests for AttributeRepository class."""
 
 import sqlite3
 import unittest
 from collections import OrderedDict
 
-from toron._data_access.data_connector import DataConnector
+from toron._dal1.data_connector import DataConnector
 from toron._data_models import Attribute
-from toron._data_access.repositories import AttributeRepository
+from toron._dal1.repositories import AttributeRepository
 
 
 class TestAttributeRepository(unittest.TestCase):

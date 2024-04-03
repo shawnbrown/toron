@@ -1,11 +1,11 @@
-"""Tests for toron/_data_access/schema.py module."""
+"""Tests for schema module."""
 import sqlite3
 import unittest
 from contextlib import closing
 
 from toron._selectors import SimpleSelector
 from toron._utils import BitFlags
-from toron._data_access.schema import (
+from toron._dal1.schema import (
     SQLITE_ENABLE_JSON1,
     SQLITE_ENABLE_MATH_FUNCTIONS,
     create_node_schema,

@@ -148,8 +148,8 @@ class PropertyRepositoryBaseTest(ABC):
 # Concrete Test Cases for SQLite Backend
 #######################################################################
 
-from toron._data_access.data_connector import DataConnector
-from toron._data_access.repositories import PropertyRepository
+from toron._dal1.data_connector import DataConnector
+from toron._dal1.repositories import PropertyRepository
 
 
 class TestDataConnectorSqlite(DataConnectorBaseTest, unittest.TestCase):

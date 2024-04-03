@@ -1,11 +1,11 @@
-"""Tests for toron/_data_access/edge_repository.py module."""
+"""Tests for EdgeRepository class."""
 
 import sqlite3
 import unittest
 
-from toron._data_access.data_connector import DataConnector
+from toron._dal1.data_connector import DataConnector
 from toron._data_models import Edge
-from toron._data_access.repositories import EdgeRepository
+from toron._dal1.repositories import EdgeRepository
 
 
 class TestEdgeRepository(unittest.TestCase):

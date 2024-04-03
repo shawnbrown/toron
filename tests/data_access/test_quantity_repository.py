@@ -1,11 +1,11 @@
-"""Tests for toron/_data_access/quantity_repository.py module."""
+"""Tests for QuantityRepository class."""
 
 import sqlite3
 import unittest
 
-from toron._data_access.data_connector import DataConnector
+from toron._dal1.data_connector import DataConnector
 from toron._data_models import Quantity
-from toron._data_access.repositories import QuantityRepository
+from toron._dal1.repositories import QuantityRepository
 
 
 class TestQuantityRepository(unittest.TestCase):

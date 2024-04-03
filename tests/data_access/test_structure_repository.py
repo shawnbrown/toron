@@ -3,9 +3,9 @@
 import sqlite3
 import unittest
 
-from toron._data_access.data_connector import DataConnector
+from toron._dal1.data_connector import DataConnector
 from toron._data_models import Structure, BaseStructureRepository
-from toron._data_access.repositories import StructureRepository
+from toron._dal1.repositories import StructureRepository
 
 
 class TestStructureRepository(unittest.TestCase):

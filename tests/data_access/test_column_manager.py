@@ -1,11 +1,11 @@
-"""Tests for toron/_data_access/column_manager.py module."""
+"""Tests for ColumnManager class."""
 
 import sqlite3
 import unittest
 
-from toron._data_access.data_connector import DataConnector
+from toron._dal1.data_connector import DataConnector
 from toron._data_models import BaseColumnManager
-from toron._data_access.column_manager import (
+from toron._dal1.column_manager import (
     verify_foreign_key_check,
     ColumnManager,
 )

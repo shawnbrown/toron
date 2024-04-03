@@ -1,11 +1,11 @@
-"""Tests for toron/_data_access/relation_repository.py module."""
+"""Tests for RelationRepository class."""
 
 import sqlite3
 import unittest
 
-from toron._data_access.data_connector import DataConnector
+from toron._dal1.data_connector import DataConnector
 from toron._data_models import Relation
-from toron._data_access.repositories import RelationRepository
+from toron._dal1.repositories import RelationRepository
 
 
 class TestRelationRepository(unittest.TestCase):

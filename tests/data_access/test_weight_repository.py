@@ -1,11 +1,11 @@
-"""Tests for toron/_data_access/weight_repository.py module."""
+"""Tests for WeightRepository class."""
 
 import sqlite3
 import unittest
 
-from toron._data_access.data_connector import DataConnector
+from toron._dal1.data_connector import DataConnector
 from toron._data_models import Weight, BaseWeightRepository
-from toron._data_access.repositories import WeightRepository
+from toron._dal1.repositories import WeightRepository
 
 
 class TestWeightRepository(unittest.TestCase):
