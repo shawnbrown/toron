@@ -5,7 +5,10 @@ import sqlite3
 from toron._typing import Optional
 
 from . import schema
-from .base_classes import Index, BaseIndexRepository
+from .base_classes import (
+    Index, BaseIndexRepository,
+    Location, BaseLocationRepository,
+)
 
 
 class IndexRepository(BaseIndexRepository):
@@ -47,15 +50,6 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(
             'DELETE FROM main.node_index WHERE index_id=?', (id,)
         )
-
-
-"""LocationRepository and related objects using SQLite."""
-
-import sqlite3
-
-from toron._typing import Optional
-
-from .base_classes import Location, BaseLocationRepository
 
 
 class LocationRepository(BaseLocationRepository):
