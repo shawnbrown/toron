@@ -5,7 +5,7 @@ import unittest
 
 from toron._data_access.data_connector import DataConnector
 from toron._data_access.base_classes import Relation
-from toron._data_access.relation_repository import RelationRepository
+from toron._data_access.repositories import RelationRepository
 
 
 class TestRelationRepository(unittest.TestCase):
