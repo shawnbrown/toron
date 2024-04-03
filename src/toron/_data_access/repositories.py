@@ -13,7 +13,6 @@ from toron._typing import (
 
 from . import schema
 from .base_classes import (
-    JsonTypes,
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
     Structure, BaseStructureRepository,
@@ -23,6 +22,7 @@ from .base_classes import (
     Quantity, BaseQuantityRepository,
     Edge, BaseEdgeRepository,
     Relation, BaseRelationRepository,
+    JsonTypes, BasePropertyRepository,
 )
 
 
@@ -513,14 +513,6 @@ class RelationRepository(BaseRelationRepository):
         self._cursor.execute(
             'DELETE FROM main.relation WHERE relation_id=?', (id,)
         )
-
-
-"""PropertyRepository and related objects using SQLite."""
-
-import sqlite3
-from json import dumps as json_dumps
-
-from .base_classes import BasePropertyRepository, JsonTypes
 
 
 class PropertyRepository(BasePropertyRepository):
