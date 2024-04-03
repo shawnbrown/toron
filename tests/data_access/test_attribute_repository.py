@@ -5,7 +5,7 @@ import unittest
 from collections import OrderedDict
 
 from toron._data_access.data_connector import DataConnector
-from toron._data_access.base_classes import Attribute
+from toron._data_models import Attribute
 from toron._data_access.repositories import AttributeRepository
 
 

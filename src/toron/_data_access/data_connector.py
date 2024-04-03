@@ -20,7 +20,7 @@ from toron._typing import (
 )
 
 from . import schema
-from .base_classes import BaseDataConnector
+from .._data_models import BaseDataConnector
 from .._utils import ToronError
 
 

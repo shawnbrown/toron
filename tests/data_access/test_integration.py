@@ -10,8 +10,10 @@ from contextlib import closing
 # Abstract Test Cases
 #######################################################################
 
-from toron._data_access.base_classes import BaseDataConnector
-from toron._data_access.base_classes import BasePropertyRepository
+from toron._data_models import (
+    BaseDataConnector,
+    BasePropertyRepository,
+)
 
 
 class DataConnectorBaseTest(ABC):

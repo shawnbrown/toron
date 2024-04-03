@@ -4,7 +4,7 @@ import sqlite3
 import unittest
 
 from toron._data_access.data_connector import DataConnector
-from toron._data_access.base_classes import Quantity
+from toron._data_models import Quantity
 from toron._data_access.repositories import QuantityRepository
 
 

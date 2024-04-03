@@ -8,7 +8,7 @@ from toron._typing import (
 )
 
 from . import schema
-from .base_classes import BaseColumnManager
+from .._data_models import BaseColumnManager
 
 
 def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
