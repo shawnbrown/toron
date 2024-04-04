@@ -1,4 +1,8 @@
-"""Abstract base classes for data access objects."""
+"""Data model classes to define the API for data access.
+
+A compatible back-end for the DataAccessLayer class must implement
+all of the base classes given in this sub-module.
+"""
 
 import os
 from abc import ABC, abstractmethod
