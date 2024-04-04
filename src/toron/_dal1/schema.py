@@ -107,6 +107,10 @@ with closing(sqlite3.connect(':memory:')) as _con:
     del _con
 
 
+# Define magic number to identify data using DAL1 format.
+DAL1_MAGIC_NUMBER: Final[int] = 0x012D84C8  # Used as 'PRAGMA user_version'.
+
+
 def create_schema_tables(cur: sqlite3.Cursor) -> None:
     """Create tables and set starting values for Toron node schema."""
     cur.executescript("""
@@ -209,6 +213,12 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
         INSERT INTO main.property VALUES ('toron_schema_version', '"0.2.0"');
         INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
     """)
+
+    # Set magic number to indicate data uses Toron DAL1.
+    cur.execute(f'PRAGMA main.user_version = {int(DAL1_MAGIC_NUMBER)}')
+    # Note: Above, keep the `int()` to prevent illegal values (the normal
+    # parameter substitution is not available because this PRAGMA cannot
+    # be used as a function).
 
     cur.execute(
         'INSERT INTO main.property (key, value) VALUES (?, ?)',
