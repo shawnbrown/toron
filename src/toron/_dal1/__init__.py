@@ -1,4 +1,4 @@
-"""Data access layer implementation for DAL1/SQLite."""
+"""Back-end implementation for data access API using SQLite."""
 
 from .data_connector import DataConnector
 from .column_manager import ColumnManager
