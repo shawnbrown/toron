@@ -18,7 +18,7 @@ def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
     without error.
     """
     cursor.execute('PRAGMA main.foreign_key_check')
-    first_ten_violations = cursor.fetchmany(size=1)
+    first_ten_violations = cursor.fetchmany(size=10)
 
     if not first_ten_violations:
         return  # <- EXIT!
