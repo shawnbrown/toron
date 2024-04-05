@@ -21,7 +21,6 @@ from toron._typing import (
 
 from . import schema
 from .._data_models import BaseDataConnector
-from .._utils import ToronError
 
 
 def make_sqlite_uri_filepath(
@@ -106,30 +105,21 @@ def get_sqlite_connection(path, access_mode=None, factory=None):
             f'requires subclass of sqlite3.Connection, got {factory.__name__}'
         )
 
-    try:
-        if path == ':memory:' or path == '':  # In-memory or on-drive temp db.
-            return sqlite3.connect(
-                database=path,
-                detect_types=sqlite3.PARSE_DECLTYPES,
-                isolation_level=None,
-                factory=factory or sqlite3.Connection,
-            )
-        else:
-            return sqlite3.connect(
-                database=make_sqlite_uri_filepath(path, access_mode),
-                detect_types=sqlite3.PARSE_DECLTYPES,
-                isolation_level=None,
-                factory=factory or sqlite3.Connection,
-                uri=True,
-            )
-    except sqlite3.OperationalError as err:
-        error_text = str(err)
-        matches = ['unable to open database', 'Could not open database']
-        if any(x in error_text for x in matches):
-            msg = f'unable to open node file {path!r}'
-            raise ToronError(msg)
-        else:
-            raise
+    if path == ':memory:' or path == '':  # In-memory or on-drive temp db.
+        return sqlite3.connect(
+            database=path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+            factory=factory or sqlite3.Connection,
+        )
+    else:
+        return sqlite3.connect(
+            database=make_sqlite_uri_filepath(path, access_mode),
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None,
+            factory=factory or sqlite3.Connection,
+            uri=True,
+        )
 
 
 if sys.platform == 'darwin':

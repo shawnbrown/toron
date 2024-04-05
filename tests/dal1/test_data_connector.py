@@ -121,6 +121,25 @@ class TestGetSqlite3Connection(unittest.TestCase):
         with self.assertRaises(TypeError, msg=msg):
             get_sqlite_connection(':memory:', factory=BadConnection)
 
+    def test_nonfile_path(self):
+        """Non-file resources should fail immediately."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as dirname:
+            with self.assertRaises(sqlite3.OperationalError):
+                get_sqlite_connection(dirname)
+
+    def test_nondatabase_file(self):
+        """Non-database files should fail."""
+        with tempfile.NamedTemporaryFile(prefix='toron-', delete=False) as f:
+            f.write(b'\xff' * 64)  # Write 64 bytes of 1s.
+        self.addCleanup(lambda: os.unlink(f.name))
+
+        # Returns connection but doesn't fail immediately.
+        con = get_sqlite_connection(f.name)
+
+        # Fails when attempting to interact with connection.
+        with self.assertRaises(sqlite3.DatabaseError):
+            con.execute('PRAGMA main.user_version')
+
 
 class TestToronSqlite3Connection(unittest.TestCase):
     def test_closing_error(self):
