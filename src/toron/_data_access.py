@@ -97,6 +97,7 @@ def get_backend_from_path(
     path: Union[str, bytes, os.PathLike]
 ) -> Optional[str]:
     """Inspect file and return appropriate backend string.
+    If the file type is not supported, returns ``None``.
 
     .. note::
         When inspecting files, this function should make a best
