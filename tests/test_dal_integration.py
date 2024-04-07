@@ -89,6 +89,29 @@ class DataConnectorBaseTest(ABC):
                 self.connector_class.from_file(file_path)
 
 
+class ColumnManagerBaseTest(ABC):
+    @property
+    @abstractmethod
+    def connector_class(self):
+        ...
+
+    @property
+    @abstractmethod
+    def manager_class(self):
+        ...
+
+    def setUp(self):
+        connector = self.connector_class()
+
+        resource = connector.acquire_resource()
+        self.addCleanup(lambda: connector.release_resource(resource))
+
+        data_reader = connector.acquire_data_reader(resource)
+        self.addCleanup(lambda: connector.release_resource(data_reader))
+
+        self.manager = self.manager_class(data_reader)
+
+
 class PropertyRepositoryBaseTest(ABC):
     @property
     @abstractmethod
@@ -155,6 +178,16 @@ class TestDataConnectorDAL1(DataConnectorBaseTest, unittest.TestCase):
     @property
     def connector_class(self):
         return _dal1.DataConnector
+
+
+class ColumnManagerDAL1(ColumnManagerBaseTest, unittest.TestCase):
+    @property
+    def connector_class(self):
+        return _dal1.DataConnector
+
+    @property
+    def manager_class(self):
+        return _dal1.ColumnManager
 
 
 class PropertyRepositoryDAL1(PropertyRepositoryBaseTest, unittest.TestCase):
