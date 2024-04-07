@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 from abc import ABC, abstractmethod
-from contextlib import closing
+from contextlib import closing, suppress
 
 
 #######################################################################
@@ -110,6 +110,13 @@ class ColumnManagerBaseTest(ABC):
         self.addCleanup(lambda: connector.release_resource(data_reader))
 
         self.manager = self.manager_class(data_reader)
+
+    def test_atomic_add_columns(self):
+        with suppress(Exception):
+            self.manager.add_columns('foo', 'bar', 'baz', 'baz')
+
+        msg = 'should be empty tuple, no column names'
+        self.assertEqual(self.manager.get_columns(), (), msg=msg)
 
 
 class PropertyRepositoryBaseTest(ABC):

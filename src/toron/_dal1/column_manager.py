@@ -45,24 +45,36 @@ class ColumnManager(BaseColumnManager):
 
     def add_columns(self, column: str, *columns: str) -> None:
         """Add new label columns."""
-        schema.drop_schema_constraints(self._cursor)
+        if self._cursor.connection.in_transaction:
+            # Adding columns must be atomic. To maintain consistency with
+            # other DDL operations (i.e., RENAME and DROP), this method
+            # manages its own transaction. Consequently, it cannot be
+            # called inside an existing transaction.
+            msg = 'cannot add columns inside an existing transaction'
+            raise RuntimeError(msg)
 
         columns = (column,) + columns
-        for column in columns:
-            self._cursor.execute(f"""
-                ALTER TABLE main.node_index ADD COLUMN
-                    {schema.column_def_node_index(column)}
-            """)
-            self._cursor.execute(f"""
-                ALTER TABLE main.location ADD COLUMN
-                    {schema.column_def_location(column)}
-            """)
-            self._cursor.execute(f"""
-                ALTER TABLE main.structure ADD COLUMN
-                    {schema.column_def_structure(column)}
-            """)
-
-        schema.create_schema_constraints(self._cursor)
+        try:
+            self._cursor.execute('BEGIN TRANSACTION')
+            schema.drop_schema_constraints(self._cursor)
+            for column in columns:
+                self._cursor.execute(f"""
+                    ALTER TABLE main.node_index ADD COLUMN
+                        {schema.column_def_node_index(column)}
+                """)
+                self._cursor.execute(f"""
+                    ALTER TABLE main.location ADD COLUMN
+                        {schema.column_def_location(column)}
+                """)
+                self._cursor.execute(f"""
+                    ALTER TABLE main.structure ADD COLUMN
+                        {schema.column_def_structure(column)}
+                """)
+            schema.create_schema_constraints(self._cursor)
+            self._cursor.execute('COMMIT TRANSACTION')
+        except Exception as err:
+            self._cursor.execute('ROLLBACK TRANSACTION')
+            raise  # Re-raise exception.
 
     def get_columns(self) -> Tuple[str, ...]:
         """Get a tuple of label column names."""
