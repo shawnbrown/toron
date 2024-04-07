@@ -113,8 +113,6 @@ class ColumnManager(BaseColumnManager):
             except Exception as err:
                 self._cursor.execute('ROLLBACK TRANSACTION')
                 raise  # Re-raise exception.
-            finally:
-                self._cursor.execute('PRAGMA foreign_keys=ON')
 
     else:
         # Legacy support: For SQLite versions older than 3.25.0, use a
@@ -180,7 +178,7 @@ class ColumnManager(BaseColumnManager):
                 self._cursor.execute('DROP TABLE main.structure')
                 self._cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
 
-                # Check integrity, re-create constraints and commit transaction.
+                # Check integrity, re-create constraints, and commit transaction.
                 verify_foreign_key_check(self._cursor)
                 schema.create_schema_constraints(self._cursor)
                 self._cursor.execute('COMMIT TRANSACTION')
@@ -239,8 +237,6 @@ class ColumnManager(BaseColumnManager):
             except Exception as err:
                 self._cursor.execute('ROLLBACK TRANSACTION')
                 raise  # Re-raise exception.
-            finally:
-                self._cursor.execute('PRAGMA foreign_keys=ON')
 
     else:
         # Legacy support: For SQLite versions older than 3.35.5, use a
