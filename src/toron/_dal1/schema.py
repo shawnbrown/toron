@@ -270,6 +270,10 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
 
     These constraints are persistent and only need to be re-created
     if they were explicitly removed.
+
+    .. note::
+        This function should create all of the constraints removed by
+        the ``drop_schema_constraints()`` function.
     """
     # Label columns in the `node_index`, `location`, and `structure`
     # tables must all be the same--so we can fetch them from table
@@ -315,6 +319,10 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
 def drop_schema_constraints(cur: sqlite3.Cursor) -> None:
     """Remove indexes and triggers from the 'node_index', 'location',
     and 'structure' tables.
+
+    .. note::
+        This function should remove all of the constraints created by
+        the ``create_schema_constraints()`` function.
     """
     cur.execute('DROP INDEX IF EXISTS main.unique_index_label_columns')
     cur.execute('DROP INDEX IF EXISTS main.unique_location_label_columns')
