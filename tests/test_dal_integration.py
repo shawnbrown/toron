@@ -148,21 +148,20 @@ class PropertyRepositoryBaseTest(ABC):
 # Concrete Test Cases for SQLite Backend
 #######################################################################
 
-from toron._dal1.data_connector import DataConnector
-from toron._dal1.repositories import PropertyRepository
+from toron import _dal1
 
 
-class TestDataConnectorSqlite(DataConnectorBaseTest, unittest.TestCase):
+class TestDataConnectorDAL1(DataConnectorBaseTest, unittest.TestCase):
     @property
     def connector_class(self):
-        return DataConnector
+        return _dal1.DataConnector
 
 
-class PropertyRepositorySqlite(PropertyRepositoryBaseTest, unittest.TestCase):
+class PropertyRepositoryDAL1(PropertyRepositoryBaseTest, unittest.TestCase):
     @property
     def connector_class(self):
-        return DataConnector
+        return _dal1.DataConnector
 
     @property
     def repository_class(self):
-        return PropertyRepository
+        return _dal1.PropertyRepository
