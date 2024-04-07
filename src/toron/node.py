@@ -1,4 +1,4 @@
-"""Node implementation for the Toron project."""
+"""Legacy node implementation for the Toron project."""
 
 from itertools import chain
 from typing import (

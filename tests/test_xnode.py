@@ -1,4 +1,4 @@
-"""Tests for toron/_node.py module."""
+"""Tests for toron/node.py module."""
 
 import unittest
 
