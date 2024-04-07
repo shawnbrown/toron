@@ -50,7 +50,9 @@ legacy_tox_ini = """
   [testenv:mypy]
   deps =
     mypy >= 0.990
-  commands = mypy src/toron
+  commands =
+    python --version
+    mypy src/toron
 
   [testenv:build_dist]
   # Build source-distribution and wheel in the 'dist/' directory.
