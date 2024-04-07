@@ -16,14 +16,14 @@ from ._categories import minimize_discrete_categories
 from ._utils import TabularData
 
 
-class Node(object):
+class xNode(object):
     def __init__(self, cache_to_drive: bool = False) -> None:
         self._dal = dal_class(cache_to_drive=cache_to_drive)
 
     @classmethod
     def from_file(
         cls, path: PathType, cache_to_drive: bool = False
-    ) -> 'Node':
+    ) -> 'xNode':
         obj = cls.__new__(cls)
         obj._dal = dal_class.from_file(
             path=path,

@@ -34,11 +34,11 @@ from ._utils import (
 
 if TYPE_CHECKING:
     from ._dal import DataAccessLayer
-    from .node import Node
+    from .node import xNode
 
 
 def _get_dal(
-    dal_or_node: Union['DataAccessLayer', 'Node']
+    dal_or_node: Union['DataAccessLayer', 'xNode']
 ) -> 'DataAccessLayer':
     """Helper function to return DataAccessLayer."""
     if hasattr(dal_or_node, '_dal'):
@@ -127,7 +127,7 @@ class Mapper(object):
 
     @staticmethod
     def _find_matches_format_data(
-        dal_or_node: Union['DataAccessLayer', 'Node'],
+        dal_or_node: Union['DataAccessLayer', 'xNode'],
         column_names: Sequence[str],
         iterable: Iterable[Tuple[str, int]],
     ) -> Iterator[Tuple[List[int], Dict[str, str], Iterator[Tuple]]]:
@@ -245,7 +245,7 @@ class Mapper(object):
 
     @staticmethod
     def _match_ambiguous_or_get_info(
-        dal_or_node: Union['DataAccessLayer', 'Node'],
+        dal_or_node: Union['DataAccessLayer', 'xNode'],
         cursor: sqlite3.Cursor,
         side: Literal['left', 'right'],
         run_ids: List[int],
@@ -372,7 +372,7 @@ class Mapper(object):
 
     def find_matches(
         self,
-        dal_or_node: Union['DataAccessLayer', 'Node'],
+        dal_or_node: Union['DataAccessLayer', 'xNode'],
         side: Literal['left', 'right'],
         match_limit: Union[int, float] = 1,
         weight_name: Optional[str] = None,

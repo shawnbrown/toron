@@ -3,7 +3,7 @@
 import unittest
 import warnings
 
-from toron.node import Node
+from toron.node import xNode
 from toron._utils import (
     ToronWarning,
     BitFlags,
@@ -27,7 +27,7 @@ class TestAddEdge(unittest.TestCase):
             ['D', 'y', 'h', 50],
             ['D', 'y', 'i', 25],
         ]
-        node1 = Node()
+        node1 = xNode()
         node1.add_index_columns(['idx1', 'idx2', 'idx3'])
         node1.add_index_records(node1_data)
         node1.add_weights(node1_data, 'wght', selectors=['[attr1]'])
@@ -45,7 +45,7 @@ class TestAddEdge(unittest.TestCase):
             ['D', 'y', 'h', 31.25],
             ['D', 'y', 'i', 31.25],
         ]
-        node2 = Node()
+        node2 = xNode()
         node2.add_index_columns(['idx1', 'idx2', 'idx3'])
         node2.add_index_records(node2_data)
         node2.add_weights(node2_data, 'wght', selectors=['[attr1]'])

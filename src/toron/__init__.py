@@ -5,7 +5,7 @@ inference problems.
 
 __version__ = '0.1.0'
 
-from .node import Node
+from .node import xNode
 from ._utils import (
     ToronError,
     ToronWarning,
@@ -15,7 +15,7 @@ from ._utils import (
 ToronError.__module__ = 'toron'
 
 __all__ = [
-    'Node',
+    'xNode',
     'ToronError',
     'ToronWarning',
     'wide_to_narrow',

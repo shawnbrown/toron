@@ -5,13 +5,13 @@ import unittest
 from .common import get_column_names
 from toron._selectors import SimpleSelector
 
-from toron.node import Node
+from toron.node import xNode
 from toron._utils import ToronWarning
 
 
 class TestNodeAddIndexColumns(unittest.TestCase):
     def setUp(self):
-        self.node = Node()
+        self.node = xNode()
         self.dal = self.node._dal
         self.cursor = self.dal._get_connection().cursor()
 
@@ -50,7 +50,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
 
 class TestNodeAddDiscreteCategories(unittest.TestCase):
     def setUp(self):
-        self.node = Node()
+        self.node = xNode()
         self.dal = self.node._dal
         self.cursor = self.dal._get_connection().cursor()
 
@@ -142,7 +142,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
 
 class TestNodeRemoveDiscreteCategories(unittest.TestCase):
     def setUp(self):
-        self.node = Node()
+        self.node = xNode()
         self.dal = self.node._dal
         self.cursor = self.dal._get_connection().cursor()
 
@@ -175,7 +175,7 @@ class TestNodeRemoveDiscreteCategories(unittest.TestCase):
 
 class TestNodeWrapperMethods(unittest.TestCase):
     def setUp(self):
-        self.node = Node()
+        self.node = xNode()
         self.dal = self.node._dal
         self.cursor = self.dal._get_connection().cursor()
 

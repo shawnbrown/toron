@@ -4,7 +4,7 @@ import sqlite3
 import unittest
 import warnings
 
-from toron.node import Node
+from toron.node import xNode
 from toron._utils import ToronWarning
 from toron._mapper import (
     Mapper,
@@ -70,7 +70,7 @@ class TestMapper(unittest.TestCase):
 
 class TestFindMatchesFormatData(unittest.TestCase):
     def setUp(self):
-        node = Node()
+        node = xNode()
         node_data = [
             ['idx1', 'idx2', 'wght'],
             ['A', 'x', 3],
@@ -320,7 +320,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         self.addCleanup(self.connection.close)
         self.addCleanup(self.cursor.close)
 
-        node = Node()
+        node = xNode()
         data = [
             ['idx1', 'idx2', 'population'],
             ['A', 'x', 3],
@@ -611,7 +611,7 @@ class TestMapperWarnMatchStats(unittest.TestCase):
 class TwoNodesBaseTest(unittest.TestCase):
     """A base class that provides two node fixtures."""
     def setUp(self):
-        node1 = Node()
+        node1 = xNode()
         data1 = [
             ['idx', 'wght'],
             ['A', 16],
@@ -623,7 +623,7 @@ class TwoNodesBaseTest(unittest.TestCase):
         node1.add_weights(data1, 'wght', selectors=['[attr1]'])
         self.node1 = node1
 
-        node2 = Node()
+        node2 = xNode()
         data2 = [
             ['idx1', 'idx2', 'wght'],
             ['A', 'x', 3],
@@ -743,7 +743,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', 'y', 'h', 12.5],
             ['D', 'y', 'i', 37.5],
         ]
-        node1 = Node()
+        node1 = xNode()
         node1.add_index_columns(['idx1', 'idx2', 'idx3'])
         node1.add_index_records(node1_data)
         node1.add_weights(node1_data, 'wght', selectors=['[attr1]'])
@@ -761,7 +761,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', 'y', 'h', 18.75],
             ['D', 'y', 'i', 31.25],
         ]
-        node2 = Node()
+        node2 = xNode()
         node2.add_index_columns(['idx1', 'idx2', 'idx3'])
         node2.add_index_records(node2_data)
         node2.add_weights(node2_data, 'wght', selectors=['[attr1]'])

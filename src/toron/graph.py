@@ -31,7 +31,7 @@ from ._utils import (
     BitFlags,
 )
 from ._mapper import Mapper
-from .node import Node
+from .node import xNode
 
 
 NoValueType: TypeAlias = NOVALUE.__class__
@@ -41,9 +41,9 @@ Direction: TypeAlias = Literal['->', '-->', '<->', '<-->', '<-', '<--']
 def add_edge(
     data : TabularData,
     name : str,
-    left_node : Node,
+    left_node : xNode,
     direction : Direction,
-    right_node : Node,
+    right_node : xNode,
     selectors: Union[Iterable[str], None, NoValueType] = NOVALUE,
     match_limit: Union[int, float] = 1,
     weight_name: Optional[str] = None,
