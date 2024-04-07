@@ -135,6 +135,7 @@ class TestGetSqlite3Connection(unittest.TestCase):
 
         # Returns connection but doesn't fail immediately.
         con = get_sqlite_connection(f.name)
+        self.addCleanup(con.close)
 
         # Fails when attempting to interact with connection.
         with self.assertRaises(sqlite3.DatabaseError):
