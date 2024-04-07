@@ -42,6 +42,7 @@ legacy_tox_ini = """
   skip_missing_interpreters = true
 
   [testenv]
+  package = editable
   commands =
     python --version
     python -c 'import sqlite3; print(f"SQLite {sqlite3.sqlite_version}")'
