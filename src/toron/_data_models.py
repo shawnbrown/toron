@@ -34,7 +34,7 @@ JsonTypes: TypeAlias = Union[
 
 class BaseDataConnector(ABC, Generic[T1, T2]):
     @abstractmethod
-    def __init__(self) -> None:
+    def __init__(self, **kwds) -> None:
         """Initialize a new node instance."""
 
     @property
