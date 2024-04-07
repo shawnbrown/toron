@@ -113,6 +113,7 @@ class ColumnManagerBaseTest(ABC):
 
     def test_atomic_add_columns(self):
         with suppress(Exception):
+            # Second 'baz' causes an error (cannot have duplicate names).
             self.manager.add_columns('foo', 'bar', 'baz', 'baz')
 
         msg = 'should be empty tuple, no column names'
