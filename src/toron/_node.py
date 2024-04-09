@@ -6,6 +6,7 @@ from typing import (
     Dict,
     Generator,
     Optional,
+    Tuple,
 )
 
 from . import _data_access
@@ -46,3 +47,8 @@ class Node(object):
                     yield reader
                 finally:
                     self._connector.release_data_reader(reader)
+
+    def add_columns(self, column: str, *columns: str) -> None:
+        with self._managed_reader() as data_reader:
+            manager = self._dal.ColumnManager(data_reader)
+            manager.add_columns(column, *columns)

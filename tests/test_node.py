@@ -116,3 +116,15 @@ class TestManagedResourceAndReader(unittest.TestCase):
             call.release_data_reader(reader),  # <- Reader released.
             call.release_resource(ANY),  # <- Resource released.
         ])
+
+
+class TestColumnMethods(unittest.TestCase):
+    def test_add_columns(self):
+        node = Node()
+
+        node.add_columns('A', 'B')
+
+        with node._managed_reader() as reader:
+            manager = node._dal.ColumnManager(reader)
+            actual = manager.get_columns()
+        self.assertEqual(actual, ('A', 'B'))
