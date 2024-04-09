@@ -62,3 +62,8 @@ class Node(object):
         with self._managed_reader() as data_reader:
             manager = self._dal.ColumnManager(data_reader)
             manager.update_columns(mapping)
+
+    def delete_columns(self, column: str, *columns: str) -> None:
+        with self._managed_reader() as data_reader:
+            manager = self._dal.ColumnManager(data_reader)
+            manager.delete_columns(column, *columns)

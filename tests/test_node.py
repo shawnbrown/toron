@@ -152,3 +152,11 @@ class TestColumnMethods(unittest.TestCase):
         node.rename_columns({'B': 'G', 'D': 'T'})
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
+
+    def test_delete_columns(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        node.delete_columns('B', 'D')
+
+        self.assertEqual(self.get_cols_helper(node), ('A', 'C'))
