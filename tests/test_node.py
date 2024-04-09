@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import (
     Mock,
     call,
+    ANY,
 )
 if sys.version_info >= (3, 8):
     from typing import get_args
@@ -95,3 +96,23 @@ class TestManagedResourceAndReader(unittest.TestCase):
                 call.acquire_data_reader(resource),
                 call.release_data_reader(reader),  # <- Reader released.
             ])
+
+    def test_managed_reader_calls_implicit_resource(self):
+        """Test ``_managed_reader`` called without ``resource`` argument
+        (should automatically create a resource internally).
+        """
+        node = Node()
+        node._connector = Mock()
+
+        with node._managed_reader() as reader:  # <- No `resource` passed.
+            node._connector.assert_has_calls([
+                call.acquire_resource(),  # <- Resource acquired automatically.
+                call.acquire_data_reader(ANY),  # <- Reader acquired.
+            ])
+
+        node._connector.assert_has_calls([
+            call.acquire_resource(),
+            call.acquire_data_reader(ANY),
+            call.release_data_reader(reader),  # <- Reader released.
+            call.release_resource(ANY),  # <- Resource released.
+        ])

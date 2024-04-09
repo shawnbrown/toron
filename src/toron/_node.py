@@ -5,6 +5,7 @@ from typing import (
     Any,
     Dict,
     Generator,
+    Optional,
 )
 
 from . import _data_access
@@ -29,9 +30,19 @@ class Node(object):
             self._connector.release_resource(resource)
 
     @contextmanager
-    def _managed_reader(self, data_resource: Any):
-        reader = self._connector.acquire_data_reader(data_resource)
-        try:
-            yield reader
-        finally:
-            self._connector.release_data_reader(reader)
+    def _managed_reader(
+        self, data_resource: Optional[Any] = None
+    ) -> Generator[Any, None, None]:
+        if data_resource:
+            reader = self._connector.acquire_data_reader(data_resource)
+            try:
+                yield reader
+            finally:
+                self._connector.release_data_reader(reader)
+        else:
+            with self._managed_resource() as data_resource:
+                reader = self._connector.acquire_data_reader(data_resource)
+                try:
+                    yield reader
+                finally:
+                    self._connector.release_data_reader(reader)
