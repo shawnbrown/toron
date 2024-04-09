@@ -1,6 +1,15 @@
 """Tests for toron/_node.py module."""
 
+import sys
 import unittest
+from unittest.mock import (
+    Mock,
+    call,
+)
+if sys.version_info >= (3, 8):
+    from typing import get_args
+else:
+    from typing_extensions import get_args
 
 from toron._node import Node
 
@@ -32,3 +41,30 @@ class TestInstantiation(unittest.TestCase):
     def test_kwds(self):
         """The ``**kwds`` are used to create a DataConnector."""
         node = Node(cache_to_drive=True)
+
+
+class TestManagedResourceAndReader(unittest.TestCase):
+    def test_managed_resource_type(self):
+        """Resource manager should return appropriate type."""
+        node = Node()  # Create node and get resource type (generic T1).
+        resource_type = get_args(node._dal.DataConnector.__orig_bases__[0])[0]
+
+        with node._managed_resource() as resource:
+            pass
+
+        self.assertIsInstance(resource, resource_type)
+
+    def test_managed_resource_calls(self):
+        """Resource manager should interact with resource methods."""
+        node = Node()
+        node._connector = Mock()
+
+        with node._managed_resource() as resource:
+            node._connector.assert_has_calls([
+                call.acquire_resource(),  # <- Resource acquired.
+            ])
+
+        node._connector.assert_has_calls([
+            call.acquire_resource(),
+            call.release_resource(resource),  # <- Resource released.
+        ])
