@@ -68,3 +68,30 @@ class TestManagedResourceAndReader(unittest.TestCase):
             call.acquire_resource(),
             call.release_resource(resource),  # <- Resource released.
         ])
+
+    def test_managed_reader_type(self):
+        """Data reader manager should return appropriate type."""
+        node = Node()  # Create node and get reader type (generic T2).
+        reader_type = get_args(node._dal.DataConnector.__orig_bases__[0])[1]
+
+        with node._managed_resource() as resource:
+            with node._managed_reader(resource) as reader:
+                pass
+
+        self.assertIsInstance(reader, reader_type)
+
+    def test_managed_reader_calls(self):
+        """Data reader manager should interact with reader methods."""
+        node = Node()
+        node._connector = Mock()
+
+        with node._managed_resource() as resource:
+            with node._managed_reader(resource) as reader:
+                node._connector.assert_has_calls([
+                    call.acquire_data_reader(resource),  # <- Reader acquired.
+                ])
+
+            node._connector.assert_has_calls([
+                call.acquire_data_reader(resource),
+                call.release_data_reader(reader),  # <- Reader released.
+            ])

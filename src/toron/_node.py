@@ -27,3 +27,11 @@ class Node(object):
             yield resource
         finally:
             self._connector.release_resource(resource)
+
+    @contextmanager
+    def _managed_reader(self, data_resource: Any):
+        reader = self._connector.acquire_data_reader(data_resource)
+        try:
+            yield reader
+        finally:
+            self._connector.release_data_reader(reader)
