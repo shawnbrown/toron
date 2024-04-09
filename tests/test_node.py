@@ -124,9 +124,23 @@ class TestColumnMethods(unittest.TestCase):
         with node._managed_reader() as data_reader:
             return node._dal.ColumnManager(data_reader).get_columns()
 
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_reader() as reader:
+            manager = node._dal.ColumnManager(reader)
+            manager.add_columns(*columns)
+
     def test_add_columns(self):
         node = Node()
 
         node.add_columns('A', 'B')
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'B'))
+
+    def test_columns_property(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+
+        columns = node.columns  # Accessed as property attribute.
+
+        self.assertEqual(columns, ('A', 'B'))
