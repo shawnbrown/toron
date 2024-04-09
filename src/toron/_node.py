@@ -57,3 +57,8 @@ class Node(object):
     def columns(self) -> Tuple[str, ...]:
         with self._managed_reader() as data_reader:
             return self._dal.ColumnManager(data_reader).get_columns()
+
+    def rename_columns(self, mapping: Dict[str, str]) -> None:
+        with self._managed_reader() as data_reader:
+            manager = self._dal.ColumnManager(data_reader)
+            manager.update_columns(mapping)

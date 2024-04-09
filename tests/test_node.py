@@ -144,3 +144,11 @@ class TestColumnMethods(unittest.TestCase):
         columns = node.columns  # Accessed as property attribute.
 
         self.assertEqual(columns, ('A', 'B'))
+
+    def test_rename_columns(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        node.rename_columns({'B': 'G', 'D': 'T'})
+
+        self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
