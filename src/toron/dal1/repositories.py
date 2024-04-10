@@ -12,7 +12,7 @@ from toron._typing import (
 )
 
 from . import schema
-from .._data_models import (
+from ..data_models import (
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
     Structure, BaseStructureRepository,

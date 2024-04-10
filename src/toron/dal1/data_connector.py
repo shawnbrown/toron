@@ -20,7 +20,7 @@ from toron._typing import (
 )
 
 from . import schema
-from .._data_models import BaseDataConnector
+from ..data_models import BaseDataConnector
 
 
 def make_sqlite_uri_filepath(

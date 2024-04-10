@@ -10,7 +10,7 @@ from contextlib import closing, suppress
 # Abstract Test Cases
 #######################################################################
 
-from toron._data_models import (
+from toron.data_models import (
     BaseDataConnector,
     BasePropertyRepository,
 )

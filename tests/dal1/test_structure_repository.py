@@ -4,7 +4,7 @@ import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
-from toron._data_models import Structure, BaseStructureRepository
+from toron.data_models import Structure, BaseStructureRepository
 from toron.dal1.repositories import StructureRepository
 
 

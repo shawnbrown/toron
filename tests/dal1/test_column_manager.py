@@ -4,7 +4,7 @@ import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
-from toron._data_models import BaseColumnManager
+from toron.data_models import BaseColumnManager
 from toron.dal1.column_manager import (
     verify_foreign_key_check,
     ColumnManager,

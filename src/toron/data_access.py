@@ -10,7 +10,7 @@ from ._typing import (
     Union,
 )
 
-from ._data_models import (
+from .data_models import (
     BaseDataConnector,
     BaseColumnManager,
     BaseIndexRepository,
