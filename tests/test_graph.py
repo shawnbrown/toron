@@ -3,7 +3,7 @@
 import unittest
 import warnings
 
-from toron.node import xNode
+from toron.xnode import xNode
 from toron._utils import (
     ToronWarning,
     BitFlags,

@@ -31,7 +31,7 @@ from ._utils import (
     BitFlags,
 )
 from ._mapper import Mapper
-from .node import xNode
+from .xnode import xNode
 
 
 NoValueType: TypeAlias = NOVALUE.__class__

@@ -5,7 +5,7 @@ import unittest
 from .common import get_column_names
 from toron._selectors import SimpleSelector
 
-from toron.node import xNode
+from toron.xnode import xNode
 from toron._utils import ToronWarning
 
 

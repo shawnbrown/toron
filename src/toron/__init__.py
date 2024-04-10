@@ -17,7 +17,7 @@ __version__ = '0.1.0'
 __author__ = 'Shawn Brown <shawnbrown@users.noreply.github.com>'
 
 from ._node import Node
-from .node import xNode
+from .xnode import xNode
 from ._utils import (
     ToronError,
     ToronWarning,

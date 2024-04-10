@@ -34,7 +34,7 @@ from ._utils import (
 
 if TYPE_CHECKING:
     from ._dal import DataAccessLayer
-    from .node import xNode
+    from .xnode import xNode
 
 
 def _get_dal(
