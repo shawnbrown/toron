@@ -1,6 +1,4 @@
-"""Toron is tool kit for managing data joinability and ecological
-inference problems.
-"""
+"""A tool kit for granularity refinement and crosswalk translation."""
 
 __all__ = [
     # PACKAGE CONTENTS

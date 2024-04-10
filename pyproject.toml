@@ -13,7 +13,7 @@ requires-python = ">=3.7"
 authors = [
   { name="Shawn Brown", email="shawnbrown@users.noreply.github.com" },
 ]
-description = "A tool kit for managing data joinability and disaggregation problems."
+description = "A tool kit for granularity refinement and crosswalk translation."
 readme = "README.md"
 license = { file="LICENSE" }
 classifiers = [
