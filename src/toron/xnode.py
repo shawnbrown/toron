@@ -11,8 +11,8 @@ from typing import (
 )
 
 from ._dal import dal_class, PathType
-from ._categories import make_structure
-from ._categories import minimize_discrete_categories
+from .categories import make_structure
+from .categories import minimize_discrete_categories
 from ._utils import TabularData
 
 

@@ -50,8 +50,8 @@ except ImportError:
     fcntl = None  # type: ignore
 
 from . import _schema
-from ._categories import make_structure
-from ._categories import minimize_discrete_categories
+from .categories import make_structure
+from .categories import minimize_discrete_categories
 from .mapper import Mapper
 from ._utils import (
     ToronError,

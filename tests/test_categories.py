@@ -1,9 +1,9 @@
-"""Tests for toron/_categories.py module."""
+"""Tests for toron/categories.py module."""
 
 import unittest
 
-from toron._categories import make_structure
-from toron._categories import minimize_discrete_categories
+from toron.categories import make_structure
+from toron.categories import minimize_discrete_categories
 
 
 class TestMakeStructure(unittest.TestCase):
