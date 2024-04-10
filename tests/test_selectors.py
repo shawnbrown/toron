@@ -1,9 +1,9 @@
-"""Tests for toron._selectors module."""
+"""Tests for toron.selectors module."""
 
 import json
 import unittest
 
-from toron._selectors import (
+from toron.selectors import (
     SelectorBase,
     SimpleSelector,
     MatchesAnySelector,

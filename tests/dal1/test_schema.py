@@ -3,7 +3,7 @@ import sqlite3
 import unittest
 from contextlib import closing
 
-from toron._selectors import SimpleSelector
+from toron.selectors import SimpleSelector
 from toron._utils import BitFlags
 from toron.dal1.schema import (
     SQLITE_ENABLE_JSON1,

@@ -19,7 +19,7 @@ from itertools import (
 )
 from json import dumps as _dumps
 from json import loads as _loads
-from ._selectors import (
+from .selectors import (
     CompoundSelector,
     SimpleSelector,
     accepts_json_input,

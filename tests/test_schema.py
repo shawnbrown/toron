@@ -15,7 +15,7 @@ from .common import TempDirTestCase
 
 from toron._typing import Generator
 from toron._utils import ToronError
-from toron._selectors import SimpleSelector
+from toron.selectors import SimpleSelector
 from toron._schema import (
     SQLITE_JSON1_ENABLED,
     _user_apply_bit_flag,
