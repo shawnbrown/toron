@@ -1,4 +1,4 @@
-"""Tests for toron/_node.py module."""
+"""Tests for toron/node.py module."""
 
 import sys
 import unittest
@@ -12,7 +12,7 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import get_args
 
-from toron._node import Node
+from toron.node import Node
 
 
 class TestInstantiation(unittest.TestCase):
