@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from contextlib import closing
 
-from toron._dal1.data_connector import (
+from toron.dal1.data_connector import (
     make_sqlite_uri_filepath,
     get_sqlite_connection,
     verify_permissions,

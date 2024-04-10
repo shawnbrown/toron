@@ -66,7 +66,7 @@ def get_data_access_layer(backend: str = 'DAL1') -> DataAccessLayer:
     # TypedDict and Unpack which adds complexity and lines of code.
 
     if backend == 'DAL1':
-        from . import _dal1 as mod
+        from . import dal1 as mod
         dal = DataAccessLayer(
             backend=backend,
             DataConnector=mod.DataConnector,

@@ -7,7 +7,7 @@ from contextlib import closing
 from dataclasses import FrozenInstanceError
 from tempfile import NamedTemporaryFile
 
-from toron import _dal1
+from toron import dal1
 from toron._data_access import (
     DataAccessLayer,
     get_data_access_layer,
@@ -53,7 +53,7 @@ class TestGetBackendFromPath(unittest.TestCase):
         self.fname = f.name  # <- Start with empty file.
 
     def test_dal1(self):
-        _dal1.DataConnector().to_file(self.fname, fsync=False)
+        dal1.DataConnector().to_file(self.fname, fsync=False)
         self.assertEqual(get_backend_from_path(self.fname), 'DAL1')
 
     def test_sqlite_file(self):

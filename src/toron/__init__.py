@@ -2,7 +2,7 @@
 
 __all__ = [
     # PACKAGE CONTENTS
-    '_dal1',
+    'dal1',
 
     # CLASSES
     'Node',
@@ -16,6 +16,7 @@ __all__ = [
 __version__ = '0.1.0'
 __author__ = 'Shawn Brown <shawnbrown@users.noreply.github.com>'
 
+from . import dal1
 from ._node import Node
 from .xnode import xNode
 from ._utils import (

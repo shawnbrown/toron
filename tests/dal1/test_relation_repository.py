@@ -3,9 +3,9 @@
 import sqlite3
 import unittest
 
-from toron._dal1.data_connector import DataConnector
+from toron.dal1.data_connector import DataConnector
 from toron._data_models import Relation
-from toron._dal1.repositories import RelationRepository
+from toron.dal1.repositories import RelationRepository
 
 
 class TestRelationRepository(unittest.TestCase):

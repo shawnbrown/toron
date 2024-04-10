@@ -5,7 +5,7 @@ from contextlib import closing
 
 from toron._selectors import SimpleSelector
 from toron._utils import BitFlags
-from toron._dal1.schema import (
+from toron.dal1.schema import (
     SQLITE_ENABLE_JSON1,
     SQLITE_ENABLE_MATH_FUNCTIONS,
     create_node_schema,

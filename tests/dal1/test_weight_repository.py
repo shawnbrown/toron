@@ -3,9 +3,9 @@
 import sqlite3
 import unittest
 
-from toron._dal1.data_connector import DataConnector
+from toron.dal1.data_connector import DataConnector
 from toron._data_models import Weight, BaseWeightRepository
-from toron._dal1.repositories import WeightRepository
+from toron.dal1.repositories import WeightRepository
 
 
 class TestWeightRepository(unittest.TestCase):

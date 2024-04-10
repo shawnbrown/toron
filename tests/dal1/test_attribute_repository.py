@@ -4,9 +4,9 @@ import sqlite3
 import unittest
 from collections import OrderedDict
 
-from toron._dal1.data_connector import DataConnector
+from toron.dal1.data_connector import DataConnector
 from toron._data_models import Attribute
-from toron._dal1.repositories import AttributeRepository
+from toron.dal1.repositories import AttributeRepository
 
 
 class TestAttributeRepository(unittest.TestCase):

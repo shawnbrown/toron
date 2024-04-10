@@ -3,9 +3,9 @@
 import sqlite3
 import unittest
 
-from toron._dal1.data_connector import DataConnector
+from toron.dal1.data_connector import DataConnector
 from toron._data_models import Quantity
-from toron._dal1.repositories import QuantityRepository
+from toron.dal1.repositories import QuantityRepository
 
 
 class TestQuantityRepository(unittest.TestCase):
