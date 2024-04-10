@@ -52,7 +52,7 @@ except ImportError:
 from . import _schema
 from ._categories import make_structure
 from ._categories import minimize_discrete_categories
-from ._mapper import Mapper
+from .mapper import Mapper
 from ._utils import (
     ToronError,
     ToronWarning,

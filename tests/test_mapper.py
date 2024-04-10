@@ -1,4 +1,4 @@
-"""Tests for toron/_mapper.py module."""
+"""Tests for toron/mapper.py module."""
 
 import sqlite3
 import unittest
@@ -6,7 +6,7 @@ import warnings
 
 from toron.xnode import xNode
 from toron._utils import ToronWarning
-from toron._mapper import (
+from toron.mapper import (
     Mapper,
 )
 
