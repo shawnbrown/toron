@@ -1,4 +1,4 @@
-"""Tests for toron/_data_access.py module."""
+"""Tests for toron/data_access.py module."""
 
 import os
 import sqlite3
@@ -8,7 +8,7 @@ from dataclasses import FrozenInstanceError
 from tempfile import NamedTemporaryFile
 
 from toron import dal1
-from toron._data_access import (
+from toron.data_access import (
     DataAccessLayer,
     get_data_access_layer,
     get_backend_from_path,

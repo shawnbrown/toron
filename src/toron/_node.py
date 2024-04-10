@@ -9,7 +9,7 @@ from typing import (
     Tuple,
 )
 
-from . import _data_access
+from . import data_access
 
 
 class Node(object):
@@ -19,7 +19,7 @@ class Node(object):
         backend: str = 'DAL1',
         **kwds: Dict[str, Any],
     ) -> None:
-        self._dal = _data_access.get_data_access_layer(backend)
+        self._dal = data_access.get_data_access_layer(backend)
         self._connector = self._dal.DataConnector(**kwds)
 
     @contextmanager
