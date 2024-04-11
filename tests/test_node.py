@@ -5,7 +5,6 @@ import unittest
 from unittest.mock import (
     Mock,
     call,
-    ANY,
 )
 if sys.version_info >= (3, 8):
     from typing import get_args
@@ -106,18 +105,20 @@ class TestManagedConnectionAndCursor(unittest.TestCase):
         """
         node = Node()
         node._connector = Mock()
+        dummy_connections = [object(), object()]
+        node._connector.acquire_connection.side_effect = dummy_connections
 
         with node._managed_cursor() as cursor:  # <- No `connection` passed.
             node._connector.assert_has_calls([
                 call.acquire_connection(),  # <- Connection acquired automatically.
-                call.acquire_cursor(ANY),  # <- Cursor acquired.
+                call.acquire_cursor(dummy_connections[0]),  # <- Cursor acquired.
             ])
 
         node._connector.assert_has_calls([
             call.acquire_connection(),
-            call.acquire_cursor(ANY),
+            call.acquire_cursor(dummy_connections[0]),
             call.release_cursor(cursor),  # <- Cursor released.
-            call.release_connection(ANY),  # <- Connection released.
+            call.release_connection(dummy_connections[0]),  # <- Connection released.
         ])
 
 
