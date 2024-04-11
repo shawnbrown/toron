@@ -322,6 +322,10 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         """Begin a new transaction."""
         cursor.execute('BEGIN TRANSACTION')
 
+    def transaction_rollback(self, cursor: sqlite3.Cursor) -> None:
+        """Roll-back the transaction."""
+        cursor.execute('ROLLBACK TRANSACTION')
+
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:

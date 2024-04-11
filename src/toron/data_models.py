@@ -102,6 +102,17 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         """
 
     @abstractmethod
+    def transaction_rollback(self, cursor: T2) -> None:
+        """Roll-back the transaction.
+
+        If the back-end is a SQL database, this method should execute a
+        "ROLLBACK TRANSACTION" statement. If the back-end is some other
+        data store, this method must take steps to undo all changes to
+        the data since beginning of the transaction, restoring its
+        original state.
+        """
+
+    @abstractmethod
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
