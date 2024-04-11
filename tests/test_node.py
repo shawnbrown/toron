@@ -44,30 +44,30 @@ class TestInstantiation(unittest.TestCase):
         node = Node(cache_to_drive=True)
 
 
-class TestManagedResourceAndReader(unittest.TestCase):
-    def test_managed_resource_type(self):
-        """Resource manager should return appropriate type."""
-        node = Node()  # Create node and get resource type (generic T1).
-        resource_type = get_args(node._dal.DataConnector.__orig_bases__[0])[0]
+class TestManagedConnecctionAndReader(unittest.TestCase):
+    def test_managed_connection_type(self):
+        """Connection manager should return appropriate type."""
+        node = Node()  # Create node and get connection type (generic T1).
+        connection_type = get_args(node._dal.DataConnector.__orig_bases__[0])[0]
 
-        with node._managed_resource() as resource:
+        with node._managed_connection() as connection:
             pass
 
-        self.assertIsInstance(resource, resource_type)
+        self.assertIsInstance(connection, connection_type)
 
-    def test_managed_resource_calls(self):
-        """Resource manager should interact with resource methods."""
+    def test_managed_connection_calls(self):
+        """Connection manager should interact with connection methods."""
         node = Node()
         node._connector = Mock()
 
-        with node._managed_resource() as resource:
+        with node._managed_connection() as connection:
             node._connector.assert_has_calls([
-                call.acquire_resource(),  # <- Resource acquired.
+                call.acquire_connection(),  # <- Connection acquired.
             ])
 
         node._connector.assert_has_calls([
-            call.acquire_resource(),
-            call.release_resource(resource),  # <- Resource released.
+            call.acquire_connection(),
+            call.release_connection(connection),  # <- Connection released.
         ])
 
     def test_managed_reader_type(self):
@@ -75,8 +75,8 @@ class TestManagedResourceAndReader(unittest.TestCase):
         node = Node()  # Create node and get reader type (generic T2).
         reader_type = get_args(node._dal.DataConnector.__orig_bases__[0])[1]
 
-        with node._managed_resource() as resource:
-            with node._managed_reader(resource) as reader:
+        with node._managed_connection() as connection:
+            with node._managed_reader(connection) as reader:
                 pass
 
         self.assertIsInstance(reader, reader_type)
@@ -86,35 +86,35 @@ class TestManagedResourceAndReader(unittest.TestCase):
         node = Node()
         node._connector = Mock()
 
-        with node._managed_resource() as resource:
-            with node._managed_reader(resource) as reader:
+        with node._managed_connection() as connection:
+            with node._managed_reader(connection) as reader:
                 node._connector.assert_has_calls([
-                    call.acquire_data_reader(resource),  # <- Reader acquired.
+                    call.acquire_data_reader(connection),  # <- Reader acquired.
                 ])
 
             node._connector.assert_has_calls([
-                call.acquire_data_reader(resource),
+                call.acquire_data_reader(connection),
                 call.release_data_reader(reader),  # <- Reader released.
             ])
 
-    def test_managed_reader_calls_implicit_resource(self):
-        """Test ``_managed_reader`` called without ``resource`` argument
-        (should automatically create a resource internally).
+    def test_managed_reader_calls_implicit_connection(self):
+        """Test ``_managed_reader`` called without ``connection`` argument
+        (should automatically create a connection internally).
         """
         node = Node()
         node._connector = Mock()
 
-        with node._managed_reader() as reader:  # <- No `resource` passed.
+        with node._managed_reader() as reader:  # <- No `connection` passed.
             node._connector.assert_has_calls([
-                call.acquire_resource(),  # <- Resource acquired automatically.
+                call.acquire_connection(),  # <- Connection acquired automatically.
                 call.acquire_data_reader(ANY),  # <- Reader acquired.
             ])
 
         node._connector.assert_has_calls([
-            call.acquire_resource(),
+            call.acquire_connection(),
             call.acquire_data_reader(ANY),
             call.release_data_reader(reader),  # <- Reader released.
-            call.release_resource(ANY),  # <- Resource released.
+            call.release_connection(ANY),  # <- Connection released.
         ])
 
 

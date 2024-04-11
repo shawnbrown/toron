@@ -255,19 +255,19 @@ class TestDataConnector(unittest.TestCase):
 
         self.assertFalse(os.path.exists(working_path))
 
-    def test_acquire_resource_in_memory(self):
+    def test_acquire_connection_in_memory(self):
         """Connection should be same instance as _in_memory_connection."""
         connector = DataConnector()
-        con = connector.acquire_resource()  # <- Method under test.
+        con = connector.acquire_connection()  # <- Method under test.
         self.addCleanup(super(ToronSqlite3Connection, con).close)
 
         self.assertIs(con, connector._in_memory_connection)
         self.assertIsNone(connector._current_working_path)
 
-    def test_acquire_resource_on_drive(self):
+    def test_acquire_connection_on_drive(self):
         """Connection's file should match _current_working_path."""
         connector = DataConnector(cache_to_drive=True)
-        con = connector.acquire_resource()  # <- Method under test.
+        con = connector.acquire_connection()  # <- Method under test.
         try:
             cur = con.execute('PRAGMA database_list')
             _, _, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
@@ -281,11 +281,11 @@ class TestDataConnector(unittest.TestCase):
         finally:
             super(ToronSqlite3Connection, con).close()
 
-    def test_release_resource_in_memory(self):
+    def test_release_connection_in_memory(self):
         """Connection to temporary database should remain open."""
         connector = DataConnector()
-        con = connector.acquire_resource()
-        connector.release_resource(con)  # <- Method under test.
+        con = connector.acquire_connection()
+        connector.release_connection(con)  # <- Method under test.
 
         try:
             con.execute('SELECT 1')
@@ -294,11 +294,11 @@ class TestDataConnector(unittest.TestCase):
                 raise  # Re-raise error if it's something else.
             self.fail('the connection should not be closed')
 
-    def test_release_resource_on_drive(self):
+    def test_release_connection_on_drive(self):
         """Connection to persistent database should be closed."""
         connector = DataConnector(cache_to_drive=True)
-        con = connector.acquire_resource()
-        connector.release_resource(con)  # <- Method under test.
+        con = connector.acquire_connection()
+        connector.release_connection(con)  # <- Method under test.
 
         regex = 'closed database'
         with self.assertRaisesRegex(sqlite3.ProgrammingError, regex):
@@ -368,7 +368,7 @@ class TestFromLiveData(unittest.TestCase):
         except Exception:
             self.fail("read-only file should open with 'ro' permissions")
 
-    def test_acquire_resource_readonly(self):
+    def test_acquire_connection_readonly(self):
         """Connections from a read-only connector should remain
         read-only even if drive permissions on the underlying file
         are changed after instantiation.
@@ -386,10 +386,10 @@ class TestFromLiveData(unittest.TestCase):
 
         # Try to write data to the node (should fail even though the
         # on-drive permissions now allow writing).
-        con = connector.acquire_resource()
+        con = connector.acquire_connection()
         try:
             regex='attempt to write a readonly database'
             with self.assertRaisesRegex(sqlite3.OperationalError, regex):
                 con.execute("INSERT INTO property VALUES ('my_key', '\"my_value\"')")
         finally:
-            connector.release_resource(con)
+            connector.release_connection(con)

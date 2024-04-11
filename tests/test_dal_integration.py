@@ -44,10 +44,10 @@ class DataConnectorBaseTest(ABC):
         """The acquire and release methods should interoperate."""
         connector = self.connector_class()
         try:
-            resource = connector.acquire_resource()
-            connector.release_resource(resource)
+            connection = connector.acquire_connection()
+            connector.release_connection(connection)
         except Exception:
-            self.fail('acquired resource should be releasable')
+            self.fail('acquired connection should be releasable')
 
     def test_to_file(self):
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
@@ -103,11 +103,11 @@ class ColumnManagerBaseTest(ABC):
     def setUp(self):
         connector = self.connector_class()
 
-        resource = connector.acquire_resource()
-        self.addCleanup(lambda: connector.release_resource(resource))
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
 
-        data_reader = connector.acquire_data_reader(resource)
-        self.addCleanup(lambda: connector.release_resource(data_reader))
+        data_reader = connector.acquire_data_reader(connection)
+        self.addCleanup(lambda: connector.release_connection(data_reader))
 
         self.manager = self.manager_class(data_reader)
 
@@ -133,11 +133,11 @@ class PropertyRepositoryBaseTest(ABC):
 
     def setUp(self):
         connector = self.connector_class()
-        resource = connector.acquire_resource()
-        self.addCleanup(lambda: connector.release_resource(resource))
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
 
-        data_reader = connector.acquire_data_reader(resource)
-        self.addCleanup(lambda: connector.release_resource(data_reader))
+        data_reader = connector.acquire_data_reader(connection)
+        self.addCleanup(lambda: connector.release_connection(data_reader))
 
         self.repository = self.repository_class(data_reader)
 

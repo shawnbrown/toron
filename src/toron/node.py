@@ -23,26 +23,26 @@ class Node(object):
         self._connector = self._dal.DataConnector(**kwds)
 
     @contextmanager
-    def _managed_resource(self) -> Generator[Any, None, None]:
-        resource = self._connector.acquire_resource()
+    def _managed_connection(self) -> Generator[Any, None, None]:
+        connection = self._connector.acquire_connection()
         try:
-            yield resource
+            yield connection
         finally:
-            self._connector.release_resource(resource)
+            self._connector.release_connection(connection)
 
     @contextmanager
     def _managed_reader(
-        self, data_resource: Optional[Any] = None
+        self, connection: Optional[Any] = None
     ) -> Generator[Any, None, None]:
-        if data_resource:
-            reader = self._connector.acquire_data_reader(data_resource)
+        if connection:
+            reader = self._connector.acquire_data_reader(connection)
             try:
                 yield reader
             finally:
                 self._connector.release_data_reader(reader)
         else:
-            with self._managed_resource() as data_resource:
-                reader = self._connector.acquire_data_reader(data_resource)
+            with self._managed_connection() as connection:
+                reader = self._connector.acquire_data_reader(connection)
                 try:
                     yield reader
                 finally:

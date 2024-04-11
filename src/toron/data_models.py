@@ -43,31 +43,31 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         """Unique identifier for the node object."""
 
     @abstractmethod
-    def acquire_resource(self) -> T1:
+    def acquire_connection(self) -> T1:
         """Return an appropriate object to interact with a node's data.
 
-        If a node's storage backend is a database, the resource
+        If a node's storage backend is a database, the connection
         might be a DBAPI2 Connection. If other storage backends are
-        implemented, the resource could be an HDF5 group object, a
-        collection of Parquet tables, etc.
+        implemented, the "connection" could be an HDF5 group object,
+        a collection of Parquet tables, etc.
         """
 
     @abstractmethod
-    def release_resource(self, resource: T1) -> None:
-        """Release the acquired data *resource*.
+    def release_connection(self, connection: T1) -> None:
+        """Release the acquired data *connection*.
 
-        This method should release the given data *resource* object
+        This method should release the given data *connection* object
         if it's acceptable to do so. In the case of connections to
         a temporary database, this method may not do anything at all
         (since closing such a connection would delete the data). But
-        if the resource is a connection to an on-drive file or other
+        if the connection is a reference to an on-drive file or other
         persistent storage, then this method should release it to
         free up system resources (file handles, network connections,
         etc.).
         """
 
     @abstractmethod
-    def acquire_data_reader(self, resource: T1) -> T2:
+    def acquire_data_reader(self, connection: T1) -> T2:
         """Return an appropriate object to interact with a node's data.
 
         If a node's storage backend is a relational database, the
@@ -75,18 +75,18 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         backends are implemented, the *data_reader* could be an HDF5
         dataset, a Parquet table, etc.
 
-        For certain backends, the "resource" and the "data_reader"
+        For certain backends, the "connection" and the "data_reader"
         might be the same object. If this is the case, then this
-        method should simply return the resource given to it.
+        method should simply return the connection given to it.
         """
 
     @abstractmethod
     def release_data_reader(self, data_reader: T2) -> None:
         """Release the acquired data *data_reader*.
 
-        If the "resource" and "data_reader" are the same object,
+        If the "connection" and "data_reader" are the same object,
         this method should pass without doing anything to the object
-        and allow ``release_resource()`` to do the final clean-up.
+        and allow ``release_connection()`` to do the final clean-up.
         """
 
     @abstractmethod

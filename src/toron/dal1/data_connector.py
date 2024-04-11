@@ -56,7 +56,7 @@ class ToronSqlite3Connection(sqlite3.Connection):
     """SQLite connection wrapper to prevent accidental closing."""
     def close(self):
         raise RuntimeError(
-            "cannot close directly. Did you mean: 'release_resource(...)'?"
+            "cannot close directly. Did you mean: 'release_connection(...)'?"
         )
 
 
@@ -287,7 +287,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         """Unique identifier for the node object."""
         return self._unique_id
 
-    def acquire_resource(self) -> ToronSqlite3Connection:
+    def acquire_connection(self) -> ToronSqlite3Connection:
         """Return a connection to the node's SQLite database."""
         if self._in_memory_connection:
             return self._in_memory_connection
@@ -301,18 +301,18 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
             schema.create_functions_and_temporary_triggers(connection)
             return connection
 
-        raise RuntimeError('unable to acquire data resource')
+        raise RuntimeError('unable to acquire data connection')
 
-    def release_resource(self, resource: ToronSqlite3Connection) -> None:
+    def release_connection(self, connection: ToronSqlite3Connection) -> None:
         """Close the database connection if node is stored on drive."""
         if self._current_working_path:
-            super(ToronSqlite3Connection, resource).close()
+            super(ToronSqlite3Connection, connection).close()
 
     def acquire_data_reader(
-        self, resource: ToronSqlite3Connection
+        self, connection: ToronSqlite3Connection
     ) -> sqlite3.Cursor:
         """Return a cursor from the given connection."""
-        return resource.cursor()
+        return connection.cursor()
 
     def release_data_reader(self, data_reader: sqlite3.Cursor) -> None:
         """Close the database cursor."""
@@ -357,7 +357,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                 # - https://www.sqlite.org/changes.html#version_3_40_0
                 # - https://sqlite.org/src/info/86cb21ca12581cae
                 # - https://sqlite.org/forum/info/8c83764a7355f6cc8208cdf96e533dd2f91f939770c193d20980fa45140e8908
-                con = self.acquire_resource()
+                con = self.acquire_connection()
                 try:
                     with closing(con.cursor()) as cur:
                         cur.execute('PRAGMA main.synchronous')
@@ -374,7 +374,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                             cur.execute(f'PRAGMA main.synchronous={original_sync}')
                             cur.execute(f'PRAGMA fullfsync={original_fullfsync}')
                 finally:
-                    self.release_resource(con)
+                    self.release_connection(con)
 
                 os.replace(tmp_path, dst_path)
 
@@ -383,7 +383,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                 # buffered data to permanent storage. For more info, see
                 # "Ensuring data reaches disk" by Jeff Moyer:
                 #  - https://lwn.net/Articles/457667/
-                con = self.acquire_resource()
+                con = self.acquire_connection()
                 try:
                     with closing(con.cursor()) as cur:
                         cur.execute('VACUUM main INTO ?', (tmp_path,))
@@ -391,7 +391,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                     with closing(get_sqlite_connection(tmp_path)) as tmp_con:
                         con.backup(tmp_con)
                 finally:
-                    self.release_resource(con)
+                    self.release_connection(con)
 
                 best_effort_fsync(tmp_path)
                 os.replace(tmp_path, dst_path)
@@ -403,7 +403,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                 # that the data is flushed to drive. Although SQLite could
                 # still call fsync in versions 3.40.0 and newer, depending
                 # on the database's initial synchronous setting.
-                con = self.acquire_resource()
+                con = self.acquire_connection()
                 try:
                     with closing(con.cursor()) as cur:
                         cur.execute('VACUUM main INTO ?', (tmp_path,))
@@ -411,7 +411,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                     with closing(get_sqlite_connection(tmp_path)) as tmp_con:
                         con.backup(tmp_con)
                 finally:
-                    self.release_resource(con)
+                    self.release_connection(con)
 
                 os.replace(tmp_path, dst_path)
 

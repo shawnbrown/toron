@@ -9,10 +9,10 @@ from toron.dal1.repositories import PropertyRepository
 class TestPropertyRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
-        resource = connector.acquire_resource()
-        self.addCleanup(lambda: connector.release_resource(resource))
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
 
-        self.cursor = resource.cursor()
+        self.cursor = connection.cursor()
         self.addCleanup(self.cursor.close)
 
     def test_add(self):
