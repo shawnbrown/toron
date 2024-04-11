@@ -1,4 +1,4 @@
-"""Data model classes to define the API for data access.
+"""Abstract base classes to define the data access API.
 
 A compatible back-end for the DataAccessLayer class must implement
 all of the base classes given in this sub-module.
