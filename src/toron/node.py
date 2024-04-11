@@ -1,6 +1,6 @@
 """Node implementation for the Toron project."""
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from typing import (
     Any,
     Dict,
@@ -34,19 +34,13 @@ class Node(object):
     def _managed_cursor(
         self, connection: Optional[Any] = None
     ) -> Generator[Any, None, None]:
-        if connection:
+        cm = nullcontext(connection) if connection else self._managed_connection()
+        with cm as connection:
             cursor = self._connector.acquire_cursor(connection)
             try:
                 yield cursor
             finally:
                 self._connector.release_cursor(cursor)
-        else:
-            with self._managed_connection() as connection:
-                cursor = self._connector.acquire_cursor(connection)
-                try:
-                    yield cursor
-                finally:
-                    self._connector.release_cursor(cursor)
 
     def add_columns(self, column: str, *columns: str) -> None:
         with self._managed_cursor() as cursor:
