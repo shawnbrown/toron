@@ -86,6 +86,9 @@ class TestManagedConnectionAndCursor(unittest.TestCase):
         node = Node()
         node._connector = Mock()
 
+        # The acquire_connection() mock must return unique objects.
+        node._connector.acquire_connection.side_effect = lambda: object()
+
         with node._managed_connection() as connection:
             with node._managed_cursor(connection) as cursor:
                 node._connector.assert_has_calls([
