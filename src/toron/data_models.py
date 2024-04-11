@@ -90,6 +90,18 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         """
 
     @abstractmethod
+    def transaction_begin(self, cursor: T2) -> None:
+        """Begin a new transaction.
+
+        If the back-end is a SQL database, this method should execute
+        a "BEGIN TRANSACTION" statement. If the back-end is some other
+        data store, this method should take the necessary steps to mark
+        the start of a series of data changes, to ensure that they are
+        treated as a single unit that either completes entirely or is
+        rolled back if any part fails.
+        """
+
+    @abstractmethod
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:

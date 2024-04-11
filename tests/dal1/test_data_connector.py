@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from contextlib import closing
+from unittest.mock import Mock, call
 
 from toron.dal1.data_connector import (
     make_sqlite_uri_filepath,
@@ -393,3 +394,15 @@ class TestFromLiveData(unittest.TestCase):
                 con.execute("INSERT INTO property VALUES ('my_key', '\"my_value\"')")
         finally:
             connector.release_connection(con)
+
+
+class TestTransactionMethods(unittest.TestCase):
+    def setUp(self):
+        self.connector = DataConnector()
+
+    def test_transaction_begin(self):
+        cursor = Mock()
+
+        self.connector.transaction_begin(cursor)
+
+        self.assertEqual(cursor.mock_calls, [call.execute('BEGIN TRANSACTION')])

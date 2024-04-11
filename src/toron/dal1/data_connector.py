@@ -318,6 +318,10 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         """Close the database cursor."""
         return cursor.close()
 
+    def transaction_begin(self, cursor: sqlite3.Cursor) -> None:
+        """Begin a new transaction."""
+        cursor.execute('BEGIN TRANSACTION')
+
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
