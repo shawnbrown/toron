@@ -113,6 +113,16 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         """
 
     @abstractmethod
+    def transaction_commit(self, cursor: T2) -> None:
+        """Commit the transaction.
+
+        If the back-end is a SQL database, this method should execute
+        a "COMMIT TRANSACTION" statement. If the back-end is some other
+        data store, this method should finalize and save all data
+        changes made within the transaction.
+        """
+
+    @abstractmethod
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:

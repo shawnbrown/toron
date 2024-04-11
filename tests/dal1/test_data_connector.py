@@ -409,3 +409,8 @@ class TestTransactionMethods(unittest.TestCase):
         cursor = Mock()
         self.connector.transaction_rollback(cursor)
         self.assertEqual(cursor.mock_calls, [call.execute('ROLLBACK TRANSACTION')])
+
+    def test_transaction_commit(self):
+        cursor = Mock()
+        self.connector.transaction_commit(cursor)
+        self.assertEqual(cursor.mock_calls, [call.execute('COMMIT TRANSACTION')])
