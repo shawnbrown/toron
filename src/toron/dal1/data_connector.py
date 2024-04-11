@@ -308,15 +308,15 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         if self._current_working_path:
             super(ToronSqlite3Connection, connection).close()
 
-    def acquire_data_reader(
+    def acquire_cursor(
         self, connection: ToronSqlite3Connection
     ) -> sqlite3.Cursor:
         """Return a cursor from the given connection."""
         return connection.cursor()
 
-    def release_data_reader(self, data_reader: sqlite3.Cursor) -> None:
+    def release_cursor(self, cursor: sqlite3.Cursor) -> None:
         """Close the database cursor."""
-        return data_reader.close()
+        return cursor.close()
 
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True

@@ -27,9 +27,9 @@ from ..data_models import (
 
 
 class IndexRepository(BaseIndexRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new IndexRepository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(self, value: str, *values: str) -> None:
         """Add a record to the repository."""
@@ -68,9 +68,9 @@ class IndexRepository(BaseIndexRepository):
 
 
 class LocationRepository(BaseLocationRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new PropertyRepository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(self, value: str, *values: str) -> None:
         """Add a record to the repository."""
@@ -109,9 +109,9 @@ class LocationRepository(BaseLocationRepository):
 
 
 class StructureRepository(BaseStructureRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new StructureRepository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(self, value: str, *values: str) -> None:
         """Add a record to the repository."""
@@ -158,9 +158,9 @@ class StructureRepository(BaseStructureRepository):
 
 
 class WeightingRepository(BaseWeightingRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(
         self,
@@ -219,9 +219,9 @@ class WeightingRepository(BaseWeightingRepository):
 
 
 class WeightRepository(BaseWeightRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(self, weighting_id: int, index_id: int, value: int) -> None:
         """Add a record to the repository."""
@@ -264,9 +264,9 @@ class WeightRepository(BaseWeightRepository):
 
 
 class AttributeRepository(BaseAttributeRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(self, value: Dict[str, str]) -> None:
         """Add a record to the repository."""
@@ -298,9 +298,9 @@ class AttributeRepository(BaseAttributeRepository):
 
 
 class QuantityRepository(BaseQuantityRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(self, location_id: int, attribute_id: int, value: float) -> None:
         """Add a record to the repository."""
@@ -343,9 +343,9 @@ class QuantityRepository(BaseQuantityRepository):
 
 
 class EdgeRepository(BaseEdgeRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(
         self,
@@ -440,9 +440,9 @@ class EdgeRepository(BaseEdgeRepository):
 
 
 class RelationRepository(BaseRelationRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(
         self,
@@ -516,9 +516,9 @@ class RelationRepository(BaseRelationRepository):
 
 
 class PropertyRepository(BasePropertyRepository):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new PropertyRepository instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add(self, key: str, value: JsonTypes) -> None:
         """Add an item to the repository."""

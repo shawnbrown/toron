@@ -106,10 +106,10 @@ class ColumnManagerBaseTest(ABC):
         connection = connector.acquire_connection()
         self.addCleanup(lambda: connector.release_connection(connection))
 
-        data_reader = connector.acquire_data_reader(connection)
-        self.addCleanup(lambda: connector.release_connection(data_reader))
+        cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_connection(cursor))
 
-        self.manager = self.manager_class(data_reader)
+        self.manager = self.manager_class(cursor)
 
     def test_atomic_add_columns(self):
         with suppress(Exception):
@@ -136,10 +136,10 @@ class PropertyRepositoryBaseTest(ABC):
         connection = connector.acquire_connection()
         self.addCleanup(lambda: connector.release_connection(connection))
 
-        data_reader = connector.acquire_data_reader(connection)
-        self.addCleanup(lambda: connector.release_connection(data_reader))
+        cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_connection(cursor))
 
-        self.repository = self.repository_class(data_reader)
+        self.repository = self.repository_class(cursor)
 
     def test_inheritance(self):
         """Should subclass from appropriate abstract base class."""

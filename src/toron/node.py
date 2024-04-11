@@ -31,39 +31,39 @@ class Node(object):
             self._connector.release_connection(connection)
 
     @contextmanager
-    def _managed_reader(
+    def _managed_cursor(
         self, connection: Optional[Any] = None
     ) -> Generator[Any, None, None]:
         if connection:
-            reader = self._connector.acquire_data_reader(connection)
+            cursor = self._connector.acquire_cursor(connection)
             try:
-                yield reader
+                yield cursor
             finally:
-                self._connector.release_data_reader(reader)
+                self._connector.release_cursor(cursor)
         else:
             with self._managed_connection() as connection:
-                reader = self._connector.acquire_data_reader(connection)
+                cursor = self._connector.acquire_cursor(connection)
                 try:
-                    yield reader
+                    yield cursor
                 finally:
-                    self._connector.release_data_reader(reader)
+                    self._connector.release_cursor(cursor)
 
     def add_columns(self, column: str, *columns: str) -> None:
-        with self._managed_reader() as data_reader:
-            manager = self._dal.ColumnManager(data_reader)
+        with self._managed_cursor() as cursor:
+            manager = self._dal.ColumnManager(cursor)
             manager.add_columns(column, *columns)
 
     @property
     def columns(self) -> Tuple[str, ...]:
-        with self._managed_reader() as data_reader:
-            return self._dal.ColumnManager(data_reader).get_columns()
+        with self._managed_cursor() as cursor:
+            return self._dal.ColumnManager(cursor).get_columns()
 
     def rename_columns(self, mapping: Dict[str, str]) -> None:
-        with self._managed_reader() as data_reader:
-            manager = self._dal.ColumnManager(data_reader)
+        with self._managed_cursor() as cursor:
+            manager = self._dal.ColumnManager(cursor)
             manager.update_columns(mapping)
 
     def delete_columns(self, column: str, *columns: str) -> None:
-        with self._managed_reader() as data_reader:
-            manager = self._dal.ColumnManager(data_reader)
+        with self._managed_cursor() as cursor:
+            manager = self._dal.ColumnManager(cursor)
             manager.delete_columns(column, *columns)

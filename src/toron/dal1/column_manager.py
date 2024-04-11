@@ -39,9 +39,9 @@ def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
 
 
 class ColumnManager(BaseColumnManager):
-    def __init__(self, data_reader: sqlite3.Cursor) -> None:
+    def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new instance."""
-        self._cursor = data_reader
+        self._cursor = cursor
 
     def add_columns(self, column: str, *columns: str) -> None:
         """Add new label columns."""

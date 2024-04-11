@@ -67,26 +67,26 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         """
 
     @abstractmethod
-    def acquire_data_reader(self, connection: T1) -> T2:
+    def acquire_cursor(self, connection: T1) -> T2:
         """Return an appropriate object to interact with a node's data.
 
         If a node's storage backend is a relational database, the
-        *data_reader* might be a DBAPI2 Cursor. If other storage
-        backends are implemented, the *data_reader* could be an HDF5
-        dataset, a Parquet table, etc.
+        *cursor* might be a DBAPI2 Cursor. If other storage backends
+        are implemented, the *cursor* could be an HDF5 dataset, a
+        Parquet table, etc.
 
-        For certain backends, the "connection" and the "data_reader"
+        For certain backends, the "connection" and the "cursor"
         might be the same object. If this is the case, then this
         method should simply return the connection given to it.
         """
 
     @abstractmethod
-    def release_data_reader(self, data_reader: T2) -> None:
-        """Release the acquired data *data_reader*.
+    def release_cursor(self, cursor: T2) -> None:
+        """Release the acquired data *cursor*.
 
-        If the "connection" and "data_reader" are the same object,
-        this method should pass without doing anything to the object
-        and allow ``release_connection()`` to do the final clean-up.
+        If the "connection" and "cursor" are the same object, this
+        method should pass without doing anything to the object and
+        allow ``release_connection()`` to do the final clean-up.
         """
 
     @abstractmethod
@@ -124,7 +124,7 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
 class BaseColumnManager(ABC):
     """Manage node's label columns (add, get, update, and delete)."""
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new instance."""
 
     @abstractmethod
@@ -192,7 +192,7 @@ class BaseIndexRepository(ABC):
     A record's labels must be unique within the Node Index table.
     """
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new IndexRepository instance."""
 
     @abstractmethod
@@ -229,7 +229,7 @@ class Location(Index):
 
 class BaseLocationRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new LocationRepository instance."""
 
     @abstractmethod
@@ -289,7 +289,7 @@ class Structure(object):
 
 class BaseStructureRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new StructureRepository instance."""
 
     @abstractmethod
@@ -325,7 +325,7 @@ class Weighting(object):
 
 class BaseWeightingRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
 
     @abstractmethod
@@ -362,7 +362,7 @@ class Weight(object):
 
 class BaseWeightRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
 
     @abstractmethod
@@ -395,7 +395,7 @@ class Attribute(object):
 
 class BaseAttributeRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
 
     @abstractmethod
@@ -430,7 +430,7 @@ class Quantity(object):
 
 class BaseQuantityRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
 
     @abstractmethod
@@ -471,7 +471,7 @@ class Edge(object):
 
 class BaseEdgeRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
 
     @abstractmethod
@@ -517,7 +517,7 @@ class Relation(object):
 
 class BaseRelationRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
+    def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
 
     @abstractmethod
@@ -551,14 +551,8 @@ class BaseRelationRepository(ABC):
 
 class BasePropertyRepository(ABC):
     @abstractmethod
-    def __init__(self, data_reader: Any) -> None:
-        """Initialize a new PropertyRepository instance.
-
-        If a node's storage backend is a database, the *data_reader*
-        might be a DBAPI2 Cursor. If other storage backends are
-        implemented, the *data_reader* could be an HDF5 dataset, a
-        Parquet table, etc.
-        """
+    def __init__(self, cursor: Any) -> None:
+        """Initialize a new PropertyRepository instance."""
 
     @abstractmethod
     def add(self, key: str, value: JsonTypes) -> None:

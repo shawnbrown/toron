@@ -44,7 +44,7 @@ class TestInstantiation(unittest.TestCase):
         node = Node(cache_to_drive=True)
 
 
-class TestManagedConnecctionAndReader(unittest.TestCase):
+class TestManagedConnectionAndCursor(unittest.TestCase):
     def test_managed_connection_type(self):
         """Connection manager should return appropriate type."""
         node = Node()  # Create node and get connection type (generic T1).
@@ -70,50 +70,50 @@ class TestManagedConnecctionAndReader(unittest.TestCase):
             call.release_connection(connection),  # <- Connection released.
         ])
 
-    def test_managed_reader_type(self):
-        """Data reader manager should return appropriate type."""
-        node = Node()  # Create node and get reader type (generic T2).
-        reader_type = get_args(node._dal.DataConnector.__orig_bases__[0])[1]
+    def test_managed_cursor_type(self):
+        """Data cursor manager should return appropriate type."""
+        node = Node()  # Create node and get cursor type (generic T2).
+        cursor_type = get_args(node._dal.DataConnector.__orig_bases__[0])[1]
 
         with node._managed_connection() as connection:
-            with node._managed_reader(connection) as reader:
+            with node._managed_cursor(connection) as cursor:
                 pass
 
-        self.assertIsInstance(reader, reader_type)
+        self.assertIsInstance(cursor, cursor_type)
 
-    def test_managed_reader_calls(self):
-        """Data reader manager should interact with reader methods."""
+    def test_managed_cursor_calls(self):
+        """Cursor manager should interact with cursor methods."""
         node = Node()
         node._connector = Mock()
 
         with node._managed_connection() as connection:
-            with node._managed_reader(connection) as reader:
+            with node._managed_cursor(connection) as cursor:
                 node._connector.assert_has_calls([
-                    call.acquire_data_reader(connection),  # <- Reader acquired.
+                    call.acquire_cursor(connection),  # <- Cursor acquired.
                 ])
 
             node._connector.assert_has_calls([
-                call.acquire_data_reader(connection),
-                call.release_data_reader(reader),  # <- Reader released.
+                call.acquire_cursor(connection),
+                call.release_cursor(cursor),  # <- Cursor released.
             ])
 
-    def test_managed_reader_calls_implicit_connection(self):
-        """Test ``_managed_reader`` called without ``connection`` argument
+    def test_managed_cursor_calls_implicit_connection(self):
+        """Test ``_managed_cursor`` called without ``connection`` argument
         (should automatically create a connection internally).
         """
         node = Node()
         node._connector = Mock()
 
-        with node._managed_reader() as reader:  # <- No `connection` passed.
+        with node._managed_cursor() as cursor:  # <- No `connection` passed.
             node._connector.assert_has_calls([
                 call.acquire_connection(),  # <- Connection acquired automatically.
-                call.acquire_data_reader(ANY),  # <- Reader acquired.
+                call.acquire_cursor(ANY),  # <- Cursor acquired.
             ])
 
         node._connector.assert_has_calls([
             call.acquire_connection(),
-            call.acquire_data_reader(ANY),
-            call.release_data_reader(reader),  # <- Reader released.
+            call.acquire_cursor(ANY),
+            call.release_cursor(cursor),  # <- Cursor released.
             call.release_connection(ANY),  # <- Connection released.
         ])
 
@@ -121,13 +121,13 @@ class TestManagedConnecctionAndReader(unittest.TestCase):
 class TestColumnMethods(unittest.TestCase):
     @staticmethod
     def get_cols_helper(node):  # <- Helper function.
-        with node._managed_reader() as data_reader:
-            return node._dal.ColumnManager(data_reader).get_columns()
+        with node._managed_cursor() as cursor:
+            return node._dal.ColumnManager(cursor).get_columns()
 
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
-        with node._managed_reader() as reader:
-            manager = node._dal.ColumnManager(reader)
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
             manager.add_columns(*columns)
 
     def test_add_columns(self):
