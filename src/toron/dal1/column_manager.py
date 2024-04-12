@@ -62,7 +62,6 @@ class ColumnManager(BaseColumnManager):
     def update_columns(self, mapping: Dict[str, str]) -> None:
         """Update label column names."""
 
-        # RENAME COLUMN support added in SQLite 3.25.0 (2018-09-15).
         if sqlite3.sqlite_version_info < (3, 25, 0):
             msg = (
                 f"This feature requires SQLite 3.25.0 or newer. The current running "
@@ -180,11 +179,14 @@ def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
     raise RuntimeError(msg)
 
 
-# Legacy support: For SQLite versions older than 3.25.0, use a
-# series of operations to rebuild the tables with renamed columns
-# (see https://www.sqlite.org/lang_altertable.html#otheralter).
 def legacy_update_columns(node: 'Node', mapping: Dict[str, str]) -> None:
-    """Update label column names."""
+    """Update column names (for legacy SQLite versions).
+
+    RENAME COLUMN support was added in SQLite 3.25.0 (2018-09-15).
+    """
+    # This function implements the recommended 12-step procedure for schema
+    # changes (see https://www.sqlite.org/lang_altertable.html#otheralter).
+
     if node._dal.backend != 'DAL1':
         msg = f"expected Node with 'DAL1' backend, got {node._dal.backend!r}"
         raise TypeError(msg)
@@ -263,10 +265,10 @@ def legacy_update_columns(node: 'Node', mapping: Dict[str, str]) -> None:
 
 
 def legacy_delete_columns(node: 'Node', column: str, *columns: str) -> None:
-    """Delete label columns (for SQLite versions older than 3.35.5).
+    """Delete columns (for legacy SQLite versions).
 
-    DROP COLUMN support added in SQLite 3.35.0 and important bugfixes
-    were added in 3.35.5 (2021-04-19).
+    DROP COLUMN support was first added in SQLite 3.35.0 and important
+    bugfixes were added in 3.35.5 (2021-04-19).
     """
     # This function implements the recommended 12-step procedure for schema
     # changes (see https://www.sqlite.org/lang_altertable.html#otheralter).
