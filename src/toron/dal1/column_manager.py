@@ -8,38 +8,11 @@ from toron._typing import (
     TYPE_CHECKING,
 )
 
-from . import schema
-from ..data_models import BaseColumnManager
-
 if TYPE_CHECKING:
     from toron import Node
 
-
-def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
-    """Run SQLite's "PRAGMA foreign_key_check" to verify that schema
-    changes did not break any foreign key constraints. If there are
-    foreign key violations, raise a RuntimeError--if not, then pass
-    without error.
-    """
-    cursor.execute('PRAGMA main.foreign_key_check')
-    first_ten_violations = cursor.fetchmany(size=10)
-
-    if not first_ten_violations:
-        return  # <- EXIT!
-
-    formatted = '\n  '.join(str(x) for x in first_ten_violations)
-    msg = (
-        f'Legacy support for SQLite {sqlite3.sqlite_version} encountered '
-        f'unexpected foreign key violations:\n  {formatted}'
-    )
-    additional_count = sum(1 for row in cursor)  # Count remaining.
-    if additional_count:
-        msg = (
-            f'{msg}\n'
-            f'  ...\n'
-            f'  Additionally, {additional_count} more violations occurred.'
-        )
-    raise RuntimeError(msg)
+from . import schema
+from ..data_models import BaseColumnManager
 
 
 class ColumnManager(BaseColumnManager):
@@ -262,6 +235,33 @@ class ColumnManager(BaseColumnManager):
 
             finally:
                 self._cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
+
+
+def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
+    """Run SQLite's "PRAGMA foreign_key_check" to verify that schema
+    changes did not break any foreign key constraints. If there are
+    foreign key violations, raise a RuntimeError--if not, then pass
+    without error.
+    """
+    cursor.execute('PRAGMA main.foreign_key_check')
+    first_ten_violations = cursor.fetchmany(size=10)
+
+    if not first_ten_violations:
+        return  # <- EXIT!
+
+    formatted = '\n  '.join(str(x) for x in first_ten_violations)
+    msg = (
+        f'Legacy support for SQLite {sqlite3.sqlite_version} encountered '
+        f'unexpected foreign key violations:\n  {formatted}'
+    )
+    additional_count = sum(1 for row in cursor)  # Count remaining.
+    if additional_count:
+        msg = (
+            f'{msg}\n'
+            f'  ...\n'
+            f'  Additionally, {additional_count} more violations occurred.'
+        )
+    raise RuntimeError(msg)
 
 
 # Legacy support: For SQLite versions older than 3.25.0, use a
