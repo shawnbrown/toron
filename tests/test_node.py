@@ -2,9 +2,11 @@
 
 import sys
 import unittest
+from contextlib import suppress
 from unittest.mock import (
     Mock,
     call,
+    sentinel,
 )
 if sys.version_info >= (3, 8):
     from typing import get_args
@@ -43,7 +45,7 @@ class TestInstantiation(unittest.TestCase):
         node = Node(cache_to_drive=True)
 
 
-class TestManagedConnectionAndCursor(unittest.TestCase):
+class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
     def test_managed_connection_type(self):
         """Connection manager should return appropriate type."""
         node = Node()  # Create node and get connection type (generic T1).
@@ -119,6 +121,88 @@ class TestManagedConnectionAndCursor(unittest.TestCase):
             call.acquire_cursor(dummy_connections[0]),
             call.release_cursor(cursor),  # <- Cursor released.
             call.release_connection(dummy_connections[0]),  # <- Connection released.
+        ])
+
+    def test_managed_transaction(self):
+        """Should commit changes when no errors occur."""
+        node = Node()
+        node._connector = Mock()
+        node._connector.acquire_connection.return_value = sentinel.con
+        node._connector.acquire_cursor.return_value = sentinel.cur
+
+        with node._managed_connection() as connection:
+            with node._managed_cursor(connection) as cursor:
+                with node._managed_transaction(cursor) as cursor:
+                    node._connector.assert_has_calls([
+                        call.acquire_connection(),
+                        call.acquire_cursor(sentinel.con),
+                        call.transaction_begin(sentinel.cur),  # <- BEGIN
+                    ])
+
+        node._connector.assert_has_calls([
+            call.transaction_commit(sentinel.cur),  # <- COMMIT
+            call.release_cursor(sentinel.cur),
+            call.release_connection(sentinel.con),
+        ])
+
+    def test_managed_transaction_rollback(self):
+        """Should roll-back changes when an error occurs."""
+        node = Node()
+        node._connector = Mock()
+        node._connector.acquire_connection.return_value = sentinel.con
+        node._connector.acquire_cursor.return_value = sentinel.cur
+
+        with suppress(RuntimeError):
+            with node._managed_connection() as connection:
+                with node._managed_cursor(connection) as cursor:
+                    with node._managed_transaction(cursor) as cursor:
+                        raise RuntimeError  # <- Error inside the transaction.
+
+        node._connector.assert_has_calls([
+            call.acquire_connection(),
+            call.acquire_cursor(sentinel.con),
+            call.transaction_begin(sentinel.cur),
+            call.transaction_rollback(sentinel.cur),  # <- ROLLBACK
+            call.release_cursor(sentinel.cur),
+            call.release_connection(sentinel.con),
+        ])
+
+    def test_managed_transaction_implicit_resources(self):
+        """When called without args, should auto-acquire resources."""
+        node = Node()
+        node._connector = Mock()
+        node._connector.acquire_connection.return_value = sentinel.con
+        node._connector.acquire_cursor.return_value = sentinel.cur
+
+        with node._managed_transaction() as cursor:
+            pass
+
+        node._connector.assert_has_calls([
+            call.acquire_connection(),
+            call.acquire_cursor(sentinel.con),
+            call.transaction_begin(sentinel.cur),
+            call.transaction_commit(sentinel.cur),  # <- COMMIT
+            call.release_cursor(sentinel.cur),
+            call.release_connection(sentinel.con),
+        ])
+
+    def test_managed_transaction_implicit_resources(self):
+        node = Node()
+        node._connector = Mock()
+        node._connector.acquire_connection.return_value = sentinel.con
+        node._connector.acquire_cursor.return_value = sentinel.cur
+
+        with suppress(RuntimeError):
+            with node._managed_transaction() as cursor:
+                raise RuntimeError  # <- Error inside the transaction.
+
+        node._connector.assert_has_calls([
+            call.acquire_connection(),
+            call.acquire_cursor(sentinel.con),
+            call.transaction_begin(sentinel.cur),
+            call.transaction_rollback(sentinel.cur),  # <- ROLLBACK
+            call.release_cursor(sentinel.cur),
+            call.release_connection(sentinel.con),
         ])
 
 
