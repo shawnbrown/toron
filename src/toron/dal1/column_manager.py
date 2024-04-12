@@ -5,10 +5,14 @@ import sqlite3
 from toron._typing import (
     Dict,
     Tuple,
+    TYPE_CHECKING,
 )
 
 from . import schema
 from ..data_models import BaseColumnManager
+
+if TYPE_CHECKING:
+    from toron import Node
 
 
 def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
@@ -82,113 +86,45 @@ class ColumnManager(BaseColumnManager):
         columns = tuple(row[1] for row in self._cursor.fetchall())
         return columns[1:]  # Return columns (slicing-off index_id).
 
-    if sqlite3.sqlite_version_info >= (3, 25, 0):
+    def update_columns(self, mapping: Dict[str, str]) -> None:
+        """Update label column names."""
+
         # RENAME COLUMN support added in SQLite 3.25.0 (2018-09-15).
-        def update_columns(self, mapping: Dict[str, str]) -> None:
-            """Update label column names."""
+        if sqlite3.sqlite_version_info < (3, 25, 0):
+            msg = (
+                f"This feature requires SQLite 3.25.0 or newer. The current running "
+                f"Python is bundled with SQLite {sqlite3.sqlite_version}.\n"
+                f"\n"
+                f"Use the helper function 'toron.dal1.legacy_rename_columns(...)' instead."
+            )
+            raise Exception(msg)
 
-            if self._cursor.connection.in_transaction:
-                # While SQLite 3.25.0 and newer can rename columns inside
-                # an existing transaction, this function blocks doing so
-                # to maintain consistent behavior with legacy version.
-                msg = 'cannot update columns inside an existing transaction'
-                raise RuntimeError(msg)
+        if self._cursor.connection.in_transaction:
+            # While SQLite 3.25.0 and newer can rename columns inside
+            # an existing transaction, this function blocks doing so
+            # to maintain consistent behavior with legacy version.
+            msg = 'cannot update columns inside an existing transaction'
+            raise RuntimeError(msg)
 
-            try:
-                self._cursor.execute('BEGIN TRANSACTION')
-                for name, new_name in mapping.items():
-                    self._cursor.execute(f"""
-                        ALTER TABLE main.node_index
-                            RENAME COLUMN {name} TO {new_name}
-                    """)
-                    self._cursor.execute(f"""
-                        ALTER TABLE main.location
-                            RENAME COLUMN {name} TO {new_name}
-                    """)
-                    self._cursor.execute(f"""
-                        ALTER TABLE main.structure
-                            RENAME COLUMN {name} TO {new_name}
-                    """)
-                self._cursor.execute('COMMIT TRANSACTION')
-            except Exception as err:
-                self._cursor.execute('ROLLBACK TRANSACTION')
-                raise  # Re-raise exception.
-
-    else:
-        # Legacy support: For SQLite versions older than 3.25.0, use a
-        # series of operations to rebuild the tables with renamed columns
-        # (see https://www.sqlite.org/lang_altertable.html#otheralter).
-        def update_columns(self, mapping: Dict[str, str]) -> None:
-            """Update label column names."""
-
-            if self._cursor.connection.in_transaction:
-                msg = 'cannot update columns inside an existing transaction'
-                raise RuntimeError(msg)
-
-            # Build a list of new column names.
-            new_columns = []
-            for old_col in self.get_columns():
-                new_col = mapping.get(old_col, old_col)  # Get new name or default to old.
-                if new_col in new_columns:
-                    raise ValueError(f'cannot create duplicate columns: {new_col}')
-                new_columns.append(new_col)
-
-            self._cursor.execute('PRAGMA foreign_keys=OFF')  # <- Must be outside transaction.
-            try:
-                self._cursor.execute('BEGIN TRANSACTION')
-                schema.drop_schema_constraints(self._cursor)
-
-                # Rebuild 'node_index' table with new column names.
+        try:
+            self._cursor.execute('BEGIN TRANSACTION')
+            for name, new_name in mapping.items():
                 self._cursor.execute(f"""
-                    CREATE TABLE main.new_node_index(
-                        index_id INTEGER PRIMARY KEY AUTOINCREMENT,  /* <- Must not reuse id values. */
-                        {', '.join(schema.column_def_node_index(x) for x in new_columns)}
-                    )
+                    ALTER TABLE main.node_index
+                        RENAME COLUMN {name} TO {new_name}
                 """)
-                self._cursor.execute(
-                    'INSERT INTO main.new_node_index SELECT * FROM main.node_index'
-                )
-                self._cursor.execute('DROP TABLE main.node_index')
-                self._cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
-
-                # Rebuild 'location' table with new column names.
                 self._cursor.execute(f"""
-                    CREATE TABLE main.new_location(
-                        _location_id INTEGER PRIMARY KEY,
-                        {', '.join(schema.column_def_location(x) for x in new_columns)}
-                    )
+                    ALTER TABLE main.location
+                        RENAME COLUMN {name} TO {new_name}
                 """)
-                self._cursor.execute(
-                    'INSERT INTO main.new_location SELECT * FROM main.location'
-                )
-                self._cursor.execute('DROP TABLE main.location')
-                self._cursor.execute('ALTER TABLE main.new_location RENAME TO location')
-
-                # Rebuild 'structure' table with new column names.
                 self._cursor.execute(f"""
-                    CREATE TABLE main.new_structure(
-                        _structure_id INTEGER PRIMARY KEY,
-                        _granularity REAL,
-                        {', '.join(schema.column_def_structure(x) for x in new_columns)}
-                    )
+                    ALTER TABLE main.structure
+                        RENAME COLUMN {name} TO {new_name}
                 """)
-                self._cursor.execute(
-                    'INSERT INTO main.new_structure SELECT * FROM main.structure'
-                )
-                self._cursor.execute('DROP TABLE main.structure')
-                self._cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
-
-                # Check integrity, re-create constraints, and commit transaction.
-                verify_foreign_key_check(self._cursor)
-                schema.create_schema_constraints(self._cursor)
-                self._cursor.execute('COMMIT TRANSACTION')
-
-            except Exception as err:
-                self._cursor.execute('ROLLBACK TRANSACTION')
-                raise  # Re-raise exception.
-
-            finally:
-                self._cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
+            self._cursor.execute('COMMIT TRANSACTION')
+        except Exception as err:
+            self._cursor.execute('ROLLBACK TRANSACTION')
+            raise  # Re-raise exception.
 
     if sqlite3.sqlite_version_info >= (3, 35, 5):
         # DROP COLUMN support added in SQLite 3.35.0 and important bugfixes
@@ -326,3 +262,81 @@ class ColumnManager(BaseColumnManager):
 
             finally:
                 self._cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
+
+
+# Legacy support: For SQLite versions older than 3.25.0, use a
+# series of operations to rebuild the tables with renamed columns
+# (see https://www.sqlite.org/lang_altertable.html#otheralter).
+def legacy_update_columns(node: 'Node', mapping: Dict[str, str]) -> None:
+    """Update label column names."""
+    with node._managed_cursor() as cursor:
+        manager = node._dal.ColumnManager(cursor)
+
+        if manager._cursor.connection.in_transaction:
+            msg = 'cannot update columns inside an existing transaction'
+            raise RuntimeError(msg)
+
+        # Build a list of new column names.
+        new_columns = []
+        for old_col in manager.get_columns():
+            new_col = mapping.get(old_col, old_col)  # Get new name or default to old.
+            if new_col in new_columns:
+                raise ValueError(f'cannot create duplicate columns: {new_col}')
+            new_columns.append(new_col)
+
+        manager._cursor.execute('PRAGMA foreign_keys=OFF')  # <- Must be outside transaction.
+        try:
+            manager._cursor.execute('BEGIN TRANSACTION')
+            schema.drop_schema_constraints(manager._cursor)
+
+            # Rebuild 'node_index' table with new column names.
+            manager._cursor.execute(f"""
+                CREATE TABLE main.new_node_index(
+                    index_id INTEGER PRIMARY KEY AUTOINCREMENT,  /* <- Must not reuse id values. */
+                    {', '.join(schema.column_def_node_index(x) for x in new_columns)}
+                )
+            """)
+            manager._cursor.execute(
+                'INSERT INTO main.new_node_index SELECT * FROM main.node_index'
+            )
+            manager._cursor.execute('DROP TABLE main.node_index')
+            manager._cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
+
+            # Rebuild 'location' table with new column names.
+            manager._cursor.execute(f"""
+                CREATE TABLE main.new_location(
+                    _location_id INTEGER PRIMARY KEY,
+                    {', '.join(schema.column_def_location(x) for x in new_columns)}
+                )
+            """)
+            manager._cursor.execute(
+                'INSERT INTO main.new_location SELECT * FROM main.location'
+            )
+            manager._cursor.execute('DROP TABLE main.location')
+            manager._cursor.execute('ALTER TABLE main.new_location RENAME TO location')
+
+            # Rebuild 'structure' table with new column names.
+            manager._cursor.execute(f"""
+                CREATE TABLE main.new_structure(
+                    _structure_id INTEGER PRIMARY KEY,
+                    _granularity REAL,
+                    {', '.join(schema.column_def_structure(x) for x in new_columns)}
+                )
+            """)
+            manager._cursor.execute(
+                'INSERT INTO main.new_structure SELECT * FROM main.structure'
+            )
+            manager._cursor.execute('DROP TABLE main.structure')
+            manager._cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
+
+            # Check integrity, re-create constraints, and commit transaction.
+            verify_foreign_key_check(manager._cursor)
+            schema.create_schema_constraints(manager._cursor)
+            manager._cursor.execute('COMMIT TRANSACTION')
+
+        except Exception as err:
+            manager._cursor.execute('ROLLBACK TRANSACTION')
+            raise  # Re-raise exception.
+
+        finally:
+            manager._cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.

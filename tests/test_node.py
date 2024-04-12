@@ -1,5 +1,6 @@
 """Tests for toron/node.py module."""
 
+import sqlite3
 import sys
 import unittest
 from contextlib import suppress
@@ -235,7 +236,11 @@ class TestColumnMethods(unittest.TestCase):
         node = Node()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
-        node.rename_columns({'B': 'G', 'D': 'T'})
+        if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
+            node.rename_columns({'B': 'G', 'D': 'T'})
+        else:
+            import toron.dal1
+            toron.dal1.legacy_update_columns(node, {'B': 'G', 'D': 'T'})
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
 

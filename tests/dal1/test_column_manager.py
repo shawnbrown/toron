@@ -125,6 +125,7 @@ class TestColumnManager(unittest.TestCase):
 
         self.assertEqual(actual, tuple(), msg='should be empty tuple when no label columns')
 
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 25, 0), 'requires 3.25.0 or newer')
     def test_update_columns(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar')
@@ -144,6 +145,7 @@ class TestColumnManager(unittest.TestCase):
             [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')],
         )
 
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 25, 0), 'requires 3.25.0 or newer')
     def test_update_columns_bad_transaction_state(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar')

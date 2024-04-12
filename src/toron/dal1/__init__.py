@@ -2,6 +2,7 @@
 
 from .data_connector import DataConnector
 from .column_manager import ColumnManager
+from .column_manager import legacy_update_columns
 from .repositories import (
     IndexRepository,
     LocationRepository,
