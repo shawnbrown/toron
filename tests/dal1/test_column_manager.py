@@ -9,6 +9,7 @@ from toron.dal1.column_manager import (
     ColumnManager,
     verify_foreign_key_check,
     legacy_update_columns,
+    legacy_delete_columns,
 )
 from toron.node import Node
 
@@ -108,6 +109,7 @@ class TestColumnManager(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, regex):
             manager.update_columns({'foo': 'qux', 'bar': 'quux'})
 
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 35, 5), 'requires 3.35.5 or newer')
     def test_delete_columns(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar', 'baz', 'qux')
@@ -137,6 +139,7 @@ class TestColumnManager(unittest.TestCase):
             [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
         )
 
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 35, 5), 'requires 3.35.5 or newer')
     def test_delete_columns_all(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar')
@@ -144,6 +147,18 @@ class TestColumnManager(unittest.TestCase):
         regex = 'cannot delete all columns'
         with self.assertRaisesRegex(RuntimeError, regex):
             manager.delete_columns('foo', 'bar')
+
+    def test_delete_columns_legacy_message(self):
+        """On SQLite versions older than 3.35.5, should raise error."""
+        if sqlite3.sqlite_version_info >= (3, 35, 5):
+            return  # <- EXIT!
+
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar')
+
+        regex = 'requires SQLite 3.35.5 or newer'
+        with self.assertRaisesRegex(Exception, regex):
+            manager.delete_columns('bar')
 
 
 class TestVerifyForeignKeyCheck(unittest.TestCase):
@@ -244,3 +259,40 @@ class TestLegacyUpdateColumns(unittest.TestCase):
         regex = 'existing transaction'
         with self.assertRaisesRegex(RuntimeError, regex):
             legacy_update_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
+
+    def test_legacy_delete_columns(self):
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar', 'baz', 'qux')
+        self.cursor.executescript("""
+            INSERT INTO node_index VALUES (NULL, 'a', 'x', '111', 'one');
+            INSERT INTO node_index VALUES (NULL, 'b', 'y', '222', 'two');
+            INSERT INTO node_index VALUES (NULL, 'c', 'z', '333', 'three');
+        """)
+
+        legacy_delete_columns(self.node, 'bar')  # <- Delete 1 column.
+
+        self.assertColumnsEqual('node_index', ['index_id', 'foo', 'baz', 'qux'])
+        self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
+        self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'baz', 'qux'])
+        self.assertRecordsEqual(
+            'node_index',
+            [(0, '-', '-', '-'), (1, 'a', '111', 'one'), (2, 'b', '222', 'two'), (3, 'c', '333', 'three')],
+        )
+
+        legacy_delete_columns(self.node, 'baz', 'qux')  # <- Delete 2 more columns at the same time.
+
+        self.assertColumnsEqual('node_index', ['index_id', 'foo'])
+        self.assertColumnsEqual('location', ['_location_id', 'foo'])
+        self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo'])
+        self.assertRecordsEqual(
+            'node_index',
+            [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
+        )
+
+    def test_legacy_delete_columns_all(self):
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar')
+
+        regex = 'cannot delete all columns'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            legacy_delete_columns(self.node, 'foo', 'bar')

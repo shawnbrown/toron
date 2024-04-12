@@ -99,142 +99,58 @@ class ColumnManager(BaseColumnManager):
             self._cursor.execute('ROLLBACK TRANSACTION')
             raise  # Re-raise exception.
 
-    if sqlite3.sqlite_version_info >= (3, 35, 5):
-        # DROP COLUMN support added in SQLite 3.35.0 and important bugfixes
-        # were added in 3.35.5 (2021-04-19).
-        def delete_columns(self, column: str, *columns: str) -> None:
-            """Delete label columns."""
-            #raise NotImplementedError
+    def delete_columns(self, column: str, *columns: str) -> None:
+        """Delete label columns."""
 
-            if self._cursor.connection.in_transaction:
-                # While SQLite 3.35.5 and newer can drop columns inside
-                # an existing transaction, this function blocks doing so
-                # to maintain consistent behavior with legacy version.
-                msg = 'cannot delete columns inside an existing transaction'
-                raise RuntimeError(msg)
+        if sqlite3.sqlite_version_info < (3, 35, 5):
+            msg = (
+                f"This feature requires SQLite 3.35.5 or newer. The current running "
+                f"Python is bundled with SQLite {sqlite3.sqlite_version}.\n"
+                f"\n"
+                f"Use the helper function 'toron.dal1.legacy_delete_columns(...)' instead."
+            )
+            raise Exception(msg)
 
-            existing_columns = self.get_columns()
-            columns_to_delete = (column,) + columns
+        if self._cursor.connection.in_transaction:
+            # While SQLite 3.35.5 and newer can drop columns inside
+            # an existing transaction, this function blocks doing so
+            # to maintain consistent behavior with legacy version.
+            msg = 'cannot delete columns inside an existing transaction'
+            raise RuntimeError(msg)
 
-            if not set(existing_columns).difference(columns_to_delete):
-                # Without at least 1 label column, a node cannot represent
-                # any quantities, weightings, or edges it might contain--and
-                # this information must be preserved.
-                raise RuntimeError('cannot delete all columns')
+        existing_columns = self.get_columns()
+        columns_to_delete = (column,) + columns
 
-            try:
-                self._cursor.execute('BEGIN TRANSACTION')
-                schema.drop_schema_constraints(self._cursor)
+        if not set(existing_columns).difference(columns_to_delete):
+            # Without at least 1 label column, a node cannot represent
+            # any quantities, weightings, or edges it might contain--and
+            # this information must be preserved.
+            raise RuntimeError('cannot delete all columns')
 
-                for column in columns_to_delete:
-                    if column not in existing_columns:
-                        continue  # Skip to next column.
+        try:
+            self._cursor.execute('BEGIN TRANSACTION')
+            schema.drop_schema_constraints(self._cursor)
 
-                    column = schema.format_identifier(column)
-                    self._cursor.execute(
-                        f'ALTER TABLE main.node_index DROP COLUMN {column}'
-                    )
-                    self._cursor.execute(
-                        f'ALTER TABLE main.location DROP COLUMN {column}'
-                    )
-                    self._cursor.execute(
-                        f'ALTER TABLE main.structure DROP COLUMN {column}'
-                    )
+            for column in columns_to_delete:
+                if column not in existing_columns:
+                    continue  # Skip to next column.
 
-                schema.create_schema_constraints(self._cursor)
-                self._cursor.execute('COMMIT TRANSACTION')
-            except Exception as err:
-                self._cursor.execute('ROLLBACK TRANSACTION')
-                raise  # Re-raise exception.
+                column = schema.format_identifier(column)
+                self._cursor.execute(
+                    f'ALTER TABLE main.node_index DROP COLUMN {column}'
+                )
+                self._cursor.execute(
+                    f'ALTER TABLE main.location DROP COLUMN {column}'
+                )
+                self._cursor.execute(
+                    f'ALTER TABLE main.structure DROP COLUMN {column}'
+                )
 
-    else:
-        # Legacy support: For SQLite versions older than 3.35.5, use a
-        # series of operations to rebuild the tables with remaining columns
-        # (see https://www.sqlite.org/lang_altertable.html#otheralter).
-        def delete_columns(self, column: str, *columns: str) -> None:
-            """Delete label columns."""
-
-            if self._cursor.connection.in_transaction:
-                msg = 'cannot delete columns inside an existing transaction'
-                raise RuntimeError(msg)
-
-            # Build a list of column names to keep.
-            columns_to_delete = (column,) + columns
-            columns_to_keep = [
-                col for col in self.get_columns() if col not in columns_to_delete
-            ]
-            if not columns_to_keep:
-                # Without at least 1 label column, a node cannot represent
-                # any quantities, weightings, or edges it might contain--and
-                # this information must be preserved.
-                raise RuntimeError('cannot delete all columns')
-
-            formatted_columns_to_keep = [
-                schema.format_identifier(x) for x in columns_to_keep
-            ]
-
-            self._cursor.execute('PRAGMA foreign_keys=OFF')  # <- Must be outside transaction.
-            try:
-                self._cursor.execute('BEGIN TRANSACTION')
-                schema.drop_schema_constraints(self._cursor)
-
-                # Rebuild 'node_index' table with columns_to_keep.
-                self._cursor.execute(f"""
-                    CREATE TABLE main.new_node_index(
-                        index_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        {', '.join(schema.column_def_node_index(x) for x in columns_to_keep)}
-                    )
-                """)
-                self._cursor.execute(f"""
-                    INSERT INTO main.new_node_index
-                    SELECT index_id, {', '.join(formatted_columns_to_keep)}
-                    FROM main.node_index
-                """)
-                self._cursor.execute('DROP TABLE main.node_index')
-                self._cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
-
-                # Rebuild 'location' table with columns_to_keep.
-                self._cursor.execute(f"""
-                    CREATE TABLE main.new_location(
-                        _location_id INTEGER PRIMARY KEY,
-                        {', '.join(schema.column_def_location(x) for x in columns_to_keep)}
-                    )
-                """)
-                self._cursor.execute(f"""
-                    INSERT INTO main.new_location
-                    SELECT _location_id, {', '.join(formatted_columns_to_keep)}
-                    FROM main.location
-                """)
-                self._cursor.execute('DROP TABLE main.location')
-                self._cursor.execute('ALTER TABLE main.new_location RENAME TO location')
-
-                # Rebuild 'structure' table with columns_to_keep.
-                self._cursor.execute(f"""
-                    CREATE TABLE main.new_structure(
-                        _structure_id INTEGER PRIMARY KEY,
-                        _granularity REAL,
-                        {', '.join(schema.column_def_structure(x) for x in columns_to_keep)}
-                    )
-                """)
-                self._cursor.execute(f"""
-                    INSERT INTO main.new_structure
-                    SELECT _structure_id, _granularity, {', '.join(formatted_columns_to_keep)}
-                    FROM main.structure
-                """)
-                self._cursor.execute('DROP TABLE main.structure')
-                self._cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
-
-                # Check integrity, re-create constraints, and commit transaction.
-                verify_foreign_key_check(self._cursor)
-                schema.create_schema_constraints(self._cursor)
-                self._cursor.execute('COMMIT TRANSACTION')
-
-            except Exception as err:
-                self._cursor.execute('ROLLBACK TRANSACTION')
-                raise  # Re-raise exception.
-
-            finally:
-                self._cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
+            schema.create_schema_constraints(self._cursor)
+            self._cursor.execute('COMMIT TRANSACTION')
+        except Exception as err:
+            self._cursor.execute('ROLLBACK TRANSACTION')
+            raise  # Re-raise exception.
 
 
 def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
@@ -330,6 +246,105 @@ def legacy_update_columns(node: 'Node', mapping: Dict[str, str]) -> None:
             cursor.execute(
                 'INSERT INTO main.new_structure SELECT * FROM main.structure'
             )
+            cursor.execute('DROP TABLE main.structure')
+            cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
+
+            # Check integrity, re-create constraints, and commit transaction.
+            verify_foreign_key_check(cursor)
+            schema.create_schema_constraints(cursor)
+            cursor.execute('COMMIT TRANSACTION')
+
+        except Exception as err:
+            cursor.execute('ROLLBACK TRANSACTION')
+            raise  # Re-raise exception.
+
+        finally:
+            cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
+
+
+def legacy_delete_columns(node: 'Node', column: str, *columns: str) -> None:
+    """Delete label columns (for SQLite versions older than 3.35.5).
+
+    DROP COLUMN support added in SQLite 3.35.0 and important bugfixes
+    were added in 3.35.5 (2021-04-19).
+    """
+    # This function implements the recommended 12-step procedure for schema
+    # changes (see https://www.sqlite.org/lang_altertable.html#otheralter).
+
+    if node._dal.backend != 'DAL1':
+        msg = f"expected Node with 'DAL1' backend, got {node._dal.backend!r}"
+        raise TypeError(msg)
+
+    with node._managed_cursor() as cursor:
+        manager = ColumnManager(cursor)
+
+        if cursor.connection.in_transaction:
+            msg = 'cannot delete columns inside an existing transaction'
+            raise RuntimeError(msg)
+
+        # Build a list of column names to keep.
+        columns_to_delete = (column,) + columns
+        columns_to_keep = [
+            col for col in manager.get_columns() if col not in columns_to_delete
+        ]
+        if not columns_to_keep:
+            # Without at least 1 label column, a node cannot represent
+            # any quantities, weightings, or edges it might contain--and
+            # this information must be preserved.
+            raise RuntimeError('cannot delete all columns')
+
+        formatted_columns_to_keep = [
+            schema.format_identifier(x) for x in columns_to_keep
+        ]
+
+        cursor.execute('PRAGMA foreign_keys=OFF')  # <- Must be outside transaction.
+        try:
+            cursor.execute('BEGIN TRANSACTION')
+            schema.drop_schema_constraints(cursor)
+
+            # Rebuild 'node_index' table with columns_to_keep.
+            cursor.execute(f"""
+                CREATE TABLE main.new_node_index(
+                    index_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    {', '.join(schema.column_def_node_index(x) for x in columns_to_keep)}
+                )
+            """)
+            cursor.execute(f"""
+                INSERT INTO main.new_node_index
+                SELECT index_id, {', '.join(formatted_columns_to_keep)}
+                FROM main.node_index
+            """)
+            cursor.execute('DROP TABLE main.node_index')
+            cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
+
+            # Rebuild 'location' table with columns_to_keep.
+            cursor.execute(f"""
+                CREATE TABLE main.new_location(
+                    _location_id INTEGER PRIMARY KEY,
+                    {', '.join(schema.column_def_location(x) for x in columns_to_keep)}
+                )
+            """)
+            cursor.execute(f"""
+                INSERT INTO main.new_location
+                SELECT _location_id, {', '.join(formatted_columns_to_keep)}
+                FROM main.location
+            """)
+            cursor.execute('DROP TABLE main.location')
+            cursor.execute('ALTER TABLE main.new_location RENAME TO location')
+
+            # Rebuild 'structure' table with columns_to_keep.
+            cursor.execute(f"""
+                CREATE TABLE main.new_structure(
+                    _structure_id INTEGER PRIMARY KEY,
+                    _granularity REAL,
+                    {', '.join(schema.column_def_structure(x) for x in columns_to_keep)}
+                )
+            """)
+            cursor.execute(f"""
+                INSERT INTO main.new_structure
+                SELECT _structure_id, _granularity, {', '.join(formatted_columns_to_keep)}
+                FROM main.structure
+            """)
             cursor.execute('DROP TABLE main.structure')
             cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
 

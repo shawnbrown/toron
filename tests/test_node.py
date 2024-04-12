@@ -248,6 +248,10 @@ class TestColumnMethods(unittest.TestCase):
         node = Node()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
-        node.delete_columns('B', 'D')
+        if sqlite3.sqlite_version_info >= (3, 35, 5) or node._dal.backend != 'DAL1':
+            node.delete_columns('B', 'D')
+        else:
+            import toron.dal1
+            toron.dal1.legacy_delete_columns(node, 'B', 'D')
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'C'))
