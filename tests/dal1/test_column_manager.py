@@ -6,9 +6,11 @@ import unittest
 from toron.dal1.data_connector import DataConnector
 from toron.data_models import BaseColumnManager
 from toron.dal1.column_manager import (
-    verify_foreign_key_check,
     ColumnManager,
+    verify_foreign_key_check,
+    legacy_update_columns,
 )
+from toron.node import Node
 
 
 class TestVerifyForeignKeyCheck(unittest.TestCase):
@@ -193,3 +195,52 @@ class TestColumnManager(unittest.TestCase):
         regex = 'cannot delete all columns'
         with self.assertRaisesRegex(RuntimeError, regex):
             manager.delete_columns('foo', 'bar')
+
+
+class TestLegacyUpdateColumns(unittest.TestCase):
+    def assertColumnsEqual(self, table_name, expected_columns, msg=None):
+        self.cursor.execute(f"PRAGMA main.table_info('{table_name}')")
+        actual_columns = [row[1] for row in self.cursor.fetchall()]
+        self.assertEqual(actual_columns, expected_columns, msg=msg)
+
+    def assertRecordsEqual(self, table_name, expected_records, msg=None):
+        self.cursor.execute(f"SELECT * FROM {table_name}")
+        actual_records = self.cursor.fetchall()
+        self.assertEqual(actual_records, expected_records, msg=msg)
+
+    def setUp(self):
+        self.node = Node()
+        connection = self.node._connector.acquire_connection()
+        self.addCleanup(lambda: self.node._connector.release_connection(connection))
+        self.cursor = connection.cursor()
+        self.addCleanup(self.cursor.close)
+
+    def test_update_columns(self):
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar')
+        self.cursor.executescript("""
+            INSERT INTO node_index VALUES (NULL, 'a', 'x');
+            INSERT INTO node_index VALUES (NULL, 'b', 'y');
+            INSERT INTO node_index VALUES (NULL, 'c', 'z');
+        """)
+
+        legacy_update_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
+
+        self.assertColumnsEqual('node_index', ['index_id', 'qux', 'quux'])
+        self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
+        self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'qux', 'quux'])
+        self.assertRecordsEqual(
+            'node_index',
+            [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')],
+        )
+
+    def test_update_columns_bad_transaction_state(self):
+        manager = ColumnManager(self.cursor)
+        manager.add_columns('foo', 'bar')
+
+        self.cursor.execute('BEGIN TRANSACTION')
+        self.addCleanup(lambda: self.cursor.execute('ROLLBACK TRANSACTION'))
+
+        regex = 'existing transaction'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            legacy_update_columns(self.node, {'foo': 'qux', 'bar': 'quux'})

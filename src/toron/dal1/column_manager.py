@@ -269,10 +269,14 @@ class ColumnManager(BaseColumnManager):
 # (see https://www.sqlite.org/lang_altertable.html#otheralter).
 def legacy_update_columns(node: 'Node', mapping: Dict[str, str]) -> None:
     """Update label column names."""
-    with node._managed_cursor() as cursor:
-        manager = node._dal.ColumnManager(cursor)
+    if node._dal.backend != 'DAL1':
+        msg = f"expected Node with 'DAL1' backend, got {node._dal.backend!r}"
+        raise TypeError(msg)
 
-        if manager._cursor.connection.in_transaction:
+    with node._managed_cursor() as cursor:
+        manager = ColumnManager(cursor)
+
+        if cursor.connection.in_transaction:
             msg = 'cannot update columns inside an existing transaction'
             raise RuntimeError(msg)
 
@@ -284,59 +288,59 @@ def legacy_update_columns(node: 'Node', mapping: Dict[str, str]) -> None:
                 raise ValueError(f'cannot create duplicate columns: {new_col}')
             new_columns.append(new_col)
 
-        manager._cursor.execute('PRAGMA foreign_keys=OFF')  # <- Must be outside transaction.
+        cursor.execute('PRAGMA foreign_keys=OFF')  # <- Must be outside transaction.
         try:
-            manager._cursor.execute('BEGIN TRANSACTION')
-            schema.drop_schema_constraints(manager._cursor)
+            cursor.execute('BEGIN TRANSACTION')
+            schema.drop_schema_constraints(cursor)
 
             # Rebuild 'node_index' table with new column names.
-            manager._cursor.execute(f"""
+            cursor.execute(f"""
                 CREATE TABLE main.new_node_index(
                     index_id INTEGER PRIMARY KEY AUTOINCREMENT,  /* <- Must not reuse id values. */
                     {', '.join(schema.column_def_node_index(x) for x in new_columns)}
                 )
             """)
-            manager._cursor.execute(
+            cursor.execute(
                 'INSERT INTO main.new_node_index SELECT * FROM main.node_index'
             )
-            manager._cursor.execute('DROP TABLE main.node_index')
-            manager._cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
+            cursor.execute('DROP TABLE main.node_index')
+            cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
 
             # Rebuild 'location' table with new column names.
-            manager._cursor.execute(f"""
+            cursor.execute(f"""
                 CREATE TABLE main.new_location(
                     _location_id INTEGER PRIMARY KEY,
                     {', '.join(schema.column_def_location(x) for x in new_columns)}
                 )
             """)
-            manager._cursor.execute(
+            cursor.execute(
                 'INSERT INTO main.new_location SELECT * FROM main.location'
             )
-            manager._cursor.execute('DROP TABLE main.location')
-            manager._cursor.execute('ALTER TABLE main.new_location RENAME TO location')
+            cursor.execute('DROP TABLE main.location')
+            cursor.execute('ALTER TABLE main.new_location RENAME TO location')
 
             # Rebuild 'structure' table with new column names.
-            manager._cursor.execute(f"""
+            cursor.execute(f"""
                 CREATE TABLE main.new_structure(
                     _structure_id INTEGER PRIMARY KEY,
                     _granularity REAL,
                     {', '.join(schema.column_def_structure(x) for x in new_columns)}
                 )
             """)
-            manager._cursor.execute(
+            cursor.execute(
                 'INSERT INTO main.new_structure SELECT * FROM main.structure'
             )
-            manager._cursor.execute('DROP TABLE main.structure')
-            manager._cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
+            cursor.execute('DROP TABLE main.structure')
+            cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
 
             # Check integrity, re-create constraints, and commit transaction.
-            verify_foreign_key_check(manager._cursor)
-            schema.create_schema_constraints(manager._cursor)
-            manager._cursor.execute('COMMIT TRANSACTION')
+            verify_foreign_key_check(cursor)
+            schema.create_schema_constraints(cursor)
+            cursor.execute('COMMIT TRANSACTION')
 
         except Exception as err:
-            manager._cursor.execute('ROLLBACK TRANSACTION')
+            cursor.execute('ROLLBACK TRANSACTION')
             raise  # Re-raise exception.
 
         finally:
-            manager._cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
+            cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
