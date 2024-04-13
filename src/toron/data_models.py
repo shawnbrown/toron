@@ -488,8 +488,8 @@ class BaseQuantityRepository(ABC):
 
 
 @dataclass
-class Edge(object):
-    """Edge record."""
+class Crosswalk(object):
+    """Crosswalk record."""
     id: int
     name: str
     other_unique_id: str
@@ -502,7 +502,7 @@ class Edge(object):
     is_default: bool = False
 
 
-class BaseEdgeRepository(ABC):
+class BaseCrosswalkRepository(ABC):
     @abstractmethod
     def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
@@ -524,11 +524,11 @@ class BaseEdgeRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Edge]:
+    def get(self, id: int) -> Optional[Crosswalk]:
         """Get a record from the repository."""
 
     @abstractmethod
-    def update(self, record: Edge) -> None:
+    def update(self, record: Crosswalk) -> None:
         """Update a record in the repository."""
 
     @abstractmethod

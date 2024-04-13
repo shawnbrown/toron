@@ -89,8 +89,8 @@ class ColumnManager(BaseColumnManager):
         columns_to_delete = tuple(chain([column], columns))
 
         if not set(existing_columns).difference(columns_to_delete):
-            # Without at least 1 label column, a node cannot represent
-            # any quantities, weightings, or edges it might contain--and
+            # Without at least 1 label column, a node cannot represent any
+            # quantities, weightings, or crosswalks it might contain--and
             # this information must be preserved.
             raise RuntimeError('cannot delete all columns')
 
@@ -252,8 +252,8 @@ def legacy_delete_columns(node: 'Node', column: str, *columns: str) -> None:
             col for col in manager.get_columns() if col not in columns_to_delete
         ]
         if not columns_to_keep:
-            # Without at least 1 label column, a node cannot represent
-            # any quantities, weightings, or edges it might contain--and
+            # Without at least 1 label column, a node cannot represent any
+            # quantities, weightings, or crosswalks it might contain--and
             # this information must be preserved.
             raise RuntimeError('cannot delete all columns')
 

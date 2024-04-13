@@ -1,14 +1,14 @@
-"""Tests for EdgeRepository class."""
+"""Tests for CrosswalkRepository class."""
 
 import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
-from toron.data_models import Edge
-from toron.dal1.repositories import EdgeRepository
+from toron.data_models import Crosswalk
+from toron.dal1.repositories import CrosswalkRepository
 
 
-class TestEdgeRepository(unittest.TestCase):
+class TestCrosswalkRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
@@ -23,7 +23,7 @@ class TestEdgeRepository(unittest.TestCase):
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def test_add(self):
-        repository = EdgeRepository(self.cursor)
+        repository = CrosswalkRepository(self.cursor)
 
         repository.add('name1', '111-unique-id-1111', is_default=True)
         repository.add('name2', '111-unique-id-1111')  # <- Same `other_unique_id`, different name.
@@ -40,7 +40,7 @@ class TestEdgeRepository(unittest.TestCase):
         )
 
         # Note: The last item (`is_default`) is True/False on the user-facing
-        # object (the Edge record class) but it's 1/None on the database side
+        # object (the Crosswalk record class) but it's 1/None on the database side
         # to facilitate the SQLite constraint that enforces one default crosswalk
         # per `other_unique_id`.
         self.assertRecords([
@@ -69,11 +69,11 @@ class TestEdgeRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (3, 'name1', '222-unique-id-2222', 'somefile.toron', '78b320d6dbbb48c8',
                                           'A crosswalk to some other node.', '["[foo]", "[bar]"]', '{"prop1": 111}', 1, 1);
         """)
-        repository = EdgeRepository(self.cursor)
+        repository = CrosswalkRepository(self.cursor)
 
         self.assertEqual(
             repository.get(1),
-            Edge(
+            Crosswalk(
                 id=1,
                 name='name1',
                 other_unique_id='111-unique-id-1111',
@@ -82,14 +82,14 @@ class TestEdgeRepository(unittest.TestCase):
                 description=None,
                 selectors=None,
                 user_properties=None,
-                is_locally_complete=False,  # <- Edge value False, database value 0.
-                is_default=True,  # <- Edge value True, database value 1.
+                is_locally_complete=False,  # <- Crosswalk value False, database value 0.
+                is_default=True,  # <- Crosswalk value True, database value 1.
             ),
         )
 
         self.assertEqual(
             repository.get(2),
-            Edge(
+            Crosswalk(
                 id=2,
                 name='name2',
                 other_unique_id='111-unique-id-1111',
@@ -98,14 +98,14 @@ class TestEdgeRepository(unittest.TestCase):
                 description=None,
                 selectors=None,
                 user_properties=None,
-                is_locally_complete=False,  # <- Edge value False, database value 0.
-                is_default=False,  # <- Edge value False, database value NULL.
+                is_locally_complete=False,  # <- Crosswalk value False, database value 0.
+                is_default=False,  # <- Crosswalk value False, database value NULL.
             ),
         )
 
         self.assertEqual(
             repository.get(3),
-            Edge(
+            Crosswalk(
                 id=3,
                 name='name1',
                 other_unique_id='222-unique-id-2222',
@@ -114,8 +114,8 @@ class TestEdgeRepository(unittest.TestCase):
                 description='A crosswalk to some other node.',
                 selectors=['[foo]', '[bar]'],
                 user_properties={'prop1': 111},
-                is_locally_complete=True,  # <- Edge value True, database value 1.
-                is_default=True,  # <- Edge value True, database value 1.
+                is_locally_complete=True,  # <- Crosswalk value True, database value 1.
+                is_default=True,  # <- Crosswalk value True, database value 1.
             ),
         )
 
@@ -128,10 +128,10 @@ class TestEdgeRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (3, 'name1', '222-unique-id-2222', 'somefile.toron', '78b320d6dbbb48c8',
                                           'A crosswalk to some other node.', '["[foo]", "[bar]"]', '{"prop1": 111}', 1, 1);
         """)
-        repository = EdgeRepository(self.cursor)
+        repository = CrosswalkRepository(self.cursor)
 
         # Change name (matched WHERE crosswalk_id=2, all other values are SET).
-        repository.update(Edge(2, 'name-two', '111-unique-id-1111'))
+        repository.update(Crosswalk(2, 'name-two', '111-unique-id-1111'))
         self.assertRecords([
             (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, 1),
             (2, 'name-two', '111-unique-id-1111', None, None, None, None, None, 0, None),  # <- Name changed!
@@ -140,7 +140,7 @@ class TestEdgeRepository(unittest.TestCase):
         ])
 
         # Check coersion from False to None for `is_default` column.
-        repository.update(Edge(1, 'name1', '111-unique-id-1111', is_default=False))
+        repository.update(Crosswalk(1, 'name1', '111-unique-id-1111', is_default=False))
         self.assertRecords([
             (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, None),  # <- Should end with None!
             (2, 'name-two', '111-unique-id-1111', None, None, None, None, None, 0, None),
@@ -149,7 +149,7 @@ class TestEdgeRepository(unittest.TestCase):
         ])
 
         # Check selectors JSON.
-        repository.update(Edge(3, 'name1', '222-unique-id-2222', selectors=['[baz]']))  # <- Set selector.
+        repository.update(Crosswalk(3, 'name1', '222-unique-id-2222', selectors=['[baz]']))  # <- Set selector.
         self.assertRecords([
             (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, None),
             (2, 'name-two', '111-unique-id-1111', None, None, None, None, None, 0, None),
@@ -157,7 +157,7 @@ class TestEdgeRepository(unittest.TestCase):
         ])
 
         # Check user_properties JSON.
-        repository.update(Edge(3, 'name1', '222-unique-id-2222', user_properties={'alt-prop': 42}))  # <- Set user_properties.
+        repository.update(Crosswalk(3, 'name1', '222-unique-id-2222', user_properties={'alt-prop': 42}))  # <- Set user_properties.
         self.assertRecords([
             (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, None),
             (2, 'name-two', '111-unique-id-1111', None, None, None, None, None, 0, None),
@@ -166,11 +166,11 @@ class TestEdgeRepository(unittest.TestCase):
 
         msg = "should fail, 'name' values must be unique per other_index_id"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.update(Edge(2, 'name1', '111-unique-id-1111'))
+            repository.update(Crosswalk(2, 'name1', '111-unique-id-1111'))
 
         # No record exists with crosswalk_id=4.
         try:
-            repository.update(Edge(4, 'name1', '444-unique-id-4444'))
+            repository.update(Crosswalk(4, 'name1', '444-unique-id-4444'))
         except Exception as err:
             self.fail(f'updating non-existant records should not raise error, got {err!r}')
 
@@ -179,7 +179,7 @@ class TestEdgeRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (1, 'name1', '111-unique-id-1111', NULL, NULL, NULL, NULL, NULL, 0, 1);
             INSERT INTO crosswalk VALUES (2, 'name2', '111-unique-id-1111', NULL, NULL, NULL, NULL, NULL, 0, NULL);
         """)
-        repository = EdgeRepository(self.cursor)
+        repository = CrosswalkRepository(self.cursor)
 
         repository.delete(1)
         self.assertRecords([(2, 'name2', '111-unique-id-1111', None, None, None, None, None, 0, None)])

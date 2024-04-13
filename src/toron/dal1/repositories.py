@@ -20,7 +20,7 @@ from ..data_models import (
     Weight, BaseWeightRepository,
     Attribute, BaseAttributeRepository,
     Quantity, BaseQuantityRepository,
-    Edge, BaseEdgeRepository,
+    Crosswalk, BaseCrosswalkRepository,
     Relation, BaseRelationRepository,
     JsonTypes, BasePropertyRepository,
 )
@@ -342,7 +342,7 @@ class QuantityRepository(BaseQuantityRepository):
     #    """Filter to records associated with the given attribute."""
 
 
-class EdgeRepository(BaseEdgeRepository):
+class CrosswalkRepository(BaseCrosswalkRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
         self._cursor = cursor
@@ -391,7 +391,7 @@ class EdgeRepository(BaseEdgeRepository):
         )
         self._cursor.execute(sql, parameters)
 
-    def get(self, id: int) -> Optional[Edge]:
+    def get(self, id: int) -> Optional[Crosswalk]:
         """Get a record from the repository."""
         self._cursor.execute(
             'SELECT * FROM main.crosswalk WHERE crosswalk_id=?', (id,)
@@ -399,10 +399,10 @@ class EdgeRepository(BaseEdgeRepository):
         record = self._cursor.fetchone()
         if record:
             a, b, c, d, e, f, g, h, i, j = record  # Faster to unpack all than to slice.
-            return Edge(a, b, c, d, e, f, g, h, bool(i), bool(j))
+            return Crosswalk(a, b, c, d, e, f, g, h, bool(i), bool(j))
         return None
 
-    def update(self, record: Edge) -> None:
+    def update(self, record: Crosswalk) -> None:
         """Update a record in the repository."""
         sql = f"""
             UPDATE main.crosswalk
