@@ -83,9 +83,8 @@ class Node(object):
                 msg = (
                     'cannot delete all columns\n'
                     '\n'
-                    'Without at least 1 label column, a node cannot represent '
-                    'any quantities, distributions, or crosswalks it might '
-                    'contain.'
+                    'Without at least one index column, a node cannot represent '
+                    'any weights, quantities, or relations it might contain.'
                 )
                 raise RuntimeError(msg)
 
