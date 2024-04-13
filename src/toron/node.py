@@ -69,12 +69,12 @@ class Node(object):
             return self._dal.ColumnManager(cursor).get_columns()
 
     def rename_columns(self, mapping: Dict[str, str]) -> None:
-        with self._managed_cursor() as cursor:
+        with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
             manager.update_columns(mapping)
 
     def delete_columns(self, column: str, *columns: str) -> None:
-        with self._managed_cursor() as cursor:
+        with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
             manager.delete_columns(column, *columns)
 

@@ -59,32 +59,19 @@ class ColumnManager(BaseColumnManager):
             )
             raise Exception(msg)
 
-        if self._cursor.connection.in_transaction:
-            # While SQLite 3.25.0 and newer can rename columns inside
-            # an existing transaction, this function blocks doing so
-            # to maintain consistent behavior with legacy version.
-            msg = 'cannot update columns inside an existing transaction'
-            raise RuntimeError(msg)
-
-        try:
-            self._cursor.execute('BEGIN TRANSACTION')
-            for name, new_name in mapping.items():
-                self._cursor.execute(f"""
-                    ALTER TABLE main.node_index
-                        RENAME COLUMN {name} TO {new_name}
-                """)
-                self._cursor.execute(f"""
-                    ALTER TABLE main.location
-                        RENAME COLUMN {name} TO {new_name}
-                """)
-                self._cursor.execute(f"""
-                    ALTER TABLE main.structure
-                        RENAME COLUMN {name} TO {new_name}
-                """)
-            self._cursor.execute('COMMIT TRANSACTION')
-        except Exception as err:
-            self._cursor.execute('ROLLBACK TRANSACTION')
-            raise  # Re-raise exception.
+        for name, new_name in mapping.items():
+            self._cursor.execute(f"""
+                ALTER TABLE main.node_index
+                    RENAME COLUMN {name} TO {new_name}
+            """)
+            self._cursor.execute(f"""
+                ALTER TABLE main.location
+                    RENAME COLUMN {name} TO {new_name}
+            """)
+            self._cursor.execute(f"""
+                ALTER TABLE main.structure
+                    RENAME COLUMN {name} TO {new_name}
+            """)
 
     def delete_columns(self, column: str, *columns: str) -> None:
         """Delete label columns."""
@@ -98,15 +85,8 @@ class ColumnManager(BaseColumnManager):
             )
             raise Exception(msg)
 
-        if self._cursor.connection.in_transaction:
-            # While SQLite 3.35.5 and newer can drop columns inside
-            # an existing transaction, this function blocks doing so
-            # to maintain consistent behavior with legacy version.
-            msg = 'cannot delete columns inside an existing transaction'
-            raise RuntimeError(msg)
-
         existing_columns = self.get_columns()
-        columns_to_delete = (column,) + columns
+        columns_to_delete = tuple(chain([column], columns))
 
         if not set(existing_columns).difference(columns_to_delete):
             # Without at least 1 label column, a node cannot represent
@@ -114,30 +94,24 @@ class ColumnManager(BaseColumnManager):
             # this information must be preserved.
             raise RuntimeError('cannot delete all columns')
 
-        try:
-            self._cursor.execute('BEGIN TRANSACTION')
-            schema.drop_schema_constraints(self._cursor)
+        schema.drop_schema_constraints(self._cursor)
 
-            for column in columns_to_delete:
-                if column not in existing_columns:
-                    continue  # Skip to next column.
+        for column in columns_to_delete:
+            if column not in existing_columns:
+                continue  # Skip to next column.
 
-                column = schema.format_identifier(column)
-                self._cursor.execute(
-                    f'ALTER TABLE main.node_index DROP COLUMN {column}'
-                )
-                self._cursor.execute(
-                    f'ALTER TABLE main.location DROP COLUMN {column}'
-                )
-                self._cursor.execute(
-                    f'ALTER TABLE main.structure DROP COLUMN {column}'
-                )
+            column = schema.format_identifier(column)
+            self._cursor.execute(
+                f'ALTER TABLE main.node_index DROP COLUMN {column}'
+            )
+            self._cursor.execute(
+                f'ALTER TABLE main.location DROP COLUMN {column}'
+            )
+            self._cursor.execute(
+                f'ALTER TABLE main.structure DROP COLUMN {column}'
+            )
 
-            schema.create_schema_constraints(self._cursor)
-            self._cursor.execute('COMMIT TRANSACTION')
-        except Exception as err:
-            self._cursor.execute('ROLLBACK TRANSACTION')
-            raise  # Re-raise exception.
+        schema.create_schema_constraints(self._cursor)
 
 
 def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
