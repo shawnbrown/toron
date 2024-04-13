@@ -85,13 +85,12 @@ class ColumnManager(BaseColumnManager):
             )
             raise Exception(msg)
 
-        existing_columns = self.get_columns()
+        columns_to_delete = \
+            set(chain([column], columns)).intersection(self.get_columns())
+
         schema.drop_schema_constraints(self._cursor)
 
-        for column in tuple(chain([column], columns)):
-            if column not in existing_columns:
-                continue  # Skip to next column.
-
+        for column in columns_to_delete:
             column = schema.format_identifier(column)
             self._cursor.execute(
                 f'ALTER TABLE main.node_index DROP COLUMN {column}'
