@@ -540,7 +540,7 @@ class BaseEdgeRepository(ABC):
 class Relation(object):
     """Relation record."""
     id: int
-    edge_id: int
+    crosswalk_id: int
     other_index_id: int
     index_id: int
     value: float
@@ -556,7 +556,7 @@ class BaseRelationRepository(ABC):
     @abstractmethod
     def add(
         self,
-        edge_id: int,
+        crosswalk_id: int,
         other_index_id: int,
         index_id: int,
         value: float,
@@ -578,8 +578,8 @@ class BaseRelationRepository(ABC):
         """Delete a record from the repository."""
 
     #@abstractmethod
-    #def find_by_edge_id(self, edge_id: int) -> Iterable[Relation]:
-    #    """Filter to records associated with the given edge."""
+    #def find_by_crosswalk_id(self, crosswalk_id: int) -> Iterable[Relation]:
+    #    """Filter to records associated with the given crosswalk."""
 
 
 class BasePropertyRepository(ABC):

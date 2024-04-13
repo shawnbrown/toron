@@ -365,7 +365,7 @@ class EdgeRepository(BaseEdgeRepository):
             selectors = [selectors]
 
         sql = """
-            INSERT INTO main.edge (
+            INSERT INTO main.crosswalk (
                 name,
                 other_unique_id,
                 other_filename_hint,
@@ -394,7 +394,7 @@ class EdgeRepository(BaseEdgeRepository):
     def get(self, id: int) -> Optional[Edge]:
         """Get a record from the repository."""
         self._cursor.execute(
-            'SELECT * FROM main.edge WHERE edge_id=?', (id,)
+            'SELECT * FROM main.crosswalk WHERE crosswalk_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record:
@@ -405,7 +405,7 @@ class EdgeRepository(BaseEdgeRepository):
     def update(self, record: Edge) -> None:
         """Update a record in the repository."""
         sql = f"""
-            UPDATE main.edge
+            UPDATE main.crosswalk
             SET
                 name=?,
                 other_unique_id=?,
@@ -416,7 +416,7 @@ class EdgeRepository(BaseEdgeRepository):
                 user_properties=?,
                 is_locally_complete=?,
                 is_default=?
-            WHERE edge_id=?
+            WHERE crosswalk_id=?
         """
         parameters = [
                 record.name,
@@ -435,7 +435,7 @@ class EdgeRepository(BaseEdgeRepository):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
-            'DELETE FROM main.edge WHERE edge_id=?', (id,)
+            'DELETE FROM main.crosswalk WHERE crosswalk_id=?', (id,)
         )
 
 
@@ -446,7 +446,7 @@ class RelationRepository(BaseRelationRepository):
 
     def add(
         self,
-        edge_id: int,
+        crosswalk_id: int,
         other_index_id: int,
         index_id: int,
         value: float,
@@ -456,7 +456,7 @@ class RelationRepository(BaseRelationRepository):
         """Add a record to the repository."""
         sql = """
             INSERT INTO main.relation (
-                edge_id,
+                crosswalk_id,
                 other_index_id,
                 index_id,
                 relation_value,
@@ -466,7 +466,7 @@ class RelationRepository(BaseRelationRepository):
             VALUES (?, ?, ?, ?, ?, ?)
         """
         parameters = (
-            edge_id,
+            crosswalk_id,
             other_index_id,
             index_id,
             value,
@@ -489,7 +489,7 @@ class RelationRepository(BaseRelationRepository):
         """Update a record in the repository."""
         sql = f"""
             UPDATE main.relation
-            SET edge_id=?,
+            SET crosswalk_id=?,
                 other_index_id=?,
                 index_id=?,
                 relation_value=?,
@@ -498,7 +498,7 @@ class RelationRepository(BaseRelationRepository):
             WHERE relation_id=?
         """
         parameters = (
-            record.edge_id,
+            record.crosswalk_id,
             record.other_index_id,
             record.index_id,
             record.value,

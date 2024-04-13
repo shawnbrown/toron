@@ -14,9 +14,9 @@ application layer:
                                                            •  +-----------------+
                                     +----------------+     •  | attribute       |
     +----------------------+        | relation       |     •  +-----------------+
-    | edge                 |        +----------------+     •  | attribute_id    |--+
+    | crosswalk            |        +----------------+     •  | attribute_id    |--+
     +----------------------+        | relation_id    |     •  | attribute_value |  |
-    | edge_id              |------->| edge_id        |     •  +-----------------+  |
+    | crosswalk_id         |------->| crosswalk_id   |     •  +-----------------+  |
     | name                 |  ••••••| other_index_id |<•••••                       |
     | other_unique_id      |  •  •••| index_id       |<-+     +-----------------+  |
     | other_filename_hint  |  •  •  | relation_value |  |     | quantity        |  |
@@ -166,8 +166,8 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             FOREIGN KEY(attribute_id) REFERENCES attribute(attribute_id) ON DELETE CASCADE
         );
 
-        CREATE TABLE main.edge(
-            edge_id INTEGER PRIMARY KEY,
+        CREATE TABLE main.crosswalk(
+            crosswalk_id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             other_unique_id TEXT NOT NULL,
             other_filename_hint TEXT,
@@ -190,15 +190,15 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
 
         CREATE TABLE main.relation(
             relation_id INTEGER PRIMARY KEY,
-            edge_id INTEGER,
+            crosswalk_id INTEGER,
             other_index_id INTEGER NOT NULL,
             index_id INTEGER,
             relation_value REAL NOT NULL CHECK (0.0 <= relation_value),
             proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
             mapping_level BLOB_BITFLAGS,
-            FOREIGN KEY(edge_id) REFERENCES edge(edge_id) ON DELETE CASCADE,
+            FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,
             FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
-            UNIQUE (edge_id, other_index_id, index_id)
+            UNIQUE (crosswalk_id, other_index_id, index_id)
         );
 
         CREATE TABLE main.property(
@@ -365,7 +365,7 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
         tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
         node_tables = {
             'attribute',
-            'edge',
+            'crosswalk',
             'location',
             'node_index',
             'property',
@@ -449,7 +449,7 @@ def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
 
 
 def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
-    """Add temp triggers to validate ``edge.selectors`` and
+    """Add temp triggers to validate ``crosswalk.selectors`` and
     ``weighting.selectors`` columns.
 
     The trigger will pass without error when the value is a wellformed
@@ -484,8 +484,8 @@ def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
     """
     cur.execute(sql.format(event='INSERT', table='weighting'))
     cur.execute(sql.format(event='UPDATE', table='weighting'))
-    cur.execute(sql.format(event='INSERT', table='edge'))
-    cur.execute(sql.format(event='UPDATE', table='edge'))
+    cur.execute(sql.format(event='INSERT', table='crosswalk'))
+    cur.execute(sql.format(event='UPDATE', table='crosswalk'))
 
 
 def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
@@ -576,7 +576,7 @@ def create_toron_check_user_properties(connection: sqlite3.Connection) -> None:
 
 
 def create_triggers_user_properties(cur: sqlite3.Cursor) -> None:
-    """Add temp triggers to validate ``edge.user_properties`` column.
+    """Add temp triggers to validate ``crosswalk.user_properties`` column.
 
     A well-formed TEXT_USERPROPERTIES value is a string containing
     a JSON object type.
@@ -590,13 +590,13 @@ def create_triggers_user_properties(cur: sqlite3.Cursor) -> None:
         userproperties_are_invalid = f'toron_check_user_properties(NEW.user_properties) = 0'
 
     sql = f"""
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_edge_user_properties
-        BEFORE {{event}} ON main.edge FOR EACH ROW
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_crosswalk_user_properties
+        BEFORE {{event}} ON main.crosswalk FOR EACH ROW
         WHEN
             NEW.user_properties IS NOT NULL
             AND {userproperties_are_invalid}
         BEGIN
-            SELECT RAISE(ABORT, 'edge.user_properties must be well-formed JSON object type');
+            SELECT RAISE(ABORT, 'crosswalk.user_properties must be well-formed JSON object type');
         END;
     """
     cur.execute(sql.format(event='INSERT'))

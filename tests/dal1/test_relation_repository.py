@@ -113,5 +113,5 @@ class TestRelationRepository(unittest.TestCase):
         self.assertRecords([])
 
     @unittest.skip('not implemented')
-    def test_find_by_edge_id(self):
+    def test_find_by_crosswalk_id(self):
         raise NotImplementedError
