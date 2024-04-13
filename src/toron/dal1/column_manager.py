@@ -47,8 +47,8 @@ class ColumnManager(BaseColumnManager):
         columns = tuple(row[1] for row in self._cursor.fetchall())
         return columns[1:]  # Return columns (slicing-off index_id).
 
-    def update_columns(self, mapping: Dict[str, str]) -> None:
-        """Update label column names."""
+    def rename_columns(self, mapping: Dict[str, str]) -> None:
+        """Rename label columns."""
 
         if sqlite3.sqlite_version_info < (3, 25, 0):
             msg = (
@@ -141,8 +141,8 @@ def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
     raise RuntimeError(msg)
 
 
-def legacy_update_columns(node: 'Node', mapping: Dict[str, str]) -> None:
-    """Update column names (for legacy SQLite versions).
+def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
+    """Rename label columns (for legacy SQLite versions).
 
     RENAME COLUMN support was added in SQLite 3.25.0 (2018-09-15).
     """
@@ -157,7 +157,7 @@ def legacy_update_columns(node: 'Node', mapping: Dict[str, str]) -> None:
         manager = ColumnManager(cursor)
 
         if cursor.connection.in_transaction:
-            msg = 'cannot update columns inside an existing transaction'
+            msg = 'cannot rename columns inside an existing transaction'
             raise RuntimeError(msg)
 
         # Build a list of new column names.

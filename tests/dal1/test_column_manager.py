@@ -8,7 +8,7 @@ from toron.data_models import BaseColumnManager
 from toron.dal1.column_manager import (
     ColumnManager,
     verify_foreign_key_check,
-    legacy_update_columns,
+    legacy_rename_columns,
     legacy_delete_columns,
 )
 from toron.node import Node
@@ -78,7 +78,7 @@ class TestColumnManager(unittest.TestCase):
         self.assertEqual(actual, tuple(), msg='should be empty tuple when no label columns')
 
     @unittest.skipIf(sqlite3.sqlite_version_info < (3, 25, 0), 'requires 3.25.0 or newer')
-    def test_update_columns(self):
+    def test_rename_columns(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar')
         self.cursor.executescript("""
@@ -87,7 +87,7 @@ class TestColumnManager(unittest.TestCase):
             INSERT INTO node_index VALUES (NULL, 'c', 'z');
         """)
 
-        manager.update_columns({'foo': 'qux', 'bar': 'quux'})
+        manager.rename_columns({'foo': 'qux', 'bar': 'quux'})
 
         self.assertColumnsEqual('node_index', ['index_id', 'qux', 'quux'])
         self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
@@ -218,7 +218,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
         self.cursor = connection.cursor()
         self.addCleanup(self.cursor.close)
 
-    def test_update_columns(self):
+    def test_rename_columns(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar')
         self.cursor.executescript("""
@@ -227,7 +227,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             INSERT INTO node_index VALUES (NULL, 'c', 'z');
         """)
 
-        legacy_update_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
+        legacy_rename_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
 
         self.assertColumnsEqual('node_index', ['index_id', 'qux', 'quux'])
         self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
@@ -237,7 +237,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')],
         )
 
-    def test_update_columns_bad_transaction_state(self):
+    def test_rename_columns_bad_transaction_state(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar')
 
@@ -246,7 +246,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
 
         regex = 'existing transaction'
         with self.assertRaisesRegex(RuntimeError, regex):
-            legacy_update_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
+            legacy_rename_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
 
     def test_legacy_delete_columns(self):
         manager = ColumnManager(self.cursor)

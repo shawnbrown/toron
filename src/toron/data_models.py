@@ -169,8 +169,8 @@ class BaseColumnManager(ABC):
         """Get a tuple of label column names."""
 
     @abstractmethod
-    def update_columns(self, mapping: Dict[str, str]) -> None:
-        """Update label column names."""
+    def rename_columns(self, mapping: Dict[str, str]) -> None:
+        """Rename label columns."""
 
     @abstractmethod
     def delete_columns(self, column: str, *columns: str) -> None:

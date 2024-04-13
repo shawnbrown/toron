@@ -3,7 +3,7 @@
 from .data_connector import DataConnector
 from .column_manager import (
     ColumnManager,
-    legacy_update_columns,
+    legacy_rename_columns,
     legacy_delete_columns,
 )
 from .repositories import (

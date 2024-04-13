@@ -253,7 +253,7 @@ class TestColumnMethods(unittest.TestCase):
             node.rename_columns({'B': 'G', 'D': 'T'})
         else:
             import toron.dal1
-            toron.dal1.legacy_update_columns(node, {'B': 'G', 'D': 'T'})
+            toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
 
