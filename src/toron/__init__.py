@@ -1,4 +1,4 @@
-"""A tool kit for granularity refinement and crosswalk translation."""
+"""Data structures to refine granularity and translate crosswalks."""
 
 __all__ = [
     # PACKAGE CONTENTS

@@ -13,7 +13,7 @@ requires-python = ">=3.7"
 authors = [
   { name="Shawn Brown", email="shawnbrown@users.noreply.github.com" },
 ]
-description = "A tool kit for granularity refinement and crosswalk translation."
+description = "Data structures to refine granularity and translate crosswalks."
 readme = "README.md"
 license = { file="LICENSE" }
 classifiers = [
