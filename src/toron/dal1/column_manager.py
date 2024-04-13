@@ -247,7 +247,7 @@ def legacy_delete_columns(node: 'Node', column: str, *columns: str) -> None:
             raise RuntimeError(msg)
 
         # Build a list of column names to keep.
-        columns_to_delete = (column,) + columns
+        columns_to_delete = tuple(chain([column], columns))
         columns_to_keep = [
             col for col in manager.get_columns() if col not in columns_to_delete
         ]
