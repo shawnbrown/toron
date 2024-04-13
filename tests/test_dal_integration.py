@@ -111,14 +111,6 @@ class ColumnManagerBaseTest(ABC):
 
         self.manager = self.manager_class(cursor)
 
-    def test_atomic_add_columns(self):
-        with suppress(Exception):
-            # Second 'baz' causes an error (cannot have duplicate names).
-            self.manager.add_columns('foo', 'bar', 'baz', 'baz')
-
-        msg = 'should be empty tuple, no column names'
-        self.assertEqual(self.manager.get_columns(), (), msg=msg)
-
 
 class PropertyRepositoryBaseTest(ABC):
     @property

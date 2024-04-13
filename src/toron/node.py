@@ -59,7 +59,7 @@ class Node(object):
                 raise
 
     def add_columns(self, column: str, *columns: str) -> None:
-        with self._managed_cursor() as cursor:
+        with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
             manager.add_columns(column, *columns)
 
@@ -77,3 +77,4 @@ class Node(object):
         with self._managed_cursor() as cursor:
             manager = self._dal.ColumnManager(cursor)
             manager.delete_columns(column, *columns)
+

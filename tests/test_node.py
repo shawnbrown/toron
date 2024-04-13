@@ -224,6 +224,19 @@ class TestColumnMethods(unittest.TestCase):
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'B'))
 
+    def test_add_columns_atomic(self):
+        """Adding columns should be an atomic operation (either all
+        columns should be added or none should be added).
+        """
+        node = Node()
+
+        with suppress(Exception):
+            # Second 'baz' causes an error (cannot have duplicate names).
+            node.add_columns('foo', 'bar', 'baz', 'baz')
+
+        msg = 'should be empty tuple, no column names'
+        self.assertEqual(self.get_cols_helper(node), (), msg=msg)
+
     def test_columns_property(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
