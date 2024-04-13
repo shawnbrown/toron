@@ -35,7 +35,7 @@ class TestQuantityRepository(unittest.TestCase):
 
         # NOTE: Currently the `quantity` table does not prevent multiple
         # attributes per location (this is different from how the `weight`
-        # table restricts multiple index ids per weighting).
+        # table restricts multiple index ids per distribution).
 
         # Add second location (location_id=2).
         repository.add(location_id=2, attribute_id=1, value=151.0)

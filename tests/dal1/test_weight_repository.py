@@ -33,17 +33,17 @@ class TestWeightRepository(unittest.TestCase):
         repository = WeightRepository(self.cursor)
 
         repository.add(1, 1, 3.0)  # Test positional.
-        repository.add(weighting_id=1, index_id=2, value=7.0)  # Test keyword.
+        repository.add(distribution_id=1, index_id=2, value=7.0)  # Test keyword.
 
         self.assertRecords([(1, 1, 1, 3.0), (2, 1, 2, 7.0)])
 
-        msg='should fail, index_id values must be unique per weighting'
+        msg='should fail, index_id values must be unique per distribution'
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.add(1, 2, 5.0)  # <- Weighting 1 already has index_id 2.
 
-        # Add second weighting (weighting_id=2).
-        repository.add(weighting_id=2, index_id=1, value=6.0)
-        repository.add(weighting_id=2, index_id=2, value=8.0)
+        # Add second distribution (distribution_id=2).
+        repository.add(distribution_id=2, index_id=1, value=6.0)
+        repository.add(distribution_id=2, index_id=2, value=8.0)
 
         self.assertRecords([(1, 1, 1, 3.0), (2, 1, 2, 7.0),
                             (3, 2, 1, 6.0), (4, 2, 2, 8.0)])
@@ -91,5 +91,5 @@ class TestWeightRepository(unittest.TestCase):
         self.assertRecords([])
 
     @unittest.skip('not implemented')
-    def test_find_by_weighting_id(self):
+    def test_find_by_distribution_id(self):
         raise NotImplementedError

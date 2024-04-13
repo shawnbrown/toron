@@ -188,7 +188,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         self.assertRecords([])
 
         try:
-            repository.delete(3)  # No weighting_id=3, should pass without error.
+            repository.delete(3)  # No distribution_id=3, should pass without error.
         except Exception as err:
             self.fail(f'should not raise error, got {err!r}')
         self.assertRecords([])

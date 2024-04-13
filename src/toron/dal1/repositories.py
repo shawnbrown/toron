@@ -176,7 +176,7 @@ class WeightingRepository(BaseWeightingRepository):
             selectors = json_dumps(selectors)
 
         sql = """
-            INSERT INTO main.weighting (name, description, selectors, is_complete)
+            INSERT INTO main.distribution (name, description, selectors, is_complete)
             VALUES (?, ?, ?, ?)
         """
         self._cursor.execute(sql, (name, description, selectors, is_complete))
@@ -184,7 +184,7 @@ class WeightingRepository(BaseWeightingRepository):
     def get(self, id: int) -> Optional[Weighting]:
         """Get a record from the repository."""
         self._cursor.execute(
-            'SELECT * FROM main.weighting WHERE weighting_id=?', (id,)
+            'SELECT * FROM main.distribution WHERE distribution_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record:
@@ -194,13 +194,13 @@ class WeightingRepository(BaseWeightingRepository):
     def update(self, record: Weighting) -> None:
         """Update a record in the repository."""
         sql = f"""
-            UPDATE main.weighting
+            UPDATE main.distribution
             SET
                 name=?,
                 description=?,
                 selectors=?,
                 is_complete=?
-            WHERE weighting_id=?
+            WHERE distribution_id=?
         """
         parameters = [
             record.name,
@@ -214,7 +214,7 @@ class WeightingRepository(BaseWeightingRepository):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
-            'DELETE FROM main.weighting WHERE weighting_id=?', (id,)
+            'DELETE FROM main.distribution WHERE distribution_id=?', (id,)
         )
 
 
@@ -223,13 +223,13 @@ class WeightRepository(BaseWeightRepository):
         """Initialize a new repository instance."""
         self._cursor = cursor
 
-    def add(self, weighting_id: int, index_id: int, value: int) -> None:
+    def add(self, distribution_id: int, index_id: int, value: int) -> None:
         """Add a record to the repository."""
         sql = """
-            INSERT INTO main.weight (weighting_id, index_id, weight_value)
+            INSERT INTO main.weight (distribution_id, index_id, weight_value)
             VALUES (?, ?, ?)
         """
-        self._cursor.execute(sql, (weighting_id, index_id, value))
+        self._cursor.execute(sql, (distribution_id, index_id, value))
 
     def get(self, id: int) -> Optional[Weight]:
         """Get a record from the repository."""
@@ -246,7 +246,7 @@ class WeightRepository(BaseWeightRepository):
         sql = f"""
             UPDATE main.weight
             SET
-                weighting_id=:weighting_id,
+                distribution_id=:distribution_id,
                 index_id=:index_id,
                 weight_value=:value
             WHERE weight_id=:id
@@ -259,8 +259,8 @@ class WeightRepository(BaseWeightRepository):
             'DELETE FROM main.weight WHERE weight_id=?', (id,)
         )
 
-    #def find_by_weighting_id(self, weighting_id: int) -> Iterable[Weight]:
-    #    """Filter to records associated with the given weighting."""
+    #def find_by_distribution_id(self, distribution_id: int) -> Iterable[Weight]:
+    #    """Filter to records associated with the given distribution."""
 
 
 class AttributeRepository(BaseAttributeRepository):

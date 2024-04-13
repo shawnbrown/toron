@@ -18,7 +18,7 @@ class TestWeightingRepository(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def assertRecords(self, expected_records, msg=None):
-        self.cursor.execute(f'SELECT * FROM weighting')
+        self.cursor.execute(f'SELECT * FROM distribution')
         actual_records = self.cursor.fetchall()
         self.assertEqual(actual_records, expected_records, msg=msg)
 
@@ -40,7 +40,7 @@ class TestWeightingRepository(unittest.TestCase):
             (5, 'name5', 'Name Five', ['[qux]', '[quux]'], 1),
         ])
 
-        msg = "should fail, 'name' values must be unique per weighting"
+        msg = "should fail, 'name' values must be unique per distribution"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.add('name5')  # <- The name "name5" already exists.
 
@@ -50,8 +50,8 @@ class TestWeightingRepository(unittest.TestCase):
 
     def test_get(self):
         self.cursor.executescript("""
-            INSERT INTO weighting VALUES (1, 'name1', NULL, NULL, 1);
-            INSERT INTO weighting VALUES (2, 'name2', NULL, '["[foo]", "[bar]"]', 0);
+            INSERT INTO distribution VALUES (1, 'name1', NULL, NULL, 1);
+            INSERT INTO distribution VALUES (2, 'name2', NULL, '["[foo]", "[bar]"]', 0);
         """)
         repository = WeightingRepository(self.cursor)
 
@@ -61,8 +61,8 @@ class TestWeightingRepository(unittest.TestCase):
 
     def test_update(self):
         self.cursor.executescript("""
-            INSERT INTO weighting VALUES (1, 'name1', NULL, NULL, 1);
-            INSERT INTO weighting VALUES (2, 'name2', NULL, '["[bar]"]', 0);
+            INSERT INTO distribution VALUES (1, 'name1', NULL, NULL, 1);
+            INSERT INTO distribution VALUES (2, 'name2', NULL, '["[bar]"]', 0);
         """)
         repository = WeightingRepository(self.cursor)
 
@@ -73,20 +73,20 @@ class TestWeightingRepository(unittest.TestCase):
             (2, 'name2', None, ['[bar]'], 0),
         ])
 
-        repository.update(Weighting(3, 'name3', None, None, 1))  # No weighting_id=3, should pass without error.
+        repository.update(Weighting(3, 'name3', None, None, 1))  # No distribution_id=3, should pass without error.
 
         self.assertRecords(
             [
                 (1, 'name1', 'Name One', ['[foo]'], 1),
                 (2, 'name2', None, ['[bar]'], 0),
             ],
-            msg='No weighting_id=3, should remain unchanged',
+            msg='No distribution_id=3, should remain unchanged',
         )
 
     def test_delete(self):
         self.cursor.executescript("""
-            INSERT INTO weighting VALUES (1, 'name1', 'Name One', '["[foo]"]', 1);
-            INSERT INTO weighting VALUES (2, 'name2', NULL, '["[bar]"]', 0);
+            INSERT INTO distribution VALUES (1, 'name1', 'Name One', '["[foo]"]', 1);
+            INSERT INTO distribution VALUES (2, 'name2', NULL, '["[bar]"]', 0);
         """)
         repository = WeightingRepository(self.cursor)
 
@@ -96,5 +96,5 @@ class TestWeightingRepository(unittest.TestCase):
         repository.delete(2)
         self.assertRecords([])
 
-        repository.delete(3)  # No weighting_id=3, should pass without error.
+        repository.delete(3)  # No distribution_id=3, should pass without error.
         self.assertRecords([])

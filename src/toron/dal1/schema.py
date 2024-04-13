@@ -31,23 +31,23 @@ application layer:
                       +------------+  |  +--------------+  |  | structure     |
                       | node_index |  |  | location     |  |  +---------------+
                       +------------+  |  +--------------+  |  | _structure_id |
-                   +--| index_id   |--+  | _location_id |--+  | _granularity* |
-                   |  | label_a    |••••>| label_a      |<••••| label_a*      |
-                   |  | label_b    |••••>| label_b      |<••••| label_b*      |
-                   |  | label_c    |••••>| label_c      |<••••| label_c*      |
-                   |  | ...        |••••>| ...          |<••••| ...           |
-                   |  +------------+     +--------------+     +---------------+
-                   |
-                   |  +--------------+                          +----------+
-                   |  | weight       |     +--------------+     | property |
-                   |  +--------------+     | weighting    |     +----------+
-                   |  | weight_id    |     +--------------+     | key      |
-                   |  | weighting_id |<----| weighting_id |     | value    |
-                   +->| index_id     |•••  | name         |     +----------+
-                      | weight_value |  •  | description  |
-                      +--------------+  •  | selectors    |
-                                        ••>| is_complete* |
-                                           +--------------+
+              +-------| index_id   |--+  | _location_id |--+  | _granularity* |
+              |       | label_a    |••••>| label_a      |<••••| label_a*      |
+              |       | label_b    |••••>| label_b      |<••••| label_b*      |
+              |       | label_c    |••••>| label_c      |<••••| label_c*      |
+              |       | ...        |••••>| ...          |<••••| ...           |
+              |       +------------+     +--------------+     +---------------+
+              |
+              |  +-----------------+                            +----------+
+              |  | weight          |     +-----------------+    | property |
+              |  +-----------------+     | distribution    |    +----------+
+              |  | weight_id       |     +-----------------+    | key      |
+              |  | distribution_id |<----| distribution_id |    | value    |
+              +->| index_id        |•••  | name            |    +----------+
+                 | weight_value    |  •  | description     |
+                 +-----------------+  •  | selectors       |
+                                      ••>| is_complete*    |
+                                         +-----------------+
 
 Asterisks (``*``) denote values that are computed at the application
 layer using data from elsewhere in the schema. Toron may automatically
@@ -132,8 +132,8 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             /* label columns added programmatically */
         );
 
-        CREATE TABLE main.weighting(
-            weighting_id INTEGER PRIMARY KEY,
+        CREATE TABLE main.distribution(
+            distribution_id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             description TEXT,
             selectors TEXT_SELECTORS,
@@ -143,12 +143,12 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
 
         CREATE TABLE main.weight(
             weight_id INTEGER PRIMARY KEY,
-            weighting_id INTEGER,
+            distribution_id INTEGER,
             index_id INTEGER CHECK (index_id > 0),
             weight_value REAL NOT NULL,
-            FOREIGN KEY(weighting_id) REFERENCES weighting(weighting_id) ON DELETE CASCADE,
+            FOREIGN KEY(distribution_id) REFERENCES distribution(distribution_id) ON DELETE CASCADE,
             FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
-            UNIQUE (index_id, weighting_id)
+            UNIQUE (index_id, distribution_id)
         );
 
         CREATE TABLE main.attribute(
@@ -373,7 +373,7 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
             'relation',
             'structure',
             'weight',
-            'weighting',
+            'distribution',
         }
         if tables != node_tables:
             raise RuntimeError(msg)
@@ -450,7 +450,7 @@ def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
 
 def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
     """Add temp triggers to validate ``crosswalk.selectors`` and
-    ``weighting.selectors`` columns.
+    ``distribution.selectors`` columns.
 
     The trigger will pass without error when the value is a wellformed
     JSON "array" containing "text" elements.
@@ -482,8 +482,8 @@ def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
             SELECT RAISE(ABORT, '{{table}}.selectors must be a JSON array with text values');
         END;
     """
-    cur.execute(sql.format(event='INSERT', table='weighting'))
-    cur.execute(sql.format(event='UPDATE', table='weighting'))
+    cur.execute(sql.format(event='INSERT', table='distribution'))
+    cur.execute(sql.format(event='UPDATE', table='distribution'))
     cur.execute(sql.format(event='INSERT', table='crosswalk'))
     cur.execute(sql.format(event='UPDATE', table='crosswalk'))
 

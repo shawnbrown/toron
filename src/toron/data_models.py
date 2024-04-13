@@ -388,7 +388,7 @@ class BaseWeightingRepository(ABC):
 class Weight(object):
     """Weight record."""
     id: int
-    weighting_id: int
+    distribution_id: int
     index_id: int
     value: float
 
@@ -399,7 +399,7 @@ class BaseWeightRepository(ABC):
         """Initialize a new repository instance."""
 
     @abstractmethod
-    def add(self, weighting_id: int, index_id: int, value: int) -> None:
+    def add(self, distribution_id: int, index_id: int, value: int) -> None:
         """Add a record to the repository."""
 
     @abstractmethod
@@ -415,8 +415,8 @@ class BaseWeightRepository(ABC):
         """Delete a record from the repository."""
 
     #@abstractmethod
-    #def find_by_weighting_id(self, weighting_id: int) -> Iterable[Weight]:
-    #    """Filter to records associated with the given weighting."""
+    #def find_by_distribution_id(self, distribution_id: int) -> Iterable[Weight]:
+    #    """Filter to records associated with the given distribution."""
 
 
 @dataclass
