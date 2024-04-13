@@ -86,17 +86,9 @@ class ColumnManager(BaseColumnManager):
             raise Exception(msg)
 
         existing_columns = self.get_columns()
-        columns_to_delete = tuple(chain([column], columns))
-
-        if not set(existing_columns).difference(columns_to_delete):
-            # Without at least 1 label column, a node cannot represent any
-            # quantities, distributions, or crosswalks it might contain--and
-            # this information must be preserved.
-            raise RuntimeError('cannot delete all columns')
-
         schema.drop_schema_constraints(self._cursor)
 
-        for column in columns_to_delete:
+        for column in tuple(chain([column], columns)):
             if column not in existing_columns:
                 continue  # Skip to next column.
 
@@ -246,16 +238,20 @@ def legacy_delete_columns(node: 'Node', column: str, *columns: str) -> None:
             msg = 'cannot delete columns inside an existing transaction'
             raise RuntimeError(msg)
 
-        # Build a list of column names to keep.
+        # Get list of columns to keep (must preserve existing order).
         columns_to_delete = tuple(chain([column], columns))
         columns_to_keep = [
             col for col in manager.get_columns() if col not in columns_to_delete
         ]
         if not columns_to_keep:
-            # Without at least 1 label column, a node cannot represent any
-            # quantities, distributions, or crosswalks it might contain--and
-            # this information must be preserved.
-            raise RuntimeError('cannot delete all columns')
+            msg = (
+                'cannot delete all columns\n'
+                '\n'
+                'Without at least 1 label column, a node cannot represent '
+                'any quantities, distributions, or crosswalks it might '
+                'contain.'
+            )
+            raise RuntimeError(msg)
 
         formatted_columns_to_keep = [
             schema.format_identifier(x) for x in columns_to_keep

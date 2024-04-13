@@ -268,3 +268,14 @@ class TestColumnMethods(unittest.TestCase):
             toron.dal1.legacy_delete_columns(node, 'B', 'D')
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'C'))
+
+    def test_delete_columns_all(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C')
+
+        if node._dal.backend == 'DAL1' and sqlite3.sqlite_version_info < (3, 35, 5):
+            self.skipTest('requires SQLite 3.35.5 or newer')
+
+        regex = 'cannot delete all columns'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            node.delete_columns('A', 'B', 'C')

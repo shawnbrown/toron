@@ -127,15 +127,6 @@ class TestColumnManager(unittest.TestCase):
             [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
         )
 
-    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 35, 5), 'requires 3.35.5 or newer')
-    def test_delete_columns_all(self):
-        manager = ColumnManager(self.cursor)
-        manager.add_columns('foo', 'bar')
-
-        regex = 'cannot delete all columns'
-        with self.assertRaisesRegex(RuntimeError, regex):
-            manager.delete_columns('foo', 'bar')
-
     def test_delete_columns_legacy_message(self):
         """On SQLite versions older than 3.35.5, should raise error."""
         if sqlite3.sqlite_version_info >= (3, 35, 5):

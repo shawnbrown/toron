@@ -1,7 +1,9 @@
 """Node implementation for the Toron project."""
 
 from contextlib import contextmanager, nullcontext
-from typing import (
+from itertools import chain
+
+from toron._typing import (
     Any,
     Dict,
     Generator,
@@ -76,5 +78,15 @@ class Node(object):
     def delete_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
-            manager.delete_columns(column, *columns)
 
+            if set(manager.get_columns()).issubset(chain([column], columns)):
+                msg = (
+                    'cannot delete all columns\n'
+                    '\n'
+                    'Without at least 1 label column, a node cannot represent '
+                    'any quantities, distributions, or crosswalks it might '
+                    'contain.'
+                )
+                raise RuntimeError(msg)
+
+            manager.delete_columns(column, *columns)
