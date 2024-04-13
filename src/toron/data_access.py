@@ -16,7 +16,7 @@ from .data_models import (
     BaseIndexRepository,
     BaseLocationRepository,
     BaseStructureRepository,
-    BaseWeightingRepository,
+    BaseDistributionRepository,
     BaseWeightRepository,
     BaseAttributeRepository,
     BaseQuantityRepository,
@@ -40,7 +40,7 @@ class DataAccessLayer(object):
     IndexRepository: Type[BaseIndexRepository]
     LocationRepository: Type[BaseLocationRepository]
     StructureRepository: Type[BaseStructureRepository]
-    WeightingRepository: Type[BaseWeightingRepository]
+    DistributionRepository: Type[BaseDistributionRepository]
     WeightRepository: Type[BaseWeightRepository]
     AttributeRepository: Type[BaseAttributeRepository]
     QuantityRepository: Type[BaseQuantityRepository]
@@ -74,7 +74,7 @@ def get_data_access_layer(backend: str = 'DAL1') -> DataAccessLayer:
             IndexRepository=mod.IndexRepository,
             LocationRepository=mod.LocationRepository,
             StructureRepository=mod.StructureRepository,
-            WeightingRepository=mod.WeightingRepository,
+            DistributionRepository=mod.DistributionRepository,
             WeightRepository=mod.WeightRepository,
             AttributeRepository=mod.AttributeRepository,
             QuantityRepository=mod.QuantityRepository,

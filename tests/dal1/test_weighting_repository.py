@@ -1,14 +1,14 @@
-"""Tests for WeightingRepository class."""
+"""Tests for DistributionRepository class."""
 
 import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
-from toron.data_models import Weighting
-from toron.dal1.repositories import WeightingRepository
+from toron.data_models import Distribution
+from toron.dal1.repositories import DistributionRepository
 
 
-class TestWeightingRepository(unittest.TestCase):
+class TestDistributionRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
@@ -23,7 +23,7 @@ class TestWeightingRepository(unittest.TestCase):
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def test_add(self):
-        repository = WeightingRepository(self.cursor)
+        repository = DistributionRepository(self.cursor)
 
         # Test various default values.
         repository.add('name1')
@@ -53,10 +53,10 @@ class TestWeightingRepository(unittest.TestCase):
             INSERT INTO distribution VALUES (1, 'name1', NULL, NULL, 1);
             INSERT INTO distribution VALUES (2, 'name2', NULL, '["[foo]", "[bar]"]', 0);
         """)
-        repository = WeightingRepository(self.cursor)
+        repository = DistributionRepository(self.cursor)
 
-        self.assertEqual(repository.get(1), Weighting(1, 'name1', None, None, 1))
-        self.assertEqual(repository.get(2), Weighting(2, 'name2', None, ['[foo]', '[bar]'], 0))
+        self.assertEqual(repository.get(1), Distribution(1, 'name1', None, None, 1))
+        self.assertEqual(repository.get(2), Distribution(2, 'name2', None, ['[foo]', '[bar]'], 0))
         self.assertIsNone(repository.get(3))
 
     def test_update(self):
@@ -64,16 +64,16 @@ class TestWeightingRepository(unittest.TestCase):
             INSERT INTO distribution VALUES (1, 'name1', NULL, NULL, 1);
             INSERT INTO distribution VALUES (2, 'name2', NULL, '["[bar]"]', 0);
         """)
-        repository = WeightingRepository(self.cursor)
+        repository = DistributionRepository(self.cursor)
 
-        repository.update(Weighting(1, 'name1', 'Name One', ['[foo]'], 1))
+        repository.update(Distribution(1, 'name1', 'Name One', ['[foo]'], 1))
 
         self.assertRecords([
             (1, 'name1', 'Name One', ['[foo]'], 1),
             (2, 'name2', None, ['[bar]'], 0),
         ])
 
-        repository.update(Weighting(3, 'name3', None, None, 1))  # No distribution_id=3, should pass without error.
+        repository.update(Distribution(3, 'name3', None, None, 1))  # No distribution_id=3, should pass without error.
 
         self.assertRecords(
             [
@@ -88,7 +88,7 @@ class TestWeightingRepository(unittest.TestCase):
             INSERT INTO distribution VALUES (1, 'name1', 'Name One', '["[foo]"]', 1);
             INSERT INTO distribution VALUES (2, 'name2', NULL, '["[bar]"]', 0);
         """)
-        repository = WeightingRepository(self.cursor)
+        repository = DistributionRepository(self.cursor)
 
         repository.delete(1)
         self.assertRecords([(2, 'name2', None, ['[bar]'], 0)])

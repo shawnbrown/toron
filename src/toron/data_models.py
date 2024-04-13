@@ -347,8 +347,8 @@ class BaseStructureRepository(ABC):
 
 
 @dataclass
-class Weighting(object):
-    """Weighting record."""
+class Distribution(object):
+    """Distribution record."""
     id: int
     name: str
     description: Optional[str]
@@ -356,7 +356,7 @@ class Weighting(object):
     is_complete: bool = False
 
 
-class BaseWeightingRepository(ABC):
+class BaseDistributionRepository(ABC):
     @abstractmethod
     def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
@@ -372,11 +372,11 @@ class BaseWeightingRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Weighting]:
+    def get(self, id: int) -> Optional[Distribution]:
         """Get a record from the repository."""
 
     @abstractmethod
-    def update(self, record: Weighting) -> None:
+    def update(self, record: Distribution) -> None:
         """Update a record in the repository."""
 
     @abstractmethod

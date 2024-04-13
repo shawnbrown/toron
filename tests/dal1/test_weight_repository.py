@@ -39,7 +39,7 @@ class TestWeightRepository(unittest.TestCase):
 
         msg='should fail, index_id values must be unique per distribution'
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.add(1, 2, 5.0)  # <- Weighting 1 already has index_id 2.
+            repository.add(1, 2, 5.0)  # <- Distribution 1 already has index_id 2.
 
         # Add second distribution (distribution_id=2).
         repository.add(distribution_id=2, index_id=1, value=6.0)

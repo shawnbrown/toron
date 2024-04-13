@@ -16,7 +16,7 @@ from ..data_models import (
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
     Structure, BaseStructureRepository,
-    Weighting, BaseWeightingRepository,
+    Distribution, BaseDistributionRepository,
     Weight, BaseWeightRepository,
     Attribute, BaseAttributeRepository,
     Quantity, BaseQuantityRepository,
@@ -157,7 +157,7 @@ class StructureRepository(BaseStructureRepository):
         )
 
 
-class WeightingRepository(BaseWeightingRepository):
+class DistributionRepository(BaseDistributionRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
         self._cursor = cursor
@@ -181,17 +181,17 @@ class WeightingRepository(BaseWeightingRepository):
         """
         self._cursor.execute(sql, (name, description, selectors, is_complete))
 
-    def get(self, id: int) -> Optional[Weighting]:
+    def get(self, id: int) -> Optional[Distribution]:
         """Get a record from the repository."""
         self._cursor.execute(
             'SELECT * FROM main.distribution WHERE distribution_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record:
-            return Weighting(*record)
+            return Distribution(*record)
         return None
 
-    def update(self, record: Weighting) -> None:
+    def update(self, record: Distribution) -> None:
         """Update a record in the repository."""
         sql = f"""
             UPDATE main.distribution

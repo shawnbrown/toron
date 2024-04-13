@@ -10,7 +10,7 @@ from .repositories import (
     IndexRepository,
     LocationRepository,
     StructureRepository,
-    WeightingRepository,
+    DistributionRepository,
     WeightRepository,
     AttributeRepository,
     QuantityRepository,
