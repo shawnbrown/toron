@@ -16,7 +16,7 @@ from ..data_models import (
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
     Structure, BaseStructureRepository,
-    Distribution, BaseDistributionRepository,
+    WeightGroup, BaseWeightGroupRepository,
     Weight, BaseWeightRepository,
     Attribute, BaseAttributeRepository,
     Quantity, BaseQuantityRepository,
@@ -157,7 +157,7 @@ class StructureRepository(BaseStructureRepository):
         )
 
 
-class DistributionRepository(BaseDistributionRepository):
+class WeightGroupRepository(BaseWeightGroupRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
         self._cursor = cursor
@@ -176,31 +176,31 @@ class DistributionRepository(BaseDistributionRepository):
             selectors = json_dumps(selectors)
 
         sql = """
-            INSERT INTO main.distribution (name, description, selectors, is_complete)
+            INSERT INTO main.weight_group (name, description, selectors, is_complete)
             VALUES (?, ?, ?, ?)
         """
         self._cursor.execute(sql, (name, description, selectors, is_complete))
 
-    def get(self, id: int) -> Optional[Distribution]:
+    def get(self, id: int) -> Optional[WeightGroup]:
         """Get a record from the repository."""
         self._cursor.execute(
-            'SELECT * FROM main.distribution WHERE distribution_id=?', (id,)
+            'SELECT * FROM main.weight_group WHERE weight_group_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record:
-            return Distribution(*record)
+            return WeightGroup(*record)
         return None
 
-    def update(self, record: Distribution) -> None:
+    def update(self, record: WeightGroup) -> None:
         """Update a record in the repository."""
         sql = f"""
-            UPDATE main.distribution
+            UPDATE main.weight_group
             SET
                 name=?,
                 description=?,
                 selectors=?,
                 is_complete=?
-            WHERE distribution_id=?
+            WHERE weight_group_id=?
         """
         parameters = [
             record.name,
@@ -214,7 +214,7 @@ class DistributionRepository(BaseDistributionRepository):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
-            'DELETE FROM main.distribution WHERE distribution_id=?', (id,)
+            'DELETE FROM main.weight_group WHERE weight_group_id=?', (id,)
         )
 
 
@@ -223,13 +223,13 @@ class WeightRepository(BaseWeightRepository):
         """Initialize a new repository instance."""
         self._cursor = cursor
 
-    def add(self, distribution_id: int, index_id: int, value: int) -> None:
+    def add(self, weight_group_id: int, index_id: int, value: int) -> None:
         """Add a record to the repository."""
         sql = """
-            INSERT INTO main.weight (distribution_id, index_id, weight_value)
+            INSERT INTO main.weight (weight_group_id, index_id, weight_value)
             VALUES (?, ?, ?)
         """
-        self._cursor.execute(sql, (distribution_id, index_id, value))
+        self._cursor.execute(sql, (weight_group_id, index_id, value))
 
     def get(self, id: int) -> Optional[Weight]:
         """Get a record from the repository."""
@@ -246,7 +246,7 @@ class WeightRepository(BaseWeightRepository):
         sql = f"""
             UPDATE main.weight
             SET
-                distribution_id=:distribution_id,
+                weight_group_id=:weight_group_id,
                 index_id=:index_id,
                 weight_value=:value
             WHERE weight_id=:id
@@ -259,8 +259,8 @@ class WeightRepository(BaseWeightRepository):
             'DELETE FROM main.weight WHERE weight_id=?', (id,)
         )
 
-    #def find_by_distribution_id(self, distribution_id: int) -> Iterable[Weight]:
-    #    """Filter to records associated with the given distribution."""
+    #def find_by_weight_group_id(self, weight_group_id: int) -> Iterable[Weight]:
+    #    """Filter to records associated with the given weight group."""
 
 
 class AttributeRepository(BaseAttributeRepository):

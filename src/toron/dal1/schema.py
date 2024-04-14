@@ -40,9 +40,9 @@ application layer:
               |
               |  +-----------------+                            +----------+
               |  | weight          |     +-----------------+    | property |
-              |  +-----------------+     | distribution    |    +----------+
+              |  +-----------------+     | weight_group    |    +----------+
               |  | weight_id       |     +-----------------+    | key      |
-              |  | distribution_id |<----| distribution_id |    | value    |
+              |  | weight_group_id |<----| weight_group_id |    | value    |
               +->| index_id        |•••  | name            |    +----------+
                  | weight_value    |  •  | description     |
                  +-----------------+  •  | selectors       |
@@ -132,8 +132,8 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             /* label columns added programmatically */
         );
 
-        CREATE TABLE main.distribution(
-            distribution_id INTEGER PRIMARY KEY,
+        CREATE TABLE main.weight_group(
+            weight_group_id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             description TEXT,
             selectors TEXT_SELECTORS,
@@ -143,12 +143,12 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
 
         CREATE TABLE main.weight(
             weight_id INTEGER PRIMARY KEY,
-            distribution_id INTEGER,
+            weight_group_id INTEGER,
             index_id INTEGER CHECK (index_id > 0),
             weight_value REAL NOT NULL,
-            FOREIGN KEY(distribution_id) REFERENCES distribution(distribution_id) ON DELETE CASCADE,
+            FOREIGN KEY(weight_group_id) REFERENCES weight_group(weight_group_id) ON DELETE CASCADE,
             FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
-            UNIQUE (index_id, distribution_id)
+            UNIQUE (index_id, weight_group_id)
         );
 
         CREATE TABLE main.attribute(
@@ -373,7 +373,7 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
             'relation',
             'structure',
             'weight',
-            'distribution',
+            'weight_group',
         }
         if tables != node_tables:
             raise RuntimeError(msg)
@@ -450,7 +450,7 @@ def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
 
 def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
     """Add temp triggers to validate ``crosswalk.selectors`` and
-    ``distribution.selectors`` columns.
+    ``weight_group.selectors`` columns.
 
     The trigger will pass without error when the value is a wellformed
     JSON "array" containing "text" elements.
@@ -482,8 +482,8 @@ def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
             SELECT RAISE(ABORT, '{{table}}.selectors must be a JSON array with text values');
         END;
     """
-    cur.execute(sql.format(event='INSERT', table='distribution'))
-    cur.execute(sql.format(event='UPDATE', table='distribution'))
+    cur.execute(sql.format(event='INSERT', table='weight_group'))
+    cur.execute(sql.format(event='UPDATE', table='weight_group'))
     cur.execute(sql.format(event='INSERT', table='crosswalk'))
     cur.execute(sql.format(event='UPDATE', table='crosswalk'))
 

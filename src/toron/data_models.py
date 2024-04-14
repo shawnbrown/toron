@@ -347,8 +347,8 @@ class BaseStructureRepository(ABC):
 
 
 @dataclass
-class Distribution(object):
-    """Distribution record."""
+class WeightGroup(object):
+    """WeightGroup record."""
     id: int
     name: str
     description: Optional[str]
@@ -356,7 +356,7 @@ class Distribution(object):
     is_complete: bool = False
 
 
-class BaseDistributionRepository(ABC):
+class BaseWeightGroupRepository(ABC):
     @abstractmethod
     def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""
@@ -372,11 +372,11 @@ class BaseDistributionRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Distribution]:
+    def get(self, id: int) -> Optional[WeightGroup]:
         """Get a record from the repository."""
 
     @abstractmethod
-    def update(self, record: Distribution) -> None:
+    def update(self, record: WeightGroup) -> None:
         """Update a record in the repository."""
 
     @abstractmethod
@@ -388,7 +388,7 @@ class BaseDistributionRepository(ABC):
 class Weight(object):
     """Weight record."""
     id: int
-    distribution_id: int
+    weight_group_id: int
     index_id: int
     value: float
 
@@ -399,7 +399,7 @@ class BaseWeightRepository(ABC):
         """Initialize a new repository instance."""
 
     @abstractmethod
-    def add(self, distribution_id: int, index_id: int, value: int) -> None:
+    def add(self, weight_group_id: int, index_id: int, value: int) -> None:
         """Add a record to the repository."""
 
     @abstractmethod
@@ -415,8 +415,8 @@ class BaseWeightRepository(ABC):
         """Delete a record from the repository."""
 
     #@abstractmethod
-    #def find_by_distribution_id(self, distribution_id: int) -> Iterable[Weight]:
-    #    """Filter to records associated with the given distribution."""
+    #def find_by_weight_group_id(self, weight_group_id: int) -> Iterable[Weight]:
+    #    """Filter to records associated with the given weight group."""
 
 
 @dataclass

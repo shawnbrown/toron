@@ -66,7 +66,7 @@ class TestCreateNodeSchema(unittest.TestCase):
             'relation',
             'structure',
             'weight',
-            'distribution',
+            'weight_group',
             'sqlite_sequence',  # <- Table added by SQLite.
         }
         self.assertSetEqual(tables, expected)
@@ -502,9 +502,9 @@ class TestCreateTriggersSelectors(BaseSelectorsTestCase):
         )
         self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
 
-    def test_insert_valid_distribution_selectors(self):
+    def test_insert_valid_weight_group_selectors(self):
         cur = self.cur.executemany(
-            'INSERT INTO distribution (name, selectors) VALUES (?, ?)',
+            'INSERT INTO weight_group (name, selectors) VALUES (?, ?)',
             [(str(i), sel) for i, sel in enumerate(self.valid_selector_json)],
         )
         self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
@@ -521,15 +521,15 @@ class TestCreateTriggersSelectors(BaseSelectorsTestCase):
                         (value, 'foo', '1'),
                     )
 
-    def test_insert_invalid_distribution_selectors(self):
-        regex = 'distribution.selectors must be a JSON array with text values'
+    def test_insert_invalid_weight_group_selectors(self):
+        regex = 'weight_group.selectors must be a JSON array with text values'
 
         for value, desc in self.invalid_selector_json:
             with self.subTest(value=value):
                 msg = f'should raise IntegrityError, TEXT_SELECTORS {value!r} {desc}'
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
                     self.cur.execute(
-                        'INSERT INTO distribution (name, selectors) VALUES (?, ?)',
+                        'INSERT INTO weight_group (name, selectors) VALUES (?, ?)',
                         ('1', value),
                     )
 
@@ -696,10 +696,10 @@ class TestRegisteredConverters(unittest.TestCase):
 
     def test_converter_text_selectors(self):
         cur = self.cur.execute(
-            'INSERT INTO distribution (name, selectors) VALUES (?, ?)',
+            'INSERT INTO weight_group (name, selectors) VALUES (?, ?)',
             ('myname', r'["[a=\"one\"]", "[b]"]'),
         )
-        cur.execute('SELECT selectors FROM distribution')
+        cur.execute('SELECT selectors FROM weight_group')
         self.assertEqual(cur.fetchall(), [(['[a="one"]', '[b]'],)])
 
     def test_converter_blob_bitflags(self):

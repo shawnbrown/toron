@@ -1,14 +1,14 @@
-"""Tests for DistributionRepository class."""
+"""Tests for WeightGroupRepository class."""
 
 import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
-from toron.data_models import Distribution
-from toron.dal1.repositories import DistributionRepository
+from toron.data_models import WeightGroup
+from toron.dal1.repositories import WeightGroupRepository
 
 
-class TestDistributionRepository(unittest.TestCase):
+class TestWeightGroupRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
@@ -18,12 +18,12 @@ class TestDistributionRepository(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def assertRecords(self, expected_records, msg=None):
-        self.cursor.execute(f'SELECT * FROM distribution')
+        self.cursor.execute(f'SELECT * FROM weight_group')
         actual_records = self.cursor.fetchall()
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def test_add(self):
-        repository = DistributionRepository(self.cursor)
+        repository = WeightGroupRepository(self.cursor)
 
         # Test various default values.
         repository.add('name1')
@@ -40,7 +40,7 @@ class TestDistributionRepository(unittest.TestCase):
             (5, 'name5', 'Name Five', ['[qux]', '[quux]'], 1),
         ])
 
-        msg = "should fail, 'name' values must be unique per distribution"
+        msg = "should fail, 'name' values must be unique per weight group"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.add('name5')  # <- The name "name5" already exists.
 
@@ -50,45 +50,45 @@ class TestDistributionRepository(unittest.TestCase):
 
     def test_get(self):
         self.cursor.executescript("""
-            INSERT INTO distribution VALUES (1, 'name1', NULL, NULL, 1);
-            INSERT INTO distribution VALUES (2, 'name2', NULL, '["[foo]", "[bar]"]', 0);
+            INSERT INTO weight_group VALUES (1, 'name1', NULL, NULL, 1);
+            INSERT INTO weight_group VALUES (2, 'name2', NULL, '["[foo]", "[bar]"]', 0);
         """)
-        repository = DistributionRepository(self.cursor)
+        repository = WeightGroupRepository(self.cursor)
 
-        self.assertEqual(repository.get(1), Distribution(1, 'name1', None, None, 1))
-        self.assertEqual(repository.get(2), Distribution(2, 'name2', None, ['[foo]', '[bar]'], 0))
+        self.assertEqual(repository.get(1), WeightGroup(1, 'name1', None, None, 1))
+        self.assertEqual(repository.get(2), WeightGroup(2, 'name2', None, ['[foo]', '[bar]'], 0))
         self.assertIsNone(repository.get(3))
 
     def test_update(self):
         self.cursor.executescript("""
-            INSERT INTO distribution VALUES (1, 'name1', NULL, NULL, 1);
-            INSERT INTO distribution VALUES (2, 'name2', NULL, '["[bar]"]', 0);
+            INSERT INTO weight_group VALUES (1, 'name1', NULL, NULL, 1);
+            INSERT INTO weight_group VALUES (2, 'name2', NULL, '["[bar]"]', 0);
         """)
-        repository = DistributionRepository(self.cursor)
+        repository = WeightGroupRepository(self.cursor)
 
-        repository.update(Distribution(1, 'name1', 'Name One', ['[foo]'], 1))
+        repository.update(WeightGroup(1, 'name1', 'Name One', ['[foo]'], 1))
 
         self.assertRecords([
             (1, 'name1', 'Name One', ['[foo]'], 1),
             (2, 'name2', None, ['[bar]'], 0),
         ])
 
-        repository.update(Distribution(3, 'name3', None, None, 1))  # No distribution_id=3, should pass without error.
+        repository.update(WeightGroup(3, 'name3', None, None, 1))  # No weight_group_id=3, should pass without error.
 
         self.assertRecords(
             [
                 (1, 'name1', 'Name One', ['[foo]'], 1),
                 (2, 'name2', None, ['[bar]'], 0),
             ],
-            msg='No distribution_id=3, should remain unchanged',
+            msg='No weight_group_id=3, should remain unchanged',
         )
 
     def test_delete(self):
         self.cursor.executescript("""
-            INSERT INTO distribution VALUES (1, 'name1', 'Name One', '["[foo]"]', 1);
-            INSERT INTO distribution VALUES (2, 'name2', NULL, '["[bar]"]', 0);
+            INSERT INTO weight_group VALUES (1, 'name1', 'Name One', '["[foo]"]', 1);
+            INSERT INTO weight_group VALUES (2, 'name2', NULL, '["[bar]"]', 0);
         """)
-        repository = DistributionRepository(self.cursor)
+        repository = WeightGroupRepository(self.cursor)
 
         repository.delete(1)
         self.assertRecords([(2, 'name2', None, ['[bar]'], 0)])
@@ -96,5 +96,5 @@ class TestDistributionRepository(unittest.TestCase):
         repository.delete(2)
         self.assertRecords([])
 
-        repository.delete(3)  # No distribution_id=3, should pass without error.
+        repository.delete(3)  # No weight_group_id=3, should pass without error.
         self.assertRecords([])
