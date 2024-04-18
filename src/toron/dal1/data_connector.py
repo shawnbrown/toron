@@ -63,14 +63,14 @@ class ToronSqlite3Connection(sqlite3.Connection):
 @overload
 def get_sqlite_connection(
     path: str,
-    access_mode: Literal['ro', 'rw', 'rwc', None] = None,
+    access_mode: Optional[Literal['ro', 'rw', 'rwc']] = None,
     factory: Type[ToronSqlite3Connection] = ToronSqlite3Connection,
 ) -> ToronSqlite3Connection:
     ...
 @overload
 def get_sqlite_connection(
     path: str,
-    access_mode: Literal['ro', 'rw', 'rwc', None] = None,
+    access_mode: Optional[Literal['ro', 'rw', 'rwc']] = None,
     factory: Optional[Type[sqlite3.Connection]] = None,
 ) -> sqlite3.Connection:
     ...

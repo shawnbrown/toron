@@ -837,7 +837,7 @@ def _make_sqlite_uri_filepath(path: str, mode: Literal['ro', 'rw', 'rwc', None])
 
 def get_raw_connection(
     path: str,
-    access_mode: Literal['ro', 'rw', 'rwc', None] = None,
+    access_mode: Optional[Literal['ro', 'rw', 'rwc']] = None,
 ) -> sqlite3.Connection:
     """Open and return an SQLite 3 connection to the given *path* using
     the specified URI access mode if provided. If path is ':memory:',
@@ -875,7 +875,7 @@ def get_raw_connection(
 def get_connection(
     path: str,
     required_permissions: RequiredPermissions,
-    access_mode: Literal['ro', 'rw', 'rwc', None] = None,
+    access_mode: Optional[Literal['ro', 'rw', 'rwc']] = None,
 ) -> sqlite3.Connection:
     """Return an SQLite 3 connection to a Toron database containing a
     supported node schema with required file permissions, triggers, and

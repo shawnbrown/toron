@@ -142,7 +142,7 @@ class SimpleSelector(SelectorBase):
     def __init__(
         self,
         attr: str,
-        op: Literal['=', '~=', '|=', '^=', '$=', '*=', None] = None,
+        op: Optional[Literal['=', '~=', '|=', '^=', '$=', '*=']] = None,
         val: Optional[str] = None,
         ignore_case: Optional[bool] = None,
     ) -> None:
