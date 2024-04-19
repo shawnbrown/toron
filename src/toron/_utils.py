@@ -352,7 +352,7 @@ def make_hash(values: Iterable, sep: str = '|') -> Optional[str]:
     except StopIteration:
         return None
 
-    values = chain([f'{first_item}'], (f'{sep}{x}' for x in values))
+    values = chain([str(first_item)], (f'{sep}{x}' for x in values))
 
     sha256 = hashlib.sha256()
     for value in values:
