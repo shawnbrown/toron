@@ -60,15 +60,15 @@ class Node(object):
                 self._connector.transaction_rollback(cursor)
                 raise
 
-    def add_index_columns(self, column: str, *columns: str) -> None:
-        with self._managed_transaction() as cursor:
-            manager = self._dal.ColumnManager(cursor)
-            manager.add_columns(column, *columns)
-
     @property
     def index_columns(self) -> Tuple[str, ...]:
         with self._managed_cursor() as cursor:
             return self._dal.ColumnManager(cursor).get_columns()
+
+    def add_index_columns(self, column: str, *columns: str) -> None:
+        with self._managed_transaction() as cursor:
+            manager = self._dal.ColumnManager(cursor)
+            manager.add_columns(column, *columns)
 
     def rename_index_columns(self, mapping: Dict[str, str]) -> None:
         with self._managed_transaction() as cursor:
