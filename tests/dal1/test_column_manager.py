@@ -9,7 +9,7 @@ from toron.dal1.column_manager import (
     ColumnManager,
     verify_foreign_key_check,
     legacy_rename_columns,
-    legacy_delete_columns,
+    legacy_drop_columns,
 )
 from toron.node import Node
 
@@ -239,7 +239,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, regex):
             legacy_rename_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
 
-    def test_legacy_delete_columns(self):
+    def test_legacy_drop_columns(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar', 'baz', 'qux')
         self.cursor.executescript("""
@@ -248,7 +248,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             INSERT INTO node_index VALUES (NULL, 'c', 'z', '333', 'three');
         """)
 
-        legacy_delete_columns(self.node, 'bar')  # <- Delete 1 column.
+        legacy_drop_columns(self.node, 'bar')  # <- Delete 1 column.
 
         self.assertColumnsEqual('node_index', ['index_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
@@ -258,7 +258,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             [(0, '-', '-', '-'), (1, 'a', '111', 'one'), (2, 'b', '222', 'two'), (3, 'c', '333', 'three')],
         )
 
-        legacy_delete_columns(self.node, 'baz', 'qux')  # <- Delete 2 more columns at the same time.
+        legacy_drop_columns(self.node, 'baz', 'qux')  # <- Delete 2 more columns at the same time.
 
         self.assertColumnsEqual('node_index', ['index_id', 'foo'])
         self.assertColumnsEqual('location', ['_location_id', 'foo'])
@@ -268,10 +268,10 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
         )
 
-    def test_legacy_delete_columns_all(self):
+    def test_legacy_drop_columns_all(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar')
 
         regex = 'cannot delete all columns'
         with self.assertRaisesRegex(RuntimeError, regex):
-            legacy_delete_columns(self.node, 'foo', 'bar')
+            legacy_drop_columns(self.node, 'foo', 'bar')

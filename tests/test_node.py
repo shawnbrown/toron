@@ -265,7 +265,7 @@ class TestColumnMethods(unittest.TestCase):
             node.drop_index_columns('B', 'D')
         else:
             import toron.dal1
-            toron.dal1.legacy_delete_columns(node, 'B', 'D')
+            toron.dal1.legacy_drop_columns(node, 'B', 'D')
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'C'))
 

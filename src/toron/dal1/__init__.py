@@ -4,7 +4,7 @@ from .data_connector import DataConnector
 from .column_manager import (
     ColumnManager,
     legacy_rename_columns,
-    legacy_delete_columns,
+    legacy_drop_columns,
 )
 from .repositories import (
     IndexRepository,

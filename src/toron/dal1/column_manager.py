@@ -81,7 +81,7 @@ class ColumnManager(BaseColumnManager):
                 f"This feature requires SQLite 3.35.5 or newer. The current running "
                 f"Python is bundled with SQLite {sqlite3.sqlite_version}.\n"
                 f"\n"
-                f"Use the helper function 'toron.dal1.legacy_delete_columns(...)' instead."
+                f"Use the helper function 'toron.dal1.legacy_drop_columns(...)' instead."
             )
             raise Exception(msg)
 
@@ -217,8 +217,8 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
             cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
 
 
-def legacy_delete_columns(node: 'Node', column: str, *columns: str) -> None:
-    """Delete columns (for legacy SQLite versions).
+def legacy_drop_columns(node: 'Node', column: str, *columns: str) -> None:
+    """Remove columns (for legacy SQLite versions).
 
     DROP COLUMN support was first added in SQLite 3.35.0 and important
     bugfixes were added in 3.35.5 (2021-04-19).
