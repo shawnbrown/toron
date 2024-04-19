@@ -60,28 +60,28 @@ class Node(object):
                 self._connector.transaction_rollback(cursor)
                 raise
 
-    def add_columns(self, column: str, *columns: str) -> None:
+    def add_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
             manager.add_columns(column, *columns)
 
     @property
-    def columns(self) -> Tuple[str, ...]:
+    def index_columns(self) -> Tuple[str, ...]:
         with self._managed_cursor() as cursor:
             return self._dal.ColumnManager(cursor).get_columns()
 
-    def rename_columns(self, mapping: Dict[str, str]) -> None:
+    def rename_index_columns(self, mapping: Dict[str, str]) -> None:
         with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
             manager.rename_columns(mapping)
 
-    def delete_columns(self, column: str, *columns: str) -> None:
+    def drop_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
 
             if set(manager.get_columns()).issubset(chain([column], columns)):
                 msg = (
-                    'cannot delete all columns\n'
+                    'cannot remove all index columns\n'
                     '\n'
                     'Without at least one index column, a node cannot represent '
                     'any weights, quantities, or relations it might contain.'

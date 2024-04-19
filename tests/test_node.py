@@ -217,14 +217,14 @@ class TestColumnMethods(unittest.TestCase):
             manager = node._dal.ColumnManager(cursor)
             manager.add_columns(*columns)
 
-    def test_add_columns(self):
+    def test_add_index_columns(self):
         node = Node()
 
-        node.add_columns('A', 'B')
+        node.add_index_columns('A', 'B')
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'B'))
 
-    def test_add_columns_atomic(self):
+    def test_add_index_columns_atomic(self):
         """Adding columns should be an atomic operation (either all
         columns should be added or none should be added).
         """
@@ -232,50 +232,50 @@ class TestColumnMethods(unittest.TestCase):
 
         with suppress(Exception):
             # Second 'baz' causes an error (cannot have duplicate names).
-            node.add_columns('foo', 'bar', 'baz', 'baz')
+            node.add_index_columns('foo', 'bar', 'baz', 'baz')
 
         msg = 'should be empty tuple, no column names'
         self.assertEqual(self.get_cols_helper(node), (), msg=msg)
 
-    def test_columns_property(self):
+    def test_index_columns_property(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
 
-        columns = node.columns  # Accessed as property attribute.
+        columns = node.index_columns  # Accessed as property attribute.
 
         self.assertEqual(columns, ('A', 'B'))
 
-    def test_rename_columns(self):
+    def test_rename_index_columns(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
-            node.rename_columns({'B': 'G', 'D': 'T'})
+            node.rename_index_columns({'B': 'G', 'D': 'T'})
         else:
             import toron.dal1
             toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
 
-    def test_delete_columns(self):
+    def test_drop_index_columns(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         if sqlite3.sqlite_version_info >= (3, 35, 5) or node._dal.backend != 'DAL1':
-            node.delete_columns('B', 'D')
+            node.drop_index_columns('B', 'D')
         else:
             import toron.dal1
             toron.dal1.legacy_delete_columns(node, 'B', 'D')
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'C'))
 
-    def test_delete_columns_all(self):
+    def test_drop_index_columns_all(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B', 'C')
 
         if node._dal.backend == 'DAL1' and sqlite3.sqlite_version_info < (3, 35, 5):
             self.skipTest('requires SQLite 3.35.5 or newer')
 
-        regex = 'cannot delete all columns'
+        regex = 'cannot remove all index columns'
         with self.assertRaisesRegex(RuntimeError, regex):
-            node.delete_columns('A', 'B', 'C')
+            node.drop_index_columns('A', 'B', 'C')
