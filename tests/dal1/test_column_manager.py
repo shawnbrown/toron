@@ -98,7 +98,7 @@ class TestColumnManager(unittest.TestCase):
         )
 
     @unittest.skipIf(sqlite3.sqlite_version_info < (3, 35, 5), 'requires 3.35.5 or newer')
-    def test_delete_columns(self):
+    def test_drop_columns(self):
         manager = ColumnManager(self.cursor)
         manager.add_columns('foo', 'bar', 'baz', 'qux')
         self.cursor.executescript("""
@@ -107,7 +107,7 @@ class TestColumnManager(unittest.TestCase):
             INSERT INTO node_index VALUES (NULL, 'c', 'z', '333', 'three');
         """)
 
-        manager.delete_columns('bar')  # <- Delete 1 column.
+        manager.drop_columns('bar')  # <- Remove 1 column.
 
         self.assertColumnsEqual('node_index', ['index_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
@@ -117,7 +117,7 @@ class TestColumnManager(unittest.TestCase):
             [(0, '-', '-', '-'), (1, 'a', '111', 'one'), (2, 'b', '222', 'two'), (3, 'c', '333', 'three')],
         )
 
-        manager.delete_columns('baz', 'qux')  # <- Delete 2 more columns at the same time.
+        manager.drop_columns('baz', 'qux')  # <- Remove 2 more columns at the same time.
 
         self.assertColumnsEqual('node_index', ['index_id', 'foo'])
         self.assertColumnsEqual('location', ['_location_id', 'foo'])
@@ -127,7 +127,7 @@ class TestColumnManager(unittest.TestCase):
             [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
         )
 
-    def test_delete_columns_legacy_message(self):
+    def test_drop_columns_legacy_message(self):
         """On SQLite versions older than 3.35.5, should raise error."""
         if sqlite3.sqlite_version_info >= (3, 35, 5):
             return  # <- EXIT!
@@ -137,7 +137,7 @@ class TestColumnManager(unittest.TestCase):
 
         regex = 'requires SQLite 3.35.5 or newer'
         with self.assertRaisesRegex(Exception, regex):
-            manager.delete_columns('bar')
+            manager.drop_columns('bar')
 
 
 class TestVerifyForeignKeyCheck(unittest.TestCase):

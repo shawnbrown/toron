@@ -88,4 +88,4 @@ class Node(object):
                 )
                 raise RuntimeError(msg)
 
-            manager.delete_columns(column, *columns)
+            manager.drop_columns(column, *columns)

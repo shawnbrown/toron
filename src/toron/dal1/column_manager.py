@@ -73,8 +73,8 @@ class ColumnManager(BaseColumnManager):
                     RENAME COLUMN {name} TO {new_name}
             """)
 
-    def delete_columns(self, column: str, *columns: str) -> None:
-        """Delete label columns."""
+    def drop_columns(self, column: str, *columns: str) -> None:
+        """Remove label columns."""
 
         if sqlite3.sqlite_version_info < (3, 35, 5):
             msg = (

@@ -173,8 +173,8 @@ class BaseColumnManager(ABC):
         """Rename label columns."""
 
     @abstractmethod
-    def delete_columns(self, column: str, *columns: str) -> None:
-        """Delete label columns."""
+    def drop_columns(self, column: str, *columns: str) -> None:
+        """Remove label columns."""
 
 
 @dataclass(init=False)
