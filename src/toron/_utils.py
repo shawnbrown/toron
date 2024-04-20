@@ -41,6 +41,67 @@ from ._typing import (
 )
 
 
+def normalize_tabular(
+    data: Union[Iterable[Sequence], Iterable[Mapping]],
+    columns: Optional[Sequence[str]] = None,
+) -> Tuple[Iterator[Sequence], Sequence]:
+    """Return normalized *data* and column names or raise a TypeError
+    if data cannot be normalized.
+
+    Normalizing an iterable of sequence rows::
+
+        >>> raw_data = [
+        ...     ('A', 'B', 'C'),
+        ...     (1, 11, 111),
+        ...     (2, 22, 222)
+        ... ]
+        >>> data, cols = normalize_tabular(raw_data)
+        >>> list(data)
+        [(1, 11, 111), (2, 22, 222)]
+        >>> cols
+        ('A', 'B', 'C')
+
+    Normalizing an iterable of dictionary rows::
+
+        >>> raw_data = [
+        ...     {'A': 1, 'B': 11, 'C': 111},
+        ...     {'A': 2, 'B': 22, 'C': 222},
+        ... ]
+        >>> data, cols = normalize_tabular(raw_data)
+        >>> list(data)
+        [(1, 11, 111), (2, 22, 222)]
+        >>> cols
+        ('A', 'B', 'C')
+    """
+    try:
+        data_iter = iter(data)
+    except TypeError:
+        qualname = data.__class__.__qualname__
+        msg = f'data must be iterable, got {qualname!r}: {data!r}'
+        raise TypeError(msg)
+
+    try:
+        first_row = next(data_iter)
+    except StopIteration:
+        return data_iter, columns or tuple()
+
+    if isinstance(first_row, Sequence):
+        if columns:
+            return chain([first_row], data_iter), columns
+        return data_iter, first_row
+
+    if isinstance(first_row, Mapping):
+        if not columns:
+            columns = tuple(first_row.keys())
+        func = lambda row: tuple(row.get(x) for x in columns)
+        data_iter = (func(row) for row in chain([first_row], data_iter))
+        return data_iter, columns
+
+    qualname = first_row.__class__.__qualname__
+    msg = f'rows must be sequence or mapping, got {qualname!r}: {first_row!r}'
+    raise TypeError(msg)
+
+
 TabularData : TypeAlias = Union[
     Iterable[Sequence],
     Iterable[Mapping],

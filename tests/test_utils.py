@@ -8,6 +8,7 @@ from collections.abc import Iterator
 
 from toron._utils import (
     ToronError,
+    normalize_tabular,
     make_readerlike,
     make_dictreaderlike,
     wide_to_narrow,
@@ -16,6 +17,77 @@ from toron._utils import (
     BitFlags,
     QuantityIterator,
 )
+
+
+class TestNormalizeTabular(unittest.TestCase):
+    def test_sequences(self):
+        input_data = [('col1', 'col2'), (1, 'a'), (2, 'b'), (3, 'c')]
+
+        data, columns = normalize_tabular(input_data)
+
+        self.assertEqual(list(data), [(1, 'a'), (2, 'b'), (3, 'c')])
+        self.assertEqual(columns, ('col1', 'col2'))
+
+    def test_sequences_explicit_columns(self):
+        input_data = [(1, 'a'), (2, 'b'), (3, 'c')]
+        input_clumns = ('col1', 'col2')
+
+        data, columns = normalize_tabular(input_data, input_clumns)
+
+        self.assertEqual(list(data), input_data)
+        self.assertEqual(columns, input_clumns)
+
+    def test_csv_reader(self):
+        input_data = csv.reader(io.StringIO('col1,col2\n1,a\n2,b\n3,c\n'))
+
+        data, columns = normalize_tabular(input_data)
+
+        self.assertEqual(list(data), [['1', 'a'], ['2', 'b'], ['3', 'c']])
+        self.assertEqual(columns, ['col1', 'col2'])
+
+    def test_mappings(self):
+        input_data = [{'col1': 1, 'col2': 'a'},
+                      {'col1': 2, 'col2': 'b'},
+                      {'col1': 3, 'col2': 'c'}]
+
+        data, columns = normalize_tabular(input_data)
+
+        self.assertEqual(list(data), [(1, 'a'), (2, 'b'), (3, 'c')])
+        self.assertEqual(columns, ('col1', 'col2'))
+
+    def test_mappings_explicit_columns(self):
+        """Normalized mapping should use order of *columns* if given."""
+        input_data = [{'col1': 1, 'col2': 'a'},
+                      {'col1': 2, 'col2': 'b'},
+                      {'col1': 3, 'col2': 'c'}]
+        input_columns = ('col2', 'col1')  # <- Changed order.
+
+        data, columns = normalize_tabular(input_data, input_columns)
+
+        self.assertEqual(list(data), [('a', 1), ('b', 2), ('c', 3)])
+        self.assertEqual(columns, input_columns)
+
+    def test_empty_dataset(self):
+        input_data = iter([])
+
+        data, columns = normalize_tabular(input_data)
+
+        self.assertEqual(list(data), [])
+        self.assertEqual(columns, tuple())
+
+    def test_bad_data_type(self):
+        input_data = 123
+
+        regex = r"data must be iterable, got 'int': 123"
+        with self.assertRaisesRegex(TypeError, regex):
+            data, columns = normalize_tabular(input_data)
+
+    def test_bad_row_type(self):
+        input_data = [{'col1', 'col2'}, {1, 'a'}, {2, 'b'}, {3, 'c'}]  # <- Not sequences!
+
+        regex = r"rows must be sequence or mapping, got 'set': \{'col[12]', 'col[12]'\}"
+        with self.assertRaisesRegex(TypeError, regex):
+            data, columns = normalize_tabular(input_data)
 
 
 class TestMakeReaderLike(unittest.TestCase):
