@@ -205,7 +205,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         ])
 
 
-class TestColumnMethods(unittest.TestCase):
+class TestIndexColumnMethods(unittest.TestCase):
     @staticmethod
     def get_cols_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
