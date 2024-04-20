@@ -41,10 +41,17 @@ from ._typing import (
 )
 
 
+@overload
 def normalize_tabular(
-    data: Union[Iterable[Sequence], Iterable[Mapping]],
-    columns: Optional[Sequence[str]] = None,
+    data: Iterable[Sequence], columns: Optional[Sequence[str]] = None,
 ) -> Tuple[Iterator[Sequence], Sequence]:
+    ...
+@overload
+def normalize_tabular(
+    data: Iterable[Mapping], columns: Optional[Sequence[str]] = None,
+) -> Tuple[Iterator[Sequence], Sequence]:
+    ...
+def normalize_tabular(data, columns=None):
     """Return normalized *data* and column names or raise a TypeError
     if data cannot be normalized.
 
