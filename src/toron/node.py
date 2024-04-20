@@ -7,11 +7,15 @@ from toron._typing import (
     Any,
     Dict,
     Generator,
+    Iterable,
     Optional,
+    Sequence,
     Tuple,
+    Union,
 )
 
 from . import data_access
+from ._utils import normalize_tabular
 
 
 class Node(object):
@@ -89,3 +93,16 @@ class Node(object):
                 raise RuntimeError(msg)
 
             manager.drop_columns(column, *columns)
+
+    def insert_index(
+        self,
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        data, columns = normalize_tabular(data, columns)
+
+        with self._managed_transaction() as cursor:
+            repository = self._dal.IndexRepository(cursor)
+
+            for row in data:
+                repository.add(*row)

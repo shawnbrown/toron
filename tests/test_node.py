@@ -279,3 +279,27 @@ class TestIndexColumnMethods(unittest.TestCase):
         regex = 'cannot remove all index columns'
         with self.assertRaisesRegex(RuntimeError, regex):
             node.drop_index_columns('A', 'B', 'C')
+
+
+class TestIndexMethods(unittest.TestCase):
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns(*columns)
+
+    @staticmethod
+    def get_index_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM node_index')
+            return cursor.fetchall()
+
+    def test_insert(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+
+        data = [('A', 'B'), ('foo', 'x'), ('bar', 'y')]
+        node.insert_index(data)
+
+        expected = [(0, '-', '-'), (1, 'foo', 'x'), (2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(node), expected)
