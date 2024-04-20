@@ -102,7 +102,13 @@ class Node(object):
         data, columns = normalize_tabular(data, columns)
 
         with self._managed_transaction() as cursor:
+            manager = self._dal.ColumnManager(cursor)
             repository = self._dal.IndexRepository(cursor)
 
+            index_columns = manager.get_columns()
+            order_lookup = dict(enumerate(index_columns.index(x) for x in columns))
+            sort_key = lambda item: order_lookup[item[0]]
+
             for row in data:
+                row = [v for k, v in sorted(enumerate(row), key=sort_key)]
                 repository.add(*row)

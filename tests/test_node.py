@@ -303,3 +303,13 @@ class TestIndexMethods(unittest.TestCase):
 
         expected = [(0, '-', '-'), (1, 'foo', 'x'), (2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(node), expected)
+
+    def test_insert_different_order(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+
+        data = [('B', 'A'), ('x', 'foo'), ('y', 'bar')]  # <- Different order.
+        node.insert_index(data)
+
+        expected = [(0, '-', '-'), (1, 'foo', 'x'), (2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(node), expected)
