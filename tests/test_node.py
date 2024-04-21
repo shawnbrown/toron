@@ -313,3 +313,11 @@ class TestIndexMethods(unittest.TestCase):
 
         expected = [(0, '-', '-'), (1, 'foo', 'x'), (2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(node), expected)
+
+    def test_insert_invalid_columns(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        regex = r"missing required columns: 'C', 'D'"
+        with self.assertRaisesRegex(ValueError, regex):
+            node.insert_index([('A', 'B'), ('foo', 'x'), ('bar', 'y')])

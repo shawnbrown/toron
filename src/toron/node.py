@@ -15,7 +15,10 @@ from toron._typing import (
 )
 
 from . import data_access
-from ._utils import normalize_tabular
+from ._utils import (
+    normalize_tabular,
+    verify_columns_set,
+)
 
 
 class Node(object):
@@ -106,6 +109,8 @@ class Node(object):
             repository = self._dal.IndexRepository(cursor)
 
             index_columns = manager.get_columns()
+            verify_columns_set(columns, index_columns)
+
             order_lookup = dict(enumerate(index_columns.index(x) for x in columns))
             sort_key = lambda item: order_lookup[item[0]]
 
