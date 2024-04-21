@@ -9,6 +9,7 @@ from collections.abc import Iterator
 from toron._utils import (
     ToronError,
     normalize_tabular,
+    verify_columns_set,
     make_readerlike,
     make_dictreaderlike,
     wide_to_narrow,
@@ -88,6 +89,29 @@ class TestNormalizeTabular(unittest.TestCase):
         regex = r"rows must be sequence or mapping, got 'set': \{'col[12]', 'col[12]'\}"
         with self.assertRaisesRegex(TypeError, regex):
             data, columns = normalize_tabular(input_data)
+
+
+class TestVerifyColumnsSet(unittest.TestCase):
+    def test_passing(self):
+        try:
+            verify_columns_set(['A', 'B', 'C'], ['A', 'B', 'C'])
+        except Exception:
+            self.fail('columns are the same, should pass without error')
+
+    def test_missing(self):
+        regex = r"^invalid column names\s+missing required columns: 'B', 'C'$"
+        with self.assertRaisesRegex(ValueError, regex):
+            verify_columns_set(['A'], ['A', 'B', 'C'])
+
+    def test_extra(self):
+        regex = r"^invalid column names\s+extra columns found: 'D', 'E'$"
+        with self.assertRaisesRegex(ValueError, regex):
+            verify_columns_set(['A', 'B', 'C', 'D', 'E'], ['A', 'B', 'C'])
+
+    def test_missing_and_extra(self):
+        regex = r"^invalid column names\s+missing required columns: 'C'\s+extra columns found: 'E'$"
+        with self.assertRaisesRegex(ValueError, regex):
+            verify_columns_set(['A', 'B', 'E'], ['A', 'B', 'C'])
 
 
 class TestMakeReaderLike(unittest.TestCase):

@@ -109,6 +109,26 @@ def normalize_tabular(data, columns=None):
     raise TypeError(msg)
 
 
+def verify_columns_set(columns, required_columns):
+    """Raise error if columns do not match set of required columns."""
+    if set(columns) == set(required_columns):
+        return  # <- EXIT!
+
+    msg = 'invalid column names'
+
+    missing = [x for x in required_columns if x not in columns]
+    if missing:
+        missing_fmt = ', '.join(repr(x) for x in missing)
+        msg = msg + f'\n  missing required columns: {missing_fmt}'
+
+    extra = [x for x in columns if x not in required_columns]
+    if extra:
+        extra_fmt = ', '.join(repr(x) for x in extra)
+        msg = msg + f'\n  extra columns found: {extra_fmt}'
+
+    raise ValueError(msg)
+
+
 TabularData : TypeAlias = Union[
     Iterable[Sequence],
     Iterable[Mapping],
