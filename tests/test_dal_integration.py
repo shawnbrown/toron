@@ -12,6 +12,7 @@ from contextlib import closing, suppress
 
 from toron.data_models import (
     BaseDataConnector,
+    Index, BaseIndexRepository,
     BasePropertyRepository,
 )
 
@@ -112,6 +113,55 @@ class ColumnManagerBaseTest(ABC):
         self.manager = self.manager_class(cursor)
 
 
+class IndexRepositoryBaseTest(ABC):
+    @property
+    @abstractmethod
+    def connector_class(self):
+        ...
+
+    @property
+    @abstractmethod
+    def manager_class(self):
+        ...
+
+    @property
+    @abstractmethod
+    def repository_class(self):
+        ...
+
+    def setUp(self):
+        connector = self.connector_class()
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
+
+        cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        self.manager = self.manager_class(cursor)
+
+        self.repository = self.repository_class(cursor)
+
+    def test_inheritance(self):
+        """Must inherit from appropriate abstract base class."""
+        self.assertTrue(issubclass(self.repository_class, BaseIndexRepository))
+
+    def test_integration(self):
+        """Test add(), get(), update() and delete() interaction."""
+        self.manager.add_columns('A', 'B')
+
+        self.repository.add('foo', 'x')
+        self.repository.add('bar', 'y')
+
+        self.assertEqual(self.repository.get(1), Index(1, 'foo', 'x'))
+        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'y'))
+
+        self.repository.update(Index(2, 'bar', 'z'))
+        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'z'))
+
+        self.repository.delete(2)
+        self.assertIsNone(self.repository.get(2))
+
+
 class PropertyRepositoryBaseTest(ABC):
     @property
     @abstractmethod
@@ -188,6 +238,20 @@ class ColumnManagerDAL1(ColumnManagerBaseTest, unittest.TestCase):
     @property
     def manager_class(self):
         return dal1.ColumnManager
+
+
+class IndexRepositoryDAL1(IndexRepositoryBaseTest, unittest.TestCase):
+    @property
+    def connector_class(self):
+        return dal1.DataConnector
+
+    @property
+    def manager_class(self):
+        return dal1.ColumnManager
+
+    @property
+    def repository_class(self):
+        return dal1.IndexRepository
 
 
 class PropertyRepositoryDAL1(PropertyRepositoryBaseTest, unittest.TestCase):
