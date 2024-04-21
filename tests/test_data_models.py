@@ -185,6 +185,43 @@ class IndexRepositoryBaseTest(ABC):
         with self.assertRaises(ValueError, msg=msg):
             self.repository.add('foo', '')
 
+    def test_add_many(self):
+        self.manager.add_columns('A', 'B')
+
+        data = [('foo', 'x'), ('bar', 'y')]
+        self.repository.add_many(data)
+
+        self.assertEqual(self.repository.get(1), Index(1, 'foo', 'x'))
+        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'y'))
+
+    def test_add_many_duplicate(self):
+        """Duplicates should be skipped without error."""
+        self.manager.add_columns('A', 'B')
+
+        self.repository.add_many([
+            ('foo', 'x'),
+            ('foo', 'x'),  # <- Duplicate of first value.
+            ('bar', 'y'),
+        ])
+
+        self.assertEqual(self.repository.get(1), Index(1, 'foo', 'x'))
+        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'y'))
+        self.assertIsNone(self.repository.get(3))
+
+    def test_add_many_empty_string(self):
+        """Empty-strings should be skipped without error."""
+        self.manager.add_columns('A', 'B')
+
+        self.repository.add_many([
+            ('foo', 'x'),
+            ('bar', ''),   # <- Contains empty string.
+            ('bar', 'y'),
+        ])
+
+        self.assertEqual(self.repository.get(1), Index(1, 'foo', 'x'))
+        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'y'))
+        self.assertIsNone(self.repository.get(3))
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property
