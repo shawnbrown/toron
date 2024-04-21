@@ -107,7 +107,7 @@ class ColumnManagerBaseTest(ABC):
         self.addCleanup(lambda: connector.release_connection(connection))
 
         cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_connection(cursor))
+        self.addCleanup(lambda: connector.release_cursor(cursor))
 
         self.manager = self.manager_class(cursor)
 
@@ -129,7 +129,7 @@ class PropertyRepositoryBaseTest(ABC):
         self.addCleanup(lambda: connector.release_connection(connection))
 
         cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_connection(cursor))
+        self.addCleanup(lambda: connector.release_cursor(cursor))
 
         self.repository = self.repository_class(cursor)
 
