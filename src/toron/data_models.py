@@ -230,7 +230,10 @@ class BaseIndexRepository(ABC):
 
     @abstractmethod
     def add(self, value: str, *values: str) -> None:
-        """Add a record to the repository."""
+        """Add a record to the repository.
+
+        Duplicate or invalid data should raise a ValueError.
+        """
 
     @abstractmethod
     def get(self, id: int) -> Optional[Index]:

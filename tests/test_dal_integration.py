@@ -161,6 +161,23 @@ class IndexRepositoryBaseTest(ABC):
         self.repository.delete(2)
         self.assertIsNone(self.repository.get(2))
 
+    def test_add_duplicate_value(self):
+        """Attempting to add duplicate values should raise ValueError."""
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'bar')
+
+        msg = "should not add ('foo', 'bar') again, duplicates not allowed"
+        with self.assertRaises(ValueError, msg=msg):
+            self.repository.add('foo', 'bar')
+
+    def test_add_empty_string(self):
+        """Attempting to add empty strings should raise ValueError."""
+        self.manager.add_columns('A', 'B')
+
+        msg = "adding ('foo', '') should fail, empty strings not allowed"
+        with self.assertRaises(ValueError, msg=msg):
+            self.repository.add('foo', '')
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property
