@@ -36,7 +36,10 @@ class IndexRepository(BaseIndexRepository):
         values = (value,) + values
         qmarks = ", ".join("?" * len(values))
         sql = f'INSERT INTO main.node_index VALUES (NULL, {qmarks})'
-        self._cursor.execute(sql, values)
+        try:
+            self._cursor.execute(sql, values)
+        except sqlite3.IntegrityError as err:
+            raise ValueError(str(err))
 
     def get(self, id: int) -> Optional[Index]:
         """Get a record from the repository."""

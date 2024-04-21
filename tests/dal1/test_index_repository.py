@@ -42,11 +42,11 @@ class TestIndexRepository(unittest.TestCase):
         )
 
         msg = "should not add ('foo', 'bar') again, duplicates not allowed"
-        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+        with self.assertRaises(ValueError, msg=msg):
             repository.add('foo', 'bar')
 
         msg = "adding ('foo', '') should fail, empty strings not allowed"
-        with self.assertRaises(sqlite3.IntegrityError, msg=msg):
+        with self.assertRaises(ValueError, msg=msg):
             repository.add('foo', '')
 
     def test_get(self):
