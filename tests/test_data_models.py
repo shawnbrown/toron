@@ -1,3 +1,10 @@
+"""Tests for data models and data model integration.
+
+Currently this module is focused on integration tests while most of
+the behavior is covered by unit tests in the dal1/ folder. But in the
+future, it may be best to move or adapt relevant tests to this module
+as well.
+"""
 
 import os
 import tempfile
