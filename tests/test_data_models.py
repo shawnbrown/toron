@@ -202,11 +202,17 @@ class IndexRepositoryBaseTest(ABC):
     def test_add_many(self):
         self.manager.add_columns('A', 'B')
 
-        data = [('foo', 'x'), ('bar', 'y')]
-        self.repository.add_many(data)
+        self.repository.add_many([
+            ('foo', 'x'),
+            ('bar', 'y'),
+        ])
 
-        self.assertEqual(self.repository.get(1), Index(1, 'foo', 'x'))
-        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'y'))
+        expected = [
+            Index(id=0, values=('-', '-')),
+            Index(id=1, values=('foo', 'x')),
+            Index(id=2, values=('bar', 'y')),
+        ]
+        self.assertEqual(list(self.repository.get_all()), expected)
 
     def test_add_many_duplicate(self):
         """Duplicates should be skipped without error."""
@@ -218,9 +224,12 @@ class IndexRepositoryBaseTest(ABC):
             ('bar', 'y'),
         ])
 
-        self.assertEqual(self.repository.get(1), Index(1, 'foo', 'x'))
-        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'y'))
-        self.assertIsNone(self.repository.get(3))
+        expected = [
+            Index(id=0, values=('-', '-')),
+            Index(id=1, values=('foo', 'x')),
+            Index(id=2, values=('bar', 'y')),
+        ]
+        self.assertEqual(list(self.repository.get_all()), expected)
 
     def test_add_many_empty_string(self):
         """Empty-strings should be skipped without error."""
@@ -232,9 +241,12 @@ class IndexRepositoryBaseTest(ABC):
             ('bar', 'y'),
         ])
 
-        self.assertEqual(self.repository.get(1), Index(1, 'foo', 'x'))
-        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'y'))
-        self.assertIsNone(self.repository.get(3))
+        expected = [
+            Index(id=0, values=('-', '-')),
+            Index(id=1, values=('foo', 'x')),
+            Index(id=2, values=('bar', 'y')),
+        ]
+        self.assertEqual(list(self.repository.get_all()), expected)
 
 
 class PropertyRepositoryBaseTest(ABC):
