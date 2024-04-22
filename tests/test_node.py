@@ -15,6 +15,7 @@ else:
     from typing_extensions import get_args
 
 from toron._utils import ToronWarning
+from toron.data_models import Index
 from toron.node import Node
 
 
@@ -292,8 +293,8 @@ class TestIndexMethods(unittest.TestCase):
     @staticmethod
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM node_index')
-            return cursor.fetchall()
+            repository = node._dal.IndexRepository(cursor)
+            return list(repository.get_all())
 
     def test_insert(self):
         node = Node()
@@ -302,7 +303,11 @@ class TestIndexMethods(unittest.TestCase):
         data = [('A', 'B'), ('foo', 'x'), ('bar', 'y')]
         node.insert_index(data)
 
-        expected = [(0, '-', '-'), (1, 'foo', 'x'), (2, 'bar', 'y')]
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
+        ]
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_different_order(self):
@@ -312,7 +317,11 @@ class TestIndexMethods(unittest.TestCase):
         data = [('B', 'A'), ('x', 'foo'), ('y', 'bar')]  # <- Different order.
         node.insert_index(data)
 
-        expected = [(0, '-', '-'), (1, 'foo', 'x'), (2, 'bar', 'y')]
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
+        ]
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_invalid_columns(self):
@@ -348,6 +357,9 @@ class TestIndexMethods(unittest.TestCase):
 
         # Check the loaded data.
         expected = [
-            (0, '-', '-'), (1, 'foo', 'x'), (2, 'bar', 'y'), (3, 'baz', 'z')
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
+            Index(3, 'baz', 'z'),
         ]
         self.assertEqual(self.get_index_helper(node), expected)
