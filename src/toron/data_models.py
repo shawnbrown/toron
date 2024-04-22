@@ -13,6 +13,7 @@ from toron._typing import (
     Dict,
     Generic,
     Iterable,
+    Iterator,
     List,
     Literal,
     Optional,
@@ -260,9 +261,9 @@ class BaseIndexRepository(ABC):
             except ValueError:
                 pass
 
-    #@abstractmethod
-    #def get_all(self) -> Iterator[Index]:
-    #    """Get all records in the repository."""
+    @abstractmethod
+    def get_all(self) -> Iterator[Index]:
+        """Get all records in the repository."""
 
     #@abstractmethod
     #def find(self, **criteria: str) -> Iterator[Index]:

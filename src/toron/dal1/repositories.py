@@ -6,6 +6,7 @@ from json import dumps as json_dumps
 
 from toron._typing import (
     Dict,
+    Iterator,
     List,
     Optional,
     Union,
@@ -68,6 +69,11 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(
             'DELETE FROM main.node_index WHERE index_id=?', (id,)
         )
+
+    def get_all(self) -> Iterator[Index]:
+        """Get all records in the repository."""
+        self._cursor.execute('SELECT * FROM main.node_index')
+        return (Index(*record) for record in self._cursor)
 
 
 class LocationRepository(BaseLocationRepository):

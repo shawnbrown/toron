@@ -185,6 +185,20 @@ class IndexRepositoryBaseTest(ABC):
         with self.assertRaises(ValueError, msg=msg):
             self.repository.add('foo', '')
 
+    def test_get_all(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')
+        self.repository.add('bar', 'y')
+
+        results = self.repository.get_all()
+
+        expected = [
+            Index(id=0, values=('-', '-')),
+            Index(id=1, values=('foo', 'x')),
+            Index(id=2, values=('bar', 'y')),
+        ]
+        self.assertEqual(list(results), expected)
+
     def test_add_many(self):
         self.manager.add_columns('A', 'B')
 
