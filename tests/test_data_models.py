@@ -199,55 +199,6 @@ class IndexRepositoryBaseTest(ABC):
         ]
         self.assertEqual(list(results), expected)
 
-    def test_add_many(self):
-        self.manager.add_columns('A', 'B')
-
-        self.repository.add_many([
-            ('foo', 'x'),
-            ('bar', 'y'),
-        ])
-
-        expected = [
-            Index(id=0, values=('-', '-')),
-            Index(id=1, values=('foo', 'x')),
-            Index(id=2, values=('bar', 'y')),
-        ]
-        self.assertEqual(list(self.repository.get_all()), expected)
-
-    def test_add_many_duplicate(self):
-        """Duplicates should be skipped without error."""
-        self.manager.add_columns('A', 'B')
-
-        self.repository.add_many([
-            ('foo', 'x'),
-            ('foo', 'x'),  # <- Duplicate of first value.
-            ('bar', 'y'),
-        ])
-
-        expected = [
-            Index(id=0, values=('-', '-')),
-            Index(id=1, values=('foo', 'x')),
-            Index(id=2, values=('bar', 'y')),
-        ]
-        self.assertEqual(list(self.repository.get_all()), expected)
-
-    def test_add_many_empty_string(self):
-        """Empty-strings should be skipped without error."""
-        self.manager.add_columns('A', 'B')
-
-        self.repository.add_many([
-            ('foo', 'x'),
-            ('bar', ''),   # <- Contains empty string.
-            ('bar', 'y'),
-        ])
-
-        expected = [
-            Index(id=0, values=('-', '-')),
-            Index(id=1, values=('foo', 'x')),
-            Index(id=2, values=('bar', 'y')),
-        ]
-        self.assertEqual(list(self.repository.get_all()), expected)
-
 
 class PropertyRepositoryBaseTest(ABC):
     @property

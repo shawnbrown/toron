@@ -250,17 +250,6 @@ class BaseIndexRepository(ABC):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
-    def add_many(self, data: Iterable[Sequence[str]]) -> None:
-        """Add multiple records to the repository.
-
-        Duplicate or invalid data should be ignored.
-        """
-        for row in data:
-            try:
-                self.add(*row)
-            except ValueError:
-                pass
-
     @abstractmethod
     def get_all(self) -> Iterator[Index]:
         """Get all records in the repository."""
