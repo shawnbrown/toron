@@ -14,6 +14,7 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import get_args
 
+from toron._utils import ToronWarning
 from toron.node import Node
 
 
@@ -321,3 +322,32 @@ class TestIndexMethods(unittest.TestCase):
         regex = r"missing required columns: 'C', 'D'"
         with self.assertRaisesRegex(ValueError, regex):
             node.insert_index([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
+
+    def test_insert_duplicate_or_empty_strings(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+
+        data = [
+            ('A', 'B'),
+            ('foo', 'x'),
+            ('foo', 'x'),  # <- Duplicate of previous record.
+            ('bar', ''),   # <- Contains empty string.
+            ('bar', 'y'),
+            ('baz', 'z'),
+        ]
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            node.insert_index(data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'skipped 2 rows with duplicate values or empty strings, loaded 3 rows',
+        )
+
+        # Check the loaded data.
+        expected = [
+            (0, '-', '-'), (1, 'foo', 'x'), (2, 'bar', 'y'), (3, 'baz', 'z')
+        ]
+        self.assertEqual(self.get_index_helper(node), expected)

@@ -1,5 +1,6 @@
 """Node implementation for the Toron project."""
 
+from collections import Counter
 from contextlib import contextmanager, nullcontext
 from itertools import chain
 
@@ -16,6 +17,7 @@ from toron._typing import (
 
 from . import data_access
 from ._utils import (
+    ToronWarning,
     normalize_tabular,
     verify_columns_set,
 )
@@ -114,6 +116,20 @@ class Node(object):
             order_lookup = dict(enumerate(index_columns.index(x) for x in columns))
             sort_key = lambda item: order_lookup[item[0]]
 
+            counter: Counter = Counter()
             for row in data:
                 row = [v for k, v in sorted(enumerate(row), key=sort_key)]
-                repository.add(*row)
+                try:
+                    repository.add(*row)
+                    counter['loaded'] += 1
+                except ValueError:
+                    counter['skipped'] += 1
+
+            if counter['skipped']:
+                import warnings
+                msg = (
+                    f'skipped {counter["skipped"]} rows with duplicate '
+                    f'values or empty strings, loaded {counter["loaded"]} '
+                    f'rows'
+                )
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
