@@ -291,6 +291,13 @@ class TestIndexMethods(unittest.TestCase):
             manager.add_columns(*columns)
 
     @staticmethod
+    def add_index_helper(node, data):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            for row in data:
+                repository.add(*row)
+
+    @staticmethod
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             repository = node._dal.IndexRepository(cursor)
@@ -363,3 +370,43 @@ class TestIndexMethods(unittest.TestCase):
             Index(3, 'baz', 'z'),
         ]
         self.assertEqual(self.get_index_helper(node), expected)
+
+    def test_select(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+        data = [('foo', 'x'), ('foo', 'y'), ('bar', 'x'), ('bar', 'y')]
+        self.add_index_helper(node, data)
+
+        self.assertEqual(
+            list(node.select_index(A='foo')),  # <- Filter on one column.
+            [(1, 'foo', 'x'), (2, 'foo', 'y')],
+        )
+
+        self.assertEqual(
+            list(node.select_index(header=True, B='x')),  # <- Include header.
+            [('index_id', 'A', 'B'), (1, 'foo', 'x'), (3, 'bar', 'x')],
+        )
+
+        self.assertEqual(
+            list(node.select_index(A='bar', B='x')),  # <- Filter on multiple columns.
+            [(3, 'bar', 'x')],
+        )
+
+        self.assertEqual(
+            list(node.select_index(index_id=4, A='bar')),  # <- Criteria includes `index_id`.
+            [(4, 'bar', 'y')],
+        )
+
+        self.assertEqual(
+            list(node.select_index(A='baz')),  # <- No matching value 'baz'.
+            [],
+        )
+
+        self.assertEqual(
+            list(node.select_index()),  # <- No criteria (returns all).
+            [(0, '-', '-'),
+             (1, 'foo', 'x'),
+             (2, 'foo', 'y'),
+             (3, 'bar', 'x'),
+             (4, 'bar', 'y')],
+        )

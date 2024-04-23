@@ -9,6 +9,7 @@ from toron._typing import (
     Dict,
     Generator,
     Iterable,
+    Iterator,
     Optional,
     Sequence,
     Tuple,
@@ -133,3 +134,17 @@ class Node(object):
                     f'rows'
                 )
                 warnings.warn(msg, category=ToronWarning, stacklevel=2)
+
+    def select_index(
+        self, header: bool = False, **criteria: str
+    ) -> Iterator[Sequence]:
+        with self._managed_transaction() as cursor:
+            if header:
+                label_columns = self._dal.ColumnManager(cursor).get_columns()
+                yield ('index_id',) + label_columns  # Yield header row.
+
+            repository = self._dal.IndexRepository(cursor)
+            index_records = repository.find(criteria)
+            results = ((x.id,) + x.values for x in index_records)
+            for row in results:
+                yield row
