@@ -12,7 +12,9 @@ from toron._typing import (
     Union,
 )
 
-from . import schema
+from .schema import (
+    format_identifier,
+)
 from ..data_models import (
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
@@ -73,6 +75,21 @@ class IndexRepository(BaseIndexRepository):
     def get_all(self) -> Iterator[Index]:
         """Get all records in the repository."""
         self._cursor.execute('SELECT * FROM main.node_index')
+        return (Index(*record) for record in self._cursor)
+
+    def find(
+        self, criteria: Optional[Dict[str, str]] = None
+    ) -> Iterator[Index]:
+        """Find all records in the repository that match criteria."""
+        if criteria:
+            qmarks = (f'{format_identifier(k)}=?' for k in criteria.keys())
+            self._cursor.execute(
+                f'SELECT * FROM main.node_index WHERE {" AND ".join(qmarks)}',
+                tuple(criteria.values()),
+            )
+        else:
+            self._cursor.execute('SELECT * FROM main.node_index')
+
         return (Index(*record) for record in self._cursor)
 
 

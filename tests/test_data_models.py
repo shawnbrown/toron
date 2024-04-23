@@ -199,6 +199,37 @@ class IndexRepositoryBaseTest(ABC):
         ]
         self.assertEqual(list(results), expected)
 
+    def test_find(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')
+        self.repository.add('foo', 'y')
+        self.repository.add('bar', 'x')
+        self.repository.add('bar', 'y')
+
+        results = self.repository.find({'A': 'foo'})
+        expected = [Index(1, 'foo', 'x'), Index(2, 'foo', 'y')]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find({'B': 'x'})
+        expected = [Index(1, 'foo', 'x'), Index(3, 'bar', 'x')]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find({'A': 'bar', 'B': 'x'})
+        expected = [Index(3, 'bar', 'x')]
+        self.assertEqual(list(results), expected)
+
+        all_records = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'foo', 'y'),
+            Index(3, 'bar', 'x'),
+            Index(4, 'bar', 'y'),
+        ]
+        results = self.repository.find()  # <- No argument.
+        self.assertEqual(list(results), all_records)
+        results = self.repository.find(dict())  # <- Empty dict.
+        self.assertEqual(list(results), all_records)
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property

@@ -254,9 +254,11 @@ class BaseIndexRepository(ABC):
     def get_all(self) -> Iterator[Index]:
         """Get all records in the repository."""
 
-    #@abstractmethod
-    #def find(self, **criteria: str) -> Iterator[Index]:
-    #    """Find all records in the repository that match criteria."""
+    @abstractmethod
+    def find(
+        self, criteria: Optional[Dict[str, str]] = None
+    ) -> Iterator[Index]:
+        """Find all records in the repository that match criteria."""
 
 
 class Location(Index):
