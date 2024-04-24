@@ -410,3 +410,104 @@ class TestIndexMethods(unittest.TestCase):
              (3, 'bar', 'x'),
              (4, 'bar', 'y')],
         )
+
+
+class TestNodeUpdateIndex(unittest.TestCase):
+    @staticmethod
+    def get_index_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            return list(repository.get_all())
+
+    def setUp(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns('A', 'B')
+
+            repository = node._dal.IndexRepository(cursor)
+            repository.add('foo', 'x')
+            repository.add('bar', 'y')
+
+        self.node = node
+
+    def test_update_all_values(self):
+        data = [('index_id', 'A', 'B'), (1, 'baz', 'z')]  # <- Updating columns A & B.
+        self.node.update_index(data)
+        expected = [Index(0, '-', '-'), Index(1, 'baz', 'z'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+    def test_update_different_order(self):
+        """Columns should be matched on name, not positional order."""
+        data = [('index_id', 'B', 'A'), (1, 'z', 'baz')]  # <- Different order (B then A)
+        self.node.update_index(data)
+        expected = [Index(0, '-', '-'), Index(1, 'baz', 'z'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+    def test_update_partial_values(self):
+        """Will update values even when missing some columns.
+        TODO: Investigate if this is a good idea (behavior might be removed).
+        """
+        data = [('index_id', 'B'), (2, 'xyz')]  # <- Updating column B only.
+        self.node.update_index(data)
+        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'xyz')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+    def test_update_ignore_extra_cols(self):
+        """When given extra columns, they are ignored when loading."""
+        data = [('index_id', 'A', 'B', 'C'), (1, 'baz', 'z', 'zzz')]  # <- Column C not in index.
+        self.node.update_index(data)
+        expected = [Index(0, '-', '-'), Index(1, 'baz', 'z'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+    def test_update_non_matching_id(self):
+        """Should raise warning and skip to next for missing index_id."""
+        data = [
+            ('index_id', 'A', 'B'),
+            (4, 'baz', 'z'),  # <- No index_id 4!
+            (2, 'bar', 'YYY'),
+        ]
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.update_index(data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'skipped 1 rows with non-matching index_id values, updated 1 rows',
+        )
+
+        # Check values (unchanged).
+        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'YYY')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+    def test_empty_string(self):
+        """Should raise warning and skip to next for empty strings."""
+        data = [
+            ('index_id', 'A', 'B'),
+            (1, 'bar', ''),  # <- Has empty string.
+            (2, 'bar', 'YYY'),
+        ]
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.update_index(data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'skipped 1 rows with empty string values, updated 1 rows',
+        )
+
+        # Check values (index_id 2 updated).
+        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'YYY')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+    def test_no_index_id_column(self):
+        """Must have 'index_id' to identify records when updating."""
+        data = [('A', 'B'), ('baz', 'z')]  # <- No 'index_id' column.
+
+        regex = "column 'index_id' required to update records"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.update_index(data)

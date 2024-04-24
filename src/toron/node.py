@@ -148,3 +148,50 @@ class Node(object):
             results = ((x.id,) + x.values for x in index_records)
             for row in results:
                 yield row
+
+    def update_index(
+        self,
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        data, columns = normalize_tabular(data, columns)
+
+        if 'index_id' not in columns:
+            raise ValueError("column 'index_id' required to update records")
+
+        with self._managed_transaction() as cursor:
+            repository = self._dal.IndexRepository(cursor)
+            label_columns = self._dal.ColumnManager(cursor).get_columns()
+
+            counter: Counter = Counter()
+            for new_vals in data:
+                if '' in new_vals:
+                    counter['empty_str'] += 1
+                    continue  # <- Skip to next item.
+
+                new_dict = dict(zip(columns, new_vals))
+                index = repository.get(new_dict['index_id'])
+
+                if index is None:
+                    counter['no_match'] += 1
+                    continue  # <- Skip to next item.
+
+                index_dict = dict(zip(label_columns, index.values))
+                for key in index_dict.keys():
+                    if key in new_dict:
+                        index_dict[key] = new_dict[key]
+                index.values = tuple(index_dict.values())
+                repository.update(index)
+                counter['updated'] += 1
+
+            if counter['no_match'] or counter['empty_str']:
+                import warnings
+                msg = []
+                if counter['empty_str']:
+                    msg.append(f'skipped {counter["empty_str"]} rows with '
+                               f'empty string values')
+                if counter['no_match']:
+                    msg.append(f'skipped {counter["no_match"]} rows with '
+                               f'non-matching index_id values')
+                msg.append(f'updated {counter["updated"]} rows')
+                warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
