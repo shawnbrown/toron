@@ -144,7 +144,11 @@ class Node(object):
                 yield ('index_id',) + label_columns  # Yield header row.
 
             repository = self._dal.IndexRepository(cursor)
-            index_records = repository.find(criteria)
+            if criteria:
+                index_records = repository.find_by_label(criteria)
+            else:
+                index_records = repository.get_all()
+
             results = ((x.id,) + x.values for x in index_records)
             for row in results:
                 yield row

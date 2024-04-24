@@ -77,19 +77,19 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute('SELECT * FROM main.node_index')
         return (Index(*record) for record in self._cursor)
 
-    def find(
-        self, criteria: Optional[Dict[str, str]] = None
+    def find_by_label(
+        self, criteria: Optional[Dict[str, str]]
     ) -> Iterator[Index]:
         """Find all records in the repository that match criteria."""
-        if criteria:
-            qmarks = (f'{format_identifier(k)}=?' for k in criteria.keys())
-            self._cursor.execute(
-                f'SELECT * FROM main.node_index WHERE {" AND ".join(qmarks)}',
-                tuple(criteria.values()),
-            )
-        else:
-            self._cursor.execute('SELECT * FROM main.node_index')
+        if not criteria:
+            msg = 'find_by_label requires at least 1 criteria value, got 0'
+            raise ValueError(msg)
 
+        qmarks = (f'{format_identifier(k)}=?' for k in criteria.keys())
+        self._cursor.execute(
+            f'SELECT * FROM main.node_index WHERE {" AND ".join(qmarks)}',
+            tuple(criteria.values()),
+        )
         return (Index(*record) for record in self._cursor)
 
 

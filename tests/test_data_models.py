@@ -199,36 +199,28 @@ class IndexRepositoryBaseTest(ABC):
         ]
         self.assertEqual(list(results), expected)
 
-    def test_find(self):
+    def test_find_by_label(self):
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'x')
         self.repository.add('foo', 'y')
         self.repository.add('bar', 'x')
         self.repository.add('bar', 'y')
 
-        results = self.repository.find({'A': 'foo'})
+        results = self.repository.find_by_label({'A': 'foo'})
         expected = [Index(1, 'foo', 'x'), Index(2, 'foo', 'y')]
         self.assertEqual(list(results), expected)
 
-        results = self.repository.find({'B': 'x'})
+        results = self.repository.find_by_label({'B': 'x'})
         expected = [Index(1, 'foo', 'x'), Index(3, 'bar', 'x')]
         self.assertEqual(list(results), expected)
 
-        results = self.repository.find({'A': 'bar', 'B': 'x'})
+        results = self.repository.find_by_label({'A': 'bar', 'B': 'x'})
         expected = [Index(3, 'bar', 'x')]
         self.assertEqual(list(results), expected)
 
-        all_records = [
-            Index(0, '-', '-'),
-            Index(1, 'foo', 'x'),
-            Index(2, 'foo', 'y'),
-            Index(3, 'bar', 'x'),
-            Index(4, 'bar', 'y'),
-        ]
-        results = self.repository.find()  # <- No argument.
-        self.assertEqual(list(results), all_records)
-        results = self.repository.find(dict())  # <- Empty dict.
-        self.assertEqual(list(results), all_records)
+        regex = 'find_by_label requires at least 1 criteria value, got 0'
+        with self.assertRaisesRegex(ValueError, regex):
+            results = self.repository.find_by_label(dict())  # <- Empty dict.
 
 
 class PropertyRepositoryBaseTest(ABC):

@@ -255,10 +255,13 @@ class BaseIndexRepository(ABC):
         """Get all records in the repository."""
 
     @abstractmethod
-    def find(
-        self, criteria: Optional[Dict[str, str]] = None
+    def find_by_label(
+        self, criteria: Optional[Dict[str, str]]
     ) -> Iterator[Index]:
-        """Find all records in the repository that match criteria."""
+        """Find all records where labels match criteria.
+
+        If criteria is an empty dict, should raise ValueError.
+        """
 
 
 class Location(Index):
