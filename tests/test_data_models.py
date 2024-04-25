@@ -335,13 +335,15 @@ class RelationRepositoryBaseTest(ABC):
         self.crosswalk.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
         self.crosswalk.add('other2', '222-22-2222')  # Adds crosswalk_id 2.
 
-        self.repository.add(1, 1, 1, 175000)
-        self.repository.add(1, 2, 2,  25000)
-        self.repository.add(1, 3, 3, 100000)
+        self.repository.add(1, 1, 1, 131250, 0.75)
+        self.repository.add(1, 2, 1,  43750, 0.25)
+        self.repository.add(1, 2, 2,  25000, 1.00)
+        self.repository.add(1, 3, 3, 100000, 1.00)
 
-        self.repository.add(2, 1, 1, 583.75)
-        self.repository.add(2, 2, 2, 416.25)
-        self.repository.add(2, 3, 3, 500.0)
+        self.repository.add(2, 1, 1, 583.75, None)
+        self.repository.add(2, 2, 2, 416.25, None)
+        self.repository.add(2, 1, 3, 100.0, 0.20)
+        self.repository.add(2, 3, 3, 400.0, 0.80)
 
     def get_relations_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
@@ -351,6 +353,33 @@ class RelationRepositoryBaseTest(ABC):
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
         self.assertTrue(issubclass(self.dal.RelationRepository, BaseRelationRepository))
+
+    def test_find_by_index_id(self):
+        results = self.repository.find_by_index_id(2)
+        expected = [
+            Relation(
+                id=3,
+                crosswalk_id=1,
+                other_index_id=2,
+                index_id=2,
+                value=25000.0,
+                proportion=1.0,
+                mapping_level=None,
+            ),
+            Relation(
+                id=6,
+                crosswalk_id=2,
+                other_index_id=2,
+                index_id=2,
+                value=416.25,
+                proportion=None,
+                mapping_level=None,
+            )
+        ]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_index_id(93)  # No index_id 93
+        self.assertEqual(list(results), [], msg='should return empty iterator')
 
 
 class PropertyRepositoryBaseTest(ABC):

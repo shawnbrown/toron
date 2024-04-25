@@ -548,6 +548,14 @@ class RelationRepository(BaseRelationRepository):
             'DELETE FROM main.relation WHERE relation_id=?', (id,)
         )
 
+    def find_by_index_id(self, index_id: int) -> Iterator[Relation]:
+        """Find all records with matching index_id."""
+        self._cursor.execute(
+            'SELECT * FROM main.relation WHERE index_id=?', (index_id,)
+        )
+        for record in self._cursor:
+            yield Relation(*record)
+
 
 class PropertyRepository(BasePropertyRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:

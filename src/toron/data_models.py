@@ -616,6 +616,10 @@ class BaseRelationRepository(ABC):
     #def find_by_crosswalk_id(self, crosswalk_id: int) -> Iterable[Relation]:
     #    """Filter to records associated with the given crosswalk."""
 
+    @abstractmethod
+    def find_by_index_id(self, index_id: int) -> Iterator[Relation]:
+        """Find all records with matching index_id."""
+
 
 class BasePropertyRepository(ABC):
     @abstractmethod
