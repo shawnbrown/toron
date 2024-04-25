@@ -264,6 +264,17 @@ class WeightRepositoryBaseTest(ABC):
         """Must inherit from appropriate abstract base class."""
         self.assertTrue(issubclass(self.dal.WeightRepository, BaseWeightRepository))
 
+    def test_find_by_index_id(self):
+        results = self.repository.find_by_index_id(1)
+        expected = [
+            Weight(id=1, weight_group_id=1, index_id=1, value=175000.0),
+            Weight(id=4, weight_group_id=2, index_id=1, value=583.75),
+        ]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_index_id(99)  # No index_id 99
+        self.assertEqual(list(results), [], msg='should return empty iterator')
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property

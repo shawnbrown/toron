@@ -288,6 +288,14 @@ class WeightRepository(BaseWeightRepository):
     #def find_by_weight_group_id(self, weight_group_id: int) -> Iterable[Weight]:
     #    """Filter to records associated with the given weight group."""
 
+    def find_by_index_id(self, index_id: int) -> Iterator[Weight]:
+        """Find all records with matching index_id."""
+        self._cursor.execute(
+            'SELECT * FROM main.weight WHERE index_id=?', (index_id,)
+        )
+        for record in self._cursor:
+            yield Weight(*record)
+
 
 class AttributeRepository(BaseAttributeRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:

@@ -429,6 +429,10 @@ class BaseWeightRepository(ABC):
     #def find_by_weight_group_id(self, weight_group_id: int) -> Iterable[Weight]:
     #    """Filter to records associated with the given weight group."""
 
+    @abstractmethod
+    def find_by_index_id(self, index_id: int) -> Iterator[Weight]:
+        """Find all records with matching index_id."""
+
 
 @dataclass
 class Attribute(object):
