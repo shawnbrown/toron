@@ -6,6 +6,7 @@ all of the base classes given in this sub-module.
 
 import os
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from dataclasses import dataclass
 
 from toron._typing import (
@@ -432,6 +433,24 @@ class BaseWeightRepository(ABC):
     @abstractmethod
     def find_by_index_id(self, index_id: int) -> Iterator[Weight]:
         """Find all records with matching index_id."""
+
+    def merge(self, index_ids: Iterable[int], target: int) -> None:
+        """Merge weight records with given index_id values."""
+        index_ids = {target}.union(index_ids)  # Always include target in ids.
+
+        old_set = set()
+        sum_dict: defaultdict = defaultdict(float)
+        for index_id in index_ids:
+            records = self.find_by_index_id(index_id)
+            for record in records:
+                old_set.add(record.id)
+                sum_dict[(record.weight_group_id, target)] += record.value
+
+        for weight_id in old_set:
+            self.delete(weight_id)
+
+        for (weight_group_id, index_id), value in sum_dict.items():
+            self.add(weight_group_id, index_id, value)
 
 
 @dataclass

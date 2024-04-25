@@ -232,10 +232,10 @@ class WeightRepositoryBaseTest(ABC):
 
     def setUp(self):
         connector = self.dal.DataConnector()
-        connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(self.connection))
 
-        cursor = connector.acquire_cursor(connection)
+        cursor = connector.acquire_cursor(self.connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
         self.manager = self.dal.ColumnManager(cursor)
@@ -260,6 +260,11 @@ class WeightRepositoryBaseTest(ABC):
         self.repository.add(2, 2, 416.25)
         self.repository.add(2, 3, 500.0)
 
+    def get_weights_helper(self):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        cur = self.connection.execute('SELECT * FROM main.weight')
+        return cur.fetchall()
+
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
         self.assertTrue(issubclass(self.dal.WeightRepository, BaseWeightRepository))
@@ -274,6 +279,47 @@ class WeightRepositoryBaseTest(ABC):
 
         results = self.repository.find_by_index_id(99)  # No index_id 99
         self.assertEqual(list(results), [], msg='should return empty iterator')
+
+    def test_merge_one_and_two(self):
+        self.repository.merge(index_ids={1, 2}, target=1)
+        results = self.get_weights_helper()
+        expected = [
+            (3, 1, 3, 100000.0),
+            (6, 2, 3, 500.0),
+            (7, 1, 1, 200000.0),
+            (8, 2, 1, 1000.0),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_merge_two_and_three(self):
+        self.repository.merge(index_ids={2, 3}, target=2)
+        results = self.get_weights_helper()
+        expected = [
+            (1, 1, 1, 175000.0),
+            (4, 2, 1, 583.75),
+            (5, 1, 2, 125000.0),
+            (6, 2, 2, 916.25),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_merge_one_two_and_three(self):
+        self.repository.merge(index_ids={1, 2, 3}, target=1)
+        results = self.get_weights_helper()
+        expected = [
+            (1, 1, 1, 300000.0),
+            (2, 2, 1, 1500.0),
+        ]
+        self.assertEqual(results, expected)
+
+    def test_merge_target_inclusion(self):
+        """Target id must be auto-added to index_ids if not included."""
+        self.repository.merge(index_ids={2, 3}, target=1)  # <- 1 is target but not in index_ids.
+        results = self.get_weights_helper()
+        expected = [
+            (1, 1, 1, 300000.0),
+            (2, 2, 1, 1500.0),
+        ]
+        self.assertEqual(results, expected)
 
 
 class PropertyRepositoryBaseTest(ABC):
