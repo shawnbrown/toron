@@ -28,30 +28,29 @@ from toron.data_models import (
 class DataConnectorBaseTest(ABC):
     @property
     @abstractmethod
-    def connector_class(self):
-        """The concrete class to be tested."""
-        return NotImplemented
+    def dal(self):
+        ...
 
     def test_inheritance(self):
         """Should subclass from BaseDataConnector."""
-        self.assertTrue(issubclass(self.connector_class, BaseDataConnector))
+        self.assertTrue(issubclass(self.dal.DataConnector, BaseDataConnector))
 
     def test_instantiation(self):
         """Without args, should create an empty node structure."""
         try:
-            connector = self.connector_class()
+            connector = self.dal.DataConnector()
         except Exception:
             self.fail('should instantiate with no args')
 
     def test_unique_id(self):
         """Each node should get a unique ID value."""
-        connector1 = self.connector_class()
-        connector2 = self.connector_class()
+        connector1 = self.dal.DataConnector()
+        connector2 = self.dal.DataConnector()
         self.assertNotEqual(connector1.unique_id, connector2.unique_id)
 
     def test_acquire_release_interoperation(self):
         """The acquire and release methods should interoperate."""
-        connector = self.connector_class()
+        connector = self.dal.DataConnector()
         try:
             connection = connector.acquire_connection()
             connector.release_connection(connection)
@@ -63,7 +62,7 @@ class DataConnectorBaseTest(ABC):
             file_path = os.path.join(tmpdir, 'mynode.toron')
             self.assertFalse(os.path.exists(file_path))
 
-            connector = self.connector_class()
+            connector = self.dal.DataConnector()
             connector.to_file(file_path, fsync=True)
             self.assertTrue(os.path.exists(file_path))
 
@@ -73,10 +72,10 @@ class DataConnectorBaseTest(ABC):
     def test_from_file(self):
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             file_path = os.path.join(tmpdir, 'mynode.toron')
-            original = self.connector_class()
+            original = self.dal.DataConnector()
             original.to_file(file_path)
 
-            loadedfromfile = self.connector_class.from_file(file_path)
+            loadedfromfile = self.dal.DataConnector.from_file(file_path)
             self.assertEqual(original.unique_id, loadedfromfile.unique_id)
 
     def test_from_file_missing(self):
@@ -85,7 +84,7 @@ class DataConnectorBaseTest(ABC):
             file_path = os.path.join(tmpdir, 'does_not_exist.toron')
 
             with self.assertRaises(FileNotFoundError):
-                self.connector_class.from_file(file_path)
+                self.dal.DataConnector.from_file(file_path)
 
     def test_from_file_unknown_format(self):
         """Should raise RuntimeError if file uses unknown format."""
@@ -95,22 +94,17 @@ class DataConnectorBaseTest(ABC):
                 f.write('Hello World\n')
 
             with self.assertRaises(RuntimeError):
-                self.connector_class.from_file(file_path)
+                self.dal.DataConnector.from_file(file_path)
 
 
 class ColumnManagerBaseTest(ABC):
     @property
     @abstractmethod
-    def connector_class(self):
-        ...
-
-    @property
-    @abstractmethod
-    def manager_class(self):
+    def dal(self):
         ...
 
     def setUp(self):
-        connector = self.connector_class()
+        connector = self.dal.DataConnector()
 
         connection = connector.acquire_connection()
         self.addCleanup(lambda: connector.release_connection(connection))
@@ -118,40 +112,29 @@ class ColumnManagerBaseTest(ABC):
         cursor = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.manager_class(cursor)
+        self.manager = self.dal.ColumnManager(cursor)
 
 
 class IndexRepositoryBaseTest(ABC):
     @property
     @abstractmethod
-    def connector_class(self):
-        ...
-
-    @property
-    @abstractmethod
-    def manager_class(self):
-        ...
-
-    @property
-    @abstractmethod
-    def repository_class(self):
+    def dal(self):
         ...
 
     def setUp(self):
-        connector = self.connector_class()
+        connector = self.dal.DataConnector()
         connection = connector.acquire_connection()
         self.addCleanup(lambda: connector.release_connection(connection))
 
         cursor = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.manager_class(cursor)
-
-        self.repository = self.repository_class(cursor)
+        self.manager = self.dal.ColumnManager(cursor)
+        self.repository = self.dal.IndexRepository(cursor)
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
-        self.assertTrue(issubclass(self.repository_class, BaseIndexRepository))
+        self.assertTrue(issubclass(self.dal.IndexRepository, BaseIndexRepository))
 
     def test_integration(self):
         """Test add(), get(), update() and delete() interaction."""
@@ -326,27 +309,22 @@ class WeightRepositoryBaseTest(ABC):
 class PropertyRepositoryBaseTest(ABC):
     @property
     @abstractmethod
-    def connector_class(self):
-        ...
-
-    @property
-    @abstractmethod
-    def repository_class(self):
+    def dal(self):
         ...
 
     def setUp(self):
-        connector = self.connector_class()
+        connector = self.dal.DataConnector()
         connection = connector.acquire_connection()
         self.addCleanup(lambda: connector.release_connection(connection))
 
         cursor = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.repository = self.repository_class(cursor)
+        self.repository = self.dal.PropertyRepository(cursor)
 
     def test_inheritance(self):
         """Should subclass from appropriate abstract base class."""
-        self.assertTrue(issubclass(self.repository_class, BasePropertyRepository))
+        self.assertTrue(issubclass(self.dal.PropertyRepository, BasePropertyRepository))
 
     def test_initial_properties(self):
         """Before adding any new properties, a newly-created node
@@ -386,46 +364,16 @@ from toron import dal1
 
 
 class TestDataConnectorDAL1(DataConnectorBaseTest, unittest.TestCase):
-    @property
-    def connector_class(self):
-        return dal1.DataConnector
-
+    dal = dal1
 
 class ColumnManagerDAL1(ColumnManagerBaseTest, unittest.TestCase):
-    @property
-    def connector_class(self):
-        return dal1.DataConnector
-
-    @property
-    def manager_class(self):
-        return dal1.ColumnManager
-
+    dal = dal1
 
 class IndexRepositoryDAL1(IndexRepositoryBaseTest, unittest.TestCase):
-    @property
-    def connector_class(self):
-        return dal1.DataConnector
-
-    @property
-    def manager_class(self):
-        return dal1.ColumnManager
-
-    @property
-    def repository_class(self):
-        return dal1.IndexRepository
-
+    dal = dal1
 
 class WeightRepositoryDAL1(WeightRepositoryBaseTest, unittest.TestCase):
-    @property
-    def dal(self):
-        return dal1
-
+    dal = dal1
 
 class PropertyRepositoryDAL1(PropertyRepositoryBaseTest, unittest.TestCase):
-    @property
-    def connector_class(self):
-        return dal1.DataConnector
-
-    @property
-    def repository_class(self):
-        return dal1.PropertyRepository
+    dal = dal1
