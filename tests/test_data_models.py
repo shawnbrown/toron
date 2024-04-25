@@ -20,6 +20,7 @@ from contextlib import closing, suppress
 from toron.data_models import (
     BaseDataConnector,
     Index, BaseIndexRepository,
+    Weight, BaseWeightRepository,
     BasePropertyRepository,
 )
 
@@ -223,6 +224,47 @@ class IndexRepositoryBaseTest(ABC):
             results = self.repository.find_by_label(dict())  # <- Empty dict.
 
 
+class WeightRepositoryBaseTest(ABC):
+    @property
+    @abstractmethod
+    def dal(self):
+        ...
+
+    def setUp(self):
+        connector = self.dal.DataConnector()
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
+
+        cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        self.manager = self.dal.ColumnManager(cursor)
+        self.index_repo = self.dal.IndexRepository(cursor)
+
+        self.manager.add_columns('A', 'B')
+        self.index_repo.add('foo', 'x')
+        self.index_repo.add('bar', 'y')
+        self.index_repo.add('baz', 'z')
+
+        self.weight_group_repo = self.dal.WeightGroupRepository(cursor)
+
+        self.repository = self.dal.WeightRepository(cursor)
+        self.weight_group_repo.add('population')  # Adds weight_group_id 1.
+        self.weight_group_repo.add('square_miles')  # Adds weight_group_id 2.
+
+        self.repository.add(1, 1, 175000)
+        self.repository.add(1, 2,  25000)
+        self.repository.add(1, 3, 100000)
+
+        self.repository.add(2, 1, 583.75)
+        self.repository.add(2, 2, 416.25)
+        self.repository.add(2, 3, 500.0)
+
+    def test_inheritance(self):
+        """Must inherit from appropriate abstract base class."""
+        self.assertTrue(issubclass(self.dal.WeightRepository, BaseWeightRepository))
+
+
 class PropertyRepositoryBaseTest(ABC):
     @property
     @abstractmethod
@@ -313,6 +355,12 @@ class IndexRepositoryDAL1(IndexRepositoryBaseTest, unittest.TestCase):
     @property
     def repository_class(self):
         return dal1.IndexRepository
+
+
+class WeightRepositoryDAL1(WeightRepositoryBaseTest, unittest.TestCase):
+    @property
+    def dal(self):
+        return dal1
 
 
 class PropertyRepositoryDAL1(PropertyRepositoryBaseTest, unittest.TestCase):
