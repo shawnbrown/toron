@@ -434,22 +434,23 @@ class BaseWeightRepository(ABC):
     def find_by_index_id(self, index_id: int) -> Iterator[Weight]:
         """Find all records with matching index_id."""
 
-    def merge(self, index_ids: Iterable[int], target: int) -> None:
-        """Merge weight records with given index_id values."""
+    def merge_by_index_id(
+        self, index_ids: Iterable[int], target: int
+    ) -> None:
+        """Merge weight records by given index_id values."""
         index_ids = {target}.union(index_ids)  # Always include target in ids.
 
-        old_set = set()
-        sum_dict: defaultdict = defaultdict(float)
+        old_weight_ids = set()
+        summed_values: defaultdict = defaultdict(float)
         for index_id in index_ids:
-            records = self.find_by_index_id(index_id)
-            for record in records:
-                old_set.add(record.id)
-                sum_dict[(record.weight_group_id, target)] += record.value
+            for weight in self.find_by_index_id(index_id):
+                old_weight_ids.add(weight.id)
+                summed_values[(weight.weight_group_id, target)] += weight.value
 
-        for weight_id in old_set:
+        for weight_id in old_weight_ids:
             self.delete(weight_id)
 
-        for (weight_group_id, index_id), value in sum_dict.items():
+        for (weight_group_id, index_id), value in summed_values.items():
             self.add(weight_group_id, index_id, value)
 
 

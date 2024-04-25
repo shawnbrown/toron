@@ -281,7 +281,7 @@ class WeightRepositoryBaseTest(ABC):
         self.assertEqual(list(results), [], msg='should return empty iterator')
 
     def test_merge_one_and_two(self):
-        self.repository.merge(index_ids={1, 2}, target=1)
+        self.repository.merge_by_index_id(index_ids={1, 2}, target=1)
         results = self.get_weights_helper()
         expected = [
             (3, 1, 3, 100000.0),
@@ -292,7 +292,7 @@ class WeightRepositoryBaseTest(ABC):
         self.assertEqual(results, expected)
 
     def test_merge_two_and_three(self):
-        self.repository.merge(index_ids={2, 3}, target=2)
+        self.repository.merge_by_index_id(index_ids={2, 3}, target=2)
         results = self.get_weights_helper()
         expected = [
             (1, 1, 1, 175000.0),
@@ -303,7 +303,7 @@ class WeightRepositoryBaseTest(ABC):
         self.assertEqual(results, expected)
 
     def test_merge_one_two_and_three(self):
-        self.repository.merge(index_ids={1, 2, 3}, target=1)
+        self.repository.merge_by_index_id(index_ids={1, 2, 3}, target=1)
         results = self.get_weights_helper()
         expected = [
             (1, 1, 1, 300000.0),
@@ -313,7 +313,8 @@ class WeightRepositoryBaseTest(ABC):
 
     def test_merge_target_inclusion(self):
         """Target id must be auto-added to index_ids if not included."""
-        self.repository.merge(index_ids={2, 3}, target=1)  # <- 1 is target but not in index_ids.
+        # The target (1) is not in index_ids (but should be included internally).
+        self.repository.merge_by_index_id(index_ids={2, 3}, target=1)
         results = self.get_weights_helper()
         expected = [
             (1, 1, 1, 300000.0),
