@@ -630,29 +630,26 @@ class BaseRelationRepository(ABC):
         """Merge relation records by given index_id values."""
         index_ids = {target}.union(index_ids)  # Always include target in ids.
 
-        old_relation_ids = set()
-        summed_values: defaultdict = defaultdict(float)
+        relation_ids = set()
+        relation_sums: defaultdict = defaultdict(lambda: (0.0, 0.0))
         for index_id in index_ids:
-            for relation in self.find_by_index_id(index_id):
-                old_relation_ids.add(relation.id)
-                key = (
-                    relation.crosswalk_id,
-                    relation.other_index_id,
-                    relation.mapping_level,
-                )
-                summed_values[key] += relation.value
+            for rel in self.find_by_index_id(index_id):
+                relation_ids.add(rel.id)
+                key = (rel.crosswalk_id, rel.other_index_id, rel.mapping_level)
+                v, p = relation_sums[key]  # Unpack value and proportion.
+                relation_sums[key] = ((v + rel.value), (p + rel.proportion))
 
-        for relation_id in old_relation_ids:
+        for relation_id in relation_ids:
             self.delete(relation_id)
 
-        for key, value in summed_values.items():
+        for key, (value, proportion) in relation_sums.items():
             crosswalk_id, other_index_id, mapping_level = key
             self.add(
                 crosswalk_id=crosswalk_id,
                 other_index_id=other_index_id,
                 index_id=target,  # <- Target index_id.
                 value=value,
-                proportion=None,
+                proportion=proportion,
                 mapping_level=mapping_level,
             )
 

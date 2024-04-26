@@ -387,13 +387,13 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (10, 1, 1, 1, 131250.0, None,   None),
-            (11, 1, 2, 1, 65536.0,  None,   b'\x40'),
+            (10, 1, 1, 1, 131250.0, 1.0,    None),
+            (11, 1, 2, 1, 65536.0,  1.0,    b'\x40'),
             (4,  1, 3, 3, 100000.0, 1.0,    None),
             # Second crosswalk.
-            (12, 2, 1, 1, 583.75,   None,   None),
-            (14, 2, 2, 1, 416.25,   None,   None),
-            (13, 2, 3, 1, 448.0,    None,   None),
+            (12, 2, 1, 1, 583.75,   1.0,    None),
+            (14, 2, 2, 1, 416.25,   1.0,    None),
+            (13, 2, 3, 1, 448.0,    0.4375, None),
             (9,  2, 3, 3, 576.0,    0.5625, None),
         }
         self.assertEqual(results, expected)
@@ -403,15 +403,15 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (1,  1, 1, 1, 131250.0, 1.0,      None),
-            (2,  1, 2, 1, 40960.0,  0.625,    b'\x40'),
-            (8,  1, 2, 2, 24576.0,  None,     b'\x40'),
-            (11, 1, 3, 2, 100000.0, None,     None),
+            (1,  1, 1, 1, 131250.0, 1.0,    None),
+            (2,  1, 2, 1, 40960.0,  0.625,  b'\x40'),
+            (8,  1, 2, 2, 24576.0,  0.375,  b'\x40'),
+            (11, 1, 3, 2, 100000.0, 1.0,    None),
             # Second crosswalk.
-            (5,  2, 1, 1, 583.75,   1.0,      None),
-            (9,  2, 2, 2, 416.25,   None,     None),
-            (7,  2, 3, 1, 336.0,    0.328125, None),
-            (10, 2, 3, 2, 688.0,    None,     None),
+            (5,  2, 1, 1, 583.75, 1.0,      None),
+            (9,  2, 2, 2, 416.25, 1.0,      None),
+            (7,  2, 3, 1, 336.0,  0.328125, None),
+            (10, 2, 3, 2, 688.0,  0.671875, None),
         }
         self.assertEqual(results, expected)
 
@@ -420,13 +420,13 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (1, 1, 1, 1, 131250.0, None, None),
-            (2, 1, 2, 1, 65536.0,  None, b'\x40'),
-            (6, 1, 3, 1, 100000.0, None, None),
+            (1, 1, 1, 1, 131250.0, 1.0, None),
+            (2, 1, 2, 1, 65536.0,  1.0, b'\x40'),
+            (6, 1, 3, 1, 100000.0, 1.0, None),
             # Second crosswalk.
-            (3, 2, 1, 1, 583.75,   None, None),
-            (5, 2, 2, 1, 416.25,   None, None),
-            (4, 2, 3, 1, 1024.0,   None, None),
+            (3, 2, 1, 1, 583.75,   1.0, None),
+            (5, 2, 2, 1, 416.25,   1.0, None),
+            (4, 2, 3, 1, 1024.0,   1.0, None),
         }
         self.assertEqual(results, expected)
 
@@ -437,13 +437,13 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (1, 1, 1, 1, 131250.0, None, None),
-            (2, 1, 2, 1, 65536.0,  None, b'\x40'),
-            (6, 1, 3, 1, 100000.0, None, None),
+            (1, 1, 1, 1, 131250.0, 1.0, None),
+            (2, 1, 2, 1, 65536.0,  1.0, b'\x40'),
+            (6, 1, 3, 1, 100000.0, 1.0, None),
             # Second crosswalk.
-            (3, 2, 1, 1, 583.75,   None, None),
-            (5, 2, 2, 1, 416.25,   None, None),
-            (4, 2, 3, 1, 1024.0,   None, None),
+            (3, 2, 1, 1, 583.75,   1.0, None),
+            (5, 2, 2, 1, 416.25,   1.0, None),
+            (4, 2, 3, 1, 1024.0,   1.0, None),
         }
         self.assertEqual(results, expected)
 
