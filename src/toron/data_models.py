@@ -624,6 +624,38 @@ class BaseRelationRepository(ABC):
     def find_by_index_id(self, index_id: int) -> Iterator[Relation]:
         """Find all records with matching index_id."""
 
+    def merge_by_index_id(
+        self, index_ids: Iterable[int], target: int
+    ) -> None:
+        """Merge relation records by given index_id values."""
+        index_ids = {target}.union(index_ids)  # Always include target in ids.
+
+        old_relation_ids = set()
+        summed_values: defaultdict = defaultdict(float)
+        for index_id in index_ids:
+            for relation in self.find_by_index_id(index_id):
+                old_relation_ids.add(relation.id)
+                key = (
+                    relation.crosswalk_id,
+                    relation.other_index_id,
+                    relation.mapping_level,
+                )
+                summed_values[key] += relation.value
+
+        for relation_id in old_relation_ids:
+            self.delete(relation_id)
+
+        for key, value in summed_values.items():
+            crosswalk_id, other_index_id, mapping_level = key
+            self.add(
+                crosswalk_id=crosswalk_id,
+                other_index_id=other_index_id,
+                index_id=target,  # <- Target index_id.
+                value=value,
+                proportion=None,
+                mapping_level=mapping_level,
+            )
+
 
 class BasePropertyRepository(ABC):
     @abstractmethod

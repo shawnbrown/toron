@@ -335,20 +335,20 @@ class RelationRepositoryBaseTest(ABC):
         self.crosswalk.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
         self.crosswalk.add('other2', '222-22-2222')  # Adds crosswalk_id 2.
 
-        self.repository.add(1, 1, 1, 131250, 0.75)
-        self.repository.add(1, 2, 1,  43750, 0.25)
-        self.repository.add(1, 2, 2,  25000, 1.00)
-        self.repository.add(1, 3, 3, 100000, 1.00)
+        self.repository.add(1, 1, 1, 131250, 0.75, None)
+        self.repository.add(1, 2, 1,  43750, 0.25, b'\x40')
+        self.repository.add(1, 2, 2,  25000, 1.00, b'\x40')
+        self.repository.add(1, 3, 3, 100000, 1.00, None)
 
-        self.repository.add(2, 1, 1, 583.75, None)
-        self.repository.add(2, 2, 2, 416.25, None)
-        self.repository.add(2, 1, 3, 100.0, 0.20)
-        self.repository.add(2, 3, 3, 400.0, 0.80)
+        self.repository.add(2, 1, 1, 583.75, None, None)
+        self.repository.add(2, 2, 2, 416.25, None, None)
+        self.repository.add(2, 1, 3, 100.0, 0.20, None)
+        self.repository.add(2, 3, 3, 400.0, 0.80, None)
 
     def get_relations_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         cur = self.connection.execute('SELECT * FROM main.relation')
-        return cur.fetchall()
+        return set(cur.fetchall())
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
@@ -364,7 +364,7 @@ class RelationRepositoryBaseTest(ABC):
                 index_id=2,
                 value=25000.0,
                 proportion=1.0,
-                mapping_level=None,
+                mapping_level=b'\x40',
             ),
             Relation(
                 id=6,
@@ -374,12 +374,69 @@ class RelationRepositoryBaseTest(ABC):
                 value=416.25,
                 proportion=None,
                 mapping_level=None,
-            )
+            ),
         ]
         self.assertEqual(list(results), expected)
 
         results = self.repository.find_by_index_id(93)  # No index_id 93
         self.assertEqual(list(results), [], msg='should return empty iterator')
+
+    def test_merge_one_and_two(self):
+        self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
+        results = self.get_relations_helper()
+        expected = {
+            (4,  1, 3, 3, 100000.0, 1.0,  None),
+            (7,  2, 1, 3, 100.0,    0.2,  None),
+            (8,  2, 3, 3, 400.0,    0.8,  None),
+            (9,  1, 1, 1, 131250.0, None, None),
+            (10, 1, 2, 1, 68750.0,  None, b'\x40'),
+            (11, 2, 1, 1, 583.75,   None, None),
+            (12, 2, 2, 1, 416.25,   None, None),
+        }
+        self.assertEqual(results, expected)
+
+    def test_merge_two_and_three(self):
+        self.repository.merge_by_index_id(index_ids=(2, 3), target=2)
+        results = self.get_relations_helper()
+        expected = {
+            (1,  1, 1, 1, 131250.0, 0.75, None),
+            (2,  1, 2, 1, 43750.0,  0.25, b'\x40'),
+            (5,  2, 1, 1, 583.75,   None, None),
+            (6,  1, 2, 2, 25000.0,  None, b'\x40'),
+            (7,  2, 2, 2, 416.25,   None, None),
+            (8,  1, 3, 2, 100000.0, None, None),
+            (9,  2, 1, 2, 100.0,    None, None),
+            (10, 2, 3, 2, 400.0,    None, None),
+        }
+        self.assertEqual(results, expected)
+
+    def test_merge_one_two_and_three(self):
+        self.repository.merge_by_index_id(index_ids=(1, 2, 3), target=1)
+        results = self.get_relations_helper()
+        expected = {
+            (1, 1, 1, 1, 131250.0, None, None),
+            (2, 1, 2, 1, 68750.0,  None, b'\x40'),
+            (3, 2, 1, 1, 683.75,   None, None),
+            (4, 2, 2, 1, 416.25,   None, None),
+            (5, 1, 3, 1, 100000.0, None, None),
+            (6, 2, 3, 1, 400.0,    None, None),
+        }
+        self.assertEqual(results, expected)
+
+    def test_merge_target_inclusion(self):
+        """Target id must be auto-added to index_ids if not included."""
+        # The target (1) is not in index_ids (but should be included internally).
+        self.repository.merge_by_index_id(index_ids=(2, 3), target=1)
+        results = self.get_relations_helper()
+        expected = {
+            (1, 1, 1, 1, 131250.0, None, None),
+            (2, 1, 2, 1, 68750.0,  None, b'\x40'),
+            (3, 2, 1, 1, 683.75,   None, None),
+            (4, 2, 2, 1, 416.25,   None, None),
+            (5, 1, 3, 1, 100000.0, None, None),
+            (6, 2, 3, 1, 400.0,    None, None),
+        }
+        self.assertEqual(results, expected)
 
 
 class PropertyRepositoryBaseTest(ABC):
