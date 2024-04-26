@@ -445,13 +445,17 @@ class BaseWeightRepository(ABC):
         for index_id in index_ids:
             for weight in self.find_by_index_id(index_id):
                 old_weight_ids.add(weight.id)
-                summed_values[(weight.weight_group_id, target)] += weight.value
+                summed_values[weight.weight_group_id] += weight.value
 
         for weight_id in old_weight_ids:
             self.delete(weight_id)
 
-        for (weight_group_id, index_id), value in summed_values.items():
-            self.add(weight_group_id, index_id, value)
+        for weight_group_id, value in summed_values.items():
+            self.add(
+                weight_group_id=weight_group_id,
+                index_id=target,  # <- Target index_id.
+                value=value,
+            )
 
 
 @dataclass
