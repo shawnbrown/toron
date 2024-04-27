@@ -176,6 +176,7 @@ class Node(object):
                     counter['empty_str'] += 1
                     continue  # <- Skip to next item.
 
+                # Make a dictionary of updated labels and get existing record.
                 updated_dict = dict(zip(columns, updated_values))
                 index_record = index_repo.get(updated_dict['index_id'])
 
@@ -183,6 +184,7 @@ class Node(object):
                     counter['no_match'] += 1
                     continue  # <- Skip to next item.
 
+                # Make a dictionary of existing labels and apply new values.
                 label_dict = dict(zip(label_columns, index_record.values))
                 for key in label_dict.keys():
                     if key in updated_dict:
@@ -196,10 +198,12 @@ class Node(object):
                     counter['merged'] += 1
                     index_repo.delete(matching.id)
 
+                # Assign updated label values and perform update action.
                 index_record.values = tuple(label_dict.values())
                 index_repo.update(index_record)
                 counter['updated'] += 1
 
+            # If counter includes items besides 'updated', emit a warning.
             if {'updated'}.symmetric_difference(counter.keys()):
                 import warnings
                 msg = []
