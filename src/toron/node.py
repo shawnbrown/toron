@@ -171,33 +171,33 @@ class Node(object):
 
             label_columns = column_manager.get_columns()
             counter: Counter = Counter()
-            for new_vals in data:
-                if '' in new_vals:
+            for updated_values in data:
+                if '' in updated_values:
                     counter['empty_str'] += 1
                     continue  # <- Skip to next item.
 
-                new_dict = dict(zip(columns, new_vals))
-                index = index_repo.get(new_dict['index_id'])
+                updated_dict = dict(zip(columns, updated_values))
+                index_record = index_repo.get(updated_dict['index_id'])
 
-                if index is None:
+                if index_record is None:
                     counter['no_match'] += 1
                     continue  # <- Skip to next item.
 
-                index_dict = dict(zip(label_columns, index.values))
-                for key in index_dict.keys():
-                    if key in new_dict:
-                        index_dict[key] = new_dict[key]
+                label_dict = dict(zip(label_columns, index_record.values))
+                for key in label_dict.keys():
+                    if key in updated_dict:
+                        label_dict[key] = updated_dict[key]
 
                 # Check for a matching record and merge it if one exists.
-                matching = next(index_repo.find_by_label(index_dict), None)
+                matching = next(index_repo.find_by_label(label_dict), None)
                 if matching:
-                    weight_repo.merge_by_index_id(matching.id, target=index.id)
-                    relation_repo.merge_by_index_id(matching.id, target=index.id)
+                    weight_repo.merge_by_index_id(matching.id, index_record.id)
+                    relation_repo.merge_by_index_id(matching.id, index_record.id)
                     counter['merged'] += 1
                     index_repo.delete(matching.id)
 
-                index.values = tuple(index_dict.values())
-                index_repo.update(index)
+                index_record.values = tuple(label_dict.values())
+                index_repo.update(index_record)
                 counter['updated'] += 1
 
             if counter['no_match'] or counter['empty_str']:
