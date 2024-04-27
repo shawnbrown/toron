@@ -547,7 +547,16 @@ class TestNodeUpdateIndex(unittest.TestCase):
         # 2 into the same record. The final record should used the index_id
         # of the record being updated (in this case, 1).
         data = [('index_id', 'A', 'B'), (1, 'bar', 'y')]
-        self.node.update_index(data)  # <- Update causes records to merge.
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.update_index(data)  # <- Update causes records to merge.
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'merged 1 existing records with duplicate label values, updated 1 rows',
+        )
 
         msg = 'Record index_id 2 should be merged with index_id 1.'
         expected = [Index(0, '-', '-'), Index(1, 'bar', 'y')]

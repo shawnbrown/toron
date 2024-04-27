@@ -200,7 +200,7 @@ class Node(object):
                 index_repo.update(index_record)
                 counter['updated'] += 1
 
-            if counter['no_match'] or counter['empty_str']:
+            if {'updated'}.symmetric_difference(counter.keys()):
                 import warnings
                 msg = []
                 if counter['empty_str']:
@@ -209,6 +209,9 @@ class Node(object):
                 if counter['no_match']:
                     msg.append(f'skipped {counter["no_match"]} rows with '
                                f'non-matching index_id values')
+                if counter['merged']:
+                    msg.append(f'merged {counter["merged"]} existing records '
+                               f'with duplicate label values')
                 msg.append(f'updated {counter["updated"]} rows')
                 warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
 
