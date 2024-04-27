@@ -637,7 +637,11 @@ class BaseRelationRepository(ABC):
                 relation_ids.add(rel.id)
                 key = (rel.crosswalk_id, rel.other_index_id, rel.mapping_level)
                 v, p = relation_sums[key]  # Unpack value and proportion.
-                relation_sums[key] = ((v + rel.value), (p + rel.proportion))
+                try:
+                    proportion = p + rel.proportion
+                except TypeError:
+                    proportion = None
+                relation_sums[key] = ((v + rel.value), proportion)
 
         for relation_id in relation_ids:
             self.delete(relation_id)

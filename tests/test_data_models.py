@@ -447,6 +447,30 @@ class RelationRepositoryBaseTest(ABC):
         }
         self.assertEqual(results, expected)
 
+    def test_none_proportion(self):
+        """When proportion is None, result should be None. It should
+        not raise an error.
+        """
+        # Set one of the original proportions to None.
+        relation = self.repository.get(3)
+        relation.proportion = None
+        self.repository.update(relation)
+
+        # Merge index_ids 1, 2, and 3 into index_id 1.
+        self.repository.merge_by_index_id(index_ids=(1, 2, 3), target=1)
+        results = self.get_relations_helper()
+        expected = {
+            # First crosswalk.
+            (1, 1, 1, 1, 131250.0, 1.0,  None),
+            (2, 1, 2, 1, 65536.0,  None, b'\x40'),  # <- Proportion should be None.
+            (6, 1, 3, 1, 100000.0, 1.0,  None),
+            # Second crosswalk.
+            (3, 2, 1, 1, 583.75,   1.0,  None),
+            (5, 2, 2, 1, 416.25,   1.0,  None),
+            (4, 2, 3, 1, 1024.0,   1.0,  None),
+        }
+        self.assertEqual(results, expected)
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property
