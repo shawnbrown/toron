@@ -541,11 +541,11 @@ class TestNodeUpdateIndex(unittest.TestCase):
 
     def test_update_resulting_in_merge(self):
         """If updated labels are not unique, should merge records."""
-        # Here, the labels for index_id 1 are changed to `bar, y`. But
-        # these are the same labels used for index_id 2. Because index
-        # labels must be unique, this update should merge index_id 1
-        # and 2 into the same record. The final record should used the
-        # index_id value of the record being updated.
+        # The following data updates the labels of index_id 1 to `bar, y`.
+        # But these are the same labels used for index_id 2. Because index
+        # labels must be unique, this update should merge index_id 1 and
+        # 2 into the same record. The final record should used the index_id
+        # of the record being updated (in this case, 1).
         data = [('index_id', 'A', 'B'), (1, 'bar', 'y')]
         self.node.update_index(data)  # <- Update causes records to merge.
 
