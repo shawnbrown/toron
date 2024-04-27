@@ -187,7 +187,7 @@ class Node(object):
                         continue  # <- Skip to next item.
 
                     raise ValueError(
-                        f'cannot update index_id {updated_dict['index_id']}, '
+                        f'cannot update index_id {updated_dict["index_id"]}, '
                         f'it was merged with another record on a previous '
                         f'row'
                     )
