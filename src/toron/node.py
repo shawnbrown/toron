@@ -164,9 +164,12 @@ class Node(object):
             raise ValueError("column 'index_id' required to update records")
 
         with self._managed_transaction() as cursor:
-            repository = self._dal.IndexRepository(cursor)
-            label_columns = self._dal.ColumnManager(cursor).get_columns()
+            index_repo = self._dal.IndexRepository(cursor)
+            weight_repo = self._dal.WeightRepository(cursor)
+            relation_repo = self._dal.RelationRepository(cursor)
+            column_manager = self._dal.ColumnManager(cursor)
 
+            label_columns = column_manager.get_columns()
             counter: Counter = Counter()
             for new_vals in data:
                 if '' in new_vals:
@@ -174,7 +177,7 @@ class Node(object):
                     continue  # <- Skip to next item.
 
                 new_dict = dict(zip(columns, new_vals))
-                index = repository.get(new_dict['index_id'])
+                index = index_repo.get(new_dict['index_id'])
 
                 if index is None:
                     counter['no_match'] += 1
@@ -184,8 +187,18 @@ class Node(object):
                 for key in index_dict.keys():
                     if key in new_dict:
                         index_dict[key] = new_dict[key]
+
+                # Check for a matching record and merge it if one exists.
+                existing = next(index_repo.find_by_label(index_dict), None)
+                if existing:
+                    index_ids = {existing.id, index.id}
+                    weight_repo.merge_by_index_id(index_ids, target=index.id)
+                    relation_repo.merge_by_index_id(index_ids, target=index.id)
+                    index_repo.delete(existing.id)
+                    counter['merged'] += 1
+
                 index.values = tuple(index_dict.values())
-                repository.update(index)
+                index_repo.update(index)
                 counter['updated'] += 1
 
             if counter['no_match'] or counter['empty_str']:
@@ -199,3 +212,8 @@ class Node(object):
                                f'non-matching index_id values')
                 msg.append(f'updated {counter["updated"]} rows')
                 warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
+
+            #if counter['merged']:
+            #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
+            #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
+            #    self._dal.StructureRepository(cursor).refresh_granularity()

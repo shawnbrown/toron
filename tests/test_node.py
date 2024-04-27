@@ -419,6 +419,20 @@ class TestNodeUpdateIndex(unittest.TestCase):
             repository = node._dal.IndexRepository(cursor)
             return list(repository.get_all())
 
+    @staticmethod
+    def get_weight_helper(node):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM weight')
+            return cursor.fetchall()
+
+    @staticmethod
+    def get_relation_helper(node):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM relation')
+            return cursor.fetchall()
+
     def setUp(self):
         node = Node()
         with node._managed_cursor() as cursor:
@@ -428,6 +442,19 @@ class TestNodeUpdateIndex(unittest.TestCase):
             repository = node._dal.IndexRepository(cursor)
             repository.add('foo', 'x')
             repository.add('bar', 'y')
+
+            weight_group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_group_repo.add('group1')  # Adds weight_group_id 1.
+            weight_repo = node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 175000)
+            weight_repo.add(1, 2,  25000)
+
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
+            relation_repo = node._dal.RelationRepository(cursor)
+            relation_repo.add(1, 1, 1, 16350, 0.75, None)
+            relation_repo.add(1, 1, 2, 5450,  0.25, None)
+            relation_repo.add(1, 2, 2, 13050, 1.00, None)
 
         self.node = node
 
@@ -511,3 +538,25 @@ class TestNodeUpdateIndex(unittest.TestCase):
         regex = "column 'index_id' required to update records"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.update_index(data)
+
+    def test_update_resulting_in_merge(self):
+        """If updated labels are not unique, should merge records."""
+        # Here, the labels for index_id 1 are changed to `bar, y`. But
+        # these are the same labels used for index_id 2. Because index
+        # labels must be unique, this update should merge index_id 1
+        # and 2 into the same record. The final record should used the
+        # index_id value of the record being updated.
+        data = [('index_id', 'A', 'B'), (1, 'bar', 'y')]
+        self.node.update_index(data)  # <- Update causes records to merge.
+
+        msg = 'Record index_id 2 should be merged with index_id 1.'
+        expected = [Index(0, '-', '-'), Index(1, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected, msg=msg)
+
+        msg = 'Weight records and values should be merged into one record.'
+        expected = [(1, 1, 1, 200000.0)]
+        self.assertEqual(self.get_weight_helper(self.node), expected, msg=msg)
+
+        msg = 'Three relations merged into two, remaining relations have index_id 1.'
+        expected = [(1, 1, 1, 1, 21800.0, 1.0, None), (2, 1, 2, 1, 13050.0, 1.0, None)]
+        self.assertEqual(self.get_relation_helper(self.node), expected, msg=msg)
