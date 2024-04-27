@@ -189,13 +189,12 @@ class Node(object):
                         index_dict[key] = new_dict[key]
 
                 # Check for a matching record and merge it if one exists.
-                existing = next(index_repo.find_by_label(index_dict), None)
-                if existing:
-                    index_ids = {existing.id, index.id}
-                    weight_repo.merge_by_index_id(index_ids, target=index.id)
-                    relation_repo.merge_by_index_id(index_ids, target=index.id)
-                    index_repo.delete(existing.id)
+                matching = next(index_repo.find_by_label(index_dict), None)
+                if matching:
+                    weight_repo.merge_by_index_id(matching.id, target=index.id)
+                    relation_repo.merge_by_index_id(matching.id, target=index.id)
                     counter['merged'] += 1
+                    index_repo.delete(matching.id)
 
                 index.values = tuple(index_dict.values())
                 index_repo.update(index)

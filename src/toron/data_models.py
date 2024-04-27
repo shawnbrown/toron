@@ -435,9 +435,11 @@ class BaseWeightRepository(ABC):
         """Find all records with matching index_id."""
 
     def merge_by_index_id(
-        self, index_ids: Iterable[int], target: int
+        self, index_ids: Union[Iterable[int], int], target: int
     ) -> None:
         """Merge weight records by given index_id values."""
+        if not isinstance(index_ids, Iterable):
+            index_ids = [index_ids]
         index_ids = {target}.union(index_ids)  # Always include target in ids.
 
         old_weight_ids = set()
@@ -625,9 +627,11 @@ class BaseRelationRepository(ABC):
         """Find all records with matching index_id."""
 
     def merge_by_index_id(
-        self, index_ids: Iterable[int], target: int
+        self, index_ids: Union[Iterable[int], int], target: int
     ) -> None:
         """Merge relation records by given index_id values."""
+        if not isinstance(index_ids, Iterable):
+            index_ids = [index_ids]
         index_ids = {target}.union(index_ids)  # Always include target in ids.
 
         relation_ids = set()
