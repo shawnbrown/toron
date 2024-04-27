@@ -505,7 +505,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
             'skipped 1 rows with non-matching index_id values, updated 1 rows',
         )
 
-        # Check values (unchanged).
+        # Check values (index 2 should be updated).
         expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'YYY')]
         self.assertEqual(self.get_index_helper(self.node), expected)
 
