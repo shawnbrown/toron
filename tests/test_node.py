@@ -547,7 +547,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             self.node.update_index(data)
 
-    def test_update_resulting_in_merge(self):
+    def test_update_resulting_in_duplicate(self):
         """If updated labels are not unique, should merge records."""
         # The following data updates the labels of index_id 1 to `bar, y`.
         # But these are the same labels used for index_id 2. Because index
@@ -556,9 +556,13 @@ class TestNodeUpdateIndex(unittest.TestCase):
         # of the record being updated (in this case, 1).
         data = [('index_id', 'A', 'B'), (1, 'bar', 'y')]
 
+        # Check that merge does not happen implicitly.
+        with self.assertRaises(ValueError):
+            self.node.update_index(data)  # <- Update creates duplicate labels.
+
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.update_index(data)  # <- Update causes records to merge.
+            self.node.update_index(data, merge_on_conflict=True)  # <- Update causes records to merge.
 
         # Check the warning's message.
         self.assertEqual(
@@ -593,7 +597,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
 
         regex = 'cannot update index_id 2, it was merged with another record on a previous row'
         with self.assertRaisesRegex(ValueError, regex):
-            self.node.update_index(data)
+            self.node.update_index(data, merge_on_conflict=True)
 
         # Check values (unchanged).
         expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')]

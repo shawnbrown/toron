@@ -157,6 +157,7 @@ class Node(object):
         self,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
+        merge_on_conflict: bool = False,
     ) -> None:
         data, columns = normalize_tabular(data, columns)
 
@@ -198,9 +199,17 @@ class Node(object):
                     if key in updated_dict:
                         label_dict[key] = updated_dict[key]
 
-                # Check for a matching record and merge it if one exists.
+                # Check for matching record, raise error or merge if exists.
                 matching = next(index_repo.find_by_label(label_dict), None)
                 if matching:
+                    if not merge_on_conflict:
+                        raise ValueError(
+                            f"cannot update index_id {index_record.id}, new labels "
+                            f"conflict with the existing index_id {matching.id}.\n"
+                            f"\n"
+                            f"To merge these records use 'node.update_index(..., "
+                            f"merge_on_conflict=True)'."
+                        )
                     weight_repo.merge_by_index_id(matching.id, index_record.id)
                     relation_repo.merge_by_index_id(matching.id, index_record.id)
                     index_repo.delete(matching.id)
