@@ -488,7 +488,15 @@ class TestNodeUpdateIndex(unittest.TestCase):
         self.assertEqual(self.get_index_helper(self.node), expected)
 
     def test_update_non_matching_id(self):
-        """Should raise warning and skip to next for missing index_id."""
+        """If index_id did not exist, raise warning and skip to next.
+
+        .. note::
+            If the index_id *did* exist at the beginning of the update
+            but it was merged by a previous row, then an exception
+            should be raised and the transaction should be rolled back
+            (this is checked later by the test case
+            `test_merge_resulting_in_missing_index_id()`).
+        """
         data = [
             ('index_id', 'A', 'B'),
             (4, 'baz', 'z'),  # <- No index_id 4!
@@ -569,3 +577,24 @@ class TestNodeUpdateIndex(unittest.TestCase):
         msg = 'Three relations merged into two, remaining relations have index_id 1.'
         expected = [(1, 1, 1, 1, 21800.0, 1.0, None), (2, 1, 2, 1, 13050.0, 1.0, None)]
         self.assertEqual(self.get_relation_helper(self.node), expected, msg=msg)
+
+    def test_merge_resulting_in_missing_index_id(self):
+        """Should raise error if attempting to update a record that was merged."""
+        # When applying the first update, index_id 1 gets the same labels
+        # as index_id 2 (bar, y) which triggers a merge of these two records.
+        # Then when applying the second update, there is no index_id 2 (it
+        # was just merged with 1). If a merge removes records that the user
+        # was attempting to update, the results can be very confusing. Users
+        # would be right to wonder why `baz, z` is not included in the newly
+        # updated index. To prevent this confusing situation, attempting to
+        # update a record that was previously merged should raise an exception
+        # and any changes should be rolled-back.
+        data = [('index_id', 'A', 'B'), (1, 'bar', 'y'), (2, 'baz', 'z')]
+
+        regex = 'cannot update index_id 2, it was merged with another record on a previous row'
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.update_index(data)
+
+        # Check values (unchanged).
+        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected)

@@ -171,6 +171,7 @@ class Node(object):
 
             label_columns = column_manager.get_columns()
             counter: Counter = Counter()
+            previously_merged = set()
             for updated_values in data:
                 if '' in updated_values:
                     counter['empty_str'] += 1
@@ -180,9 +181,16 @@ class Node(object):
                 updated_dict = dict(zip(columns, updated_values))
                 index_record = index_repo.get(updated_dict['index_id'])
 
-                if index_record is None:
-                    counter['no_match'] += 1
-                    continue  # <- Skip to next item.
+                if not index_record:
+                    if updated_dict['index_id'] not in previously_merged:
+                        counter['no_match'] += 1
+                        continue  # <- Skip to next item.
+
+                    raise ValueError(
+                        f'cannot update index_id {updated_dict['index_id']}, '
+                        f'it was merged with another record on a previous '
+                        f'row'
+                    )
 
                 # Make a dictionary of existing labels and apply new values.
                 label_dict = dict(zip(label_columns, index_record.values))
@@ -195,8 +203,9 @@ class Node(object):
                 if matching:
                     weight_repo.merge_by_index_id(matching.id, index_record.id)
                     relation_repo.merge_by_index_id(matching.id, index_record.id)
-                    counter['merged'] += 1
                     index_repo.delete(matching.id)
+                    counter['merged'] += 1
+                    previously_merged.add(matching.id)
 
                 # Assign updated label values and perform update action.
                 index_record.values = tuple(label_dict.values())
