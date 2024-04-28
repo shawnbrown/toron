@@ -605,3 +605,41 @@ class TestNodeUpdateIndex(unittest.TestCase):
         # Check values (unchanged).
         expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(self.node), expected)
+
+
+class TestNodeDeleteIndex(unittest.TestCase):
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns(*columns)
+
+    @staticmethod
+    def add_index_helper(node, data):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            for row in data:
+                repository.add(*row)
+
+    @staticmethod
+    def get_index_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            return list(repository.get_all())
+
+    def setUp(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
+        self.node = node
+
+    def test_delete_index_only(self):
+        data = [
+            ('index_id', 'A', 'B'),
+            (1, 'foo', 'x'),
+            (2, 'bar', 'y'),
+        ]
+        self.node.delete_index(data)
+
+        expected = [Index(0, '-', '-')]
+        self.assertEqual(self.get_index_helper(self.node), expected)

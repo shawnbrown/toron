@@ -242,3 +242,35 @@ class Node(object):
             #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
             #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
             #    self._dal.StructureRepository(cursor).refresh_granularity()
+
+    def delete_index(
+        self,
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        data, columns = normalize_tabular(data, columns)
+        if 'index_id' not in columns:
+            raise ValueError("column 'index_id' required to delete records")
+
+        with self._managed_transaction() as cursor:
+            index_repo = self._dal.IndexRepository(cursor)
+            column_manager = self._dal.ColumnManager(cursor)
+
+            label_columns = column_manager.get_columns()
+            verify_columns_set(columns, label_columns, allow_extras=True)
+
+            for row in data:
+                row_dict = dict(zip(columns, row))
+                existing_record = index_repo.get(row_dict['index_id'])
+
+                # Check that matching index_id exists.
+                if not existing_record:
+                    continue  # <- Skip to next item.
+
+                # Check that existing values match row values.
+                row_labels = tuple(row_dict[k] for k in label_columns)
+                if existing_record.values != row_labels:
+                    continue  # <- Skip to next item.
+
+                # Remove existing Index record.
+                index_repo.delete(existing_record.id)
