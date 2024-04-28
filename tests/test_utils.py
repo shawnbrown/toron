@@ -113,6 +113,13 @@ class TestVerifyColumnsSet(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             verify_columns_set(['A', 'B', 'E'], ['A', 'B', 'C'])
 
+    def test_allow_extras(self):
+        verify_columns_set(['A', 'B', 'C', 'D', 'E'], ['A', 'B', 'C'], allow_extras=True)
+
+        regex = r"^invalid column names\s+missing required columns: 'C'$"
+        with self.assertRaisesRegex(ValueError, regex):
+            verify_columns_set(['A', 'B', 'E'], ['A', 'B', 'C'], allow_extras=True)
+
 
 class TestMakeReaderLike(unittest.TestCase):
     def test_csv_reader(self):
