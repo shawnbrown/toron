@@ -171,6 +171,8 @@ class Node(object):
             column_manager = self._dal.ColumnManager(cursor)
 
             label_columns = column_manager.get_columns()
+            verify_columns_set(columns, label_columns, allow_extras=True)
+
             counter: Counter = Counter()
             previously_merged = set()
             for updated_values in data:
@@ -196,8 +198,7 @@ class Node(object):
                 # Make a dictionary of existing labels and apply new values.
                 label_dict = dict(zip(label_columns, index_record.values))
                 for key in label_dict.keys():
-                    if key in updated_dict:
-                        label_dict[key] = updated_dict[key]
+                    label_dict[key] = updated_dict[key]
 
                 # Check for matching record, raise error or merge if exists.
                 matching = next(index_repo.find_by_label(label_dict), None)

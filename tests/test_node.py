@@ -472,12 +472,15 @@ class TestNodeUpdateIndex(unittest.TestCase):
         self.assertEqual(self.get_index_helper(self.node), expected)
 
     def test_update_partial_values(self):
-        """Will update values even when missing some columns.
-        TODO: Investigate if this is a good idea (behavior might be removed).
-        """
-        data = [('index_id', 'B'), (2, 'xyz')]  # <- Updating column B only.
-        self.node.update_index(data)
-        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'xyz')]
+        """Update requires all label columns, raise error if missing."""
+        data = [('index_id', 'B'), (2, 'xyz')]  # <- Missing column A.
+
+        regex = "missing required columns: 'A'"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.update_index(data)
+
+        # Check values (unchanged).
+        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(self.node), expected)
 
     def test_update_ignore_extra_cols(self):
