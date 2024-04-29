@@ -471,6 +471,33 @@ class RelationRepositoryBaseTest(ABC):
         }
         self.assertEqual(results, expected)
 
+    def test_find_by_other_index_id(self):
+        results = self.repository.find_by_other_index_id(1)
+        expected = [
+            Relation(
+                id=1,
+                crosswalk_id=1,
+                other_index_id=1,  # <- Matched on other_index_id 1.
+                index_id=1,
+                value=131250.0,
+                proportion=1.0,
+                mapping_level=None,
+            ),
+            Relation(
+                id=5,
+                crosswalk_id=2,
+                other_index_id=1,  # <- Matched on other_index_id 1.
+                index_id=1,
+                value=583.75,
+                proportion=1.0,
+                mapping_level=None,
+            )
+        ]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_other_index_id(93)  # No other_index_id 93
+        self.assertEqual(list(results), [], msg='should return empty iterator')
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property

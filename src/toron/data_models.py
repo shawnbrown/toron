@@ -662,6 +662,10 @@ class BaseRelationRepository(ABC):
                 mapping_level=mapping_level,
             )
 
+    @abstractmethod
+    def find_by_other_index_id(self, other_index_id: int) -> Iterator[Relation]:
+        """Find all records with matching other_index_id."""
+
 
 class BasePropertyRepository(ABC):
     @abstractmethod
