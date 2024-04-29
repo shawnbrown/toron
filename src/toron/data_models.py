@@ -302,11 +302,11 @@ class BaseLocationRepository(ABC):
 class Structure(object):
     """
     Structure(1, None, 1, 0)
-    Structure(id=1, granularity=None, values=(1, 0))
+    Structure(id=1, granularity=None, bits=(1, 0))
     """
     id: int
     granularity: Union[float, None]
-    values: Tuple[Literal[0, 1], ...]
+    bits: Tuple[Literal[0, 1], ...]
 
     @overload
     def __init__(
@@ -322,15 +322,15 @@ class Structure(object):
         id: int,
         granularity: Union[float, None],
         *,
-        values: Tuple[Literal[0, 1], ...],
+        bits: Tuple[Literal[0, 1], ...],
     ) -> None:
         ...
-    def __init__(self, id, granularity, *args, values=tuple()):
-        if args and values:
-            raise TypeError('must provide either *args or values')
+    def __init__(self, id, granularity, *args, bits=tuple()):
+        if args and bits:
+            raise TypeError('must provide either *args or bits')
         self.id = id
         self.granularity = granularity
-        self.values = args or values
+        self.bits = args or bits
 
 
 class BaseStructureRepository(ABC):
@@ -339,7 +339,7 @@ class BaseStructureRepository(ABC):
         """Initialize a new StructureRepository instance."""
 
     @abstractmethod
-    def add(self, value: str, *values: str) -> None:
+    def add(self, bit: int, *bits: int) -> None:
         """Add a record to the repository."""
 
     @abstractmethod

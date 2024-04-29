@@ -139,12 +139,12 @@ class StructureRepository(BaseStructureRepository):
         """Initialize a new StructureRepository instance."""
         self._cursor = cursor
 
-    def add(self, value: str, *values: str) -> None:
+    def add(self, bit: int, *bits: int) -> None:
         """Add a record to the repository."""
-        values = (value,) + values
-        qmarks = ', '.join('?' * len(values))
+        bits = (bit,) + bits
+        qmarks = ', '.join('?' * len(bits))
         sql = f'INSERT INTO main.structure VALUES (NULL, NULL, {qmarks})'
-        self._cursor.execute(sql, values)
+        self._cursor.execute(sql, bits)
 
     def get(self, id: int) -> Optional[Structure]:
         """Get a record from the repository."""
@@ -167,13 +167,13 @@ class StructureRepository(BaseStructureRepository):
         """Update a record in the repository."""
         self._cursor.execute(f"PRAGMA main.table_info('structure')")
         columns = ', '.join(row[1] for row in self._cursor.fetchall()[2:])
-        qmarks = ', '.join('?' * len(record.values))
+        qmarks = ', '.join('?' * len(record.bits))
         sql = f"""
             UPDATE main.structure
             SET (_granularity, {columns}) = (?, {qmarks})
             WHERE _structure_id=?
         """
-        parameters = (record.granularity,) + record.values + (record.id,)
+        parameters = (record.granularity,) + record.bits + (record.id,)
         self._cursor.execute(sql, parameters)
 
     def delete(self, id: int) -> None:
