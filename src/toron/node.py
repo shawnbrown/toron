@@ -252,6 +252,7 @@ class Node(object):
         if 'index_id' not in columns:
             raise ValueError("column 'index_id' required to delete records")
 
+        counter: Counter = Counter()
         with self._managed_transaction() as cursor:
             index_repo = self._dal.IndexRepository(cursor)
             column_manager = self._dal.ColumnManager(cursor)
@@ -265,12 +266,28 @@ class Node(object):
 
                 # Check that matching index_id exists.
                 if not existing_record:
+                    counter['no_match'] += 1
                     continue  # <- Skip to next item.
 
                 # Check that existing labels match row labels.
                 row_labels = tuple(row_dict[k] for k in label_columns)
                 if existing_record.labels != row_labels:
+                    counter['mismatch'] += 1
                     continue  # <- Skip to next item.
 
                 # Remove existing Index record.
                 index_repo.delete(existing_record.id)
+                counter['deleted'] += 1
+
+        # If counter includes items besides 'deleted', emit a warning.
+        if set(counter.keys()).difference({'deleted'}):
+            import warnings
+            msg = []
+            if counter['no_match']:
+                msg.append(f'skipped {counter["no_match"]} rows with '
+                            f'non-matching index_id values')
+            if counter['mismatch']:
+                msg.append(f'skipped {counter["mismatch"]} rows with '
+                            f'mismatched labels')
+            msg.append(f'deleted {counter["deleted"]} rows')
+            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)

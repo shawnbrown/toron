@@ -643,3 +643,26 @@ class TestNodeDeleteIndex(unittest.TestCase):
 
         expected = [Index(0, '-', '-')]
         self.assertEqual(self.get_index_helper(self.node), expected)
+
+    def test_delete_with_warning(self):
+        data = [
+            ('index_id', 'A', 'B'),
+            (42, 'qux', 'a'),  # <- Id 42 does not exist in index.
+            (1, 'foo', 'x'),
+            (2, 'bar', 'zzz'),  # <- Labels don't match index record.
+        ]
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.delete_index(data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            ('skipped 1 rows with non-matching index_id values, '
+             'skipped 1 rows with mismatched labels, deleted 1 rows'),
+        )
+
+        # Check values (index_id 1 deleted).
+        expected = [Index(0, '-', '-'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
