@@ -286,6 +286,21 @@ class Node(object):
                 relations = relation_repo.find_by_index_id(existing_record.id)
                 other_index_ids = set()
                 for relation in list(relations):
+                    if relation.mapping_level:
+                        # For now, prevent index deletion when there
+                        # are ambiguous relations. In the future, this
+                        # restriction should be removed by re-mapping
+                        # these relations using matching labels.
+                        raise ValueError(
+                            f'cannot delete index_id {existing_record.id}, '
+                            f'some associated crosswalk relations are '
+                            f'ambiguous\n'
+                            f'\n'
+                            f'Crosswalks with ambiguous relations must '
+                            f'be removed before deleting index records. '
+                            f'Afterwards, these crosswalks can be re-added.'
+                        )
+
                     other_index_ids.add(relation.other_index_id)
                     relation_repo.delete(relation.id)
 

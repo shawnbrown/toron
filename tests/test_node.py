@@ -723,3 +723,23 @@ class TestNodeDeleteIndex(unittest.TestCase):
 
         expected = [(1, 1, 1, 1, 16350.0, 1.0, None)]  # <- Proportion is updated, too (was 0.75).
         self.assertEqual(self.get_relation_helper(self.node), expected)
+
+    def test_delete_with_ambiguous_relations(self):
+        """Should not delete records linked to ambiguous relations.
+
+        NOTE: Ideally, this limitation should be removed in the future
+        by re-mapping relations using their associated labels.
+        """
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(1, 1, 1, 16350, 0.75, b'\x80')  # <- Ambiguous relations.
+            relation_repo.add(1, 1, 2, 5450,  0.25, b'\x80')  # <- Ambiguous relations.
+            relation_repo.add(1, 2, 2, 13050, 1.00, None)
+
+        data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
+
+        regex = 'associated crosswalk relations are ambiguous'
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.delete_index(data)
