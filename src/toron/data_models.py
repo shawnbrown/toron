@@ -301,7 +301,7 @@ class BaseLocationRepository(ABC):
 class Structure(object):
     """
     Structure(1, None, 1, 0)
-    Structure(id=1, None, values=(1, 0))
+    Structure(id=1, granularity=None, values=(1, 0))
     """
     id: int
     granularity: Union[float, None]
