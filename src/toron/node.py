@@ -233,13 +233,13 @@ class Node(object):
             msg = []
             if counter['empty_str']:
                 msg.append(f'skipped {counter["empty_str"]} rows with '
-                            f'empty string values')
+                           f'empty string values')
             if counter['no_match']:
                 msg.append(f'skipped {counter["no_match"]} rows with '
-                            f'non-matching index_id values')
+                           f'non-matching index_id values')
             if counter['merged']:
                 msg.append(f'merged {counter["merged"]} existing records '
-                            f'with duplicate label values')
+                           f'with duplicate label values')
             msg.append(f'updated {counter["updated"]} rows')
             warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
 
@@ -322,9 +322,9 @@ class Node(object):
             msg = []
             if counter['no_match']:
                 msg.append(f'skipped {counter["no_match"]} rows with '
-                            f'non-matching index_id values')
+                           f'non-matching index_id values')
             if counter['mismatch']:
                 msg.append(f'skipped {counter["mismatch"]} rows with '
-                            f'mismatched labels')
+                           f'mismatched labels')
             msg.append(f'deleted {counter["deleted"]} rows')
             warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
