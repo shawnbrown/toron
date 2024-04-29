@@ -130,7 +130,7 @@ class Node(object):
                 import warnings
                 msg = (
                     f'skipped {counter["skipped"]} rows with duplicate '
-                    f'values or empty strings, loaded {counter["loaded"]} '
+                    f'labels or empty strings, loaded {counter["loaded"]} '
                     f'rows'
                 )
                 warnings.warn(msg, category=ToronWarning, stacklevel=2)
@@ -149,7 +149,7 @@ class Node(object):
             else:
                 index_records = repository.get_all()
 
-            results = ((x.id,) + x.values for x in index_records)
+            results = ((x.id,) + x.labels for x in index_records)
             for row in results:
                 yield row
 
@@ -195,8 +195,8 @@ class Node(object):
                         f'row'
                     )
 
-                # Make a dictionary of existing labels and apply new values.
-                label_dict = dict(zip(label_columns, index_record.values))
+                # Make a dictionary of existing labels and apply new labels.
+                label_dict = dict(zip(label_columns, index_record.labels))
                 for key in label_dict.keys():
                     label_dict[key] = updated_dict[key]
 
@@ -218,7 +218,7 @@ class Node(object):
                     previously_merged.add(matching.id)
 
                 # Assign updated label values and perform update action.
-                index_record.values = tuple(label_dict.values())
+                index_record.labels = tuple(label_dict.values())
                 index_repo.update(index_record)
                 counter['updated'] += 1
 
@@ -267,9 +267,9 @@ class Node(object):
                 if not existing_record:
                     continue  # <- Skip to next item.
 
-                # Check that existing values match row values.
+                # Check that existing labels match row labels.
                 row_labels = tuple(row_dict[k] for k in label_columns)
-                if existing_record.values != row_labels:
+                if existing_record.labels != row_labels:
                     continue  # <- Skip to next item.
 
                 # Remove existing Index record.

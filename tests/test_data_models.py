@@ -153,8 +153,8 @@ class IndexRepositoryBaseTest(ABC):
         self.repository.delete(2)
         self.assertIsNone(self.repository.get(2))
 
-    def test_add_duplicate_value(self):
-        """Attempting to add duplicate values should raise ValueError."""
+    def test_add_duplicate_labels(self):
+        """Attempting to add duplicate labels should raise ValueError."""
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'bar')
 
@@ -178,9 +178,9 @@ class IndexRepositoryBaseTest(ABC):
         results = self.repository.get_all()
 
         expected = [
-            Index(id=0, values=('-', '-')),
-            Index(id=1, values=('foo', 'x')),
-            Index(id=2, values=('bar', 'y')),
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
         ]
         self.assertEqual(list(results), expected)
 

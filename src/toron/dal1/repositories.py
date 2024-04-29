@@ -34,13 +34,13 @@ class IndexRepository(BaseIndexRepository):
         """Initialize a new IndexRepository instance."""
         self._cursor = cursor
 
-    def add(self, value: str, *values: str) -> None:
+    def add(self, label: str, *labels: str) -> None:
         """Add a record to the repository."""
-        values = (value,) + values
-        qmarks = ", ".join("?" * len(values))
+        labels = (label,) + labels
+        qmarks = ', '.join('?' * len(labels))
         sql = f'INSERT INTO main.node_index VALUES (NULL, {qmarks})'
         try:
-            self._cursor.execute(sql, values)
+            self._cursor.execute(sql, labels)
         except sqlite3.IntegrityError as err:
             raise ValueError(str(err))
 
@@ -58,13 +58,13 @@ class IndexRepository(BaseIndexRepository):
         """Update a record in the repository."""
         self._cursor.execute(f"PRAGMA main.table_info('node_index')")
         columns = ', '.join(row[1] for row in self._cursor.fetchall()[1:])
-        qmarks = ', '.join('?' * len(record.values))
+        qmarks = ', '.join('?' * len(record.labels))
         sql = f"""
             UPDATE main.node_index
             SET ({columns}) = ({qmarks})
             WHERE index_id=?
         """
-        self._cursor.execute(sql, record.values + (record.id,))
+        self._cursor.execute(sql, record.labels + (record.id,))
 
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
@@ -98,12 +98,12 @@ class LocationRepository(BaseLocationRepository):
         """Initialize a new PropertyRepository instance."""
         self._cursor = cursor
 
-    def add(self, value: str, *values: str) -> None:
+    def add(self, label: str, *labels: str) -> None:
         """Add a record to the repository."""
-        values = (value,) + values
-        qmarks = ", ".join("?" * len(values))
+        labels = (label,) + labels
+        qmarks = ", ".join("?" * len(labels))
         sql = f'INSERT INTO main.location VALUES (NULL, {qmarks})'
-        self._cursor.execute(sql, values)
+        self._cursor.execute(sql, labels)
 
     def get(self, id: int) -> Optional[Location]:
         """Get a record from the repository."""
@@ -119,13 +119,13 @@ class LocationRepository(BaseLocationRepository):
         """Update a record in the repository."""
         self._cursor.execute(f"PRAGMA main.table_info('location')")
         columns = ', '.join(row[1] for row in self._cursor.fetchall()[1:])
-        qmarks = ', '.join('?' * len(record.values))
+        qmarks = ', '.join('?' * len(record.labels))
         sql = f"""
             UPDATE main.location
             SET ({columns}) = ({qmarks})
             WHERE _location_id=?
         """
-        self._cursor.execute(sql, record.values + (record.id,))
+        self._cursor.execute(sql, record.labels + (record.id,))
 
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""

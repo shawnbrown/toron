@@ -185,22 +185,22 @@ class BaseColumnManager(ABC):
 class Index(object):
     """
     Index(1, 'foo', 'bar')
-    Index(id=1, values=('foo', 'bar'))
+    Index(id=1, labels=('foo', 'bar'))
     """
     id: int
-    values: Tuple[str, ...]
+    labels: Tuple[str, ...]
 
     @overload
     def __init__(self, id: int, *args: str) -> None:
         ...
     @overload
-    def __init__(self, id: int, *, values: Tuple[str, ...]) -> None:
+    def __init__(self, id: int, *, labels: Tuple[str, ...]) -> None:
         ...
-    def __init__(self, id, *args, values=tuple()):
-        if args and values:
-            raise TypeError('must provide either *args or values')
+    def __init__(self, id, *args, labels=tuple()):
+        if args and labels:
+            raise TypeError('must provide either *args or labels')
         self.id = id
-        self.values = args or values
+        self.labels = args or labels
 
 
 class BaseIndexRepository(ABC):
@@ -209,7 +209,8 @@ class BaseIndexRepository(ABC):
     ``index_id`` (INTEGER)
         * This is used as a primary key and can appear in user facing
           data results.
-        * Values should never be reused for the life of the node.
+        * The same set of labels should never be reused for the life
+          of the node.
             - In SQLite, this requirement can be satisfied by defining a
               column using ``index_id INTEGER PRIMARY KEY AUTOINCREMENT``.
               The ``AUTOINCREMENT`` keyword prevents the reuse of record
@@ -233,7 +234,7 @@ class BaseIndexRepository(ABC):
         """Initialize a new IndexRepository instance."""
 
     @abstractmethod
-    def add(self, value: str, *values: str) -> None:
+    def add(self, label: str, *labels: str) -> None:
         """Add a record to the repository.
 
         Duplicate or invalid data should raise a ValueError.
@@ -268,7 +269,7 @@ class BaseIndexRepository(ABC):
 class Location(Index):
     """
     Location(1, 'foo', 'bar')
-    Location(id=1, values=('foo', 'bar'))
+    Location(id=1, labels=('foo', 'bar'))
     """
 
 
@@ -278,7 +279,7 @@ class BaseLocationRepository(ABC):
         """Initialize a new LocationRepository instance."""
 
     @abstractmethod
-    def add(self, value: str, *values: str) -> None:
+    def add(self, label: str, *labels: str) -> None:
         """Add a record to the repository."""
 
     @abstractmethod
