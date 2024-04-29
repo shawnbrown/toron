@@ -359,7 +359,7 @@ class TestIndexMethods(unittest.TestCase):
         # Check the warning's message.
         self.assertEqual(
             str(cm.warning),
-            'skipped 2 rows with duplicate values or empty strings, loaded 3 rows',
+            'skipped 2 rows with duplicate labels or empty strings, loaded 3 rows',
         )
 
         # Check the loaded data.
