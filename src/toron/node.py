@@ -311,6 +311,11 @@ class Node(object):
                 index_repo.delete(existing_record.id)
                 counter['deleted'] += 1
 
+            #if counter['deleted']:
+            #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
+            #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
+            #    self._dal.StructureRepository(cursor).refresh_granularity()
+
         # If counter includes items besides 'deleted', emit a warning.
         if set(counter.keys()).difference({'deleted'}):
             import warnings
