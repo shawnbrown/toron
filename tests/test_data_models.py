@@ -498,6 +498,28 @@ class RelationRepositoryBaseTest(ABC):
         results = self.repository.find_by_other_index_id(93)  # No other_index_id 93
         self.assertEqual(list(results), [], msg='should return empty iterator')
 
+    def test_refresh_proportions(self):
+        # Delete some relations to introduce inconsistent proportions.
+        self.repository.delete(2)
+        self.repository.delete(9)
+
+        # Fix inconsistencies with refresh_proportions().
+        self.repository.refresh_proportions(other_index_ids=[2, 3])
+
+        results = self.get_relations_helper()
+        expected = {
+            # First crosswalk.
+            (1, 1, 1, 1, 131250.0, 1.0,  None),
+            (3, 1, 2, 2, 24576.0,  1.0,  b'\x40'),  # <- Proportion was 0.375
+            (4, 1, 3, 3, 100000.0, 1.0,  None),
+            # Second crosswalk.
+            (5, 2, 1, 1, 583.75,   1.0,  None),
+            (6, 2, 2, 2, 416.25,   1.0,  None),
+            (7, 2, 3, 1, 336.0,    0.75, None),  # <- Proportion was 0.328125
+            (8, 2, 3, 2, 112.0,    0.25, None),  # <- Proportion was 0.109375
+        }
+        self.assertEqual(results, expected)
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property

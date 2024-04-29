@@ -8,6 +8,7 @@ import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
+from itertools import groupby
 
 from toron._typing import (
     Any,
@@ -665,6 +666,31 @@ class BaseRelationRepository(ABC):
     @abstractmethod
     def find_by_other_index_id(self, other_index_id: int) -> Iterator[Relation]:
         """Find all records with matching other_index_id."""
+
+    def refresh_proportions(
+        self, other_index_ids: Union[Iterable[int], int]
+    ) -> None:
+        """Refresh proportion values for records with other_index_ids."""
+        if not isinstance(other_index_ids, Iterable):
+            other_index_ids = [other_index_ids]
+
+        keyfunc = lambda x: (x.crosswalk_id, x.other_index_id)
+        for other_index_id in other_index_ids:
+            relations = self.find_by_other_index_id(other_index_id)
+
+            sorted_rels = sorted(relations, key=keyfunc)
+            if not sorted_rels:
+                continue  # <- Skip to next item.
+
+            for _, group in groupby(sorted_rels, key=keyfunc):
+                grouped_rels = list(group)
+                values_sum = sum(x.value for x in grouped_rels)
+                for relation in grouped_rels:
+                    try:
+                        relation.proportion = relation.value / values_sum
+                    except ZeroDivisionError:
+                        relation.proportion = 1 / len(grouped_rels)
+                    self.update(relation)
 
 
 class BasePropertyRepository(ABC):
