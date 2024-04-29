@@ -629,6 +629,13 @@ class TestNodeDeleteIndex(unittest.TestCase):
             return cursor.fetchall()
 
     @staticmethod
+    def get_relation_helper(node):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM relation')
+            return cursor.fetchall()
+
+    @staticmethod
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             repository = node._dal.IndexRepository(cursor)
@@ -694,3 +701,25 @@ class TestNodeDeleteIndex(unittest.TestCase):
 
         expected = [(1, 1, 1, 175000.0)]
         self.assertEqual(self.get_weight_helper(self.node), expected)
+
+    def test_delete_with_relations(self):
+        """Should delete relation records associated with index_id."""
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(1, 1, 1, 16350, 0.75, None)
+            relation_repo.add(1, 1, 2, 5450,  0.25, None)
+            relation_repo.add(1, 2, 2, 13050, 1.00, None)
+
+        data = [
+            ('index_id', 'A', 'B'),
+            (2, 'bar', 'y'),
+        ]
+        self.node.delete_index(data)
+
+        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+        expected = [(1, 1, 1, 1, 16350.0, 1.0, None)]  # <- Proportion is updated, too (was 0.75).
+        self.assertEqual(self.get_relation_helper(self.node), expected)

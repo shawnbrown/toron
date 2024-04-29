@@ -256,6 +256,7 @@ class Node(object):
         with self._managed_transaction() as cursor:
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
+            relation_repo = self._dal.RelationRepository(cursor)
             column_manager = self._dal.ColumnManager(cursor)
 
             label_columns = column_manager.get_columns()
@@ -280,6 +281,16 @@ class Node(object):
                 weights = weight_repo.find_by_index_id(existing_record.id)
                 for weight in list(weights):
                     weight_repo.delete(weight.id)
+
+                # Remove associated relation records.
+                relations = relation_repo.find_by_index_id(existing_record.id)
+                other_index_ids = set()
+                for relation in list(relations):
+                    other_index_ids.add(relation.other_index_id)
+                    relation_repo.delete(relation.id)
+
+                # Rebuild proportions for remaining relations.
+                relation_repo.refresh_proportions(other_index_ids)
 
                 # Remove existing Index record.
                 index_repo.delete(existing_record.id)
