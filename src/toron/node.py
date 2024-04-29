@@ -164,6 +164,7 @@ class Node(object):
         if 'index_id' not in columns:
             raise ValueError("column 'index_id' required to update records")
 
+        counter: Counter = Counter()
         with self._managed_transaction() as cursor:
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
@@ -173,7 +174,6 @@ class Node(object):
             label_columns = column_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            counter: Counter = Counter()
             previously_merged = set()
             for updated_values in data:
                 if '' in updated_values:
@@ -222,26 +222,26 @@ class Node(object):
                 index_repo.update(index_record)
                 counter['updated'] += 1
 
-            # If counter includes items besides 'updated', emit a warning.
-            if {'updated'}.symmetric_difference(counter.keys()):
-                import warnings
-                msg = []
-                if counter['empty_str']:
-                    msg.append(f'skipped {counter["empty_str"]} rows with '
-                               f'empty string values')
-                if counter['no_match']:
-                    msg.append(f'skipped {counter["no_match"]} rows with '
-                               f'non-matching index_id values')
-                if counter['merged']:
-                    msg.append(f'merged {counter["merged"]} existing records '
-                               f'with duplicate label values')
-                msg.append(f'updated {counter["updated"]} rows')
-                warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
-
             #if counter['merged']:
             #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
             #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
             #    self._dal.StructureRepository(cursor).refresh_granularity()
+
+        # If counter includes items besides 'updated', emit a warning.
+        if set(counter.keys()).difference({'updated'}):
+            import warnings
+            msg = []
+            if counter['empty_str']:
+                msg.append(f'skipped {counter["empty_str"]} rows with '
+                            f'empty string values')
+            if counter['no_match']:
+                msg.append(f'skipped {counter["no_match"]} rows with '
+                            f'non-matching index_id values')
+            if counter['merged']:
+                msg.append(f'merged {counter["merged"]} existing records '
+                            f'with duplicate label values')
+            msg.append(f'updated {counter["updated"]} rows')
+            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
 
     def delete_index(
         self,
