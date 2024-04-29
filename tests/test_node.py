@@ -622,6 +622,13 @@ class TestNodeDeleteIndex(unittest.TestCase):
                 repository.add(*row)
 
     @staticmethod
+    def get_weight_helper(node):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM weight')
+            return cursor.fetchall()
+
+    @staticmethod
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             repository = node._dal.IndexRepository(cursor)
@@ -666,3 +673,24 @@ class TestNodeDeleteIndex(unittest.TestCase):
         # Check values (index_id 1 deleted).
         expected = [Index(0, '-', '-'), Index(2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(self.node), expected)
+
+    def test_delete_with_weights(self):
+        """Should delete weight records associated with index_id."""
+        with self.node._managed_cursor() as cursor:
+            weight_group_repo = self.node._dal.WeightGroupRepository(cursor)
+            weight_group_repo.add('group1')  # Adds weight_group_id 1.
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 175000)
+            weight_repo.add(1, 2,  25000)
+
+        data = [
+            ('index_id', 'A', 'B'),
+            (2, 'bar', 'y'),
+        ]
+        self.node.delete_index(data)
+
+        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+        expected = [(1, 1, 1, 175000.0)]
+        self.assertEqual(self.get_weight_helper(self.node), expected)

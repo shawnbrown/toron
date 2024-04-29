@@ -255,6 +255,7 @@ class Node(object):
         counter: Counter = Counter()
         with self._managed_transaction() as cursor:
             index_repo = self._dal.IndexRepository(cursor)
+            weight_repo = self._dal.WeightRepository(cursor)
             column_manager = self._dal.ColumnManager(cursor)
 
             label_columns = column_manager.get_columns()
@@ -274,6 +275,11 @@ class Node(object):
                 if existing_record.labels != row_labels:
                     counter['mismatch'] += 1
                     continue  # <- Skip to next item.
+
+                # Remove associated weight records.
+                weights = weight_repo.find_by_index_id(existing_record.id)
+                for weight in list(weights):
+                    weight_repo.delete(weight.id)
 
                 # Remove existing Index record.
                 index_repo.delete(existing_record.id)
