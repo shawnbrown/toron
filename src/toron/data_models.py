@@ -254,12 +254,14 @@ class BaseIndexRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
-    def get_all(self) -> Iterator[Index]:
+    def get_all(self, include_undefined: bool = True) -> Iterator[Index]:
         """Get all records in the repository."""
 
     @abstractmethod
     def find_by_label(
-        self, criteria: Optional[Dict[str, str]]
+        self,
+        criteria: Optional[Dict[str, str]],
+        include_undefined: bool = True,
     ) -> Iterator[Index]:
         """Find all records where labels match criteria.
 

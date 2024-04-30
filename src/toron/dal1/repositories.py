@@ -72,13 +72,19 @@ class IndexRepository(BaseIndexRepository):
             'DELETE FROM main.node_index WHERE index_id=?', (id,)
         )
 
-    def get_all(self) -> Iterator[Index]:
+    def get_all(self, include_undefined: bool = True) -> Iterator[Index]:
         """Get all records in the repository."""
-        self._cursor.execute('SELECT * FROM main.node_index')
+        sql = 'SELECT * FROM main.node_index'
+        if not include_undefined:
+            sql += ' WHERE index_id != 0'
+
+        self._cursor.execute(sql)
         return (Index(*record) for record in self._cursor)
 
     def find_by_label(
-        self, criteria: Optional[Dict[str, str]]
+        self,
+        criteria: Optional[Dict[str, str]],
+        include_undefined: bool = True,
     ) -> Iterator[Index]:
         """Find all records in the repository that match criteria."""
         if not criteria:
@@ -86,10 +92,11 @@ class IndexRepository(BaseIndexRepository):
             raise ValueError(msg)
 
         qmarks = (f'{format_identifier(k)}=?' for k in criteria.keys())
-        self._cursor.execute(
-            f'SELECT * FROM main.node_index WHERE {" AND ".join(qmarks)}',
-            tuple(criteria.values()),
-        )
+        sql = f'SELECT * FROM main.node_index WHERE {" AND ".join(qmarks)}'
+        if not include_undefined:
+            sql += ' AND index_id != 0'
+
+        self._cursor.execute(sql, tuple(criteria.values()))
         return (Index(*record) for record in self._cursor)
 
 
