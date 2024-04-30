@@ -752,3 +752,23 @@ class TestNodeDeleteIndex(unittest.TestCase):
 
         expected = [Index(0, '-', '-'), Index(2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(self.node), expected)
+
+
+class TestNodeWeightGroups(unittest.TestCase):
+    def test_weight_groups_property(self):
+        """The `node.weight_groups` property should be list of groups
+        ordered by name.
+        """
+        node = Node()
+        with node._managed_cursor() as cursor:
+            weight_group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_group_repo.add('name_b')
+            weight_group_repo.add('name_a', 'Group A', ['"[foo]"'], is_complete=True)
+            weight_group_repo.add('name_c', 'Group C')
+
+        expected = [
+            (2, 'name_a', 'Group A', ['"[foo]"'], 1),
+            (1, 'name_b', None, None, 0),
+            (3, 'name_c', 'Group C', None, 0),
+        ]
+        self.assertEqual(node.weight_groups, expected)

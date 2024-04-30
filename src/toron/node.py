@@ -10,6 +10,7 @@ from toron._typing import (
     Generator,
     Iterable,
     Iterator,
+    List,
     Optional,
     Sequence,
     Tuple,
@@ -18,7 +19,10 @@ from toron._typing import (
 )
 
 from . import data_access
-from .data_models import delete_index_record
+from .data_models import (
+    WeightGroup,
+    delete_index_record,
+)
 from ._utils import (
     ToronWarning,
     normalize_tabular,
@@ -332,3 +336,8 @@ class Node(object):
                            f'mismatched labels')
             msg.append(f'deleted {counter["deleted"]} rows')
             warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
+
+    @property
+    def weight_groups(self) -> List[WeightGroup]:
+        with self._managed_cursor() as cursor:
+            return self._dal.WeightGroupRepository(cursor).get_all()
