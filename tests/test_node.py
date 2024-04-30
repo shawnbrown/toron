@@ -854,7 +854,6 @@ class TestNodeWeightGroups(unittest.TestCase):
             )
 
         node.edit_weight_group('name_a', name='NameA', is_complete=True)
-
         expected = [
             WeightGroup(
                 id=1,
@@ -865,3 +864,9 @@ class TestNodeWeightGroups(unittest.TestCase):
             ),
         ]
         self.assertEqual(self.get_weight_group_helper(node), expected)
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            node.edit_weight_group('name_x', description='Description of X.')
+
+        self.assertEqual(str(cm.warning), "no weight group named 'name_x'")

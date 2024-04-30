@@ -367,6 +367,9 @@ class Node(object):
             repository = self._dal.WeightGroupRepository(cursor)
             group = repository.get_by_name(existing_name)
             if not group:
+                import warnings
+                msg = f'no weight group named {existing_name!r}'
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
                 return  # <- EXIT!
 
             group = replace(group, **changes)
