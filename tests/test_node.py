@@ -793,3 +793,16 @@ class TestNodeWeightGroups(unittest.TestCase):
             ),
         ]
         self.assertEqual(node.weight_groups, expected)
+
+    def test_get_weight_group(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            weight_group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_group_repo.add('name_a', 'Group A')
+            weight_group_repo.add('name_b', 'Group B')
+
+        actual = node.get_weight_group('name_a')
+        expected = WeightGroup(id=1, name='name_a', description='Group A', selectors=None)
+        self.assertEqual(actual, expected)
+
+        self.assertIsNone(node.get_weight_group('name_zzz'))

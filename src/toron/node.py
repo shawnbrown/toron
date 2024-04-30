@@ -341,3 +341,7 @@ class Node(object):
     def weight_groups(self) -> List[WeightGroup]:
         with self._managed_cursor() as cursor:
             return self._dal.WeightGroupRepository(cursor).get_all()
+
+    def get_weight_group(self, name: str) -> Optional[WeightGroup]:
+        with self._managed_cursor() as cursor:
+            return self._dal.WeightGroupRepository(cursor).get_by_name(name)
