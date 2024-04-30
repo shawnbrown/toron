@@ -390,6 +390,10 @@ class BaseWeightGroupRepository(ABC):
         """Get a record from the repository."""
 
     @abstractmethod
+    def get_all(self) -> List[WeightGroup]:
+        """Get all records in the repository sorted by name."""
+
+    @abstractmethod
     def update(self, record: WeightGroup) -> None:
         """Update a record in the repository."""
 
