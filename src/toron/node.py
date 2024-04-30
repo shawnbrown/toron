@@ -374,3 +374,15 @@ class Node(object):
 
             group = replace(group, **changes)
             repository.update(group)
+
+    def drop_weight_group(self, existing_name: str) -> None:
+        with self._managed_cursor() as cursor:
+            repository = self._dal.WeightGroupRepository(cursor)
+            group = repository.get_by_name(existing_name)
+            if not group:
+                import warnings
+                msg = f'no weight group named {existing_name!r}'
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+                return  # <- EXIT!
+
+            repository.delete(group.id)

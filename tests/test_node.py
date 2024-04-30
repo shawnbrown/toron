@@ -764,6 +764,13 @@ class TestNodeWeightGroups(unittest.TestCase):
             repository = node._dal.WeightGroupRepository(cursor)
             return list(repository.get_all())
 
+    @staticmethod
+    def get_weight_helper(node):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM weight')
+            return cursor.fetchall()
+
     def test_weight_groups_property(self):
         """The `node.weight_groups` property should be list of groups
         ordered by name.
@@ -868,5 +875,37 @@ class TestNodeWeightGroups(unittest.TestCase):
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
             node.edit_weight_group('name_x', description='Description of X.')
+
+        self.assertEqual(str(cm.warning), "no weight group named 'name_x'")
+
+    def test_drop_weight_group(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+            weight_group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_repo = node._dal.WeightRepository(cursor)
+
+            # Add index columns and records.
+            manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('baz', 'z')
+
+            # Add weight group and associated weights.
+            weight_group_repo.add('name_a')
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        node.drop_weight_group('name_a')
+
+        msg = 'weight group and associated weights should be deleted'
+        self.assertEqual(self.get_weight_group_helper(node), [], msg=msg)
+        self.assertEqual(self.get_weight_helper(node), [], msg=msg)
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            node.drop_weight_group('name_x')
 
         self.assertEqual(str(cm.warning), "no weight group named 'name_x'")
