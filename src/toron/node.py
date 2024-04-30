@@ -2,6 +2,7 @@
 
 from collections import Counter
 from contextlib import contextmanager, nullcontext
+from dataclasses import replace
 from itertools import chain
 
 from toron._typing import (
@@ -360,3 +361,13 @@ class Node(object):
                 selectors=selectors,
                 is_complete=is_complete
             )
+
+    def edit_weight_group(self, existing_name: str, **changes: Any) -> None:
+        with self._managed_cursor() as cursor:
+            repository = self._dal.WeightGroupRepository(cursor)
+            group = repository.get_by_name(existing_name)
+            if not group:
+                return  # <- EXIT!
+
+            group = replace(group, **changes)
+            repository.update(group)

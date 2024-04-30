@@ -841,3 +841,27 @@ class TestNodeWeightGroups(unittest.TestCase):
             ),
         ]
         self.assertEqual(self.get_weight_group_helper(node), expected)
+
+    def test_edit_weight_group(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            weight_group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_group_repo.add(
+                'name_a',
+                'Group A',
+                ['"[foo]"'],
+                is_complete=False,
+            )
+
+        node.edit_weight_group('name_a', name='NameA', is_complete=True)
+
+        expected = [
+            WeightGroup(
+                id=1,
+                name='NameA',  # <- Value changed.
+                description='Group A',
+                selectors=['"[foo]"'],
+                is_complete=True,  # <- Value changed.
+            ),
+        ]
+        self.assertEqual(self.get_weight_group_helper(node), expected)
