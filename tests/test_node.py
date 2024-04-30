@@ -15,7 +15,10 @@ else:
     from typing_extensions import get_args
 
 from toron._utils import ToronWarning
-from toron.data_models import Index
+from toron.data_models import (
+    Index,
+    WeightGroup,
+)
 from toron.node import Node
 
 
@@ -767,8 +770,26 @@ class TestNodeWeightGroups(unittest.TestCase):
             weight_group_repo.add('name_c', 'Group C')
 
         expected = [
-            (2, 'name_a', 'Group A', ['"[foo]"'], 1),
-            (1, 'name_b', None, None, 0),
-            (3, 'name_c', 'Group C', None, 0),
+            WeightGroup(
+                id=2,
+                name='name_a',
+                description='Group A',
+                selectors=['"[foo]"'],
+                is_complete=1,
+            ),
+            WeightGroup(
+                id=1,
+                name='name_b',
+                description=None,
+                selectors=None,
+                is_complete=0,
+            ),
+            WeightGroup(
+                id=3,
+                name='name_c',
+                description='Group C',
+                selectors=None,
+                is_complete=0,
+            ),
         ]
         self.assertEqual(node.weight_groups, expected)

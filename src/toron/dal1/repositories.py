@@ -220,7 +220,7 @@ class WeightGroupRepository(BaseWeightGroupRepository):
     def get_all(self) -> List[WeightGroup]:
         """Get all weight_group records sorted by name."""
         self._cursor.execute('SELECT * FROM main.weight_group ORDER BY name')
-        return self._cursor.fetchall()
+        return [WeightGroup(*record) for record in self._cursor]
 
     def update(self, record: WeightGroup) -> None:
         """Update a record in the repository."""
