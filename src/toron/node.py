@@ -14,6 +14,7 @@ from toron._typing import (
     Sequence,
     Tuple,
     Union,
+    overload,
 )
 
 from . import data_access
@@ -244,14 +245,22 @@ class Node(object):
             msg.append(f'updated {counter["updated"]} rows')
             warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
 
+    @overload
     def delete_index(
         self,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
-        data, columns = normalize_tabular(data, columns)
-        if 'index_id' not in columns:
-            raise ValueError("column 'index_id' required to delete records")
+        ...
+    @overload
+    def delete_index(
+        self,
+        **criteria: str,
+    ) -> None:
+        ...
+    def delete_index(self, data=None, columns=None, **criteria):
+        if data and criteria:
+            raise TypeError('must provide either data or keyword criteria')
 
         counter: Counter = Counter()
         with self._managed_transaction() as cursor:
@@ -260,32 +269,51 @@ class Node(object):
             relation_repo = self._dal.RelationRepository(cursor)
             column_manager = self._dal.ColumnManager(cursor)
 
-            label_columns = column_manager.get_columns()
-            verify_columns_set(columns, label_columns, allow_extras=True)
+            if data:
+                data, columns = normalize_tabular(data, columns)
+                if 'index_id' not in columns:
+                    raise ValueError("column 'index_id' required to delete records")
 
-            for row in data:
-                row_dict = dict(zip(columns, row))
-                existing_record = index_repo.get(row_dict['index_id'])
+                label_columns = column_manager.get_columns()
+                verify_columns_set(columns, label_columns, allow_extras=True)
 
-                # Check that matching index_id exists.
-                if not existing_record:
-                    counter['no_match'] += 1
-                    continue  # <- Skip to next item.
+                for row in data:
+                    row_dict = dict(zip(columns, row))
+                    existing_record = index_repo.get(row_dict['index_id'])
 
-                # Check that existing labels match row labels.
-                row_labels = tuple(row_dict[k] for k in label_columns)
-                if existing_record.labels != row_labels:
-                    counter['mismatch'] += 1
-                    continue  # <- Skip to next item.
+                    # Check that matching index_id exists.
+                    if not existing_record:
+                        counter['no_match'] += 1
+                        continue  # <- Skip to next item.
 
-                # Remove existing Index record.
-                delete_index_record(
-                    existing_record.id,
-                    index_repo,
-                    weight_repo,
-                    relation_repo,
-                )
-                counter['deleted'] += 1
+                    # Check that existing labels match row labels.
+                    row_labels = tuple(row_dict[k] for k in label_columns)
+                    if existing_record.labels != row_labels:
+                        counter['mismatch'] += 1
+                        continue  # <- Skip to next item.
+
+                    # Remove existing Index record.
+                    delete_index_record(
+                        existing_record.id,
+                        index_repo,
+                        weight_repo,
+                        relation_repo,
+                    )
+                    counter['deleted'] += 1
+
+            elif criteria:
+                index_ids = [x.id for x in index_repo.find_by_label(criteria)]
+                for index_id in index_ids:
+                    delete_index_record(
+                        index_id,
+                        index_repo,
+                        weight_repo,
+                        relation_repo,
+                    )
+                    counter['deleted'] += 1
+
+            else:
+                raise TypeError('expected data or keyword criteria, got neither')
 
             #if counter['deleted']:
             #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()

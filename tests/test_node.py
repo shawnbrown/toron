@@ -743,3 +743,12 @@ class TestNodeDeleteIndex(unittest.TestCase):
         regex = 'associated crosswalk relations are ambiguous'
         with self.assertRaisesRegex(ValueError, regex):
             self.node.delete_index(data)
+
+    def test_delete_using_interoperation(self):
+        # Add more index rows so there are multiple records to select.
+        self.add_index_helper(self.node, [('foo', 'qux'), ('foo', 'quux')])
+
+        self.node.delete_index(A='foo')
+
+        expected = [Index(0, '-', '-'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
