@@ -758,6 +758,12 @@ class TestNodeDeleteIndex(unittest.TestCase):
 
 
 class TestNodeWeightGroups(unittest.TestCase):
+    @staticmethod
+    def get_weight_group_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.WeightGroupRepository(cursor)
+            return list(repository.get_all())
+
     def test_weight_groups_property(self):
         """The `node.weight_groups` property should be list of groups
         ordered by name.
@@ -806,3 +812,32 @@ class TestNodeWeightGroups(unittest.TestCase):
         self.assertEqual(actual, expected)
 
         self.assertIsNone(node.get_weight_group('name_zzz'))
+
+    def test_add_weight_group(self):
+        node = Node()
+
+        node.add_weight_group('name_a')  # <- Only `name` is required.
+        node.add_weight_group(  # <- Defining all properties.
+            name='name_b',
+            description='Group B',
+            selectors=['"[foo]"'],
+            is_complete=True
+        )
+
+        expected = [
+            WeightGroup(
+                id=1,
+                name='name_a',
+                description=None,
+                selectors=None,
+                is_complete=False,
+            ),
+            WeightGroup(
+                id=2,
+                name='name_b',
+                description='Group B',
+                selectors=['"[foo]"'],
+                is_complete=True,
+            ),
+        ]
+        self.assertEqual(self.get_weight_group_helper(node), expected)

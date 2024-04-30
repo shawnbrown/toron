@@ -345,3 +345,18 @@ class Node(object):
     def get_weight_group(self, name: str) -> Optional[WeightGroup]:
         with self._managed_cursor() as cursor:
             return self._dal.WeightGroupRepository(cursor).get_by_name(name)
+
+    def add_weight_group(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        selectors: Optional[Union[List[str], str]] = None,
+        is_complete: bool = False,
+    ) -> None:
+        with self._managed_cursor() as cursor:
+            self._dal.WeightGroupRepository(cursor).add(
+                name=name,
+                description=description,
+                selectors=selectors,
+                is_complete=is_complete
+            )
