@@ -217,6 +217,16 @@ class WeightGroupRepository(BaseWeightGroupRepository):
             return WeightGroup(*record)
         return None
 
+    def get_by_name(self, name: str) -> Optional[WeightGroup]:
+        """Get record from the repository with matching name."""
+        self._cursor.execute(
+            'SELECT * FROM main.weight_group WHERE name=?', (name,)
+        )
+        record = self._cursor.fetchone()
+        if record:
+            return WeightGroup(*record)
+        return None
+
     def get_all(self) -> List[WeightGroup]:
         """Get all weight_group records sorted by name."""
         self._cursor.execute('SELECT * FROM main.weight_group ORDER BY name')
