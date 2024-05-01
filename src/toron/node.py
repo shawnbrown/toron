@@ -393,13 +393,17 @@ class Node(object):
         header: bool = False,
         **criteria: str,
     ) -> Iterator[Sequence]:
-        with self._managed_transaction() as cursor:
-            group_repo = self._dal.WeightGroupRepository(cursor)
-            weight_repo = self._dal.WeightRepository(cursor)
-            index_repo = self._dal.IndexRepository(cursor)
+        with self._managed_connection() as con, \
+                self._managed_cursor(con) as cur1, \
+                self._managed_cursor(con) as cur2:
+            # Line continuations (above) needed for Python 3.8 and earlier.
+
+            col_manager = self._dal.ColumnManager(cur1)
+            group_repo = self._dal.WeightGroupRepository(cur1)
+            index_repo = self._dal.IndexRepository(cur1)
 
             if header:
-                label_columns = self._dal.ColumnManager(cursor).get_columns()
+                label_columns = col_manager.get_columns()
                 header_row = ('index_id',) + label_columns + (weight_group_name,)
                 yield header_row
 
@@ -415,8 +419,7 @@ class Node(object):
             else:
                 index_records = index_repo.get_all(include_undefined=False)
 
-            index_records = list(index_records)
-
+            weight_repo = self._dal.WeightRepository(cur2)
             weight_group_id = weight_group.id
             for index in index_records:
                 index_id = index.id
