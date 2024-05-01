@@ -1041,3 +1041,94 @@ class TestNodeWeightMethods(unittest.TestCase):
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_update(self):
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        data = [
+            ('index_id', 'A', 'B','weight1'),
+            (2, 'bar', 'y', 555.0),
+        ]
+        self.node.update_weights('weight1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 555.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_update_different_order(self):
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        data = [
+            ('B', 'index_id', 'A', 'weight1'),
+            ('y', 2, 'bar', 555.0),
+        ]
+        self.node.update_weights('weight1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 555.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_update_different_order_add_new(self):
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+
+        data = [
+            ('B', 'index_id', 'A', 'weight1'),
+            ('x', 1, 'foo', 111.0),
+            ('y', 2, 'bar', 222.0),
+            ('z', 3, 'bar', 333.0),  # <- Does not previously exist.
+        ]
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.update_weights('weight1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            ('inserted 1 rows that did not previously exist, '
+             'updated 2 rows'),
+        )
+
+        expected = [
+            (1, 1, 1, 111.0),  # <- Updated.
+            (2, 1, 2, 222.0),  # <- Updated.
+            (3, 1, 3, 333.0),  # <- Inserted (new record).
+        ]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_update_missing_and_mismatched(self):
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        data = [
+            ('index_id', 'A', 'B','weight1'),
+            (2, 'bar', 'YYY', 444.0),  # <- Mismatch.
+            (9, 'bar', 'z', 555.0),    # <- No index_id 9.
+        ]
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.update_weights('weight1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            ('skipped 1 rows that had no matching index record, '
+             'skipped 1 rows with mismatched labels, '
+             'updated 0 rows'),
+        )
+
+        # Check that values are unchanged.
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
