@@ -930,6 +930,12 @@ class TestNodeWeightMethods(unittest.TestCase):
 
         self.node = node
 
+    def get_weights_helper(self):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with self.node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM weight')
+            return cursor.fetchall()
+
     def test_select(self):
         with self.node._managed_cursor() as cursor:
             weight_repo = self.node._dal.WeightRepository(cursor)
@@ -963,3 +969,75 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Test with selection `header=False` and `A='NOMATCH'`.
         weights = self.node.select_weights('weight1', header=False, A='NOMATCH')
         self.assertEqual(list(weights), [], msg='iterator should be empty')
+
+    def test_insert_by_label(self):
+        data = [
+            ('A', 'B', 'weight1'),
+            ('foo', 'x', 10.0),
+            ('bar', 'y', 25.0),
+            ('bar', 'z', 15.0),
+        ]
+        self.node.insert_weights('weight1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_insert_by_label_different_order(self):
+        data = [
+            ('B', 'A', 'weight1'),
+            ('x', 'foo', 10.0),
+            ('y', 'bar', 25.0),
+            ('z', 'bar', 15.0),
+        ]
+        self.node.insert_weights('weight1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_insert_by_label_extra_columns(self):
+        data = [
+            ('A', 'B', 'C', 'weight1'),
+            ('foo', 'x', 'a', 10.0),
+            ('bar', 'y', 'b', 25.0),
+            ('bar', 'z', 'c', 15.0),
+        ]
+        self.node.insert_weights('weight1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_insert_by_index_and_label(self):
+        data = [
+            ('index_id', 'A', 'B', 'weight1'),
+            (1, 'foo', 'x', 10.0),
+            (2, 'bar', 'y', 25.0),
+            (3, 'bar', 'z', 15.0),
+        ]
+        self.node.insert_weights('weight1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_insert_by_index_and_label_extra_columns(self):
+        data = [
+            ('index_id', 'A', 'B', 'C', 'weight1'),
+            (1, 'foo', 'x', 'a', 10.0),
+            (2, 'bar', 'y', 'b', 25.0),
+            (3, 'bar', 'z', 'c', 15.0),
+        ]
+        self.node.insert_weights('weight1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_insert_by_index_and_label_different_order(self):
+        data = [
+            ('B', 'weight1', 'A', 'index_id'),
+            ('x', 10.0, 'foo', 1),
+            ('y', 25.0, 'bar', 2),
+            ('z', 15.0, 'bar', 3),
+        ]
+        self.node.insert_weights('weight1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)

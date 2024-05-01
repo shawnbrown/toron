@@ -428,3 +428,75 @@ class Node(object):
                     index_id,
                 )
                 yield (index.id,) + index.labels + (weight.value,)
+
+    def insert_weights(
+        self,
+        weight_group_name: str,
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        data, columns = normalize_tabular(data, columns)
+
+        counter: Counter = Counter()
+        with self._managed_transaction() as cursor:
+            col_manager = self._dal.ColumnManager(cursor)
+            group_repo = self._dal.WeightGroupRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+            weight_repo = self._dal.WeightRepository(cursor)
+
+            label_columns = col_manager.get_columns()
+            verify_columns_set(columns, label_columns, allow_extras=True)
+
+            group = group_repo.get_by_name(weight_group_name)
+            if not group:
+                group_repo.add(weight_group_name)
+                group = group_repo.get_by_name(weight_group_name)
+
+                import warnings
+                msg = f'weight_group {weight_group_name!r} created'
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+
+            weight_group_id = group.id
+            for row in data:
+                row_dict = dict(zip(columns, row))
+                weight_value = row_dict.pop(weight_group_name)
+
+                if 'index_id' in row_dict:
+                    index_record = index_repo.get(row_dict['index_id'])
+                    if not index_record:
+                        counter['no_match'] += 1
+                        continue  # <- Skip to next item.
+
+                    labels_dict = dict(zip(label_columns, index_record.labels))
+                    if any(row_dict[k] != v for k, v in labels_dict.items()):
+                        counter['mismatch'] += 1
+                        continue  # <- Skip to next item.
+
+                else:
+                    index_records = index_repo.find_by_label(
+                        {k: v for k, v in row_dict.items() if k in label_columns}
+                    )
+                    index_record = next(index_records, None)
+                    if not index_record:
+                        counter['no_match'] += 1
+                        continue  # <- Skip to next item.
+
+                weight_repo.add(
+                    weight_group_id=weight_group_id,
+                    index_id=index_record.id,
+                    value=weight_value,
+                )
+                counter['inserted'] += 1
+
+        # If counter includes items besides 'inserted', emit a warning.
+        if set(counter.keys()).difference({'inserted'}):
+            import warnings
+            msg = []
+            if counter['no_match']:
+                msg.append(f'skipped {counter["no_match"]} rows that '
+                           f'had no matching index record')
+            if counter['mismatch']:
+                msg.append(f'skipped {counter["mismatch"]} rows with '
+                           f'mismatched labels')
+            msg.append(f'inserted {counter["inserted"]} rows')
+            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
