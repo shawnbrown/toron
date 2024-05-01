@@ -310,6 +310,21 @@ class WeightRepository(BaseWeightRepository):
     #def find_by_weight_group_id(self, weight_group_id: int) -> Iterable[Weight]:
     #    """Filter to records associated with the given weight group."""
 
+    def get_by_weight_group_id_and_index_id(
+        self,
+        weight_group_id: int,
+        index_id: int,
+    ) -> Optional[Weight]:
+        """Get record with matching weight_group_id and index_id."""
+        self._cursor.execute(
+            'SELECT * FROM main.weight WHERE weight_group_id=? AND index_id=?',
+            (weight_group_id, index_id)
+        )
+        record = self._cursor.fetchone()
+        if record:
+            return Weight(*record)
+        return None
+
     def find_by_index_id(self, index_id: int) -> Iterator[Weight]:
         """Find all records with matching index_id."""
         self._cursor.execute(

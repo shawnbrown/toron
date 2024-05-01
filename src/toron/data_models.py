@@ -443,6 +443,14 @@ class BaseWeightRepository(ABC):
     #    """Filter to records associated with the given weight group."""
 
     @abstractmethod
+    def get_by_weight_group_id_and_index_id(
+        self,
+        weight_group_id: int,
+        index_id: int,
+    ) -> Optional[Weight]:
+        """Get record with matching weight_group_id and index_id."""
+
+    @abstractmethod
     def find_by_index_id(self, index_id: int) -> Iterator[Weight]:
         """Find all records with matching index_id."""
 
