@@ -757,7 +757,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
         self.assertEqual(self.get_index_helper(self.node), expected)
 
 
-class TestNodeWeightGroups(unittest.TestCase):
+class TestNodeWeightGroupMethods(unittest.TestCase):
     @staticmethod
     def get_weight_group_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
