@@ -386,3 +386,42 @@ class Node(object):
                 return  # <- EXIT!
 
             repository.delete(group.id)
+
+    def select_weights(
+        self,
+        weight_group_name: str,
+        header: bool = False,
+        **criteria: str,
+    ) -> Iterator[Sequence]:
+        with self._managed_transaction() as cursor:
+            group_repo = self._dal.WeightGroupRepository(cursor)
+            weight_repo = self._dal.WeightRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+
+            if header:
+                label_columns = self._dal.ColumnManager(cursor).get_columns()
+                header_row = ('index_id',) + label_columns + (weight_group_name,)
+                yield header_row
+
+            weight_group = group_repo.get_by_name(weight_group_name)
+            if not weight_group:
+                import warnings
+                msg = f'no weight group named {weight_group_name!r}'
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+                return  # <- EXIT! (stops iteration)
+
+            if criteria:
+                index_records = index_repo.find_by_label(criteria, include_undefined=False)
+            else:
+                index_records = index_repo.get_all(include_undefined=False)
+
+            index_records = list(index_records)
+
+            weight_group_id = weight_group.id
+            for index in index_records:
+                index_id = index.id
+                weight = weight_repo.get_by_weight_group_id_and_index_id(
+                    weight_group_id,
+                    index_id,
+                )
+                yield (index.id,) + index.labels + (weight.value,)

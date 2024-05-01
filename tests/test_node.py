@@ -909,3 +909,52 @@ class TestNodeWeightGroups(unittest.TestCase):
             node.drop_weight_group('name_x')
 
         self.assertEqual(str(cm.warning), "no weight group named 'name_x'")
+
+
+class TestNodeWeightMethods(unittest.TestCase):
+    def test_select(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+            weight_group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_repo = node._dal.WeightRepository(cursor)
+
+            # Add index columns and records.
+            manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('bar', 'z')
+
+            # Add weight group and associated weights.
+            weight_group_repo.add('weight1')
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        weights = node.select_weights('weight1', header=True)
+        expected = [
+            ('index_id', 'A', 'B', 'weight1'),
+            (1, 'foo', 'x', 10.0),
+            (2, 'bar', 'y', 25.0),
+            (3, 'bar', 'z', 15.0),
+        ]
+        self.assertEqual(list(weights), expected)
+
+        # Test with selection `header=False` and `A='bar'`.
+        weights = node.select_weights('weight1', header=False, A='bar')
+        expected = [
+            (2, 'bar', 'y', 25.0),
+            (3, 'bar', 'z', 15.0),
+        ]
+        self.assertEqual(list(weights), expected)
+
+        # Test with selection `header=True` and `A='NOMATCH'`.
+        weights = node.select_weights('weight1', header=True, A='NOMATCH')
+        expected = [('index_id', 'A', 'B', 'weight1')]
+        msg = 'header row only, when there are no matches'
+        self.assertEqual(list(weights), expected, msg=msg)
+
+        # Test with selection `header=False` and `A='NOMATCH'`.
+        weights = node.select_weights('weight1', header=False, A='NOMATCH')
+        self.assertEqual(list(weights), [], msg='iterator should be empty')
