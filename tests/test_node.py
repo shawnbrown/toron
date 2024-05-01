@@ -912,27 +912,32 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
 
 
 class TestNodeWeightMethods(unittest.TestCase):
-    def test_select(self):
+    def setUp(self):
         node = Node()
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            col_manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
-            weight_repo = node._dal.WeightRepository(cursor)
 
             # Add index columns and records.
-            manager.add_columns('A', 'B')
+            col_manager.add_columns('A', 'B')
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
 
-            # Add weight group and associated weights.
+            # Add weight_group_id 1.
             weight_group_repo.add('weight1')
+
+        self.node = node
+
+    def test_select(self):
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
             weight_repo.add(1, 1, 10.0)
             weight_repo.add(1, 2, 25.0)
             weight_repo.add(1, 3, 15.0)
 
-        weights = node.select_weights('weight1', header=True)
+        weights = self.node.select_weights('weight1', header=True)
         expected = [
             ('index_id', 'A', 'B', 'weight1'),
             (1, 'foo', 'x', 10.0),
@@ -942,7 +947,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         self.assertEqual(list(weights), expected)
 
         # Test with selection `header=False` and `A='bar'`.
-        weights = node.select_weights('weight1', header=False, A='bar')
+        weights = self.node.select_weights('weight1', header=False, A='bar')
         expected = [
             (2, 'bar', 'y', 25.0),
             (3, 'bar', 'z', 15.0),
@@ -950,11 +955,11 @@ class TestNodeWeightMethods(unittest.TestCase):
         self.assertEqual(list(weights), expected)
 
         # Test with selection `header=True` and `A='NOMATCH'`.
-        weights = node.select_weights('weight1', header=True, A='NOMATCH')
+        weights = self.node.select_weights('weight1', header=True, A='NOMATCH')
         expected = [('index_id', 'A', 'B', 'weight1')]
         msg = 'header row only, when there are no matches'
         self.assertEqual(list(weights), expected, msg=msg)
 
         # Test with selection `header=False` and `A='NOMATCH'`.
-        weights = node.select_weights('weight1', header=False, A='NOMATCH')
+        weights = self.node.select_weights('weight1', header=False, A='NOMATCH')
         self.assertEqual(list(weights), [], msg='iterator should be empty')
