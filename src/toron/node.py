@@ -31,6 +31,42 @@ from ._utils import (
 )
 
 
+def warn_if_issues(
+    counter: Counter,
+    expected: str,
+    stacklevel: int = 3,
+    **extras: Dict[str, str],
+) -> None:
+    """Emit warning if counter contains more items than expected.
+
+    Additional warning text items or replacement items can be passed
+    as keyword arguments (**extras).
+    """
+    # If counter only contains expected item, exit early (no warning).
+    if not set(counter.keys()).difference({expected}):
+        return  # <- EXIT!
+
+    import warnings
+
+    warning_text = {
+        'dupe_or_empty_str': 'skipped {dupe_or_empty_str} rows with duplicate labels or empty strings',
+        'inserted': 'loaded {inserted} rows',
+    }
+    warning_text.update(extras)
+
+    msg = [v for k, v in warning_text.items() if k in counter and k != expected]
+    msg.append(warning_text[expected])  # Make sure expected item is last.
+
+    if expected not in counter:
+        counter[expected] = 0  # Must add explicitly if 0 (for **kwds use).
+
+    warnings.warn(
+        message=', '.join(msg).format(**counter),
+        category=ToronWarning,
+        stacklevel=stacklevel,
+    )
+
+
 class Node(object):
     def __init__(
         self,
