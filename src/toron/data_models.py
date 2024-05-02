@@ -381,8 +381,8 @@ class BaseWeightGroupRepository(ABC):
     def add(
         self,
         name: str,
-        description: Optional[str],
-        selectors: Optional[Union[List[str], str]],
+        description: Optional[str] = None,
+        selectors: Optional[Union[List[str], str]] = None,
         is_complete: bool = False,
     ) -> None:
         """Add a record to the repository."""
