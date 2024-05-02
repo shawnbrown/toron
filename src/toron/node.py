@@ -427,7 +427,8 @@ class Node(object):
                     weight_group_id,
                     index_id,
                 )
-                yield (index.id,) + index.labels + (weight.value,)
+                weight_value = getattr(weight, 'value', None)
+                yield (index.id,) + index.labels + (weight_value,)
 
     def insert_weights(
         self,
