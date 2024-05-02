@@ -449,15 +449,17 @@ class Node(object):
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             group = group_repo.get_by_name(weight_group_name)
-            if not group:
+            if group:
+                weight_group_id = group.id
+            else:
                 group_repo.add(weight_group_name)
                 group = group_repo.get_by_name(weight_group_name)
+                weight_group_id = group.id  # type: ignore [union-attr]
 
                 import warnings
                 msg = f'weight_group {weight_group_name!r} created'
                 warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
-            weight_group_id = group.id
             for row in data:
                 row_dict = dict(zip(columns, row))
                 weight_value = row_dict.pop(weight_group_name)
