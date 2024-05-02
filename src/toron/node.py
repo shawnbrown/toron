@@ -53,6 +53,7 @@ def warn_if_issues(
         'empty_str': 'skipped {empty_str} rows with empty string values',
         'no_match': 'skipped {no_match} rows with non-matching index_id values',
         'mismatch': 'skipped {mismatch} rows with mismatched labels',
+        'no_weight': 'skipped {no_weight} rows with no matching weights',
         'merged': 'merged {merged} existing records with duplicate label values',
         'inserted': 'loaded {inserted} rows',
         'updated': 'updated {updated} rows',
@@ -653,18 +654,4 @@ class Node(object):
             else:
                 raise TypeError('expected data or keyword criteria, got neither')
 
-        # If counter includes items besides 'deleted', emit a warning.
-        if set(counter.keys()).difference({'deleted'}):
-            import warnings
-            msg_lst = []
-            if counter['no_match']:
-                msg_lst.append(f'skipped {counter["no_match"]} rows that '
-                               f'had no matching index record')
-            if counter['mismatch']:
-                msg_lst.append(f'skipped {counter["mismatch"]} rows with '
-                               f'mismatched labels')
-            if counter['no_weight']:
-                msg_lst.append(f'skipped {counter["no_weight"]} rows with '
-                               f'no matching weights')
-            msg_lst.append(f'deleted {counter["deleted"]} rows')
-            warnings.warn(', '.join(msg_lst), category=ToronWarning, stacklevel=2)
+        warn_if_issues(counter, expected='deleted')
