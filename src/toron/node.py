@@ -42,9 +42,9 @@ def warn_if_issues(
     Additional warning text items or replacement items can be passed
     as keyword arguments (**extras).
     """
-    # If counter only contains expected item, exit early (no warning).
-    if not set(counter.keys()).difference({expected}):
-        return  # <- EXIT!
+    # If counter is empty or only contains expected item, exit early.
+    if not counter or tuple(counter.keys()) == (expected,):
+        return  # <- EXIT! (no warning)
 
     import warnings
 
