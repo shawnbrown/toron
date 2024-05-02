@@ -35,7 +35,7 @@ def warn_if_issues(
     counter: Counter,
     expected: str,
     stacklevel: int = 3,
-    **extras: Dict[str, str],
+    **extras: str,
 ) -> None:
     """Emit warning if counter contains more items than expected.
 
@@ -79,7 +79,7 @@ class Node(object):
         self,
         *,
         backend: str = 'DAL1',
-        **kwds: Dict[str, Any],
+        **kwds: Any,
     ) -> None:
         self._dal = data_access.get_data_access_layer(backend)
         self._connector = self._dal.DataConnector(**kwds)
