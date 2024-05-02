@@ -576,3 +576,69 @@ class Node(object):
                            f'did not previously exist')
             msg.append(f'updated {counter["updated"]} rows')
             warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
+
+    def delete_weights(
+        self,
+        weight_group_name: str,
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ):
+        counter: Counter = Counter()
+        with self._managed_transaction() as cursor:
+            col_manager = self._dal.ColumnManager(cursor)
+            group_repo = self._dal.WeightGroupRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+            weight_repo = self._dal.WeightRepository(cursor)
+
+            data, columns = normalize_tabular(data, columns)
+            if 'index_id' not in columns:
+                raise ValueError("column 'index_id' required to delete records")
+
+            label_columns = col_manager.get_columns()
+            verify_columns_set(columns, label_columns, allow_extras=True)
+
+            weight_group = group_repo.get_by_name(weight_group_name)
+            if not weight_group:
+                msg = f'no weight group named {weight_group_name!r}'
+                raise ValueError(msg)
+            weight_group_id = weight_group.id
+
+            for row in data:
+                row_dict = dict(zip(columns, row))
+
+                index_record = index_repo.get(row_dict['index_id'])
+                if not index_record:
+                    counter['no_match'] += 1
+                    continue  # <- Skip to next item.
+
+                index_id = index_record.id
+
+                labels_dict = dict(zip(label_columns, index_record.labels))
+                if any(row_dict[k] != v for k, v in labels_dict.items()):
+                    counter['mismatch'] += 1
+                    continue  # <- Skip to next item.
+
+                weight_record = weight_repo.get_by_weight_group_id_and_index_id(
+                    weight_group_id, index_id,
+                )
+                if weight_record:
+                    weight_repo.delete(weight_record.id)
+                    counter['deleted'] += 1
+                else:
+                    counter['no_weight'] += 1
+
+        # If counter includes items besides 'deleted', emit a warning.
+        if set(counter.keys()).difference({'deleted'}):
+            import warnings
+            msg = []
+            if counter['no_match']:
+                msg.append(f'skipped {counter["no_match"]} rows that '
+                           f'had no matching index record')
+            if counter['mismatch']:
+                msg.append(f'skipped {counter["mismatch"]} rows with '
+                           f'mismatched labels')
+            if counter['no_weight']:
+                msg.append(f'skipped {counter["no_weight"]} rows with '
+                           f'no matching weights')
+            msg.append(f'deleted {counter["deleted"]} rows')
+            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)

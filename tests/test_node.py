@@ -1132,3 +1132,56 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check that values are unchanged.
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_delete(self):
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        data = [
+            ('index_id', 'A', 'B'),
+            (1, 'foo', 'x'),
+            (2, 'bar', 'y'),
+        ]
+        self.node.delete_weights('weight1', data)
+        expected = [(3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+        # Test with weight column (can be present but is ignored).
+        data = [
+            ('index_id', 'A', 'B', 'weight1'),
+            (3, 'bar', 'z', 15.0),
+        ]
+        self.node.delete_weights('weight1', data)
+        self.assertEqual(self.get_weights_helper(), [])
+
+    def test_delete_warnings(self):
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+
+        data = [
+            ('index_id', 'A', 'B'),
+            (7, 'foo', 'x'),    # <- No index match.
+            (2, 'bar', 'YYY'),  # <- Label mismatch.
+            (3, 'bar', 'z'),    # <- No matching weight.
+        ]
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.delete_weights('weight1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            ('skipped 1 rows that had no matching index record, '
+             'skipped 1 rows with mismatched labels, '
+             'skipped 1 rows with no matching weights, '
+             'deleted 0 rows'),
+        )
+
+        # Check weights (unchanged--only two weights were added).
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
