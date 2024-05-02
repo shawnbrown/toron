@@ -1185,3 +1185,19 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check weights (unchanged--only two weights were added).
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0)]
         self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_delete_criteria(self):
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        # Test single criteria (matches 2 rows).
+        self.node.delete_weights('weight1', A='bar')
+        expected = [(1, 1, 1, 10.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+        # Test multiple criteria (matches 1 row).
+        self.node.delete_weights('weight1', A='foo', B='x')
+        self.assertEqual(self.get_weights_helper(), [])

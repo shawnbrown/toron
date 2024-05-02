@@ -580,12 +580,31 @@ class Node(object):
             msg_lst.append(f'updated {counter["updated"]} rows')
             warnings.warn(', '.join(msg_lst), category=ToronWarning, stacklevel=2)
 
+    @overload
     def delete_weights(
         self,
         weight_group_name: str,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        ...
+    @overload
+    def delete_weights(
+        self,
+        weight_group_name: str,
+        **criteria: str,
+    ) -> None:
+        ...
+    def delete_weights(
+        self,
+        weight_group_name,
+        data=None,
+        columns=None,
+        **criteria,
     ):
+        if data and criteria:
+            raise TypeError('must provide either data or keyword criteria')
+
         counter: Counter = Counter()
         with self._managed_transaction() as cursor:
             col_manager = self._dal.ColumnManager(cursor)
@@ -593,42 +612,57 @@ class Node(object):
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
 
-            data, columns = normalize_tabular(data, columns)
-            if 'index_id' not in columns:
-                raise ValueError("column 'index_id' required to delete records")
-
-            label_columns = col_manager.get_columns()
-            verify_columns_set(columns, label_columns, allow_extras=True)
-
             weight_group = group_repo.get_by_name(weight_group_name)
             if not weight_group:
                 msg = f'no weight group named {weight_group_name!r}'
                 raise ValueError(msg)
             weight_group_id = weight_group.id
 
-            for row in data:
-                row_dict = dict(zip(columns, row))
+            if data:
+                data, columns = normalize_tabular(data, columns)
+                if 'index_id' not in columns:
+                    raise ValueError("column 'index_id' required to delete records")
 
-                index_record = index_repo.get(row_dict['index_id'])
-                if not index_record:
-                    counter['no_match'] += 1
-                    continue  # <- Skip to next item.
+                label_columns = col_manager.get_columns()
+                verify_columns_set(columns, label_columns, allow_extras=True)
 
-                index_id = index_record.id
+                for row in data:
+                    row_dict = dict(zip(columns, row))
 
-                labels_dict = dict(zip(label_columns, index_record.labels))
-                if any(row_dict[k] != v for k, v in labels_dict.items()):
-                    counter['mismatch'] += 1
-                    continue  # <- Skip to next item.
+                    index_record = index_repo.get(row_dict['index_id'])
+                    if not index_record:
+                        counter['no_match'] += 1
+                        continue  # <- Skip to next item.
 
-                weight_record = weight_repo.get_by_weight_group_id_and_index_id(
-                    weight_group_id, index_id,
-                )
-                if weight_record:
-                    weight_repo.delete(weight_record.id)
-                    counter['deleted'] += 1
-                else:
-                    counter['no_weight'] += 1
+                    index_id = index_record.id
+
+                    labels_dict = dict(zip(label_columns, index_record.labels))
+                    if any(row_dict[k] != v for k, v in labels_dict.items()):
+                        counter['mismatch'] += 1
+                        continue  # <- Skip to next item.
+
+                    weight_record = weight_repo.get_by_weight_group_id_and_index_id(
+                        weight_group_id, index_id,
+                    )
+                    if weight_record:
+                        weight_repo.delete(weight_record.id)
+                        counter['deleted'] += 1
+                    else:
+                        counter['no_weight'] += 1
+            elif criteria:
+                index_ids = [x.id for x in index_repo.find_by_label(criteria)]
+                for index_id in index_ids:
+                    weight_record = weight_repo.get_by_weight_group_id_and_index_id(
+                        weight_group_id, index_id,
+                    )
+                    if weight_record:
+                        weight_repo.delete(weight_record.id)
+                        counter['deleted'] += 1
+                    else:
+                        counter['no_weight'] += 1
+
+            else:
+                raise TypeError('expected data or keyword criteria, got neither')
 
         # If counter includes items besides 'deleted', emit a warning.
         if set(counter.keys()).difference({'deleted'}):
