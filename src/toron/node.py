@@ -50,7 +50,11 @@ def warn_if_issues(
 
     warning_text = {
         'dupe_or_empty_str': 'skipped {dupe_or_empty_str} rows with duplicate labels or empty strings',
+        'empty_str': 'skipped {empty_str} rows with empty string values',
+        'no_match': 'skipped {no_match} rows with non-matching index_id values',
+        'merged': 'merged {merged} existing records with duplicate label values',
         'inserted': 'loaded {inserted} rows',
+        'updated': 'updated {updated} rows',
     }
     warning_text.update(extras)
 
@@ -263,21 +267,7 @@ class Node(object):
             #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
             #    self._dal.StructureRepository(cursor).refresh_granularity()
 
-        # If counter includes items besides 'updated', emit a warning.
-        if set(counter.keys()).difference({'updated'}):
-            import warnings
-            msg = []
-            if counter['empty_str']:
-                msg.append(f'skipped {counter["empty_str"]} rows with '
-                           f'empty string values')
-            if counter['no_match']:
-                msg.append(f'skipped {counter["no_match"]} rows with '
-                           f'non-matching index_id values')
-            if counter['merged']:
-                msg.append(f'merged {counter["merged"]} existing records '
-                           f'with duplicate label values')
-            msg.append(f'updated {counter["updated"]} rows')
-            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
+        warn_if_issues(counter, expected='updated')
 
     @overload
     def delete_index(
