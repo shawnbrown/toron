@@ -1124,7 +1124,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the warning's message.
         self.assertEqual(
             str(cm.warning),
-            ('skipped 1 rows that had no matching index record, '
+            ('skipped 1 rows with non-matching index_id values, '
              'skipped 1 rows with mismatched labels, '
              'updated 0 rows'),
         )

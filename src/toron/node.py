@@ -563,21 +563,11 @@ class Node(object):
                     )
                     counter['inserted'] += 1
 
-        # If counter includes items besides 'inserted', emit a warning.
-        if set(counter.keys()).difference({'updated'}):
-            import warnings
-            msg_lst = []
-            if counter['no_match']:
-                msg_lst.append(f'skipped {counter["no_match"]} rows that '
-                               f'had no matching index record')
-            if counter['mismatch']:
-                msg_lst.append(f'skipped {counter["mismatch"]} rows with '
-                               f'mismatched labels')
-            if counter['inserted']:
-                msg_lst.append(f'inserted {counter["inserted"]} rows that '
-                               f'did not previously exist')
-            msg_lst.append(f'updated {counter["updated"]} rows')
-            warnings.warn(', '.join(msg_lst), category=ToronWarning, stacklevel=2)
+        warn_if_issues(
+            counter,
+            expected='updated',
+            inserted='inserted {inserted} rows that did not previously exist',
+        )
 
     @overload
     def delete_weights(
