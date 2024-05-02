@@ -150,6 +150,7 @@ class Node(object):
     ) -> None:
         data, columns = normalize_tabular(data, columns)
 
+        counter: Counter = Counter()
         with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
             repository = self._dal.IndexRepository(cursor)
@@ -160,23 +161,15 @@ class Node(object):
             order_lookup = dict(enumerate(index_columns.index(x) for x in columns))
             sort_key = lambda item: order_lookup[item[0]]
 
-            counter: Counter = Counter()
             for row in data:
                 row = [v for k, v in sorted(enumerate(row), key=sort_key)]
                 try:
                     repository.add(*row)
-                    counter['loaded'] += 1
+                    counter['inserted'] += 1
                 except ValueError:
-                    counter['skipped'] += 1
+                    counter['dupe_or_empty_str'] += 1
 
-            if counter['skipped']:
-                import warnings
-                msg = (
-                    f'skipped {counter["skipped"]} rows with duplicate '
-                    f'labels or empty strings, loaded {counter["loaded"]} '
-                    f'rows'
-                )
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+        warn_if_issues(counter, expected='inserted')
 
     def select_index(
         self, header: bool = False, **criteria: str
