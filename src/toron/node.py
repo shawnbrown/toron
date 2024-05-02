@@ -52,9 +52,11 @@ def warn_if_issues(
         'dupe_or_empty_str': 'skipped {dupe_or_empty_str} rows with duplicate labels or empty strings',
         'empty_str': 'skipped {empty_str} rows with empty string values',
         'no_match': 'skipped {no_match} rows with non-matching index_id values',
+        'mismatch': 'skipped {mismatch} rows with mismatched labels',
         'merged': 'merged {merged} existing records with duplicate label values',
         'inserted': 'loaded {inserted} rows',
         'updated': 'updated {updated} rows',
+        'deleted': 'deleted {deleted} rows',
     }
     warning_text.update(extras)
 
@@ -344,18 +346,7 @@ class Node(object):
             #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
             #    self._dal.StructureRepository(cursor).refresh_granularity()
 
-        # If counter includes items besides 'deleted', emit a warning.
-        if set(counter.keys()).difference({'deleted'}):
-            import warnings
-            msg = []
-            if counter['no_match']:
-                msg.append(f'skipped {counter["no_match"]} rows with '
-                           f'non-matching index_id values')
-            if counter['mismatch']:
-                msg.append(f'skipped {counter["mismatch"]} rows with '
-                           f'mismatched labels')
-            msg.append(f'deleted {counter["deleted"]} rows')
-            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
+        warn_if_issues(counter, expected='deleted')
 
     @property
     def weight_groups(self) -> List[WeightGroup]:
