@@ -492,15 +492,15 @@ class Node(object):
         # If counter includes items besides 'inserted', emit a warning.
         if set(counter.keys()).difference({'inserted'}):
             import warnings
-            msg = []
+            msg_lst = []
             if counter['no_match']:
-                msg.append(f'skipped {counter["no_match"]} rows that '
-                           f'had no matching index record')
+                msg_lst.append(f'skipped {counter["no_match"]} rows that '
+                               f'had no matching index record')
             if counter['mismatch']:
-                msg.append(f'skipped {counter["mismatch"]} rows with '
-                           f'mismatched labels')
-            msg.append(f'inserted {counter["inserted"]} rows')
-            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
+                msg_lst.append(f'skipped {counter["mismatch"]} rows with '
+                               f'mismatched labels')
+            msg_lst.append(f'inserted {counter["inserted"]} rows')
+            warnings.warn(', '.join(msg_lst), category=ToronWarning, stacklevel=2)
 
     def update_weights(
         self,
@@ -565,18 +565,18 @@ class Node(object):
         # If counter includes items besides 'inserted', emit a warning.
         if set(counter.keys()).difference({'updated'}):
             import warnings
-            msg = []
+            msg_lst = []
             if counter['no_match']:
-                msg.append(f'skipped {counter["no_match"]} rows that '
-                           f'had no matching index record')
+                msg_lst.append(f'skipped {counter["no_match"]} rows that '
+                               f'had no matching index record')
             if counter['mismatch']:
-                msg.append(f'skipped {counter["mismatch"]} rows with '
-                           f'mismatched labels')
+                msg_lst.append(f'skipped {counter["mismatch"]} rows with '
+                               f'mismatched labels')
             if counter['inserted']:
-                msg.append(f'inserted {counter["inserted"]} rows that '
-                           f'did not previously exist')
-            msg.append(f'updated {counter["updated"]} rows')
-            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
+                msg_lst.append(f'inserted {counter["inserted"]} rows that '
+                               f'did not previously exist')
+            msg_lst.append(f'updated {counter["updated"]} rows')
+            warnings.warn(', '.join(msg_lst), category=ToronWarning, stacklevel=2)
 
     def delete_weights(
         self,
@@ -631,15 +631,15 @@ class Node(object):
         # If counter includes items besides 'deleted', emit a warning.
         if set(counter.keys()).difference({'deleted'}):
             import warnings
-            msg = []
+            msg_lst = []
             if counter['no_match']:
-                msg.append(f'skipped {counter["no_match"]} rows that '
-                           f'had no matching index record')
+                msg_lst.append(f'skipped {counter["no_match"]} rows that '
+                               f'had no matching index record')
             if counter['mismatch']:
-                msg.append(f'skipped {counter["mismatch"]} rows with '
-                           f'mismatched labels')
+                msg_lst.append(f'skipped {counter["mismatch"]} rows with '
+                               f'mismatched labels')
             if counter['no_weight']:
-                msg.append(f'skipped {counter["no_weight"]} rows with '
-                           f'no matching weights')
-            msg.append(f'deleted {counter["deleted"]} rows')
-            warnings.warn(', '.join(msg), category=ToronWarning, stacklevel=2)
+                msg_lst.append(f'skipped {counter["no_weight"]} rows with '
+                               f'no matching weights')
+            msg_lst.append(f'deleted {counter["deleted"]} rows')
+            warnings.warn(', '.join(msg_lst), category=ToronWarning, stacklevel=2)
