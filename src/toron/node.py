@@ -51,7 +51,7 @@ def warn_if_issues(
     warning_text = {
         'dupe_or_empty_str': 'skipped {dupe_or_empty_str} rows with duplicate labels or empty strings',
         'empty_str': 'skipped {empty_str} rows with empty string values',
-        'no_match': 'skipped {no_match} rows with non-matching index_id values',
+        'no_index': 'skipped {no_index} rows with non-matching index_id values',
         'mismatch': 'skipped {mismatch} rows with mismatched labels',
         'no_weight': 'skipped {no_weight} rows with no matching weights',
         'merged': 'merged {merged} existing records with duplicate label values',
@@ -229,7 +229,7 @@ class Node(object):
 
                 if not index_record:
                     if updated_dict['index_id'] not in previously_merged:
-                        counter['no_match'] += 1
+                        counter['no_index'] += 1
                         continue  # <- Skip to next item.
 
                     raise ValueError(
@@ -310,7 +310,7 @@ class Node(object):
 
                     # Check that matching index_id exists.
                     if not existing_record:
-                        counter['no_match'] += 1
+                        counter['no_index'] += 1
                         continue  # <- Skip to next item.
 
                     # Check that existing labels match row labels.
@@ -478,7 +478,7 @@ class Node(object):
                 if 'index_id' in row_dict:
                     index_record = index_repo.get(row_dict['index_id'])
                     if not index_record:
-                        counter['no_match'] += 1
+                        counter['no_index'] += 1
                         continue  # <- Skip to next item.
 
                     labels_dict = dict(zip(label_columns, index_record.labels))
@@ -492,7 +492,7 @@ class Node(object):
                     )
                     index_record = next(index_records, None)
                     if not index_record:
-                        counter['no_match'] += 1
+                        counter['no_index'] += 1
                         continue  # <- Skip to next item.
 
                 weight_repo.add(
@@ -539,7 +539,7 @@ class Node(object):
 
                 index_record = index_repo.get(index_id)
                 if not index_record:
-                    counter['no_match'] += 1
+                    counter['no_index'] += 1
                     continue  # <- Skip to next item.
 
                 labels_dict = dict(zip(label_columns, index_record.labels))
@@ -621,7 +621,7 @@ class Node(object):
 
                     index_record = index_repo.get(row_dict['index_id'])
                     if not index_record:
-                        counter['no_match'] += 1
+                        counter['no_index'] += 1
                         continue  # <- Skip to next item.
 
                     index_id = index_record.id
