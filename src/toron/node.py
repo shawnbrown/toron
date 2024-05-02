@@ -501,18 +501,7 @@ class Node(object):
                 )
                 counter['inserted'] += 1
 
-        # If counter includes items besides 'inserted', emit a warning.
-        if set(counter.keys()).difference({'inserted'}):
-            import warnings
-            msg_lst = []
-            if counter['no_match']:
-                msg_lst.append(f'skipped {counter["no_match"]} rows that '
-                               f'had no matching index record')
-            if counter['mismatch']:
-                msg_lst.append(f'skipped {counter["mismatch"]} rows with '
-                               f'mismatched labels')
-            msg_lst.append(f'inserted {counter["inserted"]} rows')
-            warnings.warn(', '.join(msg_lst), category=ToronWarning, stacklevel=2)
+        warn_if_issues(counter, expected='inserted')
 
     def update_weights(
         self,
