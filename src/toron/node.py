@@ -189,7 +189,7 @@ class Node(object):
     def select_index(
         self, header: bool = False, **criteria: str
     ) -> Iterator[Sequence]:
-        with self._managed_transaction() as cursor:
+        with self._managed_cursor() as cursor:
             if header:
                 label_columns = self._dal.ColumnManager(cursor).get_columns()
                 yield ('index_id',) + label_columns  # Yield header row.
