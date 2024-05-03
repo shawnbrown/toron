@@ -516,7 +516,7 @@ class Node(object):
         weight_group_name: str,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
-    ):
+    ) -> None:
         data, columns = normalize_tabular(data, columns)
 
         if 'index_id' not in columns:
