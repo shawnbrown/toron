@@ -373,7 +373,7 @@ class Node(object):
         selectors: Optional[Union[List[str], str]] = None,
         is_complete: bool = False,
     ) -> None:
-        with self._managed_cursor() as cursor:
+        with self._managed_transaction() as cursor:
             self._dal.WeightGroupRepository(cursor).add(
                 name=name,
                 description=description,
@@ -382,7 +382,7 @@ class Node(object):
             )
 
     def edit_weight_group(self, existing_name: str, **changes: Any) -> None:
-        with self._managed_cursor() as cursor:
+        with self._managed_transaction() as cursor:
             repository = self._dal.WeightGroupRepository(cursor)
             group = repository.get_by_name(existing_name)
             if not group:
@@ -395,7 +395,7 @@ class Node(object):
             repository.update(group)
 
     def drop_weight_group(self, existing_name: str) -> None:
-        with self._managed_cursor() as cursor:
+        with self._managed_transaction() as cursor:
             repository = self._dal.WeightGroupRepository(cursor)
             group = repository.get_by_name(existing_name)
             if not group:
