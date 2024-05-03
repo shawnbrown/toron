@@ -53,6 +53,7 @@ def warn_if_issues(
         'empty_str': 'skipped {empty_str} rows with empty string values',
         'no_index': 'skipped {no_index} rows with non-matching index_id values',
         'mismatch': 'skipped {mismatch} rows with mismatched labels',
+        'no_match': 'skipped {no_match} rows with labels that match no index',
         'no_weight': 'skipped {no_weight} rows with no matching weights',
         'merged': 'merged {merged} existing records with duplicate label values',
         'inserted': 'loaded {inserted} rows',
@@ -502,7 +503,7 @@ class Node(object):
                     )
                     index_record = next(index_records, None)
                     if not index_record:
-                        counter['no_index'] += 1
+                        counter['no_match'] += 1
                         continue  # <- Skip to next item.
 
                 weight_repo.add(

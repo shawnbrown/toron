@@ -1042,6 +1042,51 @@ class TestNodeWeightMethods(unittest.TestCase):
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
+    def test_insert_warnings_with_index_id(self):
+        data = [
+            ('index_id', 'A', 'B', 'weight1'),
+            (9, 'foo', 'x', 10.0),    # <- No matching index.
+            (2, 'bar', 'YYY', 25.0),  # <- Mismatched labels.
+            (3, 'bar', 'z', 15.0),    # <- OK (gets inserted)
+        ]
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.insert_weights('weight1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            ('skipped 1 rows with non-matching index_id values, '
+             'skipped 1 rows with mismatched labels, '
+             'loaded 1 rows'),
+        )
+
+        # Check inserted records (only one).
+        self.assertEqual(self.get_weights_helper(), [(1, 1, 3, 15.0)])
+
+    def test_insert_warnings_not_index_id(self):
+        data = [
+            ('A', 'B', 'weight1'),
+            ('foo', 'XXX', 10.0),  # <- No matching labels.
+            ('bar', 'YYY', 25.0),  # <- No matching labels.
+            ('bar', 'z', 15.0),    # <- OK (gets inserted)
+        ]
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.insert_weights('weight1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            ('skipped 2 rows with labels that match no index, '
+             'loaded 1 rows'),
+        )
+
+        # Check inserted records (only one).
+        self.assertEqual(self.get_weights_helper(), [(1, 1, 3, 15.0)])
+
     def test_update(self):
         with self.node._managed_cursor() as cursor:
             weight_repo = self.node._dal.WeightRepository(cursor)
