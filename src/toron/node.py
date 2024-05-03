@@ -606,9 +606,13 @@ class Node(object):
             raise TypeError('must provide either data or keyword criteria')
 
         counter: Counter = Counter()
-        with self._managed_transaction() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
+        with self._managed_connection() as connection, \
+                self._managed_cursor(connection) as cursor, \
+                self._managed_transaction(cursor) as cursor:
+            # Line continuations (above) needed for Python 3.8 and earlier.
+
             group_repo = self._dal.WeightGroupRepository(cursor)
+            col_manager = self._dal.ColumnManager(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
 
@@ -649,17 +653,22 @@ class Node(object):
                         counter['deleted'] += 1
                     else:
                         counter['no_weight'] += 1
+
             elif criteria:
-                index_ids = [x.id for x in index_repo.find_by_label(criteria)]
-                for index_id in index_ids:
-                    weight_record = weight_repo.get_by_weight_group_id_and_index_id(
-                        weight_group_id, index_id,
-                    )
-                    if weight_record:
-                        weight_repo.delete(weight_record.id)
-                        counter['deleted'] += 1
-                    else:
-                        counter['no_weight'] += 1
+                # Get a second cursor on the same connection to provide
+                # matching records for the `get...()` function.
+                with self._managed_cursor(connection) as aux_cursor:
+                    aux_index_repo = self._dal.IndexRepository(aux_cursor)
+
+                    for index_record in aux_index_repo.find_by_label(criteria):
+                        weight_record = weight_repo.get_by_weight_group_id_and_index_id(
+                            weight_group_id, index_record.id,
+                        )
+                        if weight_record:
+                            weight_repo.delete(weight_record.id)
+                            counter['deleted'] += 1
+                        else:
+                            counter['no_weight'] += 1
 
             else:
                 raise TypeError('expected data or keyword criteria, got neither')
