@@ -298,7 +298,7 @@ class Node(object):
         if data and criteria:
             raise TypeError('must provide either data or keyword criteria')
 
-        counter: Counter = Counter()
+        counter = Counter()
         with self._managed_cursor(n=2) as (cur1, cur2), \
                 self._managed_transaction(cur1) as cur1:
             # Line continuation (above) needed for Python 3.8 and earlier.
@@ -606,7 +606,7 @@ class Node(object):
         if data and criteria:
             raise TypeError('must provide either data or keyword criteria')
 
-        counter: Counter = Counter()
+        counter = Counter()
         with self._managed_connection() as connection, \
                 self._managed_cursor(connection) as cursor, \
                 self._managed_transaction(cursor) as cursor:
