@@ -94,16 +94,24 @@ class Node(object):
 
     @contextmanager
     def _managed_cursor(
-        self, connection: Optional[Any] = None
+        self, connection: Optional[Any] = None, n: int = 1
     ) -> Generator[Any, None, None]:
+        """A context manager to handle cursor objects from *connection*.
+
+        When *n* is ``1``, a cursor object is created. When *n* is 2 or
+        more, a tuple of *n* cursors is created.
+        """
         cm = nullcontext(connection) if connection else self._managed_connection()
 
         with cm as connection:
-            cursor = self._connector.acquire_cursor(connection)
+            cursors = tuple(
+                self._connector.acquire_cursor(connection) for _ in range(n)
+            )
             try:
-                yield cursor
+                yield cursors[0] if n == 1 else cursors
             finally:
-                self._connector.release_cursor(cursor)
+                for cursor in cursors:
+                    self._connector.release_cursor(cursor)
 
     @contextmanager
     def _managed_transaction(
@@ -405,9 +413,8 @@ class Node(object):
         **criteria: str,
     ) -> Iterator[Sequence]:
         with self._managed_connection() as con, \
-                self._managed_cursor(con) as cur1, \
-                self._managed_cursor(con) as cur2:
-            # Line continuations (above) needed for Python 3.8 and earlier.
+                self._managed_cursor(con, n=2) as (cur1, cur2):
+            # Line continuation (above) needed for Python 3.8 and earlier.
 
             col_manager = self._dal.ColumnManager(cur1)
             group_repo = self._dal.WeightGroupRepository(cur1)
