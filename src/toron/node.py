@@ -418,10 +418,7 @@ class Node(object):
         header: bool = False,
         **criteria: str,
     ) -> Iterator[Sequence]:
-        with self._managed_connection() as con, \
-                self._managed_cursor(con, n=2) as (cur1, cur2):
-            # Line continuation (above) needed for Python 3.8 and earlier.
-
+        with self._managed_cursor(n=2) as (cur1, cur2):
             col_manager = self._dal.ColumnManager(cur1)
             group_repo = self._dal.WeightGroupRepository(cur1)
             index_repo = self._dal.IndexRepository(cur1)
