@@ -298,11 +298,14 @@ class Node(object):
             raise TypeError('must provide either data or keyword criteria')
 
         counter: Counter = Counter()
-        with self._managed_transaction() as cursor:
-            index_repo = self._dal.IndexRepository(cursor)
-            weight_repo = self._dal.WeightRepository(cursor)
-            relation_repo = self._dal.RelationRepository(cursor)
-            column_manager = self._dal.ColumnManager(cursor)
+        with self._managed_cursor(n=2) as (cur1, cur2), \
+                self._managed_transaction(cur1) as cur1:
+            # Line continuation (above) needed for Python 3.8 and earlier.
+
+            index_repo = self._dal.IndexRepository(cur1)
+            weight_repo = self._dal.WeightRepository(cur1)
+            relation_repo = self._dal.RelationRepository(cur1)
+            column_manager = self._dal.ColumnManager(cur1)
 
             if data:
                 data, columns = normalize_tabular(data, columns)
@@ -337,10 +340,13 @@ class Node(object):
                     counter['deleted'] += 1
 
             elif criteria:
-                index_ids = [x.id for x in index_repo.find_by_label(criteria)]
-                for index_id in index_ids:
+                # Instantiate auxiliary IndexRepository using second cursor
+                # to provide matching records for the delete function.
+                aux_index_repo = self._dal.IndexRepository(cur2)
+
+                for index_record in aux_index_repo.find_by_label(criteria):
                     delete_index_record(
-                        index_id,
+                        index_record.id,
                         index_repo,
                         weight_repo,
                         relation_repo,
@@ -351,9 +357,9 @@ class Node(object):
                 raise TypeError('expected data or keyword criteria, got neither')
 
             #if counter['deleted']:
-            #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
-            #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
-            #    self._dal.StructureRepository(cursor).refresh_granularity()
+            #    self._dal.CrosswalkRepository(cur1).refresh_is_locally_complete()
+            #    self._dal.WeightGroupRepository(cur1).refresh_is_complete()
+            #    self._dal.StructureRepository(cur1).refresh_granularity()
 
         warn_if_issues(counter, expected='deleted')
 
