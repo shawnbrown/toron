@@ -421,10 +421,10 @@ class Node(object):
         header: bool = False,
         **criteria: str,
     ) -> Iterator[Sequence]:
-        with self._managed_cursor(n=2) as (cur1, cur2):
-            col_manager = self._dal.ColumnManager(cur1)
-            group_repo = self._dal.WeightGroupRepository(cur1)
-            index_repo = self._dal.IndexRepository(cur1)
+        with self._managed_cursor(n=2) as (cursor, aux_cursor):
+            col_manager = self._dal.ColumnManager(cursor)
+            group_repo = self._dal.WeightGroupRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
 
             if header:
                 label_columns = col_manager.get_columns()
@@ -443,7 +443,7 @@ class Node(object):
             else:
                 index_records = index_repo.get_all(include_undefined=False)
 
-            weight_repo = self._dal.WeightRepository(cur2)
+            weight_repo = self._dal.WeightRepository(aux_cursor)
             weight_group_id = weight_group.id
             for index in index_records:
                 index_id = index.id
