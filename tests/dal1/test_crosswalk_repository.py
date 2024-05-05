@@ -39,15 +39,22 @@ class TestCrosswalkRepository(unittest.TestCase):
             is_default=True,
         )
 
-        # Note: The last item (`is_default`) is True/False on the user-facing
-        # object (the Crosswalk record class) but it's 1/None on the database side
-        # to facilitate the SQLite constraint that enforces one default crosswalk
-        # per `other_unique_id`.
+        # Note: The item forth from the end (`is_default`) is True/False in
+        # the user-facing object (the Crosswalk record class) but it's 1/None
+        # on the database side to facilitate the SQLite constraint that
+        # enforces one default crosswalk per `other_unique_id`.
         self.assertRecords([
-            (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, 1),
-            (2, 'name2', '111-unique-id-1111', None, None, None, None, None, 0, None),
-            (3, 'name1', '222-unique-id-2222', 'somefile.toron', '78b320d6dbbb48c8',
-             'A crosswalk to some other node.', ['[foo]', '[bar]'], {'prop1': 111}, 1, 1),
+            (1, '111-unique-id-1111', None, 'name1', None, None, 1, None, None, 0),
+            (2, '111-unique-id-1111', None, 'name2', None, None, None, None, None, 0),
+            (3, '222-unique-id-2222',
+                'somefile.toron',
+                'name1',
+                'A crosswalk to some other node.',
+                ['[foo]', '[bar]'],
+                1,
+                {'prop1': 111},
+                '78b320d6dbbb48c8',
+                1)
         ])
 
         msg = "should fail, 'name' values must be unique per other_index_id"
@@ -64,10 +71,11 @@ class TestCrosswalkRepository(unittest.TestCase):
 
     def test_get(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, 'name1', '111-unique-id-1111', NULL, NULL, NULL, NULL, NULL, 0, 1);
-            INSERT INTO crosswalk VALUES (2, 'name2', '111-unique-id-1111', NULL, NULL, NULL, NULL, NULL, 0, NULL);
-            INSERT INTO crosswalk VALUES (3, 'name1', '222-unique-id-2222', 'somefile.toron', '78b320d6dbbb48c8',
-                                          'A crosswalk to some other node.', '["[foo]", "[bar]"]', '{"prop1": 111}', 1, 1);
+            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
+                                          'A crosswalk to some other node.', '["[foo]", "[bar]"]',
+                                          1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
         repository = CrosswalkRepository(self.cursor)
 
@@ -123,45 +131,46 @@ class TestCrosswalkRepository(unittest.TestCase):
 
     def test_update(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, 'name1', '111-unique-id-1111', NULL, NULL, NULL, NULL, NULL, 0, 1);
-            INSERT INTO crosswalk VALUES (2, 'name2', '111-unique-id-1111', NULL, NULL, NULL, NULL, NULL, 0, NULL);
-            INSERT INTO crosswalk VALUES (3, 'name1', '222-unique-id-2222', 'somefile.toron', '78b320d6dbbb48c8',
-                                          'A crosswalk to some other node.', '["[foo]", "[bar]"]', '{"prop1": 111}', 1, 1);
+            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
+                                          'A crosswalk to some other node.', '["[foo]", "[bar]"]',
+                                          1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
         repository = CrosswalkRepository(self.cursor)
 
         # Change name (matched WHERE crosswalk_id=2, all other values are SET).
         repository.update(Crosswalk(2, 'name-two', '111-unique-id-1111'))
         self.assertRecords([
-            (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, 1),
-            (2, 'name-two', '111-unique-id-1111', None, None, None, None, None, 0, None),  # <- Name changed!
-            (3, 'name1', '222-unique-id-2222', 'somefile.toron', '78b320d6dbbb48c8',
-             'A crosswalk to some other node.', ['[foo]', '[bar]'], {'prop1': 111}, 1, 1),
+            (1, '111-unique-id-1111', None, 'name1', None, None, 1, None, None, 0),
+            (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),  # <- Name changed!
+            (3, '222-unique-id-2222', 'somefile.toron', 'name1', 'A crosswalk to some other node.',
+             ['[foo]', '[bar]'], 1, {'prop1': 111}, '78b320d6dbbb48c8', 1),
         ])
 
         # Check coersion from False to None for `is_default` column.
         repository.update(Crosswalk(1, 'name1', '111-unique-id-1111', is_default=False))
         self.assertRecords([
-            (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, None),  # <- Should end with None!
-            (2, 'name-two', '111-unique-id-1111', None, None, None, None, None, 0, None),
-            (3, 'name1', '222-unique-id-2222', 'somefile.toron', '78b320d6dbbb48c8',
-             'A crosswalk to some other node.', ['[foo]', '[bar]'], {'prop1': 111}, 1, 1),
+            (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),  # <- 4th from end should be None!
+            (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
+            (3, '222-unique-id-2222', 'somefile.toron', 'name1', 'A crosswalk to some other node.',
+             ['[foo]', '[bar]'], 1, {'prop1': 111}, '78b320d6dbbb48c8', 1),
         ])
 
         # Check selectors JSON.
         repository.update(Crosswalk(3, 'name1', '222-unique-id-2222', selectors=['[baz]']))  # <- Set selector.
         self.assertRecords([
-            (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, None),
-            (2, 'name-two', '111-unique-id-1111', None, None, None, None, None, 0, None),
-            (3, 'name1', '222-unique-id-2222', None, None, None, ['[baz]'], None, 0, None),  # <- JSON should round-trip!
+            (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),
+            (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
+            (3, '222-unique-id-2222', None, 'name1', None, ['[baz]'], None, None, None, 0),  # <- JSON should round-trip!
         ])
 
         # Check user_properties JSON.
         repository.update(Crosswalk(3, 'name1', '222-unique-id-2222', user_properties={'alt-prop': 42}))  # <- Set user_properties.
         self.assertRecords([
-            (1, 'name1', '111-unique-id-1111', None, None, None, None, None, 0, None),
-            (2, 'name-two', '111-unique-id-1111', None, None, None, None, None, 0, None),
-            (3, 'name1', '222-unique-id-2222', None, None, None, None, {'alt-prop': 42}, 0, None),  # <- JSON should round-trip!
+            (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),
+            (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
+            (3, '222-unique-id-2222', None, 'name1', None, None, None, {'alt-prop': 42}, None, 0),  # <- JSON should round-trip!
         ])
 
         msg = "should fail, 'name' values must be unique per other_index_id"
@@ -176,13 +185,13 @@ class TestCrosswalkRepository(unittest.TestCase):
 
     def test_delete(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, 'name1', '111-unique-id-1111', NULL, NULL, NULL, NULL, NULL, 0, 1);
-            INSERT INTO crosswalk VALUES (2, 'name2', '111-unique-id-1111', NULL, NULL, NULL, NULL, NULL, 0, NULL);
+            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
         """)
         repository = CrosswalkRepository(self.cursor)
 
         repository.delete(1)
-        self.assertRecords([(2, 'name2', '111-unique-id-1111', None, None, None, None, None, 0, None)])
+        self.assertRecords([(2, '111-unique-id-1111', None, 'name2', None, None, None, None, None, 0)])
 
         repository.delete(2)
         self.assertRecords([])

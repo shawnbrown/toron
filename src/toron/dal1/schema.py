@@ -17,15 +17,15 @@ application layer:
     | crosswalk            |        +----------------+     •  | attribute_id    |--+
     +----------------------+        | relation_id    |     •  | attribute_value |  |
     | crosswalk_id         |------->| crosswalk_id   |     •  +-----------------+  |
-    | name                 |  ••••••| other_index_id |<•••••                       |
-    | other_unique_id      |  •  •••| index_id       |<-+     +-----------------+  |
-    | other_filename_hint  |  •  •  | relation_value |  |     | quantity        |  |
-    | other_index_hash*    |<••  •  | proportion*    |  |     +-----------------+  |
-    | description          |     •  | mapping_level* |  |     | quantity_id     |  |
-    | selectors            |     •  +----------------+  |  +->| _location_id    |  |
-    | user_properties      |     •                      |  |  | attribute_id    |<-+
-    | is_locally_complete* |<•••••                      |  |  | quantity_value  |
-    | is_default           |          +-----------------+  |  +-----------------+
+    | other_unique_id      |  ••••••| other_index_id |<•••••                       |
+    | other_filename_hint  |  •  •••| index_id       |<-+     +-----------------+  |
+    | name                 |  •  •  | relation_value |  |     | quantity        |  |
+    | description          |  •  •  | proportion*    |  |     +-----------------+  |
+    | selectors            |  •  •  | mapping_level* |  |     | quantity_id     |  |
+    | is_default           |  •  •  +----------------+  |  +->| _location_id    |  |
+    | user_properties      |  •  •                      |  |  | attribute_id    |<-+
+    | other_index_hash*    |<••  •                      |  |  | quantity_value  |
+    | is_locally_complete* |<•••••    +-----------------+  |  +-----------------+
     +----------------------+          |                    |
                                       |                    |  +---------------+
                       +------------+  |  +--------------+  |  | structure     |
@@ -165,15 +165,15 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
 
         CREATE TABLE main.crosswalk(
             crosswalk_id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
             other_unique_id TEXT NOT NULL,
             other_filename_hint TEXT,
-            other_index_hash TEXT,
+            name TEXT NOT NULL,
             description TEXT,
             selectors TEXT_SELECTORS,
-            user_properties TEXT_USERPROPERTIES,
-            is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
             is_default INTEGER CHECK (is_default IS NULL OR is_default=1) DEFAULT NULL,
+            user_properties TEXT_USERPROPERTIES,
+            other_index_hash TEXT,
+            is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
             UNIQUE (name, other_unique_id),
             UNIQUE (is_default, other_unique_id)
             /*

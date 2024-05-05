@@ -464,9 +464,22 @@ class CrosswalkRepository(BaseCrosswalkRepository):
 
     def get(self, id: int) -> Optional[Crosswalk]:
         """Get a record from the repository."""
-        self._cursor.execute(
-            'SELECT * FROM main.crosswalk WHERE crosswalk_id=?', (id,)
-        )
+        sql = """
+            SELECT
+                crosswalk_id,
+                name,
+                other_unique_id,
+                other_filename_hint,
+                other_index_hash,
+                description,
+                selectors,
+                user_properties,
+                is_locally_complete,
+                is_default
+            FROM main.crosswalk
+            WHERE crosswalk_id=?
+        """
+        self._cursor.execute(sql, (id,))
         record = self._cursor.fetchone()
         if record:
             a, b, c, d, e, f, g, h, i, j = record  # Faster to unpack all than to slice.
