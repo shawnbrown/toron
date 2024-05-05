@@ -5,8 +5,10 @@ from dataclasses import asdict
 from json import dumps as json_dumps
 
 from toron._typing import (
+    Any,
     Dict,
     Iterator,
+    Iterable,
     List,
     Optional,
     Union,
@@ -462,6 +464,23 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         )
         self._cursor.execute(sql, parameters)
 
+    @staticmethod
+    def _make_crosswalk(values: Iterable[Any]) -> Crosswalk:
+        """Normalize row of 'crosswalk' values and return Crosswalk."""
+        a, b, c, d, e, f, g, h, i, j = values  # Faster to unpack all than to slice.
+        return Crosswalk(
+            id=a,
+            other_unique_id=b,
+            other_filename_hint=c,
+            name=d,
+            description=e,
+            selectors=f,
+            is_default=bool(g),
+            user_properties=h,
+            other_index_hash=i,
+            is_locally_complete=bool(j),
+        )
+
     def get(self, id: int) -> Optional[Crosswalk]:
         """Get a record from the repository."""
         sql = """
@@ -481,10 +500,7 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         """
         self._cursor.execute(sql, (id,))
         record = self._cursor.fetchone()
-        if record:
-            a, b, c, d, e, f, g, h, i, j = record  # Faster to unpack all than to slice.
-            return Crosswalk(a, b, c, d, e, f, bool(g), h, i, bool(j))
-        return None
+        return self._make_crosswalk(record) if record else None
 
     def update(self, record: Crosswalk) -> None:
         """Update a record in the repository."""
