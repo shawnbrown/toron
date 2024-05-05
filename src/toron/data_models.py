@@ -13,6 +13,7 @@ from itertools import groupby
 from toron._typing import (
     Any,
     Dict,
+    Final,
     Generic,
     Iterable,
     Iterator,
@@ -35,6 +36,9 @@ T2 = TypeVar('T2')
 JsonTypes: TypeAlias = Union[
     Dict[str, 'JsonTypes'], List['JsonTypes'], str, int, float, bool, None
 ]
+
+# Magic number to use as file signature for Toron files.
+TORON_MAGIC_NUMBER: Final[bytes] = b'\x01\x2d\x84\xc8'
 
 
 class BaseDataConnector(ABC, Generic[T1, T2]):

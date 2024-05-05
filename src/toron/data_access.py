@@ -11,6 +11,7 @@ from ._typing import (
 )
 
 from .data_models import (
+    TORON_MAGIC_NUMBER,
     BaseDataConnector,
     BaseColumnManager,
     BaseIndexRepository,
@@ -106,14 +107,14 @@ def get_backend_from_path(
         only one is needed.
     """
     with open(path, 'rb') as f:
-        header = f.read(64)  # Read first 64 bytes from file.
+        header = f.read(72)  # Read first 72 bytes from file.
 
-    # Check for SQLite header and the 'PRAGMA user_version' for DAL1.
+    # Check for SQLite header, 'application_id', and 'user_version'.
     # See: https://www.sqlite.org/fileformat.html#the_database_header
     if header.startswith(b'SQLite format 3\x00'):
-        dal1_magic_number = 0x012D84C8  # Hardcoded to avoid import.
-        pragma_user_version = int.from_bytes(header[60:64], byteorder='big')
-        if pragma_user_version == dal1_magic_number:
+        application_id = header[68:72]
+        user_version = header[60:64]
+        if application_id == TORON_MAGIC_NUMBER and user_version == b'DAL1':
             return 'DAL1'
 
     ## HDF5 Format Signature (not used, included as an example).

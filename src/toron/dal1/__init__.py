@@ -18,4 +18,3 @@ from .repositories import (
     RelationRepository,
     PropertyRepository,
 )
-from .schema import DAL1_MAGIC_NUMBER

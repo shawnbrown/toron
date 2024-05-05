@@ -70,6 +70,7 @@ from toron._typing import (
     Optional,
 )
 from toron._utils import BitFlags
+from ..data_models import TORON_MAGIC_NUMBER  # Used as 'application_id'.
 
 
 sqlite3.register_converter('TEXT_SELECTORS', json_loads)
@@ -105,10 +106,6 @@ with closing(sqlite3.connect(':memory:')) as _con:
 
     del _succeeds
     del _con
-
-
-# Define magic number to identify data using DAL1 format.
-DAL1_MAGIC_NUMBER: Final[int] = 0x012D84C8  # Used as 'PRAGMA user_version'.
 
 
 def create_schema_tables(cur: sqlite3.Cursor) -> None:
@@ -215,10 +212,8 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     """)
 
     # Set magic number to indicate data uses Toron DAL1.
-    cur.execute(f'PRAGMA main.user_version = {int(DAL1_MAGIC_NUMBER)}')
-    # Note: Above, keep the `int()` to prevent illegal values (the normal
-    # parameter substitution is not available because this PRAGMA cannot
-    # be used as a function).
+    cur.execute(f'PRAGMA main.application_id = {int.from_bytes(TORON_MAGIC_NUMBER, "big")}')
+    cur.execute(f'PRAGMA main.user_version = {int.from_bytes(b"DAL1", "big")}')
 
     cur.execute(
         'INSERT INTO main.property (key, value) VALUES (?, ?)',
