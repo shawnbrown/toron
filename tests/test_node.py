@@ -453,7 +453,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
             weight_repo.add(1, 2,  25000)
 
             crosswalk_repo = node._dal.CrosswalkRepository(cursor)
-            crosswalk_repo.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
+            crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = node._dal.RelationRepository(cursor)
             relation_repo.add(1, 1, 1, 16350, 0.75, None)
             relation_repo.add(1, 1, 2, 5450,  0.25, None)
@@ -709,7 +709,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
         """Should delete relation records associated with index_id."""
         with self.node._managed_cursor() as cursor:
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
-            crosswalk_repo.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
+            crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
             relation_repo.add(1, 1, 1, 16350, 0.75, None)
             relation_repo.add(1, 1, 2, 5450,  0.25, None)
@@ -735,7 +735,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
         """
         with self.node._managed_cursor() as cursor:
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
-            crosswalk_repo.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
+            crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
             relation_repo.add(1, 1, 1, 16350, 0.75, b'\x80')  # <- Ambiguous relations.
             relation_repo.add(1, 1, 2, 5450,  0.25, b'\x80')  # <- Ambiguous relations.

@@ -420,16 +420,16 @@ class CrosswalkRepository(BaseCrosswalkRepository):
 
     def add(
         self,
-        name: str,
         other_unique_id: str,
+        other_filename_hint: Union[str, None],
+        name: str,
         *,
-        other_filename_hint: Optional[str] = None,
-        other_index_hash: Optional[str] = None,
         description: Optional[str] = None,
         selectors: Optional[Union[List[str], str]] = None,
-        user_properties: Optional[Dict[str, JsonTypes]] = None,
-        is_locally_complete: bool = False,
         is_default: bool = False,
+        user_properties: Optional[Dict[str, JsonTypes]] = None,
+        other_index_hash: Optional[str] = None,
+        is_locally_complete: bool = False,
     ) -> None:
         """Add a record to the repository."""
         if isinstance(selectors, str):

@@ -25,18 +25,18 @@ class TestCrosswalkRepository(unittest.TestCase):
     def test_add(self):
         repository = CrosswalkRepository(self.cursor)
 
-        repository.add('name1', '111-unique-id-1111', is_default=True)
-        repository.add('name2', '111-unique-id-1111')  # <- Same `other_unique_id`, different name.
+        repository.add('111-unique-id-1111', None, 'name1', is_default=True)
+        repository.add('111-unique-id-1111', None, 'name2')  # <- Same `other_unique_id`, different name.
         repository.add(
-            'name1',
             '222-unique-id-2222',  # <- Different `other_unique_id`.
-            other_filename_hint='somefile.toron',
-            other_index_hash='78b320d6dbbb48c8',
+            'somefile.toron',
+            'name1',
             description='A crosswalk to some other node.',
             selectors=['[foo]', '[bar]'],
-            user_properties={'prop1': 111},
-            is_locally_complete=True,
             is_default=True,
+            user_properties={'prop1': 111},
+            other_index_hash='78b320d6dbbb48c8',
+            is_locally_complete=True,
         )
 
         # Note: The item forth from the end (`is_default`) is True/False in
@@ -59,15 +59,15 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         msg = "should fail, 'name' values must be unique per other_index_id"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.add('name1', '111-unique-id-1111')  # <- The name "name1" already exists for this other_unique_id.
+            repository.add('111-unique-id-1111', None, 'name1')  # <- The name "name1" already exists for this other_unique_id.
 
         msg = 'should fail, selectors must be strings'
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.add('name2', '111-unique-id-1111', selectors=[111, 222])  # <- Selectors are integers.
+            repository.add('111-unique-id-1111', None, 'name2', selectors=[111, 222])  # <- Selectors are integers.
 
         msg = 'should fail, user_properties must be dict (JSON object)'
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.add('name3', '111-unique-id-1111', user_properties=['AAA', 'BBB'])
+            repository.add('111-unique-id-1111', None, 'name3', user_properties=['AAA', 'BBB'])
 
     def test_get(self):
         self.cursor.executescript("""

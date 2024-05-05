@@ -346,8 +346,8 @@ class RelationRepositoryBaseTest(ABC):
         self.crosswalk = self.dal.CrosswalkRepository(cursor)
         self.repository = self.dal.RelationRepository(cursor)
 
-        self.crosswalk.add('other1', '111-11-1111')  # Adds crosswalk_id 1.
-        self.crosswalk.add('other2', '222-22-2222')  # Adds crosswalk_id 2.
+        self.crosswalk.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
+        self.crosswalk.add('222-22-2222', None, 'other2')  # Adds crosswalk_id 2.
 
         self.repository.add(1, 1, 1, 131250, 1.0,      None)
         self.repository.add(1, 2, 1,  40960, 0.625,    b'\x40')
