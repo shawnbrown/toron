@@ -113,8 +113,9 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     cur.executescript("""
         PRAGMA foreign_keys = ON;
 
+        /* Uses AUTOINCREMENT because 'index_id' must not be reused. */
         CREATE TABLE main.node_index(
-            index_id INTEGER PRIMARY KEY AUTOINCREMENT  /* <- Must not reuse id values. */
+            index_id INTEGER PRIMARY KEY AUTOINCREMENT
             /* label columns added programmatically */
         );
 
@@ -163,6 +164,11 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             FOREIGN KEY(attribute_id) REFERENCES attribute(attribute_id) ON DELETE CASCADE
         );
 
+        /* Below, the `is_default` column uses 1 and NULL (instead
+           of 1 and 0) so the UNIQUE constraint can guarantee a single
+           default record but allow for multiple non-default records
+           (this works because a NULL value does not test as equal to
+           other NULL values). */
         CREATE TABLE main.crosswalk(
             crosswalk_id INTEGER PRIMARY KEY,
             other_unique_id TEXT NOT NULL,
@@ -176,13 +182,6 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
             UNIQUE (name, other_unique_id),
             UNIQUE (is_default, other_unique_id)
-            /*
-                Note: The column `is_default` uses 1 and NULL (instead
-                of 1 and 0) so that the UNIQUE constraint can limit each
-                `other_unique_id` to a single 1 but allow for multple
-                NULLs since a NULL value does not test as equal to other
-                NULL values.
-            */
         );
 
         CREATE TABLE main.relation(
