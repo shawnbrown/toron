@@ -437,28 +437,28 @@ class CrosswalkRepository(BaseCrosswalkRepository):
 
         sql = """
             INSERT INTO main.crosswalk (
-                name,
                 other_unique_id,
                 other_filename_hint,
-                other_index_hash,
+                name,
                 description,
                 selectors,
+                is_default,
                 user_properties,
-                is_locally_complete,
-                is_default
+                other_index_hash,
+                is_locally_complete
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         parameters = (
-            name,
             other_unique_id,
             other_filename_hint,
-            other_index_hash,
+            name,
             description,
             json_dumps(selectors) if selectors else None,
-            json_dumps(user_properties) if user_properties else None,
-            is_locally_complete,
             True if is_default else None,
+            json_dumps(user_properties) if user_properties else None,
+            other_index_hash,
+            is_locally_complete,
         )
         self._cursor.execute(sql, parameters)
 
@@ -491,27 +491,27 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         sql = f"""
             UPDATE main.crosswalk
             SET
-                name=?,
                 other_unique_id=?,
                 other_filename_hint=?,
-                other_index_hash=?,
+                name=?,
                 description=?,
                 selectors=?,
+                is_default=?,
                 user_properties=?,
-                is_locally_complete=?,
-                is_default=?
+                other_index_hash=?,
+                is_locally_complete=?
             WHERE crosswalk_id=?
         """
         parameters = [
-                record.name,
                 record.other_unique_id,
                 record.other_filename_hint,
-                record.other_index_hash,
+                record.name,
                 record.description,
                 json_dumps(record.selectors) if record.selectors else None,
-                json_dumps(record.user_properties) if record.user_properties else None,
-                record.is_locally_complete,
                 True if record.is_default else None,
+                json_dumps(record.user_properties) if record.user_properties else None,
+                record.other_index_hash,
+                record.is_locally_complete,
                 record.id,
         ]
         self._cursor.execute(sql, parameters)
