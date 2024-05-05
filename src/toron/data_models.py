@@ -692,7 +692,7 @@ class BaseRelationRepository(ABC):
     def refresh_proportions(
         self, other_index_ids: Union[Iterable[int], int]
     ) -> None:
-        """Refresh proportion values for records with other_index_ids."""
+        """Refresh proportions for records with matching other_index_ids."""
         if not isinstance(other_index_ids, Iterable):
             other_index_ids = [other_index_ids]
 
