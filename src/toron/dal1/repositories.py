@@ -467,15 +467,15 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         sql = """
             SELECT
                 crosswalk_id,
-                name,
                 other_unique_id,
                 other_filename_hint,
-                other_index_hash,
+                name,
                 description,
                 selectors,
+                is_default,
                 user_properties,
-                is_locally_complete,
-                is_default
+                other_index_hash,
+                is_locally_complete
             FROM main.crosswalk
             WHERE crosswalk_id=?
         """
@@ -483,7 +483,7 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         record = self._cursor.fetchone()
         if record:
             a, b, c, d, e, f, g, h, i, j = record  # Faster to unpack all than to slice.
-            return Crosswalk(a, b, c, d, e, f, g, h, bool(i), bool(j))
+            return Crosswalk(a, b, c, d, e, f, bool(g), h, i, bool(j))
         return None
 
     def update(self, record: Crosswalk) -> None:

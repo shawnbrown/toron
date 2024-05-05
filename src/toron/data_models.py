@@ -556,15 +556,15 @@ class BaseQuantityRepository(ABC):
 class Crosswalk(object):
     """Crosswalk record."""
     id: int
-    name: str
     other_unique_id: str
-    other_filename_hint: Optional[str] = None
-    other_index_hash: Optional[str] = None
+    other_filename_hint: Union[str, None]
+    name: str
     description: Optional[str] = None
     selectors: Optional[List[str]] = None
-    user_properties: Optional[Dict[str, JsonTypes]] = None
-    is_locally_complete: bool = False
     is_default: bool = False
+    user_properties: Optional[Dict[str, JsonTypes]] = None
+    other_index_hash: Optional[str] = None
+    is_locally_complete: bool = False
 
 
 class BaseCrosswalkRepository(ABC):

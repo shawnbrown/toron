@@ -83,15 +83,15 @@ class TestCrosswalkRepository(unittest.TestCase):
             repository.get(1),
             Crosswalk(
                 id=1,
-                name='name1',
                 other_unique_id='111-unique-id-1111',
                 other_filename_hint=None,
-                other_index_hash=None,
+                name='name1',
                 description=None,
                 selectors=None,
-                user_properties=None,
-                is_locally_complete=False,  # <- Crosswalk value False, database value 0.
                 is_default=True,  # <- Crosswalk value True, database value 1.
+                user_properties=None,
+                other_index_hash=None,
+                is_locally_complete=False,  # <- Crosswalk value False, database value 0.
             ),
         )
 
@@ -99,15 +99,15 @@ class TestCrosswalkRepository(unittest.TestCase):
             repository.get(2),
             Crosswalk(
                 id=2,
-                name='name2',
                 other_unique_id='111-unique-id-1111',
                 other_filename_hint=None,
-                other_index_hash=None,
+                name='name2',
                 description=None,
                 selectors=None,
-                user_properties=None,
-                is_locally_complete=False,  # <- Crosswalk value False, database value 0.
                 is_default=False,  # <- Crosswalk value False, database value NULL.
+                user_properties=None,
+                other_index_hash=None,
+                is_locally_complete=False,  # <- Crosswalk value False, database value 0.
             ),
         )
 
@@ -115,15 +115,15 @@ class TestCrosswalkRepository(unittest.TestCase):
             repository.get(3),
             Crosswalk(
                 id=3,
-                name='name1',
                 other_unique_id='222-unique-id-2222',
                 other_filename_hint='somefile.toron',
-                other_index_hash='78b320d6dbbb48c8',
+                name='name1',
                 description='A crosswalk to some other node.',
                 selectors=['[foo]', '[bar]'],
-                user_properties={'prop1': 111},
-                is_locally_complete=True,  # <- Crosswalk value True, database value 1.
                 is_default=True,  # <- Crosswalk value True, database value 1.
+                user_properties={'prop1': 111},
+                other_index_hash='78b320d6dbbb48c8',
+                is_locally_complete=True,  # <- Crosswalk value True, database value 1.
             ),
         )
 
@@ -140,7 +140,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         repository = CrosswalkRepository(self.cursor)
 
         # Change name (matched WHERE crosswalk_id=2, all other values are SET).
-        repository.update(Crosswalk(2, 'name-two', '111-unique-id-1111'))
+        repository.update(Crosswalk(2, '111-unique-id-1111', None, 'name-two'))
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, 1, None, None, 0),
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),  # <- Name changed!
@@ -149,7 +149,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         ])
 
         # Check coersion from False to None for `is_default` column.
-        repository.update(Crosswalk(1, 'name1', '111-unique-id-1111', is_default=False))
+        repository.update(Crosswalk(1, '111-unique-id-1111', None, 'name1', is_default=False))
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),  # <- 4th from end should be None!
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
@@ -158,7 +158,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         ])
 
         # Check selectors JSON.
-        repository.update(Crosswalk(3, 'name1', '222-unique-id-2222', selectors=['[baz]']))  # <- Set selector.
+        repository.update(Crosswalk(3, '222-unique-id-2222', None, 'name1', selectors=['[baz]']))  # <- Set selector.
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
@@ -166,7 +166,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         ])
 
         # Check user_properties JSON.
-        repository.update(Crosswalk(3, 'name1', '222-unique-id-2222', user_properties={'alt-prop': 42}))  # <- Set user_properties.
+        repository.update(Crosswalk(3, '222-unique-id-2222', None, 'name1', user_properties={'alt-prop': 42}))  # <- Set user_properties.
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
@@ -175,11 +175,11 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         msg = "should fail, 'name' values must be unique per other_index_id"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.update(Crosswalk(2, 'name1', '111-unique-id-1111'))
+            repository.update(Crosswalk(2, '111-unique-id-1111', None, 'name1'))
 
         # No record exists with crosswalk_id=4.
         try:
-            repository.update(Crosswalk(4, 'name1', '444-unique-id-4444'))
+            repository.update(Crosswalk(4, '444-unique-id-4444', None, 'name1'))
         except Exception as err:
             self.fail(f'updating non-existant records should not raise error, got {err!r}')
 
