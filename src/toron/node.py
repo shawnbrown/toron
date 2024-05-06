@@ -22,6 +22,7 @@ from toron._typing import (
 from . import data_access
 from .data_models import (
     WeightGroup,
+    Crosswalk,
     delete_index_record,
 )
 from ._utils import (
@@ -677,3 +678,8 @@ class Node(object):
                 raise TypeError('expected data or keyword criteria, got neither')
 
         warn_if_issues(counter, expected='deleted')
+
+    @property
+    def crosswalks(self) -> List[Crosswalk]:
+        with self._managed_cursor() as cursor:
+            return self._dal.CrosswalkRepository(cursor).get_all()

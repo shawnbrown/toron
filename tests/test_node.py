@@ -16,6 +16,7 @@ else:
 
 from toron._utils import ToronWarning
 from toron.data_models import (
+    Crosswalk,
     Index,
     WeightGroup,
 )
@@ -1246,3 +1247,54 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Test multiple criteria (matches 1 row).
         self.node.delete_weights('weight1', A='foo', B='x')
         self.assertEqual(self.get_weights_helper(), [])
+
+
+class TestNodeCrosswalkMethods(unittest.TestCase):
+    def setUp(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            col_manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+
+            # Add index columns and records.
+            col_manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('bar', 'z')
+
+        self.node = node
+
+    def test_crosswalks_property(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('111-11-1111', None, 'crosswalk1')  # Add crosswalk_id 1.
+            crosswalk_repo.add('222-22-2222', None, 'crosswalk2')  # Add crosswalk_id 2.
+
+        actual = self.node.crosswalks
+        expected = [
+            Crosswalk(
+                id=1,
+                other_unique_id='111-11-1111',
+                other_filename_hint=None,
+                name='crosswalk1',
+                description=None,
+                selectors=None,
+                is_default=False,
+                user_properties=None,
+                other_index_hash=None,
+                is_locally_complete=False,
+            ),
+            Crosswalk(
+                id=2,
+                other_unique_id='222-22-2222',
+                other_filename_hint=None,
+                name='crosswalk2',
+                description=None,
+                selectors=None,
+                is_default=False,
+                user_properties=None,
+                other_index_hash=None,
+                is_locally_complete=False,
+            ),
+        ]
+        self.assertEqual(actual, expected)
