@@ -593,6 +593,10 @@ class BaseCrosswalkRepository(ABC):
         """Get a record from the repository."""
 
     @abstractmethod
+    def get_all(self) -> List[Crosswalk]:
+        """Get all records from the repository."""
+
+    @abstractmethod
     def update(self, record: Crosswalk) -> None:
         """Update a record in the repository."""
 

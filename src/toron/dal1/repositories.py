@@ -502,6 +502,11 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         record = self._cursor.fetchone()
         return self._make_crosswalk(record) if record else None
 
+    def get_all(self) -> List[Crosswalk]:
+        """Get all records from the repository."""
+        self._cursor.execute('SELECT * FROM main.crosswalk')
+        return [self._make_crosswalk(row) for row in self._cursor]
+
     def update(self, record: Crosswalk) -> None:
         """Update a record in the repository."""
         sql = f"""

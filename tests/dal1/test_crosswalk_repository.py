@@ -129,6 +129,57 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         self.assertIsNone(repository.get(4))  # <- No crosswalk_id=4.
 
+    def test_get_all(self):
+        self.cursor.executescript("""
+            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
+                                          'A crosswalk to some other node.', '["[foo]", "[bar]"]',
+                                          1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
+        """)
+        repository = CrosswalkRepository(self.cursor)
+
+        actual = repository.get_all()
+        expected = [
+            Crosswalk(
+                id=1,
+                other_unique_id='111-unique-id-1111',
+                other_filename_hint=None,
+                name='name1',
+                description=None,
+                selectors=None,
+                is_default=True,
+                user_properties=None,
+                other_index_hash=None,
+                is_locally_complete=False,
+            ),
+            Crosswalk(
+                id=2,
+                other_unique_id='111-unique-id-1111',
+                other_filename_hint=None,
+                name='name2',
+                description=None,
+                selectors=None,
+                is_default=False,
+                user_properties=None,
+                other_index_hash=None,
+                is_locally_complete=False,
+            ),
+            Crosswalk(
+                id=3,
+                other_unique_id='222-unique-id-2222',
+                other_filename_hint='somefile.toron',
+                name='name1',
+                description='A crosswalk to some other node.',
+                selectors=['[foo]', '[bar]'],
+                is_default=True,
+                user_properties={'prop1': 111},
+                other_index_hash='78b320d6dbbb48c8',
+                is_locally_complete=True,
+            ),
+        ]
+        self.assertEqual(actual, expected)
+
     def test_update(self):
         self.cursor.executescript("""
             INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
