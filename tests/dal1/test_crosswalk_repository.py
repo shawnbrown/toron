@@ -276,3 +276,24 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         actual = repository.find_by_other_unique_id('444-unique-id-4444')
         self.assertEqual(list(actual), [])
+
+    def test_find_by_other_filename_hint(self):
+        self.cursor.executescript("""
+            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', 'fileone.toron', 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', 'fileone.toron', 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+        """)
+        repository = CrosswalkRepository(self.cursor)
+
+        actual = repository.find_by_other_filename_hint('fileone.toron')
+        expected = [
+            Crosswalk(1, '111-unique-id-1111', 'fileone.toron', 'name1'),
+            Crosswalk(2, '111-unique-id-1111', 'fileone.toron', 'name2'),
+        ]
+        self.assertEqual(list(actual), expected)
+
+        actual = repository.find_by_other_filename_hint(None)
+        self.assertEqual(list(actual), [], msg='should return empty iter when given None')
+
+        actual = repository.find_by_other_filename_hint('unknownfile.toron')
+        self.assertEqual(list(actual), [], msg='should return empty iter when given an unknown filename.')

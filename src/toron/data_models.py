@@ -610,6 +610,12 @@ class BaseCrosswalkRepository(ABC):
     ) -> Iterator[Crosswalk]:
         """Find all records with matching other_unique_id."""
 
+    @abstractmethod
+    def find_by_other_filename_hint(
+        self, other_filename_hint: str
+    ) -> Iterator[Crosswalk]:
+        """Find all records with matching other_filename_hint."""
+
 
 @dataclass
 class Relation(object):

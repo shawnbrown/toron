@@ -554,6 +554,17 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         for record in self._cursor:
             yield self._make_crosswalk(record)
 
+    def find_by_other_filename_hint(
+        self, other_filename_hint: str
+    ) -> Iterator[Crosswalk]:
+        """Find all records with matching other_filename_hint."""
+        self._cursor.execute(
+            'SELECT * FROM main.crosswalk WHERE other_filename_hint=?',
+            (other_filename_hint,),
+        )
+        for record in self._cursor:
+            yield self._make_crosswalk(record)
+
 
 class RelationRepository(BaseRelationRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
