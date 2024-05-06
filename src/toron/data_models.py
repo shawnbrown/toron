@@ -604,6 +604,12 @@ class BaseCrosswalkRepository(ABC):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
+    @abstractmethod
+    def find_by_other_unique_id(
+        self, other_unique_id: str
+    ) -> Iterator[Crosswalk]:
+        """Find all records with matching other_unique_id."""
+
 
 @dataclass
 class Relation(object):

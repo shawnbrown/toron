@@ -252,3 +252,27 @@ class TestCrosswalkRepository(unittest.TestCase):
         except Exception as err:
             self.fail(f'should not raise error, got {err!r}')
         self.assertRecords([])
+
+    def test_find_by_other_unique_id(self):
+        self.cursor.executescript("""
+            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+        """)
+        repository = CrosswalkRepository(self.cursor)
+
+        actual = repository.find_by_other_unique_id('111-unique-id-1111')
+        expected = [
+            Crosswalk(1, '111-unique-id-1111', None, 'name1'),
+            Crosswalk(2, '111-unique-id-1111', None, 'name2'),
+        ]
+        self.assertEqual(list(actual), expected)
+
+        actual = repository.find_by_other_unique_id('222-unique-id-2222')
+        expected = [
+            Crosswalk(3, '222-unique-id-2222', None, 'name1'),
+        ]
+        self.assertEqual(list(actual), expected)
+
+        actual = repository.find_by_other_unique_id('444-unique-id-4444')
+        self.assertEqual(list(actual), [])

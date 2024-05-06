@@ -543,6 +543,17 @@ class CrosswalkRepository(BaseCrosswalkRepository):
             'DELETE FROM main.crosswalk WHERE crosswalk_id=?', (id,)
         )
 
+    def find_by_other_unique_id(
+        self, other_unique_id: str
+    ) -> Iterator[Crosswalk]:
+        """Find all records with matching other_unique_id."""
+        self._cursor.execute(
+            'SELECT * FROM main.crosswalk WHERE other_unique_id=?',
+            (other_unique_id,),
+        )
+        for record in self._cursor:
+            yield self._make_crosswalk(record)
+
 
 class RelationRepository(BaseRelationRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
