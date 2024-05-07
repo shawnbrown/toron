@@ -23,6 +23,8 @@ from . import data_access
 from .data_models import (
     WeightGroup,
     Crosswalk,
+)
+from .data_service import (
     delete_index_record,
 )
 from ._utils import (
