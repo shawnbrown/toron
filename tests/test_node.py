@@ -1298,3 +1298,54 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
             ),
         ]
         self.assertEqual(actual, expected)
+
+    def test_get_crosswalk(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('111-111-1111', 'somefile', 'name1')  # Add crosswalk_id 1.
+            crosswalk_repo.add('111-111-2222', 'otherfile', 'name1', is_default=True)  # Add crosswalk_id 2.
+            crosswalk_repo.add('111-111-2222', 'otherfile', 'name2')  # Add crosswalk_id 3.
+            crosswalk_repo.add('333-333-3333', 'anotherfile', 'name1')  # Add crosswalk_id 4.
+            crosswalk_repo.add('333-333-3333', 'anotherfile', 'name2')  # Add crosswalk_id 5.
+
+        result = self.node.get_crosswalk('111-111-1111')
+        self.assertEqual(result.id, 1, msg='should find distinct match on unique id')
+
+        result = self.node.get_crosswalk('somefile')
+        self.assertEqual(result.id, 1, msg='should find distinct match on filename hint')
+
+        regex = (r'node reference matches more than one node:\n'
+                 r'  111-111-1111 \(somefile\)\n'
+                 r'  111-111-2222 \(otherfile\)')
+        msg = 'should raise error if matches multiple nodes'
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            result = self.node.get_crosswalk('111-111')  # <- Ambiguous shortcode.
+
+        msg = 'should warn if there are multiple matches'
+        with self.assertWarns(ToronWarning, msg=msg) as cm:
+            result = self.node.get_crosswalk('111-111-2222')
+        self.assertEqual(
+            str(cm.warning),  # Check warning message.
+            "found multiple crosswalks, using default: 'name1'",
+            msg='should return default crosswalk'
+        )
+        self.assertEqual(result.id, 2, msg='should return default crosswalk')
+
+        regex = "found multiple crosswalks, must specify name: 'name1', 'name2'"
+        msg = 'should raise error if there are multiples but no default'
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            result = self.node.get_crosswalk('333-333-3333')
+
+        result = self.node.get_crosswalk('111-111-2222', 'name2')
+        self.assertEqual(result.id, 3, msg='specified name should match non-default crosswalk')
+
+        result = self.node.get_crosswalk('333-333-3333', 'name1')
+        self.assertEqual(result.id, 4, msg='specified name should match non-default crosswalk')
+
+        msg = "crosswalk 'unknown_name' not found, can be: 'name1', 'name2'"
+        with self.assertWarns(ToronWarning, msg=msg) as cm:
+            result = self.node.get_crosswalk('333-333-3333', 'unknown_name')
+        self.assertIsNone(result, msg='if specified name does not exist, should be None')
+
+        result = self.node.get_crosswalk('000-unknown-0000')
+        self.assertIsNone(result, msg='if specified node does not exist, should be None')

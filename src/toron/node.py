@@ -22,10 +22,12 @@ from toron._typing import (
 from . import data_access
 from .data_models import (
     WeightGroup,
+    BaseCrosswalkRepository,
     Crosswalk,
 )
 from .data_service import (
     delete_index_record,
+    find_crosswalks_by_node_reference,
 )
 from ._utils import (
     ToronWarning,
@@ -685,3 +687,59 @@ class Node(object):
     def crosswalks(self) -> List[Crosswalk]:
         with self._managed_cursor() as cursor:
             return self._dal.CrosswalkRepository(cursor).get_all()
+
+    @staticmethod
+    def _get_crosswalk(
+        node_reference: Union[str, 'Node'],
+        name: Optional[str],
+        crosswalk_repo: BaseCrosswalkRepository,
+    ) -> Optional[Crosswalk]:
+        """Get crosswalk by node reference and name."""
+        if isinstance(node_reference, Node):  # If Node, find by 'unique_id' only.
+            node_reference = node_reference._connector.unique_id
+            matches = list(crosswalk_repo.find_by_other_unique_id(node_reference))
+        else:
+            matches = find_crosswalks_by_node_reference(node_reference, crosswalk_repo)
+
+        if len({x.other_unique_id for x in matches}) > 1:
+            node_info = {x.other_unique_id: x.other_filename_hint for x in matches}
+            func = lambda a, b: f'{a} ({b or "<no filename>"})'
+            formatted = '\n  '.join(func(k, v) for k, v in node_info.items())
+            msg = f'node reference matches more than one node:\n  {formatted}'
+            raise ValueError(msg)
+
+        if name:
+            filtered = [x for x in matches if x.name == name]
+            if not filtered and matches:
+                import warnings
+                names = ', '.join(repr(x.name) for x in matches)
+                msg = f'crosswalk {name!r} not found, can be: {names}'
+                warnings.warn(msg, ToronWarning, stacklevel=2)
+        else:
+            filtered = matches
+
+        if len(filtered) > 1:
+            import warnings
+
+            defaults = [x for x in filtered if x.is_default]
+            if len(defaults) == 1:
+                crosswalk = defaults[0]
+                msg = f'found multiple crosswalks, using default: {crosswalk.name!r}'
+                warnings.warn(msg, ToronWarning, stacklevel=2)
+                return crosswalk
+            else:
+                names = ', '.join(repr(x.name) for x in filtered)
+                msg = f'found multiple crosswalks, must specify name: {names}'
+                raise ValueError(msg)
+
+        if len(filtered) == 1:
+            return filtered[0]
+
+        return None
+
+    def get_crosswalk(
+        self, node_reference: Union[str, 'Node'], name: Optional[str] = None,
+    ) -> Optional[Crosswalk]:
+        with self._managed_cursor() as cursor:
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            return self._get_crosswalk(node_reference, name, crosswalk_repo)
