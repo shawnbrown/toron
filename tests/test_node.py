@@ -1264,6 +1264,12 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
 
         self.node = node
 
+    @staticmethod
+    def get_crosswalk_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.CrosswalkRepository(cursor)
+            return list(repository.get_all())
+
     def test_crosswalks_property(self):
         with self.node._managed_cursor() as cursor:
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
@@ -1349,3 +1355,47 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
 
         result = self.node.get_crosswalk('000-unknown-0000')
         self.assertIsNone(result, msg='if specified node does not exist, should be None')
+
+    def test_add_crosswalk(self):
+        node = Node()
+
+        node.add_crosswalk('111-111-1111', None, 'name1')  # <- Only required args.
+        node.add_crosswalk(  # <- Defining all properties.
+                other_unique_id='111-111-1111',
+                other_filename_hint=None,
+                name='name2',
+                description='The second crosswalk.',
+                selectors=['"[foo]"'],
+                is_default=True,
+                user_properties={'qux': 'abc', 'quux': 123},
+                other_index_hash='12437810',
+                is_locally_complete=False,
+        )
+
+        expected = [
+            Crosswalk(
+                id=1,
+                other_unique_id='111-111-1111',
+                other_filename_hint=None,
+                name='name1',
+                description=None,
+                selectors=None,
+                is_default=False,
+                user_properties=None,
+                other_index_hash=None,
+                is_locally_complete=False,
+            ),
+            Crosswalk(
+                id=2,
+                other_unique_id='111-111-1111',
+                other_filename_hint=None,
+                name='name2',
+                description='The second crosswalk.',
+                selectors=['"[foo]"'],
+                is_default=True,
+                user_properties={'quux': 123, 'qux': 'abc'},
+                other_index_hash='12437810',
+                is_locally_complete=False,
+            ),
+        ]
+        self.assertEqual(self.get_crosswalk_helper(node), expected)

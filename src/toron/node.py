@@ -24,6 +24,7 @@ from .data_models import (
     WeightGroup,
     BaseCrosswalkRepository,
     Crosswalk,
+    JsonTypes,
 )
 from .data_service import (
     delete_index_record,
@@ -743,3 +744,29 @@ class Node(object):
         with self._managed_cursor() as cursor:
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             return self._get_crosswalk(node_reference, name, crosswalk_repo)
+
+    def add_crosswalk(
+        self,
+        other_unique_id: str,
+        other_filename_hint: Union[str, None],
+        name: str,
+        *,
+        description: Optional[str] = None,
+        selectors: Optional[Union[List[str], str]] = None,
+        is_default: bool = False,
+        user_properties: Optional[Dict[str, JsonTypes]] = None,
+        other_index_hash: Optional[str] = None,
+        is_locally_complete: bool = False,
+    ) -> None:
+        with self._managed_transaction() as cursor:
+            self._dal.CrosswalkRepository(cursor).add(
+                other_unique_id=other_unique_id,
+                other_filename_hint=other_filename_hint,
+                name=name,
+                description=description,
+                selectors=selectors,
+                is_default=is_default,
+                user_properties=user_properties,
+                other_index_hash=other_index_hash,
+                is_locally_complete=is_locally_complete,
+            )
