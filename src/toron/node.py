@@ -774,7 +774,7 @@ class Node(object):
     def edit_crosswalk(
         self,
         node_reference: Union[str, 'Node'],
-        current_name: Optional[str],
+        current_name: str,
         **changes: Any,
     ) -> None:
         with self._managed_transaction() as cursor:
