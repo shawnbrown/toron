@@ -1399,3 +1399,42 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
             ),
         ]
         self.assertEqual(self.get_crosswalk_helper(node), expected)
+
+    def test_edit_crosswalk(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('111-111-1111', 'somefile', 'name1')  # Add crosswalk_id 1.
+            crosswalk_repo.add('111-111-1111', 'somefile', 'name2', is_default=True)  # Add crosswalk_id 2.
+            crosswalk_repo.add('222-222-2222', 'otherfile', 'name1', is_default=True)  # Add crosswalk_id 3.
+
+        # Match on other_unique_id, update `user_properties`.
+        self.node.edit_crosswalk('111-111-1111', 'name1', user_properties={'foo': 'bar'})
+
+        # Match on other_filename_hint, update `description`.
+        self.node.edit_crosswalk('somefile', 'name2', description='My description.')
+
+        # Match on other_unique_id, update `name`.
+        self.node.edit_crosswalk('222-222-2222', 'name1', name='NAME_A')
+
+        expected = [
+            Crosswalk(1, '111-111-1111', 'somefile', 'name1',
+                      is_default=False, user_properties={'foo': 'bar'}),
+            Crosswalk(2, '111-111-1111', 'somefile', 'name2',
+                      is_default=True, description='My description.'),
+            Crosswalk(3, '222-222-2222', 'otherfile', 'NAME_A',
+                      is_default=True),
+        ]
+        self.assertEqual(self.get_crosswalk_helper(self.node), expected)
+
+        # Check `is_default` handling--other crosswalks from same node
+        # should have their `is_default` values set to False.
+        self.node.edit_crosswalk('111-111-1111', 'name1', is_default=True)
+        expected = [
+            Crosswalk(1, '111-111-1111', 'somefile', 'name1',
+                      is_default=True, user_properties={'foo': 'bar'}),  # <- is_default=True
+            Crosswalk(2, '111-111-1111', 'somefile', 'name2',
+                      is_default=False, description='My description.'),  # <- is_default=False
+            Crosswalk(3, '222-222-2222', 'otherfile', 'NAME_A',
+                      is_default=True),                                  # <- unchanged
+        ]
+        self.assertEqual(self.get_crosswalk_helper(self.node), expected)

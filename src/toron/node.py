@@ -770,3 +770,32 @@ class Node(object):
                 other_index_hash=other_index_hash,
                 is_locally_complete=is_locally_complete,
             )
+
+    def edit_crosswalk(
+        self,
+        node_reference: Union[str, 'Node'],
+        current_name: Optional[str],
+        **changes: Any,
+    ) -> None:
+        with self._managed_transaction() as cursor:
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk = self._get_crosswalk(node_reference, current_name, crosswalk_repo)
+
+            if not crosswalk:
+                import warnings
+                msg = (
+                    f'no crosswalk matching node_reference={node_reference!r} '
+                    f'and name={current_name!r}'
+                )
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+                return  # <- EXIT!
+
+            # If setting is_default=True, all other crosswalks coming from
+            # the same node should be set to False.
+            if changes.get('is_default') == True:
+                matches = crosswalk_repo.find_by_other_unique_id(crosswalk.other_unique_id)
+                for match in list(matches):  # Use list() to eagerly fetch all matches.
+                    crosswalk_repo.update(replace(match, is_default=False))
+
+            crosswalk = replace(crosswalk, **changes)
+            crosswalk_repo.update(crosswalk)
