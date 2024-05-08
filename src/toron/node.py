@@ -799,3 +799,22 @@ class Node(object):
 
             crosswalk = replace(crosswalk, **changes)
             crosswalk_repo.update(crosswalk)
+
+    def drop_crosswalk(
+        self,
+        node_reference: Union[str, 'Node'],
+        name: str,
+    ) -> None:
+        with self._managed_transaction() as cursor:
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            if not crosswalk:
+                import warnings
+                msg = (
+                    f'no crosswalk matching node_reference={node_reference!r} '
+                    f'and name={name!r}'
+                )
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+                return  # <- EXIT!
+
+            crosswalk_repo.delete(crosswalk.id)

@@ -1438,3 +1438,23 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
                       is_default=True),                                  # <- unchanged
         ]
         self.assertEqual(self.get_crosswalk_helper(self.node), expected)
+
+    def test_drop_crosswalk(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('111-111-1111', 'somefile', 'name1', is_default=True)  # Add crosswalk_id 1.
+            crosswalk_repo.add('111-111-1111', 'somefile', 'name2', is_default=False)  # Add crosswalk_id 2.
+            crosswalk_repo.add('222-222-2222', 'otherfile', 'name1', is_default=True)  # Add crosswalk_id 3.
+            crosswalk_repo.add('222-222-2222', 'otherfile', 'name2', is_default=False)  # Add crosswalk_id 4.
+
+        # Match on `other_unique_id` and `name`.
+        self.node.drop_crosswalk('222-222-2222', 'name2')
+
+        # Match on `other_filename_hint` and `name`.
+        self.node.drop_crosswalk('somefile', 'name1')
+
+        expected = [
+            Crosswalk(2, '111-111-1111', 'somefile', 'name2', is_default=False),
+            Crosswalk(3, '222-222-2222', 'otherfile', 'name1', is_default=True),
+        ]
+        self.assertEqual(self.get_crosswalk_helper(self.node), expected)
