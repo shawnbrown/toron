@@ -1458,3 +1458,69 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
             Crosswalk(3, '222-222-2222', 'otherfile', 'name1', is_default=True),
         ]
         self.assertEqual(self.get_crosswalk_helper(self.node), expected)
+
+
+class TestNodeRelationMethods(unittest.TestCase):
+    def setUp(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            col_manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+
+            # Add index columns and records.
+            col_manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('bar', 'z')
+
+            # Add crosswalk_id 1.
+            crosswalk_repo.add('111-111-1111', 'myfile.toron', 'rel1')
+
+        self.node = node
+
+    def get_relations_helper(self):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with self.node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM relation')
+            return cursor.fetchall()
+
+    def test_select(self):
+        with self.node._managed_cursor() as cursor:
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(1, other_index_id=0, index_id=0, value=0.0)
+            relation_repo.add(1, other_index_id=1, index_id=1, value=10.0)
+            relation_repo.add(1, other_index_id=2, index_id=2, value=20.0)
+            relation_repo.add(1, other_index_id=3, index_id=2, value=5.0)
+            relation_repo.add(1, other_index_id=3, index_id=3, value=15.0)
+
+        relations = self.node.select_relations('myfile', 'rel1', header=True)
+        expected = [
+            #('other_index_id', 'rel1: myfile -> ???', 'index_id', 'A', 'B')
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'ambiguous_fields'),
+            (0,  0.0, 0, '-',   '-', None),
+            (1, 10.0, 1, 'foo', 'x', None),
+            (2, 20.0, 2, 'bar', 'y', None),
+            (3,  5.0, 2, 'bar', 'y', None),
+            (3, 15.0, 3, 'bar', 'z', None),
+        ]
+        self.assertEqual(list(relations), expected)
+
+        # Test with selection `header=False` and `A='bar'`.
+        relations = self.node.select_relations('myfile', 'rel1', header=False, A='bar')
+        expected = [
+            (2, 20.0, 2, 'bar', 'y', None),
+            (3,  5.0, 2, 'bar', 'y', None),
+            (3, 15.0, 3, 'bar', 'z', None),
+        ]
+        self.assertEqual(list(relations), expected)
+
+        # Test with selection `header=True` and `A='NOMATCH'`.
+        relations = self.node.select_relations('myfile', 'rel1', header=True, A='NOMATCH')
+        expected = [('other_index_id', 'rel1', 'index_id', 'A', 'B', 'ambiguous_fields')]
+        msg = 'header row only, when there are no matches'
+        self.assertEqual(list(relations), expected, msg=msg)
+
+        # Test with selection `header=False` and `A='NOMATCH'`.
+        relations = self.node.select_relations('myfile', 'rel1', header=False, A='NOMATCH')
+        self.assertEqual(list(relations), [], msg='iterator should be empty')

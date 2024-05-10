@@ -818,3 +818,45 @@ class Node(object):
                 return  # <- EXIT!
 
             crosswalk_repo.delete(crosswalk.id)
+
+    def select_relations(
+        self,
+        node_reference: Union[str, 'Node'],
+        name: Optional[str] = None,
+        header: bool = False,
+        **criteria: str,
+    ) -> Iterator[Sequence]:
+        with self._managed_cursor(n=2) as (cursor, aux_cursor):
+            col_manager = self._dal.ColumnManager(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+
+            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+
+            if header:
+                label_columns = col_manager.get_columns()
+                header_row = (('other_index_id', crosswalk.name, 'index_id')
+                              + label_columns
+                              + ('ambiguous_fields',))
+                yield header_row
+
+            if criteria:
+                index_records = index_repo.find_by_label(criteria, include_undefined=True)
+            else:
+                index_records = index_repo.get_all(include_undefined=True)
+
+            relation_repo = self._dal.RelationRepository(aux_cursor)
+            crosswalk_id = crosswalk.id
+            for index in index_records:
+                index_id = index.id
+                relations = list(relation_repo.find_by_crosswalk_id_and_index_id(
+                                 crosswalk_id, index_id))
+                if relations:
+                    for rel in relations:
+                        ambiguous_fields = None  # TODO: Build from mapping_level.
+                        row_tuple = ((rel.other_index_id, rel.value, index_id)
+                                     + index.labels
+                                     + (ambiguous_fields,))
+                        yield row_tuple
+                else:
+                    yield (None, None, index_id) + index.labels + (None,)
