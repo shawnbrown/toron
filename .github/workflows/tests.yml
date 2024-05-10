@@ -21,7 +21,8 @@ on:
         options:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          - macos-13
+          #- macos-latest
       timeout:
         type: number
         description: Timeout in minutes
@@ -32,7 +33,7 @@ jobs:
   run-tox-envs:
     strategy:
       matrix:
-        os: ${{ fromJSON(format('["{0}"]', (inputs.platform || 'ubuntu-latest", "windows-latest", "macos-latest'))) }}
+        os: ${{ fromJSON(format('["{0}"]', (inputs.platform || 'ubuntu-latest", "windows-latest", "macos-13'))) }}
     name: tox envs on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     permissions:
