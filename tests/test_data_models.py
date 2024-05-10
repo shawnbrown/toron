@@ -396,6 +396,38 @@ class RelationRepositoryBaseTest(ABC):
         results = self.repository.find_by_index_id(93)  # No index_id 93
         self.assertEqual(list(results), [], msg='should return empty iterator')
 
+    def test_find_by_crosswalk_id_and_index_id(self):
+        results = self.repository.find_by_crosswalk_id_and_index_id(crosswalk_id=1, index_id=3)
+        expected = [
+            Relation(
+                id=4,
+                crosswalk_id=1,
+                other_index_id=3,
+                index_id=3,
+                value=100000.0,
+                proportion=1.0,
+                mapping_level=None,
+            ),
+        ]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_crosswalk_id_and_index_id(crosswalk_id=2, index_id=3)
+        expected = [
+            Relation(
+                id=9,
+                crosswalk_id=2,
+                other_index_id=3,
+                index_id=3,
+                value=576.0,
+                proportion=0.5625,
+                mapping_level=None,
+            ),
+        ]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_crosswalk_id_and_index_id(crosswalk_id=2, index_id=93)
+        self.assertEqual(list(results), [])
+
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
         results = self.get_relations_helper()
