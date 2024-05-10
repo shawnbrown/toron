@@ -1524,3 +1524,26 @@ class TestNodeRelationMethods(unittest.TestCase):
         # Test with selection `header=False` and `A='NOMATCH'`.
         relations = self.node.select_relations('myfile', 'rel1', header=False, A='NOMATCH')
         self.assertEqual(list(relations), [], msg='iterator should be empty')
+
+    def test_select_with_ambiguous_mappings(self):
+        with self.node._managed_cursor() as cursor:
+            col_manager = self.node._dal.ColumnManager(cursor)
+            relation_repo = self.node._dal.RelationRepository(cursor)
+
+            col_manager.add_columns('C')  # Add another column.
+            relation_repo.add(1, other_index_id=0, index_id=0, value=0.0)
+            relation_repo.add(1, other_index_id=1, index_id=1, value=10.0)
+            relation_repo.add(1, other_index_id=2, index_id=2, value=20.0)
+            relation_repo.add(1, other_index_id=3, index_id=2, value=5.0,  mapping_level=b'\x80')
+            relation_repo.add(1, other_index_id=3, index_id=3, value=15.0, mapping_level=b'\x80')
+
+        relations = self.node.select_relations('myfile', 'rel1', header=True)
+        expected = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'C', 'ambiguous_fields'),
+            (0,  0.0, 0, '-',   '-', '-', None),
+            (1, 10.0, 1, 'foo', 'x', '-', None),
+            (2, 20.0, 2, 'bar', 'y', '-', None),
+            (3,  5.0, 2, 'bar', 'y', '-', 'B, C'),
+            (3, 15.0, 3, 'bar', 'z', '-', 'B, C'),
+        ]
+        self.assertEqual(list(relations), expected)

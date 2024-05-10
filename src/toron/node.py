@@ -3,7 +3,7 @@
 from collections import Counter
 from contextlib import contextmanager, nullcontext
 from dataclasses import replace
-from itertools import chain
+from itertools import chain, compress
 
 from toron._typing import (
     Any,
@@ -31,6 +31,7 @@ from .data_service import (
     find_crosswalks_by_node_reference,
 )
 from ._utils import (
+    BitFlags,
     ToronWarning,
     normalize_tabular,
     verify_columns_set,
@@ -832,9 +833,9 @@ class Node(object):
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
             crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            label_columns = col_manager.get_columns()
 
             if header:
-                label_columns = col_manager.get_columns()
                 header_row = (('other_index_id', crosswalk.name, 'index_id')
                               + label_columns
                               + ('ambiguous_fields',))
@@ -853,10 +854,19 @@ class Node(object):
                                  crosswalk_id, index_id))
                 if relations:
                     for rel in relations:
-                        ambiguous_fields = None  # TODO: Build from mapping_level.
+                        if rel.mapping_level:
+                            # Build a description of the columns that were
+                            # left unspecified in the original mapping.
+                            bit_flags = BitFlags(rel.mapping_level)
+                            inverted_level = [(not bit) for bit in bit_flags]
+                            ambiguous_labels = compress(label_columns, inverted_level)
+                            ambiguous_desc = ', '.join(ambiguous_labels)
+                        else:
+                            ambiguous_desc = None
+
                         row_tuple = ((rel.other_index_id, rel.value, index_id)
                                      + index.labels
-                                     + (ambiguous_fields,))
+                                     + (ambiguous_desc,))
                         yield row_tuple
                 else:
                     yield (None, None, index_id) + index.labels + (None,)
