@@ -876,3 +876,75 @@ class Node(object):
                         yield row_tuple
                 else:
                     yield (None, None, index_id) + index.labels + (None,)
+
+    def insert_relations(
+        self,
+        node_reference: Union[str, 'Node'],
+        name: Optional[str],
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        data, columns = normalize_tabular(data, columns)
+
+        if tuple(columns[:3]) != ('other_index_id', name, 'index_id'):
+            raise ValueError(
+                f"columns should be start with "
+                f"('other_index_id', {name!r}, 'index_id', ...); "
+                f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
+            )
+
+        counter: Counter = Counter()
+        with self._managed_transaction() as cursor:
+            col_manager = self._dal.ColumnManager(cursor)
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            relation_repo = self._dal.RelationRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+            #struct_repo = self._dal.StructureRepository(cursor)
+
+            label_columns = col_manager.get_columns()
+            verify_columns_set(columns, label_columns, allow_extras=True)
+
+            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            if not crosswalk:
+                raise ValueError(
+                    f'no crosswalk matching node_reference={node_reference!r} '
+                    f'and name={name!r}'
+                )
+            crosswalk_id = crosswalk.id
+
+            #structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
+
+            for row in data:
+                other_index_id, value, index_id = row[:3]
+                row_dict = dict(zip(columns[3:], row[3:]))
+
+                index_record = index_repo.get(index_id)
+                if not index_record:
+                    counter['no_index'] += 1
+                    continue  # <- Skip to next item.
+
+                row_labels = tuple(row_dict[x] for x in label_columns)
+                if row_labels != index_record.labels:
+                    counter['mismatch'] += 1
+                    continue  # <- Skip to next item.
+
+                proportion = row_dict.get('proportion')
+                if isinstance(proportion, str):
+                    proportion = float(proportion) if proportion else None
+
+                mapping_level = row_dict.get('mapping_level') or None
+                #if mapping_level and BitFlags(mapping_level) not in structure:
+                #    counter['mismatch_structure'] += 1
+                #    continue  # <- Skip to next item.
+
+                relation_repo.add(
+                    crosswalk_id=crosswalk_id,
+                    other_index_id=other_index_id,
+                    index_id=index_id,
+                    value=value,
+                    proportion=proportion,
+                    mapping_level=mapping_level,
+                )
+                counter['inserted'] += 1
+
+        warn_if_issues(counter, expected='inserted')

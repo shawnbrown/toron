@@ -1547,3 +1547,81 @@ class TestNodeRelationMethods(unittest.TestCase):
             (3, 15.0, 3, 'bar', 'z', '-', 'B, C'),
         ]
         self.assertEqual(list(relations), expected)
+
+    def test_insert(self):
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+            (0,  0.0, 0, '-',   '-'),
+            (1, 10.0, 1, 'foo', 'x'),
+            (2, 20.0, 2, 'bar', 'y'),
+            (3,  5.0, 2, 'bar', 'y'),
+            (3, 15.0, 3, 'bar', 'z'),
+        ]
+        self.node.insert_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, None, None),
+            (2, 1, 1, 1, 10.0, None, None),
+            (3, 1, 2, 2, 20.0, None, None),
+            (4, 1, 3, 2,  5.0, None, None),
+            (5, 1, 3, 3, 15.0, None, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_insert_normalization(self):
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion', 'mapping_level'),
+            (1, 10.0, 1, 'foo', 'x', '',    ''),       # <- Strings should become None
+            (2, 20.0, 2, 'bar', 'y', 0.8,   b'\x80'),
+            (3,  5.0, 2, 'bar', 'y', '0.2', b'\x80'),  # <- String should become float
+            (3, 15.0, 3, 'bar', 'z', None,  None),
+        ]
+        self.node.insert_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 1, 1, 10.0, None, None),     # <- Empty strings now None
+            (2, 1, 2, 2, 20.0, 0.8,  b'\x80'),
+            (3, 1, 3, 2,  5.0, 0.2,  b'\x80'),  # <- String '0.2' now float 0.2
+            (4, 1, 3, 3, 15.0, None, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_insert_different_order_and_extra(self):
+        """Label columns in different order and extra column."""
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'B', 'extra', 'A'),
+            (0,  0.0, 0, '-', 'x1',   '-'),
+            (1, 10.0, 1, 'x', 'x2', 'foo'),
+            (2, 20.0, 2, 'y', 'x3', 'bar'),
+            (3,  5.0, 2, 'y', 'x4', 'bar'),
+            (3, 15.0, 3, 'z', 'x5', 'bar'),
+        ]
+        self.node.insert_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, None, None),
+            (2, 1, 1, 1, 10.0, None, None),
+            (3, 1, 2, 2, 20.0, None, None),
+            (4, 1, 3, 2,  5.0, None, None),
+            (5, 1, 3, 3, 15.0, None, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_insert_invalid_columns(self):
+        data = [
+            ('other_index_id', 'rel1', 'BAD_VALUE', 'A', 'B'),
+            (1, 10.0, 1, 'foo', 'x'),
+            (2, 20.0, 2, 'bar', 'y'),
+        ]
+        regex = r"columns should be start with \('other_index_id', 'rel1', 'index_id', ...\)"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_relations('myfile', 'rel1', data)
+
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A'),
+            (1, 10.0, 1, 'foo'),
+            (2, 20.0, 2, 'bar'),
+        ]
+        regex = r"missing required columns: 'B'"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_relations('myfile', 'rel1', data)
