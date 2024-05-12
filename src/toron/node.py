@@ -858,8 +858,8 @@ class Node(object):
                             # Build a description of the columns that were
                             # left unspecified in the original mapping.
                             bit_flags = BitFlags(rel.mapping_level)
-                            inverted_level = [(not bit) for bit in bit_flags]
-                            ambiguous_labels = compress(label_columns, inverted_level)
+                            inverted_bits = [(not bit) for bit in bit_flags]
+                            ambiguous_labels = compress(label_columns, inverted_bits)
                             ambiguous_desc = ', '.join(ambiguous_labels)
                         else:
                             ambiguous_desc = None
