@@ -833,6 +833,12 @@ class Node(object):
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
             crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            if not crosswalk:
+                raise ValueError(
+                    f'no crosswalk matching node_reference={node_reference!r} '
+                    f'and name={name!r}'
+                )
+
             label_columns = col_manager.get_columns()
 
             if header:
