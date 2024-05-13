@@ -212,12 +212,35 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
 
 class TestDiscreteCategoriesMethods(unittest.TestCase):
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns(*columns)
+
     def test_discrete_categories_property(self):
         node = Node()
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
             prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
 
+        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
+
+    def test_add_discrete_categories(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C')
+
+        # Creates the property if it doesn't exist.
+        node.add_discrete_categories({'A'}, {'B'})
+        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'B', 'C'}])
+
+        # Updates the property if it does exist.
+        node.add_discrete_categories({'A', 'C'})
+        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
+
+        regex = r"invalid category value 'D'"
+        with self.assertRaisesRegex(ValueError, regex):
+            node.add_discrete_categories({'C', 'D'})
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
 
 

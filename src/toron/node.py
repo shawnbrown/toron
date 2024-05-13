@@ -21,6 +21,9 @@ from toron._typing import (
 )
 
 from . import data_access
+from .categories import (
+    minimize_discrete_categories,
+)
 from .data_models import (
     WeightGroup,
     BaseCrosswalkRepository,
@@ -137,14 +140,50 @@ class Node(object):
                 self._connector.transaction_rollback(cursor)
                 raise
 
+    def _discrete_categories(self, cursor):
+        prop_repo = self._dal.PropertyRepository(cursor)
+        values: Optional[List[List[str]]]
+        values = prop_repo.get('discrete_categories')  # type: ignore [assignment]
+        return [set(x) for x in values] if values else []
+
     @property
     def discrete_categories(self) -> List[Set[str]]:
         with self._managed_cursor() as cursor:
-            prop_repo = self._dal.PropertyRepository(cursor)
-            values: Optional[List[List[str]]]
-            values = prop_repo.get('discrete_categories')  # type: ignore [assignment]
+            return self._discrete_categories(cursor)
 
-        return [set(x) for x in values] if values else []
+    def add_discrete_categories(
+        self, category: Set[str], *categories: Set[str]
+    ) -> None:
+        new_categories = (category,) + categories
+
+        with self._managed_transaction() as cursor:
+            prop_repo = self._dal.PropertyRepository(cursor)
+
+            columns = self._dal.ColumnManager(cursor).get_columns()
+            if not columns:
+                msg = 'must add index columns before defining categories'
+                raise RuntimeError(msg)
+
+            for field in set(chain(*new_categories)):
+                if field not in columns:
+                    raise ValueError(
+                        f'invalid category value {field!r}, values '
+                        f'must be present in index columns'
+                    )
+
+            existing_categories = self._discrete_categories(cursor)
+            whole_space = [set(columns)]
+
+            category_sets = minimize_discrete_categories(
+                new_categories, existing_categories, whole_space
+            )
+
+            # Save categories as list of list (stored in JSON format).
+            category_lists = [list(x) for x in category_sets]
+            if prop_repo.get('discrete_categories'):
+                prop_repo.update('discrete_categories', category_lists)
+            else:
+                prop_repo.add('discrete_categories', category_lists)
 
     @property
     def index_columns(self) -> Tuple[str, ...]:
