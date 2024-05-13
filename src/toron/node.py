@@ -14,6 +14,7 @@ from toron._typing import (
     List,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Union,
     overload,
@@ -135,6 +136,15 @@ class Node(object):
             except Exception:
                 self._connector.transaction_rollback(cursor)
                 raise
+
+    @property
+    def discrete_categories(self) -> List[Set[str]]:
+        with self._managed_cursor() as cursor:
+            prop_repo = self._dal.PropertyRepository(cursor)
+            values: Optional[List[List[str]]]
+            values = prop_repo.get('discrete_categories')  # type: ignore [assignment]
+
+        return [set(x) for x in values] if values else []
 
     @property
     def index_columns(self) -> Tuple[str, ...]:

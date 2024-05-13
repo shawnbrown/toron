@@ -211,6 +211,16 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         ])
 
 
+class TestDiscreteCategoriesMethods(unittest.TestCase):
+    def test_discrete_categories_property(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+            prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+
+        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
+
+
 class TestIndexColumnMethods(unittest.TestCase):
     @staticmethod
     def get_cols_helper(node):  # <- Helper function.
