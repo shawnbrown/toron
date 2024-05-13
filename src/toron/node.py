@@ -178,12 +178,18 @@ class Node(object):
                 new_categories, existing_categories, whole_space
             )
 
-            # Save categories as list of list (stored in JSON format).
-            category_lists = [list(x) for x in category_sets]
+            category_lists: JsonTypes = [list(cat) for cat in category_sets]
             if prop_repo.get('discrete_categories'):
                 prop_repo.update('discrete_categories', category_lists)
             else:
                 prop_repo.add('discrete_categories', category_lists)
+
+        omitting = [cat for cat in new_categories if (cat not in category_sets)]
+        if omitting:
+            import warnings
+            formatted = ', '.join(repr(cat) for cat in omitting)
+            msg = f'omitting redundant categories: {formatted}'
+            warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
     @property
     def index_columns(self) -> Tuple[str, ...]:

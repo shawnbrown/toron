@@ -238,10 +238,21 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         node.add_discrete_categories({'A', 'C'})
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
 
+        # Raises error if category does not match existing index column.
         regex = r"invalid category value 'D'"
         with self.assertRaisesRegex(ValueError, regex):
             node.add_discrete_categories({'C', 'D'})
-        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
+
+        # Check that a warning is raised on redundant categories.
+        with self.assertWarns(ToronWarning) as cm:
+            node.add_discrete_categories({'A', 'B'})
+
+        # Check warning message.
+        regex = r"omitting redundant categories: \{'[AB]', '[AB]'\}"
+        self.assertRegex(str(cm.warning), regex)
+
+        # Check that existing categories were not changed by error or warning.
+        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}], msg='should be unchanged')
 
 
 class TestIndexColumnMethods(unittest.TestCase):
