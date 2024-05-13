@@ -254,6 +254,44 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         # Check that existing categories were not changed by error or warning.
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}], msg='should be unchanged')
 
+    def test_drop_discrete_categories(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C')
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+            prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+
+        node.drop_discrete_categories({'A'}, {'B'})
+        self.assertEqual(node.discrete_categories, [{'A', 'C'}, {'A', 'B', 'C'}])
+
+        node.drop_discrete_categories({'A', 'B'})  # <- Not present (no change).
+        self.assertEqual(node.discrete_categories, [{'A', 'C'}, {'A', 'B', 'C'}])
+
+        node.drop_discrete_categories({'A', 'C'})
+        self.assertEqual(node.discrete_categories, [{'A', 'B', 'C'}])
+
+    def test_drop_discrete_categories_error(self):
+        """Should raise error if user tries to remove whole space."""
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C')
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+            prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+
+        regex = r"cannot drop whole space: \{'[ABC]', '[ABC]', '[ABC]'\}"
+
+        # Test implicit whole space element (it's  covered by other elements).
+        with self.assertRaisesRegex(ValueError, regex):
+            node.drop_discrete_categories({'A', 'B', 'C'})
+
+        # Change categories so that the whole space element appears explicitly.
+        node.drop_discrete_categories({'A'}, {'A', 'C'})
+        self.assertEqual(node.discrete_categories, [{'B'}, {'A', 'B', 'C'}])
+
+        # Test with explicit whole space.
+        with self.assertRaisesRegex(ValueError, regex):
+            node.drop_discrete_categories({'A', 'B', 'C'})
+
 
 class TestIndexColumnMethods(unittest.TestCase):
     @staticmethod

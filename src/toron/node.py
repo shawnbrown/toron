@@ -191,6 +191,30 @@ class Node(object):
             msg = f'omitting redundant categories: {formatted}'
             warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
+    def drop_discrete_categories(
+        self, category: Set[str], *categories: Set[str]
+    ) -> None:
+        cats_to_drop = list(chain((category,), categories))
+
+        with self._managed_transaction() as cursor:
+            prop_repo = self._dal.PropertyRepository(cursor)
+
+            columns = self._dal.ColumnManager(cursor).get_columns()
+            whole_space = set(columns)
+
+            if whole_space in cats_to_drop:
+                msg = f'cannot drop whole space: {whole_space!r}'
+                raise ValueError(msg)
+
+            existing_cats = self._discrete_categories(cursor)
+            cats_to_keep = [x for x in existing_cats if x not in cats_to_drop]
+
+            category_sets = minimize_discrete_categories(
+                cats_to_keep, [whole_space]
+            )
+            category_lists: JsonTypes = [list(cat) for cat in category_sets]
+            prop_repo.update('discrete_categories', category_lists)
+
     @property
     def index_columns(self) -> Tuple[str, ...]:
         with self._managed_cursor() as cursor:
