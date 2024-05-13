@@ -33,6 +33,7 @@ from .data_models import (
 from .data_service import (
     delete_index_record,
     find_crosswalks_by_node_reference,
+    get_all_discrete_categories,
 )
 from ._utils import (
     BitFlags,
@@ -140,16 +141,11 @@ class Node(object):
                 self._connector.transaction_rollback(cursor)
                 raise
 
-    def _discrete_categories(self, cursor: Any) -> List[Set[str]]:
-        prop_repo = self._dal.PropertyRepository(cursor)
-        values: Optional[List[List[str]]]
-        values = prop_repo.get('discrete_categories')  # type: ignore [assignment]
-        return [set(x) for x in values] if values else []
-
     @property
     def discrete_categories(self) -> List[Set[str]]:
         with self._managed_cursor() as cursor:
-            return self._discrete_categories(cursor)
+            property_repo = self._dal.PropertyRepository(cursor)
+            return get_all_discrete_categories(property_repo)
 
     def add_discrete_categories(
         self, category: Set[str], *categories: Set[str]
@@ -171,7 +167,7 @@ class Node(object):
                         f'must be present in index columns'
                     )
 
-            existing_categories = self._discrete_categories(cursor)
+            existing_categories = get_all_discrete_categories(prop_repo)
             whole_space = set(columns)
 
             category_sets = minimize_discrete_categories(
@@ -206,7 +202,7 @@ class Node(object):
                 msg = f'cannot drop whole space: {whole_space!r}'
                 raise ValueError(msg)
 
-            existing_cats = self._discrete_categories(cursor)
+            existing_cats = get_all_discrete_categories(prop_repo)
             cats_to_keep = [x for x in existing_cats if x not in cats_to_drop]
 
             category_sets = minimize_discrete_categories(

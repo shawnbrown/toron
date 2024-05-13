@@ -2,6 +2,8 @@
 
 from toron._typing import (
     List,
+    Optional,
+    Set,
 )
 
 from .data_models import (
@@ -9,6 +11,7 @@ from .data_models import (
     BaseWeightRepository,
     BaseRelationRepository,
     BaseCrosswalkRepository,
+    BasePropertyRepository,
     Crosswalk,
 )
 
@@ -80,3 +83,11 @@ def find_crosswalks_by_node_reference(
         return [x for x in matches if x.other_unique_id.startswith(node_reference)]
 
     return []  # Return empty list if no match.
+
+
+def get_all_discrete_categories(
+    property_repo: BasePropertyRepository
+) -> List[Set[str]]:
+    values: Optional[List[List[str]]]
+    values = property_repo.get('discrete_categories')  # type: ignore [assignment]
+    return [set(x) for x in values] if values else []
