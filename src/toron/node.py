@@ -172,17 +172,17 @@ class Node(object):
                     )
 
             existing_categories = self._discrete_categories(cursor)
-            whole_space = [set(columns)]
+            whole_space = set(columns)
 
             category_sets = minimize_discrete_categories(
-                new_categories, existing_categories, whole_space
+                new_categories, existing_categories, [whole_space]
             )
 
             category_lists: JsonTypes = [list(cat) for cat in category_sets]
-            if prop_repo.get('discrete_categories'):
-                prop_repo.update('discrete_categories', category_lists)
-            else:
+            try:
                 prop_repo.add('discrete_categories', category_lists)
+            except Exception:
+                prop_repo.update('discrete_categories', category_lists)
 
         omitting = [cat for cat in new_categories if (cat not in category_sets)]
         if omitting:
