@@ -3,8 +3,14 @@
 from itertools import chain
 from itertools import combinations
 
+from toron._typing import (
+    Iterable,
+    List,
+    Set,
+)
 
-def make_structure(discrete_categories):
+
+def make_structure(discrete_categories: List[Set[str]]) -> List[Set[str]]:
     """Returns a join-semilattice generated from a collection of
     discrete categories which can be used to define the valid levels
     of granularity in a dataset::
@@ -31,7 +37,7 @@ def make_structure(discrete_categories):
     return structure
 
 
-def minimize_discrete_categories(*bases):
+def minimize_discrete_categories(*bases: Iterable[Set[str]]) -> List[Set[str]]:
     """Returns a minimal base of discrete categories that covers
     the same generated structure as all given bases combined::
 
@@ -40,7 +46,7 @@ def minimize_discrete_categories(*bases):
         >>> minimize_discrete_categories(base_a, base_b)
         [{'A'}, {'B'}, {'C'}, {'C', 'D'}]
     """
-    base_categories = []
+    base_categories: List[Set[str]] = []
     for category in sorted(chain(*bases), key=len):
         structure = make_structure(base_categories)
         if category not in structure:

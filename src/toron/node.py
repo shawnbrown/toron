@@ -140,7 +140,7 @@ class Node(object):
                 self._connector.transaction_rollback(cursor)
                 raise
 
-    def _discrete_categories(self, cursor):
+    def _discrete_categories(self, cursor: Any) -> List[Set[str]]:
         prop_repo = self._dal.PropertyRepository(cursor)
         values: Optional[List[List[str]]]
         values = prop_repo.get('discrete_categories')  # type: ignore [assignment]
