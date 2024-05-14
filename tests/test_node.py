@@ -305,6 +305,19 @@ class TestIndexColumnMethods(unittest.TestCase):
             manager = node._dal.ColumnManager(cursor)
             manager.add_columns(*columns)
 
+    @staticmethod
+    def get_categories_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+            return [set(x) for x in prop_repo.get('discrete_categories')]
+
+    @staticmethod
+    def add_categories_helper(node, categories):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+            categories = [list(x) for x in categories]
+            prop_repo.add('discrete_categories', categories)
+
     def test_add_index_columns(self):
         node = Node()
 
@@ -344,6 +357,23 @@ class TestIndexColumnMethods(unittest.TestCase):
             toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
+
+    def test_rename_index_columns_and_categories(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+        self.add_categories_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
+
+        if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
+            node.rename_index_columns({'B': 'G', 'D': 'T'})
+        else:
+            import toron.dal1
+            toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
+
+        self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
+        self.assertEqual(
+            self.get_categories_helper(node),
+            [{'A'}, {'A', 'G'}, {'A', 'G', 'C', 'T'}],
+        )
 
     def test_drop_index_columns(self):
         node = Node()

@@ -34,6 +34,7 @@ from .data_service import (
     delete_index_record,
     find_crosswalks_by_node_reference,
     get_all_discrete_categories,
+    rename_discrete_categories,
 )
 from ._utils import (
     BitFlags,
@@ -225,6 +226,9 @@ class Node(object):
         with self._managed_transaction() as cursor:
             manager = self._dal.ColumnManager(cursor)
             manager.rename_columns(mapping)
+
+            prop_repo = self._dal.PropertyRepository(cursor)
+            rename_discrete_categories(mapping, prop_repo)
 
     def drop_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:

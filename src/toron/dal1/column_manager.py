@@ -144,6 +144,8 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
         msg = f"expected Node with 'DAL1' backend, got {node._dal.backend!r}"
         raise TypeError(msg)
 
+    from toron.data_service import rename_discrete_categories
+
     with node._managed_cursor() as cursor:
         manager = ColumnManager(cursor)
 
@@ -207,6 +209,11 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
             # Check integrity, re-create constraints, and commit transaction.
             verify_foreign_key_check(cursor)
             schema.create_schema_constraints(cursor)
+
+            # Rename discrete categories to match new column names.
+            property_repo = node._dal.PropertyRepository(cursor)
+            rename_discrete_categories(mapping, property_repo)
+
             cursor.execute('COMMIT TRANSACTION')
 
         except Exception as err:
