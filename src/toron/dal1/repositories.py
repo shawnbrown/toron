@@ -11,6 +11,7 @@ from toron._typing import (
     Iterable,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -82,6 +83,18 @@ class IndexRepository(BaseIndexRepository):
 
         self._cursor.execute(sql)
         return (Index(*record) for record in self._cursor)
+
+    def get_distinct_labels(
+        self, column: str, *columns: str, include_undefined: bool = True
+    ) -> Iterator[Tuple[str, ...]]:
+        """Get distinct label values for given column names."""
+        columns = (column,) + columns
+        formatted_cols = ', '.join(format_identifier(x) for x in columns)
+        sql = f'SELECT DISTINCT {formatted_cols} FROM main.node_index'
+        if not include_undefined:
+            sql += ' WHERE index_id != 0'
+        self._cursor.execute(sql)
+        return (row for row in self._cursor)
 
     def find_by_label(
         self,

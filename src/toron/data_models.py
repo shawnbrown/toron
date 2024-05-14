@@ -262,6 +262,12 @@ class BaseIndexRepository(ABC):
         """Get all records in the repository."""
 
     @abstractmethod
+    def get_distinct_labels(
+        self, column: str, *columns: str, include_undefined: bool = True
+    ) -> Iterator[Tuple[str, ...]]:
+        """Get distinct label values for given column names."""
+
+    @abstractmethod
     def find_by_label(
         self,
         criteria: Optional[Dict[str, str]],

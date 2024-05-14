@@ -190,6 +190,29 @@ class IndexRepositoryBaseTest(ABC):
         ]
         self.assertEqual(list(results), expected, msg='should not include index_id 0')
 
+    def test_get_distinct_labels(self):
+        self.manager.add_columns('A', 'B', 'C')
+        self.repository.add('foo', 'x', 'aaa')
+        self.repository.add('foo', 'y', 'bbb')
+        self.repository.add('bar', 'x', 'bbb')
+        self.repository.add('bar', 'x', 'ccc')
+
+        results = self.repository.get_distinct_labels('A')
+        expected = {('-',), ('foo',), ('bar',)}
+        self.assertEqual(set(results), expected)
+
+        results = self.repository.get_distinct_labels('A', include_undefined=False)
+        expected = {('foo',), ('bar',)}
+        self.assertEqual(set(results), expected)
+
+        results = self.repository.get_distinct_labels('A', 'B')
+        expected = {('-', '-'), ('foo', 'x'), ('foo', 'y'), ('bar', 'x')}
+        self.assertEqual(set(results), expected)
+
+        results = self.repository.get_distinct_labels('A', 'B', include_undefined=False)
+        expected = {('foo', 'x'), ('foo', 'y'), ('bar', 'x')}
+        self.assertEqual(set(results), expected)
+
     def test_find_by_label(self):
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'x')
