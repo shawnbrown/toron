@@ -76,7 +76,10 @@ class TestStructureRepository(unittest.TestCase):
 
         self.assertEqual(
             repository.get_all(),
-            [(4, 9.0, 1, 1, 1), (2, 7.0, 1, 1, 0), (1, 0.0, 0, 0, 0), (3, None, 1, 0, 0)]
+            [Structure(4, 9.0,  1, 1, 1),
+             Structure(2, 7.0,  1, 1, 0),
+             Structure(1, 0.0,  0, 0, 0),
+             Structure(3, None, 1, 0, 0)]
         )
 
     def test_update(self):

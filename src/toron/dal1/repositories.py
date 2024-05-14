@@ -170,7 +170,7 @@ class StructureRepository(BaseStructureRepository):
         self._cursor.execute(
             'SELECT * FROM main.structure ORDER BY _granularity DESC'
         )
-        return self._cursor.fetchall()
+        return [Structure(*record) for record in self._cursor]
 
     def update(self, record: Structure) -> None:
         """Update a record in the repository."""
