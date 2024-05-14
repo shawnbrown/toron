@@ -3,12 +3,14 @@
 import unittest
 
 from toron.data_models import (
+    Structure,
     Crosswalk,
 )
 from toron import data_access
 from toron.data_service import (
     find_crosswalks_by_node_reference,
     rename_discrete_categories,
+    rebuild_structure_table,
 )
 
 
@@ -100,3 +102,34 @@ class TestRenameDiscreteCategories(unittest.TestCase):
             [set(cat) for cat in categories],
             [{'A'}, {'X'}, {'A', 'Z'}],
         )
+
+class TestRebuildStructureTable(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        self.column_manager = dal.ColumnManager(cur)
+        self.column_manager.add_columns('A', 'B', 'C')
+
+        self.property_repo = dal.PropertyRepository(cur)
+        self.structure_repo = dal.StructureRepository(cur)
+
+    def test_generate(self):
+        self.property_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+
+        rebuild_structure_table(self.column_manager, self.property_repo, self.structure_repo)
+
+        expected = [
+            Structure(1, None, 0, 0, 0),
+            Structure(2, None, 1, 0, 0),
+            Structure(3, None, 0, 1, 0),
+            Structure(4, None, 1, 0, 1),
+            Structure(5, None, 1, 1, 0),
+            Structure(6, None, 1, 1, 1),
+        ]
+        self.assertEqual(self.structure_repo.get_all(), expected)

@@ -7,12 +7,17 @@ from toron._typing import (
     Set,
 )
 
+from .categories import (
+    make_structure,
+)
 from .data_models import (
+    BaseColumnManager,
     BaseIndexRepository,
     BaseWeightRepository,
     BaseRelationRepository,
     BaseCrosswalkRepository,
     BasePropertyRepository,
+    BaseStructureRepository,
     Crosswalk,
     JsonTypes,
 )
@@ -104,3 +109,20 @@ def rename_discrete_categories(
     category_sets = [do_rename(cat) for cat in categories]
     category_lists: JsonTypes = [list(cat) for cat in category_sets]
     property_repo.update('discrete_categories', category_lists)
+
+
+def rebuild_structure_table(
+    column_manager: BaseColumnManager,
+    property_repo: BasePropertyRepository,
+    structure_repo: BaseStructureRepository,
+) -> None:
+    # Remove existing structure.
+    for structure in structure_repo.get_all():
+        structure_repo.delete(structure.id)
+
+    # Regenerate new structure.
+    categories = get_all_discrete_categories(property_repo)
+    columns = column_manager.get_columns()
+    for cat in make_structure(categories):
+        bits = [(x in cat) for x in columns]
+        structure_repo.add(*bits)
