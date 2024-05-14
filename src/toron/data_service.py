@@ -1,6 +1,7 @@
 """Application logic functions that interact with repository objects."""
 
 from toron._typing import (
+    Dict,
     List,
     Optional,
     Set,
@@ -13,6 +14,7 @@ from .data_models import (
     BaseCrosswalkRepository,
     BasePropertyRepository,
     Crosswalk,
+    JsonTypes,
 )
 
 
@@ -91,3 +93,14 @@ def get_all_discrete_categories(
     values: Optional[List[List[str]]]
     values = property_repo.get('discrete_categories')  # type: ignore [assignment]
     return [set(x) for x in values] if values else []
+
+
+def rename_discrete_categories(
+    mapping: Dict[str, str],
+    property_repo: BasePropertyRepository,
+) -> None:
+    categories = get_all_discrete_categories(property_repo)
+    do_rename = lambda cat: {mapping.get(x, x) for x in cat}
+    category_sets = [do_rename(cat) for cat in categories]
+    category_lists: JsonTypes = [list(cat) for cat in category_sets]
+    property_repo.update('discrete_categories', category_lists)

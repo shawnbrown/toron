@@ -8,6 +8,7 @@ from toron.data_models import (
 from toron import data_access
 from toron.data_service import (
     find_crosswalks_by_node_reference,
+    rename_discrete_categories,
 )
 
 
@@ -72,3 +73,30 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
 
         crosswalks = find_crosswalks_by_node_reference(None, self.crosswalk_repo)
         self.assertEqual(crosswalks, [])
+
+
+class TestRenameDiscreteCategories(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        column_manager = dal.ColumnManager(cur)
+        column_manager.add_columns('A', 'B', 'C')
+
+        self.property_repo = dal.PropertyRepository(cur)
+
+    def test_rename(self):
+        self.property_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+
+        rename_discrete_categories({'B': 'X', 'C': 'Z'}, self.property_repo)
+
+        categories = self.property_repo.get('discrete_categories')
+        self.assertEqual(
+            [set(cat) for cat in categories],
+            [{'A'}, {'X'}, {'A', 'Z'}],
+        )
