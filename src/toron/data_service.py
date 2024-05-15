@@ -1,5 +1,7 @@
 """Application logic functions that interact with repository objects."""
 
+from math import log2
+
 from toron._typing import (
     Dict,
     List,
@@ -111,10 +113,61 @@ def rename_discrete_categories(
     property_repo.update('discrete_categories', category_lists)
 
 
+def calculate_granularity(
+    columns: List[str],
+    index_repo: BaseIndexRepository,
+    alt_index_repo: BaseIndexRepository,
+) -> float:
+    r"""Return the granularity of a given level (defined by *columns*).
+
+    This function implements a Shannon entropy based metric for the
+    "granularity measure of a partition" as described on p. 293 of:
+
+        MARK J. WIERMAN (1999) MEASURING UNCERTAINTY IN ROUGH SET
+        THEORY, International Journal of General Systems, 28:4-5,
+        283-297, DOI: 10.1080/03081079908935239
+
+    In PROBABILISTIC APPROACHES TO ROUGH SETS (Y. Y. Yao, 2003),
+    Yiyu Yao presents the same equation in Eq. (6), using a form
+    more useful for our implimentation:
+
+    .. code-block:: none
+
+                   m
+                  ___
+                  \    |A_i|
+        log |U| - /    ───── log |A_i|
+                  ‾‾‾   |U|
+                  i=1
+
+        TeX notation:
+
+            \[\log_{2}|U|-\sum_{i=1}^m \frac{|A_i|}{|U|}\log_{2}|A_i|\]
+    """
+    total_cardinality = index_repo.get_cardnality(include_undefined=False)
+    if not total_cardinality:
+        return 0.0  # <- EXIT!
+
+    distinct_labels = index_repo.get_distinct_labels(
+        *columns, include_undefined=False
+    )
+
+    total_uncertainty = 0.0
+    for labels in distinct_labels:
+        criteria = dict(zip(columns, labels))
+        records = alt_index_repo.find_by_label(criteria, include_undefined=False)
+        cardnality = sum(1 for x in records)
+        total_uncertainty += (cardnality / total_cardinality) * log2(cardnality)
+
+    return log2(total_cardinality) - total_uncertainty
+
+
 def rebuild_structure_table(
     column_manager: BaseColumnManager,
     property_repo: BasePropertyRepository,
     structure_repo: BaseStructureRepository,
+    index_repo: BaseIndexRepository,
+    alt_index_repo: BaseIndexRepository,
 ) -> None:
     # Remove existing structure.
     for structure in structure_repo.get_all():
@@ -124,6 +177,10 @@ def rebuild_structure_table(
     categories = get_all_discrete_categories(property_repo)
     columns = column_manager.get_columns()
     for cat in make_structure(categories):
+        if cat:
+            granularity = calculate_granularity(list(cat), index_repo, alt_index_repo)
+        else:
+            granularity = 0.0
+
         bits = [(x in cat) for x in columns]
-        granularity = None
         structure_repo.add(granularity, *bits)

@@ -112,24 +112,40 @@ class TestRebuildStructureTable(unittest.TestCase):
         self.addCleanup(lambda: connector.release_connection(con))
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
+        alt_cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(alt_cur))
 
         self.column_manager = dal.ColumnManager(cur)
-        self.column_manager.add_columns('A', 'B', 'C')
-
         self.property_repo = dal.PropertyRepository(cur)
         self.structure_repo = dal.StructureRepository(cur)
+        self.index_repo = dal.IndexRepository(cur)
+        self.alt_index_repo = dal.IndexRepository(alt_cur)
+
+        self.column_manager.add_columns('A', 'B', 'C')
+        self.index_repo.add('a1', 'b1', 'c1')
+        self.index_repo.add('a1', 'b1', 'c2')
+        self.index_repo.add('a1', 'b2', 'c3')
+        self.index_repo.add('a1', 'b2', 'c4')
+        self.index_repo.add('a2', 'b3', 'c5')
+        self.index_repo.add('a2', 'b3', 'c6')
+        self.index_repo.add('a2', 'b4', 'c7')
+        self.index_repo.add('a2', 'b4', 'c8')
 
     def test_generate(self):
-        self.property_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+        self.property_repo.add('discrete_categories', [['A'], ['A', 'B'], ['A', 'B', 'C']])
 
-        rebuild_structure_table(self.column_manager, self.property_repo, self.structure_repo)
+        rebuild_structure_table(
+            self.column_manager,
+            self.property_repo,
+            self.structure_repo,
+            self.index_repo,
+            self.alt_index_repo,
+        )
 
         expected = [
-            Structure(1, None, 0, 0, 0),
-            Structure(2, None, 1, 0, 0),
-            Structure(3, None, 0, 1, 0),
-            Structure(4, None, 1, 0, 1),
-            Structure(5, None, 1, 1, 0),
-            Structure(6, None, 1, 1, 1),
+            Structure(id=4, granularity=3.0, bits=(1, 1, 1)),
+            Structure(id=3, granularity=2.0, bits=(1, 1, 0)),
+            Structure(id=2, granularity=1.0, bits=(1, 0, 0)),
+            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
         ]
         self.assertEqual(self.structure_repo.get_all(), expected)
