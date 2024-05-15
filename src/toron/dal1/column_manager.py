@@ -212,7 +212,7 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
 
             # Rename discrete categories to match new column names.
             property_repo = node._dal.PropertyRepository(cursor)
-            rename_discrete_categories(mapping, property_repo)
+            rename_discrete_categories(mapping, manager, property_repo)
 
             cursor.execute('COMMIT TRANSACTION')
 

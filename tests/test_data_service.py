@@ -87,15 +87,15 @@ class TestRenameDiscreteCategories(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        column_manager = dal.ColumnManager(cur)
-        column_manager.add_columns('A', 'B', 'C')
+        self.column_manager = dal.ColumnManager(cur)
+        self.column_manager.add_columns('A', 'B', 'C')
 
         self.property_repo = dal.PropertyRepository(cur)
 
     def test_rename(self):
         self.property_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
 
-        rename_discrete_categories({'B': 'X', 'C': 'Z'}, self.property_repo)
+        rename_discrete_categories({'B': 'X', 'C': 'Z'}, self.column_manager, self.property_repo)
 
         categories = self.property_repo.get('discrete_categories')
         self.assertEqual(
@@ -131,7 +131,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         self.index_repo.add('a2', 'b4', 'c7')
         self.index_repo.add('a2', 'b4', 'c8')
 
-    def test_generate(self):
+    def test_rebuild_structure(self):
         self.property_repo.add('discrete_categories', [['A'], ['A', 'B'], ['A', 'B', 'C']])
 
         rebuild_structure_table(
@@ -149,3 +149,28 @@ class TestRebuildStructureTable(unittest.TestCase):
             Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
         ]
         self.assertEqual(self.structure_repo.get_all(), expected)
+
+    def test_rebuild_structure_no_categories(self):
+        """When no discrete categories are defined, the function should
+        build the "trivial topology".
+
+        The trivial topology (also called the "indiscrete topology")
+        is one where the only open sets are the empty set (represented
+        by bits ``(0, 0, 0)``) and the entire space (represented by
+        ``(1, 1, 1)``).
+        """
+        self.property_repo.delete('discrete_categories')  # <- No categories!
+
+        rebuild_structure_table(
+            self.column_manager,
+            self.property_repo,
+            self.structure_repo,
+            self.index_repo,
+            self.alt_index_repo,
+        )
+
+        trivial_topology = [
+            Structure(id=2, granularity=3.0, bits=(1, 1, 1)),
+            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
+        ]
+        self.assertEqual(self.structure_repo.get_all(), trivial_topology)

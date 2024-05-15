@@ -95,18 +95,27 @@ def find_crosswalks_by_node_reference(
 
 
 def get_all_discrete_categories(
-    property_repo: BasePropertyRepository
+    column_manager: BaseColumnManager,
+    property_repo: BasePropertyRepository,
 ) -> List[Set[str]]:
     values: Optional[List[List[str]]]
     values = property_repo.get('discrete_categories')  # type: ignore [assignment]
-    return [set(x) for x in values] if values else []
+    if values:
+        return [set(x) for x in values]
+
+    columns = column_manager.get_columns()
+    if columns:
+        return [set(columns)]  # Default to whole space.
+
+    return []  # Empty when no columns defined.
 
 
 def rename_discrete_categories(
     mapping: Dict[str, str],
+    column_manager: BaseColumnManager,
     property_repo: BasePropertyRepository,
 ) -> None:
-    categories = get_all_discrete_categories(property_repo)
+    categories = get_all_discrete_categories(column_manager, property_repo)
     do_rename = lambda cat: {mapping.get(x, x) for x in cat}
     category_sets = [do_rename(cat) for cat in categories]
     category_lists: JsonTypes = [list(cat) for cat in category_sets]
@@ -174,7 +183,7 @@ def rebuild_structure_table(
         structure_repo.delete(structure.id)
 
     # Regenerate new structure.
-    categories = get_all_discrete_categories(property_repo)
+    categories = get_all_discrete_categories(column_manager, property_repo)
     columns = column_manager.get_columns()
     for cat in make_structure(categories):
         if cat:

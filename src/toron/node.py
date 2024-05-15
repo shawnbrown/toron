@@ -145,8 +145,9 @@ class Node(object):
     @property
     def discrete_categories(self) -> List[Set[str]]:
         with self._managed_cursor() as cursor:
-            property_repo = self._dal.PropertyRepository(cursor)
-            return get_all_discrete_categories(property_repo)
+            col_manager = self._dal.ColumnManager(cursor)
+            prop_repo = self._dal.PropertyRepository(cursor)
+            return get_all_discrete_categories(col_manager, prop_repo)
 
     def add_discrete_categories(
         self, category: Set[str], *categories: Set[str]
@@ -154,9 +155,10 @@ class Node(object):
         new_categories = (category,) + categories
 
         with self._managed_transaction() as cursor:
+            col_manager = self._dal.ColumnManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
 
-            columns = self._dal.ColumnManager(cursor).get_columns()
+            columns = col_manager.get_columns()
             if not columns:
                 msg = 'must add index columns before defining categories'
                 raise RuntimeError(msg)
@@ -168,7 +170,7 @@ class Node(object):
                         f'must be present in index columns'
                     )
 
-            existing_categories = get_all_discrete_categories(prop_repo)
+            existing_categories = get_all_discrete_categories(col_manager, prop_repo)
             whole_space = set(columns)
 
             category_sets = minimize_discrete_categories(
@@ -194,16 +196,17 @@ class Node(object):
         cats_to_drop = list(chain((category,), categories))
 
         with self._managed_transaction() as cursor:
+            col_manager = self._dal.ColumnManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
 
-            columns = self._dal.ColumnManager(cursor).get_columns()
+            columns = col_manager.get_columns()
             whole_space = set(columns)
 
             if whole_space in cats_to_drop:
                 msg = f'cannot drop whole space: {whole_space!r}'
                 raise ValueError(msg)
 
-            existing_cats = get_all_discrete_categories(prop_repo)
+            existing_cats = get_all_discrete_categories(col_manager, prop_repo)
             cats_to_keep = [x for x in existing_cats if x not in cats_to_drop]
 
             category_sets = minimize_discrete_categories(
@@ -219,22 +222,22 @@ class Node(object):
 
     def add_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
-            manager = self._dal.ColumnManager(cursor)
-            manager.add_columns(column, *columns)
+            col_manager = self._dal.ColumnManager(cursor)
+            col_manager.add_columns(column, *columns)
 
     def rename_index_columns(self, mapping: Dict[str, str]) -> None:
         with self._managed_transaction() as cursor:
-            manager = self._dal.ColumnManager(cursor)
-            manager.rename_columns(mapping)
-
+            col_manager = self._dal.ColumnManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
-            rename_discrete_categories(mapping, prop_repo)
+
+            col_manager.rename_columns(mapping)
+            rename_discrete_categories(mapping, col_manager, prop_repo)
 
     def drop_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
-            manager = self._dal.ColumnManager(cursor)
+            col_manager = self._dal.ColumnManager(cursor)
 
-            if set(manager.get_columns()).issubset(chain([column], columns)):
+            if set(col_manager.get_columns()).issubset(chain([column], columns)):
                 msg = (
                     'cannot remove all index columns\n'
                     '\n'
@@ -243,7 +246,7 @@ class Node(object):
                 )
                 raise RuntimeError(msg)
 
-            manager.drop_columns(column, *columns)
+            col_manager.drop_columns(column, *columns)
 
     def insert_index(
         self,
