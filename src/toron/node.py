@@ -257,10 +257,10 @@ class Node(object):
 
         counter: Counter = Counter()
         with self._managed_transaction() as cursor:
-            manager = self._dal.ColumnManager(cursor)
-            repository = self._dal.IndexRepository(cursor)
+            col_manager = self._dal.ColumnManager(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
 
-            index_columns = manager.get_columns()
+            index_columns = col_manager.get_columns()
             verify_columns_set(columns, index_columns)
 
             order_lookup = dict(enumerate(index_columns.index(x) for x in columns))
@@ -269,7 +269,7 @@ class Node(object):
             for row in data:
                 row = [v for k, v in sorted(enumerate(row), key=sort_key)]
                 try:
-                    repository.add(*row)
+                    index_repo.add(*row)
                     counter['inserted'] += 1
                 except ValueError:
                     counter['dupe_or_empty_str'] += 1
@@ -284,11 +284,11 @@ class Node(object):
                 label_columns = self._dal.ColumnManager(cursor).get_columns()
                 yield ('index_id',) + label_columns  # Yield header row.
 
-            repository = self._dal.IndexRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
             if criteria:
-                index_records = repository.find_by_label(criteria)
+                index_records = index_repo.find_by_label(criteria)
             else:
-                index_records = repository.get_all()
+                index_records = index_repo.get_all()
 
             results = ((x.id,) + x.labels for x in index_records)
             for row in results:
@@ -310,9 +310,9 @@ class Node(object):
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
-            column_manager = self._dal.ColumnManager(cursor)
+            col_manager = self._dal.ColumnManager(cursor)
 
-            label_columns = column_manager.get_columns()
+            label_columns = col_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             previously_merged = set()
@@ -396,14 +396,14 @@ class Node(object):
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
-            column_manager = self._dal.ColumnManager(cursor)
+            col_manager = self._dal.ColumnManager(cursor)
 
             if data:
                 data, columns = normalize_tabular(data, columns)
                 if 'index_id' not in columns:
                     raise ValueError("column 'index_id' required to delete records")
 
-                label_columns = column_manager.get_columns()
+                label_columns = col_manager.get_columns()
                 verify_columns_set(columns, label_columns, allow_extras=True)
 
                 for row in data:
@@ -481,8 +481,8 @@ class Node(object):
 
     def edit_weight_group(self, existing_name: str, **changes: Any) -> None:
         with self._managed_transaction() as cursor:
-            repository = self._dal.WeightGroupRepository(cursor)
-            group = repository.get_by_name(existing_name)
+            group_repo = self._dal.WeightGroupRepository(cursor)
+            group = group_repo.get_by_name(existing_name)
             if not group:
                 import warnings
                 msg = f'no weight group named {existing_name!r}'
@@ -490,19 +490,19 @@ class Node(object):
                 return  # <- EXIT!
 
             group = replace(group, **changes)
-            repository.update(group)
+            group_repo.update(group)
 
     def drop_weight_group(self, existing_name: str) -> None:
         with self._managed_transaction() as cursor:
-            repository = self._dal.WeightGroupRepository(cursor)
-            group = repository.get_by_name(existing_name)
+            group_repo = self._dal.WeightGroupRepository(cursor)
+            group = group_repo.get_by_name(existing_name)
             if not group:
                 import warnings
                 msg = f'no weight group named {existing_name!r}'
                 warnings.warn(msg, category=ToronWarning, stacklevel=2)
                 return  # <- EXIT!
 
-            repository.delete(group.id)
+            group_repo.delete(group.id)
 
     def select_weights(
         self,
