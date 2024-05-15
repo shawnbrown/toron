@@ -37,19 +37,19 @@ class TestStructureRepository(unittest.TestCase):
     def test_add(self):
         repository = StructureRepository(self.cursor)
 
-        repository.add(0, 0, 0)
-        repository.add(1, 1, 0)
-        repository.add(1, 1, 1)
+        repository.add(None, 0, 0, 0)
+        repository.add(None, 1, 1, 0)
+        repository.add(None, 1, 1, 1)
 
         self.assertRecords([(1, None, 0, 0, 0), (2, None, 1, 1, 0), (3, None, 1, 1, 1)])
 
         msg = "should not add (1, 1, 1) again, duplicates not allowed"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.add(1, 1, 1)
+            repository.add(None, 1, 1, 1)
 
         msg = "NULL values not allowed in label columns"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.add(1, None, 1)
+            repository.add(None, 1, None, 1)
 
     def test_get(self):
         repository = StructureRepository(self.cursor)

@@ -161,12 +161,14 @@ class StructureRepository(BaseStructureRepository):
         """Initialize a new StructureRepository instance."""
         self._cursor = cursor
 
-    def add(self, bit: int, *bits: int) -> None:
+    def add(
+        self, granularity: Optional[float], bit: int, *bits: int
+    ) -> None:
         """Add a record to the repository."""
         bits = (bit,) + bits
         qmarks = ', '.join('?' * len(bits))
-        sql = f'INSERT INTO main.structure VALUES (NULL, NULL, {qmarks})'
-        self._cursor.execute(sql, bits)
+        sql = f'INSERT INTO main.structure VALUES (NULL, ?, {qmarks})'
+        self._cursor.execute(sql, (granularity,) + bits)
 
     def get(self, id: int) -> Optional[Structure]:
         """Get a record from the repository."""

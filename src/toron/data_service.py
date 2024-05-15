@@ -125,4 +125,5 @@ def rebuild_structure_table(
     columns = column_manager.get_columns()
     for cat in make_structure(categories):
         bits = [(x in cat) for x in columns]
-        structure_repo.add(*bits)
+        granularity = None
+        structure_repo.add(granularity, *bits)

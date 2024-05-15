@@ -356,7 +356,9 @@ class BaseStructureRepository(ABC):
         """Initialize a new StructureRepository instance."""
 
     @abstractmethod
-    def add(self, bit: int, *bits: int) -> None:
+    def add(
+        self, granularity: Optional[float], bit: int, *bits: int
+    ) -> None:
         """Add a record to the repository."""
 
     @abstractmethod
