@@ -84,6 +84,15 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return (Index(*record) for record in self._cursor)
 
+    def get_cardnality(self, include_undefined: bool = True) -> int:
+        """Return the number of records in the repository."""
+        sql = 'SELECT COUNT(*) FROM main.node_index'
+        if not include_undefined:
+            sql += ' WHERE index_id != 0'
+
+        self._cursor.execute(sql)
+        return self._cursor.fetchone()[0]
+
     def get_distinct_labels(
         self, column: str, *columns: str, include_undefined: bool = True
     ) -> Iterator[Tuple[str, ...]]:
