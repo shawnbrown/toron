@@ -125,7 +125,7 @@ def rename_discrete_categories(
 def calculate_granularity(
     columns: List[str],
     index_repo: BaseIndexRepository,
-    alt_index_repo: BaseIndexRepository,
+    aux_index_repo: BaseIndexRepository,
 ) -> float:
     r"""Return the granularity of a given level (defined by *columns*).
 
@@ -164,7 +164,7 @@ def calculate_granularity(
     total_uncertainty = 0.0
     for labels in distinct_labels:
         criteria = dict(zip(columns, labels))
-        records = alt_index_repo.find_by_label(criteria, include_undefined=False)
+        records = aux_index_repo.find_by_label(criteria, include_undefined=False)
         cardnality = sum(1 for x in records)
         total_uncertainty += (cardnality / total_cardinality) * log2(cardnality)
 
@@ -176,7 +176,7 @@ def rebuild_structure_table(
     property_repo: BasePropertyRepository,
     structure_repo: BaseStructureRepository,
     index_repo: BaseIndexRepository,
-    alt_index_repo: BaseIndexRepository,
+    aux_index_repo: BaseIndexRepository,
 ) -> None:
     # Remove existing structure.
     for structure in structure_repo.get_all():
@@ -187,7 +187,7 @@ def rebuild_structure_table(
     columns = column_manager.get_columns()
     for cat in make_structure(categories):
         if cat:
-            granularity = calculate_granularity(list(cat), index_repo, alt_index_repo)
+            granularity = calculate_granularity(list(cat), index_repo, aux_index_repo)
         else:
             granularity = 0.0
 

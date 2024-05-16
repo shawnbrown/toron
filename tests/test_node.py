@@ -18,6 +18,7 @@ from toron._utils import ToronWarning
 from toron.data_models import (
     Crosswalk,
     Index,
+    Structure,
     WeightGroup,
 )
 from toron.node import Node
@@ -212,31 +213,63 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
 
 class TestDiscreteCategoriesMethods(unittest.TestCase):
-    @staticmethod
-    def add_cols_helper(node, *columns):  # <- Helper function.
-        with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
-            manager.add_columns(*columns)
+    def setUp(self):
+        self.node = Node()
+        with self.node._managed_cursor() as cur:
+            column_manager = self.node._dal.ColumnManager(cur)
+            index_repo = self.node._dal.IndexRepository(cur)
+
+            column_manager.add_columns('A', 'B', 'C')
+            index_repo.add('a1', 'b1', 'c1')
+            index_repo.add('a1', 'b1', 'c2')
+            index_repo.add('a1', 'b2', 'c3')
+            index_repo.add('a1', 'b2', 'c4')
+            index_repo.add('a2', 'b3', 'c5')
+            index_repo.add('a2', 'b3', 'c6')
+            index_repo.add('a2', 'b4', 'c7')
+            index_repo.add('a2', 'b4', 'c8')
+
+    def get_structure_helper(self):  # <- Helper function.
+        """Return structure in order of structure_id."""
+        with self.node._managed_cursor() as cursor:
+            resutls = self.node._dal.StructureRepository(cursor).get_all()
+            return sorted(resutls, key=lambda structure: structure.id)
 
     def test_discrete_categories_property(self):
-        node = Node()
+        node = self.node
         with node._managed_cursor() as cursor:
-            prop_repo = node._dal.PropertyRepository(cursor)
+            prop_repo = self.node._dal.PropertyRepository(cursor)
             prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
 
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
 
     def test_add_discrete_categories(self):
-        node = Node()
-        self.add_cols_helper(node, 'A', 'B', 'C')
+        node = self.node
 
         # Creates the property if it doesn't exist.
         node.add_discrete_categories({'A'}, {'B'})
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'B', 'C'}])
+        expected = [
+            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
+            Structure(id=2, granularity=1.0, bits=(1, 0, 0)),
+            Structure(id=3, granularity=2.0, bits=(0, 1, 0)),
+            Structure(id=4, granularity=3.0, bits=(1, 1, 1)),
+            Structure(id=5, granularity=2.0, bits=(1, 1, 0)),
+        ]
+        self.assertEqual(self.get_structure_helper(), expected)
 
         # Updates the property if it does exist.
         node.add_discrete_categories({'A', 'C'})
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
+        expected = [
+            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
+            Structure(id=2, granularity=1.0, bits=(1, 0, 0)),
+            Structure(id=3, granularity=2.0, bits=(0, 1, 0)),
+            Structure(id=4, granularity=3.0, bits=(1, 0, 1)),
+            Structure(id=5, granularity=2.0, bits=(1, 1, 0)),
+            Structure(id=6, granularity=3.0, bits=(1, 1, 1))
+        ]
+        self.assertEqual(self.get_structure_helper(), expected)
 
         # Raises error if category does not match existing index column.
         regex = r"invalid category value 'D'"
@@ -255,25 +288,40 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}], msg='should be unchanged')
 
     def test_drop_discrete_categories(self):
-        node = Node()
-        self.add_cols_helper(node, 'A', 'B', 'C')
+        node = self.node
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
             prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
 
         node.drop_discrete_categories({'A'}, {'B'})
         self.assertEqual(node.discrete_categories, [{'A', 'C'}, {'A', 'B', 'C'}])
+        expected = [
+            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
+            Structure(id=2, granularity=3.0, bits=(1, 0, 1)),
+            Structure(id=3, granularity=3.0, bits=(1, 1, 1)),
+        ]
+        self.assertEqual(self.get_structure_helper(), expected)
 
         node.drop_discrete_categories({'A', 'B'})  # <- Not present (no change).
         self.assertEqual(node.discrete_categories, [{'A', 'C'}, {'A', 'B', 'C'}])
+        expected = [
+            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
+            Structure(id=2, granularity=3.0, bits=(1, 0, 1)),
+            Structure(id=3, granularity=3.0, bits=(1, 1, 1)),
+        ]
+        self.assertEqual(self.get_structure_helper(), expected)
 
         node.drop_discrete_categories({'A', 'C'})
         self.assertEqual(node.discrete_categories, [{'A', 'B', 'C'}])
+        expected = [
+            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
+            Structure(id=2, granularity=3.0, bits=(1, 1, 1)),
+        ]
+        self.assertEqual(self.get_structure_helper(), expected)
 
     def test_drop_discrete_categories_error(self):
         """Should raise error if user tries to remove whole space."""
-        node = Node()
-        self.add_cols_helper(node, 'A', 'B', 'C')
+        node = self.node
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
             prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
