@@ -2419,7 +2419,7 @@ class DataAccessLayer(object):
             FROM main.node_index
             WHERE index_id > 0
         """)
-        node_cardnality = cursor.fetchone()[0]
+        node_cardinality = cursor.fetchone()[0]
 
         cursor.execute('SELECT * FROM main.structure')
         structure_records = cursor.fetchall()
@@ -2428,7 +2428,7 @@ class DataAccessLayer(object):
             columns = list(compress(all_columns, bitmask))
             sql = cls._refresh_granularity_sql(columns)
             parameters = {
-                'partition_cardinality': node_cardnality,
+                'partition_cardinality': node_cardinality,
                 'structure_id': structure_id,
             }
             cursor.execute(sql, parameters)

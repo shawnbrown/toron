@@ -165,8 +165,8 @@ def calculate_granularity(
     for labels in distinct_labels:
         criteria = dict(zip(columns, labels))
         records = aux_index_repo.find_by_label(criteria, include_undefined=False)
-        cardnality = sum(1 for x in records)
-        total_uncertainty += (cardnality / total_cardinality) * log2(cardnality)
+        cardniality = sum(1 for x in records)
+        total_uncertainty += (cardniality / total_cardinality) * log2(cardniality)
 
     return log2(total_cardinality) - total_uncertainty
 

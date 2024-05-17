@@ -84,7 +84,7 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return (Index(*record) for record in self._cursor)
 
-    def get_cardnality(self, include_undefined: bool = True) -> int:
+    def get_cardinality(self, include_undefined: bool = True) -> int:
         """Return the number of records in the repository."""
         sql = 'SELECT COUNT(*) FROM main.node_index'
         if not include_undefined:
