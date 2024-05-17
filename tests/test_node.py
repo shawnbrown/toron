@@ -250,11 +250,11 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         node.add_discrete_categories({'A'}, {'B'})
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'B', 'C'}])
         expected = [
-            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
-            Structure(id=2, granularity=1.0, bits=(1, 0, 0)),
-            Structure(id=3, granularity=2.0, bits=(0, 1, 0)),
-            Structure(id=4, granularity=3.0, bits=(1, 1, 1)),
-            Structure(id=5, granularity=2.0, bits=(1, 1, 0)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
+            Structure(id=3, granularity=2.0,  bits=(0, 1, 0)),
+            Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
+            Structure(id=5, granularity=2.0,  bits=(1, 1, 0)),
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 
@@ -262,12 +262,12 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         node.add_discrete_categories({'A', 'C'})
         self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
         expected = [
-            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
-            Structure(id=2, granularity=1.0, bits=(1, 0, 0)),
-            Structure(id=3, granularity=2.0, bits=(0, 1, 0)),
-            Structure(id=4, granularity=3.0, bits=(1, 0, 1)),
-            Structure(id=5, granularity=2.0, bits=(1, 1, 0)),
-            Structure(id=6, granularity=3.0, bits=(1, 1, 1))
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
+            Structure(id=3, granularity=2.0,  bits=(0, 1, 0)),
+            Structure(id=4, granularity=3.0,  bits=(1, 0, 1)),
+            Structure(id=5, granularity=2.0,  bits=(1, 1, 0)),
+            Structure(id=6, granularity=3.0,  bits=(1, 1, 1))
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 
@@ -296,26 +296,26 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         node.drop_discrete_categories({'A'}, {'B'})
         self.assertEqual(node.discrete_categories, [{'A', 'C'}, {'A', 'B', 'C'}])
         expected = [
-            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
-            Structure(id=2, granularity=3.0, bits=(1, 0, 1)),
-            Structure(id=3, granularity=3.0, bits=(1, 1, 1)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+            Structure(id=2, granularity=3.0,  bits=(1, 0, 1)),
+            Structure(id=3, granularity=3.0,  bits=(1, 1, 1)),
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 
         node.drop_discrete_categories({'A', 'B'})  # <- Not present (no change).
         self.assertEqual(node.discrete_categories, [{'A', 'C'}, {'A', 'B', 'C'}])
         expected = [
-            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
-            Structure(id=2, granularity=3.0, bits=(1, 0, 1)),
-            Structure(id=3, granularity=3.0, bits=(1, 1, 1)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+            Structure(id=2, granularity=3.0,  bits=(1, 0, 1)),
+            Structure(id=3, granularity=3.0,  bits=(1, 1, 1)),
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 
         node.drop_discrete_categories({'A', 'C'})
         self.assertEqual(node.discrete_categories, [{'A', 'B', 'C'}])
         expected = [
-            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
-            Structure(id=2, granularity=3.0, bits=(1, 1, 1)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+            Structure(id=2, granularity=3.0,  bits=(1, 1, 1)),
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 

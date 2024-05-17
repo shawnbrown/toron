@@ -126,8 +126,11 @@ def calculate_granularity(
     columns: List[str],
     index_repo: BaseIndexRepository,
     aux_index_repo: BaseIndexRepository,
-) -> float:
-    r"""Return the granularity of a given level (defined by *columns*).
+) -> Optional[float]:
+    r"""Return granularity of a given level--as defined by *columns*.
+
+    If *columns* list is empty or if the index contains no records
+    (other than the "undefined" record), then ``None`` will be returned.
 
     This function implements a Shannon entropy based metric for the
     "granularity measure of a partition" as described on p. 293 of:
@@ -153,9 +156,12 @@ def calculate_granularity(
 
             \[\log_{2}|U|-\sum_{i=1}^m \frac{|A_i|}{|U|}\log_{2}|A_i|\]
     """
-    total_cardinality = index_repo.get_cardnality(include_undefined=False)
+    if not columns:
+        return None  # <- EXIT!
+
+    total_cardinality = index_repo.get_cardinality(include_undefined=False)
     if not total_cardinality:
-        return 0.0  # <- EXIT!
+        return None  # <- EXIT!
 
     distinct_labels = index_repo.get_distinct_labels(
         *columns, include_undefined=False
@@ -186,10 +192,6 @@ def rebuild_structure_table(
     categories = get_all_discrete_categories(column_manager, property_repo)
     columns = column_manager.get_columns()
     for cat in make_structure(categories):
-        if cat:
-            granularity = calculate_granularity(list(cat), index_repo, aux_index_repo)
-        else:
-            granularity = 0.0
-
+        granularity = calculate_granularity(list(cat), index_repo, aux_index_repo)
         bits = [(x in cat) for x in columns]
         structure_repo.add(granularity, *bits)

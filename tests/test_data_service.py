@@ -143,10 +143,10 @@ class TestRebuildStructureTable(unittest.TestCase):
         )
 
         expected = [
-            Structure(id=4, granularity=3.0, bits=(1, 1, 1)),
-            Structure(id=3, granularity=2.0, bits=(1, 1, 0)),
-            Structure(id=2, granularity=1.0, bits=(1, 0, 0)),
-            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
+            Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
+            Structure(id=3, granularity=2.0,  bits=(1, 1, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
         ]
         self.assertEqual(self.structure_repo.get_all(), expected)
 
@@ -170,7 +170,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         )
 
         trivial_topology = [
-            Structure(id=2, granularity=3.0, bits=(1, 1, 1)),
-            Structure(id=1, granularity=0.0, bits=(0, 0, 0)),
+            Structure(id=2, granularity=3.0,  bits=(1, 1, 1)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
         ]
         self.assertEqual(self.structure_repo.get_all(), trivial_topology)
