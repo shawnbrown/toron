@@ -467,9 +467,23 @@ class TestIndexMethods(unittest.TestCase):
             repository = node._dal.IndexRepository(cursor)
             return list(repository.get_all())
 
+    @staticmethod
+    def add_structure_helper(node, data):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.StructureRepository(cursor)
+            for granularity, *bits in data:
+                repository.add(granularity, *bits)
+
+    @staticmethod
+    def get_structure_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.StructureRepository(cursor)
+            return sorted(repository.get_all(), key=lambda x: x.id)
+
     def test_insert(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
+        self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
 
         data = [('A', 'B'), ('foo', 'x'), ('bar', 'y')]
         node.insert_index(data)
@@ -480,6 +494,12 @@ class TestIndexMethods(unittest.TestCase):
             Index(2, 'bar', 'y'),
         ]
         self.assertEqual(self.get_index_helper(node), expected)
+
+        expected = [
+            Structure(id=1, granularity=None, bits=(0, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 1)),
+        ]
+        self.assertEqual(self.get_structure_helper(node), expected)
 
     def test_insert_different_order(self):
         node = Node()

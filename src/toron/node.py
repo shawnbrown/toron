@@ -36,6 +36,7 @@ from .data_service import (
     get_all_discrete_categories,
     rename_discrete_categories,
     rebuild_structure_table,
+    refresh_structure_granularity,
 )
 from ._utils import (
     BitFlags,
@@ -277,7 +278,9 @@ class Node(object):
         data, columns = normalize_tabular(data, columns)
 
         counter: Counter = Counter()
-        with self._managed_transaction() as cursor:
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
+
             col_manager = self._dal.ColumnManager(cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
@@ -294,6 +297,14 @@ class Node(object):
                     counter['inserted'] += 1
                 except ValueError:
                     counter['dupe_or_empty_str'] += 1
+
+            if counter['inserted']:
+                refresh_structure_granularity(
+                    column_manager=col_manager,
+                    structure_repo=self._dal.StructureRepository(cursor),
+                    index_repo=index_repo,
+                    aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                )
 
         warn_if_issues(counter, expected='inserted')
 
