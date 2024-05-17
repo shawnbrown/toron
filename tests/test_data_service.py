@@ -11,6 +11,7 @@ from toron.data_service import (
     find_crosswalks_by_node_reference,
     rename_discrete_categories,
     rebuild_structure_table,
+    refresh_structure_granularity,
 )
 
 
@@ -174,3 +175,60 @@ class TestRebuildStructureTable(unittest.TestCase):
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
         ]
         self.assertEqual(self.structure_repo.get_all(), trivial_topology)
+
+
+class TestRefreshStructureGranularity(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+        alt_cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(alt_cur))
+
+        self.column_manager = dal.ColumnManager(cur)
+        self.property_repo = dal.PropertyRepository(cur)
+        self.structure_repo = dal.StructureRepository(cur)
+        self.index_repo = dal.IndexRepository(cur)
+        self.alt_index_repo = dal.IndexRepository(alt_cur)
+
+        self.column_manager.add_columns('A', 'B', 'C', 'D')
+        self.index_repo.add('a1', 'b1', 'c1', 'd1')
+        self.index_repo.add('a1', 'b1', 'c1', 'd2')
+        self.index_repo.add('a1', 'b1', 'c2', 'd3')
+        self.index_repo.add('a1', 'b1', 'c2', 'd4')
+        self.index_repo.add('a1', 'b2', 'c3', 'd5')
+        self.index_repo.add('a1', 'b2', 'c3', 'd6')
+        self.index_repo.add('a1', 'b2', 'c4', 'd7')
+        self.index_repo.add('a1', 'b2', 'c4', 'd8')
+
+    def test_refresh_structure_granularity(self):
+        # Define categories and create structure with `None` for granularity.
+        self.property_repo.add(
+            'discrete_categories',
+            [['A'], ['A', 'B'], ['A', 'B', 'C'], ['A', 'B', 'C', 'D']],
+        )
+        self.structure_repo.add(None, 0, 0, 0, 0)
+        self.structure_repo.add(None, 1, 0, 0, 0)
+        self.structure_repo.add(None, 1, 1, 0, 0)
+        self.structure_repo.add(None, 1, 1, 1, 0)
+        self.structure_repo.add(None, 1, 1, 1, 1)
+
+        # Calculate and assign granularity.
+        refresh_structure_granularity(
+            column_manager=self.column_manager,
+            structure_repo=self.structure_repo,
+            index_repo=self.index_repo,
+            aux_index_repo=self.alt_index_repo,
+        )
+        expected = [
+                Structure(id=5, granularity=3.0,  bits=(1, 1, 1, 1)),
+                Structure(id=4, granularity=2.0,  bits=(1, 1, 1, 0)),
+                Structure(id=3, granularity=1.0,  bits=(1, 1, 0, 0)),
+                Structure(id=2, granularity=0.0,  bits=(1, 0, 0, 0)),  # <- Only one unique value gives granularity of 0.0.
+                Structure(id=1, granularity=None, bits=(0, 0, 0, 0)),
+        ]
+        self.assertEqual(self.structure_repo.get_all(), expected)

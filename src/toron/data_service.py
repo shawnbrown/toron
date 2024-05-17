@@ -1,5 +1,6 @@
 """Application logic functions that interact with repository objects."""
 
+from itertools import compress
 from math import log2
 
 from toron._typing import (
@@ -195,3 +196,17 @@ def rebuild_structure_table(
         granularity = calculate_granularity(list(cat), index_repo, aux_index_repo)
         bits = [(x in cat) for x in columns]
         structure_repo.add(granularity, *bits)
+
+
+def refresh_structure_granularity(
+    column_manager: BaseColumnManager,
+    structure_repo: BaseStructureRepository,
+    index_repo: BaseIndexRepository,
+    aux_index_repo: BaseIndexRepository,
+) -> None:
+    label_columns = column_manager.get_columns()
+    for structure in structure_repo.get_all():
+        category = list(compress(label_columns, structure.bits))
+        granularity = calculate_granularity(category, index_repo, aux_index_repo)
+        structure.granularity = granularity
+        structure_repo.update(structure)
