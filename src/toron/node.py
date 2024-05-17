@@ -338,7 +338,9 @@ class Node(object):
             raise ValueError("column 'index_id' required to update records")
 
         counter: Counter = Counter()
-        with self._managed_transaction() as cursor:
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
+
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
@@ -398,7 +400,14 @@ class Node(object):
             #if counter['merged']:
             #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
             #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
-            #    self._dal.StructureRepository(cursor).refresh_granularity()
+
+            if counter['updated'] or counter['merged']:
+                refresh_structure_granularity(
+                    column_manager=col_manager,
+                    structure_repo=self._dal.StructureRepository(cursor),
+                    index_repo=index_repo,
+                    aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                )
 
         warn_if_issues(counter, expected='updated')
 

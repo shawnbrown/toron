@@ -790,6 +790,31 @@ class TestNodeUpdateIndex(unittest.TestCase):
         expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(self.node), expected)
 
+    def test_refresh_structure_granularity(self):
+        """Check that update_index() updates granularity."""
+        # Set up structure.
+        with self.node._managed_cursor() as cursor:
+            repository = self.node._dal.StructureRepository(cursor)
+            for granularity, *bits in [(None, 0, 0), (None, 1, 1)]:
+                repository.add(granularity, *bits)
+
+        # Call update and verify values.
+        data = [('index_id', 'A', 'B'), (1, 'baz', 'z')]  # <- Updating columns A & B.
+        self.node.update_index(data)
+        expected = [Index(0, '-', '-'), Index(1, 'baz', 'z'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+        # Get structure and check for updated values.
+        with self.node._managed_cursor() as cursor:
+            repository = self.node._dal.StructureRepository(cursor)
+            actual = sorted(repository.get_all(), key=lambda x: x.id)
+
+        expected = [
+            Structure(id=1, granularity=None, bits=(0, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 1))
+        ]
+        self.assertEqual(actual, expected)
+
 
 class TestNodeDeleteIndex(unittest.TestCase):
     @staticmethod
