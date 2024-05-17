@@ -429,12 +429,11 @@ class Node(object):
             raise TypeError('must provide either data or keyword criteria')
 
         counter = Counter()
-        with self._managed_connection() as connection, \
-                self._managed_cursor(connection) as cursor, \
-                self._managed_transaction(cursor) as cursor:
-            # Line continuations (above) needed for Python 3.8 and earlier.
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
 
             index_repo = self._dal.IndexRepository(cursor)
+            aux_index_repo = self._dal.IndexRepository(aux_cursor)
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             col_manager = self._dal.ColumnManager(cursor)
@@ -472,27 +471,27 @@ class Node(object):
                     counter['deleted'] += 1
 
             elif criteria:
-                # Get a second cursor on the same connection to provide
-                # matching records for the delete function.
-                with self._managed_cursor(connection) as aux_cursor:
-                    aux_index_repo = self._dal.IndexRepository(aux_cursor)
-
-                    for index_record in aux_index_repo.find_by_label(criteria):
-                        delete_index_record(
-                            index_record.id,
-                            index_repo,
-                            weight_repo,
-                            relation_repo,
-                        )
-                        counter['deleted'] += 1
+                for index_record in aux_index_repo.find_by_label(criteria):
+                    delete_index_record(
+                        index_record.id,
+                        index_repo,
+                        weight_repo,
+                        relation_repo,
+                    )
+                    counter['deleted'] += 1
 
             else:
                 raise TypeError('expected data or keyword criteria, got neither')
 
-            #if counter['deleted']:
-            #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
-            #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
-            #    self._dal.StructureRepository(cursor).refresh_granularity()
+            if counter['deleted']:
+                # self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
+                # self._dal.WeightGroupRepository(cursor).refresh_is_complete()
+                refresh_structure_granularity(
+                    column_manager=col_manager,
+                    structure_repo=self._dal.StructureRepository(cursor),
+                    index_repo=index_repo,
+                    aux_index_repo=aux_index_repo,
+                )
 
         warn_if_issues(counter, expected='deleted')
 

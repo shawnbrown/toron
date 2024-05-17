@@ -962,6 +962,31 @@ class TestNodeDeleteIndex(unittest.TestCase):
         expected = [Index(0, '-', '-'), Index(2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(self.node), expected)
 
+    def test_refresh_structure_granularity(self):
+        """Check that update_index() updates granularity."""
+        # Set up structure.
+        with self.node._managed_cursor() as cursor:
+            repository = self.node._dal.StructureRepository(cursor)
+            for granularity, *bits in [(None, 0, 0), (None, 1, 1)]:
+                repository.add(granularity, *bits)
+
+        # Call delete_index() and verify values.
+        data = [('index_id', 'A', 'B'), (1, 'foo', 'x')]
+        self.node.delete_index(data)
+        expected = [Index(0, '-', '-'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(self.node), expected)
+
+        # Get structure and check for updated values.
+        with self.node._managed_cursor() as cursor:
+            repository = self.node._dal.StructureRepository(cursor)
+            actual = sorted(repository.get_all(), key=lambda x: x.id)
+
+        expected = [
+            Structure(id=1, granularity=None, bits=(0, 0)),
+            Structure(id=2, granularity=0.0,  bits=(1, 1))  # <- Gets `0.0` because there is only 1 record.
+        ]
+        self.assertEqual(actual, expected)
+
 
 class TestNodeWeightGroupMethods(unittest.TestCase):
     @staticmethod
