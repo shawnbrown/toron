@@ -359,6 +359,23 @@ class WeightRepository(BaseWeightRepository):
         for record in self._cursor:
             yield Weight(*record)
 
+    def is_complete(self, weight_group_id: int) -> bool:
+        """Return True if weight group fully joins to index records."""
+        self._cursor.execute(
+            """
+                SELECT 1
+                FROM main.node_index a
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM main.weight b
+                    WHERE b.weight_group_id=? AND a.index_id=b.index_id
+                ) AND a.index_id != 0
+                LIMIT 1
+            """,
+            (weight_group_id,),
+        )
+        return not bool(self._cursor.fetchall())
+
 
 class AttributeRepository(BaseAttributeRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
