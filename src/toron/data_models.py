@@ -470,6 +470,10 @@ class BaseWeightRepository(ABC):
     def find_by_index_id(self, index_id: int) -> Iterator[Weight]:
         """Find all records with matching index_id."""
 
+    @abstractmethod
+    def check_completeness(self, weight_group_id: int) -> bool:
+        """Return True if there's a weight for every index record."""
+
     def merge_by_index_id(
         self, index_ids: Union[Iterable[int], int], target: int
     ) -> None:
