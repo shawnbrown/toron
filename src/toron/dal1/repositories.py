@@ -359,8 +359,8 @@ class WeightRepository(BaseWeightRepository):
         for record in self._cursor:
             yield Weight(*record)
 
-    def is_complete(self, weight_group_id: int) -> bool:
-        """Return True if weight group fully joins to index records."""
+    def check_completeness(self, weight_group_id: int) -> bool:
+        """Return True if there's a weight for every index record."""
         self._cursor.execute(
             """
                 SELECT 1
@@ -374,7 +374,8 @@ class WeightRepository(BaseWeightRepository):
             """,
             (weight_group_id,),
         )
-        return not bool(self._cursor.fetchall())
+        is_partial = bool(self._cursor.fetchall())
+        return not is_partial
 
 
 class AttributeRepository(BaseAttributeRepository):
