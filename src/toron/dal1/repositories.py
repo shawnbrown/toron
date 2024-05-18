@@ -279,7 +279,7 @@ class WeightGroupRepository(BaseWeightGroupRepository):
         parameters = [
             record.name,
             record.description,
-            json_dumps(record.selectors),
+            json_dumps(record.selectors) if record.selectors else None,
             record.is_complete,
             record.id,
         ]

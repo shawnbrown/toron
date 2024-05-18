@@ -67,19 +67,21 @@ class TestWeightGroupRepository(unittest.TestCase):
         repository = WeightGroupRepository(self.cursor)
 
         repository.update(WeightGroup(1, 'name1', 'Name One', ['[foo]'], 1))
-
         self.assertRecords([
             (1, 'name1', 'Name One', ['[foo]'], 1),
             (2, 'name2', None, ['[bar]'], 0),
         ])
 
-        repository.update(WeightGroup(3, 'name3', None, None, 1))  # No weight_group_id=3, should pass without error.
+        repository.update(WeightGroup(2, 'name2', description=None, selectors=None))
+        self.assertRecords([
+            (1, 'name1', 'Name One', ['[foo]'], 1),
+            (2, 'name2', None, None, 0),
+        ])
 
+        repository.update(WeightGroup(3, 'name3', None, None, 1))  # No weight_group_id=3, should pass without error.
         self.assertRecords(
-            [
-                (1, 'name1', 'Name One', ['[foo]'], 1),
-                (2, 'name2', None, ['[bar]'], 0),
-            ],
+            [(1, 'name1', 'Name One', ['[foo]'], 1),
+             (2, 'name2', None, None, 0)],
             msg='No weight_group_id=3, should remain unchanged',
         )
 
