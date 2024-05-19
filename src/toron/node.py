@@ -306,6 +306,13 @@ class Node(object):
                     aux_index_repo=self._dal.IndexRepository(aux_cursor),
                 )
 
+                # Existing groups will not include newly inserted indexes.
+                group_repo = self._dal.WeightGroupRepository(cursor)
+                for group in group_repo.get_all():
+                    if group.is_complete:
+                        group.is_complete = False  # Mark as incomplete.
+                        group_repo.update(group)
+
         warn_if_issues(counter, expected='inserted')
 
     def select_index(

@@ -555,6 +555,36 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
+    def test_insert_index_is_complete_status(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+        data = [('foo', 'x'), ('bar', 'y')]
+        self.add_index_helper(node, data)
+
+        with node._managed_cursor() as cursor:
+            group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_repo = node._dal.WeightRepository(cursor)
+
+            # Add weight_group_id 1 and weight records.
+            group_repo.add('group1', is_complete=True)
+            weight_repo.add(1, 1, 6000)
+            weight_repo.add(1, 2, 4000)
+
+            # Add weight_group_id 2 and weight records.
+            group_repo.add('group2', is_complete=False)
+            weight_repo.add(2, 1, 6000)
+
+            # Insert new index record!
+            node.insert_index([('A', 'B'), ('baz', 'z')])
+
+            # Check that group1's is_complete status is changed to False.
+            group = group_repo.get_by_name('group1')
+            self.assertFalse(group.is_complete)
+
+            # Check that group2's is_complete status remains False (unchanged).
+            group = group_repo.get_by_name('group2')
+            self.assertFalse(group.is_complete)
+
     def test_select(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
