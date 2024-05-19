@@ -959,6 +959,21 @@ class TestNodeDeleteIndex(unittest.TestCase):
         expected = [(1, 1, 1, 175000.0)]
         self.assertEqual(self.get_weight_helper(self.node), expected)
 
+    def test_delete_and_weight_group_is_complete_status(self):
+        """Deleting unweighted indexes could make weight groups complete."""
+        with self.node._managed_cursor() as cursor:
+            group_repo = self.node._dal.WeightGroupRepository(cursor)
+            group_repo.add('group1', is_complete=False)  # Adds weight_group_id 1.
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 175000)  # <- Only index_id 1 (no weight for index_id 2)
+
+            self.node.delete_index([('index_id', 'A', 'B'), (2, 'bar', 'y')])
+
+            group = group_repo.get_by_name('group1')
+            msg = 'since index_id 2 was the only unweighted record, deleting ' \
+                  'it should make the weight group complete'
+            self.assertTrue(group.is_complete, msg=msg)
+
     def test_delete_with_relations(self):
         """Should delete relation records associated with index_id."""
         with self.node._managed_cursor() as cursor:

@@ -500,13 +500,22 @@ class Node(object):
 
             if counter['deleted']:
                 # self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
-                # self._dal.WeightGroupRepository(cursor).refresh_is_complete()
+
                 refresh_structure_granularity(
                     column_manager=col_manager,
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
                     aux_index_repo=aux_index_repo,
                 )
+
+                # Previously unweighted indexes may have been deleted.
+                group_repo = self._dal.WeightGroupRepository(cursor)
+                for group in group_repo.get_all():
+                    if not group.is_complete:
+                        is_complete = weight_repo.check_completeness(group.id)
+                        if is_complete:
+                            group.is_complete = is_complete
+                            group_repo.update(group)
 
         warn_if_issues(counter, expected='deleted')
 
