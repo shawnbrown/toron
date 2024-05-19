@@ -756,11 +756,11 @@ class Node(object):
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
 
-            weight_group = group_repo.get_by_name(weight_group_name)
-            if not weight_group:
+            group = group_repo.get_by_name(weight_group_name)
+            if not group:
                 msg = f'no weight group named {weight_group_name!r}'
                 raise ValueError(msg)
-            weight_group_id = weight_group.id
+            weight_group_id = group.id
 
             if data:
                 data, columns = normalize_tabular(data, columns)
@@ -812,6 +812,11 @@ class Node(object):
 
             else:
                 raise TypeError('expected data or keyword criteria, got neither')
+
+            if counter['deleted'] and group:
+                if group.is_complete:
+                    group.is_complete = False
+                    group_repo.update(group)
 
         warn_if_issues(counter, expected='deleted')
 

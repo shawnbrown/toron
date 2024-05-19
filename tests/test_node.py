@@ -1447,6 +1447,11 @@ class TestNodeWeightMethods(unittest.TestCase):
             weight_repo.add(1, 2, 25.0)
             weight_repo.add(1, 3, 15.0)
 
+            group_repo = self.node._dal.WeightGroupRepository(cursor)
+            group = group_repo.get_by_name('weight1')
+            group.is_complete = True
+            group_repo.update(group)
+
         data = [
             ('index_id', 'A', 'B'),
             (1, 'foo', 'x'),
@@ -1455,6 +1460,10 @@ class TestNodeWeightMethods(unittest.TestCase):
         self.node.delete_weights('weight1', data)
         expected = [(3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
+
+        # Check that `is_complete` was changed to False.
+        group = self.node.get_weight_group('weight1')
+        self.assertFalse(group.is_complete)
 
         # Test with weight column (can be present but is ignored).
         data = [
