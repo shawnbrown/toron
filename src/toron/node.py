@@ -310,8 +310,7 @@ class Node(object):
                 group_repo = self._dal.WeightGroupRepository(cursor)
                 for group in group_repo.get_all():
                     if group.is_complete:
-                        group.is_complete = False  # Mark as incomplete.
-                        group_repo.update(group)
+                        group_repo.update(replace(group, is_complete=False))
 
         warn_if_issues(counter, expected='inserted')
 
@@ -416,11 +415,9 @@ class Node(object):
                 # Merges may have eliminated previously unweighted indexes.
                 group_repo = self._dal.WeightGroupRepository(cursor)
                 for group in group_repo.get_all():
-                    if not group.is_complete:
-                        is_complete = weight_repo.check_completeness(group.id)
-                        if is_complete:
-                            group.is_complete = is_complete
-                            group_repo.update(group)
+                    if (not group.is_complete
+                            and weight_repo.check_completeness(group.id)):
+                        group_repo.update(replace(group, is_complete=True))
 
                 # TODO: self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
 
@@ -511,11 +508,9 @@ class Node(object):
                 # Previously unweighted indexes may have been deleted.
                 group_repo = self._dal.WeightGroupRepository(cursor)
                 for group in group_repo.get_all():
-                    if not group.is_complete:
-                        is_complete = weight_repo.check_completeness(group.id)
-                        if is_complete:
-                            group.is_complete = is_complete
-                            group_repo.update(group)
+                    if (not group.is_complete
+                            and weight_repo.check_completeness(group.id)):
+                        group_repo.update(replace(group, is_complete=True))
 
         warn_if_issues(counter, expected='deleted')
 
@@ -668,9 +663,9 @@ class Node(object):
                 )
                 counter['inserted'] += 1
 
-            if counter['inserted'] and group:
-                group.is_complete = weight_repo.check_completeness(weight_group_id)
-                group_repo.update(group)
+            if (counter['inserted'] and group
+                    and weight_repo.check_completeness(weight_group_id)):
+                group_repo.update(replace(group, is_complete=True))
 
         warn_if_issues(counter, expected='inserted')
 
@@ -734,9 +729,9 @@ class Node(object):
                     )
                     counter['inserted'] += 1
 
-            if counter['inserted'] and group:
-                group.is_complete = weight_repo.check_completeness(weight_group_id)
-                group_repo.update(group)
+            if (counter['inserted'] and group
+                    and weight_repo.check_completeness(weight_group_id)):
+                group_repo.update(replace(group, is_complete=True))
 
         warn_if_issues(
             counter,
@@ -837,10 +832,8 @@ class Node(object):
             else:
                 raise TypeError('expected data or keyword criteria, got neither')
 
-            if counter['deleted'] and group:
-                if group.is_complete:
-                    group.is_complete = False
-                    group_repo.update(group)
+            if counter['deleted'] and group and group.is_complete:
+                group_repo.update(replace(group, is_complete=False))
 
         warn_if_issues(counter, expected='deleted')
 
