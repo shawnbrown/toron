@@ -644,6 +644,10 @@ class Node(object):
                 )
                 counter['inserted'] += 1
 
+            if counter['inserted'] and group:
+                group.is_complete = weight_repo.check_completeness(weight_group_id)
+                group_repo.update(group)
+
         warn_if_issues(counter, expected='inserted')
 
     def update_weights(

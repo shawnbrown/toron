@@ -1249,6 +1249,28 @@ class TestNodeWeightMethods(unittest.TestCase):
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
+    def test_insert_is_complete_status(self):
+        data = [
+            ('index_id', 'A', 'B', 'weight1'),
+            (1, 'foo', 'x', 10.0),
+            (2, 'bar', 'y', 25.0),
+            # Omits weight for index_id 3.
+        ]
+        self.node.insert_weights('weight1', data)
+
+        group = self.node.get_weight_group('weight1')
+        self.assertFalse(group.is_complete,
+                         msg='no weight for index_id 3, should be false')
+
+        # Add weight for index_id 3 and check again.
+        data = [
+            ('index_id', 'A', 'B', 'weight1'),
+            (3, 'bar', 'z', 15.0),
+        ]
+        self.node.insert_weights('weight1', data)
+        group = self.node.get_weight_group('weight1')
+        self.assertTrue(group.is_complete)
+
     def test_insert_by_index_and_label_extra_columns(self):
         data = [
             ('index_id', 'A', 'B', 'C', 'weight1'),
