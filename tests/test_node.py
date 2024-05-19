@@ -1378,13 +1378,17 @@ class TestNodeWeightMethods(unittest.TestCase):
             weight_repo.add(1, 1, 10.0)
             weight_repo.add(1, 2, 25.0)
 
+        # Check that `is_complete` status is False.
+        group = self.node.get_weight_group('weight1')
+        self.assertFalse(group.is_complete)
+
+        # Upate weights and check that warning is raised.
         data = [
             ('B', 'index_id', 'A', 'weight1'),
             ('x', 1, 'foo', 111.0),
             ('y', 2, 'bar', 222.0),
             ('z', 3, 'bar', 333.0),  # <- Does not previously exist.
         ]
-        # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
             self.node.update_weights('weight1', data)
 
@@ -1395,12 +1399,17 @@ class TestNodeWeightMethods(unittest.TestCase):
              'updated 2 rows'),
         )
 
+        # Check updated values.
         expected = [
             (1, 1, 1, 111.0),  # <- Updated.
             (2, 1, 2, 222.0),  # <- Updated.
             (3, 1, 3, 333.0),  # <- Inserted (new record).
         ]
         self.assertEqual(self.get_weights_helper(), expected)
+
+        # Check that `is_complete` status is now True.
+        group = self.node.get_weight_group('weight1')
+        self.assertTrue(group.is_complete)
 
     def test_update_missing_and_mismatched(self):
         with self.node._managed_cursor() as cursor:

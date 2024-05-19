@@ -673,11 +673,11 @@ class Node(object):
             label_columns = col_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            weight_group = group_repo.get_by_name(weight_group_name)
-            if not weight_group:
+            group = group_repo.get_by_name(weight_group_name)
+            if not group:
                 msg = f'no weight group named {weight_group_name!r}'
                 raise ValueError(msg)
-            weight_group_id = weight_group.id
+            weight_group_id = group.id
 
             for row in data:
                 row_dict = dict(zip(columns, row))
@@ -709,6 +709,10 @@ class Node(object):
                         value=row_dict[weight_group_name],
                     )
                     counter['inserted'] += 1
+
+            if counter['inserted'] and group:
+                group.is_complete = weight_repo.check_completeness(weight_group_id)
+                group_repo.update(group)
 
         warn_if_issues(
             counter,
