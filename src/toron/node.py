@@ -404,17 +404,25 @@ class Node(object):
                 index_repo.update(index_record)
                 counter['updated'] += 1
 
-            #if counter['merged']:
-            #    self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
-            #    self._dal.WeightGroupRepository(cursor).refresh_is_complete()
-
-            if counter['updated'] or counter['merged']:
+            if counter['merged'] or counter['updated']:
                 refresh_structure_granularity(
                     column_manager=col_manager,
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
                     aux_index_repo=self._dal.IndexRepository(aux_cursor),
                 )
+
+            if counter['merged']:
+                # Merges may have eliminated previously unweighted indexes.
+                group_repo = self._dal.WeightGroupRepository(cursor)
+                for group in group_repo.get_all():
+                    if not group.is_complete:
+                        is_complete = weight_repo.check_completeness(group.id)
+                        if is_complete:
+                            group.is_complete = is_complete
+                            group_repo.update(group)
+
+                # TODO: self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
 
         warn_if_issues(counter, expected='updated')
 

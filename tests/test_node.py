@@ -845,6 +845,24 @@ class TestNodeUpdateIndex(unittest.TestCase):
         ]
         self.assertEqual(actual, expected)
 
+    def test_merging_and_is_complete_status(self):
+        with self.node._managed_cursor() as cursor:
+            group_repo = self.node._dal.WeightGroupRepository(cursor)
+            weight_repo = self.node._dal.WeightRepository(cursor)
+
+            # Add weight_group_id 2 and weight record.
+            group_repo.add('group2', is_complete=False)
+            weight_repo.add(2, 1, 6000)
+
+            # Apply update which triggers a merge of existing records.
+            data = [('index_id', 'A', 'B'), (1, 'bar', 'y')]
+            with self.assertWarns(ToronWarning) as cm:
+                self.node.update_index(data, merge_on_conflict=True)
+
+            # Check that is_incomplete has been changed to True.
+            group = group_repo.get_by_name('group2')
+            self.assertTrue(group.is_complete)
+
 
 class TestNodeDeleteIndex(unittest.TestCase):
     @staticmethod
