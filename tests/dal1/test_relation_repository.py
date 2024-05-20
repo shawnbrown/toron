@@ -115,3 +115,27 @@ class TestRelationRepository(unittest.TestCase):
     @unittest.skip('not implemented')
     def test_find_by_crosswalk_id(self):
         raise NotImplementedError
+
+    def test_crosswalk_is_complete(self):
+        self.cursor.executescript("""
+            ALTER TABLE main.node_index ADD COLUMN
+                A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
+
+            INSERT INTO node_index VALUES (1, 'foo');
+            INSERT INTO node_index VALUES (2, 'bar');
+
+            INSERT INTO relation VALUES (1, 5, 1, 1, 125.0, NULL, NULL);
+        """)
+        repository = RelationRepository(self.cursor)
+
+        self.assertFalse(
+            repository.crosswalk_is_complete(crosswalk_id=5),
+            msg='Crosswalk is not complete, no relation matches index_id 2.'
+        )
+
+        # Add a relation that matches to index_id 2.
+        self.cursor.execute('INSERT INTO relation VALUES (2, 5, 1, 2, 375.0, NULL, NULL)')
+        self.assertTrue(
+            repository.crosswalk_is_complete(crosswalk_id=5),
+            msg='Crosswalk is complete, should return True.'
+        )

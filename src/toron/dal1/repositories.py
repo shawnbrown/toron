@@ -711,6 +711,24 @@ class RelationRepository(BaseRelationRepository):
         for record in self._cursor:
             yield Relation(*record)
 
+    def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
+        """Return True if there's a relation for every index record."""
+        self._cursor.execute(
+            """
+                SELECT 1
+                FROM main.node_index a
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM main.relation b
+                    WHERE b.crosswalk_id=? AND a.index_id=b.index_id
+                ) AND a.index_id != 0
+                LIMIT 1
+            """,
+            (crosswalk_id,),
+        )
+        is_partial = bool(self._cursor.fetchall())
+        return not is_partial
+
 
 class PropertyRepository(BasePropertyRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
