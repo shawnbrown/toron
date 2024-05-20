@@ -603,7 +603,7 @@ class TestIndexMethods(unittest.TestCase):
             # Add crosswalk_id 2 and weight records.
             crosswalk_repo.add('222-222-2222', 'anothernode.toron', 'edge2', is_locally_complete=False)
             relation_repo.add(2, 1, 1, 4000)
-            relation_repo.add(2, 2, 1, 2000)  # <- Mapps to local index_id 1 (no relation goes to index_id 2)
+            relation_repo.add(2, 2, 1, 2000)  # <- Maps to local index_id 1 (no relation goes to index_id 2)
 
             # Insert new index record!
             node.insert_index([('A', 'B'), ('baz', 'z')])
@@ -893,6 +893,25 @@ class TestNodeUpdateIndex(unittest.TestCase):
             # Check that is_incomplete has been changed to True.
             group = group_repo.get_by_name('group2')
             self.assertTrue(group.is_complete)
+
+    def test_merging_and_is_locally_complete_status(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            relation_repo = self.node._dal.RelationRepository(cursor)
+
+            # Add crosswalk_id 1 and weight records.
+            crosswalk_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=False)
+            relation_repo.add(2, 1, 1, 4000)
+            relation_repo.add(2, 2, 1, 2000)  # <- Maps to local index_id 1 (no relation goes to index_id 2)
+
+            # Apply update which triggers a merge of existing records.
+            data = [('index_id', 'A', 'B'), (1, 'bar', 'y')]
+            with self.assertWarns(ToronWarning) as cm:
+                self.node.update_index(data, merge_on_conflict=True)
+
+            # Check that is_locally_complete has been changed to True.
+            crosswalk = crosswalk_repo.get(1)
+            self.assertTrue(crosswalk.is_locally_complete)
 
 
 class TestNodeDeleteIndex(unittest.TestCase):

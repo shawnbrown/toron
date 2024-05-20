@@ -418,14 +418,19 @@ class Node(object):
                 )
 
             if counter['merged']:
-                # Merges may have eliminated previously unweighted indexes.
+                # Merges may have eliminated all unweighted indexes.
                 group_repo = self._dal.WeightGroupRepository(cursor)
                 for group in group_repo.get_all():
                     if (not group.is_complete
                             and weight_repo.weight_group_is_complete(group.id)):
                         group_repo.update(replace(group, is_complete=True))
 
-                # TODO: self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
+                # Merges may have eliminated all unrelated indexes.
+                crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+                for crosswalk in crosswalk_repo.get_all():
+                    if (not crosswalk.is_locally_complete
+                            and relation_repo.crosswalk_is_complete(crosswalk.id)):
+                        crosswalk_repo.update(replace(crosswalk, is_locally_complete=True))
 
         warn_if_issues(counter, expected='updated')
 
