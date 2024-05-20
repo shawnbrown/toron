@@ -94,7 +94,7 @@ class TestWeightRepository(unittest.TestCase):
     def test_find_by_weight_group_id(self):
         raise NotImplementedError
 
-    def test_check_completeness(self):
+    def test_weight_group_is_complete(self):
         repository = WeightRepository(self.cursor)
 
         self.cursor.executescript("""
@@ -107,13 +107,13 @@ class TestWeightRepository(unittest.TestCase):
             INSERT INTO weight VALUES (1, 1, 1, 3.0);
         """)
         self.assertFalse(
-            repository.check_completeness(weight_group_id=1),
+            repository.weight_group_is_complete(weight_group_id=1),
             msg='Weight group is not complete, no weight matches index_id 2.'
         )
 
         # Add second weight record (matches to index_id 2).
         self.cursor.execute('INSERT INTO weight VALUES (2, 1, 2, 7.0)')
         self.assertTrue(
-            repository.check_completeness(weight_group_id=1),
+            repository.weight_group_is_complete(weight_group_id=1),
             msg='Weight group is complete, should return True.'
         )

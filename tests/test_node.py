@@ -555,7 +555,7 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
-    def test_insert_index_is_complete_status(self):
+    def test_insert_index_group_is_complete(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('bar', 'y')]

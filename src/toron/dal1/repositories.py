@@ -359,7 +359,7 @@ class WeightRepository(BaseWeightRepository):
         for record in self._cursor:
             yield Weight(*record)
 
-    def check_completeness(self, weight_group_id: int) -> bool:
+    def weight_group_is_complete(self, weight_group_id: int) -> bool:
         """Return True if there's a weight for every index record."""
         self._cursor.execute(
             """

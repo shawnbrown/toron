@@ -416,7 +416,7 @@ class Node(object):
                 group_repo = self._dal.WeightGroupRepository(cursor)
                 for group in group_repo.get_all():
                     if (not group.is_complete
-                            and weight_repo.check_completeness(group.id)):
+                            and weight_repo.weight_group_is_complete(group.id)):
                         group_repo.update(replace(group, is_complete=True))
 
                 # TODO: self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
@@ -509,7 +509,7 @@ class Node(object):
                 group_repo = self._dal.WeightGroupRepository(cursor)
                 for group in group_repo.get_all():
                     if (not group.is_complete
-                            and weight_repo.check_completeness(group.id)):
+                            and weight_repo.weight_group_is_complete(group.id)):
                         group_repo.update(replace(group, is_complete=True))
 
         warn_if_issues(counter, expected='deleted')
@@ -664,7 +664,7 @@ class Node(object):
                 counter['inserted'] += 1
 
             if (counter['inserted'] and group
-                    and weight_repo.check_completeness(weight_group_id)):
+                    and weight_repo.weight_group_is_complete(weight_group_id)):
                 group_repo.update(replace(group, is_complete=True))
 
         warn_if_issues(counter, expected='inserted')
@@ -730,7 +730,7 @@ class Node(object):
                     counter['inserted'] += 1
 
             if (counter['inserted'] and group
-                    and weight_repo.check_completeness(weight_group_id)):
+                    and weight_repo.weight_group_is_complete(weight_group_id)):
                 group_repo.update(replace(group, is_complete=True))
 
         warn_if_issues(
