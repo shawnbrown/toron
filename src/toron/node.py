@@ -1115,4 +1115,8 @@ class Node(object):
                 )
                 counter['inserted'] += 1
 
+            if (counter['inserted'] and crosswalk
+                    and relation_repo.crosswalk_is_complete(crosswalk_id)):
+                crosswalk_repo.update(replace(crosswalk, is_locally_complete=True))
+
         warn_if_issues(counter, expected='inserted')

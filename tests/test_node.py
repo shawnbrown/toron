@@ -2023,3 +2023,29 @@ class TestNodeRelationMethods(unittest.TestCase):
         regex = r"missing required columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_relations('myfile', 'rel1', data)
+
+    def test_insert_is_complete_status(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+
+            data = [
+                ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+                (0,  0.0, 0, '-',   '-'),
+                (1, 10.0, 1, 'foo', 'x'),
+                (2, 20.0, 2, 'bar', 'y'),
+                (3,  5.0, 2, 'bar', 'y'),
+                # No record matching to index_id 3 ('bar', 'z').
+            ]
+            self.node.insert_relations('myfile', 'rel1', data)
+
+            crosswalk = crosswalk_repo.get(1)
+            self.assertFalse(crosswalk.is_locally_complete)
+
+            data = [
+                ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+                (3, 15.0, 3, 'bar', 'z'),  # This completes the crosswalk.
+            ]
+            self.node.insert_relations('myfile', 'rel1', data)
+
+            crosswalk = crosswalk_repo.get(1)  # Re-fetch crosswalk.
+            self.assertTrue(crosswalk.is_locally_complete)
