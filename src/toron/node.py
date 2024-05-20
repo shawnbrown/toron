@@ -312,6 +312,12 @@ class Node(object):
                     if group.is_complete:
                         group_repo.update(replace(group, is_complete=False))
 
+                # Existing crosswalks will not include newly inserted indexes.
+                crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+                for crosswalk in crosswalk_repo.get_all():
+                    if crosswalk.is_locally_complete:
+                        crosswalk_repo.update(replace(crosswalk, is_locally_complete=False))
+
         warn_if_issues(counter, expected='inserted')
 
     def select_index(

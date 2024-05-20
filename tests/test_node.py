@@ -585,6 +585,37 @@ class TestIndexMethods(unittest.TestCase):
             group = group_repo.get_by_name('group2')
             self.assertFalse(group.is_complete)
 
+    def test_insert_index_crosswalk_is_complete(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+        data = [('foo', 'x'), ('bar', 'y')]
+        self.add_index_helper(node, data)
+
+        with node._managed_cursor() as cursor:
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            relation_repo = node._dal.RelationRepository(cursor)
+
+            # Add crosswalk_id 1 and weight records.
+            crosswalk_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=True)
+            relation_repo.add(1, 1, 1, 6000)
+            relation_repo.add(1, 2, 2, 4000)
+
+            # Add crosswalk_id 2 and weight records.
+            crosswalk_repo.add('222-222-2222', 'anothernode.toron', 'edge2', is_locally_complete=False)
+            relation_repo.add(2, 1, 1, 4000)
+            relation_repo.add(2, 2, 1, 2000)  # <- Mapps to local index_id 1 (no relation goes to index_id 2)
+
+            # Insert new index record!
+            node.insert_index([('A', 'B'), ('baz', 'z')])
+
+            # Check that edge1's is_locally_complete is changed to False.
+            crosswalk = crosswalk_repo.get(1)
+            self.assertFalse(crosswalk.is_locally_complete)
+
+            # Check that edge2's is_locally_complete remains False (unchanged).
+            crosswalk = crosswalk_repo.get(2)
+            self.assertFalse(crosswalk.is_locally_complete)
+
     def test_select(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
