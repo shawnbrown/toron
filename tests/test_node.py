@@ -1066,6 +1066,21 @@ class TestNodeDeleteIndex(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             self.node.delete_index(data)
 
+    def test_delete_and_is_locally_complete_status(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('111-11-1111', None, 'other1', is_locally_complete=False)  # Adds crosswalk_id 1.
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(1, 1, 1, 16350, 0.75, None)
+            relation_repo.add(1, 2, 1, 5450,  0.25, None)
+
+            data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
+            self.node.delete_index(data)  # Deletes index without a relation (index_id 2).
+
+            # Check that is_locally_complete has been changed to True.
+            crosswalk = crosswalk_repo.get(1)
+            self.assertTrue(crosswalk.is_locally_complete)
+
     def test_delete_using_interoperation(self):
         # Add more index rows so there are multiple records to select.
         self.add_index_helper(self.node, [('foo', 'qux'), ('foo', 'quux')])

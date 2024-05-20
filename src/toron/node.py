@@ -507,8 +507,6 @@ class Node(object):
                 raise TypeError('expected data or keyword criteria, got neither')
 
             if counter['deleted']:
-                # self._dal.CrosswalkRepository(cursor).refresh_is_locally_complete()
-
                 refresh_structure_granularity(
                     column_manager=col_manager,
                     structure_repo=self._dal.StructureRepository(cursor),
@@ -516,12 +514,19 @@ class Node(object):
                     aux_index_repo=aux_index_repo,
                 )
 
-                # Previously unweighted indexes may have been deleted.
+                # All unweighted indexes may have been deleted.
                 group_repo = self._dal.WeightGroupRepository(cursor)
                 for group in group_repo.get_all():
                     if (not group.is_complete
                             and weight_repo.weight_group_is_complete(group.id)):
                         group_repo.update(replace(group, is_complete=True))
+
+                # All unrelated indexes may have been deleted.
+                crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+                for crosswalk in crosswalk_repo.get_all():
+                    if (not crosswalk.is_locally_complete
+                            and relation_repo.crosswalk_is_complete(crosswalk.id)):
+                        crosswalk_repo.update(replace(crosswalk, is_locally_complete=True))
 
         warn_if_issues(counter, expected='deleted')
 
