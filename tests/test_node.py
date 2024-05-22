@@ -1967,22 +1967,40 @@ class TestNodeRelationMethods(unittest.TestCase):
         self.assertEqual(self.get_relations_helper(), expected)
 
     def test_insert_normalization(self):
+        """The first three columns can be given as their numeric types
+        or they can be given as strings which should be automatically
+        converted to the appropriate numeric type:
+
+            * 1st column (other_index_id) converted to `int`
+            * 2nd column (value column, e.g. 'rel1') converted to `float`
+            * 3rd column (index_id) converted to `int`
+
+        The label columns should be strings. If 'proportion' is given,
+        it should be a ``float``. If 'mapping_level' is given, it should
+        be ``bytes``.
+
+        For the DAL1 backend, SQLite casts text characters as numeric
+        types based on the columns "Type Affinity":
+
+            https://www.sqlite.org/datatype3.html#type_affinity
+        """
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion', 'mapping_level'),
-            (1, 10.0, 1, 'foo', 'x', '',    ''),       # <- Strings should become None
-            (2, 20.0, 2, 'bar', 'y', 0.8,   b'\x80'),
-            (3,  5.0, 2, 'bar', 'y', '0.2', b'\x80'),  # <- String should become float
-            (3, 15.0, 3, 'bar', 'z', None,  None),
+            ('1', '10.0', '1', 'foo', 'x', None, None),
+            ('2', '20.0', '2', 'bar', 'y', 0.8,  b'\x80'),
+            ('3',  '5.0', '2', 'bar', 'y', 0.2,  b'\x80'),
+            ('3', '15.0', '3', 'bar', 'z', None, None),
         ]
         self.node.insert_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 1, 1, 10.0, None, None),     # <- Empty strings now None
+            (1, 1, 1, 1, 10.0, None, None),
             (2, 1, 2, 2, 20.0, 0.8,  b'\x80'),
-            (3, 1, 3, 2,  5.0, 0.2,  b'\x80'),  # <- String '0.2' now float 0.2
+            (3, 1, 3, 2,  5.0, 0.2,  b'\x80'),
             (4, 1, 3, 3, 15.0, None, None),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        msg = 'other_index_id and index_id should be int, rel1 should be float'
+        self.assertEqual(self.get_relations_helper(), expected, msg=msg)
 
     def test_insert_different_order_and_extra(self):
         """Label columns in different order and extra column."""
