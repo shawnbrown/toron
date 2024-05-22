@@ -1083,28 +1083,34 @@ class Node(object):
             #structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
             for row in data:
+                # Get values for relation record.
                 other_index_id, value, index_id = row[:3]
                 row_dict = dict(zip(columns[3:], row[3:]))
 
+                # Check for matching index_id.
                 index_record = index_repo.get(index_id)
                 if not index_record:
                     counter['no_index'] += 1
                     continue  # <- Skip to next item.
 
+                # Check for matching index labels.
                 row_labels = tuple(row_dict[x] for x in label_columns)
                 if row_labels != index_record.labels:
                     counter['mismatch'] += 1
                     continue  # <- Skip to next item.
 
+                # Verify proportion, if provided.
                 proportion = row_dict.get('proportion')
                 if isinstance(proportion, str):
                     proportion = float(proportion) if proportion else None
 
+                # Verify mapping level if provided.
                 mapping_level = row_dict.get('mapping_level') or None
                 #if mapping_level and BitFlags(mapping_level) not in structure:
                 #    counter['mismatch_structure'] += 1
                 #    continue  # <- Skip to next item.
 
+                # Add relation record.
                 relation_repo.add(
                     crosswalk_id=crosswalk_id,
                     other_index_id=other_index_id,
