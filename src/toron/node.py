@@ -68,6 +68,7 @@ def warn_if_issues(
         'empty_str': 'skipped {empty_str} rows with empty string values',
         'no_index': 'skipped {no_index} rows with non-matching index_id values',
         'mismatch': 'skipped {mismatch} rows with mismatched labels',
+        'bad_mapping_level': 'skipped {bad_mapping_level} rows with invalid mapping levels',
         'no_match': 'skipped {no_match} rows with labels that match no index',
         'no_weight': 'skipped {no_weight} rows with no matching weights',
         'merged': 'merged {merged} existing records with duplicate label values',
@@ -1067,7 +1068,7 @@ class Node(object):
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
-            #struct_repo = self._dal.StructureRepository(cursor)
+            struct_repo = self._dal.StructureRepository(cursor)
 
             label_columns = col_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
@@ -1080,7 +1081,7 @@ class Node(object):
                 )
             crosswalk_id = crosswalk.id
 
-            #structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
+            structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
             for row in data:
                 # Get values for relation record.
@@ -1109,9 +1110,9 @@ class Node(object):
 
                 # Verify mapping level if provided.
                 mapping_level = row_dict.get('mapping_level') or None
-                #if mapping_level and BitFlags(mapping_level) not in structure:
-                #    counter['mismatch_structure'] += 1
-                #    continue  # <- Skip to next item.
+                if mapping_level and BitFlags(mapping_level) not in structure:
+                    counter['bad_mapping_level'] += 1
+                    continue  # <- Skip to next item.
 
                 # Add relation record.
                 relation_repo.add(

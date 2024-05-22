@@ -1984,6 +1984,12 @@ class TestNodeRelationMethods(unittest.TestCase):
 
             https://www.sqlite.org/datatype3.html#type_affinity
         """
+        with self.node._managed_cursor() as cursor:
+            structure_repo = self.node._dal.StructureRepository(cursor)
+            structure_repo.add(None,      0, 0)
+            structure_repo.add(0.9140625, 1, 0)
+            structure_repo.add(1.5859375, 1, 1)
+
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion', 'mapping_level'),
             ('1', '10.0', '1', 'foo', 'x', None, None),
@@ -2016,6 +2022,40 @@ class TestNodeRelationMethods(unittest.TestCase):
         regex = r"when 'proportion' is given, it must be a float, got str: '1.0'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_relations('myfile', 'rel1', data)
+
+    def test_insert_skip_bad_mapping_level(self):
+        with self.node._managed_cursor() as cursor:
+            structure_repo = self.node._dal.StructureRepository(cursor)
+            structure_repo.add(None,      0, 0)
+            structure_repo.add(0.9140625, 1, 0)
+            structure_repo.add(1.5859375, 1, 1)
+
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'mapping_level'),
+            (1, 10.0, 1, 'foo', 'x', b'\x40'),  # <- `\x40` is bad mapping level `(0, 1)`
+            (2, 20.0, 2, 'bar', 'y', b'\x80'),
+            (3,  5.0, 2, 'bar', 'y', b'\x80'),
+            (3, 15.0, 3, 'bar', 'z', None),
+        ]
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.insert_relations('myfile', 'rel1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'skipped 1 rows with invalid mapping levels, loaded 3 rows',
+        )
+
+        # Verify the three valid rows that were loaded.
+        expected = [
+            (1, 1, 2, 2, 20.0, None, b'\x80'),
+            (2, 1, 3, 2,  5.0, None, b'\x80'),
+            (3, 1, 3, 3, 15.0, None, None),
+        ]
+        msg = 'other_index_id and index_id should be int, rel1 should be float'
+        self.assertEqual(self.get_relations_helper(), expected, msg=msg)
 
     def test_insert_different_order_and_extra(self):
         """Label columns in different order and extra column."""
