@@ -2002,6 +2002,21 @@ class TestNodeRelationMethods(unittest.TestCase):
         msg = 'other_index_id and index_id should be int, rel1 should be float'
         self.assertEqual(self.get_relations_helper(), expected, msg=msg)
 
+    def test_insert_bad_proportion_type(self):
+        """Unlike the first three columns, proportion should be used
+        as-is (not cast as a float like the value column). The reason
+        for this is that when proportion is given, it's probably going
+        to be calculated by a Mapper instance (not loaded from a CSV
+        file).
+        """
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion', 'mapping_level'),
+            (1, 10.0, 1, 'foo', 'x', '1.0', None),  # <- Proportion is a string (bad type).
+        ]
+        regex = r"when 'proportion' is given, it must be a float, got str: '1.0'"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_relations('myfile', 'rel1', data)
+
     def test_insert_different_order_and_extra(self):
         """Label columns in different order and extra column."""
         data = [

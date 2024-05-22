@@ -1100,9 +1100,12 @@ class Node(object):
                     continue  # <- Skip to next item.
 
                 # Verify proportion, if provided.
-                proportion = row_dict.get('proportion')
-                if isinstance(proportion, str):
-                    proportion = float(proportion) if proportion else None
+                proportion = row_dict.get('proportion') or None
+                if proportion and not isinstance(proportion, float):
+                    raise ValueError(
+                        f"when 'proportion' is given, it must be a float, got "
+                        f"{proportion.__class__.__qualname__}: {proportion!r}"
+                    )
 
                 # Verify mapping level if provided.
                 mapping_level = row_dict.get('mapping_level') or None
