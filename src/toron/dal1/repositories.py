@@ -683,6 +683,21 @@ class RelationRepository(BaseRelationRepository):
             'DELETE FROM main.relation WHERE relation_id=?', (id,)
         )
 
+    def get_distinct_other_index_ids(
+        self, crosswalk_id: int, ordered: bool = False
+    ) -> Iterator[int]:
+        """Get distinct other_index_id values for the given crosswalk.
+        When *ordered* is True, must return values in ascending order.
+        """
+        sql = f"""
+            SELECT DISTINCT other_index_id
+            FROM main.relation
+            WHERE crosswalk_id=?
+            {'ORDER BY other_index_id' if ordered else ''}
+        """
+        self._cursor.execute(sql, (crosswalk_id,))
+        return (row[0] for row in self._cursor)
+
     def find_by_crosswalk_id_and_index_id(
         self, crosswalk_id: int, index_id: int
     ) -> Iterator[Relation]:

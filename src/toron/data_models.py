@@ -679,6 +679,14 @@ class BaseRelationRepository(ABC):
     #    """Filter to records associated with the given crosswalk."""
 
     @abstractmethod
+    def get_distinct_other_index_ids(
+        self, crosswalk_id: int, ordered: bool = False
+    ) -> Iterator[int]:
+        """Get distinct other_index_id values for the given crosswalk.
+        When *ordered* is True, must return values in ascending order.
+        """
+
+    @abstractmethod
     def find_by_crosswalk_id_and_index_id(
         self, crosswalk_id: int, index_id: int
     ) -> Iterator[Relation]:

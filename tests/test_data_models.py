@@ -567,6 +567,13 @@ class RelationRepositoryBaseTest(ABC):
         results = self.repository.find_by_other_index_id(93)  # No other_index_id 93
         self.assertEqual(list(results), [], msg='should return empty iterator')
 
+    def test_get_distinct_other_index_ids(self):
+        results = self.repository.get_distinct_other_index_ids(1)
+        self.assertEqual(set(results), {1, 2, 3})
+
+        results = self.repository.get_distinct_other_index_ids(1, ordered=True)
+        self.assertEqual(list(results), [1, 2, 3])
+
     def test_refresh_proportions(self):
         # Delete some relations to introduce inconsistent proportions.
         self.repository.delete(2)
