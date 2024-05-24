@@ -736,6 +736,12 @@ class BaseRelationRepository(ABC):
             )
 
     @abstractmethod
+    def find_by_crosswalk_id_and_other_index_id(
+        self, crosswalk_id: int, other_index_id: int
+    ) -> Iterator[Relation]:
+        """Find all records with matching crosswalk_id and other_index_id."""
+
+    @abstractmethod
     def find_by_other_index_id(self, other_index_id: int) -> Iterator[Relation]:
         """Find all records with matching other_index_id."""
 

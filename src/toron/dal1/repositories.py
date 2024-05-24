@@ -717,6 +717,17 @@ class RelationRepository(BaseRelationRepository):
         for record in self._cursor:
             yield Relation(*record)
 
+    def find_by_crosswalk_id_and_other_index_id(
+        self, crosswalk_id: int, other_index_id: int
+    ) -> Iterator[Relation]:
+        """Find all records with matching crosswalk_id and other_index_id."""
+        self._cursor.execute(
+            'SELECT * FROM main.relation WHERE crosswalk_id=? AND other_index_id=?',
+            (crosswalk_id, other_index_id),
+        )
+        for record in self._cursor:
+            yield Relation(*record)
+
     def find_by_other_index_id(self, other_index_id: int) -> Iterator[Relation]:
         """Find all records with matching other_index_id."""
         self._cursor.execute(
