@@ -1063,7 +1063,8 @@ class Node(object):
             )
 
         counter: Counter = Counter()
-        with self._managed_transaction() as cursor:
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
             col_manager = self._dal.ColumnManager(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
@@ -1120,13 +1121,19 @@ class Node(object):
                     other_index_id=other_index_id,
                     index_id=index_id,
                     value=value,
-                    proportion=proportion,
+                    proportion=None,  # <- Calculated afterwards.
                     mapping_level=mapping_level,
                 )
                 counter['inserted'] += 1
 
-            if (counter['inserted'] and crosswalk
-                    and relation_repo.crosswalk_is_complete(crosswalk_id)):
-                crosswalk_repo.update(replace(crosswalk, is_locally_complete=True))
+            if counter['inserted'] and crosswalk:
+                if relation_repo.crosswalk_is_complete(crosswalk_id):
+                    crosswalk_repo.update(replace(crosswalk, is_locally_complete=True))
+
+                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(crosswalk_id)
+
+                for other_index_id in other_index_ids:
+                    relation_repo.refresh_proportions2(crosswalk_id, other_index_id)
 
         warn_if_issues(counter, expected='inserted')

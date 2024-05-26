@@ -770,6 +770,25 @@ class BaseRelationRepository(ABC):
                         relation.proportion = 1 / len(grouped_rels)
                     self.update(relation)
 
+    def refresh_proportions2(
+        self, crosswalk_id: int, other_index_id: int
+    ) -> None:
+        """Refresh proportions for records with matching crosswalk_id
+        and other_index_id.
+        """
+        relations = list(self.find_by_crosswalk_id_and_other_index_id(
+            crosswalk_id, other_index_id
+        ))
+
+        values_sum = sum(rel.value for rel in relations)
+        for relation in relations:
+            try:
+                relation.proportion = relation.value / values_sum
+            except ZeroDivisionError:
+                relation.proportion = 1 / len(relations)
+
+            self.update(relation)
+
 
 class BasePropertyRepository(ABC):
     @abstractmethod

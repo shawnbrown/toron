@@ -1958,11 +1958,11 @@ class TestNodeRelationMethods(unittest.TestCase):
         self.node.insert_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, None, None),
-            (2, 1, 1, 1, 10.0, None, None),
-            (3, 1, 2, 2, 20.0, None, None),
-            (4, 1, 3, 2,  5.0, None, None),
-            (5, 1, 3, 3, 15.0, None, None),
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            (3, 1, 2, 2, 20.0, 1.00, None),
+            (4, 1, 3, 2,  5.0, 0.25, None),
+            (5, 1, 3, 3, 15.0, 0.75, None),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -1990,22 +1990,25 @@ class TestNodeRelationMethods(unittest.TestCase):
             structure_repo.add(0.9140625, 1, 0)
             structure_repo.add(1.5859375, 1, 1)
 
+        # If there's proportion column, it is ignored and proportions are
+        # recalculated from the weight value (e.g., rel1) when saving.
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion', 'mapping_level'),
-            ('1', '10.0', '1', 'foo', 'x', None, None),
-            ('2', '20.0', '2', 'bar', 'y', 0.8,  b'\x80'),
-            ('3',  '5.0', '2', 'bar', 'y', 0.2,  b'\x80'),
-            ('3', '15.0', '3', 'bar', 'z', None, None),
+            ('1', '10.0', '1', 'foo', 'x', 0.50, None),
+            ('2', '20.0', '2', 'bar', 'y', 0.50, None),
+            ('3',  '5.0', '2', 'bar', 'y', None, b'\x80'),
+            ('3', '15.0', '3', 'bar', 'z', None, b'\x80'),
         ]
         self.node.insert_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 1, 1, 10.0, None, None),
-            (2, 1, 2, 2, 20.0, 0.8,  b'\x80'),
-            (3, 1, 3, 2,  5.0, 0.2,  b'\x80'),
-            (4, 1, 3, 3, 15.0, None, None),
+            (1, 1, 1, 1, 10.0, 1.0,  None),
+            (2, 1, 2, 2, 20.0, 1.0,  None),
+            (3, 1, 3, 2,  5.0, 0.25, b'\x80'),
+            (4, 1, 3, 3, 15.0, 0.75, b'\x80'),
         ]
-        msg = 'other_index_id and index_id should be int, rel1 should be float'
+        msg = 'other_index_id and index_id should be int; rel1 should be ' \
+              'float; proportions should be auto-calculated'
         self.assertEqual(self.get_relations_helper(), expected, msg=msg)
 
     def test_insert_bad_proportion_type(self):
@@ -2050,9 +2053,9 @@ class TestNodeRelationMethods(unittest.TestCase):
 
         # Verify the three valid rows that were loaded.
         expected = [
-            (1, 1, 2, 2, 20.0, None, b'\x80'),
-            (2, 1, 3, 2,  5.0, None, b'\x80'),
-            (3, 1, 3, 3, 15.0, None, None),
+            (1, 1, 2, 2, 20.0, 1.0,  b'\x80'),
+            (2, 1, 3, 2,  5.0, 0.25, b'\x80'),
+            (3, 1, 3, 3, 15.0, 0.75, None),
         ]
         msg = 'other_index_id and index_id should be int, rel1 should be float'
         self.assertEqual(self.get_relations_helper(), expected, msg=msg)
@@ -2070,11 +2073,11 @@ class TestNodeRelationMethods(unittest.TestCase):
         self.node.insert_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, None, None),
-            (2, 1, 1, 1, 10.0, None, None),
-            (3, 1, 2, 2, 20.0, None, None),
-            (4, 1, 3, 2,  5.0, None, None),
-            (5, 1, 3, 3, 15.0, None, None),
+            (1, 1, 0, 0,  0.0, 1.0,  None),
+            (2, 1, 1, 1, 10.0, 1.0,  None),
+            (3, 1, 2, 2, 20.0, 1.0,  None),
+            (4, 1, 3, 2,  5.0, 0.25, None),
+            (5, 1, 3, 3, 15.0, 0.75, None),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
