@@ -609,7 +609,10 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.delete(9)
 
         # Fix inconsistencies with refresh_proportions().
-        self.repository.refresh_proportions(other_index_ids=[2, 3])
+        self.repository.refresh_proportions(crosswalk_id=1, other_index_id=2)
+        self.repository.refresh_proportions(crosswalk_id=1, other_index_id=3)
+        self.repository.refresh_proportions(crosswalk_id=2, other_index_id=2)
+        self.repository.refresh_proportions(crosswalk_id=2, other_index_id=3)
 
         results = self.get_relations_helper()
         expected = {

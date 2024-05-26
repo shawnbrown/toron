@@ -460,6 +460,7 @@ class Node(object):
             aux_index_repo = self._dal.IndexRepository(aux_cursor)
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             col_manager = self._dal.ColumnManager(cursor)
 
             if data:
@@ -490,6 +491,7 @@ class Node(object):
                         existing_record.id,
                         index_repo,
                         weight_repo,
+                        crosswalk_repo,
                         relation_repo,
                     )
                     counter['deleted'] += 1
@@ -500,6 +502,7 @@ class Node(object):
                         index_record.id,
                         index_repo,
                         weight_repo,
+                        crosswalk_repo,
                         relation_repo,
                     )
                     counter['deleted'] += 1
@@ -523,7 +526,6 @@ class Node(object):
                         group_repo.update(replace(group, is_complete=True))
 
                 # All unrelated indexes may have been deleted.
-                crosswalk_repo = self._dal.CrosswalkRepository(cursor)
                 for crosswalk in crosswalk_repo.get_all():
                     if (not crosswalk.is_locally_complete
                             and relation_repo.crosswalk_is_complete(crosswalk.id)):
@@ -1134,6 +1136,6 @@ class Node(object):
                 other_index_ids = aux_relation_repo.get_distinct_other_index_ids(crosswalk_id)
 
                 for other_index_id in other_index_ids:
-                    relation_repo.refresh_proportions2(crosswalk_id, other_index_id)
+                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
 
         warn_if_issues(counter, expected='inserted')

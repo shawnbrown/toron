@@ -30,6 +30,7 @@ def delete_index_record(
     index_id: int,
     index_repo: BaseIndexRepository,
     weight_repo: BaseWeightRepository,
+    crosswalk_repo: BaseCrosswalkRepository,
     relation_repo: BaseRelationRepository,
 ) -> None:
     """Delete index record and associated weights and relations."""
@@ -61,7 +62,9 @@ def delete_index_record(
         relation_repo.delete(relation.id)
 
     # Rebuild proportions for remaining relations.
-    relation_repo.refresh_proportions(other_index_ids)
+    for other_index_id in other_index_ids:
+        for crosswalk in crosswalk_repo.get_all():
+            relation_repo.refresh_proportions(crosswalk.id, other_index_id)
 
     # Remove existing Index record.
     index_repo.delete(index_id)
