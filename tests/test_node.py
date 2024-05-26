@@ -2011,20 +2011,21 @@ class TestNodeRelationMethods(unittest.TestCase):
               'float; proportions should be auto-calculated'
         self.assertEqual(self.get_relations_helper(), expected, msg=msg)
 
-    def test_insert_bad_proportion_type(self):
-        """Unlike the first three columns, proportion should be used
-        as-is (not cast as a float like the value column). The reason
-        for this is that when proportion is given, it's probably going
-        to be calculated by a Mapper instance (not loaded from a CSV
-        file).
+    def test_insert_proportion_ignored(self):
+        """If 'proportion' is given as one of the columns in *data*,
+        it's treated as an extra column and is ignored. This is done
+        because other relations may already be present in the node that
+        would affect the final proportion. So the proportion values are
+        automatically recalculated after records are inserted.
         """
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion', 'mapping_level'),
-            (1, 10.0, 1, 'foo', 'x', '1.0', None),  # <- Proportion is a string (bad type).
+            (1, 10.0, 1, 'foo', 'x', '<ignored>', None),  # <- Value in 'proportion' column should be ignored.
         ]
-        regex = r"when 'proportion' is given, it must be a float, got str: '1.0'"
-        with self.assertRaisesRegex(ValueError, regex):
-            self.node.insert_relations('myfile', 'rel1', data)
+        self.node.insert_relations('myfile', 'rel1', data)
+
+        expected = [(1, 1, 1, 1, 10.0, 1.0, None)]  # <- Proportion should be 1.0 (auto-calculated).
+        self.assertEqual(self.get_relations_helper(), expected)
 
     def test_insert_skip_bad_mapping_level(self):
         with self.node._managed_cursor() as cursor:

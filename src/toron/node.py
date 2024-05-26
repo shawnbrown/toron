@@ -1103,14 +1103,6 @@ class Node(object):
                     counter['mismatch'] += 1
                     continue  # <- Skip to next item.
 
-                # Verify proportion, if provided.
-                proportion = row_dict.get('proportion') or None
-                if proportion and not isinstance(proportion, float):
-                    raise ValueError(
-                        f"when 'proportion' is given, it must be a float, got "
-                        f"{proportion.__class__.__qualname__}: {proportion!r}"
-                    )
-
                 # Verify mapping level if provided.
                 mapping_level = row_dict.get('mapping_level') or None
                 if mapping_level and BitFlags(mapping_level) not in structure:
@@ -1123,7 +1115,6 @@ class Node(object):
                     other_index_id=other_index_id,
                     index_id=index_id,
                     value=value,
-                    proportion=None,  # <- Calculated afterwards.
                     mapping_level=mapping_level,
                 )
                 counter['inserted'] += 1
