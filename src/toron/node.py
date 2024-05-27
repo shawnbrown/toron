@@ -43,6 +43,7 @@ from ._utils import (
     ToronWarning,
     normalize_tabular,
     verify_columns_set,
+    SequenceHash,
 )
 
 
@@ -1120,13 +1121,24 @@ class Node(object):
                 counter['inserted'] += 1
 
             if counter['inserted'] and crosswalk:
-                if relation_repo.crosswalk_is_complete(crosswalk_id):
-                    crosswalk_repo.update(replace(crosswalk, is_locally_complete=True))
-
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
-                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(crosswalk_id)
+                sequence_hash = SequenceHash()
 
+                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
+                    crosswalk_id,
+                    ordered=True,  # <- Must be ordered for `sequence_hash`.
+                )
+
+                # Refresh proportions and build new hash.
                 for other_index_id in other_index_ids:
                     relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+                    sequence_hash.add_value(other_index_id)
+
+                # Assign new values and update crosswalk record.
+                crosswalk_repo.update(replace(
+                    crosswalk,
+                    other_index_hash=sequence_hash.get_hexdigest(),
+                    is_locally_complete=relation_repo.crosswalk_is_complete(crosswalk_id),
+                ))
 
         warn_if_issues(counter, expected='inserted')

@@ -2101,7 +2101,7 @@ class TestNodeRelationMethods(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_relations('myfile', 'rel1', data)
 
-    def test_insert_is_complete_status(self):
+    def test_insert_is_complete_status_and_hash(self):
         with self.node._managed_cursor() as cursor:
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
 
@@ -2117,12 +2117,22 @@ class TestNodeRelationMethods(unittest.TestCase):
 
             crosswalk = crosswalk_repo.get(1)
             self.assertFalse(crosswalk.is_locally_complete)
+            self.assertEqual(
+                crosswalk.other_index_hash,
+                'c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
+                msg='hash for other_index_ids 0, 1, 2, and 3',
+            )
 
             data = [
                 ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
-                (3, 15.0, 3, 'bar', 'z'),  # This completes the crosswalk.
+                (4, 15.0, 3, 'bar', 'z'),  # index_id 3 completes the crosswalk
             ]
             self.node.insert_relations('myfile', 'rel1', data)
 
-            crosswalk = crosswalk_repo.get(1)  # Re-fetch crosswalk.
+            crosswalk = crosswalk_repo.get(1)  # re-fetch the crosswalk
             self.assertTrue(crosswalk.is_locally_complete)
+            self.assertEqual(
+                crosswalk.other_index_hash,
+                'ed545f6c1652e1c90b517e9f653bafc0cf0f7214fb2dd58e3864c1522b089982',
+                msg='hash for other_index_ids 0, 1, 2, 3, and 4',
+            )
