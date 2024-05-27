@@ -426,6 +426,11 @@ class Node(object):
                 )
 
             if counter['merged']:
+                refresh_index_hash_property(
+                    index_repo=index_repo,
+                    prop_repo=self._dal.PropertyRepository(cursor),
+                )
+
                 # Merges may have eliminated all unweighted indexes.
                 group_repo = self._dal.WeightGroupRepository(cursor)
                 for group in group_repo.get_all():

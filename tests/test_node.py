@@ -709,6 +709,9 @@ class TestNodeUpdateIndex(unittest.TestCase):
             repository.add('foo', 'x')
             repository.add('bar', 'y')
 
+            prop_repo = node._dal.PropertyRepository(cursor)
+            prop_repo.add('index_hash', '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177')
+
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_group_repo.add('group1')  # Adds weight_group_id 1.
             weight_repo = node._dal.WeightRepository(cursor)
@@ -933,6 +936,29 @@ class TestNodeUpdateIndex(unittest.TestCase):
             # Check that is_locally_complete has been changed to True.
             crosswalk = crosswalk_repo.get(1)
             self.assertTrue(crosswalk.is_locally_complete)
+
+    def test_merging_and_index_hash_updates(self):
+        with self.node._managed_cursor() as cursor:
+            prop_repo = self.node._dal.PropertyRepository(cursor)
+
+            # Check starting 'index_hash' property.
+            self.assertEqual(
+                prop_repo.get('index_hash'),
+                '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
+                msg='hash for index_ids 0, 1, and 2',
+            )
+
+            # Apply update which triggers a merge of existing records.
+            data = [('index_id', 'A', 'B'), (1, 'bar', 'y')]
+            with self.assertWarns(ToronWarning):
+                self.node.update_index(data, merge_on_conflict=True)
+
+            # Check modified 'index_hash' property.
+            self.assertEqual(
+                prop_repo.get('index_hash'),
+                '7c3ccd10bb7ec37b46d37926ae6274267f007a34aeaf15c882a715a7f3300529',
+                msg='hash for index_ids 0 and 1 (index_id 2 was merged into 1)',
+            )
 
 
 class TestNodeDeleteIndex(unittest.TestCase):
