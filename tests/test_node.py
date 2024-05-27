@@ -999,6 +999,11 @@ class TestNodeDeleteIndex(unittest.TestCase):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
         self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
+
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+            prop_repo.add('index_hash', '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177')
+
         self.node = node
 
     def test_delete_index_only(self):
@@ -1161,6 +1166,28 @@ class TestNodeDeleteIndex(unittest.TestCase):
             Structure(id=2, granularity=0.0,  bits=(1, 1))  # <- Gets `0.0` because there is only 1 record.
         ]
         self.assertEqual(actual, expected)
+
+    def test_merging_and_index_hash_updates(self):
+        with self.node._managed_cursor() as cursor:
+            prop_repo = self.node._dal.PropertyRepository(cursor)
+
+            # Check starting 'index_hash' property.
+            self.assertEqual(
+                prop_repo.get('index_hash'),
+                '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
+                msg='hash for index_ids 0, 1, and 2',
+            )
+
+            # Call delete_index() and delete index_id 1.
+            data = [('index_id', 'A', 'B'), (1, 'foo', 'x')]
+            self.node.delete_index(data)
+
+            # Check modified 'index_hash' property.
+            self.assertEqual(
+                prop_repo.get('index_hash'),
+                '692865c9a376a1a82d161b0f9578595554873797fa9ebbb068b797828122e61d',
+                msg='hash for index_ids 0 and 2 (index_id 1 was deleted)',
+            )
 
 
 class TestNodeWeightGroupMethods(unittest.TestCase):

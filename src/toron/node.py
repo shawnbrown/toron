@@ -523,6 +523,11 @@ class Node(object):
                 raise TypeError('expected data or keyword criteria, got neither')
 
             if counter['deleted']:
+                refresh_index_hash_property(
+                    index_repo=index_repo,
+                    prop_repo=self._dal.PropertyRepository(cursor),
+                )
+
                 refresh_structure_granularity(
                     column_manager=col_manager,
                     structure_repo=self._dal.StructureRepository(cursor),
