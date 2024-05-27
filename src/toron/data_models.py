@@ -261,6 +261,12 @@ class BaseIndexRepository(ABC):
     def get_all(self, include_undefined: bool = True) -> Iterator[Index]:
         """Get all records in the repository."""
 
+    @abstractmethod
+    def get_index_ids(self, ordered: bool = False) -> Iterator[int]:
+        """Get index_id values. When *ordered* is True, must return
+        values in ascending order.
+        """
+
     def get_cardinality(self, include_undefined: bool = True) -> int:
         """Return the number of records in the repository."""
         return sum(1 for _ in self.get_all(include_undefined))

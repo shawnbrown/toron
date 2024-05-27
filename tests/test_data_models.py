@@ -190,6 +190,18 @@ class IndexRepositoryBaseTest(ABC):
         ]
         self.assertEqual(list(results), expected, msg='should not include index_id 0')
 
+    def test_get_index_ids(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')
+        self.repository.add('bar', 'y')
+        self.repository.add('baz', 'z')
+
+        results = self.repository.get_index_ids()
+        self.assertEqual(set(results), {0, 1, 2, 3})
+
+        results = self.repository.get_index_ids(ordered=True)
+        self.assertEqual(list(results), [0, 1, 2, 3])
+
     def test_get_distinct_labels(self):
         self.manager.add_columns('A', 'B', 'C')
         self.repository.add('foo', 'x', 'aaa')
