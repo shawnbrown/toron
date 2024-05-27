@@ -472,9 +472,9 @@ class SequenceHash(object):
         >>>
         >>> index_hash = SequenceHash()
         >>> for index_id in index_ids:
-        ...     index_hash.update(index_id)
+        ...     index_hash.add_value(index_id)
         >>>
-        >>> index_hash.hexdigest()
+        >>> index_hash.get_hexdigest()
         'efaaa8ba342b5791c9a5fc25ec1fbc3bb77c6a110364840ce1cca88c14a93872'
     """
     def __init__(self) -> None:
