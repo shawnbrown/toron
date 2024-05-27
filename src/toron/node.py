@@ -31,6 +31,7 @@ from .data_models import (
     JsonTypes,
 )
 from .data_service import (
+    refresh_index_hash_property,
     delete_index_record,
     find_crosswalks_by_node_reference,
     get_all_discrete_categories,
@@ -301,6 +302,11 @@ class Node(object):
                     counter['dupe_or_empty_str'] += 1
 
             if counter['inserted']:
+                refresh_index_hash_property(
+                    index_repo=index_repo,
+                    prop_repo=self._dal.PropertyRepository(cursor),
+                )
+
                 refresh_structure_granularity(
                     column_manager=col_manager,
                     structure_repo=self._dal.StructureRepository(cursor),
