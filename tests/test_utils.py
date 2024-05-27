@@ -14,6 +14,7 @@ from toron._utils import (
     make_dictreaderlike,
     wide_to_narrow,
     make_hash,
+    SequenceHash,
     eagerly_initialize,
     BitFlags,
     QuantityIterator,
@@ -444,6 +445,61 @@ class TestMakeHash(unittest.TestCase):
     def test_empty_iterable(self):
         digest = make_hash([])
         self.assertIsNone(digest)
+
+
+class TestSequenceHash(unittest.TestCase):
+    def test_sequence(self):
+        sequence_hash = SequenceHash()
+        for n in [0, 1, 2]:
+            sequence_hash.add_value(n)
+
+        self.assertEqual(
+            sequence_hash.get_hexdigest(),
+            '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
+        )
+
+    def test_distinct_sequences(self):
+        """Make sure [1, 2, 3, 4] and [12, 34] have distinct hashes."""
+        sequence_hash = SequenceHash()
+        sequence_hash.add_value(1)
+        sequence_hash.add_value(2)
+        sequence_hash.add_value(3)
+        sequence_hash.add_value(4)
+        self.assertEqual(
+            sequence_hash.get_hexdigest(),
+            '7236c00c170036c6de133a878210ddd58567aa1d0619a0f70f69e38ae6f916e9',
+        )
+
+        sequence_hash = SequenceHash()
+        sequence_hash.add_value(12)
+        sequence_hash.add_value(34)
+        self.assertEqual(
+            sequence_hash.get_hexdigest(),
+            'efe163b58edfb9cfd3e3fd8c39ab3a134c4dc30f4768fe5f02b0581ae6d63adb',
+        )
+
+    def test_error_conditions(self):
+        regex = (
+            r'illegal value - values must be a strictly increasing '
+            r'sequence starting at 0 or greater'
+        )
+
+        # Test not strictly increasing.
+        sequence_hash = SequenceHash()
+        sequence_hash.add_value(1)
+        sequence_hash.add_value(2)
+        with self.assertRaisesRegex(ValueError, regex):
+            sequence_hash.add_value(2)  # <- Same as previous, not increasing!
+
+        # Test sequence not starting at 0 or greater.
+        sequence_hash = SequenceHash()
+        with self.assertRaisesRegex(ValueError, regex):
+            sequence_hash.add_value(-5)  # <- Not 0 or greater!
+
+        # Test integer is too big to fit in 8 bytes.
+        sequence_hash = SequenceHash()
+        with self.assertRaisesRegex(ValueError, 'int too big'):
+            sequence_hash.add_value(18446744073709551616)
 
 
 class TestEagerlyInitialize(unittest.TestCase):

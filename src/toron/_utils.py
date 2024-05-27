@@ -458,6 +458,48 @@ def make_hash(values: Iterable, sep: str = '|') -> Optional[str]:
     return sha256.hexdigest()
 
 
+class SequenceHash(object):
+    """An object to calculate a checksum from a sequence of integers.
+
+    Values must be a strictly increasing sequence of distinct integers
+    that start at 0 or greater and do not exceed 8 bytes in length (the
+    max integer value is 18446744073709551615, i.e., `2 ** 64 - 1`).
+
+    This class can be used to generate hashes for a node's 'index_id'
+    values::
+
+        >>> index_ids = [0, 1, 2, 5, 6, ...]
+        >>>
+        >>> index_hash = SequenceHash()
+        >>> for index_id in index_ids:
+        ...     index_hash.update(index_id)
+        >>>
+        >>> index_hash.hexdigest()
+        'efaaa8ba342b5791c9a5fc25ec1fbc3bb77c6a110364840ce1cca88c14a93872'
+    """
+    def __init__(self) -> None:
+        self.hash_obj = hashlib.sha256()
+        self._prev_value = -1
+
+    def add_value(self, value: int) -> None:
+        """Update the current digest with an additional integer."""
+        if not value > self._prev_value:
+            raise ValueError(
+                'illegal value - values must be a strictly increasing '
+                'sequence starting at 0 or greater'
+            )
+        try:
+            self.hash_obj.update(value.to_bytes(length=8, byteorder='big'))
+        except OverflowError as e:  # <- Int too big (more than 8 bytes).
+            raise ValueError(e)
+
+        self._prev_value = value
+
+    def get_hexdigest(self) -> str:
+        """Return the current digest as a hexadecimal string."""
+        return self.hash_obj.hexdigest()
+
+
 @overload
 def eagerly_initialize(func_or_iter: Callable[..., Generator]) -> Callable[..., Iterator]:
     ...
