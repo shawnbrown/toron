@@ -24,6 +24,25 @@ from .data_models import (
     Crosswalk,
     JsonTypes,
 )
+from ._utils import (
+    SequenceHash,
+)
+
+
+def refresh_index_hash_property(
+    index_repo: BaseIndexRepository,
+    prop_repo: BasePropertyRepository,
+) -> None:
+    """Update 'index_hash' property to reflect current index_id values."""
+    sequence_hash = SequenceHash()
+    for index_id in index_repo.get_index_ids(ordered=True):
+        sequence_hash.add_value(index_id)
+
+    index_hash = sequence_hash.get_hexdigest()
+    try:
+        prop_repo.add('index_hash', index_hash)
+    except Exception:
+        prop_repo.update('index_hash', index_hash)
 
 
 def delete_index_record(
