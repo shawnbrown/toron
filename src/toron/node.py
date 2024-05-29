@@ -1138,18 +1138,18 @@ class Node(object):
                 counter['inserted'] += 1
 
             if counter['inserted'] and crosswalk:
+                # Get ordered sequence of other_index_id values.
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
-                sequence_hash = SequenceHash()
-
                 other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
                     crosswalk_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
 
-                # Refresh proportions and build new hash.
+                # Build new hash and refresh proportion values.
+                sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
-                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
                     sequence_hash.add_value(other_index_id)
+                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
 
                 # Assign new values and update crosswalk record.
                 crosswalk_repo.update(replace(
