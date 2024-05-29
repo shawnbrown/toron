@@ -693,6 +693,16 @@ class BaseRelationRepository(ABC):
         """
 
     @abstractmethod
+    def find_by_ids(
+        self,
+        *,
+        crosswalk_id: Optional[int] = None,
+        other_index_id: Optional[int] = None,
+        index_id: Optional[int] = None,
+    ) -> Iterator[Relation]:
+        """Find all records with matching combination of id values."""
+
+    @abstractmethod
     def find_by_crosswalk_id_and_index_id(
         self, crosswalk_id: int, index_id: int
     ) -> Iterator[Relation]:

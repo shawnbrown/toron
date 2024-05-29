@@ -708,6 +708,34 @@ class RelationRepository(BaseRelationRepository):
         self._cursor.execute(sql, (crosswalk_id,))
         return (row[0] for row in self._cursor)
 
+    def find_by_ids(
+        self,
+        *,
+        crosswalk_id: Optional[int] = None,
+        other_index_id: Optional[int] = None,
+        index_id: Optional[int] = None,
+    ) -> Iterator[Relation]:
+        """Find all records with matching combination of id values."""
+        criteria = []
+        if crosswalk_id is not None:
+            criteria.append('crosswalk_id=:crosswalk_id')
+        if other_index_id is not None:
+            criteria.append('other_index_id=:other_index_id')
+        if index_id is not None:
+            criteria.append('index_id=:index_id')
+
+        if criteria:
+            sql = f'SELECT * FROM main.relation WHERE {" AND ".join(criteria)}'
+            parameters = {
+                'crosswalk_id': crosswalk_id,
+                'other_index_id': other_index_id,
+                'index_id': index_id,
+            }
+            self._cursor.execute(sql, parameters)
+
+            for record in self._cursor:
+                yield Relation(*record)
+
     def find_by_crosswalk_id_and_index_id(
         self, crosswalk_id: int, index_id: int
     ) -> Iterator[Relation]:

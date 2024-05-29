@@ -615,6 +615,59 @@ class RelationRepositoryBaseTest(ABC):
         results = self.repository.get_distinct_other_index_ids(1, ordered=True)
         self.assertEqual(list(results), [1, 2, 3])
 
+    def test_find_by_ids(self):
+        self.assertEqual(
+            list(self.repository.find_by_ids(crosswalk_id=1)),
+            [Relation(1, 1, 1, 1, 131250.0, 1.0,   None),
+             Relation(2, 1, 2, 1, 40960.0,  0.625, b'\x40'),
+             Relation(3, 1, 2, 2, 24576.0,  0.375, b'\x40'),
+             Relation(4, 1, 3, 3, 100000.0, 1.0,   None)],
+            msg='matches crosswalk_id 1',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(other_index_id=2)),
+            [Relation(2, 1, 2, 1, 40960.0, 0.625, b'\x40'),
+             Relation(3, 1, 2, 2, 24576.0, 0.375, b'\x40'),
+             Relation(6, 2, 2, 2, 416.25,  1.0,   None)],
+            msg='matches other_index_id 2 (includes records from crosswalks 1 and 2)',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(index_id=1)),
+            [Relation(1, 1, 1, 1, 131250.0, 1.0,      None),
+             Relation(2, 1, 2, 1, 40960.0,  0.625,    b'\x40'),
+             Relation(5, 2, 1, 1, 583.75,   1.0,      None),
+             Relation(7, 2, 3, 1, 336.0,    0.328125, None)],
+            msg='matches index_id 1 (includes records from crosswalks 1 and 2)',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(other_index_id=1, index_id=1)),
+            [Relation(1, 1, 1, 1, 131250.0, 1.0, None),
+             Relation(5, 2, 1, 1, 583.75,   1.0, None)],
+            msg='matches other_index_id 1 and index_id 1 (includes records from crosswalks 1 and 2)',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(crosswalk_id=1, other_index_id=2)),
+            [Relation(2, 1, 2, 1, 40960.0,  0.625, b'\x40'),
+             Relation(3, 1, 2, 2, 24576.0,  0.375, b'\x40')],
+            msg='matches crosswalk_id 1 and other_index_id 2',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(crosswalk_id=2, other_index_id=2, index_id=2)),
+            [Relation(6, 2, 2, 2, 416.25, 1.0, None)],
+            msg='matches crosswalk_id 2 and other_index_id 2 and index_id 2',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids()),
+            [],
+            msg='when no ids given, return empty iterator',
+        )
+
     def test_refresh_proportions(self):
         # Delete some relations to introduce inconsistent proportions.
         self.repository.delete(2)
