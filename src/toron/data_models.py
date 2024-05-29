@@ -680,10 +680,6 @@ class BaseRelationRepository(ABC):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
-    #@abstractmethod
-    #def find_by_crosswalk_id(self, crosswalk_id: int) -> Iterable[Relation]:
-    #    """Filter to records associated with the given crosswalk."""
-
     @abstractmethod
     def get_distinct_other_index_ids(
         self, crosswalk_id: int, ordered: bool = False
@@ -703,16 +699,6 @@ class BaseRelationRepository(ABC):
         """Find all records with matching combination of id values."""
 
     @abstractmethod
-    def find_by_crosswalk_id_and_index_id(
-        self, crosswalk_id: int, index_id: int
-    ) -> Iterator[Relation]:
-        """Find all records with matching crosswalk_id and index_id."""
-
-    @abstractmethod
-    def find_by_index_id(self, index_id: int) -> Iterator[Relation]:
-        """Find all records with matching index_id."""
-
-    @abstractmethod
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
 
@@ -727,7 +713,7 @@ class BaseRelationRepository(ABC):
         relation_ids = set()
         relation_sums: defaultdict = defaultdict(lambda: (0.0, 0.0))
         for index_id in index_ids:
-            for rel in self.find_by_index_id(index_id):
+            for rel in self.find_by_ids(index_id=index_id):
                 relation_ids.add(rel.id)
                 key = (rel.crosswalk_id, rel.other_index_id, rel.mapping_level)
                 v, p = relation_sums[key]  # Unpack value and proportion.
@@ -751,24 +737,14 @@ class BaseRelationRepository(ABC):
                 mapping_level=mapping_level,
             )
 
-    @abstractmethod
-    def find_by_crosswalk_id_and_other_index_id(
-        self, crosswalk_id: int, other_index_id: int
-    ) -> Iterator[Relation]:
-        """Find all records with matching crosswalk_id and other_index_id."""
-
-    @abstractmethod
-    def find_by_other_index_id(self, other_index_id: int) -> Iterator[Relation]:
-        """Find all records with matching other_index_id."""
-
     def refresh_proportions(
         self, crosswalk_id: int, other_index_id: int
     ) -> None:
         """Refresh proportions for records with matching crosswalk_id
         and other_index_id.
         """
-        relations = list(self.find_by_crosswalk_id_and_other_index_id(
-            crosswalk_id, other_index_id
+        relations = list(self.find_by_ids(
+            crosswalk_id=crosswalk_id, other_index_id=other_index_id
         ))
 
         values_sum = sum(rel.value for rel in relations)

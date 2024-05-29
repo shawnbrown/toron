@@ -736,45 +736,6 @@ class RelationRepository(BaseRelationRepository):
             for record in self._cursor:
                 yield Relation(*record)
 
-    def find_by_crosswalk_id_and_index_id(
-        self, crosswalk_id: int, index_id: int
-    ) -> Iterator[Relation]:
-        """Find all records with matching crosswalk_id and index_id."""
-        self._cursor.execute(
-            'SELECT * FROM main.relation WHERE crosswalk_id=? AND index_id=?',
-            (crosswalk_id, index_id),
-        )
-        for record in self._cursor:
-            yield Relation(*record)
-
-    def find_by_index_id(self, index_id: int) -> Iterator[Relation]:
-        """Find all records with matching index_id."""
-        self._cursor.execute(
-            'SELECT * FROM main.relation WHERE index_id=?', (index_id,)
-        )
-        for record in self._cursor:
-            yield Relation(*record)
-
-    def find_by_crosswalk_id_and_other_index_id(
-        self, crosswalk_id: int, other_index_id: int
-    ) -> Iterator[Relation]:
-        """Find all records with matching crosswalk_id and other_index_id."""
-        self._cursor.execute(
-            'SELECT * FROM main.relation WHERE crosswalk_id=? AND other_index_id=?',
-            (crosswalk_id, other_index_id),
-        )
-        for record in self._cursor:
-            yield Relation(*record)
-
-    def find_by_other_index_id(self, other_index_id: int) -> Iterator[Relation]:
-        """Find all records with matching other_index_id."""
-        self._cursor.execute(
-            'SELECT * FROM main.relation WHERE other_index_id=?',
-            (other_index_id,),
-        )
-        for record in self._cursor:
-            yield Relation(*record)
-
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
         self._cursor.execute(

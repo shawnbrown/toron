@@ -1044,8 +1044,9 @@ class Node(object):
             crosswalk_id = crosswalk.id
             for index in index_records:
                 index_id = index.id
-                relations = list(relation_repo.find_by_crosswalk_id_and_index_id(
-                                 crosswalk_id, index_id))
+                relations = list(relation_repo.find_by_ids(
+                    crosswalk_id=crosswalk_id, index_id=index_id
+                ))
                 if relations:
                     for rel in relations:
                         if rel.mapping_level:

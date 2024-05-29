@@ -405,7 +405,7 @@ class RelationRepositoryBaseTest(ABC):
         self.assertTrue(issubclass(self.dal.RelationRepository, BaseRelationRepository))
 
     def test_find_by_index_id(self):
-        results = self.repository.find_by_index_id(3)
+        results = self.repository.find_by_ids(index_id=3)
         expected = [
             Relation(
                 id=4,
@@ -428,40 +428,8 @@ class RelationRepositoryBaseTest(ABC):
         ]
         self.assertEqual(list(results), expected)
 
-        results = self.repository.find_by_index_id(93)  # No index_id 93
+        results = self.repository.find_by_ids(index_id=93)  # No index_id 93
         self.assertEqual(list(results), [], msg='should return empty iterator')
-
-    def test_find_by_crosswalk_id_and_index_id(self):
-        results = self.repository.find_by_crosswalk_id_and_index_id(crosswalk_id=1, index_id=3)
-        expected = [
-            Relation(
-                id=4,
-                crosswalk_id=1,
-                other_index_id=3,
-                index_id=3,
-                value=100000.0,
-                proportion=1.0,
-                mapping_level=None,
-            ),
-        ]
-        self.assertEqual(list(results), expected)
-
-        results = self.repository.find_by_crosswalk_id_and_index_id(crosswalk_id=2, index_id=3)
-        expected = [
-            Relation(
-                id=9,
-                crosswalk_id=2,
-                other_index_id=3,
-                index_id=3,
-                value=576.0,
-                proportion=0.5625,
-                mapping_level=None,
-            ),
-        ]
-        self.assertEqual(list(results), expected)
-
-        results = self.repository.find_by_crosswalk_id_and_index_id(crosswalk_id=2, index_id=93)
-        self.assertEqual(list(results), [])
 
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
@@ -551,62 +519,6 @@ class RelationRepositoryBaseTest(ABC):
             (4, 2, 3, 1, 1024.0,   1.0,  None),
         }
         self.assertEqual(results, expected)
-
-    def test_find_by_crosswalk_id_and_other_index_id(self):
-        results = self.repository.find_by_crosswalk_id_and_other_index_id(1, 1)
-        expected = [
-            Relation(
-                id=1,
-                crosswalk_id=1,  # <- Matched on crosswalk_id 1.
-                other_index_id=1,  # <- Matched on other_index_id 1.
-                index_id=1,
-                value=131250.0,
-                proportion=1.0,
-                mapping_level=None,
-            ),
-        ]
-        self.assertEqual(list(results), expected)
-
-        results = self.repository.find_by_crosswalk_id_and_other_index_id(2, 1)
-        expected = [
-            Relation(
-                id=5,
-                crosswalk_id=2,  # <- Matched on crosswalk_id 2.
-                other_index_id=1,  # <- Matched on other_index_id 1.
-                index_id=1,
-                value=583.75,
-                proportion=1.0,
-                mapping_level=None,
-            ),
-        ]
-        self.assertEqual(list(results), expected)
-
-    def test_find_by_other_index_id(self):
-        results = self.repository.find_by_other_index_id(1)
-        expected = [
-            Relation(
-                id=1,
-                crosswalk_id=1,
-                other_index_id=1,  # <- Matched on other_index_id 1.
-                index_id=1,
-                value=131250.0,
-                proportion=1.0,
-                mapping_level=None,
-            ),
-            Relation(
-                id=5,
-                crosswalk_id=2,
-                other_index_id=1,  # <- Matched on other_index_id 1.
-                index_id=1,
-                value=583.75,
-                proportion=1.0,
-                mapping_level=None,
-            )
-        ]
-        self.assertEqual(list(results), expected)
-
-        results = self.repository.find_by_other_index_id(93)  # No other_index_id 93
-        self.assertEqual(list(results), [], msg='should return empty iterator')
 
     def test_get_distinct_other_index_ids(self):
         results = self.repository.get_distinct_other_index_ids(1)

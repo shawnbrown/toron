@@ -59,7 +59,7 @@ def delete_index_record(
         weight_repo.delete(weight.id)
 
     # Remove associated relation records.
-    relations = relation_repo.find_by_index_id(index_id)
+    relations = relation_repo.find_by_ids(index_id=index_id)
     other_index_ids = set()
     for relation in list(relations):
         if relation.mapping_level:
