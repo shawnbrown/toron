@@ -1159,3 +1159,124 @@ class Node(object):
                 ))
 
         warn_if_issues(counter, expected='inserted')
+
+    def update_relations(
+        self,
+        node_reference: Union[str, 'Node'],
+        name: Optional[str],
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        data, columns = normalize_tabular(data, columns)
+
+        if tuple(columns[:3]) != ('other_index_id', name, 'index_id'):
+            raise ValueError(
+                f"columns should be start with "
+                f"('other_index_id', {name!r}, 'index_id', ...); "
+                f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
+            )
+
+        counter: Counter = Counter()
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
+            col_manager = self._dal.ColumnManager(cursor)
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            relation_repo = self._dal.RelationRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+            struct_repo = self._dal.StructureRepository(cursor)
+
+            label_columns = col_manager.get_columns()
+            verify_columns_set(columns, label_columns, allow_extras=True)
+
+            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            if not crosswalk:
+                raise ValueError(
+                    f'no crosswalk matching node_reference={node_reference!r} '
+                    f'and name={name!r}'
+                )
+            crosswalk_id = crosswalk.id
+
+            structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
+
+            for row in data:
+                # Get values for relation record.
+                other_index_id, value, index_id = row[:3]
+                row_dict = dict(zip(columns[3:], row[3:]))
+
+                # Check for matching index_id.
+                index_record = index_repo.get(index_id)
+                if not index_record:
+                    counter['no_index'] += 1
+                    continue  # <- Skip to next item.
+
+                # Check for matching index labels.
+                row_labels = tuple(row_dict[x] for x in label_columns)
+                if row_labels != index_record.labels:
+                    counter['mismatch'] += 1
+                    continue  # <- Skip to next item.
+
+                # Verify mapping level if provided.
+                mapping_level = row_dict.get('mapping_level') or None
+                if mapping_level and BitFlags(mapping_level) not in structure:
+                    counter['bad_mapping_level'] += 1
+                    continue  # <- Skip to next item.
+
+                # Find matching relation record (can only match one record).
+                relation_match = relation_repo.find_by_ids(
+                    crosswalk_id=crosswalk_id,
+                    other_index_id=other_index_id,
+                    index_id=index_id,
+                )
+                relation_record = next(relation_match, None)
+
+                if relation_record:
+                    # Update relation record if it exists.
+                    relation_record.value = value
+                    relation_record.mapping_level = mapping_level
+                    relation_repo.update(relation_record)
+                    counter['updated'] += 1
+                else:
+                    # Add new relation if it does not exist.
+                    relation_repo.add(
+                        crosswalk_id=crosswalk_id,
+                        other_index_id=other_index_id,
+                        index_id=index_id,
+                        value=value,
+                        mapping_level=mapping_level,
+                    )
+                    counter['inserted'] += 1
+
+            aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+            if counter['inserted']:
+                # Get ordered sequence of other_index_id values.
+                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
+                    crosswalk_id,
+                    ordered=True,  # <- Must be ordered for `sequence_hash`.
+                )
+
+                # Build new hash and refresh proportion values.
+                sequence_hash = SequenceHash()
+                for other_index_id in other_index_ids:
+                    sequence_hash.add_value(other_index_id)
+                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+
+                # Update crosswalk's hash and is-complete status.
+                crosswalk_repo.update(replace(
+                    crosswalk,
+                    other_index_hash=sequence_hash.get_hexdigest(),
+                    is_locally_complete=relation_repo.crosswalk_is_complete(crosswalk_id),
+                ))
+
+            elif counter['updated']:
+                # Get iterator of other_index_id values.
+                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(crosswalk_id)
+
+                # Refresh proportion values.
+                for other_index_id in other_index_ids:
+                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+
+        warn_if_issues(
+            counter,
+            expected='updated',
+            inserted='inserted {inserted} rows that did not previously exist',
+        )

@@ -2210,3 +2210,207 @@ class TestNodeRelationMethods(unittest.TestCase):
                 'ed545f6c1652e1c90b517e9f653bafc0cf0f7214fb2dd58e3864c1522b089982',
                 msg='hash for other_index_ids 0, 1, 2, 3, and 4',
             )
+
+
+class TestNodeUpdateRelations(unittest.TestCase):
+    def get_relations_helper(self):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with self.node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM relation')
+            return cursor.fetchall()
+
+    def setUp(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            col_manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            relation_repo = node._dal.RelationRepository(cursor)
+
+            # Add index columns and records.
+            col_manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('bar', 'z')
+
+            # Add crosswalk and relations.
+            crosswalk_repo.add('111-111-1111', 'myfile.toron', 'rel1',
+                other_index_hash='c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079')  # crosswalk_id 1
+            relation_repo.add(1, 0, 0,  0.0, 1.00, None)  # relation_id 1 (-, -)
+            relation_repo.add(1, 1, 1, 10.0, 1.00, None)  # relation_id 2 (foo, x)
+            relation_repo.add(1, 2, 2, 20.0, 1.00, None)  # relation_id 3 (bar, y)
+            relation_repo.add(1, 3, 3, 15.0, 1.00, None)  # relation_id 4 (bar, z)
+
+        self.node = node
+
+    def test_update(self):
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+            (2, 60.0, 2, 'bar', 'y'),
+        ]
+        self.node.update_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            (3, 1, 2, 2, 60.0, 1.00, None),  # <- Updated from 20 to 60.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_update_normalization(self):
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+            ('2', '60.0', '2', 'bar', 'y'),  # <- All values given as strings.
+        ]
+        self.node.update_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            (3, 1, 2, 2, 60.0, 1.00, None),  # <- Updated from 20 to 60.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_update_non_existant_record(self):
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+            (3,  10.0,  3, 'bar', 'z'),
+            (3,  6.0,   2, 'bar', 'y'),
+        ]
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.update_relations('myfile', 'rel1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'inserted 1 rows that did not previously exist, updated 1 rows',
+        )
+
+        # Verify final records.
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.0,   None),
+            (2, 1, 1, 1, 10.0, 1.0,   None),
+            (3, 1, 2, 2, 20.0, 1.0,   None),
+            (4, 1, 3, 3, 10.0, 0.625, None),  # <- Weight updated from 15 to 10, proportion recalculated.
+            (5, 1, 3, 2,  6.0, 0.375, None),  # <- Non-existant record inserted, proportion added.
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_update_proportion_ignored(self):
+        """If 'proportion' is given as one of the columns in *data*,
+        it's treated as an extra column and is ignored. The proportion
+        values are automatically calculated after records are inserted.
+        """
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion'),
+            (2, 60.0, 2, 'bar', 'y', 0.75),  # <- Proportion (0.75) gets ignored.
+        ]
+        self.node.update_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            (3, 1, 2, 2, 60.0, 1.00, None),  # <- Proportion auto-calculated (1.0), value updated from 20 to 60.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_update_skip_bad_mapping_level(self):
+        with self.node._managed_cursor() as cursor:
+            structure_repo = self.node._dal.StructureRepository(cursor)
+            structure_repo.add(None,      0, 0)
+            structure_repo.add(0.9140625, 1, 0)
+            structure_repo.add(1.5859375, 1, 1)
+
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'mapping_level'),
+            (1, 10.0, 1, 'foo', 'x', b'\x40'),  # <- `\x40` is bad mapping level `(0, 1)`
+            (3, 15.0, 3, 'bar', 'z', b'\x80'),
+            (3, 5.0,  2, 'bar', 'y', b'\x80'),
+        ]
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.update_relations('myfile', 'rel1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            ('skipped 1 rows with invalid mapping levels, inserted '
+             '1 rows that did not previously exist, updated 1 rows'),
+        )
+
+        # Verify final records.
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.0,   None),
+            (2, 1, 1, 1, 10.0, 1.0,   None),
+            (3, 1, 2, 2, 20.0, 1.0,   None),
+            (4, 1, 3, 3, 15.0, 0.75, b'\x80'),  # <- Mapping level updated.
+            (5, 1, 3, 2,  5.0, 0.25, b'\x80'),  # <- Mapping level updated.
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_update_different_order_and_extra(self):
+        """Label columns in different order and extra column."""
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'B', 'EXTRACOL', 'A'),
+            (1, 99.0, 1, 'x', 'EXTRA', 'foo'),
+            (2, 99.0, 2, 'y', 'EXTRA', 'bar'),
+        ]
+        self.node.update_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.0, None),
+            (2, 1, 1, 1, 99.0, 1.0, None),  # <- Updated from 10 to 99.
+            (3, 1, 2, 2, 99.0, 1.0, None),  # <- Updated from 20 to 99.
+            (4, 1, 3, 3, 15.0, 1.0, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_update_invalid_columns(self):
+        data = [
+            ('other_index_id', 'rel1', 'BAD_VALUE', 'A', 'B'),
+            (2, 60.0, 2, 'bar', 'y'),
+        ]
+        regex = r"columns should be start with \('other_index_id', 'rel1', 'index_id', ...\)"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.update_relations('myfile', 'rel1', data)
+
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A'),
+            (2, 60.0, 2, 'bar'),
+        ]
+        regex = r"missing required columns: 'B'"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.update_relations('myfile', 'rel1', data)
+
+    def test_update_is_complete_status_and_hash(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+
+            # Check initial status.
+            crosswalk = crosswalk_repo.get(1)
+            self.assertEqual(
+                crosswalk.other_index_hash,
+                'c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
+                msg='hash for other_index_ids 0, 1, 2, and 3',
+            )
+
+            # Perform update that inserts previously non-existant record.
+            data = [
+                ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+                (4,  5.0,   2, 'bar', 'y'),
+            ]
+            with self.assertWarns(ToronWarning) as cm:
+                self.node.update_relations('myfile', 'rel1', data)
+
+            # Check updated status status.
+            crosswalk = crosswalk_repo.get(1)
+            self.assertTrue(crosswalk.is_locally_complete)
+            self.assertEqual(
+                crosswalk.other_index_hash,
+                'ed545f6c1652e1c90b517e9f653bafc0cf0f7214fb2dd58e3864c1522b089982',
+                msg='hash for other_index_ids 0, 1, 2, 3, and 4',
+            )
