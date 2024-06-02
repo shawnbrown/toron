@@ -702,6 +702,22 @@ class TestBitFlags(unittest.TestCase):
 
         self.assertEqual(list(bits), bit_list)
 
+    def test_bitwise_or(self):
+        bits_a = BitFlags(1, 1, 1, 1, 1, 1, 1, 1)
+        bits_b = BitFlags(1, 1, 1, 1, 0, 0, 0, 0)
+        bits_c = BitFlags(0, 0, 0, 0, 1, 1, 1, 1)
+        bits_d = BitFlags(1, 0, 1, 0, 1, 0, 1, 0)
+        bits_e = BitFlags(0, 1, 0, 1, 0, 1, 0, 1)
+        bits_f = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 1, 0)
+        bits_g = BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
+
+        self.assertEqual(bits_a | bits_b, bits_a)
+        self.assertEqual(bits_b | bits_c, bits_a)
+        self.assertEqual(bits_d | bits_e, bits_a)
+        self.assertEqual(bits_b | bits_d, BitFlags(1, 1, 1, 1, 1, 0, 1, 0))
+        self.assertEqual(bits_f | bits_g, BitFlags(0, 0, 0, 0, 0, 0, 0, 0, 1, 1))
+        self.assertEqual(bits_e | bits_g, BitFlags(0, 1, 0, 1, 0, 1, 0, 1, 0, 1))
+
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):

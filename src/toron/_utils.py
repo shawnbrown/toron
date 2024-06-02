@@ -34,6 +34,7 @@ from ._typing import (
     Mapping,
     Optional,
     overload,
+    Self,
     Sequence,
     Set,
     Tuple,
@@ -732,6 +733,14 @@ class BitFlags(Sequence[Literal[0, 1]]):
             return self._bytes == other_bytes
 
         return NotImplemented
+
+    def __or__(self, other: Any) -> Self:
+        """Return the bitwise-or (``|``) of self and other."""
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        zipped = zip_longest(self._bytes, other._bytes, fillvalue=0)
+        return self.__class__(bytes(a | b for a, b in zipped))
 
     def __hash__(self) -> int:
         """Return hash integer of instance."""
