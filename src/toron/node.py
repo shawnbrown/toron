@@ -70,9 +70,12 @@ def warn_if_issues(
         'empty_str': 'skipped {empty_str} rows with empty string values',
         'no_index': 'skipped {no_index} rows with non-matching index_id values',
         'mismatch': 'skipped {mismatch} rows with mismatched labels',
+        'value_mismatch': 'skipped {value_mismatch} rows with mismatched values',
+        'mapping_level_mismatch': 'skipped {mapping_level_mismatch} rows with mismatched mapping levels',
         'bad_mapping_level': 'skipped {bad_mapping_level} rows with invalid mapping levels',
         'no_match': 'skipped {no_match} rows with labels that match no index',
         'no_weight': 'skipped {no_weight} rows with no matching weights',
+        'no_relation': 'skipped {no_relation} rows with no matching relations',
         'merged': 'merged {merged} existing records with duplicate label values',
         'inserted': 'loaded {inserted} rows',
         'updated': 'updated {updated} rows',
@@ -1280,3 +1283,132 @@ class Node(object):
             expected='updated',
             inserted='inserted {inserted} rows that did not previously exist',
         )
+
+    @overload
+    def delete_relations(
+        self,
+        node_reference: Union[str, 'Node'],
+        name: Optional[str],
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        ...
+    @overload
+    def delete_relations(
+        self,
+        node_reference: Union[str, 'Node'],
+        name: Optional[str],
+        **criteria: str,
+    ) -> None:
+        ...
+    def delete_relations(
+        self,
+        node_reference,
+        name=None,
+        data=None,
+        columns=None,
+        **criteria,
+    ):
+        if data and criteria:
+            raise TypeError('must provide either data or keyword criteria')
+
+        counter: Counter = Counter()
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
+
+            col_manager = self._dal.ColumnManager(cursor)
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            relation_repo = self._dal.RelationRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+
+            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            if not crosswalk:
+                raise ValueError(
+                    f'no crosswalk matching node_reference={node_reference!r} '
+                    f'and name={name!r}'
+                )
+            crosswalk_id = crosswalk.id
+
+            if data:
+                data, columns = normalize_tabular(data, columns)
+
+                label_columns = col_manager.get_columns()
+                verify_columns_set(columns, label_columns, allow_extras=True)
+
+                if tuple(columns[:3]) != ('other_index_id', name, 'index_id'):
+                    raise ValueError(
+                        f"columns should be start with "
+                        f"('other_index_id', {name!r}, 'index_id', ...); "
+                        f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
+                    )
+
+                for row in data:
+                    # Get values for relation record.
+                    other_index_id, value, index_id = row[:3]
+                    row_dict = dict(zip(columns[3:], row[3:]))
+
+                    # Check for matching index_id.
+                    index_record = index_repo.get(index_id)
+                    if not index_record:
+                        counter['no_index'] += 1
+                        continue  # <- Skip to next item.
+
+                    # Check for matching index labels.
+                    row_labels = tuple(row_dict[x] for x in label_columns)
+                    if row_labels != index_record.labels:
+                        counter['mismatch'] += 1
+                        continue  # <- Skip to next item.
+
+                    # Find matching relation record (can only match one record).
+                    relation_match = relation_repo.find_by_ids(
+                        crosswalk_id=crosswalk_id,
+                        other_index_id=other_index_id,
+                        index_id=index_id,
+                    )
+                    relation_record = next(relation_match, None)
+
+                    if relation_record:
+                        # Check for matching value.
+                        if relation_record.value != float(value):
+                            counter['value_mismatch'] += 1
+                            continue  # <- Skip to next item.
+
+                        # Check for matching mapping level if provided.
+                        if 'mapping_level' in row_dict \
+                                and row_dict['mapping_level'] != relation_record.mapping_level:
+                            counter['mapping_level_mismatch'] += 1
+                            continue  # <- Skip to next item.
+
+                        relation_repo.delete(relation_record.id)
+                        counter['deleted'] += 1
+                    else:
+                        counter['no_relation'] += 1
+
+            elif criteria:
+                pass  # TODO
+
+            else:
+                raise TypeError('expected data or keyword criteria, got neither')
+
+            if counter['deleted']:
+                # Get ordered sequence of other_index_id values.
+                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
+                    crosswalk_id,
+                    ordered=True,  # <- Must be ordered for `sequence_hash`.
+                )
+
+                # Build new hash and refresh proportion values.
+                sequence_hash = SequenceHash()
+                for other_index_id in other_index_ids:
+                    sequence_hash.add_value(other_index_id)
+                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+
+                # Update crosswalk's hash and is-complete status.
+                crosswalk_repo.update(replace(
+                    crosswalk,
+                    other_index_hash=sequence_hash.get_hexdigest(),
+                    is_locally_complete=relation_repo.crosswalk_is_complete(crosswalk_id),
+                ))
+
+        warn_if_issues(counter, expected='deleted')

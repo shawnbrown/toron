@@ -2414,3 +2414,221 @@ class TestNodeUpdateRelations(unittest.TestCase):
                 'ed545f6c1652e1c90b517e9f653bafc0cf0f7214fb2dd58e3864c1522b089982',
                 msg='hash for other_index_ids 0, 1, 2, 3, and 4',
             )
+
+
+class TestNodeDeleteRelations(unittest.TestCase):
+    def get_relations_helper(self):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with self.node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM relation')
+            return cursor.fetchall()
+
+    def setUp(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            col_manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            relation_repo = node._dal.RelationRepository(cursor)
+
+            # Add index columns and records.
+            col_manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('bar', 'z')
+
+            # Add crosswalk (crosswalk_id 1) and relations.
+            crosswalk_repo.add(
+                other_unique_id='111-111-1111',
+                other_filename_hint='myfile.toron',
+                name='rel1',
+                other_index_hash='c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
+                is_locally_complete=True
+            )
+            relation_repo.add(1, 0, 0,  0.0, 1.00, None)  # relation_id 1 (-, -)
+            relation_repo.add(1, 1, 1, 10.0, 1.00, None)  # relation_id 2 (foo, x)
+            relation_repo.add(1, 2, 2, 20.0, 1.00, None)  # relation_id 3 (bar, y)
+            relation_repo.add(1, 3, 3, 15.0, 1.00, None)  # relation_id 4 (bar, z)
+
+        self.node = node
+
+    def test_delete(self):
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+            (2, 20.0, 2, 'bar', 'y'),  # <- Matches relation_id 3.
+        ]
+        self.node.delete_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            # Record with relation_id 3 is deleted.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_normalization(self):
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+            ('2', '20', '2', 'bar', 'y'),  # <- All values given as strings.
+        ]
+        self.node.delete_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            # Record with relation_id 3 is deleted.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_non_existant_record(self):
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+            (9, 20.0, 2, 'bar', 'y'),  # <- No match (other_index_id 9 not present).
+            (2, 20.0, 2, 'bar', 'y'),  # <- Matches relation_id 3.
+        ]
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.delete_relations('myfile', 'rel1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'skipped 1 rows with no matching relations, deleted 1 rows',
+        )
+
+        # Verify final records.
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            # Record with relation_id 3 is deleted.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_proportion_ignored(self):
+        """If 'proportion' is given as one of the columns in *data*,
+        it's treated as an extra column and is ignored. The proportion
+        values of the remaining records are automatically calculated
+        after records are deleted.
+        """
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion'),
+            (2, 20.0, 2, 'bar', 'y', 0.75),  # <- Proportion (0.75) gets ignored.
+        ]
+        self.node.delete_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            # Record with relation_id 3 is deleted.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_with_mapping_level(self):
+        with self.node._managed_cursor() as cursor:
+            structure_repo = self.node._dal.StructureRepository(cursor)
+            structure_repo.add(None,      0, 0)
+            structure_repo.add(0.9140625, 1, 0)
+            structure_repo.add(1.5859375, 1, 1)
+
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(1, 1, 2, 30.0, 1.00, b'\x80')  # relation_id 3 (bar, y)
+            relation_repo.add(1, 1, 3, 10.0, 1.00, b'\x80')  # relation_id 4 (bar, z)
+
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'mapping_level'),
+            (2, 20.0, 2, 'bar', 'y', None),     # <- Deletes (None matches None)
+            (1, 30.0, 2, 'bar', 'y', None),     # <- Skips (None does not match b'\x80')
+            (1, 10.0, 3, 'bar', 'z', b'\x80'),  # <- Deletes ('\x80' matches '\x80')
+        ]
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.delete_relations('myfile', 'rel1', data)
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'skipped 1 rows with mismatched mapping levels, deleted 2 rows',
+        )
+
+        # Verify final records.
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.0,  None),
+            (2, 1, 1, 1, 10.0, 0.25, None),
+            (4, 1, 3, 3, 15.0, 1.0,  None),
+            (5, 1, 1, 2, 30.0, 0.75, b'\x80'),  # <- Not removed because mapping_level did not match.
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_different_order_and_extra(self):
+        """Label columns in different order and extra column."""
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'B', 'EXTRACOL', 'A'),
+            (2, 20.0, 2, 'y', 'EXTRA', 'bar'),  # <- Matches index_id 3.
+        ]
+        self.node.delete_relations('myfile', 'rel1', data)
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            # Record with relation_id 3 is deleted.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_invalid_columns(self):
+        data = [
+            ('other_index_id', 'rel1', 'BAD_VALUE', 'A', 'B'),
+            (2, 20.0, 2, 'bar', 'y'),
+        ]
+        regex = r"columns should be start with \('other_index_id', 'rel1', 'index_id', ...\)"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.delete_relations('myfile', 'rel1', data)
+
+        data = [
+            ('other_index_id', 'rel1', 'index_id', 'A'),
+            (2, 20.0, 2, 'bar'),
+        ]
+        regex = r"missing required columns: 'B'"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.delete_relations('myfile', 'rel1', data)
+
+        # Check that data is not changed.
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.00, None),
+            (2, 1, 1, 1, 10.0, 1.00, None),
+            (3, 1, 2, 2, 20.0, 1.00, None),  # <- Not removed.
+            (4, 1, 3, 3, 15.0, 1.00, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_is_complete_status_and_hash(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+
+            # Check initial status.
+            crosswalk = crosswalk_repo.get(1)
+            self.assertTrue(crosswalk.is_locally_complete)
+            self.assertEqual(
+                crosswalk.other_index_hash,
+                'c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
+                msg='hash for other_index_ids 0, 1, 2, and 3',
+            )
+
+            data = [
+                ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+                (2, 20.0, 2, 'bar', 'y'),  # <- Matches relation_id 3 (other_index_id 2)
+            ]
+            self.node.delete_relations('myfile', 'rel1', data)
+
+            # Check updated status status.
+            crosswalk = crosswalk_repo.get(1)
+            self.assertFalse(crosswalk.is_locally_complete)
+            self.assertEqual(
+                crosswalk.other_index_hash,
+                'a07d14c1929fe9ef2d5276645e7133d165e0e7b7065ae9f33bd0718f593d774f',
+                msg='hash for other_index_ids 0, 1, and 3',
+            )
