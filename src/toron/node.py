@@ -1319,6 +1319,7 @@ class Node(object):
             col_manager = self._dal.ColumnManager(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
+            aux_relation_repo = self._dal.RelationRepository(aux_cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
             crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
@@ -1385,14 +1386,31 @@ class Node(object):
                         counter['no_relation'] += 1
 
             elif criteria:
-                pass  # TODO
+                label_columns = col_manager.get_columns()
+                criteria_keys = set(criteria.keys())
+                criteria_level = BitFlags(x in criteria_keys for x in label_columns)
+
+                index_records = index_repo.find_by_label(criteria, include_undefined=True)
+                for index in index_records:
+                    relations = list(aux_relation_repo.find_by_ids(
+                        crosswalk_id=crosswalk_id,
+                        index_id=index.id,
+                    ))
+                    for rel in relations:
+                        bitwise_or = criteria_level | BitFlags(rel.mapping_level)
+                        if criteria_level == bitwise_or:
+                            aux_relation_repo.delete(rel.id)
+                            counter['deleted'] += 1
+                        else:
+                            # If the relation's mapping level uses columns that
+                            # aren't used in the criteria, then don't delete it.
+                            counter['mapping_level_mismatch'] += 1
 
             else:
                 raise TypeError('expected data or keyword criteria, got neither')
 
             if counter['deleted']:
                 # Get ordered sequence of other_index_id values.
-                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
                 other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
                     crosswalk_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.

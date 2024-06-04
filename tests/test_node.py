@@ -2632,3 +2632,69 @@ class TestNodeDeleteRelations(unittest.TestCase):
                 'a07d14c1929fe9ef2d5276645e7133d165e0e7b7065ae9f33bd0718f593d774f',
                 msg='hash for other_index_ids 0, 1, and 3',
             )
+
+    def test_delete_criteria_single(self):
+        self.node.delete_relations('myfile', 'rel1', A='bar')
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.0, None),  # relation_id 1 (-, -)
+            (2, 1, 1, 1, 10.0, 1.0, None),  # relation_id 2 (foo, x)
+            # relation_id 3 (bar, y) should be deleted
+            # relation_id 4 (bar, z) should be deleted
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_criteria_multiple(self):
+        self.node.delete_relations('myfile', 'rel1', A='bar', B='y')
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.0, None),  # relation_id 1 (-, -)
+            (2, 1, 1, 1, 10.0, 1.0, None),  # relation_id 2 (foo, x)
+            # relation_id 3 (bar, y) should be deleted
+            (4, 1, 3, 3, 15.0, 1.0, None),  # relation_id 4 (bar, z)
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_delete_criteria_mapping_levels(self):
+        with self.node._managed_cursor() as cursor:
+            structure_repo = self.node._dal.StructureRepository(cursor)
+            structure_repo.add(None,      0, 0)
+            structure_repo.add(0.9140625, 1, 0)
+            structure_repo.add(1.5859375, 1, 1)
+
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(1, 2, 1, 10.0, None, b'\x80')  # relation_id 5 (foo, x)
+            relation_repo.add(1, 1, 2, 30.0, None, b'\x80')  # relation_id 6 (bar, y)
+            relation_repo.add(1, 1, 3, 10.0, None, b'\x80')  # relation_id 7 (bar, z)
+
+        # Since mapping levels for 6 and 7 use `(1, 0)`, we can delete using 'A'.
+        self.node.delete_relations('myfile', 'rel1', A='foo')
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.0,  None),
+            # Deleted relation_id 2 (foo, x)
+            (3, 1, 2, 2, 20.0, 1.0,  None),
+            (4, 1, 3, 3, 15.0, 1.0,  None),
+            # Deleted relation_id 5 (foo, x)
+            (6, 1, 1, 2, 30.0, 0.75, b'\x80'),
+            (7, 1, 1, 3, 10.0, 0.25, b'\x80'),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+        # Check deletion using criteria column not used in a mapping level.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.delete_relations('myfile', 'rel1', B='y')
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'skipped 1 rows with mismatched mapping levels, deleted 1 rows',
+        )
+
+        expected = [
+            (1, 1, 0, 0,  0.0, 1.0,  None),
+            # Deleted relation_id 3 (bar, y)
+            (4, 1, 3, 3, 15.0, 1.0,  None),
+            (6, 1, 1, 2, 30.0, 0.75, b'\x80'),  # <- Not deleted because of mapping level `(1, 0)` is not a subset of `(0, 1)`.
+            (7, 1, 1, 3, 10.0, 0.25, b'\x80'),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
