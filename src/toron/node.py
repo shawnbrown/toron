@@ -73,6 +73,7 @@ def warn_if_issues(
         'value_mismatch': 'skipped {value_mismatch} rows with mismatched values',
         'mapping_level_mismatch': 'skipped {mapping_level_mismatch} rows with mismatched mapping levels',
         'bad_mapping_level': 'skipped {bad_mapping_level} rows with invalid mapping levels',
+        'approximate_relations': 'skipped {approximate_relations} approximate relations (reify to delete)',
         'no_match': 'skipped {no_match} rows with labels that match no index',
         'no_weight': 'skipped {no_weight} rows with no matching weights',
         'no_relation': 'skipped {no_relation} rows with no matching relations',
@@ -1374,10 +1375,9 @@ class Node(object):
                             counter['value_mismatch'] += 1
                             continue  # <- Skip to next item.
 
-                        # Check for matching mapping level if provided.
-                        if 'mapping_level' in row_dict \
-                                and row_dict['mapping_level'] != relation_record.mapping_level:
-                            counter['mapping_level_mismatch'] += 1
+                        # Check for mapping level, skip if present.
+                        if relation_record.mapping_level:
+                            counter['approximate_relations'] += 1
                             continue  # <- Skip to next item.
 
                         relation_repo.delete(relation_record.id)

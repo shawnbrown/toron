@@ -2539,10 +2539,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
             relation_repo.add(1, 1, 3, 10.0, 1.00, b'\x80')  # relation_id 4 (bar, z)
 
         data = [
-            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'mapping_level'),
-            (2, 20.0, 2, 'bar', 'y', None),     # <- Deletes (None matches None)
-            (1, 30.0, 2, 'bar', 'y', None),     # <- Skips (None does not match b'\x80')
-            (1, 10.0, 3, 'bar', 'z', b'\x80'),  # <- Deletes ('\x80' matches '\x80')
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
+            (2, 20.0, 2, 'bar', 'y'),  # <- Deletes
+            (1, 30.0, 2, 'bar', 'y'),  # <- Skips (matches approximate rel)
+            (1, 10.0, 3, 'bar', 'z'),  # <- Skips (matches approximate rel)
         ]
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
@@ -2551,15 +2551,17 @@ class TestNodeDeleteRelations(unittest.TestCase):
         # Check the warning's message.
         self.assertEqual(
             str(cm.warning),
-            'skipped 1 rows with mismatched mapping levels, deleted 2 rows',
+            'skipped 2 approximate relations (reify to delete), deleted 1 rows',
         )
 
         # Verify final records.
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0,  None),
-            (2, 1, 1, 1, 10.0, 0.25, None),
-            (4, 1, 3, 3, 15.0, 1.0,  None),
-            (5, 1, 1, 2, 30.0, 0.75, b'\x80'),  # <- Not removed because mapping_level did not match.
+            (1, 1, 0, 0,  0.0, 1.0, None),
+            (2, 1, 1, 1, 10.0, 0.2, None),
+            # relation_id 3 is deleted (not approximate)
+            (4, 1, 3, 3, 15.0, 1.0, None),
+            (5, 1, 1, 2, 30.0, 0.6, b'\x80'),  # <- Not removed (approximate rel)
+            (6, 1, 1, 3, 10.0, 0.2, b'\x80'),  # <- Not removed (approximate rel)
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
