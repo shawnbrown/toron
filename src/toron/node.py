@@ -1399,6 +1399,8 @@ class Node(object):
                     for rel in relations:
                         bitwise_or = criteria_level | BitFlags(rel.mapping_level)
                         if criteria_level == bitwise_or:
+                            # If criteria uses the same or more columns than
+                            # the relation's mapping level, then delete it.
                             aux_relation_repo.delete(rel.id)
                             counter['deleted'] += 1
                         else:
