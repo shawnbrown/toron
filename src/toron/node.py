@@ -81,6 +81,7 @@ def warn_if_issues(
         'inserted': 'loaded {inserted} rows',
         'updated': 'updated {updated} rows',
         'deleted': 'deleted {deleted} rows',
+        'reified': 'reified {reified} records'
     }
     warning_text.update(extras)
 
@@ -1432,3 +1433,61 @@ class Node(object):
                 ))
 
         warn_if_issues(counter, expected='deleted')
+
+    def reify_relations(
+        self,
+        node_reference: Union[str, 'Node'],
+        name: str,
+        **criteria: str,
+    ) -> None:
+        """Remove 'mapping_level' from approximate relations associated
+        with the specified crosswalk (*node_reference* and *name*).
+        """
+        counter: Counter = Counter()
+        with self._managed_cursor(n=2) as (cursor, aux_cursor):
+            col_manager = self._dal.ColumnManager(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+
+            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            if not crosswalk:
+                raise ValueError(
+                    f'no crosswalk matching node_reference={node_reference!r} '
+                    f'and name={name!r}'
+                )
+
+            if criteria:
+                # Reify selected relations in crosswalk.
+                label_columns = col_manager.get_columns()
+                criteria_keys = set(criteria.keys())
+                criteria_level = BitFlags(x in criteria_keys for x in label_columns)
+
+                index_records = index_repo.find_by_label(criteria, include_undefined=True)
+
+                relation_repo = self._dal.RelationRepository(aux_cursor)
+                crosswalk_id = crosswalk.id
+                for index in index_records:
+                    relations = list(relation_repo.find_by_ids(
+                        crosswalk_id=crosswalk_id, index_id=index.id
+                    ))
+                    for rel in relations:
+                        if rel.mapping_level:
+                            bitwise_or = criteria_level | BitFlags(rel.mapping_level)
+                            if criteria_level == bitwise_or:
+                                relation_repo.update(replace(rel, mapping_level=None))
+                                counter['reified'] += 1
+                            else:
+                                counter['mapping_level_mismatch'] += 1
+
+            else:
+                # Reify ALL relations in crosswalk.
+                relation_repo = self._dal.RelationRepository(cursor)
+                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+
+                relations = relation_repo.find_by_ids(crosswalk_id=crosswalk.id)
+                for rel in relations:
+                    if rel.mapping_level:
+                        aux_relation_repo.update(replace(rel, mapping_level=None))
+                        counter['reified'] += 1
+
+        warn_if_issues(counter, expected='reified')

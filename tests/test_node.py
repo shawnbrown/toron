@@ -4,6 +4,7 @@ import sqlite3
 import sys
 import unittest
 from contextlib import suppress
+from itertools import chain
 from unittest.mock import (
     Mock,
     call,
@@ -17,6 +18,7 @@ else:
 from toron._utils import ToronWarning
 from toron.data_models import (
     Crosswalk,
+    Relation,
     Index,
     Structure,
     WeightGroup,
@@ -2698,5 +2700,111 @@ class TestNodeDeleteRelations(unittest.TestCase):
             (4, 1, 3, 3, 15.0, 1.0,  None),
             (6, 1, 1, 2, 30.0, 0.75, b'\x80'),  # <- Not deleted because of mapping level `(1, 0)` is not a subset of `(0, 1)`.
             (7, 1, 1, 3, 10.0, 0.25, b'\x80'),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+
+class TestNodeRefiyRelations(unittest.TestCase):
+    def setUp(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            col_manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            relation_repo = node._dal.RelationRepository(cursor)
+            structure_repo = node._dal.StructureRepository(cursor)
+
+            # Add index columns and records.
+            col_manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('bar', 'z')
+
+            # Add granularity and structure records.
+            structure_repo.add(None,      0, 0)
+            structure_repo.add(0.9140625, 1, 0)
+            structure_repo.add(1.5859375, 0, 1)
+            structure_repo.add(1.5859375, 1, 1)
+
+            # Add crosswalk (crosswalk_id 1) and relations.
+            crosswalk_repo.add(
+                other_unique_id='111-111-1111',
+                other_filename_hint='myfile.toron',
+                name='rel1',
+                other_index_hash='c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
+                is_locally_complete=True
+            )
+
+            relation_repo.add(1, 0, 0,  0.0, 1.00, None)     # relation_id 1 (-, -)
+            relation_repo.add(1, 1, 1, 10.0, 1.00, b'\x40')  # relation_id 2 (foo, x)
+            relation_repo.add(1, 1, 2, 10.0, 1.00, b'\x40')  # relation_id 3 (bar, y)
+            relation_repo.add(1, 2, 2, 20.0, 1.00, None)     # relation_id 4 (bar, y)
+            relation_repo.add(1, 2, 3, 20.0, 1.00, None)     # relation_id 5 (bar, z)
+            relation_repo.add(1, 3, 1, 15.0, 1.00, b'\x80')  # relation_id 6 (foo, x)
+            relation_repo.add(1, 3, 2, 15.0, 1.00, b'\x80')  # relation_id 7 (bar, y)
+            relation_repo.add(1, 3, 3, 15.0, 1.00, b'\x80')  # relation_id 8 (bar, z)
+
+        self.node = node
+
+    def get_relations_helper(self):
+        """Helper function to return list of all relation records."""
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            crosswalks = crosswalk_repo.get_all()
+            get_rels = lambda id: relation_repo.find_by_ids(crosswalk_id=id)
+            rels = (get_rels(crosswalk.id) for crosswalk in crosswalks)
+            return list(chain.from_iterable(rels))
+
+    def test_reify_all_records(self):
+        self.node.reify_relations('myfile', 'rel1')
+        expected = [
+            Relation(1, 1, 0, 0,  0.0, 1.0, None),
+            Relation(2, 1, 1, 1, 10.0, 1.0, None),
+            Relation(3, 1, 1, 2, 10.0, 1.0, None),
+            Relation(4, 1, 2, 2, 20.0, 1.0, None),
+            Relation(5, 1, 2, 3, 20.0, 1.0, None),
+            Relation(6, 1, 3, 1, 15.0, 1.0, None),
+            Relation(7, 1, 3, 2, 15.0, 1.0, None),
+            Relation(8, 1, 3, 3, 15.0, 1.0, None),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_reify_selected_records(self):
+        self.node.reify_relations('myfile', 'rel1', A='foo', B='x')
+        self.node.reify_relations('myfile', 'rel1', A='bar', B='y')
+
+        expected = [
+            Relation(1, 1, 0, 0,  0.0, 1.0, None),
+            Relation(2, 1, 1, 1, 10.0, 1.0, None),  # <- mapping_level removed (foo, x)
+            Relation(3, 1, 1, 2, 10.0, 1.0, None),  # <- mapping_level removed (bar, y)
+            Relation(4, 1, 2, 2, 20.0, 1.0, None),
+            Relation(5, 1, 2, 3, 20.0, 1.0, None),
+            Relation(6, 1, 3, 1, 15.0, 1.0, None),  # <- mapping_level removed (foo, x)
+            Relation(7, 1, 3, 2, 15.0, 1.0, None),  # <- mapping_level removed (bar, y)
+            Relation(8, 1, 3, 3, 15.0, 1.0, b'\x80'),
+        ]
+        self.assertEqual(self.get_relations_helper(), expected)
+
+    def test_reify_selected_records_with_warning(self):
+        # Check deletion using criteria column not used in a mapping level.
+        with self.assertWarns(ToronWarning) as cm:
+            self.node.reify_relations('myfile', 'rel1', A='bar')
+
+        # Check the warning's message.
+        self.assertEqual(
+            str(cm.warning),
+            'skipped 1 rows with mismatched mapping levels, reified 2 records',
+        )
+
+        expected = [
+            Relation(1, 1, 0, 0,  0.0, 1.0, None),
+            Relation(2, 1, 1, 1, 10.0, 1.0, b'\x40'),
+            Relation(3, 1, 1, 2, 10.0, 1.0, b'\x40'),  # <- not removed, 'A' is (1, 0) but mapping level is (0, 1).
+            Relation(4, 1, 2, 2, 20.0, 1.0, None),
+            Relation(5, 1, 2, 3, 20.0, 1.0, None),
+            Relation(6, 1, 3, 1, 15.0, 1.0, b'\x80'),
+            Relation(7, 1, 3, 2, 15.0, 1.0, None),  # <- mapping_level removed
+            Relation(8, 1, 3, 3, 15.0, 1.0, None),  # <- mapping_level removed
         ]
         self.assertEqual(self.get_relations_helper(), expected)
