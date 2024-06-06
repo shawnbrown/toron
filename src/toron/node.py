@@ -885,16 +885,16 @@ class Node(object):
 
     @staticmethod
     def _get_crosswalk(
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         name: Optional[str],
         crosswalk_repo: BaseCrosswalkRepository,
     ) -> Optional[Crosswalk]:
         """Get crosswalk by node reference and name."""
-        if isinstance(node_reference, Node):  # If Node, find by 'unique_id' only.
-            node_reference = node_reference._connector.unique_id
-            matches = list(crosswalk_repo.find_by_other_unique_id(node_reference))
+        if isinstance(node, Node):  # If Node, find by 'unique_id' only.
+            node = node._connector.unique_id
+            matches = list(crosswalk_repo.find_by_other_unique_id(node))
         else:
-            matches = find_crosswalks_by_node_reference(node_reference, crosswalk_repo)
+            matches = find_crosswalks_by_node_reference(node, crosswalk_repo)
 
         if len({x.other_unique_id for x in matches}) > 1:
             node_info = {x.other_unique_id: x.other_filename_hint for x in matches}
@@ -933,11 +933,11 @@ class Node(object):
         return None
 
     def get_crosswalk(
-        self, node_reference: Union[str, 'Node'], name: Optional[str] = None,
+        self, node: Union[str, 'Node'], name: Optional[str] = None,
     ) -> Optional[Crosswalk]:
         with self._managed_cursor() as cursor:
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
-            return self._get_crosswalk(node_reference, name, crosswalk_repo)
+            return self._get_crosswalk(node, name, crosswalk_repo)
 
     def add_crosswalk(
         self,
@@ -967,19 +967,19 @@ class Node(object):
 
     def edit_crosswalk(
         self,
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         current_name: str,
         **changes: Any,
     ) -> None:
         with self._managed_transaction() as cursor:
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
-            crosswalk = self._get_crosswalk(node_reference, current_name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node, current_name, crosswalk_repo)
 
             if not crosswalk:
                 import warnings
                 msg = (
-                    f'no crosswalk matching node_reference={node_reference!r} '
-                    f'and name={current_name!r}'
+                    f'no crosswalk matching node reference {node!r} '
+                    f'and name {current_name!r}'
                 )
                 warnings.warn(msg, category=ToronWarning, stacklevel=2)
                 return  # <- EXIT!
@@ -996,17 +996,17 @@ class Node(object):
 
     def drop_crosswalk(
         self,
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         name: str,
     ) -> None:
         with self._managed_transaction() as cursor:
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
-            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node, name, crosswalk_repo)
             if not crosswalk:
                 import warnings
                 msg = (
-                    f'no crosswalk matching node_reference={node_reference!r} '
-                    f'and name={name!r}'
+                    f'no crosswalk matching node reference {node!r} '
+                    f'and name {name!r}'
                 )
                 warnings.warn(msg, category=ToronWarning, stacklevel=2)
                 return  # <- EXIT!
@@ -1015,7 +1015,7 @@ class Node(object):
 
     def select_relations(
         self,
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         name: Optional[str] = None,
         header: bool = False,
         **criteria: str,
@@ -1025,11 +1025,11 @@ class Node(object):
             index_repo = self._dal.IndexRepository(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node, name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
-                    f'no crosswalk matching node_reference={node_reference!r} '
-                    f'and name={name!r}'
+                    f'no crosswalk matching node reference {node!r} '
+                    f'and name {name!r}'
                 )
 
             label_columns = col_manager.get_columns()
@@ -1073,7 +1073,7 @@ class Node(object):
 
     def insert_relations(
         self,
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1099,11 +1099,11 @@ class Node(object):
             label_columns = col_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node, name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
-                    f'no crosswalk matching node_reference={node_reference!r} '
-                    f'and name={name!r}'
+                    f'no crosswalk matching node reference {node!r} '
+                    f'and name {name!r}'
                 )
             crosswalk_id = crosswalk.id
 
@@ -1167,7 +1167,7 @@ class Node(object):
 
     def update_relations(
         self,
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1193,11 +1193,11 @@ class Node(object):
             label_columns = col_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node, name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
-                    f'no crosswalk matching node_reference={node_reference!r} '
-                    f'and name={name!r}'
+                    f'no crosswalk matching node reference {node!r} '
+                    f'and name {name!r}'
                 )
             crosswalk_id = crosswalk.id
 
@@ -1289,7 +1289,7 @@ class Node(object):
     @overload
     def delete_relations(
         self,
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1298,14 +1298,14 @@ class Node(object):
     @overload
     def delete_relations(
         self,
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         name: Optional[str],
         **criteria: str,
     ) -> None:
         ...
     def delete_relations(
         self,
-        node_reference,
+        node,
         name=None,
         data=None,
         columns=None,
@@ -1324,11 +1324,11 @@ class Node(object):
             aux_relation_repo = self._dal.RelationRepository(aux_cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node, name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
-                    f'no crosswalk matching node_reference={node_reference!r} '
-                    f'and name={name!r}'
+                    f'no crosswalk matching node reference {node!r} '
+                    f'and name {name!r}'
                 )
             crosswalk_id = crosswalk.id
 
@@ -1436,12 +1436,12 @@ class Node(object):
 
     def reify_relations(
         self,
-        node_reference: Union[str, 'Node'],
+        node: Union[str, 'Node'],
         name: str,
         **criteria: str,
     ) -> None:
         """Remove 'mapping_level' from approximate relations associated
-        with the specified crosswalk (*node_reference* and *name*).
+        with the specified crosswalk (*node* and *name*).
         """
         counter: Counter = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
@@ -1449,11 +1449,11 @@ class Node(object):
             index_repo = self._dal.IndexRepository(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_reference, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node, name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
-                    f'no crosswalk matching node_reference={node_reference!r} '
-                    f'and name={name!r}'
+                    f'no crosswalk matching node reference {node!r} '
+                    f'and name {name!r}'
                 )
 
             if criteria:
