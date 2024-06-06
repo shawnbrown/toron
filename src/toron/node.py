@@ -1314,7 +1314,7 @@ class Node(object):
         if data and criteria:
             raise TypeError('must provide either data or keyword criteria')
 
-        counter: Counter = Counter()
+        counter = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
 
@@ -1484,8 +1484,7 @@ class Node(object):
                 relation_repo = self._dal.RelationRepository(cursor)
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
 
-                relations = relation_repo.find_by_ids(crosswalk_id=crosswalk.id)
-                for rel in relations:
+                for rel in relation_repo.find_by_ids(crosswalk_id=crosswalk.id):
                     if rel.mapping_level:
                         aux_relation_repo.update(replace(rel, mapping_level=None))
                         counter['reified'] += 1
