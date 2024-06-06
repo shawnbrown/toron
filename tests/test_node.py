@@ -723,9 +723,9 @@ class TestNodeUpdateIndex(unittest.TestCase):
             crosswalk_repo = node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 1, 16350, 0.75, None)
-            relation_repo.add(1, 1, 2, 5450,  0.25, None)
-            relation_repo.add(1, 2, 2, 13050, 1.00, None)
+            relation_repo.add(1, 1, 1, 16350, None, 0.75)
+            relation_repo.add(1, 1, 2, 5450,  None, 0.25)
+            relation_repo.add(1, 2, 2, 13050, None, 1.00)
 
         self.node = node
 
@@ -853,7 +853,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
         self.assertEqual(self.get_weight_helper(self.node), expected, msg=msg)
 
         msg = 'Three relations merged into two, remaining relations have index_id 1.'
-        expected = [(1, 1, 1, 1, 21800.0, 1.0, None), (2, 1, 2, 1, 13050.0, 1.0, None)]
+        expected = [(1, 1, 1, 1, 21800.0, None, 1.0), (2, 1, 2, 1, 13050.0, None, 1.0)]
         self.assertEqual(self.get_relation_helper(self.node), expected, msg=msg)
 
     def test_merge_resulting_in_missing_index_id(self):
@@ -1084,9 +1084,9 @@ class TestNodeDeleteIndex(unittest.TestCase):
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 1, 16350, 0.75, None)
-            relation_repo.add(1, 1, 2, 5450,  0.25, None)
-            relation_repo.add(1, 2, 2, 13050, 1.00, None)
+            relation_repo.add(1, 1, 1, 16350, None, 0.75)
+            relation_repo.add(1, 1, 2, 5450,  None, 0.25)
+            relation_repo.add(1, 2, 2, 13050, None, 1.00)
 
         data = [
             ('index_id', 'A', 'B'),
@@ -1097,7 +1097,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
         expected = [Index(0, '-', '-'), Index(1, 'foo', 'x')]
         self.assertEqual(self.get_index_helper(self.node), expected)
 
-        expected = [(1, 1, 1, 1, 16350.0, 1.0, None)]  # <- Proportion is updated, too (was 0.75).
+        expected = [(1, 1, 1, 1, 16350.0, None, 1.0)]  # <- Proportion is updated, too (was 0.75).
         self.assertEqual(self.get_relation_helper(self.node), expected)
 
     def test_delete_with_ambiguous_relations(self):
@@ -1110,9 +1110,9 @@ class TestNodeDeleteIndex(unittest.TestCase):
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 1, 16350, 0.75, b'\x80')  # <- Ambiguous relations.
-            relation_repo.add(1, 1, 2, 5450,  0.25, b'\x80')  # <- Ambiguous relations.
-            relation_repo.add(1, 2, 2, 13050, 1.00, None)
+            relation_repo.add(1, 1, 1, 16350, b'\x80', 0.75)  # <- Ambiguous relations.
+            relation_repo.add(1, 1, 2, 5450,  b'\x80', 0.25)  # <- Ambiguous relations.
+            relation_repo.add(1, 2, 2, 13050, None,    1.00)
 
         data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
 
@@ -1125,8 +1125,8 @@ class TestNodeDeleteIndex(unittest.TestCase):
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1', is_locally_complete=False)  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 1, 16350, 0.75, None)
-            relation_repo.add(1, 2, 1, 5450,  0.25, None)
+            relation_repo.add(1, 1, 1, 16350, None, 0.75)
+            relation_repo.add(1, 2, 1, 5450,  None, 0.25)
 
             data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
             self.node.delete_index(data)  # Deletes index without a relation (index_id 2).
@@ -2034,11 +2034,11 @@ class TestNodeRelationMethods(unittest.TestCase):
         self.node.insert_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
-            (3, 1, 2, 2, 20.0, 1.00, None),
-            (4, 1, 3, 2,  5.0, 0.25, None),
-            (5, 1, 3, 3, 15.0, 0.75, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
+            (3, 1, 2, 2, 20.0, None, 1.00),
+            (4, 1, 3, 2,  5.0, None, 0.25),
+            (5, 1, 3, 3, 15.0, None, 0.75),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2069,19 +2069,19 @@ class TestNodeRelationMethods(unittest.TestCase):
         # If there's proportion column, it is ignored and proportions are
         # recalculated from the weight value (e.g., rel1) when saving.
         data = [
-            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion', 'mapping_level'),
-            ('1', '10.0', '1', 'foo', 'x', 0.50, None),
-            ('2', '20.0', '2', 'bar', 'y', 0.50, None),
-            ('3',  '5.0', '2', 'bar', 'y', None, b'\x80'),
-            ('3', '15.0', '3', 'bar', 'z', None, b'\x80'),
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'mapping_level', 'proportion'),
+            ('1', '10.0', '1', 'foo', 'x', None,    0.50),
+            ('2', '20.0', '2', 'bar', 'y', None,    0.50),
+            ('3',  '5.0', '2', 'bar', 'y', b'\x80', None),
+            ('3', '15.0', '3', 'bar', 'z', b'\x80', None),
         ]
         self.node.insert_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 1, 1, 10.0, 1.0,  None),
-            (2, 1, 2, 2, 20.0, 1.0,  None),
-            (3, 1, 3, 2,  5.0, 0.25, b'\x80'),
-            (4, 1, 3, 3, 15.0, 0.75, b'\x80'),
+            (1, 1, 1, 1, 10.0, None,    1.0),
+            (2, 1, 2, 2, 20.0, None,    1.0),
+            (3, 1, 3, 2,  5.0, b'\x80', 0.25),
+            (4, 1, 3, 3, 15.0, b'\x80', 0.75),
         ]
         msg = 'other_index_id and index_id should be int; rel1 should be ' \
               'float; proportions should be auto-calculated'
@@ -2100,7 +2100,7 @@ class TestNodeRelationMethods(unittest.TestCase):
         ]
         self.node.insert_relations('myfile', 'rel1', data)
 
-        expected = [(1, 1, 1, 1, 10.0, 1.0, None)]  # <- Proportion should be 1.0 (auto-calculated).
+        expected = [(1, 1, 1, 1, 10.0, None, 1.0)]  # <- Proportion should be 1.0 (auto-calculated).
         self.assertEqual(self.get_relations_helper(), expected)
 
     def test_insert_skip_bad_mapping_level(self):
@@ -2130,9 +2130,9 @@ class TestNodeRelationMethods(unittest.TestCase):
 
         # Verify the three valid rows that were loaded.
         expected = [
-            (1, 1, 2, 2, 20.0, 1.0,  b'\x80'),
-            (2, 1, 3, 2,  5.0, 0.25, b'\x80'),
-            (3, 1, 3, 3, 15.0, 0.75, None),
+            (1, 1, 2, 2, 20.0, b'\x80', 1.0),
+            (2, 1, 3, 2,  5.0, b'\x80', 0.25),
+            (3, 1, 3, 3, 15.0, None,    0.75),
         ]
         msg = 'other_index_id and index_id should be int, rel1 should be float'
         self.assertEqual(self.get_relations_helper(), expected, msg=msg)
@@ -2150,11 +2150,11 @@ class TestNodeRelationMethods(unittest.TestCase):
         self.node.insert_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0,  None),
-            (2, 1, 1, 1, 10.0, 1.0,  None),
-            (3, 1, 2, 2, 20.0, 1.0,  None),
-            (4, 1, 3, 2,  5.0, 0.25, None),
-            (5, 1, 3, 3, 15.0, 0.75, None),
+            (1, 1, 0, 0,  0.0, None, 1.0),
+            (2, 1, 1, 1, 10.0, None, 1.0),
+            (3, 1, 2, 2, 20.0, None, 1.0),
+            (4, 1, 3, 2,  5.0, None, 0.25),
+            (5, 1, 3, 3, 15.0, None, 0.75),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2238,10 +2238,10 @@ class TestNodeUpdateRelations(unittest.TestCase):
             # Add crosswalk and relations.
             crosswalk_repo.add('111-111-1111', 'myfile.toron', 'rel1',
                 other_index_hash='c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079')  # crosswalk_id 1
-            relation_repo.add(1, 0, 0,  0.0, 1.00, None)  # relation_id 1 (-, -)
-            relation_repo.add(1, 1, 1, 10.0, 1.00, None)  # relation_id 2 (foo, x)
-            relation_repo.add(1, 2, 2, 20.0, 1.00, None)  # relation_id 3 (bar, y)
-            relation_repo.add(1, 3, 3, 15.0, 1.00, None)  # relation_id 4 (bar, z)
+            relation_repo.add(1, 0, 0,  0.0, None, 1.00)  # relation_id 1 (-, -)
+            relation_repo.add(1, 1, 1, 10.0, None, 1.00)  # relation_id 2 (foo, x)
+            relation_repo.add(1, 2, 2, 20.0, None, 1.00)  # relation_id 3 (bar, y)
+            relation_repo.add(1, 3, 3, 15.0, None, 1.00)  # relation_id 4 (bar, z)
 
         self.node = node
 
@@ -2253,10 +2253,10 @@ class TestNodeUpdateRelations(unittest.TestCase):
         self.node.update_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
-            (3, 1, 2, 2, 60.0, 1.00, None),  # <- Updated from 20 to 60.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
+            (3, 1, 2, 2, 60.0, None, 1.00),  # <- Updated from 20 to 60.
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2268,10 +2268,10 @@ class TestNodeUpdateRelations(unittest.TestCase):
         self.node.update_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
-            (3, 1, 2, 2, 60.0, 1.00, None),  # <- Updated from 20 to 60.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
+            (3, 1, 2, 2, 60.0, None, 1.00),  # <- Updated from 20 to 60.
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2293,11 +2293,11 @@ class TestNodeUpdateRelations(unittest.TestCase):
 
         # Verify final records.
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0,   None),
-            (2, 1, 1, 1, 10.0, 1.0,   None),
-            (3, 1, 2, 2, 20.0, 1.0,   None),
-            (4, 1, 3, 3, 10.0, 0.625, None),  # <- Weight updated from 15 to 10, proportion recalculated.
-            (5, 1, 3, 2,  6.0, 0.375, None),  # <- Non-existant record inserted, proportion added.
+            (1, 1, 0, 0,  0.0, None, 1.0),
+            (2, 1, 1, 1, 10.0, None, 1.0),
+            (3, 1, 2, 2, 20.0, None, 1.0),
+            (4, 1, 3, 3, 10.0, None, 0.625),  # <- Weight updated from 15 to 10, proportion recalculated.
+            (5, 1, 3, 2,  6.0, None, 0.375),  # <- Non-existant record inserted, proportion added.
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2313,10 +2313,10 @@ class TestNodeUpdateRelations(unittest.TestCase):
         self.node.update_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
-            (3, 1, 2, 2, 60.0, 1.00, None),  # <- Proportion auto-calculated (1.0), value updated from 20 to 60.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
+            (3, 1, 2, 2, 60.0, None, 1.00),  # <- Proportion auto-calculated (1.0), value updated from 20 to 60.
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2346,11 +2346,11 @@ class TestNodeUpdateRelations(unittest.TestCase):
 
         # Verify final records.
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0,   None),
-            (2, 1, 1, 1, 10.0, 1.0,   None),
-            (3, 1, 2, 2, 20.0, 1.0,   None),
-            (4, 1, 3, 3, 15.0, 0.75, b'\x80'),  # <- Mapping level updated.
-            (5, 1, 3, 2,  5.0, 0.25, b'\x80'),  # <- Mapping level updated.
+            (1, 1, 0, 0,  0.0, None,    1.0),
+            (2, 1, 1, 1, 10.0, None,    1.0),
+            (3, 1, 2, 2, 20.0, None,    1.0),
+            (4, 1, 3, 3, 15.0, b'\x80', 0.75),  # <- Mapping level updated.
+            (5, 1, 3, 2,  5.0, b'\x80', 0.25),  # <- Mapping level updated.
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2364,10 +2364,10 @@ class TestNodeUpdateRelations(unittest.TestCase):
         self.node.update_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0, None),
-            (2, 1, 1, 1, 99.0, 1.0, None),  # <- Updated from 10 to 99.
-            (3, 1, 2, 2, 99.0, 1.0, None),  # <- Updated from 20 to 99.
-            (4, 1, 3, 3, 15.0, 1.0, None),
+            (1, 1, 0, 0,  0.0, None, 1.0),
+            (2, 1, 1, 1, 99.0, None, 1.0),  # <- Updated from 10 to 99.
+            (3, 1, 2, 2, 99.0, None, 1.0),  # <- Updated from 20 to 99.
+            (4, 1, 3, 3, 15.0, None, 1.0),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2447,10 +2447,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
                 other_index_hash='c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
                 is_locally_complete=True
             )
-            relation_repo.add(1, 0, 0,  0.0, 1.00, None)  # relation_id 1 (-, -)
-            relation_repo.add(1, 1, 1, 10.0, 1.00, None)  # relation_id 2 (foo, x)
-            relation_repo.add(1, 2, 2, 20.0, 1.00, None)  # relation_id 3 (bar, y)
-            relation_repo.add(1, 3, 3, 15.0, 1.00, None)  # relation_id 4 (bar, z)
+            relation_repo.add(1, 0, 0,  0.0, None, 1.00)  # relation_id 1 (-, -)
+            relation_repo.add(1, 1, 1, 10.0, None, 1.00)  # relation_id 2 (foo, x)
+            relation_repo.add(1, 2, 2, 20.0, None, 1.00)  # relation_id 3 (bar, y)
+            relation_repo.add(1, 3, 3, 15.0, None, 1.00)  # relation_id 4 (bar, z)
 
         self.node = node
 
@@ -2462,10 +2462,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
         self.node.delete_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
             # Record with relation_id 3 is deleted.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2477,10 +2477,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
         self.node.delete_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
             # Record with relation_id 3 is deleted.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2502,10 +2502,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
 
         # Verify final records.
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
             # Record with relation_id 3 is deleted.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2522,10 +2522,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
         self.node.delete_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
             # Record with relation_id 3 is deleted.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2537,8 +2537,8 @@ class TestNodeDeleteRelations(unittest.TestCase):
             structure_repo.add(1.5859375, 1, 1)
 
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 2, 30.0, 1.00, b'\x80')  # relation_id 3 (bar, y)
-            relation_repo.add(1, 1, 3, 10.0, 1.00, b'\x80')  # relation_id 4 (bar, z)
+            relation_repo.add(1, 1, 2, 30.0, b'\x80', 1.00)  # relation_id 3 (bar, y)
+            relation_repo.add(1, 1, 3, 10.0, b'\x80', 1.00)  # relation_id 4 (bar, z)
 
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
@@ -2558,12 +2558,12 @@ class TestNodeDeleteRelations(unittest.TestCase):
 
         # Verify final records.
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0, None),
-            (2, 1, 1, 1, 10.0, 0.2, None),
+            (1, 1, 0, 0,  0.0, None,    1.0),
+            (2, 1, 1, 1, 10.0, None,    0.2),
             # relation_id 3 is deleted (not approximate)
-            (4, 1, 3, 3, 15.0, 1.0, None),
-            (5, 1, 1, 2, 30.0, 0.6, b'\x80'),  # <- Not removed (approximate rel)
-            (6, 1, 1, 3, 10.0, 0.2, b'\x80'),  # <- Not removed (approximate rel)
+            (4, 1, 3, 3, 15.0, None,    1.0),
+            (5, 1, 1, 2, 30.0, b'\x80', 0.6),  # <- Not removed (approximate rel)
+            (6, 1, 1, 3, 10.0, b'\x80', 0.2),  # <- Not removed (approximate rel)
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2576,10 +2576,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
         self.node.delete_relations('myfile', 'rel1', data)
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
             # Record with relation_id 3 is deleted.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2602,10 +2602,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
 
         # Check that data is not changed.
         expected = [
-            (1, 1, 0, 0,  0.0, 1.00, None),
-            (2, 1, 1, 1, 10.0, 1.00, None),
-            (3, 1, 2, 2, 20.0, 1.00, None),  # <- Not removed.
-            (4, 1, 3, 3, 15.0, 1.00, None),
+            (1, 1, 0, 0,  0.0, None, 1.00),
+            (2, 1, 1, 1, 10.0, None, 1.00),
+            (3, 1, 2, 2, 20.0, None, 1.00),  # <- Not removed.
+            (4, 1, 3, 3, 15.0, None, 1.00),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2641,8 +2641,8 @@ class TestNodeDeleteRelations(unittest.TestCase):
         self.node.delete_relations('myfile', 'rel1', A='bar')
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0, None),  # relation_id 1 (-, -)
-            (2, 1, 1, 1, 10.0, 1.0, None),  # relation_id 2 (foo, x)
+            (1, 1, 0, 0,  0.0, None, 1.0),  # relation_id 1 (-, -)
+            (2, 1, 1, 1, 10.0, None, 1.0),  # relation_id 2 (foo, x)
             # relation_id 3 (bar, y) should be deleted
             # relation_id 4 (bar, z) should be deleted
         ]
@@ -2652,10 +2652,10 @@ class TestNodeDeleteRelations(unittest.TestCase):
         self.node.delete_relations('myfile', 'rel1', A='bar', B='y')
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0, None),  # relation_id 1 (-, -)
-            (2, 1, 1, 1, 10.0, 1.0, None),  # relation_id 2 (foo, x)
+            (1, 1, 0, 0,  0.0, None, 1.0),  # relation_id 1 (-, -)
+            (2, 1, 1, 1, 10.0, None, 1.0),  # relation_id 2 (foo, x)
             # relation_id 3 (bar, y) should be deleted
-            (4, 1, 3, 3, 15.0, 1.0, None),  # relation_id 4 (bar, z)
+            (4, 1, 3, 3, 15.0, None, 1.0),  # relation_id 4 (bar, z)
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2667,20 +2667,20 @@ class TestNodeDeleteRelations(unittest.TestCase):
             structure_repo.add(1.5859375, 1, 1)
 
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 2, 1, 10.0, None, b'\x80')  # relation_id 5 (foo, x)
-            relation_repo.add(1, 1, 2, 30.0, None, b'\x80')  # relation_id 6 (bar, y)
-            relation_repo.add(1, 1, 3, 10.0, None, b'\x80')  # relation_id 7 (bar, z)
+            relation_repo.add(1, 2, 1, 10.0, b'\x80', None)  # relation_id 5 (foo, x)
+            relation_repo.add(1, 1, 2, 30.0, b'\x80', None)  # relation_id 6 (bar, y)
+            relation_repo.add(1, 1, 3, 10.0, b'\x80', None)  # relation_id 7 (bar, z)
 
         # Since mapping levels for 6 and 7 use `(1, 0)`, we can delete using 'A'.
         self.node.delete_relations('myfile', 'rel1', A='foo')
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0,  None),
+            (1, 1, 0, 0,  0.0, None,    1.0),
             # Deleted relation_id 2 (foo, x)
-            (3, 1, 2, 2, 20.0, 1.0,  None),
-            (4, 1, 3, 3, 15.0, 1.0,  None),
+            (3, 1, 2, 2, 20.0, None,    1.0),
+            (4, 1, 3, 3, 15.0, None,    1.0),
             # Deleted relation_id 5 (foo, x)
-            (6, 1, 1, 2, 30.0, 0.75, b'\x80'),
-            (7, 1, 1, 3, 10.0, 0.25, b'\x80'),
+            (6, 1, 1, 2, 30.0, b'\x80', 0.75),
+            (7, 1, 1, 3, 10.0, b'\x80', 0.25),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2695,11 +2695,11 @@ class TestNodeDeleteRelations(unittest.TestCase):
         )
 
         expected = [
-            (1, 1, 0, 0,  0.0, 1.0,  None),
+            (1, 1, 0, 0,  0.0, None,    1.0),
             # Deleted relation_id 3 (bar, y)
-            (4, 1, 3, 3, 15.0, 1.0,  None),
-            (6, 1, 1, 2, 30.0, 0.75, b'\x80'),  # <- Not deleted because of mapping level `(1, 0)` is not a subset of `(0, 1)`.
-            (7, 1, 1, 3, 10.0, 0.25, b'\x80'),
+            (4, 1, 3, 3, 15.0, None,    1.0),
+            (6, 1, 1, 2, 30.0, b'\x80', 0.75),  # <- Not deleted because of mapping level `(1, 0)` is not a subset of `(0, 1)`.
+            (7, 1, 1, 3, 10.0, b'\x80', 0.25),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2735,14 +2735,14 @@ class TestNodeRefiyRelations(unittest.TestCase):
                 is_locally_complete=True
             )
 
-            relation_repo.add(1, 0, 0,  0.0, 1.00, None)     # relation_id 1 (-, -)
-            relation_repo.add(1, 1, 1, 10.0, 1.00, b'\x40')  # relation_id 2 (foo, x)
-            relation_repo.add(1, 1, 2, 10.0, 1.00, b'\x40')  # relation_id 3 (bar, y)
-            relation_repo.add(1, 2, 2, 20.0, 1.00, None)     # relation_id 4 (bar, y)
-            relation_repo.add(1, 2, 3, 20.0, 1.00, None)     # relation_id 5 (bar, z)
-            relation_repo.add(1, 3, 1, 15.0, 1.00, b'\x80')  # relation_id 6 (foo, x)
-            relation_repo.add(1, 3, 2, 15.0, 1.00, b'\x80')  # relation_id 7 (bar, y)
-            relation_repo.add(1, 3, 3, 15.0, 1.00, b'\x80')  # relation_id 8 (bar, z)
+            relation_repo.add(1, 0, 0,  0.0, None,    1.00)  # relation_id 1 (-, -)
+            relation_repo.add(1, 1, 1, 10.0, b'\x40', 1.00)  # relation_id 2 (foo, x)
+            relation_repo.add(1, 1, 2, 10.0, b'\x40', 1.00)  # relation_id 3 (bar, y)
+            relation_repo.add(1, 2, 2, 20.0, None,    1.00)  # relation_id 4 (bar, y)
+            relation_repo.add(1, 2, 3, 20.0, None,    1.00)  # relation_id 5 (bar, z)
+            relation_repo.add(1, 3, 1, 15.0, b'\x80', 1.00)  # relation_id 6 (foo, x)
+            relation_repo.add(1, 3, 2, 15.0, b'\x80', 1.00)  # relation_id 7 (bar, y)
+            relation_repo.add(1, 3, 3, 15.0, b'\x80', 1.00)  # relation_id 8 (bar, z)
 
         self.node = node
 
@@ -2759,14 +2759,14 @@ class TestNodeRefiyRelations(unittest.TestCase):
     def test_reify_all_records(self):
         self.node.reify_relations('myfile', 'rel1')
         expected = [
-            Relation(1, 1, 0, 0,  0.0, 1.0, None),
-            Relation(2, 1, 1, 1, 10.0, 1.0, None),
-            Relation(3, 1, 1, 2, 10.0, 1.0, None),
-            Relation(4, 1, 2, 2, 20.0, 1.0, None),
-            Relation(5, 1, 2, 3, 20.0, 1.0, None),
-            Relation(6, 1, 3, 1, 15.0, 1.0, None),
-            Relation(7, 1, 3, 2, 15.0, 1.0, None),
-            Relation(8, 1, 3, 3, 15.0, 1.0, None),
+            Relation(1, 1, 0, 0,  0.0, None, 1.0),
+            Relation(2, 1, 1, 1, 10.0, None, 1.0),
+            Relation(3, 1, 1, 2, 10.0, None, 1.0),
+            Relation(4, 1, 2, 2, 20.0, None, 1.0),
+            Relation(5, 1, 2, 3, 20.0, None, 1.0),
+            Relation(6, 1, 3, 1, 15.0, None, 1.0),
+            Relation(7, 1, 3, 2, 15.0, None, 1.0),
+            Relation(8, 1, 3, 3, 15.0, None, 1.0),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2775,14 +2775,14 @@ class TestNodeRefiyRelations(unittest.TestCase):
         self.node.reify_relations('myfile', 'rel1', A='bar', B='y')
 
         expected = [
-            Relation(1, 1, 0, 0,  0.0, 1.0, None),
-            Relation(2, 1, 1, 1, 10.0, 1.0, None),  # <- mapping_level removed (foo, x)
-            Relation(3, 1, 1, 2, 10.0, 1.0, None),  # <- mapping_level removed (bar, y)
-            Relation(4, 1, 2, 2, 20.0, 1.0, None),
-            Relation(5, 1, 2, 3, 20.0, 1.0, None),
-            Relation(6, 1, 3, 1, 15.0, 1.0, None),  # <- mapping_level removed (foo, x)
-            Relation(7, 1, 3, 2, 15.0, 1.0, None),  # <- mapping_level removed (bar, y)
-            Relation(8, 1, 3, 3, 15.0, 1.0, b'\x80'),
+            Relation(1, 1, 0, 0,  0.0, None,    1.0),
+            Relation(2, 1, 1, 1, 10.0, None,    1.0),  # <- mapping_level removed (foo, x)
+            Relation(3, 1, 1, 2, 10.0, None,    1.0),  # <- mapping_level removed (bar, y)
+            Relation(4, 1, 2, 2, 20.0, None,    1.0),
+            Relation(5, 1, 2, 3, 20.0, None,    1.0),
+            Relation(6, 1, 3, 1, 15.0, None,    1.0),  # <- mapping_level removed (foo, x)
+            Relation(7, 1, 3, 2, 15.0, None,    1.0),  # <- mapping_level removed (bar, y)
+            Relation(8, 1, 3, 3, 15.0, b'\x80', 1.0),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -2798,13 +2798,13 @@ class TestNodeRefiyRelations(unittest.TestCase):
         )
 
         expected = [
-            Relation(1, 1, 0, 0,  0.0, 1.0, None),
-            Relation(2, 1, 1, 1, 10.0, 1.0, b'\x40'),
-            Relation(3, 1, 1, 2, 10.0, 1.0, b'\x40'),  # <- not removed, 'A' is (1, 0) but mapping level is (0, 1).
-            Relation(4, 1, 2, 2, 20.0, 1.0, None),
-            Relation(5, 1, 2, 3, 20.0, 1.0, None),
-            Relation(6, 1, 3, 1, 15.0, 1.0, b'\x80'),
-            Relation(7, 1, 3, 2, 15.0, 1.0, None),  # <- mapping_level removed
-            Relation(8, 1, 3, 3, 15.0, 1.0, None),  # <- mapping_level removed
+            Relation(1, 1, 0, 0,  0.0, None,    1.0),
+            Relation(2, 1, 1, 1, 10.0, b'\x40', 1.0),
+            Relation(3, 1, 1, 2, 10.0, b'\x40', 1.0),  # <- not removed, 'A' is (1, 0) but mapping level is (0, 1).
+            Relation(4, 1, 2, 2, 20.0, None,    1.0),
+            Relation(5, 1, 2, 3, 20.0, None,    1.0),
+            Relation(6, 1, 3, 1, 15.0, b'\x80', 1.0),
+            Relation(7, 1, 3, 2, 15.0, None,    1.0),  # <- mapping_level removed
+            Relation(8, 1, 3, 3, 15.0, None,    1.0),  # <- mapping_level removed
         ]
         self.assertEqual(self.get_relations_helper(), expected)

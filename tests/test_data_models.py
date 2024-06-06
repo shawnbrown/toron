@@ -384,16 +384,16 @@ class RelationRepositoryBaseTest(ABC):
         self.crosswalk.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
         self.crosswalk.add('222-22-2222', None, 'other2')  # Adds crosswalk_id 2.
 
-        self.repository.add(1, 1, 1, 131250, 1.0,      None)
-        self.repository.add(1, 2, 1,  40960, 0.625,    b'\x40')
-        self.repository.add(1, 2, 2,  24576, 0.375,    b'\x40')
-        self.repository.add(1, 3, 3, 100000, 1.0,      None)
+        self.repository.add(1, 1, 1, 131250, None,    1.0)
+        self.repository.add(1, 2, 1,  40960, b'\x40', 0.625)
+        self.repository.add(1, 2, 2,  24576, b'\x40', 0.375)
+        self.repository.add(1, 3, 3, 100000, None,    1.0)
 
-        self.repository.add(2, 1, 1, 583.75, 1.0,      None)
-        self.repository.add(2, 2, 2, 416.25, 1.0,      None)
-        self.repository.add(2, 3, 1, 336.0,  0.328125, None)
-        self.repository.add(2, 3, 2, 112.0,  0.109375, None)
-        self.repository.add(2, 3, 3, 576.0,  0.5625,   None)
+        self.repository.add(2, 1, 1, 583.75, None, 1.0)
+        self.repository.add(2, 2, 2, 416.25, None, 1.0)
+        self.repository.add(2, 3, 1, 336.0,  None, 0.328125)
+        self.repository.add(2, 3, 2, 112.0,  None, 0.109375)
+        self.repository.add(2, 3, 3, 576.0,  None, 0.5625)
 
     def get_relations_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
@@ -413,8 +413,8 @@ class RelationRepositoryBaseTest(ABC):
                 other_index_id=3,
                 index_id=3,
                 value=100000.0,
-                proportion=1.0,
                 mapping_level=None,
+                proportion=1.0,
             ),
             Relation(
                 id=9,
@@ -422,8 +422,8 @@ class RelationRepositoryBaseTest(ABC):
                 other_index_id=3,
                 index_id=3,
                 value=576.0,
-                proportion=0.5625,
                 mapping_level=None,
+                proportion=0.5625,
             )
         ]
         self.assertEqual(list(results), expected)
@@ -436,14 +436,14 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (10, 1, 1, 1, 131250.0, 1.0,    None),
-            (11, 1, 2, 1, 65536.0,  1.0,    b'\x40'),
-            (4,  1, 3, 3, 100000.0, 1.0,    None),
+            (10, 1, 1, 1, 131250.0, None,    1.0),
+            (11, 1, 2, 1, 65536.0,  b'\x40', 1.0),
+            (4,  1, 3, 3, 100000.0, None,    1.0),
             # Second crosswalk.
-            (12, 2, 1, 1, 583.75,   1.0,    None),
-            (14, 2, 2, 1, 416.25,   1.0,    None),
-            (13, 2, 3, 1, 448.0,    0.4375, None),
-            (9,  2, 3, 3, 576.0,    0.5625, None),
+            (12, 2, 1, 1, 583.75,   None,    1.0),
+            (14, 2, 2, 1, 416.25,   None,    1.0),
+            (13, 2, 3, 1, 448.0,    None,    0.4375),
+            (9,  2, 3, 3, 576.0,    None,    0.5625),
         }
         self.assertEqual(results, expected)
 
@@ -452,15 +452,15 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (1,  1, 1, 1, 131250.0, 1.0,    None),
-            (2,  1, 2, 1, 40960.0,  0.625,  b'\x40'),
-            (8,  1, 2, 2, 24576.0,  0.375,  b'\x40'),
-            (11, 1, 3, 2, 100000.0, 1.0,    None),
+            (1,  1, 1, 1, 131250.0, None,    1.0),
+            (2,  1, 2, 1, 40960.0,  b'\x40', 0.625),
+            (8,  1, 2, 2, 24576.0,  b'\x40', 0.375),
+            (11, 1, 3, 2, 100000.0, None,    1.0),
             # Second crosswalk.
-            (5,  2, 1, 1, 583.75, 1.0,      None),
-            (9,  2, 2, 2, 416.25, 1.0,      None),
-            (7,  2, 3, 1, 336.0,  0.328125, None),
-            (10, 2, 3, 2, 688.0,  0.671875, None),
+            (5,  2, 1, 1, 583.75, None,      1.0),
+            (9,  2, 2, 2, 416.25, None,      1.0),
+            (7,  2, 3, 1, 336.0,  None,      0.328125),
+            (10, 2, 3, 2, 688.0,  None,      0.671875),
         }
         self.assertEqual(results, expected)
 
@@ -469,13 +469,13 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (1, 1, 1, 1, 131250.0, 1.0, None),
-            (2, 1, 2, 1, 65536.0,  1.0, b'\x40'),
-            (6, 1, 3, 1, 100000.0, 1.0, None),
+            (1, 1, 1, 1, 131250.0, None,    1.0),
+            (2, 1, 2, 1, 65536.0,  b'\x40', 1.0),
+            (6, 1, 3, 1, 100000.0, None,    1.0),
             # Second crosswalk.
-            (3, 2, 1, 1, 583.75,   1.0, None),
-            (5, 2, 2, 1, 416.25,   1.0, None),
-            (4, 2, 3, 1, 1024.0,   1.0, None),
+            (3, 2, 1, 1, 583.75,   None,    1.0),
+            (5, 2, 2, 1, 416.25,   None,    1.0),
+            (4, 2, 3, 1, 1024.0,   None,    1.0),
         }
         self.assertEqual(results, expected)
 
@@ -486,13 +486,13 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (1, 1, 1, 1, 131250.0, 1.0, None),
-            (2, 1, 2, 1, 65536.0,  1.0, b'\x40'),
-            (6, 1, 3, 1, 100000.0, 1.0, None),
+            (1, 1, 1, 1, 131250.0, None,    1.0),
+            (2, 1, 2, 1, 65536.0,  b'\x40', 1.0),
+            (6, 1, 3, 1, 100000.0, None,    1.0),
             # Second crosswalk.
-            (3, 2, 1, 1, 583.75,   1.0, None),
-            (5, 2, 2, 1, 416.25,   1.0, None),
-            (4, 2, 3, 1, 1024.0,   1.0, None),
+            (3, 2, 1, 1, 583.75,   None,    1.0),
+            (5, 2, 2, 1, 416.25,   None,    1.0),
+            (4, 2, 3, 1, 1024.0,   None,    1.0),
         }
         self.assertEqual(results, expected)
 
@@ -510,13 +510,13 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (1, 1, 1, 1, 131250.0, 1.0,  None),
-            (2, 1, 2, 1, 65536.0,  None, b'\x40'),  # <- Proportion should be None.
-            (6, 1, 3, 1, 100000.0, 1.0,  None),
+            (1, 1, 1, 1, 131250.0, None,    1.0),
+            (2, 1, 2, 1, 65536.0,  b'\x40', None),  # <- Proportion should be None.
+            (6, 1, 3, 1, 100000.0, None,    1.0),
             # Second crosswalk.
-            (3, 2, 1, 1, 583.75,   1.0,  None),
-            (5, 2, 2, 1, 416.25,   1.0,  None),
-            (4, 2, 3, 1, 1024.0,   1.0,  None),
+            (3, 2, 1, 1, 583.75,   None,    1.0),
+            (5, 2, 2, 1, 416.25,   None,    1.0),
+            (4, 2, 3, 1, 1024.0,   None,    1.0),
         }
         self.assertEqual(results, expected)
 
@@ -530,47 +530,47 @@ class RelationRepositoryBaseTest(ABC):
     def test_find_by_ids(self):
         self.assertEqual(
             list(self.repository.find_by_ids(crosswalk_id=1)),
-            [Relation(1, 1, 1, 1, 131250.0, 1.0,   None),
-             Relation(2, 1, 2, 1, 40960.0,  0.625, b'\x40'),
-             Relation(3, 1, 2, 2, 24576.0,  0.375, b'\x40'),
-             Relation(4, 1, 3, 3, 100000.0, 1.0,   None)],
+            [Relation(1, 1, 1, 1, 131250.0, None,    1.0),
+             Relation(2, 1, 2, 1, 40960.0,  b'\x40', 0.625),
+             Relation(3, 1, 2, 2, 24576.0,  b'\x40', 0.375),
+             Relation(4, 1, 3, 3, 100000.0, None,    1.0)],
             msg='matches crosswalk_id 1',
         )
 
         self.assertEqual(
             list(self.repository.find_by_ids(other_index_id=2)),
-            [Relation(2, 1, 2, 1, 40960.0, 0.625, b'\x40'),
-             Relation(3, 1, 2, 2, 24576.0, 0.375, b'\x40'),
-             Relation(6, 2, 2, 2, 416.25,  1.0,   None)],
+            [Relation(2, 1, 2, 1, 40960.0, b'\x40', 0.625),
+             Relation(3, 1, 2, 2, 24576.0, b'\x40', 0.375),
+             Relation(6, 2, 2, 2, 416.25,  None,    1.0)],
             msg='matches other_index_id 2 (includes records from crosswalks 1 and 2)',
         )
 
         self.assertEqual(
             list(self.repository.find_by_ids(index_id=1)),
-            [Relation(1, 1, 1, 1, 131250.0, 1.0,      None),
-             Relation(2, 1, 2, 1, 40960.0,  0.625,    b'\x40'),
-             Relation(5, 2, 1, 1, 583.75,   1.0,      None),
-             Relation(7, 2, 3, 1, 336.0,    0.328125, None)],
+            [Relation(1, 1, 1, 1, 131250.0, None,    1.0),
+             Relation(2, 1, 2, 1, 40960.0,  b'\x40', 0.625),
+             Relation(5, 2, 1, 1, 583.75,   None,    1.0),
+             Relation(7, 2, 3, 1, 336.0,    None,    0.328125)],
             msg='matches index_id 1 (includes records from crosswalks 1 and 2)',
         )
 
         self.assertEqual(
             list(self.repository.find_by_ids(other_index_id=1, index_id=1)),
-            [Relation(1, 1, 1, 1, 131250.0, 1.0, None),
-             Relation(5, 2, 1, 1, 583.75,   1.0, None)],
+            [Relation(1, 1, 1, 1, 131250.0, None, 1.0),
+             Relation(5, 2, 1, 1, 583.75,   None, 1.0)],
             msg='matches other_index_id 1 and index_id 1 (includes records from crosswalks 1 and 2)',
         )
 
         self.assertEqual(
             list(self.repository.find_by_ids(crosswalk_id=1, other_index_id=2)),
-            [Relation(2, 1, 2, 1, 40960.0,  0.625, b'\x40'),
-             Relation(3, 1, 2, 2, 24576.0,  0.375, b'\x40')],
+            [Relation(2, 1, 2, 1, 40960.0,  b'\x40', 0.625),
+             Relation(3, 1, 2, 2, 24576.0,  b'\x40', 0.375)],
             msg='matches crosswalk_id 1 and other_index_id 2',
         )
 
         self.assertEqual(
             list(self.repository.find_by_ids(crosswalk_id=2, other_index_id=2, index_id=2)),
-            [Relation(6, 2, 2, 2, 416.25, 1.0, None)],
+            [Relation(6, 2, 2, 2, 416.25, None, 1.0)],
             msg='matches crosswalk_id 2 and other_index_id 2 and index_id 2',
         )
 
@@ -594,14 +594,14 @@ class RelationRepositoryBaseTest(ABC):
         results = self.get_relations_helper()
         expected = {
             # First crosswalk.
-            (1, 1, 1, 1, 131250.0, 1.0,  None),
-            (3, 1, 2, 2, 24576.0,  1.0,  b'\x40'),  # <- Proportion was 0.375
-            (4, 1, 3, 3, 100000.0, 1.0,  None),
+            (1, 1, 1, 1, 131250.0, None,    1.0),
+            (3, 1, 2, 2, 24576.0,  b'\x40', 1.0),  # <- Proportion was 0.375
+            (4, 1, 3, 3, 100000.0, None,    1.0),
             # Second crosswalk.
-            (5, 2, 1, 1, 583.75,   1.0,  None),
-            (6, 2, 2, 2, 416.25,   1.0,  None),
-            (7, 2, 3, 1, 336.0,    0.75, None),  # <- Proportion was 0.328125
-            (8, 2, 3, 2, 112.0,    0.25, None),  # <- Proportion was 0.109375
+            (5, 2, 1, 1, 583.75,   None,    1.0),
+            (6, 2, 2, 2, 416.25,   None,    1.0),
+            (7, 2, 3, 1, 336.0,    None,    0.75),  # <- Proportion was 0.328125
+            (8, 2, 3, 2, 112.0,    None,    0.25),  # <- Proportion was 0.109375
         }
         self.assertEqual(results, expected)
 

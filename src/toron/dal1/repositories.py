@@ -629,8 +629,8 @@ class RelationRepository(BaseRelationRepository):
         other_index_id: int,
         index_id: int,
         value: float,
-        proportion: Optional[float] = None,
         mapping_level: Optional[bytes] = None,
+        proportion: Optional[float] = None,
     ) -> None:
         """Add a record to the repository."""
         sql = """
@@ -639,8 +639,8 @@ class RelationRepository(BaseRelationRepository):
                 other_index_id,
                 index_id,
                 relation_value,
-                proportion,
-                mapping_level
+                mapping_level,
+                proportion
             )
             VALUES (?, ?, ?, ?, ?, ?)
         """
@@ -649,8 +649,8 @@ class RelationRepository(BaseRelationRepository):
             other_index_id,
             index_id,
             value,
-            proportion,
             bytes(mapping_level) if mapping_level else None,
+            proportion,
         )
         self._cursor.execute(sql, parameters)
 
@@ -672,8 +672,8 @@ class RelationRepository(BaseRelationRepository):
                 other_index_id=?,
                 index_id=?,
                 relation_value=?,
-                proportion=?,
-                mapping_level=?
+                mapping_level=?,
+                proportion=?
             WHERE relation_id=?
         """
         parameters = (
@@ -681,8 +681,8 @@ class RelationRepository(BaseRelationRepository):
             record.other_index_id,
             record.index_id,
             record.value,
-            record.proportion,
             record.mapping_level,
+            record.proportion,
             record.id,
         )
         self._cursor.execute(sql, parameters)

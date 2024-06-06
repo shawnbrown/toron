@@ -647,8 +647,8 @@ class Relation(object):
     other_index_id: int
     index_id: int
     value: float
-    proportion: Optional[float] = None
     mapping_level: Optional[bytes] = None
+    proportion: Optional[float] = None
 
 
 class BaseRelationRepository(ABC):
@@ -663,8 +663,8 @@ class BaseRelationRepository(ABC):
         other_index_id: int,
         index_id: int,
         value: float,
-        proportion: Optional[float] = None,
         mapping_level: Optional[bytes] = None,
+        proportion: Optional[float] = None,
     ) -> None:
         """Add a record to the repository."""
 
@@ -733,8 +733,8 @@ class BaseRelationRepository(ABC):
                 other_index_id=other_index_id,
                 index_id=target,  # <- Target index_id.
                 value=value,
-                proportion=proportion,
                 mapping_level=mapping_level,
+                proportion=proportion,
             )
 
     def refresh_proportions(

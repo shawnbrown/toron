@@ -28,16 +28,16 @@ class TestRelationRepository(unittest.TestCase):
     def test_add(self):
         repository = RelationRepository(self.cursor)
 
-        repository.add(9, 1, 1, 5.0)
-        repository.add(9, 1, 2, 3.0, None, None)
-        repository.add(9, 2, 3, 11.0, 1.0, None)
-        repository.add(9, 2, 4, 7.0, None, b'\x10')
+        repository.add(9, 1, 1,  5.0)
+        repository.add(9, 1, 2,  3.0, None,    None)
+        repository.add(9, 2, 3, 11.0, None,    1.0)
+        repository.add(9, 2, 4,  7.0, b'\x10', None)
 
         self.assertRecords([
-            (1, 9, 1, 1, 5.0, None, None),
-            (2, 9, 1, 2, 3.0, None, None),
-            (3, 9, 2, 3, 11.0, 1.0, None),
-            (4, 9, 2, 4, 7.0, None, b'\x10'),
+            (1, 9, 1, 1,  5.0, None,    None),
+            (2, 9, 1, 2,  3.0, None,    None),
+            (3, 9, 2, 3, 11.0, None,    1.0),
+            (4, 9, 2, 4,  7.0, b'\x10', None),
         ])
 
         msg = 'should fail, `other_index_id` and `index_id` pairs must be unique per edge'
@@ -51,49 +51,49 @@ class TestRelationRepository(unittest.TestCase):
         repository.add(10, 2, 4, 8.0)
 
         self.assertRecords([
-            (1, 9, 1, 1, 5.0, None, None),
-            (2, 9, 1, 2, 3.0, None, None),
-            (3, 9, 2, 3, 11.0, 1.0, None),
-            (4, 9, 2, 4, 7.0, None, b'\x10'),
-            (5, 10, 1, 1, 4.0, None, None),
-            (6, 10, 1, 2, 6.0, None, None),
-            (7, 10, 2, 3, 5.0, None, None),
-            (8, 10, 2, 4, 8.0, None, None),
+            (1,  9, 1, 1,  5.0, None,    None),
+            (2,  9, 1, 2,  3.0, None,    None),
+            (3,  9, 2, 3, 11.0, None,    1.0),
+            (4,  9, 2, 4,  7.0, b'\x10', None),
+            (5, 10, 1, 1,  4.0, None,    None),
+            (6, 10, 1, 2,  6.0, None,    None),
+            (7, 10, 2, 3,  5.0, None,    None),
+            (8, 10, 2, 4,  8.0, None,    None),
         ])
 
     def test_get(self):
         self.cursor.executescript("""
-            INSERT INTO relation VALUES (1, 9, 1, 1, 5.0, NULL, NULL);
-            INSERT INTO relation VALUES (2, 9, 2, 3, 3.0, 1.0, NULL);
-            INSERT INTO relation VALUES (3, 9, 3, 5, 7.0, NULL, X'10');
+            INSERT INTO relation VALUES (1, 9, 1, 1, 5.0, NULL,  NULL);
+            INSERT INTO relation VALUES (2, 9, 2, 3, 3.0, NULL,  1.0);
+            INSERT INTO relation VALUES (3, 9, 3, 5, 7.0, X'10', NULL);
         """)
         repository = RelationRepository(self.cursor)
 
         self.assertEqual(repository.get(1), Relation(1, 9, 1, 1, 5.0))
-        self.assertEqual(repository.get(2), Relation(2, 9, 2, 3, 3.0, 1.0))
-        self.assertEqual(repository.get(3), Relation(3, 9, 3, 5, 7.0, None, b'\x10'))
+        self.assertEqual(repository.get(2), Relation(2, 9, 2, 3, 3.0, None, 1.0))
+        self.assertEqual(repository.get(3), Relation(3, 9, 3, 5, 7.0, b'\x10'))
         self.assertIsNone(repository.get(4))
 
     def test_update(self):
         self.cursor.executescript("""
             INSERT INTO relation VALUES (1, 5, 1, 1, 125.0, NULL, NULL);
             INSERT INTO relation VALUES (2, 5, 1, 2, 375.0, NULL, NULL);
-            INSERT INTO relation VALUES (3, 5, 2, 3, 620.0, NULL, X'10');
+            INSERT INTO relation VALUES (3, 5, 2, 3, 620.0, X'10', NULL);
         """)
         repository = RelationRepository(self.cursor)
 
-        repository.update(Relation(1, 5, 1, 1, 125.0, 0.25, None))
-        repository.update(Relation(2, 5, 1, 2, 375.0, 0.75, None))
-        repository.update(Relation(3, 5, 2, 3, 620.0, 1.0, b'\x10'))
+        repository.update(Relation(1, 5, 1, 1, 125.0, None,    0.25))
+        repository.update(Relation(2, 5, 1, 2, 375.0, None,    0.75))
+        repository.update(Relation(3, 5, 2, 3, 620.0, b'\x10', 1.0))
 
         expected = [
-            (1, 5, 1, 1, 125.0, 0.25, None),
-            (2, 5, 1, 2, 375.0, 0.75, None),
-            (3, 5, 2, 3, 620.0, 1.0, b'\x10'),
+            (1, 5, 1, 1, 125.0, None,    0.25),
+            (2, 5, 1, 2, 375.0, None,    0.75),
+            (3, 5, 2, 3, 620.0, b'\x10', 1.0),
         ]
         self.assertRecords(expected)
 
-        repository.update(Relation(4, 5, 3, 4, 570.0, 1.0, None))
+        repository.update(Relation(4, 5, 3, 4, 570.0, None, 1.0))
         self.assertRecords(expected, msg='should be unchanged, no relation_id=4')
 
     def test_delete(self):
