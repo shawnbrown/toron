@@ -1169,7 +1169,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
         ]
         self.assertEqual(actual, expected)
 
-    def test_merging_and_index_hash_updates(self):
+    def test_delete_and_index_hash_updates(self):
         with self.node._managed_cursor() as cursor:
             prop_repo = self.node._dal.PropertyRepository(cursor)
 
