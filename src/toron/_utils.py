@@ -477,10 +477,20 @@ class SequenceHash(object):
         >>>
         >>> index_hash.get_hexdigest()
         'efaaa8ba342b5791c9a5fc25ec1fbc3bb77c6a110364840ce1cca88c14a93872'
+
+    Optionally, SequenceHash can be initialized with an iterable::
+
+        >>> index_hash = SequenceHash([0, 1, 2, 5, 6, ...])
+        >>> index_hash.get_hexdigest()
+        'efaaa8ba342b5791c9a5fc25ec1fbc3bb77c6a110364840ce1cca88c14a93872'
     """
-    def __init__(self) -> None:
+    def __init__(self, iterable: Optional[Iterable] = None) -> None:
         self.hash_obj = hashlib.sha256()
         self._prev_value = -1
+
+        if iterable:
+            for value in iterable:
+                self.add_value(value)
 
     def add_value(self, value: int) -> None:
         """Update the current digest with an additional integer."""

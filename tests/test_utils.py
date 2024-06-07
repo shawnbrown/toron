@@ -458,6 +458,13 @@ class TestSequenceHash(unittest.TestCase):
             '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
         )
 
+    def test_initialize_with_sequence(self):
+        sequence_hash = SequenceHash(iter([0, 1, 2]))
+        self.assertEqual(
+            sequence_hash.get_hexdigest(),
+            '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
+        )
+
     def test_distinct_sequences(self):
         """Make sure [1, 2, 3, 4] and [12, 34] have distinct hashes."""
         sequence_hash = SequenceHash()
