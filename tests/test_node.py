@@ -1135,6 +1135,45 @@ class TestNodeDeleteIndex(unittest.TestCase):
             crosswalk = crosswalk_repo.get(1)
             self.assertTrue(crosswalk.is_locally_complete)
 
+    def test_delete_and_other_index_hash_updates(self):
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add('111-11-1111', None, 'other1',
+                               other_index_hash='8c7654ecfd7b0b623b803e2f4e02ad1cc84278efdfcd7c4c9208edd81f17e115',
+                               is_locally_complete=True)  # Adds crosswalk_id 1.
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(1, 1, 1, 16350, None, 0.75)
+            relation_repo.add(1, 1, 2,  5450, None, 0.25)
+            relation_repo.add(1, 2, 2,  7500, None, 1.00)
+
+            crosswalk_repo.add('222-22-2222', None, 'other2',
+                               other_index_hash='65b5281bf090304aa0255d2af391f164cb81d587a4c7b5b27db04faacb9388df',
+                               is_locally_complete=False)  # Adds crosswalk_id 2.
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(2, 7, 1, 6000, None, 1.00)
+            relation_repo.add(2, 8, 1, 9000, None, 0.5625)
+            relation_repo.add(2, 8, 2, 7000, None, 0.4375)
+
+            data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
+            self.node.delete_index(data)  # Deletes index_id 2.
+
+            crosswalk = crosswalk_repo.get(1)
+            self.assertTrue(crosswalk.is_locally_complete, msg='should be unchanged')
+            self.assertEqual(
+                crosswalk.other_index_hash,
+                'cd2662154e6d76b2b2b92e70c0cac3ccf534f9b74eb5b89819ec509083d00a50',
+                msg='should be changed (different set of other_index_id values)',
+
+            )
+
+            crosswalk = crosswalk_repo.get(2)
+            self.assertTrue(crosswalk.is_locally_complete, msg='should be changed (was False)')
+            self.assertEqual(
+                crosswalk.other_index_hash,
+                '65b5281bf090304aa0255d2af391f164cb81d587a4c7b5b27db04faacb9388df',
+                msg='should be unchanged (same set of other_index_id values)',
+            )
+
     def test_delete_using_interoperation(self):
         # Add more index rows so there are multiple records to select.
         self.add_index_helper(self.node, [('foo', 'qux'), ('foo', 'quux')])
