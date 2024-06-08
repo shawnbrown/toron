@@ -1467,8 +1467,8 @@ class Node(object):
         A 'mapping_level' records the level of granularity at which an
         approximate relation (or partial relation) was established. By
         removing it, we indicate that the probabilistically assigned
-        values associated with an approximate relation should now be
-        considered as the actual values.
+        value associated with an approximate relation should now be
+        considered as the actual value.
 
         Parameters
         ----------
