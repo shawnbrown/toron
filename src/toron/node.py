@@ -1463,6 +1463,23 @@ class Node(object):
     ) -> None:
         """Remove 'mapping_level' from approximate relations associated
         with the specified crosswalk (*node* and *name*).
+
+        A 'mapping_level' records the level of granularity at which an
+        approximate relation (or partial relation) was established. By
+        removing it, we indicate that the probabilistically assigned
+        values associated with an approximate relation should now be
+        considered as the actual values.
+
+        Parameters
+        ----------
+        node : Union[str, Node]
+            The node from which the crosswalk is coming.
+        name : str
+            The name of the crosswalk. This is needed because multiple
+            crosswalks can come from the same node.
+        **criteria : str
+            Additional keyword arguments to select only those relations
+            associated the given index labels for reification.
         """
         counter: Counter = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
