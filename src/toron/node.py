@@ -549,25 +549,28 @@ class Node(object):
 
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
                 for crosswalk in crosswalk_repo.get_all():
-                    # If all unmapped indexes are deleted, can become complete.
+                    # Rebuild 'other_index_hash'. When all occurances of an
+                    # 'other_index_id' are associated with 'index_id' values
+                    # that are deleted, this hash will change.
+                    other_index_hash = SequenceHash(
+                        aux_relation_repo.get_distinct_other_index_ids(
+                            crosswalk.id,
+                            ordered=True,
+                        )
+                    ).get_hexdigest()
+
+                    # Check 'is_locally_complete' status. A crosswalk can
+                    # become complete if all of the unmapped index_id values
+                    # are deleted.
                     is_locally_complete = (
                         crosswalk.is_locally_complete
                         or relation_repo.crosswalk_is_complete(crosswalk.id)
                     )
 
-                    # Build new 'other_index_hash'.
-                    other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
-                        crosswalk.id,
-                        ordered=True,
-                    )
-                    sequence_hash = SequenceHash()
-                    for other_index_id in other_index_ids:
-                        sequence_hash.add_value(other_index_id)
-
                     # Assign new values and update crosswalk record.
                     crosswalk_repo.update(replace(
                         crosswalk,
-                        other_index_hash=sequence_hash.get_hexdigest(),
+                        other_index_hash=other_index_hash,
                         is_locally_complete=is_locally_complete,
                     ))
 
