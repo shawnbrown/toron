@@ -313,6 +313,36 @@ class LocationRepositoryBaseTest(ABC):
         except Exception:
             self.fail("should ('foo', ''), empty strings must be allowed")
 
+    def test_find_by_label(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')
+        self.repository.add('foo', 'y')
+        self.repository.add('bar', 'x')
+        self.repository.add('bar', '')  # <- Location labels can be empty strings (indicating approximate location)
+
+        results = self.repository.find_by_label({'A': 'foo'})
+        expected = [Location(1, 'foo', 'x'), Location(2, 'foo', 'y')]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_label({'B': 'x'})
+        expected = [Location(1, 'foo', 'x'), Location(3, 'bar', 'x')]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_label({'B': ''})  # <- Empty string.
+        expected = [Location(4, 'bar', '')]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_label({'A': 'bar', 'B': 'x'})
+        expected = [Location(3, 'bar', 'x')]
+        self.assertEqual(list(results), expected)
+
+        results = self.repository.find_by_label({'A': 'baz', 'B': 'z'})  # <- No match.
+        self.assertEqual(list(results), [])  # <- Empty result.
+
+        regex = 'find_by_label requires at least 1 criteria value, got 0'
+        with self.assertRaisesRegex(ValueError, regex):
+            results = self.repository.find_by_label(dict())  # <- Empty dict.
+
 
 class WeightRepositoryBaseTest(ABC):
     @property

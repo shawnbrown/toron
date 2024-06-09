@@ -317,6 +317,16 @@ class BaseLocationRepository(ABC):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
+    @abstractmethod
+    def find_by_label(
+        self,
+        criteria: Optional[Dict[str, str]],
+    ) -> Iterator[Location]:
+        """Find all records where labels match criteria.
+
+        If criteria is an empty dict, should raise ValueError.
+        """
+
     #def filter_by_structure(self, structure: Structure) -> Iterable[Location]:
     #    """Filter to records that match the given structure."""
 

@@ -174,6 +174,20 @@ class LocationRepository(BaseLocationRepository):
             'DELETE FROM main.location WHERE _location_id=?', (id,)
         )
 
+    def find_by_label(
+        self,
+        criteria: Optional[Dict[str, str]],
+    ) -> Iterator[Location]:
+        """Find all records in the repository that match criteria."""
+        if not criteria:
+            msg = 'find_by_label requires at least 1 criteria value, got 0'
+            raise ValueError(msg)
+
+        qmarks = (f'{format_identifier(k)}=?' for k in criteria.keys())
+        sql = f'SELECT * FROM main.location WHERE {" AND ".join(qmarks)}'
+        self._cursor.execute(sql, tuple(criteria.values()))
+        return (Location(*record) for record in self._cursor)
+
 
 class StructureRepository(BaseStructureRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
