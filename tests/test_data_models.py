@@ -20,6 +20,7 @@ from contextlib import closing, suppress
 from toron.data_models import (
     BaseDataConnector,
     Index, BaseIndexRepository,
+    Location, BaseLocationRepository,
     Weight, BaseWeightRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
@@ -255,6 +256,62 @@ class IndexRepositoryBaseTest(ABC):
         # Check `include_undefined=False`.
         results = self.repository.find_by_label({'B': '-'}, include_undefined=False)
         self.assertEqual(list(results), [Index(4, 'bar', '-')])
+
+
+class LocationRepositoryBaseTest(ABC):
+    @property
+    @abstractmethod
+    def dal(self):
+        ...
+
+    def setUp(self):
+        connector = self.dal.DataConnector()
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
+
+        cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        self.manager = self.dal.ColumnManager(cursor)
+        self.repository = self.dal.LocationRepository(cursor)
+
+    def test_inheritance(self):
+        """Must inherit from appropriate abstract base class."""
+        self.assertTrue(issubclass(self.dal.LocationRepository, BaseLocationRepository))
+
+    def test_integration(self):
+        """Test add(), get(), update() and delete() interaction."""
+        self.manager.add_columns('A', 'B')
+
+        self.repository.add('foo', 'x')
+        self.repository.add('bar', 'y')
+
+        self.assertEqual(self.repository.get(1), Location(1, 'foo', 'x'))
+        self.assertEqual(self.repository.get(2), Location(2, 'bar', 'y'))
+
+        self.repository.update(Index(2, 'bar', 'z'))
+        self.assertEqual(self.repository.get(2), Location(2, 'bar', 'z'))
+
+        self.repository.delete(2)
+        self.assertIsNone(self.repository.get(2))
+
+    def test_add_duplicate_labels(self):
+        """Attempting to add duplicate labels should raise ValueError."""
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'bar')
+
+        msg = "should not add ('foo', 'bar') again, duplicates not allowed"
+        with self.assertRaises(Exception, msg=msg):
+            self.repository.add('foo', 'bar')
+
+    def test_add_empty_string(self):
+        """Empty strings are allowed in 'location' (unlike 'index')."""
+        self.manager.add_columns('A', 'B')
+
+        try:
+            self.repository.add('foo', '')
+        except Exception:
+            self.fail("should ('foo', ''), empty strings must be allowed")
 
 
 class WeightRepositoryBaseTest(ABC):
@@ -670,6 +727,9 @@ class ColumnManagerDAL1(ColumnManagerBaseTest, unittest.TestCase):
     dal = dal1
 
 class IndexRepositoryDAL1(IndexRepositoryBaseTest, unittest.TestCase):
+    dal = dal1
+
+class LocationRepositoryDAL1(LocationRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class WeightRepositoryDAL1(WeightRepositoryBaseTest, unittest.TestCase):
