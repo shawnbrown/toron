@@ -23,7 +23,6 @@ from json import (
 from ._typing import (
     Any,
     Callable,
-    Collection,
     Dict,
     Generator,
     Hashable,
@@ -112,8 +111,8 @@ def normalize_tabular(data, columns=None):
 
 
 def verify_columns_set(
-    columns: Collection,
-    required_columns: Collection,
+    columns: Iterable,
+    required_columns: Iterable,
     allow_extras: bool = False,
 ) -> None:
     """Raise error if columns do not match set of required columns."""
