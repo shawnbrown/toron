@@ -1546,23 +1546,22 @@ class Node(object):
 
         #counter: Counter = Counter()
         with self._managed_transaction() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
-            index_repo = self._dal.IndexRepository(cursor)
             location_repo = self._dal.LocationRepository(cursor)
             attribute_repo = self._dal.AttributeRepository(cursor)
             quantity_repo = self._dal.QuantityRepository(cursor)
 
-            index_columns = col_manager.get_columns()
+            label_columns = location_repo.get_label_columns()
+
             verify_columns_set(
                 columns=columns,
-                required_columns=chain(index_columns, attributes, [value]),
+                required_columns=chain(label_columns, attributes, [value]),
                 allow_extras=True,
             )
 
             for row in data:
                 row_dict = dict(zip(columns, row))
 
-                label_criteria = {k: row_dict[k] for k in index_columns}
+                label_criteria = {k: row_dict[k] for k in label_columns}
                 location = location_repo.get_or_add_by_label(label_criteria)
 
                 attribute_value = {k: row_dict[k] for k in attributes}
