@@ -348,6 +348,28 @@ class LocationRepositoryBaseTest(ABC):
         with self.assertRaisesRegex(ValueError, regex):
             results = self.repository.find_by_label(dict())  # <- Empty dict.
 
+    def test_get_or_add_by_label(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')  # <- Create existing location.
+
+        self.assertEqual(
+            self.repository.get_or_add_by_label({'A': 'foo', 'B': 'x'}),
+            Location(1, 'foo', 'x'),
+            msg='should return existing location',
+        )
+
+        self.assertEqual(
+            self.repository.get_or_add_by_label({'A': 'bar', 'B': 'y'}),
+            Location(2, 'bar', 'y'),
+            msg='should create and return a new location',
+        )
+
+        self.assertEqual(
+            self.repository.get_or_add_by_label({'A': 'bar', 'B': 'y'}),
+            Location(2, 'bar', 'y'),
+            msg='should return existing (previously created) location',
+        )
+
 
 class WeightRepositoryBaseTest(ABC):
     @property

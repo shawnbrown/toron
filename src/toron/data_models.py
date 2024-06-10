@@ -331,6 +331,28 @@ class BaseLocationRepository(ABC):
         If criteria is an empty dict, should raise ValueError.
         """
 
+    def get_or_add_by_label(self, criteria: dict) -> Location:
+        """Return the location that matches given criteria. If there is
+        no matching location, a new record is added and then returned.
+        The *criteria* given must include values for all label columns.
+        """
+        columns = self.get_label_columns()
+
+        if set(criteria.keys()) != set(columns):
+            formatted = ', '.join(str(x) for x in columns)
+            raise ValueError(f'requires all columns: {formatted}')
+
+        results = list(self.find_by_label(criteria))
+
+        if len(results) == 1:
+            return results[0]
+
+        if len(results) == 0:
+            self.add(*(criteria[k] for k in columns))
+            return next(self.find_by_label(criteria))
+
+        raise Exception
+
     #def filter_by_structure(self, structure: Structure) -> Iterable[Location]:
     #    """Filter to records that match the given structure."""
 
