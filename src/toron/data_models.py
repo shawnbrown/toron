@@ -583,7 +583,11 @@ class BaseAttributeRepository(ABC):
             return attribute
 
         self.add(value)
-        return self.get_by_value(value)
+        attribute = self.get_by_value(value)
+        if attribute:
+            return attribute
+
+        raise RuntimeError('expected attribute was not created')
 
     #@abstractmethod
     #def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
