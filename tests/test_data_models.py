@@ -504,6 +504,13 @@ class AttributeRepositoryBaseTest(ABC):
         repository.delete(1)
         self.assertIsNone(repository.get(1))
 
+    def test_get_by_value(self):
+        self.repository.add({'foo': 'A'})
+        self.assertEqual(
+            self.repository.get_by_value({'foo': 'A'}),
+            Attribute(1, {'foo': 'A'}),
+        )
+
 
 class RelationRepositoryBaseTest(ABC):
     @property

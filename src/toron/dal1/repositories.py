@@ -441,6 +441,17 @@ class AttributeRepository(BaseAttributeRepository):
             'DELETE FROM main.attribute WHERE attribute_id=?', (id,)
         )
 
+    def get_by_value(self, value: Dict[str, str]) -> Optional[Attribute]:
+        """Get the record matching the given value."""
+        self._cursor.execute(
+            'SELECT * FROM main.attribute WHERE attribute_value=?',
+            (json_dumps(value, sort_keys=True),)
+        )
+        record = self._cursor.fetchone()
+        if record:
+            return Attribute(*record)
+        return None
+
 
 class QuantityRepository(BaseQuantityRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:

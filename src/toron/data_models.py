@@ -570,6 +570,10 @@ class BaseAttributeRepository(ABC):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
+    @abstractmethod
+    def get_by_value(self, value: Dict[str, str]) -> Optional[Attribute]:
+        """Get the record matching the given value."""
+
     #@abstractmethod
     #def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
     #    """Filter to records associated matching the given criteria."""
