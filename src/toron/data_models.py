@@ -318,6 +318,10 @@ class BaseLocationRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
+    def get_label_columns(self) -> Tuple[str, ...]:
+        """Return a tuple of label column names."""
+
+    @abstractmethod
     def find_by_label(
         self,
         criteria: Optional[Dict[str, str]],

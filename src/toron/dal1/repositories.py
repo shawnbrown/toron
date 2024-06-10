@@ -174,6 +174,12 @@ class LocationRepository(BaseLocationRepository):
             'DELETE FROM main.location WHERE _location_id=?', (id,)
         )
 
+    def get_label_columns(self) -> Tuple[str, ...]:
+        """Get a tuple of label column names."""
+        self._cursor.execute(f"PRAGMA main.table_info('location')")
+        columns = tuple(row[1] for row in self._cursor.fetchall())
+        return columns[1:]  # Return columns (slicing-off _location_id).
+
     def find_by_label(
         self,
         criteria: Optional[Dict[str, str]],
