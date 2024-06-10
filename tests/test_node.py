@@ -2847,3 +2847,81 @@ class TestNodeRefiyRelations(unittest.TestCase):
             Relation(8, 1, 3, 3, 15.0, None,    1.0),  # <- mapping_level removed
         ]
         self.assertEqual(self.get_relations_helper(), expected)
+
+
+class TestNodeInsertQuantities(unittest.TestCase):
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns(*columns)
+
+    @staticmethod
+    def add_index_helper(node, data):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            for row in data:
+                repository.add(*row)
+
+    @staticmethod
+    def get_location_helper(node):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM location')
+            return cursor.fetchall()
+
+    @staticmethod
+    def get_attributes_helper(node):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM attribute')
+            return cursor.fetchall()
+
+    @staticmethod
+    def get_quantities_helper(node):  # <- Helper function.
+        # TODO: Update this helper when proper interface is available.
+        with node._managed_cursor() as cursor:
+            cursor.execute('SELECT * FROM quantity')
+            return cursor.fetchall()
+
+    def setUp(self):
+        node = Node()
+        self.add_cols_helper(node, 'state', 'county')
+        self.add_index_helper(node, [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')])
+
+        self.node = node
+
+    def test_insert_quantities(self):
+        data = [
+            ('state', 'county', 'category', 'sex', 'counts'),
+            ('OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+            ('OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+            ('OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+            ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+        ]
+
+        self.node.insert_quantities(
+            value='counts',
+            attributes=['category', 'sex'],
+            data=data,
+        )
+
+        self.assertEqual(
+            self.get_location_helper(self.node),
+            [(1, 'OH', 'BUTLER'),
+             (2, 'OH', 'FRANKLIN')],
+        )
+
+        self.assertEqual(
+            self.get_attributes_helper(self.node),
+            [(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+             (2, {'category': 'TOTAL', 'sex': 'FEMALE'})],
+        )
+
+        self.assertEqual(
+            self.get_quantities_helper(self.node),
+            [(1, 1, 1, 180140),
+             (2, 1, 2, 187990),
+             (3, 2, 1, 566499),
+             (4, 2, 2, 596915)],
+        )

@@ -1528,3 +1528,49 @@ class Node(object):
                         counter['reified'] += 1
 
         warn_if_issues(counter, expected='reified')
+
+    def insert_quantities(
+        self,
+        *,
+        value: str,
+        attributes: Union[str, Iterable[str]],
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        data, columns = normalize_tabular(data, columns)
+
+        if isinstance(attributes, str):
+            attributes = [attributes]
+        else:
+            attributes = list(attributes)
+
+        #counter: Counter = Counter()
+        with self._managed_transaction() as cursor:
+            col_manager = self._dal.ColumnManager(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+            location_repo = self._dal.LocationRepository(cursor)
+            attribute_repo = self._dal.AttributeRepository(cursor)
+            quantity_repo = self._dal.QuantityRepository(cursor)
+
+            index_columns = col_manager.get_columns()
+            verify_columns_set(
+                columns=columns,
+                required_columns=chain(index_columns, attributes, [value]),
+                allow_extras=True,
+            )
+
+            for row in data:
+                row_dict = dict(zip(columns, row))
+
+                label_criteria = {k: row_dict[k] for k in index_columns}
+                location = location_repo.get_or_add_by_label(label_criteria)
+
+                attribute_value = {k: row_dict[k] for k in attributes}
+                attribute = attribute_repo.get_or_add_by_value(attribute_value)
+
+                quantity_repo.add(
+                    location_id=location.id,
+                    attribute_id=attribute.id,
+                    value=row_dict[value],
+                )
+                #counter['inserted'] += 1
