@@ -574,6 +574,17 @@ class BaseAttributeRepository(ABC):
     def get_by_value(self, value: Dict[str, str]) -> Optional[Attribute]:
         """Get the record matching the given value."""
 
+    def get_or_add_by_value(self, value: Dict[str, str]) -> Attribute:
+        """Return the attribute that matches given value. If there is
+        no matching attribute, a new record is added and then returned.
+        """
+        attribute = self.get_by_value(value)
+        if attribute:
+            return attribute
+
+        self.add(value)
+        return self.get_by_value(value)
+
     #@abstractmethod
     #def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
     #    """Filter to records associated matching the given criteria."""
