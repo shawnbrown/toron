@@ -22,6 +22,7 @@ from toron.data_models import (
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
     Weight, BaseWeightRepository,
+    Attribute, BaseAttributeRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
 )
@@ -470,6 +471,40 @@ class WeightRepositoryBaseTest(ABC):
         self.assertEqual(results, expected)
 
 
+class AttributeRepositoryBaseTest(ABC):
+    @property
+    @abstractmethod
+    def dal(self):
+        ...
+
+    def setUp(self):
+        connector = self.dal.DataConnector()
+        self.connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(self.connection))
+
+        cursor = connector.acquire_cursor(self.connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        self.repository = self.dal.AttributeRepository(cursor)
+
+    def test_inheritance(self):
+        """Must inherit from appropriate abstract base class."""
+        self.assertTrue(isinstance(self.repository, BaseAttributeRepository))
+
+    def test_integration(self):
+        """Test interoperation of add, get, update, and delete."""
+        repository = self.repository
+
+        repository.add({'foo': 'A'})
+        self.assertEqual(repository.get(1), Attribute(1, {'foo': 'A'}))
+
+        repository.update(Attribute(1, {'foo': 'B'}))
+        self.assertEqual(repository.get(1), Attribute(1, {'foo': 'B'}))
+
+        repository.delete(1)
+        self.assertIsNone(repository.get(1))
+
+
 class RelationRepositoryBaseTest(ABC):
     @property
     @abstractmethod
@@ -790,6 +825,9 @@ class LocationRepositoryDAL1(LocationRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class WeightRepositoryDAL1(WeightRepositoryBaseTest, unittest.TestCase):
+    dal = dal1
+
+class AttributeRepositoryDAL1(AttributeRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class RelationRepositoryDAL1(RelationRepositoryBaseTest, unittest.TestCase):
