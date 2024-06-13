@@ -349,8 +349,12 @@ class BaseLocationRepository(ABC):
         columns = self.get_label_columns()
 
         if set(criteria.keys()) != set(columns):
-            formatted = ', '.join(str(x) for x in columns)
-            raise ValueError(f'requires all columns: {formatted}')
+            given_cols = ', '.join(str(x) for x in criteria.keys())
+            required_cols = ', '.join(str(x) for x in columns)
+            raise ValueError(
+                f'requires all label columns, got: {given_cols or "nothing"} '
+                f'(needs {required_cols})'
+            )
 
         location_record = next(self.find_by_label(criteria), None)
 

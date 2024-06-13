@@ -376,6 +376,18 @@ class LocationRepositoryBaseTest(ABC):
             msg='should now return existing (previously created) location',
         )
 
+        regex = r'requires all label columns, got: A \(needs A, B\)'
+        with self.assertRaisesRegex(ValueError, regex):
+            self.repository.get_by_all_labels({'A': 'foo'})
+
+        regex = r'requires all label columns, got: nothing \(needs A, B\)'
+        with self.assertRaisesRegex(ValueError, regex):
+            self.repository.get_by_all_labels(dict())
+
+        regex = r'requires all label columns, got: A, B, C \(needs A, B\)'
+        with self.assertRaisesRegex(ValueError, regex):
+            self.repository.get_by_all_labels({'A': 'bar', 'B': 'y', 'C': 'z'})
+
 
 class WeightRepositoryBaseTest(ABC):
     @property
