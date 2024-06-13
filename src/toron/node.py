@@ -1562,8 +1562,9 @@ class Node(object):
                 row_dict = dict(zip(columns, row))
 
                 label_criteria = {k: row_dict[k] for k in label_columns}
-                location = location_repo.get_or_add_by_label(label_criteria)
-
+                location = location_repo.get_by_all_labels(
+                    label_criteria, add_if_missing=True
+                )
                 attribute_value = {k: row_dict[k] for k in attributes}
                 attribute = attribute_repo.get_or_add_by_value(attribute_value)
 

@@ -349,26 +349,31 @@ class LocationRepositoryBaseTest(ABC):
         with self.assertRaisesRegex(ValueError, regex):
             results = self.repository.find_by_label(dict())  # <- Empty dict.
 
-    def test_get_or_add_by_label(self):
+    def test_get_by_all_labels(self):
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'x')  # <- Create existing location.
 
         self.assertEqual(
-            self.repository.get_or_add_by_label({'A': 'foo', 'B': 'x'}),
+            self.repository.get_by_all_labels({'A': 'foo', 'B': 'x'}),
             Location(1, 'foo', 'x'),
             msg='should return existing location',
         )
 
-        self.assertEqual(
-            self.repository.get_or_add_by_label({'A': 'bar', 'B': 'y'}),
-            Location(2, 'bar', 'y'),
-            msg='should create and return a new location',
+        self.assertIsNone(
+            self.repository.get_by_all_labels({'A': 'bar', 'B': 'y'}),
+            msg='should return None if specified labels are missing',
         )
 
         self.assertEqual(
-            self.repository.get_or_add_by_label({'A': 'bar', 'B': 'y'}),
+            self.repository.get_by_all_labels({'A': 'bar', 'B': 'y'}, add_if_missing=True),
             Location(2, 'bar', 'y'),
-            msg='should return existing (previously created) location',
+            msg='should create and return a new location when `add_if_missing` is True',
+        )
+
+        self.assertEqual(
+            self.repository.get_by_all_labels({'A': 'bar', 'B': 'y'}),
+            Location(2, 'bar', 'y'),
+            msg='should now return existing (previously created) location',
         )
 
 
