@@ -585,7 +585,7 @@ class BaseAttributeRepository(ABC):
     def get_by_value(self, value: Dict[str, str]) -> Optional[Attribute]:
         """Get the record matching the given value."""
 
-    def get_or_add_by_value(self, value: Dict[str, str]) -> Attribute:
+    def get_by_value_add_if_missing(self, value: Dict[str, str]) -> Attribute:
         """Return the attribute that matches given value. If there is
         no matching attribute, a new record is added and then returned.
         """

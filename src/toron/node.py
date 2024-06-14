@@ -1566,7 +1566,7 @@ class Node(object):
                     label_criteria, add_if_missing=True
                 )
                 attribute_value = {k: row_dict[k] for k in attributes}
-                attribute = attribute_repo.get_or_add_by_value(attribute_value)
+                attribute = attribute_repo.get_by_value_add_if_missing(attribute_value)
 
                 quantity_repo.add(
                     location_id=location.id,

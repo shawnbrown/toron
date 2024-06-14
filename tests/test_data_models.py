@@ -528,23 +528,23 @@ class AttributeRepositoryBaseTest(ABC):
             Attribute(1, {'foo': 'A'}),
         )
 
-    def test_get_or_add_by_value(self):
+    def test_get_by_value_add_if_missing(self):
         self.repository.add({'foo': 'A'})  # <- Create attribute_id 1.
 
         self.assertEqual(
-            self.repository.get_or_add_by_value({'foo': 'A'}),
+            self.repository.get_by_value_add_if_missing({'foo': 'A'}),
             Attribute(1, {'foo': 'A'}),
             msg='should return existing attribute_id 1',
         )
 
         self.assertEqual(
-            self.repository.get_or_add_by_value({'foo': 'B'}),  # <- Creates attribute_id 2.
+            self.repository.get_by_value_add_if_missing({'foo': 'B'}),  # <- Creates attribute_id 2.
             Attribute(2, {'foo': 'B'}),
             msg='should create and return record with attribute_id 2'
         )
 
         self.assertEqual(
-            self.repository.get_or_add_by_value({'foo': 'B'}),  # <- Gets existing attribute_id 2.
+            self.repository.get_by_value_add_if_missing({'foo': 'B'}),  # <- Gets existing attribute_id 2.
             Attribute(2, {'foo': 'B'}),
             msg='should return existing record with attribute_id 2'
         )
