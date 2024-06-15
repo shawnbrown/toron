@@ -349,44 +349,39 @@ class LocationRepositoryBaseTest(ABC):
         with self.assertRaisesRegex(ValueError, regex):
             results = self.repository.find_by_label(dict())  # <- Empty dict.
 
-    def test_get_by_all_labels(self):
+    def test_get_by_labels_add_if_missing(self):
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'x')  # <- Create existing location.
 
         self.assertEqual(
-            self.repository.get_by_all_labels({'A': 'foo', 'B': 'x'}),
+            self.repository.get_by_labels_add_if_missing({'A': 'foo', 'B': 'x'}),
             Location(1, 'foo', 'x'),
             msg='should return existing location',
         )
 
-        self.assertIsNone(
-            self.repository.get_by_all_labels({'A': 'bar', 'B': 'y'}),
-            msg='should return None if specified labels are missing',
+        self.assertEqual(
+            self.repository.get_by_labels_add_if_missing({'A': 'bar', 'B': 'y'}),
+            Location(2, 'bar', 'y'),
+            msg='should create and return a new location since no match existed',
         )
 
         self.assertEqual(
-            self.repository.get_by_all_labels({'A': 'bar', 'B': 'y'}, add_if_missing=True),
+            self.repository.get_by_labels_add_if_missing({'A': 'bar', 'B': 'y'}),
             Location(2, 'bar', 'y'),
-            msg='should create and return a new location when `add_if_missing` is True',
-        )
-
-        self.assertEqual(
-            self.repository.get_by_all_labels({'A': 'bar', 'B': 'y'}),
-            Location(2, 'bar', 'y'),
-            msg='should now return existing (previously created) location',
+            msg='should now return existing (newly created) location',
         )
 
         regex = r'requires all label columns, got: A \(needs A, B\)'
         with self.assertRaisesRegex(ValueError, regex):
-            self.repository.get_by_all_labels({'A': 'foo'})
+            self.repository.get_by_labels_add_if_missing({'A': 'foo'})
 
         regex = r'requires all label columns, got: nothing \(needs A, B\)'
         with self.assertRaisesRegex(ValueError, regex):
-            self.repository.get_by_all_labels(dict())
+            self.repository.get_by_labels_add_if_missing(dict())
 
         regex = r'requires all label columns, got: A, B, C \(needs A, B\)'
         with self.assertRaisesRegex(ValueError, regex):
-            self.repository.get_by_all_labels({'A': 'bar', 'B': 'y', 'C': 'z'})
+            self.repository.get_by_labels_add_if_missing({'A': 'bar', 'B': 'y', 'C': 'z'})
 
 
 class WeightRepositoryBaseTest(ABC):

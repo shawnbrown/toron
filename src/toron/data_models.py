@@ -331,36 +331,29 @@ class BaseLocationRepository(ABC):
         If criteria is an empty dict, should raise ValueError.
         """
 
-    @overload
-    def get_by_all_labels(
-        self, criteria: dict, add_if_missing: Literal[True]
-    ) -> Location:
-        ...
-    @overload
-    def get_by_all_labels(
-       self, criteria: dict, add_if_missing: Literal[False]
-    ) -> Optional[Location]:
-        ...
-    def get_by_all_labels(self, criteria, add_if_missing=False):
-        """Return the location that matches given criteria. If there is
-        no matching location, a new record is added and then returned.
-        The *criteria* given must include values for all label columns.
+    def get_by_labels_add_if_missing(self, labels: dict) -> Location:
+        """Return the location that matches given *labels* dict. If
+        there is no matching location, a new location is added and then
+        returned.
+
+        The given *labels* dictionary must include items for all label
+        columns.
         """
         columns = self.get_label_columns()
 
-        if set(criteria.keys()) != set(columns):
-            given_cols = ', '.join(str(x) for x in criteria.keys())
+        if set(labels.keys()) != set(columns):
+            given_cols = ', '.join(str(x) for x in labels.keys())
             required_cols = ', '.join(str(x) for x in columns)
             raise ValueError(
                 f'requires all label columns, got: {given_cols or "nothing"} '
                 f'(needs {required_cols})'
             )
 
-        location_record = next(self.find_by_label(criteria), None)
+        location_record = next(self.find_by_label(labels), None)
 
-        if not location_record and add_if_missing:
-            self.add(*(criteria[k] for k in columns))
-            location_record = next(self.find_by_label(criteria))
+        if not location_record:
+            self.add(*(labels[k] for k in columns))
+            location_record = next(self.find_by_label(labels))
 
         return location_record
 

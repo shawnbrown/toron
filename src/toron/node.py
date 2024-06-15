@@ -1561,12 +1561,11 @@ class Node(object):
             for row in data:
                 row_dict = dict(zip(columns, row))
 
-                label_criteria = {k: row_dict[k] for k in label_columns}
-                location = location_repo.get_by_all_labels(
-                    label_criteria, add_if_missing=True
-                )
-                attribute_value = {k: row_dict[k] for k in attributes}
-                attribute = attribute_repo.get_by_value_add_if_missing(attribute_value)
+                labels_dict = {k: row_dict[k] for k in label_columns}
+                location = location_repo.get_by_labels_add_if_missing(labels_dict)
+
+                attr_dict = {k: row_dict[k] for k in attributes}
+                attribute = attribute_repo.get_by_value_add_if_missing(attr_dict)
 
                 quantity_repo.add(
                     location_id=location.id,
