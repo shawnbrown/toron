@@ -21,6 +21,7 @@ from toron.data_models import (
     BaseDataConnector,
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
+    Structure,
     Weight, BaseWeightRepository,
     Attribute, BaseAttributeRepository,
     Relation, BaseRelationRepository,
@@ -382,6 +383,35 @@ class LocationRepositoryBaseTest(ABC):
         regex = r'requires all label columns, got: A, B, C \(needs A, B\)'
         with self.assertRaisesRegex(ValueError, regex):
             self.repository.get_by_labels_add_if_missing({'A': 'bar', 'B': 'y', 'C': 'z'})
+
+    def test_find_by_structure(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')  # <- Matches bits (1, 1)
+        self.repository.add('bar', 'y')  # <- Matches bits (1, 1)
+        self.repository.add('foo', '')   # <- Matches bits (1, 0)
+        self.repository.add('bar', '')   # <- Matches bits (1, 0)
+        self.repository.add('', 'x')     # <- Matches bits (0, 1)
+        self.repository.add('', 'y')     # <- Matches bits (0, 1)
+
+        self.assertEqual(
+            list(self.repository.find_by_structure(Structure(1, None, bits=(1, 1)))),
+            [Location(1, 'foo', 'x'), Location(2, 'bar', 'y')],
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_structure(Structure(2, None, bits=(1, 0)))),
+            [Location(3, 'foo', ''), Location(4, 'bar', '')],
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_structure(Structure(3, None, bits=(0, 1)))),
+            [Location(5, '', 'x'), Location(6, '', 'y')],
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_structure(Structure(3, None, bits=(0, 0)))),
+            [],
+        )
 
 
 class WeightRepositoryBaseTest(ABC):

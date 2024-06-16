@@ -194,6 +194,16 @@ class LocationRepository(BaseLocationRepository):
         self._cursor.execute(sql, tuple(criteria.values()))
         return (Location(*record) for record in self._cursor)
 
+    def find_by_structure(self, structure: Structure) -> Iterable[Location]:
+        """Find records that match the given structure's bit pattern."""
+        columns = self.get_label_columns()
+        func = lambda a, b: f"{format_identifier(a)} {'!=' if b else '='} ''"
+        conditions = list(func(a, b) for a, b in zip(columns, structure.bits))
+        self._cursor.execute(
+            f'SELECT * FROM main.location WHERE {" AND ".join(conditions)}'
+        )
+        return (Location(*record) for record in self._cursor)
+
 
 class StructureRepository(BaseStructureRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:

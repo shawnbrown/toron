@@ -331,6 +331,10 @@ class BaseLocationRepository(ABC):
         If criteria is an empty dict, should raise ValueError.
         """
 
+    @abstractmethod
+    def find_by_structure(self, structure: 'Structure') -> Iterable[Location]:
+        """Find records that match the given structure's bit pattern."""
+
     def get_by_labels_add_if_missing(self, labels: dict) -> Location:
         """Return the location that matches given *labels* dict. If
         there is no matching location, a new location is added and then
@@ -356,9 +360,6 @@ class BaseLocationRepository(ABC):
             location_record = next(self.find_by_label(labels))
 
         return location_record
-
-    #def filter_by_structure(self, structure: Structure) -> Iterable[Location]:
-    #    """Filter to records that match the given structure."""
 
 
 @dataclass(init=False)
