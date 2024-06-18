@@ -462,6 +462,11 @@ class AttributeRepository(BaseAttributeRepository):
             return Attribute(*record)
         return None
 
+    def find_all(self) -> Iterable[Attribute]:
+        """Get all records in the repository."""
+        self._cursor.execute('SELECT * FROM main.attribute')
+        return (Attribute(*record) for record in self._cursor)
+
 
 class QuantityRepository(BaseQuantityRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:

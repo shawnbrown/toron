@@ -574,6 +574,18 @@ class AttributeRepositoryBaseTest(ABC):
             msg='should return existing record with attribute_id 2'
         )
 
+    def test_find_all(self):
+        self.repository.add({'A': 'foo'})
+        self.repository.add({'A': 'bar'})
+        self.repository.add({'A': 'baz'})
+
+        self.assertEqual(
+            list(self.repository.find_all()),
+            [Attribute(id=1, value={'A': 'foo'}),
+             Attribute(id=2, value={'A': 'bar'}),
+             Attribute(id=3, value={'A': 'baz'})]
+        )
+
 
 class RelationRepositoryBaseTest(ABC):
     @property

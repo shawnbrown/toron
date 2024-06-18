@@ -579,9 +579,9 @@ class BaseAttributeRepository(ABC):
     def get_by_value(self, value: Dict[str, str]) -> Optional[Attribute]:
         """Get the record matching the given value."""
 
-    #@abstractmethod
-    #def find_all(self) -> Iterable[Attribute]:
-    #    """Get all records in the repository."""
+    @abstractmethod
+    def find_all(self) -> Iterable[Attribute]:
+        """Get all records in the repository."""
 
     #def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
     #    """Find records matching given criteria values."""
