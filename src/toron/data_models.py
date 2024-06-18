@@ -579,6 +579,13 @@ class BaseAttributeRepository(ABC):
     def get_by_value(self, value: Dict[str, str]) -> Optional[Attribute]:
         """Get the record matching the given value."""
 
+    #@abstractmethod
+    #def find_all(self) -> Iterable[Attribute]:
+    #    """Get all records in the repository."""
+
+    #def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
+    #    """Find records matching given criteria values."""
+
     def get_by_value_add_if_missing(self, value: Dict[str, str]) -> Attribute:
         """Return the attribute that matches given value. If there is
         no matching attribute, a new record is added and then returned.
@@ -593,10 +600,6 @@ class BaseAttributeRepository(ABC):
             return attribute
 
         raise RuntimeError('expected attribute was not created')
-
-    #@abstractmethod
-    #def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
-    #    """Filter to records associated matching the given criteria."""
 
 
 @dataclass
