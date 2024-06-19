@@ -644,6 +644,11 @@ class AttributeRepositoryBaseTest(ABC):
         method_under_test = super(obj_type, obj_instance).find_by_criteria
         self._helper_find_by_criteria(method_under_test)
 
+    def test_find_by_criteria_concrete(self):
+        """Test AttributeRepository.find_by_criteria() method."""
+        method_under_test = self.repository.find_by_criteria
+        self._helper_find_by_criteria(method_under_test)
+
 
 class RelationRepositoryBaseTest(ABC):
     @property

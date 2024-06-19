@@ -2,6 +2,7 @@
 
 import sqlite3
 from dataclasses import asdict
+from itertools import chain
 from json import dumps as json_dumps
 
 from toron._typing import (
@@ -16,6 +17,7 @@ from toron._typing import (
 )
 
 from .schema import (
+    SQLITE_ENABLE_JSON1,
     format_identifier,
 )
 from ..data_models import (
@@ -466,6 +468,22 @@ class AttributeRepository(BaseAttributeRepository):
         """Get all records in the repository."""
         self._cursor.execute('SELECT * FROM main.attribute')
         return (Attribute(*record) for record in self._cursor)
+
+    if SQLITE_ENABLE_JSON1:
+        def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
+            """Find records matching given criteria values."""
+            # Format keys as SQLite JSON "PATH arguments". See SQLite's JSON
+            # docs for details <https://sqlite.org/json1.html#path_arguments>.
+            formatted_items = [(f'$.{k}', v) for k, v in criteria.items()]
+
+            expression = 'json_extract(attribute_value, ?) IS ?'
+            where_clause = ' AND '.join([expression] * len(formatted_items))
+            sql = f'SELECT * FROM main.attribute WHERE {where_clause}'
+
+            flattened_items = list(chain.from_iterable(formatted_items))
+
+            self._cursor.execute(sql, flattened_items)
+            return (Attribute(*record) for record in self._cursor)
 
 
 class QuantityRepository(BaseQuantityRepository):
