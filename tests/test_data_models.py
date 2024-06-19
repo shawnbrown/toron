@@ -586,6 +586,64 @@ class AttributeRepositoryBaseTest(ABC):
              Attribute(id=3, value={'A': 'baz'})]
         )
 
+    def _helper_find_by_criteria(self, method_under_test):
+        """Helper method to check ``find_by_criteria()``."""
+
+        self.repository.add({'A': 'foo'})
+        self.repository.add({'A': 'foo', 'B': 'qux'})
+        self.repository.add({'A': 'bar', 'B': 'qux'})
+
+        self.assertEqual(
+            list(method_under_test(A='foo')),
+            [Attribute(id=1, value={'A': 'foo'}),
+             Attribute(id=2, value={'A': 'foo', 'B': 'qux'})],
+        )
+
+        self.assertEqual(
+            list(method_under_test(B='qux')),
+            [Attribute(id=2, value={'A': 'foo', 'B': 'qux'}),
+             Attribute(id=3, value={'A': 'bar', 'B': 'qux'})],
+        )
+
+        self.assertEqual(
+            list(method_under_test(A='foo', B='qux')),
+            [Attribute(id=2, value={'A': 'foo', 'B': 'qux'})],
+        )
+
+        self.assertEqual(
+            list(method_under_test(A='foo', B=None)),
+            [Attribute(id=1, value={'A': 'foo'})],
+            msg='criteria B=None should match records without B',
+        )
+
+        self.assertEqual(
+            list(method_under_test(B='corge')),
+            [],
+            msg="no match for B='corge', iterator should be empty",
+        )
+
+        self.assertEqual(
+            list(method_under_test(A='foo', C='bar')),
+            [],
+            msg='no column C, iterator should be empty',
+        )
+
+        # Check that attributes special characters can survive round-trip.
+        ugly_attr = {'A \\ "B", \'C\'': 'baz * "123"'}  # <- Uses special characters.
+        self.repository.add(ugly_attr)
+        self.assertEqual(
+            list(method_under_test(**ugly_attr)),
+            [Attribute(id=4, value=ugly_attr)],
+            msg='special characters should survive round-trip matching',
+        )
+
+    def test_find_by_criteria_abstract(self):
+        """Test BaseAttributeRepository.find_by_criteria() method."""
+        obj_type = self.dal.AttributeRepository
+        obj_instance = self.repository
+        method_under_test = super(obj_type, obj_instance).find_by_criteria
+        self._helper_find_by_criteria(method_under_test)
+
 
 class RelationRepositoryBaseTest(ABC):
     @property

@@ -583,8 +583,12 @@ class BaseAttributeRepository(ABC):
     def find_all(self) -> Iterable[Attribute]:
         """Get all records in the repository."""
 
-    #def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
-    #    """Find records matching given criteria values."""
+    def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
+        """Find records matching given criteria values."""
+        for attribute in self.find_all():
+            attr_val = attribute.value
+            if all(attr_val.get(k) == v for k, v in criteria.items()):
+                yield attribute
 
     def get_by_value_add_if_missing(self, value: Dict[str, str]) -> Attribute:
         """Return the attribute that matches given value. If there is
