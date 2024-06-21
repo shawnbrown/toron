@@ -472,6 +472,13 @@ class AttributeRepository(BaseAttributeRepository):
     if SQLITE_ENABLE_JSON1:
         def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
             """Find records matching given criteria values."""
+            # If one or more keys is not a simple alpha-numeric string,
+            # then call the unoptimized parent class' method instead.
+            # This is done because SQLite's JSON "PATH arguments" are
+            # not well defined for keys with special characters.
+            if any(key and not key.isalnum() for key in criteria.keys()):
+                return super().find_by_criteria(**criteria)
+
             # Format keys as SQLite JSON "PATH arguments". See SQLite's JSON
             # docs for details <https://sqlite.org/json1.html#path_arguments>.
             formatted_items = [(f'$.{k}', v) for k, v in criteria.items()]
