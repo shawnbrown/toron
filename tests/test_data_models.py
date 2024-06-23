@@ -24,6 +24,7 @@ from toron.data_models import (
     Structure,
     Weight, BaseWeightRepository,
     Attribute, BaseAttributeRepository,
+    Quantity, BaseQuantityRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
 )
@@ -650,6 +651,86 @@ class AttributeRepositoryBaseTest(ABC):
         self._helper_find_by_criteria(method_under_test)
 
 
+class QuantityRepositoryBaseTest(ABC):
+    @property
+    @abstractmethod
+    def dal(self):
+        ...
+
+    def setUp(self):
+        connector = self.dal.DataConnector()
+        self.connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(self.connection))
+
+        cursor = connector.acquire_cursor(self.connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        # Set-up test values for quantity table to use.
+        manager = self.dal.ColumnManager(cursor)
+        manager.add_columns('A', 'B')
+
+        location_repo = self.dal.LocationRepository(cursor)
+        location_repo.add('foo', 'qux')   # Add location_id 1
+        location_repo.add('bar', 'quux')  # Add location_id 2
+
+        attribute_repo = self.dal.AttributeRepository(cursor)
+        attribute_repo.add({'aaa': 'one'})  # Add attribute_id 1
+        attribute_repo.add({'bbb': 'two'})  # Add attribute_id 2
+
+        # Create QuantityRepository for testing.
+        self.repository = self.dal.QuantityRepository(cursor)
+
+    def test_inheritance(self):
+        """Must inherit from appropriate abstract base class."""
+        self.assertTrue(isinstance(self.repository, BaseQuantityRepository))
+
+    def test_find_by_ids(self):
+        self.repository.add(location_id=1, attribute_id=1, value=15.0)  # Add quantity_id 1
+        self.repository.add(location_id=2, attribute_id=1, value=20.0)  # Add quantity_id 2
+        self.repository.add(location_id=1, attribute_id=2, value=25.0)  # Add quantity_id 3
+        self.repository.add(location_id=2, attribute_id=2, value=10.0)  # Add quantity_id 4
+        self.repository.add(location_id=2, attribute_id=2, value=35.0)  # Add quantity_id 5
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(location_id=1)),
+            [Quantity(id=1, location_id=1, attribute_id=1, value=15),
+             Quantity(id=3, location_id=1, attribute_id=2, value=25)],
+            msg='matches location_id 1',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(attribute_id=1)),
+            [Quantity(id=1, location_id=1, attribute_id=1, value=15),
+             Quantity(id=2, location_id=2, attribute_id=1, value=20)],
+            msg='matches attribute_id 1',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(location_id=1, attribute_id=2)),
+            [Quantity(id=3, location_id=1, attribute_id=2, value=25)],
+            msg='matches location_id 1 and attribute_id 2',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(location_id=2, attribute_id=2)),
+            [Quantity(id=4, location_id=2, attribute_id=2, value=10),
+             Quantity(id=5, location_id=2, attribute_id=2, value=35)],
+            msg='matches location_id 2 and attribute_id 2 (two matching records)',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(location_id=4, attribute_id=2)),
+            [],
+            msg='matches location_id 4 and attribute_id 2 (zero matching records)',
+        )
+
+        self.assertEqual(
+            list(self.repository.find_by_ids()),
+            [],
+            msg='when no ids given, return empty iterator',
+        )
+
+
 class RelationRepositoryBaseTest(ABC):
     @property
     @abstractmethod
@@ -973,6 +1054,9 @@ class WeightRepositoryDAL1(WeightRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class AttributeRepositoryDAL1(AttributeRepositoryBaseTest, unittest.TestCase):
+    dal = dal1
+
+class QuantityRepositoryDAL1(QuantityRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class RelationRepositoryDAL1(RelationRepositoryBaseTest, unittest.TestCase):

@@ -534,8 +534,29 @@ class QuantityRepository(BaseQuantityRepository):
             'DELETE FROM main.quantity WHERE quantity_id=?', (id,)
         )
 
-    #def find_by_attribute_id(self, attribute_id: int) -> Iterable[Quantity]:
-    #    """Filter to records associated with the given attribute."""
+    def find_by_ids(
+        self,
+        *,
+        location_id: Optional[int] = None,
+        attribute_id:  Optional[int] = None,
+    ) -> Iterator[Quantity]:
+        """Find records with matching location and attribute ids."""
+        criteria = []
+        if location_id is not None:
+            criteria.append('_location_id=:location_id')
+        if attribute_id is not None:
+            criteria.append('attribute_id=:attribute_id')
+
+        if criteria:
+            sql = f'SELECT * FROM main.quantity WHERE {" AND ".join(criteria)}'
+            parameters = {
+                'location_id': location_id,
+                'attribute_id': attribute_id,
+            }
+            self._cursor.execute(sql, parameters)
+
+            for record in self._cursor:
+                yield Quantity(*record)
 
 
 class CrosswalkRepository(BaseCrosswalkRepository):
