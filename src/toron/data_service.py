@@ -17,6 +17,7 @@ from .data_models import (
     BaseColumnManager,
     BaseIndexRepository,
     BaseWeightRepository,
+    BaseQuantityRepository,
     BaseRelationRepository,
     BaseCrosswalkRepository,
     BasePropertyRepository,
@@ -87,6 +88,22 @@ def delete_index_record(
 
     # Remove existing Index record.
     index_repo.delete(index_id)
+
+
+def get_quantity_value_sum(
+    location_id: int,
+    attribute_id: int,
+    quantity_repo: BaseQuantityRepository,
+) -> Optional[float]:
+    """Return sum of quantities matching location_id and attribute_id."""
+    quantities = quantity_repo.find_by_ids(
+        location_id=location_id,
+        attribute_id=attribute_id,
+    )
+    quantity = next(quantities, None)
+    if quantity is None:
+        return None
+    return quantity.value + sum(x.value for x in quantities)
 
 
 def find_crosswalks_by_node_reference(
