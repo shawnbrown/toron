@@ -684,6 +684,18 @@ class QuantityRepositoryBaseTest(ABC):
         """Must inherit from appropriate abstract base class."""
         self.assertTrue(isinstance(self.repository, BaseQuantityRepository))
 
+    def test_get_value_type(self):
+        """The type of ``Quantity.value`` objects should be ``float``
+        regardless of input or storage type.
+        """
+        self.repository.add(location_id=1, attribute_id=1, value=10.5)  # Add quantity_id 1
+        self.repository.add(location_id=2, attribute_id=1, value=20.0)  # Add quantity_id 2
+        self.repository.add(location_id=1, attribute_id=2, value=20)    # Add quantity_id 3
+
+        self.assertIsInstance(self.repository.get(1).value, float)
+        self.assertIsInstance(self.repository.get(2).value, float)
+        self.assertIsInstance(self.repository.get(3).value, float)
+
     def test_find_by_ids(self):
         self.repository.add(location_id=1, attribute_id=1, value=15.0)  # Add quantity_id 1
         self.repository.add(location_id=2, attribute_id=1, value=20.0)  # Add quantity_id 2
@@ -691,30 +703,32 @@ class QuantityRepositoryBaseTest(ABC):
         self.repository.add(location_id=2, attribute_id=2, value=10.0)  # Add quantity_id 4
         self.repository.add(location_id=2, attribute_id=2, value=35.0)  # Add quantity_id 5
 
+        result = list(self.repository.find_by_ids(location_id=1, attribute_id=2))
+        self.assertEqual(
+            result,
+            [Quantity(id=3, location_id=1, attribute_id=2, value=25.0)],
+            msg='matches location_id 1 and attribute_id 2',
+        )
+        self.assertIsInstance(result[0].value, float)
+
         self.assertEqual(
             list(self.repository.find_by_ids(location_id=1)),
-            [Quantity(id=1, location_id=1, attribute_id=1, value=15),
-             Quantity(id=3, location_id=1, attribute_id=2, value=25)],
+            [Quantity(id=1, location_id=1, attribute_id=1, value=15.0),
+             Quantity(id=3, location_id=1, attribute_id=2, value=25.0)],
             msg='matches location_id 1',
         )
 
         self.assertEqual(
             list(self.repository.find_by_ids(attribute_id=1)),
-            [Quantity(id=1, location_id=1, attribute_id=1, value=15),
-             Quantity(id=2, location_id=2, attribute_id=1, value=20)],
+            [Quantity(id=1, location_id=1, attribute_id=1, value=15.0),
+             Quantity(id=2, location_id=2, attribute_id=1, value=20.0)],
             msg='matches attribute_id 1',
         )
 
         self.assertEqual(
-            list(self.repository.find_by_ids(location_id=1, attribute_id=2)),
-            [Quantity(id=3, location_id=1, attribute_id=2, value=25)],
-            msg='matches location_id 1 and attribute_id 2',
-        )
-
-        self.assertEqual(
             list(self.repository.find_by_ids(location_id=2, attribute_id=2)),
-            [Quantity(id=4, location_id=2, attribute_id=2, value=10),
-             Quantity(id=5, location_id=2, attribute_id=2, value=35)],
+            [Quantity(id=4, location_id=2, attribute_id=2, value=10.0),
+             Quantity(id=5, location_id=2, attribute_id=2, value=35.0)],
             msg='matches location_id 2 and attribute_id 2 (two matching records)',
         )
 

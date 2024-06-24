@@ -511,9 +511,10 @@ class QuantityRepository(BaseQuantityRepository):
         self._cursor.execute(
             'SELECT * FROM main.quantity WHERE quantity_id=?', (id,)
         )
-        record = self._cursor.fetchone()
-        if record:
-            return Quantity(*record)
+        quantity = self._cursor.fetchone()
+        if quantity:
+            quantity_id, loc_id, attr_id, val = quantity
+            return Quantity(quantity_id, loc_id, attr_id, float(val))
         return None
 
     def update(self, record: Quantity) -> None:
@@ -555,8 +556,9 @@ class QuantityRepository(BaseQuantityRepository):
             }
             self._cursor.execute(sql, parameters)
 
-            for record in self._cursor:
-                yield Quantity(*record)
+            for quantity in self._cursor:
+                quantity_id, loc_id, attr_id, val = quantity
+                yield Quantity(quantity_id, loc_id, attr_id, float(val))
 
 
 class CrosswalkRepository(BaseCrosswalkRepository):
