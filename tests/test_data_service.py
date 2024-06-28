@@ -3,12 +3,14 @@
 import unittest
 
 from toron.data_models import (
+    Index,
     Structure,
     Crosswalk,
 )
 from toron import data_access
 from toron.data_service import (
     get_quantity_value_sum,
+    disaggregate_value,
     find_crosswalks_by_node_reference,
     rename_discrete_categories,
     rebuild_structure_table,
@@ -60,6 +62,99 @@ class TestGetQuantityValueSum(unittest.TestCase):
     def test_missing_item(self):
         """Should return None when there are no matching quantities."""
         self.assertIsNone(get_quantity_value_sum(3, 1, self.quantity_repo))
+
+
+class TestDisaggregateValue(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
+
+        # The index and weight repositories must use different cursors.
+        aux1_cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(aux1_cursor))
+        aux2_cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(aux2_cursor))
+
+        index_repo = dal.IndexRepository(aux1_cursor)
+        weight_repo = dal.WeightRepository(aux2_cursor)
+
+        # Set-up test values.
+        try:
+            cursor = connector.acquire_cursor(connection)
+            manager = dal.ColumnManager(cursor)
+            weight_group_repo = dal.WeightGroupRepository(cursor)
+
+            manager.add_columns('A', 'B')
+            index_repo.add('OH', 'BUTLER')    # index_id 1
+            index_repo.add('OH', 'FRANKLIN')  # index_id 2
+            index_repo.add('IN', 'KNOX')      # index_id 3
+            index_repo.add('IN', 'LAPORTE')   # index_id 4
+            weight_group_repo.add('totpop', is_complete=True)  # weight_group_id 1
+            weight_repo.add(weight_group_id=1, index_id=1, value=374150)
+            weight_repo.add(weight_group_id=1, index_id=2, value=1336250)
+            weight_repo.add(weight_group_id=1, index_id=3, value=36864)
+            weight_repo.add(weight_group_id=1, index_id=4, value=110592)
+        finally:
+            connector.release_cursor(cursor)
+
+        self.index_repo = index_repo
+        self.weight_repo = weight_repo
+
+    def test_single_result(self):
+        """Result should keep whole quantity with only matching index."""
+        results = disaggregate_value(
+            quantity_value=10000,
+            index_criteria={'A': 'OH', 'B': 'FRANKLIN'},
+            weight_group_id=1,
+            index_repo=self.index_repo,
+            weight_repo=self.weight_repo,
+        )
+        expected = [
+            (Index(id=2, labels=('OH', 'FRANKLIN')), 10000.0),
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_multiple_results(self):
+        """Result should divide quantity across multiple matching indexes."""
+        results = disaggregate_value(
+            quantity_value=10000,
+            index_criteria={'A': 'IN'},
+            weight_group_id=1,
+            index_repo=self.index_repo,
+            weight_repo=self.weight_repo,
+        )
+        expected = [
+            (Index(id=3, labels=('IN', 'KNOX')), 2500.0),
+            (Index(id=4, labels=('IN', 'LAPORTE')), 7500.0),
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_no_matching_weight(self):
+        regex = 'no weight value matching weight_group_id 9 and index_id 3'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            results = disaggregate_value(
+                quantity_value=10000,
+                index_criteria={'A': 'IN', 'B': 'KNOX'},
+                weight_group_id=9,  # <- No weight_group_id 9 exists!
+                index_repo=self.index_repo,
+                weight_repo=self.weight_repo,
+            )
+            list(results)  # Consume iterator.
+
+    def test_no_matching_index(self):
+        regex = "no index matching {'A': 'ZZ'}"
+        with self.assertRaisesRegex(RuntimeError, regex):
+            results = disaggregate_value(
+                quantity_value=10000,
+                index_criteria={'A': 'ZZ'},  # <- No index matching ZZ!
+                weight_group_id=1,
+                index_repo=self.index_repo,
+                weight_repo=self.weight_repo,
+            )
+            list(results)  # Consume iterator.
 
 
 class TestFindCrosswalksByNodeReference(unittest.TestCase):

@@ -5,9 +5,11 @@ from math import log2
 
 from toron._typing import (
     Dict,
+    Iterator,
     List,
     Optional,
     Set,
+    Tuple,
 )
 
 from .categories import (
@@ -22,6 +24,7 @@ from .data_models import (
     BaseCrosswalkRepository,
     BasePropertyRepository,
     BaseStructureRepository,
+    Index,
     Crosswalk,
     JsonTypes,
 )
@@ -104,6 +107,85 @@ def get_quantity_value_sum(
     if quantity is None:
         return None
     return quantity.value + sum(x.value for x in quantities)
+
+
+def disaggregate_value(
+    quantity_value: float,
+    index_criteria: Dict[str, str],
+    weight_group_id: int,
+    index_repo: BaseIndexRepository,
+    weight_repo: BaseWeightRepository,
+) -> Iterator[Tuple[Index, float]]:
+    """Return Index records and disaggregated results for given value.
+
+    .. important::
+
+        This is an internal (non-user-facing) function. It should only
+        be used when certain conditions are met:
+
+        * The *quantity_value* should represent an extensive property
+          (not an intensive property). If an intensive property is
+          given--like a percentage or temperature--the results will
+          be nonsensical.
+        * The *index_criteria* should use keys that correspond with an
+          existing structure record. If this condition is not satisfied,
+          the level of granularity may be invalid and the disaggregation
+          process could return misallocated results.
+        * The *index_criteria* should match one or more index records.
+          If there are no matching records, a RuntimeError is raised.
+        * The weight group should exist and it should be complete--a
+          weight should exist for every index record. If there is no
+          matching weight, a RuntimeError is raised.
+        * The given ``index_repo`` and ``weight_repo`` objects must
+          use different cursor instances. If the same instance is used
+          for both objects, the output could be incomplete. Many cursor
+          implementations (like DBAPI2 cursors) return stateful
+          iterators which will truncate the output of earlier results
+          when given new queries to execute.
+
+        These conditions should be assured by the parent operation
+        before calling this function.
+    """
+    # NOTE: The following implementation calls find_by_label() twice.
+    # This is done so that the entire collection of returned items is
+    # not loaded into memory. It's possible that a very large number of
+    # Index records match the *index_criteria*.
+
+    # TODO: Once this code is in production, investigate ways to
+    # optimize this function--there could be significant performance
+    # improvements to be gained.
+
+    # Get sum of index values and count of index records for location.
+    group_weight = 0.0
+    group_count = 0
+    for index in index_repo.find_by_label(index_criteria):
+        weight = weight_repo.get_by_weight_group_id_and_index_id(
+            weight_group_id, index.id
+        )
+        if not weight:
+            raise RuntimeError(
+                f'no weight value matching weight_group_id {weight_group_id} '
+                f'and index_id {index.id}'
+            )
+        group_weight += weight.value
+        group_count += 1
+
+    if group_count == 0:
+        raise RuntimeError(f'no index matching {index_criteria!r}')
+
+    # Yield disaggregated values for associated index records.
+    for index in index_repo.find_by_label(index_criteria):
+        weight = weight_repo.get_by_weight_group_id_and_index_id(
+            weight_group_id, index.id
+        )
+        try:
+            # Using "type: ignore ..." because any missing `weight` values
+            # would have already raised an error when summing `group_weight`.
+            proportion = weight.value / group_weight  # type: ignore [union-attr]
+        except ZeroDivisionError:
+            proportion = 1 / group_count
+
+        yield (index, quantity_value * proportion)
 
 
 def find_crosswalks_by_node_reference(
