@@ -97,6 +97,11 @@ class TestDisaggregateValue(unittest.TestCase):
             weight_repo.add(weight_group_id=1, index_id=2, value=1336250)
             weight_repo.add(weight_group_id=1, index_id=3, value=36864)
             weight_repo.add(weight_group_id=1, index_id=4, value=110592)
+            weight_group_repo.add('empty', is_complete=True)  # weight_group_id 2
+            weight_repo.add(weight_group_id=2, index_id=1, value=0)
+            weight_repo.add(weight_group_id=2, index_id=2, value=0)
+            weight_repo.add(weight_group_id=2, index_id=3, value=0)
+            weight_repo.add(weight_group_id=2, index_id=4, value=0)
         finally:
             connector.release_cursor(cursor)
 
@@ -129,6 +134,37 @@ class TestDisaggregateValue(unittest.TestCase):
         expected = [
             (Index(id=3, labels=('IN', 'KNOX')), 2500.0),
             (Index(id=4, labels=('IN', 'LAPORTE')), 7500.0),
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_zero_weight_single_result(self):
+        """When weight sum is 0, should still keep whole quantity when
+        only matching index.
+        """
+        results = disaggregate_value(
+            quantity_value=10000,
+            index_criteria={'A': 'OH', 'B': 'FRANKLIN'},
+            weight_group_id=2,  # <- Weight group 2 has weights of 0.
+            index_repo=self.index_repo,
+            weight_repo=self.weight_repo,
+        )
+        expected = [
+            (Index(id=2, labels=('OH', 'FRANKLIN')), 10000.0),
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_zero_weight_multiple_results(self):
+        """When weight sum is 0, should be divided evenly among indexes."""
+        results = disaggregate_value(
+            quantity_value=10000,
+            index_criteria={'A': 'IN'},
+            weight_group_id=2,  # <- Weight group 2 has weights of 0.
+            index_repo=self.index_repo,
+            weight_repo=self.weight_repo,
+        )
+        expected = [
+            (Index(id=3, labels=('IN', 'KNOX')), 5000.0),  # <- Divided evenly among indexes.
+            (Index(id=4, labels=('IN', 'LAPORTE')), 5000.0),  # <- Divided evenly among indexes.
         ]
         self.assertEqual(list(results), expected)
 
