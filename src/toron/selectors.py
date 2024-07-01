@@ -654,34 +654,11 @@ class GetMatchingKey(object):
             msg = f'String must be valid JSON, got {row_dict!r}: {err}'
             raise TypeError(msg) from None
 
-        matched: Dict[Any, Tuple[int, int]] = {}
-        for dict_key, selector_set in self._selector_items:
-            for selector in selector_set:
-                if selector(row_dict):  # type: ignore[arg-type]
-                    specificity = max(
-                        matched.get(dict_key, (0, 0)),
-                        selector.specificity,
-                    )
-                    matched[dict_key] = specificity
-
-        # Swap positions so tuples contain `(specificity, dict_key)`.
-        matched_items = ((b, a) for a, b in matched.items())
-
-        # Sort from greatest to least specificity.
-        get_specificity = lambda x: x[0]
-        sorted_items = sorted(matched_items, key=get_specificity, reverse=True)
-
-        # Return `dict_key` with the greatest unique specificity.
-        for _, group in groupby(sorted_items, key=get_specificity):
-            _, dict_key = next(group)  # Get the first item from group.
-
-            try:                   # If group contains a second item, then
-                next(group)        # the match at this specificity is not
-                continue           # unique--so skip to the next item.
-            except StopIteration:
-                return dict_key    # If it is unique, then return the key.
-
-        return self._default
+        return get_greatest_unique_specificity(
+            row_dict=row_dict,
+            selector_dict=dict(self._selector_items),
+            default=self._default
+        )
 
     def __hash__(self) -> int:
         return hash((self.__class__, self._selector_items, self._default))
