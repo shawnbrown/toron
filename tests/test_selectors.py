@@ -15,6 +15,7 @@ from toron.selectors import (
     parse_selector,
     convert_text_selectors,
     SelectorSyntaxError,
+    get_greatest_unique_specificity,
     GetMatchingKey,
 )
 
@@ -845,6 +846,147 @@ class TestParserSelectorIntegration(unittest.TestCase):
             my_dict,
             {selector1: 'y'},
             msg='selector2 should be indistinguishable',
+        )
+
+
+class TestGetGreatestUniqueSpecificity(unittest.TestCase):
+    def test_simple_match(self):
+        selector_dict = {
+            1: [SimpleSelector('A', '=', 'xxx')],
+            2: [SimpleSelector('B', '=', 'yyy')],
+        }
+        self.assertEqual(
+            get_greatest_unique_specificity({'A': 'xxx'}, selector_dict, 1),
+            1,
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'B': 'yyy'}, selector_dict, 1),
+            2,
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'C': 'zzz'}, selector_dict, 1),
+            1,
+            msg='should get default',
+        )
+
+        with self.assertRaises(TypeError, msg='expects a dictionary of strings'):
+            get_greatest_unique_specificity('bad-input-value', selector_dict, 1)
+
+    def test_multiple_selectors(self):
+        selector_dict = {
+            1: [SimpleSelector('A', '=', 'xxx')],
+            2: [SimpleSelector('B', '=', 'yyy'), SimpleSelector('C')],
+        }
+        self.assertEqual(
+            get_greatest_unique_specificity({'C': 'zzz'}, selector_dict, 1),
+            2,
+            msg='should match second selector associated with 2',
+        )
+
+    def test_max_specificity(self):
+        selector_dict = {
+            1: [SimpleSelector('A')],
+            2: [SimpleSelector('A', '=', 'xxx')],
+            3: [SimpleSelector('B')],
+            4: [SimpleSelector('B', '=', 'yyy')],
+        }
+        self.assertEqual(
+            get_greatest_unique_specificity({'A': 'qqq'}, selector_dict, 1),
+            1,
+            msg='specificity: (0, 1)',
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'A': 'xxx'}, selector_dict, 1),
+            2,
+            msg='specificity: (1, 1)',
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'B': 'qqq'}, selector_dict, 1),
+            3,
+            msg='specificity: (0, 1)',
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'B': 'yyy'}, selector_dict, 1),
+            4,
+            msg='specificity: (1, 1)',
+        )
+
+    def test_greatest_unique_specificity(self):
+        selector_dict = {
+            1: [SimpleSelector('A')],
+            2: [SimpleSelector('A', '=', 'xxx')],
+            3: [CompoundSelector([SimpleSelector('B', '=', 'yyy'), SimpleSelector('C')])],
+            4: [CompoundSelector([SimpleSelector('B'), SimpleSelector('C', '=', 'zzz')])],
+        }
+
+        # Check basic matches and default.
+        self.assertEqual(
+            get_greatest_unique_specificity({'A': 'qqq'}, selector_dict, 1),
+            1,
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'A': 'xxx'}, selector_dict, 1),
+            2,
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'A': 'xxx', 'B': 'yyy', 'C': 'qqq'}, selector_dict, 1),
+            3,
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'A': 'xxx', 'B': 'qqq', 'C': 'zzz'}, selector_dict, 1),
+            4,
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'D': 'qqq'}, selector_dict, 1),
+            1,
+            msg='no matching selector, should return default value',
+        )
+
+        # Check greatest-unique specificity.
+        row_dict = {'A': 'xxx', 'B': 'yyy', 'C': 'zzz'}
+        self.assertEqual(
+            get_greatest_unique_specificity({'A': 'xxx', 'B': 'yyy', 'C': 'zzz'}, selector_dict, 1),
+            2,
+            msg=(
+                'The `row_dict` matches both 3 and 4 with a specificity '
+                'of `(2, 1)` so they are not unique. But 2 matches with '
+                'a specificity of `(1, 1)` and it *is* unique, therefore '
+                'get_matching_key() should return 2.'
+            ),
+        )
+
+        # Check fall-back to default.
+        self.assertEqual(
+            get_greatest_unique_specificity(
+                row_dict={'D': 'qqq', 'B': 'yyy', 'C': 'zzz'},
+                selector_dict=selector_dict,
+                default=1,
+            ),
+            1,
+            msg=(
+                'The `row_dict` matches both 3 and 4 with a specificity '
+                'of `(2, 1)` so they are not unique. And since there is '
+                'no other matching selector, get_matching_key() should '
+                'return 1 (the default key).'
+            ),
+        )
+
+    def test_missing_selector(self):
+        """Selectors are not required and may be omitted."""
+        selector_dict = {
+            1: None,
+            2: [SimpleSelector('B', '=', 'yyy')],
+            3: [],
+        }
+
+        self.assertEqual(
+            get_greatest_unique_specificity({'B': 'yyy'}, selector_dict, 1),
+            2,
+        )
+        self.assertEqual(
+            get_greatest_unique_specificity({'C': 'zzz'}, selector_dict, 1),
+            1,
+            msg='default value behavior should not be affected by its selector',
         )
 
 

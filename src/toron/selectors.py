@@ -7,6 +7,7 @@ from ._typing import (
     Any,
     AnyStr,
     Dict,
+    Hashable,
     Iterable,
     List,
     Literal,
@@ -535,6 +536,66 @@ def convert_text_selectors(selector_json: AnyStr) -> List[CompoundSelector]:
             err = err.__context__
         selector_error = SelectorSyntaxError(err)
         raise selector_error from None
+
+
+def get_greatest_unique_specificity(
+    row_dict: Dict[str, str],
+    selector_dict: Dict[Hashable, Iterable[SelectorBase]],
+    default: Hashable,
+) -> Hashable:
+    """Return the *selector_dict* key associated with the selector that
+    matches *row_dict* with the greatest unique specificity. If no
+    selector matches or if no matching specificity is unique then
+    *default* is returned.
+
+    Example::
+
+        >>> selector_dict = {
+        ...     1: [SimpleSelector('A', '=', 'xxx')],
+        ...     2: [SimpleSelector('B', '=', 'yyy')],
+        ... }
+        >>> get_matching_key({'A': 'xxx'}, selector_dict, default=1)
+        1
+        >>> get_matching_key({'B': 'yyy'}, selector_dict, default=1)
+        2
+
+    If there is no match at all or if there is no match with a unique
+    level of specificity, then the default value is returned::
+
+        >>> get_matching_key({'C': 'zzz'}, selector_dict, default=1)
+        1
+    """
+    matched: Dict[Hashable, Tuple[int, int]] = {}
+    for key, selectors in selector_dict.items():
+        if not selectors:
+            continue
+
+        for selector in selectors:
+            if selector(row_dict):  # type: ignore[arg-type]
+                specificity = max(
+                    matched.get(key, (0, 0)),
+                    selector.specificity,
+                )
+                matched[key] = specificity
+
+    # Swap positions so tuples contain `(specificity, key)`.
+    matched_items = ((b, a) for a, b in matched.items())
+
+    # Sort from greatest to least specificity.
+    get_specificity = lambda x: x[0]
+    sorted_items = sorted(matched_items, key=get_specificity, reverse=True)
+
+    # Return `key` with the greatest unique specificity.
+    for _, group in groupby(sorted_items, key=get_specificity):
+        _, key = next(group)  # Get the first item from group.
+
+        try:                   # If group contains a second item, then
+            next(group)        # the match at this specificity is not
+            continue           # unique--so skip to the next item.
+        except StopIteration:
+            return key    # If it is unique, then return the key.
+
+    return default
 
 
 class GetMatchingKey(object):
