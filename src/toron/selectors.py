@@ -554,15 +554,21 @@ def get_greatest_unique_specificity(
         ...     1: [SimpleSelector('A', '=', 'xxx')],
         ...     2: [SimpleSelector('B', '=', 'yyy')],
         ... }
-        >>> get_matching_key({'A': 'xxx'}, selector_dict, default=1)
+        >>> get_greatest_unique_specificity(
+        ...     {'A': 'xxx'}, selector_dict, default=1
+        ... )
         1
-        >>> get_matching_key({'B': 'yyy'}, selector_dict, default=1)
+        >>> get_greatest_unique_specificity(
+        ...     {'B': 'yyy'}, selector_dict, default=1
+        ... )
         2
 
     If there is no match at all or if there is no match with a unique
     level of specificity, then the default value is returned::
 
-        >>> get_matching_key({'C': 'zzz'}, selector_dict, default=1)
+        >>> get_greatest_unique_specificity(
+        ...     {'C': 'zzz'}, selector_dict, default=1
+        ... )
         1
     """
     matched: Dict[Hashable, Tuple[int, int]] = {}
