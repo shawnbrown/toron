@@ -503,9 +503,18 @@ class SelectorTransformer(Transformer):
         return True
 
 
-parse_selector = Lark(selector_grammar,
-                      parser='lalr',
-                      transformer=SelectorTransformer()).parse
+_parse_selector = Lark(
+    selector_grammar,
+    parser='lalr',
+    transformer=SelectorTransformer(),
+).parse
+
+
+def parse_selector(text: str) -> SelectorBase:
+    obj = _parse_selector(text)
+    if not isinstance(obj, SelectorBase):
+        raise TypeError(obj.__class__.__name__)
+    return obj
 
 
 class SelectorSyntaxError(SyntaxError):
