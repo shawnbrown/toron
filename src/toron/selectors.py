@@ -512,9 +512,11 @@ _parse_selector = Lark(
 
 
 def parse_selector(text: str) -> SelectorBase:
+    """Parse selector text and return a selector object."""
     obj = _parse_selector(text)
     if not isinstance(obj, SelectorBase):
-        raise TypeError(obj.__class__.__name__)
+        qualname = obj.__class__.__qualname__
+        raise TypeError(f'expected SelectorBase, got: {qualname!r}')
     return obj
 
 
