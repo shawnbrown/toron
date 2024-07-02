@@ -14,6 +14,7 @@ from ._typing import (
     Mapping,
     Optional,
     Tuple,
+    TypeVar,
     Union,
 )
 
@@ -547,11 +548,14 @@ def convert_text_selectors(selector_json: AnyStr) -> List[CompoundSelector]:
         raise selector_error from None
 
 
+_KeyT = TypeVar('_KeyT')
+
+
 def get_greatest_unique_specificity(
     row_dict: Dict[str, str],
-    selector_dict: Dict[Hashable, Iterable[SelectorBase]],
-    default: Hashable,
-) -> Hashable:
+    selector_dict: Mapping[_KeyT, Optional[Iterable[SelectorBase]]],
+    default: _KeyT,
+) -> _KeyT:
     """Return the *selector_dict* key associated with the selector that
     matches *row_dict* with the greatest unique specificity. If no
     selector matches or if no matching specificity is unique then
@@ -580,13 +584,13 @@ def get_greatest_unique_specificity(
         ... )
         1
     """
-    matched: Dict[Hashable, Tuple[int, int]] = {}
+    matched: Dict[_KeyT, Tuple[int, int]] = {}
     for key, selectors in selector_dict.items():
         if not selectors:
             continue
 
         for selector in selectors:
-            if selector(row_dict):  # type: ignore[arg-type]
+            if selector(row_dict):
                 specificity = max(
                     matched.get(key, (0, 0)),
                     selector.specificity,
