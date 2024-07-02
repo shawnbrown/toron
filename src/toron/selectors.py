@@ -647,34 +647,36 @@ class GetMatchingKey(object):
     """
     def __init__(
         self,
-        selectors: Union[Mapping[Any, Optional[List[SelectorBase]]],
-                         Iterable[Tuple[Any, Optional[List[SelectorBase]]]]],
-        default: Any,
+        selectors: Union[Dict[Hashable, Optional[List[SelectorBase]]],
+                         Iterable[Tuple[Hashable, Optional[List[SelectorBase]]]]],
+        default: Hashable,
     ):
-        if isinstance(selectors, Mapping):
+        if isinstance(selectors, dict):
             selectors = selectors.items()  # Normalize as key-value item pairs.
-
-        self._selector_items = frozenset((k, frozenset(v)) for k, v in selectors if v)
+        self._selector_dict = {k: frozenset(v) for k, v in selectors if v}
         self._default = default
 
-    def __call__(self, row_dict: Union[AnyStr, Mapping[str, str]]) -> Any:
-        try:
-            # Try to load it as JSON string.
-            row_dict = loads(row_dict)  # type: ignore[arg-type]
-        except TypeError:
-            pass  # If not a string, use it as-is.
-        except JSONDecodeError as err:
-            msg = f'String must be valid JSON, got {row_dict!r}: {err}'
-            raise TypeError(msg) from None
+    def __call__(self, row_obj: Union[AnyStr, Dict[str, str]]) -> Any:
+        if isinstance(row_obj, dict):
+            row_dict = dict(row_obj)
+        else:
+            try:
+                row_dict = loads(row_obj)
+                if not isinstance(row_dict, dict):
+                    raise TypeError
+            except JSONDecodeError as err:
+                msg = f'String must be valid JSON, got {row_obj!r}: {err}'
+                raise TypeError(msg) from None
 
         return get_greatest_unique_specificity(
             row_dict=row_dict,
-            selector_dict=dict(self._selector_items),
-            default=self._default
+            selector_dict=self._selector_dict,
+            default=self._default,
         )
 
     def __hash__(self) -> int:
-        return hash((self.__class__, self._selector_items, self._default))
+        selector_items = frozenset(self._selector_dict.items())
+        return hash((self.__class__, selector_items, self._default))
 
     def __eq__(self, other: Any) -> bool:
         try:

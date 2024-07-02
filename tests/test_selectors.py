@@ -1139,10 +1139,10 @@ class TestGetMatchingKey(unittest.TestCase):
         }
         get_matching_key = GetMatchingKey(key_selector_dict, default=1)
 
-        expected = frozenset({
-            (2, frozenset({SimpleSelector('B', '=', 'yyy')}))  # <- Only includes item 2.
-        })
-        self.assertEqual(get_matching_key._selector_items, expected)
+        expected = {
+            2: frozenset({SimpleSelector('B', '=', 'yyy')}),  # <- Only includes item 2.
+        }
+        self.assertEqual(get_matching_key._selector_dict, expected)
 
         msg = 'default should still be 1 despite not have a selector'
         self.assertEqual(get_matching_key._default, 1, msg=msg)
