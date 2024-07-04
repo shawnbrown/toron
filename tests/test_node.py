@@ -1245,6 +1245,12 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
             cursor.execute('SELECT * FROM weight')
             return cursor.fetchall()
 
+    @staticmethod
+    def get_default_weight_group_id_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.PropertyRepository(cursor)
+            return repository.get('default_weight_group_id')
+
     def test_weight_groups_property(self):
         """The `node.weight_groups` property should be list of groups
         ordered by name.
@@ -1322,6 +1328,11 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
             ),
         ]
         self.assertEqual(self.get_weight_group_helper(node), expected)
+        self.assertEqual(
+            self.get_default_weight_group_id_helper(node),
+            1,
+            msg='if not specified otherwise, first edge should be set as default',
+        )
 
     def test_edit_weight_group(self):
         node = Node()

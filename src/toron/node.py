@@ -34,6 +34,7 @@ from .data_service import (
     refresh_index_hash_property,
     delete_index_record,
     find_crosswalks_by_node_reference,
+    set_default_weight_group,
     get_all_discrete_categories,
     rename_discrete_categories,
     rebuild_structure_table,
@@ -585,20 +586,43 @@ class Node(object):
         with self._managed_cursor() as cursor:
             return self._dal.WeightGroupRepository(cursor).get_by_name(name)
 
+    def set_default_weight_group(self, weight_group: WeightGroup) -> None:
+        with self._managed_transaction() as cursor:
+            set_default_weight_group(
+                weight_group=weight_group,
+                property_repo=self._dal.PropertyRepository(cursor),
+            )
+
     def add_weight_group(
         self,
         name: str,
         description: Optional[str] = None,
         selectors: Optional[Union[List[str], str]] = None,
         is_complete: bool = False,
+        *,
+        make_default: Optional[bool] = None,
     ) -> None:
         with self._managed_transaction() as cursor:
-            self._dal.WeightGroupRepository(cursor).add(
+            weight_group_repo = self._dal.WeightGroupRepository(cursor)
+            weight_group_repo.add(
                 name=name,
                 description=description,
                 selectors=selectors,
                 is_complete=is_complete
             )
+
+            # Set as default weight group if *make_default* is True or
+            # if *make_default* is unspecified (None) and this is the
+            # first weight group to be added.
+            if (make_default == True
+                or (make_default is None
+                    and len(weight_group_repo.get_all()) == 1)):
+                weight_group = weight_group_repo.get_by_name(name)
+                if weight_group:
+                    set_default_weight_group(
+                        weight_group, self._dal.PropertyRepository(cursor)
+                    )
+                # TODO: Log when default_weight_group is automatically set.
 
     def edit_weight_group(self, existing_name: str, **changes: Any) -> None:
         with self._managed_transaction() as cursor:

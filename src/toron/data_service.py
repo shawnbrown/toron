@@ -25,6 +25,7 @@ from .data_models import (
     BasePropertyRepository,
     BaseStructureRepository,
     Index,
+    WeightGroup,
     Crosswalk,
     JsonTypes,
 )
@@ -214,6 +215,14 @@ def find_crosswalks_by_node_reference(
         return [x for x in matches if x.other_unique_id.startswith(node_reference)]
 
     return []  # Return empty list if no match.
+
+
+def set_default_weight_group(
+    weight_group: WeightGroup,
+    property_repo: BasePropertyRepository,
+) -> None:
+    """Sets the node's default weight group."""
+    property_repo.add('default_weight_group_id', weight_group.id)
 
 
 def get_all_discrete_categories(

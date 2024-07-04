@@ -4,6 +4,7 @@ import unittest
 
 from toron.data_models import (
     Index,
+    WeightGroup,
     Structure,
     Crosswalk,
 )
@@ -12,6 +13,7 @@ from toron.data_service import (
     get_quantity_value_sum,
     disaggregate_value,
     find_crosswalks_by_node_reference,
+    set_default_weight_group,
     rename_discrete_categories,
     rebuild_structure_table,
     refresh_structure_granularity,
@@ -256,6 +258,28 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
         self.assertEqual(crosswalks, [])
 
 
+class TestGetAndSetDefaultWeightGroup(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        self.weight_group_repo = dal.WeightGroupRepository(cur)
+        self.property_repo = dal.PropertyRepository(cur)
+
+    def test_set_default_weight_group(self):
+        set_default_weight_group(
+            weight_group=WeightGroup(3, 'name1', None, None),
+            property_repo=self.property_repo,
+        )
+        msg = 'property repository should save the id value'
+        self.assertEqual(self.property_repo.get('default_weight_group_id'), 3, msg=msg)
+
+
 class TestRenameDiscreteCategories(unittest.TestCase):
     def setUp(self):
         dal = data_access.get_data_access_layer()
@@ -281,6 +305,7 @@ class TestRenameDiscreteCategories(unittest.TestCase):
             [set(cat) for cat in categories],
             [{'A'}, {'X'}, {'A', 'Z'}],
         )
+
 
 class TestRebuildStructureTable(unittest.TestCase):
     def setUp(self):
