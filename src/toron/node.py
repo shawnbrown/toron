@@ -35,6 +35,7 @@ from .data_service import (
     delete_index_record,
     find_crosswalks_by_node_reference,
     set_default_weight_group,
+    get_default_weight_group,
     get_all_discrete_categories,
     rename_discrete_categories,
     rebuild_structure_table,
@@ -591,6 +592,13 @@ class Node(object):
             set_default_weight_group(
                 weight_group=weight_group,
                 property_repo=self._dal.PropertyRepository(cursor),
+            )
+
+    def get_default_weight_group(self) -> Optional[WeightGroup]:
+        with self._managed_transaction() as cursor:
+            return get_default_weight_group(
+                property_repo=self._dal.PropertyRepository(cursor),
+                weight_group_repo=self._dal.WeightGroupRepository(cursor),
             )
 
     def add_weight_group(

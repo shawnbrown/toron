@@ -14,6 +14,7 @@ from toron.data_service import (
     disaggregate_value,
     find_crosswalks_by_node_reference,
     set_default_weight_group,
+    get_default_weight_group,
     rename_discrete_categories,
     rebuild_structure_table,
     refresh_structure_granularity,
@@ -278,6 +279,18 @@ class TestGetAndSetDefaultWeightGroup(unittest.TestCase):
         )
         msg = 'property repository should save the id value'
         self.assertEqual(self.property_repo.get('default_weight_group_id'), 3, msg=msg)
+
+    def test_get_default_weight_group(self):
+        self.weight_group_repo.add('foo')  # Adds weight_group_id 1
+        self.weight_group_repo.add('bar')  # Adds weight_group_id 2
+        self.property_repo.add('default_weight_group_id', 2)  # <- Save id 2 as default.
+
+        weight_group = get_default_weight_group(
+            property_repo=self.property_repo,
+            weight_group_repo=self.weight_group_repo,
+        )
+        expected = self.weight_group_repo.get(2)
+        self.assertEqual(weight_group, expected)
 
 
 class TestRenameDiscreteCategories(unittest.TestCase):

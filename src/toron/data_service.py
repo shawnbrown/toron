@@ -18,6 +18,7 @@ from .categories import (
 from .data_models import (
     BaseColumnManager,
     BaseIndexRepository,
+    BaseWeightGroupRepository,
     BaseWeightRepository,
     BaseQuantityRepository,
     BaseRelationRepository,
@@ -239,6 +240,17 @@ def get_all_discrete_categories(
         return [set(columns)]  # Default to whole space.
 
     return []  # Empty when no columns defined.
+
+
+def get_default_weight_group(
+    property_repo: BasePropertyRepository,
+    weight_group_repo: BaseWeightGroupRepository,
+) -> Optional[WeightGroup]:
+    """Return the node's default weight group (if any)."""
+    weight_group_id = property_repo.get('default_weight_group_id')
+    if isinstance(weight_group_id, int):
+        return weight_group_repo.get(weight_group_id)
+    return None
 
 
 def rename_discrete_categories(
