@@ -22,6 +22,7 @@ from toron.data_models import (
     Index,
     Structure,
     WeightGroup,
+    Attribute,
 )
 from toron.node import Node
 
@@ -2936,3 +2937,137 @@ class TestNodeInsertQuantities(unittest.TestCase):
              (3, 2, 1, 566499),
              (4, 2, 2, 596915)],
         )
+
+
+class TestNodeDisaggregate(unittest.TestCase):
+    def setUp(self):
+        node = Node()
+
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns('state', 'county')
+
+            structure_repo = node._dal.StructureRepository(cursor)
+            structure_repo.add(1.0, 1, 0)
+            structure_repo.add(2.0, 1, 1)
+
+            index_repo = node._dal.IndexRepository(cursor)
+            index_repo.add('OH', 'BUTLER')    # index_id 1
+            index_repo.add('OH', 'FRANKLIN')  # index_id 2
+            index_repo.add('IN', 'KNOX')      # index_id 3
+            index_repo.add('IN', 'LAPORTE')   # index_id 4
+
+            weight_group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_group_repo.add('totpop', is_complete=True)  # weight_group_id 1
+
+            weight_repo = node._dal.WeightRepository(cursor)
+            weight_repo.add(weight_group_id=1, index_id=1, value=374150)
+            weight_repo.add(weight_group_id=1, index_id=2, value=1336250)
+            weight_repo.add(weight_group_id=1, index_id=3, value=36864)
+            weight_repo.add(weight_group_id=1, index_id=4, value=110592)
+
+            property_repo = node._dal.PropertyRepository(cursor)
+            property_repo.add('default_weight_group_id', 1)
+
+            location_repo = node._dal.LocationRepository(cursor)
+            location_repo.add('OH', 'BUTLER')    # location_id 1
+            location_repo.add('OH', 'FRANKLIN')  # location_id 2
+            location_repo.add('OH', '')          # location_id 3
+            location_repo.add('IN', '')          # location_id 4
+
+            attribute_repo = node._dal.AttributeRepository(cursor)
+            attribute_repo.add(value={'category': 'TOTAL', 'sex': 'MALE'})    # attribute_id 1
+            attribute_repo.add(value={'category': 'TOTAL', 'sex': 'FEMALE'})  # attribute_id 2
+
+            quantity_repo = node._dal.QuantityRepository(cursor)
+            quantity_repo.add(location_id=1, attribute_id=1, value=187075)
+            quantity_repo.add(location_id=1, attribute_id=2, value=187075)
+            quantity_repo.add(location_id=2, attribute_id=1, value=668125)
+            quantity_repo.add(location_id=2, attribute_id=2, value=668125)
+            quantity_repo.add(location_id=3, attribute_id=1, value=1000)
+            quantity_repo.add(location_id=3, attribute_id=2, value=1000)
+            quantity_repo.add(location_id=4, attribute_id=1, value=73728)
+            quantity_repo.add(location_id=4, attribute_id=2, value=73728)
+
+        self.node = node
+
+    def test_default_weight_group(self):
+        """Disaggregate using default weight group."""
+        results = self.node.disaggregate()
+        expected = [
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   668125.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   218.75),   # <- Disaggreated.
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   781.25),   # <- Disaggreated.
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   18432.0),  # <- Disaggreated.
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   55296.0),  # <- Disaggreated.
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 218.75),   # <- Disaggreated.
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 781.25),   # <- Disaggreated.
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 18432.0),  # <- Disaggreated.
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 55296.0),  # <- Disaggreated.
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_matching_group_and_default(self):
+        with self.node._managed_cursor() as cursor:
+            weight_group_repo = self.node._dal.WeightGroupRepository(cursor)
+            weight_repo = self.node._dal.WeightRepository(cursor)
+
+            weight_group_repo.add('men', is_complete=True, selectors=['[sex="MALE"]'])  # weight_group_id 2
+            weight_repo.add(weight_group_id=2, index_id=1, value=10000)
+            weight_repo.add(weight_group_id=2, index_id=2, value=10000)
+            weight_repo.add(weight_group_id=2, index_id=3, value=10000)
+            weight_repo.add(weight_group_id=2, index_id=4, value=10000)
+
+        results = self.node.disaggregate()
+        expected = [
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   668125.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   500.0),    # <- Disaggreated by group 2
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   500.0),    # <- Disaggreated by group 2
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 218.75),   # <- Disaggreated by default (group 1)
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 781.25),   # <- Disaggreated by default (group 1)
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 18432.0),  # <- Disaggreated by default (group 1)
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 55296.0),  # <- Disaggreated by default (group 1)
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_matching_group_and_default(self):
+        with self.node._managed_cursor() as cursor:
+            weight_group_repo = self.node._dal.WeightGroupRepository(cursor)
+            weight_repo = self.node._dal.WeightRepository(cursor)
+
+            weight_group_repo.add('men', is_complete=True, selectors=['[sex="MALE"]'])  # weight_group_id 2
+            weight_repo.add(weight_group_id=2, index_id=1, value=10000)
+            weight_repo.add(weight_group_id=2, index_id=2, value=10000)
+            weight_repo.add(weight_group_id=2, index_id=3, value=0)  # <- Values in 0-weight group are divided evenly.
+            weight_repo.add(weight_group_id=2, index_id=4, value=0)  # <- Values in 0-weight group are divided evenly.
+
+            weight_group_repo.add('women', is_complete=True, selectors=['[sex="FEMALE"]'])  # weight_group_id 3
+            weight_repo.add(weight_group_id=3, index_id=1, value=5000)
+            weight_repo.add(weight_group_id=3, index_id=2, value=15000)
+            weight_repo.add(weight_group_id=3, index_id=3, value=10000)
+            weight_repo.add(weight_group_id=3, index_id=4, value=10000)
+
+        results = self.node.disaggregate()
+        expected = [
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   668125.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   500.0),    # <- Disaggreated by group 2
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   500.0),    # <- Disaggreated by group 2
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 250.0),    # <- Disaggreated by group 3
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 750.0),    # <- Disaggreated by group 3
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 36864.0),  # <- Disaggreated by group 3
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 36864.0),  # <- Disaggreated by group 3
+        ]
+        self.assertEqual(list(results), expected)

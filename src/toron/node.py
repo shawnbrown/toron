@@ -25,6 +25,8 @@ from .categories import (
     minimize_discrete_categories,
 )
 from .data_models import (
+    Index,
+    Attribute,
     WeightGroup,
     BaseCrosswalkRepository,
     Crosswalk,
@@ -33,6 +35,8 @@ from .data_models import (
 from .data_service import (
     refresh_index_hash_property,
     delete_index_record,
+    get_quantity_value_sum,
+    disaggregate_value,
     find_crosswalks_by_node_reference,
     set_default_weight_group,
     get_default_weight_group,
@@ -40,6 +44,10 @@ from .data_service import (
     rename_discrete_categories,
     rebuild_structure_table,
     refresh_structure_granularity,
+)
+from .selectors import (
+    parse_selector,
+    get_greatest_unique_specificity,
 )
 from ._utils import (
     BitFlags,
@@ -1605,3 +1613,78 @@ class Node(object):
                     value=row_dict[value],
                 )
                 #counter['inserted'] += 1
+
+    def disaggregate(self) -> Iterator[Tuple[Index, Attribute, float]]:
+        """Return indexes, attributes, and disaggregated results."""
+        with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4), \
+                self._managed_transaction(cur1):
+
+            # The weight, structure, and attribute repos can share a cursor.
+            property_repo = self._dal.PropertyRepository(cur1)
+            weight_group_repo = self._dal.WeightGroupRepository(cur1)
+            structure_repo = self._dal.StructureRepository(cur1)
+            attribute_repo = self._dal.AttributeRepository(cur1)
+
+            # The location repo must have its own cursor.
+            location_repo = self._dal.LocationRepository(cur2)
+
+            # The quantity repo can share a cursor with index or weight
+            # repos but index and weight cannot share the same cursor.
+            quantity_repo = self._dal.QuantityRepository(cur3)
+            index_repo = self._dal.IndexRepository(cur3)
+            weight_repo = self._dal.WeightRepository(cur4)
+
+            # Get the default weight group and make sure it's complete.
+            default_weight_group = get_default_weight_group(property_repo, weight_group_repo)
+            if not default_weight_group:
+                raise RuntimeError('no default weight group is defined')
+            elif not default_weight_group.is_complete:
+                msg = f'default weight group {default_weight_group.name!r} is not complete'
+                raise RuntimeError(msg)
+
+            # Build dict of index id values and attribute selector objects.
+            weight_groups = weight_group_repo.get_all()
+            weight_groups = [wg for wg in weight_groups if (wg.is_complete and wg.selectors)]
+            func = lambda selectors: [parse_selector(s) for s in selectors]
+            selector_dict = {wg.id: func(wg.selectors) for wg in weight_groups}
+
+            # Get structure records (ordered from most to least granular).
+            structures = structure_repo.get_all()
+
+            # Get label column names (in table definition order).
+            label_columns = location_repo.get_label_columns()
+
+            # For each attribute, loop over locations and disaggregate
+            # to index records using matching weight group.
+            for attribute in attribute_repo.find_all():
+                weight_group_id = get_greatest_unique_specificity(
+                    row_dict=attribute.value,
+                    selector_dict=selector_dict,
+                    default=default_weight_group.id,
+                )
+
+                for structure in structures:
+                    for location in location_repo.find_by_structure(structure):
+                        # Get sum of values for this location and attribute.
+                        quantity_value = get_quantity_value_sum(
+                            location.id, attribute.id, quantity_repo
+                        )
+                        if quantity_value is None:
+                            continue  # Skip to next location.
+
+                        # Make index matching criteria from location labels.
+                        zipped = zip(label_columns, location.labels)
+                        index_criteria = {k: v for k, v in zipped if v != ''}
+
+                        # Get disaggregated results for each individual index.
+                        disaggregated = disaggregate_value(
+                            quantity_value,
+                            index_criteria,
+                            weight_group_id,
+                            index_repo,
+                            weight_repo,
+                        )
+
+                        # Yield disaggregated results for each index.
+                        for index, result in disaggregated:
+                            yield (index, attribute, result)
