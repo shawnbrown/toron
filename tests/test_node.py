@@ -504,6 +504,24 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_structure_helper(node), expected)
 
+    def test_insert_skip_empty_rows(self):
+        """Text based files (like CSV files) often end with a newline
+        character. Many parsers interpret this as an empty row of data.
+        """
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+
+        # Insert data where second and last items are empty.
+        data = [('foo', 'x'), (), ('bar', 'y'), ()]  # <- Includes empty rows!
+        node.insert_index(data, columns=['A', 'B'])
+
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
+        ]
+        self.assertEqual(self.get_index_helper(node), expected)
+
     def test_insert_different_order(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')

@@ -309,7 +309,14 @@ class Node(object):
             sort_key = lambda item: order_lookup[item[0]]
 
             for row in data:
+                # If row is empty, skip to next.
+                if not row:
+                    continue
+
+                # Sort label values to match internal column order.
                 row = [v for k, v in sorted(enumerate(row), key=sort_key)]
+
+                # Insert new index record.
                 try:
                     index_repo.add(*row)
                     counter['inserted'] += 1
