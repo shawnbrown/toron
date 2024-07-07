@@ -427,6 +427,9 @@ class AttributeRepository(BaseAttributeRepository):
 
     def add(self, value: Dict[str, str]) -> None:
         """Add a record to the repository."""
+        if '' in value.keys() or '' in value.values():
+            raise ValueError('keys and values cannot be empty strings')
+
         sql = 'INSERT INTO main.attribute (attribute_value) VALUES (?)'
         self._cursor.execute(sql, (json_dumps(value, sort_keys=True),))
 

@@ -547,6 +547,14 @@ class AttributeRepositoryBaseTest(ABC):
         repository.delete(1)
         self.assertIsNone(repository.get(1))
 
+    def test_add_empty_string_error(self):
+        """If keys or values are empty string, should raise ValueError."""
+        with self.assertRaises(ValueError, msg='keys must not be empty strings'):
+            self.repository.add({'foo': 'A', '': 'B'})  # <- Second key is empty string.
+
+        with self.assertRaises(ValueError, msg='values must not be empty strings'):
+            self.repository.add({'foo': 'A', 'bar': ''})  # <- Second value is empty string.
+
     def test_get_by_value(self):
         self.repository.add({'foo': 'A'})
         self.assertEqual(
