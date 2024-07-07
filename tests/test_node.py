@@ -2994,6 +2994,41 @@ class TestNodeInsertQuantities(unittest.TestCase):
              (4, 2, 4, 596915)],
         )
 
+    def test_insert_quantities_all_attr_empty(self):
+        """When rows are missing all attribute values they should be
+        omitted entirely.
+        """
+        data = [
+            ('state', 'county', 'category', 'sex', 'counts'),
+            ('OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+            ('OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+            ('OH', 'FRANKLIN', '', '', 566499),  # <- all attr values are empty string!
+            ('OH', 'FRANKLIN', '', '', 596915),  # <- all attr values are empty string!
+        ]
+
+        self.node.insert_quantities(
+            value='counts',
+            attributes=['category', 'sex'],
+            data=data,
+        )
+
+        self.assertEqual(
+            self.get_location_helper(self.node),
+            [(1, 'OH', 'BUTLER')],
+        )
+
+        self.assertEqual(
+            self.get_attributes_helper(self.node),
+            [(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+             (2, {'category': 'TOTAL', 'sex': 'FEMALE'})],
+        )
+
+        self.assertEqual(
+            self.get_quantities_helper(self.node),
+            [(1, 1, 1, 180140),
+             (2, 1, 2, 187990)],
+        )
+
 
 class TestNodeDisaggregate(unittest.TestCase):
     def setUp(self):

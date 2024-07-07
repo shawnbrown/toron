@@ -1609,9 +1609,11 @@ class Node(object):
                 row_dict = dict(zip(columns, row))
 
                 labels_dict = {k: row_dict[k] for k in label_columns}
-                location = location_repo.get_by_labels_add_if_missing(labels_dict)
-
                 attr_dict = {k: row_dict[k] for k in attributes if row_dict[k]}
+                if not attr_dict:
+                    continue
+
+                location = location_repo.get_by_labels_add_if_missing(labels_dict)
                 attribute = attribute_repo.get_by_value_add_if_missing(attr_dict)
 
                 quantity_repo.add(
