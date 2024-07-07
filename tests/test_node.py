@@ -536,13 +536,35 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
-    def test_insert_invalid_columns(self):
+    def test_insert_missing_columns(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = r"missing required columns: 'C', 'D'"
         with self.assertRaisesRegex(ValueError, regex):
             node.insert_index([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
+
+    def test_insert_extra_columns(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+
+        # Check that a warning is raised.
+        with self.assertWarns(ToronWarning) as cm:
+            node.insert_index([
+                ('C',   'B', 'D', 'A'),
+                ('111', 'x', '1', 'foo'),
+                ('222', 'y', '2', 'bar'),
+            ])
+
+        # Check the warning's message.
+        self.assertEqual( str(cm.warning), "extra columns ignored: 'C', 'D'")
+
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
+        ]
+        self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_duplicate_or_empty_strings(self):
         node = Node()

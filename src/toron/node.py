@@ -303,22 +303,29 @@ class Node(object):
             index_repo = self._dal.IndexRepository(cursor)
 
             index_columns = col_manager.get_columns()
-            verify_columns_set(columns, index_columns)
+            verify_columns_set(columns, index_columns, allow_extras=True)
+            extra_columns = [x for x in columns if x not in index_columns]
+            if extra_columns:
+                import warnings
+                extra_fmt = ', '.join(repr(x) for x in extra_columns)
+                msg = f'extra columns ignored: {extra_fmt}'
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
-            order_lookup = dict(enumerate(index_columns.index(x) for x in columns))
-            sort_key = lambda item: order_lookup[item[0]]
+            label_positions = [
+                columns.index(x) for x in index_columns if x in columns
+            ]
 
             for row in data:
                 # If row is empty, skip to next.
                 if not row:
                     continue
 
-                # Sort label values to match internal column order.
-                row = [v for k, v in sorted(enumerate(row), key=sort_key)]
+                # Get label values by internal column order.
+                labels = [row[pos] for pos in label_positions]
 
                 # Insert new index record.
                 try:
-                    index_repo.add(*row)
+                    index_repo.add(*labels)
                     counter['inserted'] += 1
                 except ValueError:
                     counter['dupe_or_empty_str'] += 1
