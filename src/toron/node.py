@@ -1611,7 +1611,7 @@ class Node(object):
                 labels_dict = {k: row_dict[k] for k in label_columns}
                 location = location_repo.get_by_labels_add_if_missing(labels_dict)
 
-                attr_dict = {k: row_dict[k] for k in attributes}
+                attr_dict = {k: row_dict[k] for k in attributes if row_dict[k]}
                 attribute = attribute_repo.get_by_value_add_if_missing(attr_dict)
 
                 quantity_repo.add(

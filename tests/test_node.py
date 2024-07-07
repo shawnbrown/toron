@@ -2956,6 +2956,44 @@ class TestNodeInsertQuantities(unittest.TestCase):
              (4, 2, 2, 596915)],
         )
 
+    def test_insert_quantities_some_attr_empty(self):
+        """Attribute keys with empty values should be omitted."""
+        data = [
+            ('state', 'county', 'category', 'sex', 'counts'),
+            ('OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+            ('OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+            ('OH', 'FRANKLIN', '', 'MALE', 566499),  # <- 'category' value is empty string!
+            ('OH', 'FRANKLIN', '', 'FEMALE', 596915),  # <- 'category' value is empty string!
+        ]
+
+        self.node.insert_quantities(
+            value='counts',
+            attributes=['category', 'sex'],
+            data=data,
+        )
+
+        self.assertEqual(
+            self.get_location_helper(self.node),
+            [(1, 'OH', 'BUTLER'),
+             (2, 'OH', 'FRANKLIN')],
+        )
+
+        self.assertEqual(
+            self.get_attributes_helper(self.node),
+            [(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+             (2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+             (3, {'sex': 'MALE'}),  # <- should not have 'category'
+             (4, {'sex': 'FEMALE'})],  # <- should not have 'category'
+        )
+
+        self.assertEqual(
+            self.get_quantities_helper(self.node),
+            [(1, 1, 1, 180140),
+             (2, 1, 2, 187990),
+             (3, 2, 3, 566499),
+             (4, 2, 4, 596915)],
+        )
+
 
 class TestNodeDisaggregate(unittest.TestCase):
     def setUp(self):
