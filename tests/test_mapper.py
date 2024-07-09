@@ -7,11 +7,11 @@ import warnings
 from toron.xnode import xNode
 from toron._utils import ToronWarning
 from toron.mapper import (
-    Mapper,
+    xMapper,
 )
 
 
-class TestMapper(unittest.TestCase):
+class Test_xMapper(unittest.TestCase):
     def test_name_exact(self):
         """Matches "population" column exactly."""
         data = [
@@ -19,7 +19,7 @@ class TestMapper(unittest.TestCase):
             ['A', 70, 'A', 'x'],
             ['B', 80, 'B', 'y'],
         ]
-        mapper = Mapper(data, 'population')  # <- Matches name of column exactly.
+        mapper = xMapper(data, 'population')  # <- Matches name of column exactly.
 
         self.assertEqual(mapper.left_keys, ['idx1'])
         self.assertEqual(mapper.right_keys, ['idx1', 'idx2'])
@@ -38,7 +38,7 @@ class TestMapper(unittest.TestCase):
             ['A', 70, 'A', 'x'],
             ['B', 80, 'B', 'y'],
         ]
-        mapper = Mapper(data, 'population')  # <- Matches name in shorthand syntax.
+        mapper = xMapper(data, 'population')  # <- Matches name in shorthand syntax.
 
         self.assertEqual(mapper.left_keys, ['idx1'])
         self.assertEqual(mapper.right_keys, ['idx1', 'idx2'])
@@ -58,7 +58,7 @@ class TestMapper(unittest.TestCase):
             [],
             ['B', 80, 'B', 'y'],
         ]
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         mapper.cur.execute('SELECT * FROM temp.source_mapping')
         expected = {
@@ -86,7 +86,7 @@ class TestFindMatchesFormatData(unittest.TestCase):
         self.node = node
 
     def test_find_matches_format_data_exact(self):
-        formatted = Mapper._find_matches_format_data(
+        formatted = xMapper._find_matches_format_data(
             self.node,
             column_names=['idx1', 'idx2'],
             iterable=[
@@ -113,7 +113,7 @@ class TestFindMatchesFormatData(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_find_matches_format_data_ambiguous(self):
-        formatted = Mapper._find_matches_format_data(
+        formatted = xMapper._find_matches_format_data(
             self.node,
             column_names=['idx1', 'idx2'],
             iterable=[
@@ -135,7 +135,7 @@ class TestFindMatchesFormatData(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_find_matches_format_data_none_found(self):
-        formatted = Mapper._find_matches_format_data(
+        formatted = xMapper._find_matches_format_data(
             self.node,
             column_names=['idx1', 'idx2'],
             iterable=[
@@ -171,7 +171,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def test_matches_one_to_one(self):
-        info_dict = Mapper._match_exact_or_get_info(
+        info_dict = xMapper._match_exact_or_get_info(
             self.cursor,
             side='right',
             index_columns=['idx1', 'idx2', 'idx3'],
@@ -188,7 +188,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.assertEqual(self.cursor.fetchall(), expected)
 
     def test_matches_many_to_one(self):
-        info_dict = Mapper._match_exact_or_get_info(
+        info_dict = xMapper._match_exact_or_get_info(
             self.cursor,
             side='right',
             index_columns=['idx1', 'idx2', 'idx3'],
@@ -209,7 +209,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.assertEqual(self.cursor.fetchall(), expected)
 
     def test_no_match(self):
-        info_dict = Mapper._match_exact_or_get_info(
+        info_dict = xMapper._match_exact_or_get_info(
             self.cursor,
             side='right',
             index_columns=['idx1', 'idx2', 'idx3'],
@@ -228,14 +228,14 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         """If match is ambiguous and over the limit, it is logged
         using `'count_overlimit'` in the returned info_dict.
         """
-        # Single record from Mapper._find_matches_format_data()
+        # Single record from xMapper._find_matches_format_data()
         # is a three-tuple like `(run_ids, key, matches)`.
         run_ids = [103]
         key = {'idx1': 'B'}
         matches = [(3, 'B', 'x'), (4, 'B', 'y')]
 
         # When no `match_limit` is given, it defaults to 1.
-        info_dict = Mapper._match_exact_or_get_info(
+        info_dict = xMapper._match_exact_or_get_info(
             self.cursor,
             'right',
             ['idx1', 'idx2', 'idx3'],
@@ -259,14 +259,14 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         column names used for the match using `'matched_category'`
         in the returned info_dict.
         """
-        # Single record from Mapper._find_matches_format_data()
+        # Single record from xMapper._find_matches_format_data()
         # is a three-tuple like `(run_ids, key, matches)`.
         run_ids = [103]
         key = {'idx1': 'B'}
         matches = [(3, 'B', 'x'), (4, 'B', 'y')]
 
         # Check using `match_limit=3`.
-        info_dict = Mapper._match_exact_or_get_info(
+        info_dict = xMapper._match_exact_or_get_info(
             self.cursor,
             'right',
             ['idx1', 'idx2', 'idx3'],
@@ -284,7 +284,7 @@ class TestMatchExactOrGetInfo(unittest.TestCase):
         self.assertEqual(self.cursor.fetchall(), [], msg='should be no records')
 
     def test_invalid_categories(self):
-        info_dict = Mapper._match_exact_or_get_info(
+        info_dict = xMapper._match_exact_or_get_info(
             self.cursor,
             side='right',
             index_columns=['idx1', 'idx2', 'idx3'],
@@ -339,7 +339,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         ambiguous_match = ([3], {'idx1': 'C'}, 2)
         run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
 
-        info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
+        info_dict = xMapper._match_ambiguous_or_get_info(  # <- Method under test.
             dal_or_node=self.node,
             cursor=self.cursor,
             side='right',
@@ -362,7 +362,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         ambiguous_match = ([2, 3], {'idx1': 'C'}, 2)
         run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
 
-        info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
+        info_dict = xMapper._match_ambiguous_or_get_info(  # <- Method under test.
             dal_or_node=self.node,
             cursor=self.cursor,
             side='right',
@@ -385,7 +385,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
 
     def test_allow_overlapping(self):
         # Add an existing match.
-        info_dict = Mapper._match_exact_or_get_info(
+        info_dict = xMapper._match_exact_or_get_info(
             self.cursor,
             'right',
             ['idx1', 'idx2', 'idx3'],
@@ -396,7 +396,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         ambiguous_match = ([102], {'idx1': 'C'}, 2)
         run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
 
-        info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
+        info_dict = xMapper._match_ambiguous_or_get_info(  # <- Method under test.
             dal_or_node=self.node,
             cursor=self.cursor,
             side='right',
@@ -419,7 +419,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
 
     def test_disallow_overlapping(self):
         # Add an existing match.
-        info_dict = Mapper._match_exact_or_get_info(
+        info_dict = xMapper._match_exact_or_get_info(
             self.cursor,
             'right',
             ['idx1', 'idx2', 'idx3'],
@@ -430,7 +430,7 @@ class TestMatchAmbiguousOrGetInfo(unittest.TestCase):
         ambiguous_match = ([102], {'idx1': 'C'}, 2)
         run_ids, where_dict, _ = ambiguous_match  # Unpack (discards count).
 
-        info_dict = Mapper._match_ambiguous_or_get_info(  # <- Method under test.
+        info_dict = xMapper._match_ambiguous_or_get_info(  # <- Method under test.
             dal_or_node=self.node,
             cursor=self.cursor,
             side='right',
@@ -474,7 +474,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (4, 4, NULL, NULL, NULL)
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        xMapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.cursor.execute('SELECT * FROM temp.right_matches')
         expected = [
@@ -496,7 +496,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (4, 2, NULL, NULL, NULL)
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        xMapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.cursor.execute('SELECT * FROM temp.right_matches')
         expected = [
@@ -518,7 +518,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (3, 4, 37.5, NULL, X'C0')
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        xMapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.cursor.execute('SELECT * FROM temp.right_matches')
         expected = [
@@ -540,7 +540,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (2, 2, 37.5, NULL, X'C0')
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        xMapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.cursor.execute('SELECT * FROM temp.right_matches')
         expected = [
@@ -557,7 +557,7 @@ class TestMapperWarnMatchStats(unittest.TestCase):
         """Check no warnings are raised when relevant args are 0."""
         with warnings.catch_warnings():
             warnings.simplefilter('error')
-            Mapper._warn_match_stats(
+            xMapper._warn_match_stats(
                 count_unmatchable=0,
                 count_invalid=0,
                 invalid_categories=set(),
@@ -570,7 +570,7 @@ class TestMapperWarnMatchStats(unittest.TestCase):
         """Check warning for values with no matches."""
         regex = 'skipped 11 values that matched no records'
         with self.assertWarnsRegex(ToronWarning, regex):
-            Mapper._warn_match_stats(
+            xMapper._warn_match_stats(
                 count_unmatchable=11,
             )
 
@@ -581,7 +581,7 @@ class TestMapperWarnMatchStats(unittest.TestCase):
             'current match_limit is 3 but data includes values that match up to 5 records'
         )
         with self.assertWarnsRegex(ToronWarning, regex):
-            Mapper._warn_match_stats(
+            xMapper._warn_match_stats(
                 count_overlimit=7,
                 overlimit_max=5,
                 match_limit=3,
@@ -598,7 +598,7 @@ class TestMapperWarnMatchStats(unittest.TestCase):
             '  B, C'
         )
         with self.assertWarnsRegex(ToronWarning, regex):
-            Mapper._warn_match_stats(
+            xMapper._warn_match_stats(
                 count_unmatchable=13,
                 count_invalid=11,
                 invalid_categories={('B', 'C'), ('B',)},
@@ -641,7 +641,7 @@ class TwoNodesBaseTest(unittest.TestCase):
 
 class TestMapperFindMatches(TwoNodesBaseTest):
     def test_find_matches_side(self):
-        mapper = Mapper([['idx', 'dummy_weight', 'idx1']], 'dummy_weight')
+        mapper = xMapper([['idx', 'dummy_weight', 'idx1']], 'dummy_weight')
 
         # Check valid *side* arguments.
         mapper.find_matches(self.node1, 'left')
@@ -653,7 +653,7 @@ class TestMapperFindMatches(TwoNodesBaseTest):
             mapper.find_matches(self.node1, 'bad')
 
     def test_exact_matching(self):
-        mapper = Mapper(
+        mapper = xMapper(
             data=[
                 ['idx', 'population', 'idx1', 'idx2'],
                 ['A', 10, 'A', 'x'],
@@ -702,7 +702,7 @@ class TestMapperFindMatches(TwoNodesBaseTest):
             ['Z', 20, 'Z', 'Z'],
         ]
 
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         regex = 'skipped 3 values that matched no records'
         with self.assertWarnsRegex(ToronWarning, regex):
@@ -717,7 +717,7 @@ class TestMapperFindMatches(TwoNodesBaseTest):
             ['idx', 'population', 'idx1', 'idx2'],
             ['X', 10, 'X', 'X'],
         ]
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         regex = 'match_limit must be 1 or greater, got 0'
         with self.assertRaisesRegex(ValueError, regex):
@@ -774,7 +774,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', '',  '', 100, 'D', 'y', 'h'],
             ['D', 'x', '', 100, 'D', 'x', 'g'],
         ]
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         regex = (
             'skipped 3 values that used invalid categories:\n'
@@ -812,7 +812,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', 'y', '', 50,  'D', 'y', 'i'],
         ]
         self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         mapper.find_matches(self.node1, 'left', match_limit=2)  # <- Method under test.
 
@@ -834,7 +834,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', 'y', '', 100,  'D', 'y', ''],
         ]
         self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         regex = (
             'skipped 1 values that ambiguously matched to one or more '
@@ -865,7 +865,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', 'y', '',  100, 'D', 'y', ''],
         ]
         self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         mapper.find_matches(self.node1, 'left', match_limit=4, allow_overlapping=False)  # <- Method under test.
 
@@ -885,7 +885,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['B', '',  '',  100, 'B', '',  ''],
         ]
         self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         mapper.find_matches(self.node1, 'left', match_limit=4, allow_overlapping=True)  # <- Method under test.
 
@@ -907,7 +907,7 @@ class TestMapperAssignMatchesById(unittest.TestCase):
             (102, 100.0, 'bar', 'y'),
             (103, 100.0, 'baz', 'z'),
         ]
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
         mapper.assign_matches_by_id(side='left')
 
         mapper.cur.execute('SELECT * FROM left_matches')
@@ -925,7 +925,7 @@ class TestMapperAssignMatchesById(unittest.TestCase):
             (101, 100.0, 'foo', 'x'),
             (102, 100.0, 'bar', 'y'),
         ]
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         regex = "expected 'other_index_id' or 'index_id', got 'unknown_id'"
         with self.assertRaisesRegex(Exception, regex):
@@ -943,7 +943,7 @@ class TestGetRelations(TwoNodesBaseTest):
             ['C', 30, 'C', 'x'],
             ['C', 50, 'C', 'y'],
         ]
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
         mapper.find_matches(self.node1, 'left')
         mapper.find_matches(self.node2, 'right')
 
@@ -969,7 +969,7 @@ class TestGetRelations(TwoNodesBaseTest):
             ['C', 7, 'C', 'y'],   # <- Exact match (overlapps the records matched on "C" alone).
         ]
         self.node2.add_discrete_categories([{'idx1'}])
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
         mapper.find_matches(self.node1, 'left')
         mapper.find_matches(self.node2, 'right', match_limit=2)
 
@@ -995,7 +995,7 @@ class TestGetRelations(TwoNodesBaseTest):
             ['C', 7, 'C',  'y'],  # <- Exact match (overlapps the records matched on "C" alone).
         ]
         self.node2.add_discrete_categories([{'idx1'}])
-        mapper = Mapper(data, 'population')
+        mapper = xMapper(data, 'population')
 
         mapper.find_matches(self.node1, 'left')
         mapper.find_matches(self.node2, 'right', match_limit=2, allow_overlapping=True)

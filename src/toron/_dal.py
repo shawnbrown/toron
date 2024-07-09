@@ -52,7 +52,7 @@ except ImportError:
 from . import _schema
 from .categories import make_structure
 from .categories import minimize_discrete_categories
-from .mapper import Mapper
+from .mapper import xMapper
 from ._utils import (
     ToronError,
     ToronWarning,
@@ -1121,8 +1121,8 @@ class DataAccessLayer(object):
             )
             defined_relations = (x for x in incoming_edge if x[0] is not None)
 
-            # Load relations into Mapper object and rebuild them.
-            mapper = Mapper(data=defined_relations, name=edge_dict['name'])
+            # Load relations into xMapper object and rebuild them.
+            mapper = xMapper(data=defined_relations, name=edge_dict['name'])
             mapper.assign_matches_by_id('left')
             mapper.find_matches(
                 dal_or_node=self,
@@ -1163,7 +1163,7 @@ class DataAccessLayer(object):
                 #user_properties=edge_dict['user_properties'],  # <- ADD THIS!
             )
             self._add_edge_relations(cursor, new_edge_id, mapper_relations)  # type: ignore [arg-type]
-            mapper.close()  # Close database connection inside Mapper.
+            mapper.close()  # Close database connection inside xMapper.
             self._refresh_proportions(cursor, new_edge_id)
             self._refresh_other_index_hash(cursor, new_edge_id)
             self._refresh_is_locally_complete(cursor, new_edge_id)

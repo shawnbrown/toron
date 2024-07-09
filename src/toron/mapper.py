@@ -46,7 +46,7 @@ def _get_dal(
     return dal_or_node
 
 
-class Mapper(object):
+class xMapper(object):
     """Object to build a correspondence mapping between label sets.
 
     This class create a small in-memory database. When the object is
@@ -460,7 +460,7 @@ class Mapper(object):
 
             # Handle ambiguous matches.
             for run_ids, where_dict, _ in list_ambiguous:
-                info_dict = Mapper._match_ambiguous_or_get_info(
+                info_dict = xMapper._match_ambiguous_or_get_info(
                     dal_or_node=dal,
                     cursor=self.cur,
                     side=side,

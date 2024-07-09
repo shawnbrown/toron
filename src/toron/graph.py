@@ -30,7 +30,7 @@ from ._utils import (
     ToronWarning,
     BitFlags,
 )
-from .mapper import Mapper
+from .mapper import xMapper
 from .xnode import xNode
 
 
@@ -49,7 +49,7 @@ def add_edge(
     weight_name: Optional[str] = None,
     allow_overlapping: bool = False,
 ) -> None:
-    mapper = Mapper(data, name)
+    mapper = xMapper(data, name)
     try:
         mapper.find_matches(left_node, 'left', match_limit, weight_name, allow_overlapping)
         mapper.find_matches(right_node, 'right', match_limit, weight_name, allow_overlapping)
