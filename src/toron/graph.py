@@ -30,7 +30,7 @@ from ._utils import (
     ToronWarning,
     BitFlags,
 )
-from .mapper import xMapper
+from ._xmapper import xMapper
 from .xnode import xNode
 
 

@@ -6,7 +6,7 @@ import warnings
 
 from toron.xnode import xNode
 from toron._utils import ToronWarning
-from toron.mapper import (
+from toron._xmapper import (
     xMapper,
 )
 
