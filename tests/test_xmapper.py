@@ -1,4 +1,4 @@
-"""Tests for toron/mapper.py module."""
+"""Tests for toron/_xmapper.py module."""
 
 import sqlite3
 import unittest
