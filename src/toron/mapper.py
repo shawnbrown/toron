@@ -15,6 +15,7 @@ from ._typing import (
 
 from ._utils import (
     normalize_tabular,
+    parse_edge_shorthand,
 )
 
 
@@ -69,7 +70,10 @@ class Mapper(object):
         data, columns = normalize_tabular(data, columns)
 
         for i, col in enumerate(columns):
-            if crosswalk_name == col:
+            if (
+                crosswalk_name == col or
+                crosswalk_name == parse_edge_shorthand(col).get('edge_name')
+            ):
                 value_pos = i  # Get index position of value column
                 break
         else:  # no break
