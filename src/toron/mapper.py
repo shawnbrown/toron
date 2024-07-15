@@ -32,10 +32,11 @@ class Mapper(object):
         +---------------+    +---------------+    +---------------+
         | run_id        |<---| run_id        |--->| run_id        |
         | index_id      |    | left_labels   |    | index_id      |
-        | weight_value  |    | right_labels  |    | weight_value  |
-        | mapping_level |    | mapping_value |    | mapping_level |
-        | proportion    |    +---------------+    | proportion    |
-        +---------------+                         +---------------+
+        | weight_value  |    | left_flags    |    | weight_value  |
+        | proportion    |    | right_labels  |    | proportion    |
+        +---------------+    | right_flags   |    +---------------+
+                             | mapping_value |
+                             +---------------+
     """
     def __init__(
         self,
@@ -48,21 +49,21 @@ class Mapper(object):
             CREATE TABLE mapping_data(
                 run_id INTEGER PRIMARY KEY,
                 left_labels TEXT NOT NULL,
+                left_flags BLOB_BITFLAGS,
                 right_labels TEXT NOT NULL,
+                right_flags BLOB_BITFLAGS,
                 mapping_value REAL NOT NULL
             );
             CREATE TABLE left_matches(
                 run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
                 index_id INTEGER,
                 weight_value REAL CHECK (0.0 <= weight_value),
-                mapping_level BLOB_BITFLAGS,
                 proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
             );
             CREATE TABLE right_matches(
                 run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
                 index_id INTEGER,
                 weight_value REAL CHECK (0.0 <= weight_value),
-                mapping_level BLOB_BITFLAGS,
                 proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
             );
         """)
