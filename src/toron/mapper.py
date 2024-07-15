@@ -16,6 +16,7 @@ from ._typing import (
 from ._utils import (
     normalize_tabular,
     parse_edge_shorthand,
+    BitFlags,
 )
 
 
@@ -49,9 +50,9 @@ class Mapper(object):
             CREATE TABLE mapping_data(
                 run_id INTEGER PRIMARY KEY,
                 left_labels TEXT NOT NULL,
-                left_flags BLOB_BITFLAGS,
+                left_flags BLOB_BITFLAGS NOT NULL,
                 right_labels TEXT NOT NULL,
-                right_flags BLOB_BITFLAGS,
+                right_flags BLOB_BITFLAGS NOT NULL,
                 mapping_value REAL NOT NULL
             );
             CREATE TABLE left_matches(
@@ -90,12 +91,14 @@ class Mapper(object):
 
             sql = """
                 INSERT INTO mapping_data
-                  (left_labels, right_labels, mapping_value)
-                  VALUES (:left_labels, :right_labels, :mapping_value)
+                  (left_labels, left_flags, right_labels, right_flags, mapping_value)
+                  VALUES (:left_labels, :left_flags, :right_labels, :right_flags, :mapping_value)
             """
             parameters = {
                 'left_labels': dumps(row[:value_pos]),
+                'left_flags': bytes(BitFlags(x != '' for x in row[:value_pos])),
                 'right_labels': dumps(row[value_pos+1:]),
+                'right_flags': bytes(BitFlags(x != '' for x in row[value_pos+1:])),
                 'mapping_value': row[value_pos],
             }
             try:

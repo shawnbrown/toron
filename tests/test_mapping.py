@@ -19,6 +19,8 @@ class TestMapperInit(unittest.TestCase):
             ['idx1', 'population', 'idx1', 'idx2'],
             ['A', 70, 'A', 'x'],
             ['B', 80, 'B', 'y'],
+            ['A', 7, 'A', ''],
+            ['B', 8, '', 'y'],
         ]
         mapper = Mapper(
             crosswalk_name='population',  # <- Matches name of column exactly.
@@ -29,8 +31,10 @@ class TestMapperInit(unittest.TestCase):
         self.assertEqual(mapper.right_keys, ['idx1', 'idx2'])
         self.assertEqual(
             self.get_mapping_data(mapper),
-            {(1, '["A"]', None, '["A", "x"]', None, 70.0),
-             (2, '["B"]', None, '["B", "y"]', None, 80.0)},
+            {(1, '["A"]', b'\x80', '["A", "x"]', b'\xc0', 70.0),
+             (2, '["B"]', b'\x80', '["B", "y"]', b'\xc0', 80.0),
+             (3, '["A"]', b'\x80', '["A", ""]',  b'\x80', 7.0),
+             (4, '["B"]', b'\x80', '["", "y"]',  b'\x40', 8.0)},
         )
 
     def test_parsed_crosswalk_name(self):
@@ -49,8 +53,8 @@ class TestMapperInit(unittest.TestCase):
         self.assertEqual(mapper.right_keys, ['idx1', 'idx2'])
         self.assertEqual(
             self.get_mapping_data(mapper),
-            {(1, '["A"]', None, '["A", "x"]', None, 70.0),
-             (2, '["B"]', None, '["B", "y"]', None, 80.0)},
+            {(1, '["A"]', b'\x80', '["A", "x"]', b'\xc0', 70.0),
+             (2, '["B"]', b'\x80', '["B", "y"]', b'\xc0', 80.0)},
         )
 
     def test_empty_rows_in_data(self):
@@ -65,6 +69,6 @@ class TestMapperInit(unittest.TestCase):
 
         self.assertEqual(
             self.get_mapping_data(mapper),
-            {(1, '["A"]', None, '["A", "x"]', None, 70.0),
-             (2, '["B"]', None, '["B", "y"]', None, 80.0)},
+            {(1, '["A"]', b'\x80', '["A", "x"]', b'\xc0', 70.0),
+             (2, '["B"]', b'\x80', '["B", "y"]', b'\xc0', 80.0)},
         )
