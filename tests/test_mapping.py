@@ -4,6 +4,8 @@ import unittest
 
 from toron.node import Node
 from toron.mapper import Mapper
+from toron.data_models import Structure
+from toron._utils import BitFlags
 
 
 class TestMapperInit(unittest.TestCase):
@@ -101,3 +103,81 @@ class TestMapperMethods(unittest.TestCase):
             ],
         )
         self.node2.add_discrete_categories({'idx1'})
+
+    def test_parse_mapping_flags(self):
+        mapping_flags = [
+            b'\xe0',  # 1, 1, 1
+            b'\xc0',  # 1, 1, 0
+            b'\x80',  # 1, 0, 0
+            b'\x60',  # 0, 1, 1
+            b'\x20',  # 0, 0, 1
+        ]
+        mapping_keys = ['A', 'B', 'C']
+        node_structures = [
+            Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
+            Structure(id=3, granularity=2.0,  bits=(1, 1, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+        ]
+        node_columns = ['A', 'B', 'C']
+
+        results = Mapper._parse_mapping_flags(  # <- Method under test.
+            mapping_flags,
+            mapping_keys,
+            node_structures,
+            node_columns,
+        )
+        valid_levels, invalid_levels = results
+
+        self.assertEqual(
+            valid_levels,
+            [(b'\xe0', ('A', 'B', 'C'), BitFlags(1, 1, 1)),
+             (b'\xc0', ('A', 'B'), BitFlags(1, 1, 0)),
+             (b'\x80', ('A',), BitFlags(1, 0, 0))],
+        )
+
+        self.assertEqual(
+            invalid_levels,
+            [(b'\x60', ('B', 'C'), BitFlags(0, 1, 1)),
+             (b'\x20', ('C',), BitFlags(0, 0, 1))],
+        )
+
+    def test_parse_mapping_flags_different_mapping_order(self):
+        """Mapping keys may be in different order than node columns."""
+        mapping_flags = [
+            b'\xe0',  # 1, 1, 1
+            b'\x60',  # 0, 1, 1
+            b'\x20',  # 0, 0, 1
+            b'\xc0',  # 1, 1, 0
+            b'\x80',  # 1, 0, 0
+        ]
+        mapping_keys = ['C', 'B', 'A']  # <- Different order than node_columns, below.
+
+        node_structures = [
+            Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
+            Structure(id=3, granularity=2.0,  bits=(1, 1, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+        ]
+        node_columns = ['A', 'B', 'C']  # <- Different order than mapping_keys, above.
+
+        results = Mapper._parse_mapping_flags(  # <- Method under test.
+            mapping_flags,
+            mapping_keys,
+            node_structures,
+            node_columns,
+        )
+        valid_levels, invalid_levels = results
+
+        self.assertEqual(
+            valid_levels,
+            [(b'\xe0', ('C', 'B', 'A'), BitFlags(1, 1, 1)),
+             (b'\x60', ('B', 'A'), BitFlags(1, 1, 0)),
+             (b'\x20', ('A',), BitFlags(1, 0, 0))],
+        )
+
+        self.assertEqual(
+            invalid_levels,
+            [(b'\xc0', ('C', 'B'), BitFlags(0, 1, 1)),
+             (b'\x80', ('C',), BitFlags(0, 0, 1))],
+        )
