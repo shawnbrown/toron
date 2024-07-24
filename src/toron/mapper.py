@@ -36,16 +36,16 @@ class Mapper(object):
 
     .. code-block:: text
 
-        +---------------+    +---------------+    +---------------+
-        | left_matches  |    | mapping_data  |    | right_matches |
-        +---------------+    +---------------+    +---------------+
-        | run_id        |<---| run_id        |--->| run_id        |
-        | index_id      |    | left_labels   |    | index_id      |
-        | weight_value  |    | left_flags    |    | weight_value  |
-        | proportion    |    | right_labels  |    | proportion    |
-        +---------------+    | right_flags   |    +---------------+
-                             | mapping_value |
-                             +---------------+
+        +---------------+    +----------------+    +---------------+
+        | left_matches  |    | mapping_data   |    | right_matches |
+        +---------------+    +----------------+    +---------------+
+        | run_id        |<---| run_id         |--->| run_id        |
+        | index_id      |    | left_location  |    | index_id      |
+        | weight_value  |    | left_level     |    | weight_value  |
+        | proportion    |    | right_location |    | proportion    |
+        +---------------+    | right_level    |    +---------------+
+                             | mapping_value  |
+                             +----------------+
     """
     def __init__(
         self,
@@ -57,10 +57,10 @@ class Mapper(object):
         self.cur = self.con.executescript("""
             CREATE TABLE mapping_data(
                 run_id INTEGER PRIMARY KEY,
-                left_labels TEXT NOT NULL,
-                left_flags BLOB_BITFLAGS NOT NULL,
-                right_labels TEXT NOT NULL,
-                right_flags BLOB_BITFLAGS NOT NULL,
+                left_location TEXT NOT NULL,
+                left_level BLOB_BITFLAGS NOT NULL,
+                right_location TEXT NOT NULL,
+                right_level BLOB_BITFLAGS NOT NULL,
                 mapping_value REAL NOT NULL
             );
             CREATE TABLE left_matches(
@@ -90,8 +90,8 @@ class Mapper(object):
             msg = f'{crosswalk_name!r} is not in data, got header: {columns!r}'
             raise ValueError(msg)
 
-        self.left_keys = columns[:value_pos]
-        self.right_keys = columns[value_pos+1:]
+        self.left_columns = columns[:value_pos]
+        self.right_columns = columns[value_pos+1:]
 
         for row in data:
             if not row:
@@ -99,14 +99,14 @@ class Mapper(object):
 
             sql = """
                 INSERT INTO mapping_data
-                  (left_labels, left_flags, right_labels, right_flags, mapping_value)
-                  VALUES (:left_labels, :left_flags, :right_labels, :right_flags, :mapping_value)
+                  (left_location, left_level, right_location, right_level, mapping_value)
+                  VALUES (:left_location, :left_level, :right_location, :right_level, :mapping_value)
             """
             parameters = {
-                'left_labels': dumps(row[:value_pos]),
-                'left_flags': bytes(BitFlags(x != '' for x in row[:value_pos])),
-                'right_labels': dumps(row[value_pos+1:]),
-                'right_flags': bytes(BitFlags(x != '' for x in row[value_pos+1:])),
+                'left_location': dumps(row[:value_pos]),
+                'left_level': bytes(BitFlags(x != '' for x in row[:value_pos])),
+                'right_location': dumps(row[value_pos+1:]),
+                'right_level': bytes(BitFlags(x != '' for x in row[value_pos+1:])),
                 'mapping_value': row[value_pos],
             }
             try:
@@ -116,24 +116,24 @@ class Mapper(object):
                 raise sqlite3.IntegrityError(msg) from err
 
     @staticmethod
-    def _parse_mapping_flags(
-        mapping_flags: Sequence[bytes],
-        mapping_keys: Sequence[str],
-        node_structures: Sequence['Structure'],
+    def _parse_mapping_levels(
+        left_or_right_columns: Sequence[str],
+        left_or_right_levels: Sequence[bytes],
         node_columns: Sequence[str],
+        node_structures: Sequence['Structure'],
     ) -> Tuple[List[Tuple[bytes, Tuple[str, ...], BitFlags]],
                List[Tuple[bytes, Tuple[str, ...], BitFlags]]]:
-        """Return a two lists (a tuple) of mapping flags information.
+        """Return a two lists (a tuple) of mapping level information.
         The first list contains valid records (in descending order of
         granularity) and the second list contains invalid records.
 
         .. code-block:: python
 
-            >>> results = Mapper._get_flags_to_levels(
-            ...     mapping_flags,
-            ...     mapping_keys,
-            ...     node_structures,
+            >>> results = Mapper._parse_mapping_levels(
+            ...     left_columns,
+            ...     left_levels,
             ...     node_columns,
+            ...     node_structures,
             ... )
             >>>valid_levels, invalid_levels = results
             >>> valid_levels
@@ -146,10 +146,10 @@ class Mapper(object):
         """
         # Make a list of level-info tuples.
         def make_info(bytes_flag):
-            mapping_columns = tuple(compress(mapping_keys, BitFlags(bytes_flag)))
+            mapping_columns = tuple(compress(left_or_right_columns, BitFlags(bytes_flag)))
             mapping_level = BitFlags((x in mapping_columns) for x in node_columns)
             return (bytes_flag, mapping_columns, mapping_level)
-        level_info = [make_info(x) for x in mapping_flags]
+        level_info = [make_info(x) for x in left_or_right_levels]
 
         # Make dict with bit-flags keys and granularity values.
         all_valid_levels = {BitFlags(x.bits): x.granularity for x in node_structures}
