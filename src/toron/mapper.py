@@ -116,55 +116,55 @@ class Mapper(object):
                 raise sqlite3.IntegrityError(msg) from err
 
     @staticmethod
-    def _parse_mapping_levels(
+    def _get_level_pairs(
         left_or_right_columns: Sequence[str],
         left_or_right_levels: Sequence[bytes],
         node_columns: Sequence[str],
         node_structures: Sequence['Structure'],
-    ) -> Tuple[List[Tuple[bytes, Tuple[str, ...], BitFlags]],
-               List[Tuple[bytes, Tuple[str, ...], BitFlags]]]:
-        """Return a two lists (a tuple) of mapping level information.
-        The first list contains valid records (in descending order of
-        granularity) and the second list contains invalid records.
+    ) -> List[Tuple[bytes, Optional[bytes]]]:
+        """Return a list of level pairs--tuples containing two levels,
+        ``input_bytes`` and ``node_bytes``. Level pairs are sorted in
+        descending order of granularity (as defined in the node
+        structures). If an input level has no corresponding node level,
+        then the ``node_bytes`` will be ``None``.
 
         .. code-block:: python
 
-            >>> results = Mapper._parse_mapping_levels(
+            >>> mapper = Mapper(...)
+            >>> level_pairs = mapper._get_level_pairs(
             ...     left_columns,
             ...     left_levels,
             ...     node_columns,
             ...     node_structures,
             ... )
-            >>>valid_levels, invalid_levels = results
-            >>> valid_levels
-            [(b'\xe0', ('A', 'B', 'C'), BitFlags(1, 1, 1)),
-             (b'\xc0', ('A', 'B'), BitFlags(1, 1, 0)),
-             (b'\x80', ('A',), BitFlags(1, 0, 0))]
-            >>> invalid_levels
-            [(b'\x60', ('B', 'C'), BitFlags(0, 1, 1)),
-             (b'\x20', ('C',), BitFlags(0, 0, 1))]
+            >>> level_pairs
+            [(b'\xe0', b'\xe0'),
+             (b'\xc0', b'\xc0'),
+             (b'\x80', b'\x80'),
+             (b'\x60', None),
+             (b'\x20', None)]
         """
-        # Make a list of level-info tuples.
-        def make_info(bytes_flag):
-            mapping_columns = tuple(compress(left_or_right_columns, BitFlags(bytes_flag)))
-            mapping_level = BitFlags((x in mapping_columns) for x in node_columns)
-            return (bytes_flag, mapping_columns, mapping_level)
-        level_info = [make_info(x) for x in left_or_right_levels]
+        # Build dictionary with bytes (keys) and granularity (values).
+        make_item = lambda x: (bytes(BitFlags(x.bits)), x.granularity)
+        granularity_items = (make_item(x) for x in node_structures)
+        granularity_dict = {k: v for k, v in granularity_items if k != b''}
 
-        # Make dict with bit-flags keys and granularity values.
-        all_valid_levels = {BitFlags(x.bits): x.granularity for x in node_structures}
+        # Build list of `(input_bytes, node_bytes)` items.
+        levels = []
+        for input_bytes in left_or_right_levels:
+            input_bits = BitFlags(input_bytes)
+            mapped_columns = tuple(compress(left_or_right_columns, input_bits))
+            node_bits = BitFlags((x in mapped_columns) for x in node_columns)
+            node_bytes: Optional[bytes] = bytes(node_bits)
+            if node_bytes not in granularity_dict:
+                node_bytes = None
+            levels.append((input_bytes, node_bytes))
 
-        # Get valid levels and sort by greatest level of granularity.
-        valid_level_info = [x for x in level_info if x[2] in all_valid_levels]
-        def sort_key(x):
-            val = all_valid_levels.get(x[2])
-            return val if val is not None else -1.0
-        valid_level_info = sorted(valid_level_info, key=sort_key, reverse=True)
+        # Sort levels from highest to lowest granularity.
+        sort_key = lambda x: granularity_dict.get(x[1], -1)
+        levels = sorted(levels, key=sort_key, reverse=True)
 
-        # Get invalid levels in given order.
-        invalid_level_info = [x for x in level_info if x[2] not in all_valid_levels]
-
-        return (valid_level_info, invalid_level_info)
+        return levels
 
     def close(self) -> None:
         """Close internal connection to temporary database."""
