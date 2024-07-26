@@ -198,12 +198,8 @@ class Mapper(object):
                 closing(self.con.cursor()) as cur1, \
                 closing(self.con.cursor()) as cur2:
 
-            column_manager = node._dal.ColumnManager(node_cur)
-            structure_repo = node._dal.StructureRepository(node_cur)
             index_repo = node._dal.IndexRepository(node_cur)
             property_repo = node._dal.IndexRepository(node_cur)
-            node_columns = column_manager.get_columns()
-            node_structures = structure_repo.get_all()
 
             cur1.execute(f'SELECT DISTINCT {level_column} FROM mapping_data')
             all_match_levels = [x[0] for x in cur1]
@@ -212,8 +208,8 @@ class Mapper(object):
             ordered_level_pairs = self._get_level_pairs(
                 left_or_right_columns=match_columns,
                 left_or_right_levels=all_match_levels,
-                node_columns=node_columns,
-                node_structures=node_structures,
+                node_columns=node._dal.ColumnManager(node_cur).get_columns(),
+                node_structures=node._dal.StructureRepository(node_cur).get_all(),
             )
 
             # Loop over levels from highest to lowest granularity.
