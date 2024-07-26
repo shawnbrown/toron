@@ -199,7 +199,6 @@ class Mapper(object):
                 closing(self.con.cursor()) as cur2:
 
             index_repo = node._dal.IndexRepository(node_cur)
-            property_repo = node._dal.IndexRepository(node_cur)
 
             cur1.execute(f'SELECT DISTINCT {level_column} FROM mapping_data')
             all_match_levels = [x[0] for x in cur1]
