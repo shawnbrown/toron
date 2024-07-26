@@ -1,6 +1,7 @@
 """Tests for toron/mapper.py module."""
 
 import unittest
+from contextlib import closing
 
 from toron.node import Node
 from toron.mapper import Mapper
@@ -114,6 +115,14 @@ class TestMapperMethods(unittest.TestCase):
         )
         self.node2.add_discrete_categories({'idx1'})
 
+    @staticmethod
+    def select_all_helper(mapper, table):
+        """Helper method to get contents of a table in mapper."""
+        with closing(mapper.con.cursor()) as cur:
+            cur.execute(f'SELECT * FROM {table}')
+            contents = cur.fetchall()
+        return contents
+
     def test_get_level_pairs(self):
         right_columns = ['A', 'B', 'C']
         right_levels = [
@@ -179,4 +188,40 @@ class TestMapperMethods(unittest.TestCase):
              (b'\x20', b'\x80'),  # A
              (b'\xc0', None),     # B, C
              (b'\x80', None)]     # C
+        )
+
+    def test_match_records(self):
+        mapper = Mapper(
+            crosswalk_name='population',  # <- Matches name of column exactly.
+            data=[
+                ['idx', 'population', 'idx1', 'idx2'],
+                ['A', 70, 'A', 'x'],
+                ['B', 80, 'B', 'y'],
+                ['A', 7, 'A', ''],
+                ['B', 8, '', 'y'],
+            ],
+        )
+
+        # Before matching, match tables should be empty.
+        self.assertEqual(self.select_all_helper(mapper, 'right_matches'), [])
+        self.assertEqual(self.select_all_helper(mapper, 'left_matches'), [])
+
+        # Match right-side and test results.
+        mapper.match_records(self.node2, 'right')
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1, 100.0, b'\xc0', None),
+             (2, 4, 100.0, b'\xc0', None),
+             (3, 1, 100.0, b'\x80', None),
+             (3, 2, 100.0, b'\x80', None)],
+        )
+
+        # Match left-side and test results.
+        mapper.match_records(self.node1, 'left')
+        self.assertEqual(
+            self.select_all_helper(mapper, 'left_matches'),
+            [(1, 1, 100.0, b'\x80', None),
+             (2, 2, 100.0, b'\x80', None),
+             (3, 1, 100.0, b'\x80', None),
+             (4, 2, 100.0, b'\x80', None)],
         )

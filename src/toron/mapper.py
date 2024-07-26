@@ -1,8 +1,12 @@
 """Tools for building weighted crosswalks between sets of labels."""
 
 import sqlite3
+from contextlib import (
+    closing,
+)
 from json import (
     dumps,
+    loads,
 )
 from itertools import (
     compress,
@@ -11,6 +15,7 @@ from ._typing import (
     Dict,
     Iterable,
     List,
+    Literal,
     Optional,
     Sequence,
     Tuple,
@@ -26,6 +31,7 @@ from ._utils import (
 
 if TYPE_CHECKING:
     from .data_models import Structure
+    from .node import Node
 
 
 class Mapper(object):
@@ -42,9 +48,9 @@ class Mapper(object):
         | run_id        |<---| run_id         |--->| run_id        |
         | index_id      |    | left_location  |    | index_id      |
         | weight_value  |    | left_level     |    | weight_value  |
-        | proportion    |    | right_location |    | proportion    |
-        +---------------+    | right_level    |    +---------------+
-                             | mapping_value  |
+        | mapping_level |    | right_location |    | mapping_level |
+        | proportion    |    | right_level    |    | proportion    |
+        +---------------+    | mapping_value  |    +---------------+
                              +----------------+
     """
     def __init__(
@@ -67,12 +73,14 @@ class Mapper(object):
                 run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
                 index_id INTEGER,
                 weight_value REAL CHECK (0.0 <= weight_value),
+                mapping_level BLOB_BITFLAGS NOT NULL,
                 proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
             );
             CREATE TABLE right_matches(
                 run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
                 index_id INTEGER,
                 weight_value REAL CHECK (0.0 <= weight_value),
+                mapping_level BLOB_BITFLAGS NOT NULL,
                 proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
             );
         """)
@@ -165,6 +173,78 @@ class Mapper(object):
         levels = sorted(levels, key=sort_key, reverse=True)
 
         return levels
+
+    def match_records(
+        self,
+        node: 'Node',
+        side: Literal['left', 'right'],
+    ) -> None:
+        """Match mapping rows to node index records."""
+        if side == 'left':
+            match_table = 'left_matches'
+            match_columns = self.left_columns
+            location_column = 'left_location'
+            level_column = 'left_level'
+        elif side == 'right':
+            match_table = 'right_matches'
+            match_columns = self.right_columns
+            location_column = 'right_location'
+            level_column = 'right_level'
+        else:
+            msg = f"side must be 'left' or 'right', got {side!r}"
+            raise ValueError(msg)
+
+        with node._managed_cursor() as node_cur, \
+                closing(self.con.cursor()) as cur1, \
+                closing(self.con.cursor()) as cur2:
+
+            column_manager = node._dal.ColumnManager(node_cur)
+            structure_repo = node._dal.StructureRepository(node_cur)
+            index_repo = node._dal.IndexRepository(node_cur)
+            property_repo = node._dal.IndexRepository(node_cur)
+            node_columns = column_manager.get_columns()
+            node_structures = structure_repo.get_all()
+
+            cur1.execute(f'SELECT DISTINCT {level_column} FROM mapping_data')
+            all_match_levels = [x[0] for x in cur1]
+
+            # Get level pairs in order of decreasing granularity.
+            ordered_level_pairs = self._get_level_pairs(
+                left_or_right_columns=match_columns,
+                left_or_right_levels=all_match_levels,
+                node_columns=node_columns,
+                node_structures=node_structures,
+            )
+
+            # Loop over levels from highest to lowest granularity.
+            for match_bytes, node_bytes in ordered_level_pairs:
+                if node_bytes is None:
+                    continue  # Skip if no matching level in node.
+
+                sql = f"""
+                    SELECT run_id, {location_column}
+                    FROM mapping_data
+                    WHERE {level_column}=?
+                """
+                cur1.execute(sql, (match_bytes,))
+
+                # Loop over mapping rows for current granularity level.
+                for row in cur1:
+                    run_id, location_labels = row
+                    zipped = zip(match_columns, loads(location_labels))
+                    criteria = {k: v for k, v in zipped if v != ''}
+
+                    # Loop over index records that match current mapping row.
+                    for index in index_repo.find_by_label(criteria):
+                        weight_value = 100
+                        sql = f"""
+                            INSERT INTO {match_table}
+                                (run_id, index_id, weight_value, mapping_level)
+                            VALUES
+                                (?, ?, ?, ?)
+                        """
+                        parameters = (run_id, index.id, weight_value, node_bytes)
+                        cur2.execute(sql, parameters)
 
     def close(self) -> None:
         """Close internal connection to temporary database."""
