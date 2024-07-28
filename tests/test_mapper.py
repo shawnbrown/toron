@@ -1,7 +1,9 @@
 """Tests for toron/mapper.py module."""
 
+import logging
 import unittest
 from contextlib import closing
+from io import StringIO
 
 from toron.node import Node
 from toron.mapper import Mapper
@@ -227,8 +229,25 @@ class TestMapperMethods(unittest.TestCase):
         )
 
     def test_match_records_ambiguous_matches_over_limit(self):
+        logger = logging.getLogger('toron')
+        log_stream = StringIO()
+        handler = logging.StreamHandler(log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        logger.addHandler(handler)
+
         mapper = Mapper('population', self.mapper_data)
-        mapper.match_records(self.node2, 'right')  # <- Match limit defaults to 1.
+        try:
+            mapper.match_records(self.node2, 'right')  # <- Match limit defaults to 1.
+        finally:
+            logger.removeHandler(handler)
+
+        self.assertEqual(
+            log_stream.getvalue(),
+            ('WARNING: skipped 1 values that matched too many records\n'
+             'WARNING: current match_limit is 1 but data includes values that match up to 2 records\n'),
+        )
+        log_stream.close()
+
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
             [(1, 1, 100.0, b'\xc0', None),

@@ -30,3 +30,7 @@ from ._utils import (
 )
 
 ToronError.__module__ = 'toron'
+
+# Define 'toron' logger and set level to INFO (20) but leave
+# handler unspecified--defaults to "handler of last resort".
+__import__('logging').getLogger(__name__).setLevel(level=20)

@@ -1,6 +1,8 @@
 """Tools for building weighted crosswalks between sets of labels."""
 
+import logging
 import sqlite3
+from collections import Counter
 from contextlib import (
     closing,
 )
@@ -33,6 +35,9 @@ from ._utils import (
 if TYPE_CHECKING:
     from .data_models import Structure
     from .node import Node
+
+
+logger = logging.getLogger(__name__)
 
 
 class Mapper(object):
@@ -196,6 +201,7 @@ class Mapper(object):
             msg = f"side must be 'left' or 'right', got {side!r}"
             raise ValueError(msg)
 
+        counter: Counter = Counter()
         with node._managed_cursor() as node_cur, \
                 closing(self.con.cursor()) as cur1, \
                 closing(self.con.cursor()) as cur2:
@@ -235,6 +241,11 @@ class Mapper(object):
                     all_matches = index_repo.find_by_label(criteria)
                     matches = list(islice(all_matches, match_limit + 1))
                     if len(matches) > match_limit:
+                        counter['overlimit_max'] = max(
+                            counter['overlimit_max'],
+                            len(matches) + sum(1 for _ in all_matches),
+                        )
+                        counter['count_overlimit'] += 1
                         continue  # Skip to next row in mapping.
 
                     for index in matches:
@@ -247,6 +258,15 @@ class Mapper(object):
                         """
                         parameters = (run_id, index.id, weight_value, node_bytes)
                         cur2.execute(sql, parameters)
+
+        if counter['count_overlimit']:
+            logger.warning(
+                f'skipped {counter['count_overlimit']} values that matched too many records'
+            )
+            logger.warning(
+                f'current match_limit is {match_limit} but data includes values '
+                f'that match up to {counter['overlimit_max']} records'
+            )
 
     def close(self) -> None:
         """Close internal connection to temporary database."""
