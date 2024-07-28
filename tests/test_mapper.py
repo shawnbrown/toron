@@ -115,6 +115,14 @@ class TestMapperMethods(unittest.TestCase):
         )
         self.node2.add_discrete_categories({'idx1'})
 
+        self.mapper_data = [
+            ['idx', 'population', 'idx1', 'idx2'],
+            ['A', 70, 'A', 'x'],
+            ['B', 80, 'B', 'y'],
+            ['A', 7, 'A', ''],
+            ['B', 8, '', 'y'],
+        ]
+
     @staticmethod
     def select_all_helper(mapper, table):
         """Helper method to get contents of a table in mapper."""
@@ -207,33 +215,8 @@ class TestMapperMethods(unittest.TestCase):
              (b'\x80', None)]     # C
         )
 
-    def test_match_records(self):
-        mapper = Mapper(
-            crosswalk_name='population',  # <- Matches name of column exactly.
-            data=[
-                ['idx', 'population', 'idx1', 'idx2'],
-                ['A', 70, 'A', 'x'],
-                ['B', 80, 'B', 'y'],
-                ['A', 7, 'A', ''],
-                ['B', 8, '', 'y'],
-            ],
-        )
-
-        # Before matching, match tables should be empty.
-        self.assertEqual(self.select_all_helper(mapper, 'right_matches'), [])
-        self.assertEqual(self.select_all_helper(mapper, 'left_matches'), [])
-
-        # Match right-side and test results.
-        mapper.match_records(self.node2, 'right')
-        self.assertEqual(
-            self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1, 100.0, b'\xc0', None),
-             (2, 4, 100.0, b'\xc0', None),
-             (3, 1, 100.0, b'\x80', None),
-             (3, 2, 100.0, b'\x80', None)],
-        )
-
-        # Match left-side and test results.
+    def test_match_records_exact_matches(self):
+        mapper = Mapper('population', self.mapper_data)
         mapper.match_records(self.node1, 'left')
         self.assertEqual(
             self.select_all_helper(mapper, 'left_matches'),
@@ -241,4 +224,26 @@ class TestMapperMethods(unittest.TestCase):
              (2, 2, 100.0, b'\x80', None),
              (3, 1, 100.0, b'\x80', None),
              (4, 2, 100.0, b'\x80', None)],
+        )
+
+    def test_match_records_ambiguous_matches_over_limit(self):
+        mapper = Mapper('population', self.mapper_data)
+        mapper.match_records(self.node2, 'right')  # <- Match limit defaults to 1.
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1, 100.0, b'\xc0', None),
+             (2, 4, 100.0, b'\xc0', None)],
+            msg=('should only match two records, other records are '
+                 'over the match limit'),
+        )
+
+    def test_match_records_ambiguous_matches_within_limit(self):
+        mapper = Mapper('population', self.mapper_data)
+        mapper.match_records(self.node2, 'right', match_limit=2)
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1, 100.0, b'\xc0', None),
+             (2, 4, 100.0, b'\xc0', None),
+             (3, 1, 100.0, b'\x80', None),
+             (3, 2, 100.0, b'\x80', None)],
         )

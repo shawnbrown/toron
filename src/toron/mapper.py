@@ -10,6 +10,7 @@ from json import (
 )
 from itertools import (
     compress,
+    islice,
 )
 from ._typing import (
     Dict,
@@ -178,6 +179,7 @@ class Mapper(object):
         self,
         node: 'Node',
         side: Literal['left', 'right'],
+        match_limit: int = 1,
     ) -> None:
         """Match mapping rows to node index records."""
         if side == 'left':
@@ -230,7 +232,12 @@ class Mapper(object):
                     criteria = {k: v for k, v in zipped if v != ''}
 
                     # Loop over index records that match current mapping row.
-                    for index in index_repo.find_by_label(criteria):
+                    all_matches = index_repo.find_by_label(criteria)
+                    matches = list(islice(all_matches, match_limit + 1))
+                    if len(matches) > match_limit:
+                        continue  # Skip to next row in mapping.
+
+                    for index in matches:
                         weight_value = 100
                         sql = f"""
                             INSERT INTO {match_table}
