@@ -123,6 +123,23 @@ class TestMapperMethods(unittest.TestCase):
             contents = cur.fetchall()
         return contents
 
+    def test_crosswalk_name_parsing(self):
+        mapper1 = Mapper(
+            crosswalk_name='somename',
+            data=[['left_col', 'somename', 'right_col'],  # <- Exact name match.
+                  ['A', 1, 'A']],
+        )
+        self.assertEqual(mapper1.left_columns, ['left_col'])
+        self.assertEqual(mapper1.right_columns, ['right_col'])
+
+        mapper2 = Mapper(
+            crosswalk_name='somename',
+            data=[['left_col', 'somename: foo -> bar', 'right_col'],  # <- Parsed from shorthand syntax.
+                  ['A', 1, 'A']],
+        )
+        self.assertEqual(mapper2.left_columns, ['left_col'])
+        self.assertEqual(mapper2.right_columns, ['right_col'])
+
     def test_get_level_pairs(self):
         right_columns = ['A', 'B', 'C']
         right_levels = [
