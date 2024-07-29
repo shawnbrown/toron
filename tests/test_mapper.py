@@ -79,7 +79,76 @@ class TestMapperInit(unittest.TestCase):
         )
 
 
-class TestMapperMethods(unittest.TestCase):
+class TestMapperGetLevelPairs(unittest.TestCase):
+    def test_same_column_order(self):
+        right_columns = ['A', 'B', 'C']
+        right_levels = [
+            b'\xe0',  # 1, 1, 1
+            b'\xc0',  # 1, 1, 0
+            b'\x80',  # 1, 0, 0
+            b'\x60',  # 0, 1, 1
+            b'\x20',  # 0, 0, 1
+        ]
+        node_columns = ['A', 'B', 'C']
+        node_structures = [
+            Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
+            Structure(id=3, granularity=2.0,  bits=(1, 1, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+        ]
+
+        level_pairs = Mapper._get_level_pairs(  # <- Method under test.
+            right_columns,
+            right_levels,
+            node_columns,
+            node_structures,
+        )
+
+        self.assertEqual(
+            level_pairs,
+            [(b'\xe0', b'\xe0'),  # A, B, C
+             (b'\xc0', b'\xc0'),  # A, B
+             (b'\x80', b'\x80'),  # A
+             (b'\x60', None),     # B, C
+             (b'\x20', None)]     # C
+        )
+
+    def test_different_column_order(self):
+        """Mapping columns may be in different order than node columns."""
+        right_columns = ['C', 'B', 'A']  # <- Different order than node_columns, below.
+        right_levels = [
+            b'\xe0',  # 1, 1, 1
+            b'\x60',  # 0, 1, 1
+            b'\x20',  # 0, 0, 1
+            b'\xc0',  # 1, 1, 0
+            b'\x80',  # 1, 0, 0
+        ]
+        node_columns = ['A', 'B', 'C']  # <- Different order than right_columns, above.
+        node_structures = [
+            Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
+            Structure(id=3, granularity=2.0,  bits=(1, 1, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+        ]
+
+        level_pairs = Mapper._get_level_pairs(  # <- Method under test.
+            right_columns,
+            right_levels,
+            node_columns,
+            node_structures,
+        )
+
+        self.assertEqual(
+            level_pairs,
+            [(b'\xe0', b'\xe0'),  # A, B, C
+             (b'\x60', b'\xc0'),  # A, B
+             (b'\x20', b'\x80'),  # A
+             (b'\xc0', None),     # B, C
+             (b'\x80', None)]     # C
+        )
+
+
+class TestMapperMatchRecords(unittest.TestCase):
     def setUp(self):
         self.node1 = Node()
         self.node1.add_index_columns('idx')
@@ -132,73 +201,6 @@ class TestMapperMethods(unittest.TestCase):
             cur.execute(f'SELECT * FROM {table}')
             contents = cur.fetchall()
         return contents
-
-    def test_get_level_pairs(self):
-        right_columns = ['A', 'B', 'C']
-        right_levels = [
-            b'\xe0',  # 1, 1, 1
-            b'\xc0',  # 1, 1, 0
-            b'\x80',  # 1, 0, 0
-            b'\x60',  # 0, 1, 1
-            b'\x20',  # 0, 0, 1
-        ]
-        node_columns = ['A', 'B', 'C']
-        node_structures = [
-            Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
-            Structure(id=3, granularity=2.0,  bits=(1, 1, 0)),
-            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
-            Structure(id=1, granularity=None, bits=(0, 0, 0)),
-        ]
-
-        level_pairs = Mapper._get_level_pairs(  # <- Method under test.
-            right_columns,
-            right_levels,
-            node_columns,
-            node_structures,
-        )
-
-        self.assertEqual(
-            level_pairs,
-            [(b'\xe0', b'\xe0'),  # A, B, C
-             (b'\xc0', b'\xc0'),  # A, B
-             (b'\x80', b'\x80'),  # A
-             (b'\x60', None),     # B, C
-             (b'\x20', None)]     # C
-        )
-
-    def test_get_level_pairs_different_column_order(self):
-        """Mapping columns may be in different order than node columns."""
-        right_columns = ['C', 'B', 'A']  # <- Different order than node_columns, below.
-        right_levels = [
-            b'\xe0',  # 1, 1, 1
-            b'\x60',  # 0, 1, 1
-            b'\x20',  # 0, 0, 1
-            b'\xc0',  # 1, 1, 0
-            b'\x80',  # 1, 0, 0
-        ]
-        node_columns = ['A', 'B', 'C']  # <- Different order than right_columns, above.
-        node_structures = [
-            Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
-            Structure(id=3, granularity=2.0,  bits=(1, 1, 0)),
-            Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
-            Structure(id=1, granularity=None, bits=(0, 0, 0)),
-        ]
-
-        level_pairs = Mapper._get_level_pairs(  # <- Method under test.
-            right_columns,
-            right_levels,
-            node_columns,
-            node_structures,
-        )
-
-        self.assertEqual(
-            level_pairs,
-            [(b'\xe0', b'\xe0'),  # A, B, C
-             (b'\x60', b'\xc0'),  # A, B
-             (b'\x20', b'\x80'),  # A
-             (b'\xc0', None),     # B, C
-             (b'\x80', None)]     # C
-        )
 
     def test_match_records_exact_matches(self):
         mapper = Mapper('population', self.mapper_data)
