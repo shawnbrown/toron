@@ -258,17 +258,31 @@ class Mapper(object):
                         counter['count_overlimit'] += 1
                         continue  # Skip to next row in mapping.
 
+                    # Build tuple of `(index_id, weight_value)` for all matches.
+                    index_id_and_weight_value = []
                     for index in matches:
                         weight = weight_repo.get_by_weight_group_id_and_index_id(
                             weight_group.id, index.id
                         )
+                        index_id_and_weight_value.append(
+                            (index.id, getattr(weight, 'value', None))
+                        )
+
+                    # If match is ambiguous and any weight is missing, skip it.
+                    if len(index_id_and_weight_value) > 1 and \
+                            any(x is None for _, x in index_id_and_weight_value):
+                        counter['count_unweighted'] += 1
+                        continue  # Skip to next row in mapping.
+
+                    # Insert matches into appropriate table.
+                    for index_id, weight_value in index_id_and_weight_value:
                         sql = f"""
                             INSERT INTO {match_table}
                                 (run_id, index_id, weight_value, mapping_level)
                             VALUES
                                 (?, ?, ?, ?)
                         """
-                        parameters = (run_id, index.id, weight.value, node_bytes)
+                        parameters = (run_id, index_id, weight_value, node_bytes)
                         cur2.execute(sql, parameters)
 
         if counter['count_overlimit']:
@@ -278,6 +292,12 @@ class Mapper(object):
             logger.warning(
                 f"current match_limit is {match_limit} but data includes values "
                 f"that match up to {counter['overlimit_max']} records"
+            )
+
+        if counter['count_unweighted']:
+            logger.warning(
+                f"skipped {counter['count_unweighted']} values that ambiguously "
+                f"matched to one or more records that have no associated weight"
             )
 
     def close(self) -> None:

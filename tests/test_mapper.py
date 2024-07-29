@@ -255,3 +255,49 @@ class TestMapperMatchRecords(unittest.TestCase):
              (3, 1,  3.0, b'\x80', None),
              (3, 2, 15.0, b'\x80', None)],
         )
+
+    def test_missing_weight_exact_match(self):
+        """Exact matches are OK even when weight is missing."""
+        # Delete a weight record that's only involved in an exact match.
+        self.node2.delete_weights('wght', idx1='B', idx2='y')
+
+        mapper = Mapper('population', self.mapper_data)
+        mapper.match_records(self.node2, 'right', match_limit=2)
+
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1,  3.0, b'\xc0', None),
+             (2, 4, None, b'\xc0', None),  # <- Weight missing but exact match.
+             (3, 1,  3.0, b'\x80', None),
+             (3, 2, 15.0, b'\x80', None)],
+        )
+
+    def test_missing_weight_ambiguous_match(self):
+        """Ambiguous matches require weight values for all records.
+        If one or more matched records is missing a weight, then the
+        match must be skipped because there's no way to calculate a
+        distribution.
+        """
+        # Delete a weight record that's involved in an ambiguous match.
+        self.node2.delete_weights('wght', idx1='A', idx2='x')
+
+        mapper = Mapper('population', self.mapper_data)
+        mapper.match_records(self.node2, 'right', match_limit=2)
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ('WARNING: skipped 1 values that ambiguously matched to '
+             'one or more records that have no associated weight\n'),
+        )
+
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1, None, b'\xc0', None),  # <- Weight missing but exact match.
+             (2, 4,  7.0, b'\xc0', None)],
+        )
+
+        # Above, the self.mapper_data record `['A', 7, 'A', '']` is not matched
+        # to the right-side table because it's ambiguous AND one of the involved
+        # index records (index_id 1) has no corresponding weight. Also notice
+        # that the self.mapper_data record `['A', 70, 'A', 'x']` IS matched
+        # because it's an exact match (despite lacking a weight).
