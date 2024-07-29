@@ -26,6 +26,9 @@ from ._typing import (
     TYPE_CHECKING,
 )
 
+from .data_service import (
+    get_default_weight_group,
+)
 from ._utils import (
     normalize_tabular,
     parse_edge_shorthand,
@@ -207,9 +210,16 @@ class Mapper(object):
                 closing(self.con.cursor()) as cur2:
 
             index_repo = node._dal.IndexRepository(node_cur)
+            weight_repo = node._dal.WeightRepository(node_cur)
 
             cur1.execute(f'SELECT DISTINCT {level_column} FROM mapping_data')
             all_match_levels = [x[0] for x in cur1]
+
+            weight_group = get_default_weight_group(
+                property_repo=node._dal.PropertyRepository(node_cur),
+                weight_group_repo=node._dal.WeightGroupRepository(node_cur),
+                required=True,
+            )
 
             # Get level pairs in order of decreasing granularity.
             ordered_level_pairs = self._get_level_pairs(
@@ -249,14 +259,16 @@ class Mapper(object):
                         continue  # Skip to next row in mapping.
 
                     for index in matches:
-                        weight_value = 100
+                        weight = weight_repo.get_by_weight_group_id_and_index_id(
+                            weight_group.id, index.id
+                        )
                         sql = f"""
                             INSERT INTO {match_table}
                                 (run_id, index_id, weight_value, mapping_level)
                             VALUES
                                 (?, ?, ?, ?)
                         """
-                        parameters = (run_id, index.id, weight_value, node_bytes)
+                        parameters = (run_id, index.id, weight.value, node_bytes)
                         cur2.execute(sql, parameters)
 
         if counter['count_overlimit']:

@@ -220,10 +220,10 @@ class TestMapperMatchRecords(unittest.TestCase):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'left_matches'),
-            [(1, 1, 100.0, b'\x80', None),
-             (2, 2, 100.0, b'\x80', None),
-             (3, 1, 100.0, b'\x80', None),
-             (4, 2, 100.0, b'\x80', None)],
+            [(1, 1, 16.0, b'\x80', None),
+             (2, 2,  8.0, b'\x80', None),
+             (3, 1, 16.0, b'\x80', None),
+             (4, 2,  8.0, b'\x80', None)],
         )
 
     def test_match_records_ambiguous_matches_over_limit(self):
@@ -238,8 +238,8 @@ class TestMapperMatchRecords(unittest.TestCase):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1, 100.0, b'\xc0', None),
-             (2, 4, 100.0, b'\xc0', None)],
+            [(1, 1, 3.0, b'\xc0', None),
+             (2, 4, 7.0, b'\xc0', None)],
             msg=('should only match two records, other records are '
                  'over the match limit'),
         )
@@ -250,8 +250,8 @@ class TestMapperMatchRecords(unittest.TestCase):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1, 100.0, b'\xc0', None),
-             (2, 4, 100.0, b'\xc0', None),
-             (3, 1, 100.0, b'\x80', None),
-             (3, 2, 100.0, b'\x80', None)],
+            [(1, 1,  3.0, b'\xc0', None),
+             (2, 4,  7.0, b'\xc0', None),
+             (3, 1,  3.0, b'\x80', None),
+             (3, 2, 15.0, b'\x80', None)],
         )
