@@ -186,6 +186,18 @@ class TestMapperMatchRecords(unittest.TestCase):
         )
         self.node2.add_discrete_categories({'idx1'})
 
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
+
+        # Add handler to 'toron' logger.
+        logger = logging.getLogger('toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        logger.addHandler(handler)
+        self.addCleanup(lambda: logger.removeHandler(handler))
+
+        # Add mapping data.
         self.mapper_data = [
             ['idx', 'population', 'idx1', 'idx2'],
             ['A', 70, 'A', 'x'],
@@ -205,6 +217,7 @@ class TestMapperMatchRecords(unittest.TestCase):
     def test_match_records_exact_matches(self):
         mapper = Mapper('population', self.mapper_data)
         mapper.match_records(self.node1, 'left')
+
         self.assertEqual(
             self.select_all_helper(mapper, 'left_matches'),
             [(1, 1, 100.0, b'\x80', None),
@@ -214,24 +227,14 @@ class TestMapperMatchRecords(unittest.TestCase):
         )
 
     def test_match_records_ambiguous_matches_over_limit(self):
-        logger = logging.getLogger('toron')
-        log_stream = StringIO()
-        handler = logging.StreamHandler(log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        logger.addHandler(handler)
-
         mapper = Mapper('population', self.mapper_data)
-        try:
-            mapper.match_records(self.node2, 'right')  # <- Match limit defaults to 1.
-        finally:
-            logger.removeHandler(handler)
+        mapper.match_records(self.node2, 'right')  # <- Match limit defaults to 1.
 
         self.assertEqual(
-            log_stream.getvalue(),
+            self.log_stream.getvalue(),
             ('WARNING: skipped 1 values that matched too many records\n'
              'WARNING: current match_limit is 1 but data includes values that match up to 2 records\n'),
         )
-        log_stream.close()
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
@@ -244,6 +247,7 @@ class TestMapperMatchRecords(unittest.TestCase):
     def test_match_records_ambiguous_matches_within_limit(self):
         mapper = Mapper('population', self.mapper_data)
         mapper.match_records(self.node2, 'right', match_limit=2)
+
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
             [(1, 1, 100.0, b'\xc0', None),
