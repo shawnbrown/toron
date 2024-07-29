@@ -15,8 +15,9 @@ class TestMapperInit(unittest.TestCase):
     @staticmethod
     def get_mapping_data(mapper):
         """Helper method to get contents of 'mapping_data' table."""
-        mapper.cur.execute('SELECT * FROM mapping_data')
-        return set(mapper.cur.fetchall())
+        with closing(mapper.con.cursor()) as cur:
+            cur.execute('SELECT * FROM mapping_data')
+            return set(cur.fetchall())
 
     def test_exact_crosswalk_name(self):
         """Test crosswalk name matches value column exactly."""

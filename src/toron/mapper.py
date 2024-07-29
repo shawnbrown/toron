@@ -69,68 +69,70 @@ class Mapper(object):
         columns: Optional[Sequence[str]] = None,
     ) -> None:
         self.con = sqlite3.connect('')  # Empty string creates temp file.
-        self.cur = self.con.executescript("""
-            CREATE TABLE mapping_data(
-                run_id INTEGER PRIMARY KEY,
-                left_location TEXT NOT NULL,
-                left_level BLOB_BITFLAGS NOT NULL,
-                right_location TEXT NOT NULL,
-                right_level BLOB_BITFLAGS NOT NULL,
-                mapping_value REAL NOT NULL
-            );
-            CREATE TABLE left_matches(
-                run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
-                index_id INTEGER,
-                weight_value REAL CHECK (0.0 <= weight_value),
-                mapping_level BLOB_BITFLAGS NOT NULL,
-                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
-            );
-            CREATE TABLE right_matches(
-                run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
-                index_id INTEGER,
-                weight_value REAL CHECK (0.0 <= weight_value),
-                mapping_level BLOB_BITFLAGS NOT NULL,
-                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
-            );
-        """)
 
-        data, columns = normalize_tabular(data, columns)
+        with closing(self.con.cursor()) as cur:
+            cur = self.con.executescript("""
+                CREATE TABLE mapping_data(
+                    run_id INTEGER PRIMARY KEY,
+                    left_location TEXT NOT NULL,
+                    left_level BLOB_BITFLAGS NOT NULL,
+                    right_location TEXT NOT NULL,
+                    right_level BLOB_BITFLAGS NOT NULL,
+                    mapping_value REAL NOT NULL
+                );
+                CREATE TABLE left_matches(
+                    run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
+                    index_id INTEGER,
+                    weight_value REAL CHECK (0.0 <= weight_value),
+                    mapping_level BLOB_BITFLAGS NOT NULL,
+                    proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
+                );
+                CREATE TABLE right_matches(
+                    run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
+                    index_id INTEGER,
+                    weight_value REAL CHECK (0.0 <= weight_value),
+                    mapping_level BLOB_BITFLAGS NOT NULL,
+                    proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
+                );
+            """)
 
-        for i, col in enumerate(columns):
-            if (
-                crosswalk_name == col or
-                crosswalk_name == parse_edge_shorthand(col).get('edge_name')
-            ):
-                value_pos = i  # Get index position of value column
-                break
-        else:  # no break
-            msg = f'{crosswalk_name!r} is not in data, got header: {columns!r}'
-            raise ValueError(msg)
+            data, columns = normalize_tabular(data, columns)
 
-        self.left_columns = columns[:value_pos]
-        self.right_columns = columns[value_pos+1:]
+            for i, col in enumerate(columns):
+                if (
+                    crosswalk_name == col or
+                    crosswalk_name == parse_edge_shorthand(col).get('edge_name')
+                ):
+                    value_pos = i  # Get index position of value column
+                    break
+            else:  # no break
+                msg = f'{crosswalk_name!r} is not in data, got header: {columns!r}'
+                raise ValueError(msg)
 
-        for row in data:
-            if not row:
-                continue  # If row is empty, skip to next.
+            self.left_columns = columns[:value_pos]
+            self.right_columns = columns[value_pos+1:]
 
-            sql = """
-                INSERT INTO mapping_data
-                  (left_location, left_level, right_location, right_level, mapping_value)
-                  VALUES (:left_location, :left_level, :right_location, :right_level, :mapping_value)
-            """
-            parameters = {
-                'left_location': dumps(row[:value_pos]),
-                'left_level': bytes(BitFlags(x != '' for x in row[:value_pos])),
-                'right_location': dumps(row[value_pos+1:]),
-                'right_level': bytes(BitFlags(x != '' for x in row[value_pos+1:])),
-                'mapping_value': row[value_pos],
-            }
-            try:
-                self.cur.execute(sql, parameters)
-            except sqlite3.IntegrityError as err:
-                msg = f'{err}\nfailed to insert:\n  {tuple(parameters.values())}'
-                raise sqlite3.IntegrityError(msg) from err
+            for row in data:
+                if not row:
+                    continue  # If row is empty, skip to next.
+
+                sql = """
+                    INSERT INTO mapping_data
+                    (left_location, left_level, right_location, right_level, mapping_value)
+                    VALUES (:left_location, :left_level, :right_location, :right_level, :mapping_value)
+                """
+                parameters = {
+                    'left_location': dumps(row[:value_pos]),
+                    'left_level': bytes(BitFlags(x != '' for x in row[:value_pos])),
+                    'right_location': dumps(row[value_pos+1:]),
+                    'right_level': bytes(BitFlags(x != '' for x in row[value_pos+1:])),
+                    'mapping_value': row[value_pos],
+                }
+                try:
+                    cur.execute(sql, parameters)
+                except sqlite3.IntegrityError as err:
+                    msg = f'{err}\nfailed to insert:\n  {tuple(parameters.values())}'
+                    raise sqlite3.IntegrityError(msg) from err
 
     @staticmethod
     def _get_level_pairs(
@@ -302,11 +304,6 @@ class Mapper(object):
 
     def close(self) -> None:
         """Close internal connection to temporary database."""
-        try:
-            self.cur.close()  # Fails if Connection is not open.
-        except sqlite3.ProgrammingError:
-            pass
-
         self.con.close()
 
     def __del__(self) -> None:
