@@ -261,11 +261,11 @@ class Mapper(object):
 
         if counter['count_overlimit']:
             logger.warning(
-                f'skipped {counter['count_overlimit']} values that matched too many records'
+                f"skipped {counter['count_overlimit']} values that matched too many records"
             )
             logger.warning(
-                f'current match_limit is {match_limit} but data includes values '
-                f'that match up to {counter['overlimit_max']} records'
+                f"current match_limit is {match_limit} but data includes values "
+                f"that match up to {counter['overlimit_max']} records"
             )
 
     def close(self) -> None:
