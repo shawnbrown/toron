@@ -1651,10 +1651,10 @@ class Node(object):
             weight_repo = self._dal.WeightRepository(cur4)
 
             # Get the default weight group and make sure it's complete.
-            default_weight_group = get_default_weight_group(property_repo, weight_group_repo)
-            if not default_weight_group:
-                raise RuntimeError('no default weight group is defined')
-            elif not default_weight_group.is_complete:
+            default_weight_group = get_default_weight_group(
+                property_repo, weight_group_repo, required=True
+            )
+            if not default_weight_group.is_complete:
                 msg = f'default weight group {default_weight_group.name!r} is not complete'
                 raise RuntimeError(msg)
 

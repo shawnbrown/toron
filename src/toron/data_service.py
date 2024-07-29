@@ -7,9 +7,11 @@ from toron._typing import (
     Dict,
     Iterator,
     List,
+    Literal,
     Optional,
     Set,
     Tuple,
+    overload,
 )
 
 from .categories import (
@@ -242,14 +244,30 @@ def get_all_discrete_categories(
     return []  # Empty when no columns defined.
 
 
+@overload
 def get_default_weight_group(
     property_repo: BasePropertyRepository,
     weight_group_repo: BaseWeightGroupRepository,
+    required: Literal[False] = False,
 ) -> Optional[WeightGroup]:
+    ...
+@overload
+def get_default_weight_group(
+    property_repo: BasePropertyRepository,
+    weight_group_repo: BaseWeightGroupRepository,
+    required: Literal[True],
+) -> WeightGroup:
+    ...
+def get_default_weight_group(property_repo, weight_group_repo, required=False):
     """Return the node's default weight group (if any)."""
     weight_group_id = property_repo.get('default_weight_group_id')
     if isinstance(weight_group_id, int):
-        return weight_group_repo.get(weight_group_id)
+        weight_group = weight_group_repo.get(weight_group_id)
+        if weight_group:
+            return weight_group
+
+    if required:
+        raise RuntimeError('no default weight group is defined')
     return None
 
 
