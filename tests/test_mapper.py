@@ -523,3 +523,79 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
              (4, 4,  5.0, b'\x80', 0.625)],
             msg='should include the overlap with `B, x` (index_id 3)',
         )
+
+
+class TestGetRelations(TwoNodesBaseTest):
+    def test_exact_matches(self):
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 10, 'A', 'x'],
+                  ['A', 70, 'A', 'y'],
+                  ['B', 20, 'B', 'x'],
+                  ['B', 60, 'B', 'y'],
+                  ['C', 30, 'C', 'x'],
+                  ['C', 50, 'C', 'y']],
+        )
+        mapper.match_records(self.node1, 'left')
+        mapper.match_records(self.node2, 'right')
+
+        relations = mapper.get_relations('right')  # <- Method under test.
+
+        self.assertEqual(list(relations), [(1, 1, 10.0, b'\xc0'),
+                                           (1, 2, 70.0, b'\xc0'),
+                                           (2, 3, 20.0, b'\xc0'),
+                                           (2, 4, 60.0, b'\xc0'),
+                                           (3, 5, 30.0, b'\xc0'),
+                                           (3, 6, 50.0, b'\xc0')])
+
+    def test_ambiguous_no_overlaps(self):
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 90, 'A',  ''],   # <- Matched to 2 right-side records.
+                  ['B', 20, 'B', 'x'],   # <- Exact match.
+                  ['B', 60, 'B', 'y'],   # <- Exact match.
+                  ['C', 28, 'C',  ''],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
+                  ['C',  7, 'C', 'y']],  # <- Exact match (overlapps the records matched on "C" alone).
+        )
+        mapper.match_records(self.node1, 'left')
+        mapper.match_records(self.node2, 'right', match_limit=2)
+
+        relations = mapper.get_relations('right')  # <- Method under test.
+
+        expected = [
+            (1, 1, 22.5, b'\x80'),
+            (1, 2, 67.5, b'\x80'),
+            (2, 3, 20.0, b'\xc0'),
+            (2, 4, 60.0, b'\xc0'),
+            (3, 5, 28.0, b'\x80'),  # <- Gets full weight, `3, 6` overlap omitted.
+            (3, 6,  7.0, b'\xc0'),  # <- `3, 6` already matched at finer granularity.
+        ]
+        self.assertEqual(list(relations), expected)
+
+    def test_ambiguous_with_overlaps(self):
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 90, 'A',  ''],   # <- Matched to 2 right-side records.
+                  ['B', 20, 'B', 'x'],   # <- Exact match.
+                  ['B', 60, 'B', 'y'],   # <- Exact match.
+                  ['C', 28, 'C',  ''],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
+                  ['C',  7, 'C', 'y']],  # <- Exact match (overlapps the records matched on "C" alone).
+        )
+        mapper.match_records(self.node1, 'left')
+        mapper.match_records(self.node2, 'right', match_limit=2, allow_overlapping=True)
+
+        relations = mapper.get_relations('right')  # <- Method under test.
+
+        expected = [
+            (1, 1, 22.5, b'\x80'),
+            (1, 2, 67.5, b'\x80'),
+            (2, 3, 20.0, b'\xc0'),
+            (2, 4, 60.0, b'\xc0'),
+            (3, 5, 10.4, b'\x80'),  # <- Gets proportion of weight.
+            (3, 6, 17.6, b'\x80'),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
+            (3, 6,  7.0, b'\xc0'),  # <- Exact match overlapped by ambiguous match.
+        ]
+        self.assertEqual(list(relations), expected)

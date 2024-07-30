@@ -17,6 +17,7 @@ from itertools import (
 from ._typing import (
     Dict,
     Iterable,
+    Iterator,
     List,
     Literal,
     Optional,
@@ -377,6 +378,51 @@ class Mapper(object):
                 f"skipped {counter['invalid_rows']} values that used invalid "
                 f"categories:\n  {category_string}"
             )
+
+    def get_relations(
+        self, side: Literal['left', 'right']
+    ) -> Iterator[Tuple[int, int, float, Union[BitFlags, None]]]:
+        """Returns an iterator of relations going to the given *side*
+        (and coming from the other side).
+
+        The following example gets an iterable relations for the
+        right table (coming from the left and going to the right)::
+
+            >>> relations = mapper.get_relations('right')
+        """
+        if side == 'left':
+            other_side = 'right'
+        elif side == 'right':
+            other_side = 'left'
+        else:
+            msg = f"side must be 'left' or 'right', got {side!r}"
+            raise ValueError(msg)
+
+        with closing(self.con.cursor()) as cur:
+            cur.execute(f"""
+                WITH
+                    joint_probability AS (
+                        SELECT
+                            run_id,
+                            src.index_id AS other_index_id,
+                            dst.index_id AS index_id,
+                            src.proportion * dst.proportion AS proportion,
+                            dst.mapping_level AS mapping_level
+                        FROM {other_side}_matches src
+                        JOIN {side}_matches dst USING (run_id)
+                    )
+                SELECT
+                    other_index_id,
+                    index_id,
+                    SUM(mapping_value * proportion) AS relation_value,
+                    mapping_level
+                FROM mapping_data
+                JOIN joint_probability USING (run_id)
+                GROUP BY other_index_id, index_id, mapping_level
+                ORDER BY other_index_id, index_id, mapping_level
+            """)
+            for row in cur:
+                yield row
 
     def close(self) -> None:
         """Close internal connection to temporary database."""
