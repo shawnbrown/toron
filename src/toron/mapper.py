@@ -302,15 +302,15 @@ class Mapper(object):
                     # with records that have already been matched at a finer
                     # level of granularity.
                     if len_matches > 1:
-                        sql = f'SELECT COUNT(*) FROM {match_table} WHERE index_id=?'
-                        count_overlaps = lambda x: cur2.execute(sql, (x.id,),).fetchone()[0]
+                        sql = f'SELECT EXISTS (SELECT 1 FROM {match_table} WHERE index_id=?)'
+                        is_overlap = lambda x: cur2.execute(sql, (x.id,),).fetchone()[0]
 
                         if allow_overlapping:
                             counter['overlaps_included'] += \
-                                sum(count_overlaps(x) for x in matches)
+                                sum(is_overlap(x) for x in matches)
                         else:
                             # When not allowed, filter to non-overlapping only.
-                            matches = [x for x in matches if count_overlaps(x) == 0]
+                            matches = [x for x in matches if is_overlap(x) == 0]
                             counter['overlaps_excluded'] += len_matches - len(matches)
 
                     # Build tuple of `(index_id, weight_value)` for all matches.
