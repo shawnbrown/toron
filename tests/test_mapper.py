@@ -469,18 +469,24 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         # notice that the self.mapper_data record `['A', 70, 'A', 'x']` IS matched
         # because it's an exact match (despite lacking a weight).
 
-    def test_overlapping(self):
-        mapper_data=[
-            ['idx', 'population', 'idx1', 'idx2'],
-            ['A', 70, 'A', 'x'],
-            ['A', 40, 'A', 'y'],
-            ['B', 80, 'B', 'x'],
-            ['B', 80, 'B',  ''],  # <- Ambiguous mapping.
-        ]
+    def test_overlapping_not_allowed(self):
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],
+                  ['A', 40, 'A', 'y'],
+                  ['B', 80, 'B', 'x'],
+                  ['B', 80, 'B',  '']],  # <- Ambiguous mapping.
+        )
 
-        # Test overlapping is not allowed (default).
-        mapper = Mapper('population', mapper_data)
         mapper.match_records(self.node2, 'right', match_limit=2)  # <- allow_overlapping defaults to False
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ('WARNING: omitted 1 ambiguous matches that overlap with records '
+             'that were already matched at a finer level of granularity\n'),
+        )
+
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
             [(1, 1,  5.0, b'\xc0', 1.0),
@@ -490,9 +496,24 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
             msg='should omit the overlap with `B, x` (index_id 3)',
         )
 
-        # Test overlapping allowed.
-        mapper = Mapper('population', mapper_data)
+    def test_overlapping_allowed(self):
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],
+                  ['A', 40, 'A', 'y'],
+                  ['B', 80, 'B', 'x'],
+                  ['B', 80, 'B',  '']],  # <- Ambiguous mapping.
+        )
+
         mapper.match_records(self.node2, 'right', match_limit=2, allow_overlapping=True)
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ('INFO: included 1 ambiguous matches that overlap with records '
+             'that were also matched at a finer level of granularity\n'),
+        )
+
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
             [(1, 1,  5.0, b'\xc0', 1.0),
