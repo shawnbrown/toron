@@ -1,6 +1,7 @@
 """Tests for toron/mapper.py module."""
 
 import logging
+import sqlite3
 import unittest
 from contextlib import closing
 from io import StringIO
@@ -147,6 +148,119 @@ class TestMapperGetLevelPairs(unittest.TestCase):
              (b'\xc0', None),     # B, C
              (b'\x80', None)]     # C
         )
+
+
+class TestMatchRefreshProportions(unittest.TestCase):
+    def setUp(self):
+        # Create simplified dummy table for testing.
+        connection = sqlite3.connect(':memory:')
+        self.addCleanup(connection.close)
+        self.cursor = connection.execute("""
+            CREATE TEMP TABLE right_matches(
+                run_id, index_id, weight_value, mapping_level, proportion
+            )
+        """)
+
+    def select_all_helper(self):
+        """Helper method to get contents of 'right_matches' table."""
+        self.cursor.execute('SELECT * FROM right_matches')
+        return self.cursor.fetchall()
+
+    def test_one_to_one(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1,  3.0, X'C0', NULL),
+                (2, 2, 15.0, X'C0', NULL),
+                (3, 3,  3.0, X'C0', NULL),
+                (4, 4,  7.0, X'C0', NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.assertEqual(self.select_all_helper(), [(1, 1,  3.0, b'\xc0', 1.0),
+                                                    (2, 2, 15.0, b'\xc0', 1.0),
+                                                    (3, 3,  3.0, b'\xc0', 1.0),
+                                                    (4, 4,  7.0, b'\xc0', 1.0)])
+
+    def test_many_to_one(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1,  3.0, X'C0', NULL),
+                (2, 1, 15.0, X'C0', NULL),
+                (3, 2,  3.0, X'C0', NULL),
+                (4, 2,  7.0, X'C0', NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.assertEqual(self.select_all_helper(), [(1, 1,  3.0, b'\xc0', 1.0),
+                                                    (2, 1, 15.0, b'\xc0', 1.0),
+                                                    (3, 2,  3.0, b'\xc0', 1.0),
+                                                    (4, 2,  7.0, b'\xc0', 1.0)])
+
+    def test_one_to_many(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1,  3.0, X'C0', NULL),
+                (2, 2,  7.0, X'C0', NULL),
+                (3, 3, 12.5, X'C0', NULL),
+                (3, 4, 37.5, X'C0', NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.assertEqual(self.select_all_helper(), [(1, 1,  3.0, b'\xc0', 1.00),
+                                                    (2, 2,  7.0, b'\xc0', 1.00),
+                                                    (3, 3, 12.5, b'\xc0', 0.25),
+                                                    (3, 4, 37.5, b'\xc0', 0.75)])
+
+    def test_many_to_many(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1, 20.0, X'80', NULL),
+                (1, 2, 12.0, X'80', NULL),
+                (2, 1, 12.5, X'C0', NULL),
+                (2, 2, 37.5, X'C0', NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.assertEqual(self.select_all_helper(), [(1, 1, 20.0, b'\x80', 0.625),
+                                                    (1, 2, 12.0, b'\x80', 0.375),
+                                                    (2, 1, 12.5, b'\xc0', 0.250),
+                                                    (2, 2, 37.5, b'\xc0', 0.750)])
+
+    def test_many_to_many_zero_weight(self):
+        self.cursor.execute("""
+            INSERT INTO
+                right_matches
+            VALUES
+                (1, 1, 0.0, X'E0', NULL),
+                (2, 2, 0.0, X'C0', NULL),
+                (2, 3, 0.0, X'C0', NULL),
+                (3, 2, 0.0, X'80', NULL),
+                (3, 3, 0.0, X'80', NULL),
+                (3, 4, 0.0, X'80', NULL),
+                (3, 5, 0.0, X'80', NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+
+        self.assertEqual(self.select_all_helper(), [(1, 1, 0.0, b'\xe0', 1.00),
+                                                    (2, 2, 0.0, b'\xc0', 0.50),
+                                                    (2, 3, 0.0, b'\xc0', 0.50),
+                                                    (3, 2, 0.0, b'\x80', 0.25),
+                                                    (3, 3, 0.0, b'\x80', 0.25),
+                                                    (3, 4, 0.0, b'\x80', 0.25),
+                                                    (3, 5, 0.0, b'\x80', 0.25)])
 
 
 class TestMapperMatchRecords(unittest.TestCase):

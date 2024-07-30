@@ -185,6 +185,32 @@ class Mapper(object):
 
         return levels
 
+    @staticmethod
+    def _refresh_proportions(
+        cursor: sqlite3.Cursor, side: Literal['left', 'right']
+    ) -> None:
+        """Update 'proportion' values in left or right matches table."""
+        cursor.execute(f"""
+            WITH
+                AggregatedValues AS (
+                    SELECT
+                        run_id            AS run_id_aggregated,
+                        SUM(weight_value) AS weight_value_sum,
+                        COUNT(*)          AS weight_value_count
+                    FROM {side}_matches
+                    GROUP BY run_id
+                )
+            UPDATE {side}_matches
+            SET proportion=COALESCE(
+                (CAST(weight_value AS REAL) / (SELECT weight_value_sum
+                                               FROM AggregatedValues
+                                               WHERE run_id=run_id_aggregated)),
+                (1.0 / (SELECT weight_value_count
+                        FROM AggregatedValues
+                        WHERE run_id=run_id_aggregated))
+            )
+        """)
+
     def match_records(
         self,
         node: 'Node',
