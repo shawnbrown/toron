@@ -232,6 +232,7 @@ class Mapper(object):
             msg = f"side must be 'left' or 'right', got {side!r}"
             raise ValueError(msg)
 
+        invalid_categories = []
         counter: Counter = Counter()
         with node._managed_cursor() as node_cur, \
                 closing(self.con.cursor()) as cur1, \
@@ -260,7 +261,16 @@ class Mapper(object):
             # Loop over levels from highest to lowest granularity.
             for match_bytes, node_bytes in ordered_level_pairs:
                 if node_bytes is None:
-                    continue  # Skip if no matching level in node.
+                    # If no matching level in node, category is invalid.
+                    invalid_categories.append(
+                        tuple(compress(match_columns, BitFlags(match_bytes)))
+                    )
+                    cur1.execute(
+                        f'SELECT COUNT(*) FROM mapping_data WHERE {level_column}=?',
+                        (match_bytes,),
+                    )
+                    counter['invalid_rows'] += cur1.fetchone()[0]
+                    continue  # Skip to next level in ordered pairs.
 
                 sql = f"""
                     SELECT run_id, {location_column}
@@ -328,6 +338,14 @@ class Mapper(object):
             logger.warning(
                 f"skipped {counter['count_unweighted']} values that ambiguously "
                 f"matched to one or more records that have no associated weight"
+            )
+
+        if counter['invalid_rows']:
+            category_list = [', '.join(c) for c in sorted(invalid_categories)]
+            category_string = '\n  '.join(category_list)
+            logger.warning(
+                f"skipped {counter['invalid_rows']} values that used invalid "
+                f"categories:\n  {category_string}"
             )
 
     def close(self) -> None:
