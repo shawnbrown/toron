@@ -313,6 +313,8 @@ class Mapper(object):
                         parameters = (run_id, index_id, weight_value, node_bytes)
                         cur2.execute(sql, parameters)
 
+            self._refresh_proportions(cur1, side)
+
         if counter['count_overlimit']:
             logger.warning(
                 f"skipped {counter['count_overlimit']} values that matched too many records"

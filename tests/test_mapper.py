@@ -291,7 +291,7 @@ class TestMapperMatchRecords(unittest.TestCase):
             weight_group_name='wght',
             data=[
                 ['idx1', 'idx2', 'wght'],
-                ['A', 'x', 3],
+                ['A', 'x', 5],
                 ['A', 'y', 15],
                 ['B', 'x', 3],
                 ['B', 'y', 7],
@@ -335,10 +335,10 @@ class TestMapperMatchRecords(unittest.TestCase):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'left_matches'),
-            [(1, 1, 16.0, b'\x80', None),
-             (2, 2,  8.0, b'\x80', None),
-             (3, 1, 16.0, b'\x80', None),
-             (4, 2,  8.0, b'\x80', None)],
+            [(1, 1, 16.0, b'\x80', 1.0),
+             (2, 2,  8.0, b'\x80', 1.0),
+             (3, 1, 16.0, b'\x80', 1.0),
+             (4, 2,  8.0, b'\x80', 1.0)],
         )
 
     def test_match_records_ambiguous_matches_over_limit(self):
@@ -353,8 +353,8 @@ class TestMapperMatchRecords(unittest.TestCase):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1, 3.0, b'\xc0', None),
-             (2, 4, 7.0, b'\xc0', None)],
+            [(1, 1, 5.0, b'\xc0', 1.0),
+             (2, 4, 7.0, b'\xc0', 1.0)],
             msg=('should only match two records, other records are '
                  'over the match limit'),
         )
@@ -365,10 +365,10 @@ class TestMapperMatchRecords(unittest.TestCase):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1,  3.0, b'\xc0', None),
-             (2, 4,  7.0, b'\xc0', None),
-             (3, 1,  3.0, b'\x80', None),
-             (3, 2, 15.0, b'\x80', None)],
+            [(1, 1,  5.0, b'\xc0', 1.00),
+             (2, 4,  7.0, b'\xc0', 1.00),
+             (3, 1,  5.0, b'\x80', 0.25),
+             (3, 2, 15.0, b'\x80', 0.75)],
         )
 
     def test_missing_weight_exact_match(self):
@@ -381,10 +381,10 @@ class TestMapperMatchRecords(unittest.TestCase):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1,  3.0, b'\xc0', None),
-             (2, 4, None, b'\xc0', None),  # <- Weight missing but exact match.
-             (3, 1,  3.0, b'\x80', None),
-             (3, 2, 15.0, b'\x80', None)],
+            [(1, 1,  5.0, b'\xc0', 1.00),
+             (2, 4, None, b'\xc0', 1.00),  # <- Weight missing but exact match.
+             (3, 1,  5.0, b'\x80', 0.25),
+             (3, 2, 15.0, b'\x80', 0.75)],
         )
 
     def test_missing_weight_ambiguous_match(self):
@@ -407,8 +407,8 @@ class TestMapperMatchRecords(unittest.TestCase):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1, None, b'\xc0', None),  # <- Weight missing but exact match.
-             (2, 4,  7.0, b'\xc0', None)],
+            [(1, 1, None, b'\xc0', 1.0),  # <- Weight missing but exact match.
+             (2, 4,  7.0, b'\xc0', 1.0)],
         )
 
         # Above, the self.mapper_data record `['A', 7, 'A', '']` is not matched
