@@ -292,10 +292,10 @@ class TwoNodesBaseTest(unittest.TestCase):
             weight_group_name='wght',
             data=[
                 ['idx1', 'idx2', 'wght'],
-                ['A', 'x', 5],
+                ['A', 'x',  5],
                 ['A', 'y', 15],
-                ['B', 'x', 3],
-                ['B', 'y', 7],
+                ['B', 'x',  3],
+                ['B', 'y',  5],
                 ['C', 'x', 13],
                 ['C', 'y', 22],
             ],
@@ -315,16 +315,6 @@ class TwoNodesBaseTest(unittest.TestCase):
 
 
 class TestMapperMatchRecords(TwoNodesBaseTest):
-    def setUp(self):
-        super().setUp()
-        self.mapper_data = [
-            ['idx', 'population', 'idx1', 'idx2'],
-            ['A', 70, 'A', 'x'],
-            ['B', 80, 'B', 'y'],
-            ['A', 7, 'A', ''],
-            ['B', 8, '', 'y'],
-        ]
-
     @staticmethod
     def select_all_helper(mapper, table):
         """Helper method to get contents of a table in mapper."""
@@ -334,20 +324,33 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         return contents
 
     def test_match_records_exact_matches(self):
-        mapper = Mapper('population', self.mapper_data)
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],
+                  ['B', 80, 'B', 'y'],
+                  ['C', 15, 'A', 'y']],
+        )
+
         mapper.match_records(self.node1, 'left')
 
         self.assertEqual(
             self.select_all_helper(mapper, 'left_matches'),
             [(1, 1, 16.0, b'\x80', 1.0),
              (2, 2,  8.0, b'\x80', 1.0),
-             (3, 1, 16.0, b'\x80', 1.0),
-             (4, 2,  8.0, b'\x80', 1.0)],
+             (3, 3, 32.0, b'\x80', 1.0)],
         )
 
     def test_match_records_ambiguous_matches_over_limit(self):
-        mapper = Mapper('population', self.mapper_data)
-        mapper.match_records(self.node2, 'right')  # <- Match limit defaults to 1.
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],
+                  ['A', 40, 'A', 'y'],
+                  ['B', 80, 'B', '']],  # <- Matches to 2 records.
+        )
+
+        mapper.match_records(self.node2, 'right')  # <- match_limit dafaults to 1
 
         self.assertEqual(
             self.log_stream.getvalue(),
@@ -357,38 +360,52 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1, 5.0, b'\xc0', 1.0),
-             (2, 4, 7.0, b'\xc0', 1.0)],
+            [(1, 1,  5.0, b'\xc0', 1.0),
+             (2, 2, 15.0, b'\xc0', 1.0)],
             msg=('should only match two records, other records are '
                  'over the match limit'),
         )
 
     def test_match_records_ambiguous_matches_within_limit(self):
-        mapper = Mapper('population', self.mapper_data)
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],
+                  ['A', 40, 'A', 'y'],
+                  ['B', 80, 'B', '']],  # <- Matches to 2 records.
+        )
+
         mapper.match_records(self.node2, 'right', match_limit=2)
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1,  5.0, b'\xc0', 1.00),
-             (2, 4,  7.0, b'\xc0', 1.00),
-             (3, 1,  5.0, b'\x80', 0.25),
-             (3, 2, 15.0, b'\x80', 0.75)],
+            [(1, 1,  5.0, b'\xc0', 1.0),
+             (2, 2, 15.0, b'\xc0', 1.0),
+             (3, 3,  3.0, b'\x80', 0.375),   # <- Ambiguous, has different level (b'\x80').
+             (3, 4,  5.0, b'\x80', 0.625)],  # <- Ambiguous, has different level (b'\x80').
         )
 
     def test_missing_weight_exact_match(self):
         """Exact matches are OK even when weight is missing."""
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],
+                  ['A', 40, 'A', 'y'],
+                  ['B', 80, 'B', 'x'],
+                  ['B', 80, 'B', 'y']],
+        )
         # Delete a weight record that's only involved in an exact match.
-        self.node2.delete_weights('wght', idx1='B', idx2='y')
+        self.node2.delete_weights('wght', idx1='B', idx2='x')
 
-        mapper = Mapper('population', self.mapper_data)
         mapper.match_records(self.node2, 'right', match_limit=2)
 
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1,  5.0, b'\xc0', 1.00),
-             (2, 4, None, b'\xc0', 1.00),  # <- Weight missing but exact match.
-             (3, 1,  5.0, b'\x80', 0.25),
-             (3, 2, 15.0, b'\x80', 0.75)],
+            [(1, 1,  5.0, b'\xc0', 1.0),
+             (2, 2, 15.0, b'\xc0', 1.0),
+             (3, 3, None, b'\xc0', 1.0),  # <- Weight missing but exact match.
+             (4, 4,  5.0, b'\xc0', 1.0)],
         )
 
     def test_missing_weight_ambiguous_match(self):
@@ -397,10 +414,16 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         match must be skipped because there's no way to calculate a
         distribution.
         """
-        # Delete a weight record that's involved in an ambiguous match.
-        self.node2.delete_weights('wght', idx1='A', idx2='x')
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],  # <- exact match
+                  ['A', 30, 'A', 'y'],  # <- exact match
+                  ['B', 80, 'B', '']],  # <- ambiguous match
+        )
+        self.node2.delete_weights('wght', idx1='A', idx2='x')  # <- gets matched exactly
+        self.node2.delete_weights('wght', idx1='B', idx2='y')  # <- gets matched ambiguously
 
-        mapper = Mapper('population', self.mapper_data)
         mapper.match_records(self.node2, 'right', match_limit=2)
 
         self.assertEqual(
@@ -412,11 +435,11 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         self.assertEqual(
             self.select_all_helper(mapper, 'right_matches'),
             [(1, 1, None, b'\xc0', 1.0),  # <- Weight missing but exact match.
-             (2, 4,  7.0, b'\xc0', 1.0)],
+             (2, 2, 15.0, b'\xc0', 1.0)],
         )
 
-        # Above, the self.mapper_data record `['A', 7, 'A', '']` is not matched
+        # Above, the self.mapper_data record `['B', 80, 'B', '']` is not matched
         # to the right-side table because it's ambiguous AND one of the involved
-        # index records (index_id 1) has no corresponding weight. Also notice
-        # that the self.mapper_data record `['A', 70, 'A', 'x']` IS matched
+        # index records has no corresponding weight (`B, y`, index_id 4). Also
+        # notice that the self.mapper_data record `['A', 70, 'A', 'x']` IS matched
         # because it's an exact match (despite lacking a weight).
