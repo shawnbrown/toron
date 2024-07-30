@@ -263,7 +263,8 @@ class TestMatchRefreshProportions(unittest.TestCase):
                                                     (3, 5, 0.0, b'\x80', 0.25)])
 
 
-class TestMapperMatchRecords(unittest.TestCase):
+class TwoNodesBaseTest(unittest.TestCase):
+    """A base class that sets-up node fixtures and a logging handler."""
     def setUp(self):
         self.node1 = Node()
         self.node1.add_index_columns('idx')
@@ -312,7 +313,10 @@ class TestMapperMatchRecords(unittest.TestCase):
         logger.addHandler(handler)
         self.addCleanup(lambda: logger.removeHandler(handler))
 
-        # Add mapping data.
+
+class TestMapperMatchRecords(TwoNodesBaseTest):
+    def setUp(self):
+        super().setUp()
         self.mapper_data = [
             ['idx', 'population', 'idx1', 'idx2'],
             ['A', 70, 'A', 'x'],
