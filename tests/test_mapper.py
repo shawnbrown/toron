@@ -341,31 +341,6 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
              (3, 3, 32.0, b'\x80', 1.0)],
         )
 
-    def test_invalid_categories(self):
-        mapper = Mapper(
-            crosswalk_name='population',
-            data=[['idx', 'population', 'idx1', 'idx2'],
-                  ['A', 70, 'A', 'x'],
-                  ['A', 40, 'A', 'y'],
-                  ['B', 80,  '', 'y']],  # <- Invalid category.
-        )
-
-        mapper.match_records(self.node2, 'right')  # <- match_limit dafaults to 1
-
-        self.assertEqual(
-            self.log_stream.getvalue(),
-            ('WARNING: skipped 1 values that used invalid categories:\n'
-             '  idx2\n'),
-        )
-
-        self.assertEqual(
-            self.select_all_helper(mapper, 'right_matches'),
-            [(1, 1,  5.0, b'\xc0', 1.0),
-             (2, 2, 15.0, b'\xc0', 1.0)],
-            msg=('should only match two records, other records are '
-                 'over the match limit'),
-        )
-
     def test_ambiguous_matches_over_limit(self):
         mapper = Mapper(
             crosswalk_name='population',
@@ -408,6 +383,31 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
              (2, 2, 15.0, b'\xc0', 1.0),
              (3, 3,  3.0, b'\x80', 0.375),   # <- Ambiguous, has different level (b'\x80').
              (3, 4,  5.0, b'\x80', 0.625)],  # <- Ambiguous, has different level (b'\x80').
+        )
+
+    def test_invalid_categories(self):
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],
+                  ['A', 40, 'A', 'y'],
+                  ['B', 80,  '', 'y']],  # <- Invalid category.
+        )
+
+        mapper.match_records(self.node2, 'right')  # <- match_limit dafaults to 1
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ('WARNING: skipped 1 values that used invalid categories:\n'
+             '  idx2\n'),
+        )
+
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1,  5.0, b'\xc0', 1.0),
+             (2, 2, 15.0, b'\xc0', 1.0)],
+            msg=('should only match two records, other records are '
+                 'over the match limit'),
         )
 
     def test_missing_weight_exact_match(self):
