@@ -323,7 +323,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
             contents = cur.fetchall()
         return contents
 
-    def test_match_records_exact_matches(self):
+    def test_exact_matches(self):
         mapper = Mapper(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
@@ -341,7 +341,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
              (3, 3, 32.0, b'\x80', 1.0)],
         )
 
-    def test_skip_invalid_categories(self):
+    def test_invalid_categories(self):
         mapper = Mapper(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
@@ -366,7 +366,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
                  'over the match limit'),
         )
 
-    def test_match_records_ambiguous_matches_over_limit(self):
+    def test_ambiguous_matches_over_limit(self):
         mapper = Mapper(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
@@ -391,7 +391,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
                  'over the match limit'),
         )
 
-    def test_match_records_ambiguous_matches_within_limit(self):
+    def test_ambiguous_matches_within_limit(self):
         mapper = Mapper(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
