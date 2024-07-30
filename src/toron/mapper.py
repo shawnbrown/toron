@@ -216,6 +216,7 @@ class Mapper(object):
         node: 'Node',
         side: Literal['left', 'right'],
         match_limit: int = 1,
+        allow_overlapping: bool = False,
     ) -> None:
         """Match mapping rows to node index records."""
         if side == 'left':
@@ -288,13 +289,22 @@ class Mapper(object):
                     # Loop over index records that match current mapping row.
                     all_matches = index_repo.find_by_label(criteria)
                     matches = list(islice(all_matches, match_limit + 1))
-                    if len(matches) > match_limit:
+                    len_matches = len(matches)
+                    if len_matches > match_limit:
                         counter['overlimit_max'] = max(
                             counter['overlimit_max'],
-                            len(matches) + sum(1 for _ in all_matches),
+                            len_matches + sum(1 for _ in all_matches),
                         )
                         counter['count_overlimit'] += 1
                         continue  # Skip to next row in mapping.
+
+                    # If overlapping isn't allowed, filter-out matches that
+                    # overlap with records that have already been matched (at
+                    # a finer level of granularity).
+                    if len_matches > 1 and not allow_overlapping:
+                        sql = f'SELECT COUNT(*) FROM {match_table} WHERE index_id=?'
+                        count_overlaps = lambda x: cur2.execute(sql, (x.id,),).fetchone()[0]
+                        matches = [x for x in matches if count_overlaps(x) == 0]
 
                     # Build tuple of `(index_id, weight_value)` for all matches.
                     index_id_and_weight_value = []

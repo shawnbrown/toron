@@ -468,3 +468,37 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         # index records has no corresponding weight (`B, y`, index_id 4). Also
         # notice that the self.mapper_data record `['A', 70, 'A', 'x']` IS matched
         # because it's an exact match (despite lacking a weight).
+
+    def test_overlapping(self):
+        mapper_data=[
+            ['idx', 'population', 'idx1', 'idx2'],
+            ['A', 70, 'A', 'x'],
+            ['A', 40, 'A', 'y'],
+            ['B', 80, 'B', 'x'],
+            ['B', 80, 'B',  ''],  # <- Ambiguous mapping.
+        ]
+
+        # Test overlapping is not allowed (default).
+        mapper = Mapper('population', mapper_data)
+        mapper.match_records(self.node2, 'right', match_limit=2)  # <- allow_overlapping defaults to False
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1,  5.0, b'\xc0', 1.0),
+             (2, 2, 15.0, b'\xc0', 1.0),
+             (3, 3,  3.0, b'\xc0', 1.0),
+             (4, 4,  5.0, b'\x80', 1.0)],  # <- Only one record (overlap of 3 is omitted)
+            msg='should omit the overlap with `B, x` (index_id 3)',
+        )
+
+        # Test overlapping allowed.
+        mapper = Mapper('population', mapper_data)
+        mapper.match_records(self.node2, 'right', match_limit=2, allow_overlapping=True)
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1,  5.0, b'\xc0', 1.0),
+             (2, 2, 15.0, b'\xc0', 1.0),
+             (3, 3,  3.0, b'\xc0', 1.0),
+             (4, 3,  3.0, b'\x80', 0.375),  # <- Overlaps with exact match `3, 3`.
+             (4, 4,  5.0, b'\x80', 0.625)],
+            msg='should include the overlap with `B, x` (index_id 3)',
+        )
