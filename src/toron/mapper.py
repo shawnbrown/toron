@@ -219,7 +219,14 @@ class Mapper(object):
         match_limit: int = 1,
         allow_overlapping: bool = False,
     ) -> None:
-        """Match mapping rows to node index records."""
+        """Match mapping rows to node index records.
+
+        Use *allow_overlapping* to specify exclusive or inclusive record
+        linkage. When it's ``False``, records that have already been
+        matched are excluded from later, more ambiguous mappings. When
+        it's ``True``, records that have already been matched can still
+        be matched again later by increasingly ambiguous mappings.
+        """
         if side == 'left':
             match_table = 'left_matches'
             match_columns = self.left_columns
