@@ -16,8 +16,8 @@ from itertools import (
 )
 from ._typing import (
     Dict,
+    Generator,
     Iterable,
-    Iterator,
     List,
     Literal,
     Optional,
@@ -31,6 +31,7 @@ from .data_service import (
     get_default_weight_group,
 )
 from ._utils import (
+    eagerly_initialize,
     normalize_tabular,
     parse_edge_shorthand,
     BitFlags,
@@ -386,9 +387,10 @@ class Mapper(object):
                 f"categories:\n  {category_string}"
             )
 
+    @eagerly_initialize
     def get_relations(
         self, direction: Literal['<-', '->']
-    ) -> Iterator[Tuple[int, int, float, Union[BitFlags, None]]]:
+    ) -> Generator[Tuple[int, int, float, Union[BitFlags, None]], None, None]:
         """Returns an iterator of relations for the direction given.
         The *direction* can be ``'->'`` (left-to-right) or ``'<-'``
         (right-to-left):

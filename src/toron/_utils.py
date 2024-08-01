@@ -523,7 +523,7 @@ def eagerly_initialize(func_or_iter):
     first yield statement. This allows a generator to immediately
     perform any needed pre-iteration actions (like validation, error
     handling, logging, etc.) rather than passively waiting until the
-    object is iterated over.
+    object is iterated over somewhere else in the code.
     """
     def do_initialize(generator: Iterator) -> Iterator:  # <-  Helper function.
         sentinel_value = object()
