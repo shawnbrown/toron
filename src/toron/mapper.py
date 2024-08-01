@@ -387,22 +387,24 @@ class Mapper(object):
             )
 
     def get_relations(
-        self, side: Literal['left', 'right']
+        self, direction: Literal['<-', '->']
     ) -> Iterator[Tuple[int, int, float, Union[BitFlags, None]]]:
-        """Returns an iterator of relations going to the given *side*
-        (and coming from the other side).
+        """Returns an iterator of relations for the direction given.
+        The *direction* can be ``'->'`` (left-to-right) or ``'<-'``
+        (right-to-left):
 
-        The following example gets an iterable relations for the
-        right table (coming from the left and going to the right)::
+        .. code-block:: python
 
-            >>> relations = mapper.get_relations('right')
+            >>> relations = mapper.get_relations('->')
         """
-        if side == 'left':
+        if direction == '<-':
+            side = 'left'
             other_side = 'right'
-        elif side == 'right':
+        elif direction == '->':
+            side = 'right'
             other_side = 'left'
         else:
-            msg = f"side must be 'left' or 'right', got {side!r}"
+            msg = f"direction must be '<-' or '->', got {direction!r}"
             raise ValueError(msg)
 
         with closing(self.con.cursor()) as cur:

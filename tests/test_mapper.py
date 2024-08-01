@@ -540,7 +540,7 @@ class TestGetRelations(TwoNodesBaseTest):
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right')
 
-        relations = mapper.get_relations('right')  # <- Method under test.
+        relations = mapper.get_relations(direction='->')  # <- Method under test.
 
         self.assertEqual(list(relations), [(1, 1, 10.0, b'\xc0'),
                                            (1, 2, 70.0, b'\xc0'),
@@ -562,7 +562,7 @@ class TestGetRelations(TwoNodesBaseTest):
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right', match_limit=2)
 
-        relations = mapper.get_relations('right')  # <- Method under test.
+        relations = mapper.get_relations(direction='->')  # <- Method under test.
 
         expected = [
             (1, 1, 22.5, b'\x80'),
@@ -587,7 +587,7 @@ class TestGetRelations(TwoNodesBaseTest):
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right', match_limit=2, allow_overlapping=True)
 
-        relations = mapper.get_relations('right')  # <- Method under test.
+        relations = mapper.get_relations(direction='->')  # <- Method under test.
 
         expected = [
             (1, 1, 22.5, b'\x80'),
