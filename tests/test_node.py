@@ -2025,6 +2025,57 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
         self.assertEqual(self.get_crosswalk_helper(self.node), expected)
 
 
+class TestNodeInsertRelations2(unittest.TestCase):
+    def setUp(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            col_manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+
+            # Add index columns and records.
+            col_manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('bar', 'z')
+
+            # Add crosswalk_id 1.
+            crosswalk_repo.add('111-111-1111', 'myfile.toron', 'rel1')
+
+        self.node = node
+
+    def get_relations_helper(self):  # <- Helper function.
+        with self.node._managed_cursor() as cursor:
+            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            relation_repo = self.node._dal.RelationRepository(cursor)
+
+            func = lambda x: relation_repo.find_by_ids(crosswalk_id=x)
+            relation_iters = (func(x.id) for x in crosswalk_repo.get_all())
+            return list(chain.from_iterable(relation_iters))
+
+    def test_insert(self):
+        data = [
+            ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
+            (0, 0, None,  0.0),
+            (1, 1, None, 10.0),
+            (2, 2, None, 20.0),
+            (3, 2, None,  5.0),
+            (3, 3, None, 15.0),
+        ]
+        self.node.insert_relations2('myfile', 'rel1', data)
+
+        self.assertEqual(
+            self.get_relations_helper(),
+            [
+                Relation(1, 1, 0, 0, value=0.0,  mapping_level=None, proportion=1.00),
+                Relation(2, 1, 1, 1, value=10.0, mapping_level=None, proportion=1.00),
+                Relation(3, 1, 2, 2, value=20.0, mapping_level=None, proportion=1.00),
+                Relation(4, 1, 3, 2, value=5.0,  mapping_level=None, proportion=0.25),
+                Relation(5, 1, 3, 3, value=15.0, mapping_level=None, proportion=0.75),
+            ],
+        )
+
+
 class TestNodeRelationMethods(unittest.TestCase):
     def setUp(self):
         node = Node()

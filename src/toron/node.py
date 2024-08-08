@@ -1146,6 +1146,77 @@ class Node(object):
                 else:
                     yield (None, None, index_id) + index.labels + (None,)
 
+    def insert_relations2(
+        self,
+        node_reference: Union[str, 'Node'],
+        crosswalk_name: Optional[str],
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        """Insert relations for specified crosswalk.
+
+        .. code-block:: python
+
+            >>> node.insert_relations2(
+            ...     node_reference='myfile',
+            ...     crosswalk_name='pop2000',
+            ...     data=[
+            ...         ('other_index_id', 'index_id', 'mapping_level', 'pop2000'),
+            ...         (0, 0, b'\xe0',  0.0),
+            ...         (1, 1, b'\xe0', 10.0),
+            ...         (2, 2, b'\xe0', 20.0),
+            ...         (3, 2, b'\xe0',  5.0),
+            ...         (3, 3, b'\xe0', 15.0),
+            ...     ]
+            ... )
+
+        .. note::
+
+            This is a new implementation to use with the updated Mapper
+            class. Once the use cases for relation handling are better
+            defined, the existing methods should be revisited and
+            finalized.
+        """
+        data, columns = normalize_tabular(data, columns)
+
+        counter: Dict[str, int] = Counter()
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            relation_repo = self._dal.RelationRepository(cursor)
+
+            crosswalk = self._get_crosswalk(node_reference, crosswalk_name,
+                                            crosswalk_repo)
+            if not crosswalk:
+                raise ValueError(
+                    f'no crosswalk matching node reference {node_reference!r} '
+                    f'and name {crosswalk_name!r}'
+                )
+            crosswalk_id = crosswalk.id
+
+            for row in data:
+                other_index_id, index_id, mapping_level, value = row[:4]
+
+                relation_repo.add(
+                    crosswalk_id=crosswalk_id,
+                    other_index_id=other_index_id,
+                    index_id=index_id,
+                    mapping_level=mapping_level,
+                    value=value,
+                )
+                counter['inserted'] += 1
+
+            if counter['inserted'] and crosswalk:
+                # Get sequence of other_index_id values.
+                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
+                    crosswalk_id,
+                )
+
+                # Refresh proportion values.
+                for other_index_id in other_index_ids:
+                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+
     def insert_relations(
         self,
         node: Union[str, 'Node'],
