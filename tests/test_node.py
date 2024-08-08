@@ -2075,6 +2075,42 @@ class TestNodeInsertRelations2(unittest.TestCase):
             ],
         )
 
+    def test_string_input(self):
+        """When data is given as strings they should be automatically
+        converted to the appropriate numeric type:
+
+            * other_index_id: converted to `int`
+            * index_id: converted to `int`
+            * value column (e.g. 'rel1'): converted to `float`
+
+        If 'mapping_level' is given, it should be ``bytes``.
+
+        For the DAL1 backend, SQLite casts text characters as numeric
+        types based on each columns' "Type Affinity":
+
+            https://www.sqlite.org/datatype3.html#type_affinity
+        """
+        data = [
+            ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
+            ('0', '0', None,  '0.0'),
+            ('1', '1', None, '10.0'),
+            ('2', '2', None, '20.0'),
+            ('3', '2', None,  '5.0'),
+            ('3', '3', None, '15.0'),
+        ]
+        self.node.insert_relations2('myfile', 'rel1', data)
+
+        self.assertEqual(
+            self.get_relations_helper(),
+            [
+                Relation(1, 1, 0, 0, value=0.0,  mapping_level=None, proportion=1.00),
+                Relation(2, 1, 1, 1, value=10.0, mapping_level=None, proportion=1.00),
+                Relation(3, 1, 2, 2, value=20.0, mapping_level=None, proportion=1.00),
+                Relation(4, 1, 3, 2, value=5.0,  mapping_level=None, proportion=0.25),
+                Relation(5, 1, 3, 3, value=15.0, mapping_level=None, proportion=0.75),
+            ],
+        )
+
 
 class TestNodeRelationMethods(unittest.TestCase):
     def setUp(self):
