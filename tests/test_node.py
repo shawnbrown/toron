@@ -2111,6 +2111,29 @@ class TestNodeInsertRelations2(unittest.TestCase):
             ],
         )
 
+    def test_ignore_proportion_in_data(self):
+        """If 'proportion' is given as one of the columns in *data*,
+        it's treated as an extra column and is ignored. This is done
+        because other relations may already be present in the node that
+        would affect the final proportion. So the proportion values are
+        automatically recalculated after records are inserted.
+        """
+        data = [
+            ('other_index_id', 'index_id', 'mapping_level', 'rel1', 'proportion'),
+            (3, 2, None,  5.0, 0.375),
+            (3, 3, None, 15.0, 0.625),
+        ]
+        self.node.insert_relations2('myfile', 'rel1', data)
+
+        self.assertEqual(
+            self.get_relations_helper(),
+            [
+                Relation(1, 1, 3, 2, value=5.0,  mapping_level=None, proportion=0.25),
+                Relation(2, 1, 3, 3, value=15.0, mapping_level=None, proportion=0.75),
+            ],
+            msg='should ignore proportion from data and calculate it using values'
+        )
+
 
 class TestNodeRelationMethods(unittest.TestCase):
     def setUp(self):
