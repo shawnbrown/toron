@@ -2042,6 +2042,7 @@ class TestNodeInsertRelations2(unittest.TestCase):
             # Add crosswalk_id 1.
             crosswalk_repo.add('111-111-1111', 'myfile.toron', 'rel1')
 
+        node.add_discrete_categories({'A', 'B'}, {'A'})
         self.node = node
 
     def get_relations_helper(self):  # <- Helper function.
@@ -2132,6 +2133,40 @@ class TestNodeInsertRelations2(unittest.TestCase):
                 Relation(2, 1, 3, 3, value=15.0, mapping_level=None, proportion=0.75),
             ],
             msg='should ignore proportion from data and calculate it using values'
+        )
+
+    def test_skip_bad_mapping_level(self):
+        """Records with bad mapping levels should be logged and skipped.
+
+        Byte and bit-flag equivalence:
+
+            +---------+-----------+
+            | bytes   | bit flags |
+            +=========+===========+
+            | b'\xc0' | 1, 1      |
+            +---------+-----------+
+            | b'\x80' | 1, 0      |
+            +---------+-----------+
+            | b'\x40' | 0, 1      |
+            +---------+-----------+
+        """
+        data = [
+            ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
+            (0, 0, b'\xc0',  0.0),
+            (1, 1, b'\x40', 10.0),  # <- Bad mapping level, should be omitted.
+            (2, 2, b'\x40', 20.0),  # <- Bad mapping level, should be omitted.
+            (3, 2, b'\x80',  5.0),
+            (3, 3, b'\x80', 15.0),
+        ]
+        self.node.insert_relations2('myfile', 'rel1', data)
+
+        self.assertEqual(
+            self.get_relations_helper(),
+            [
+                Relation(1, 1, 0, 0, value=0.0,  mapping_level=b'\xc0', proportion=1.00),
+                Relation(2, 1, 3, 2, value=5.0,  mapping_level=b'\x80', proportion=0.25),
+                Relation(3, 1, 3, 3, value=15.0, mapping_level=b'\x80', proportion=0.75),
+            ],
         )
 
 

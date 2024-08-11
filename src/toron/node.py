@@ -1194,8 +1194,19 @@ class Node(object):
                 )
             crosswalk_id = crosswalk.id
 
+            structure = {bytes(BitFlags(x.bits))
+                         for x
+                         in self._dal.StructureRepository(cursor).get_all()}
+            structure.remove(b'')  # Empty bit-flags are not allowed.
+            structure.add(None)  # `None` values are allowed.
+
             for row in data:
                 other_index_id, index_id, mapping_level, value = row[:4]
+
+                # Verify mapping level.
+                if mapping_level not in structure:
+                    counter['bad_mapping_level'] += 1
+                    continue  # <- Skip to next item.
 
                 relation_repo.add(
                     crosswalk_id=crosswalk_id,
