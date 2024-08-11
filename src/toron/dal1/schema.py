@@ -187,9 +187,9 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
         CREATE TABLE main.relation(
             relation_id INTEGER PRIMARY KEY,
             crosswalk_id INTEGER,
-            other_index_id INTEGER NOT NULL,
+            other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = "integer"),
             index_id INTEGER,
-            relation_value REAL NOT NULL CHECK (0.0 <= relation_value),
+            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) = "real" AND 0.0 <= relation_value),
             mapping_level BLOB_BITFLAGS,
             proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
             FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,

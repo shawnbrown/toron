@@ -834,6 +834,26 @@ class RelationRepositoryBaseTest(ABC):
         }
         self.assertEqual(self.get_relations_helper(), expected)
 
+    def test_add_bad_types(self):
+        """String values that cannot be coerced should raise an error."""
+        with self.assertRaises(Exception):
+            self.repository.add('foo', 4, 1, 4242, None, 1.0)
+
+        with self.assertRaises(Exception):
+            self.repository.add(1, 'foo', 1, 4242, None, 1.0)
+
+        with self.assertRaises(Exception):
+            self.repository.add(1, 4, 'foo', 4242, None, 1.0)
+
+        with self.assertRaises(Exception):
+            self.repository.add(1, 4, 1, 'foo', None, 1.0)
+
+        with self.assertRaises(Exception):
+            self.repository.add(1, 4, 1, 4242, 'foo', 1.0)
+
+        with self.assertRaises(Exception):
+            self.repository.add(1, 4, 1, 4242, None, 'foo')
+
     def test_find_by_index_id(self):
         results = self.repository.find_by_ids(index_id=3)
         expected = [
