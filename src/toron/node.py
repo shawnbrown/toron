@@ -4,6 +4,7 @@ from collections import Counter
 from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from itertools import chain, compress
+from logging import getLogger
 
 from toron._typing import (
     Any,
@@ -56,6 +57,9 @@ from ._utils import (
     verify_columns_set,
     SequenceHash,
 )
+
+
+logger = getLogger(__name__)
 
 
 def warn_if_issues(
@@ -1221,6 +1225,8 @@ class Node(object):
                 counter['inserted'] += 1
 
             if counter['inserted'] and crosswalk:
+                logger.info(f"loaded {counter['inserted']} relations")
+
                 # Get sequence of other_index_id values.
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
                 other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
@@ -1230,6 +1236,14 @@ class Node(object):
                 # Refresh proportion values.
                 for other_index_id in other_index_ids:
                     relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+            else:
+                logger.warning('no relations loaded')
+
+            if counter['bad_mapping_level']:
+                logger.warning(
+                    f"skipped {counter['bad_mapping_level']} relations with "
+                    f"invalid mapping levels"
+                )
 
     def insert_relations(
         self,

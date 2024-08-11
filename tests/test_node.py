@@ -1,9 +1,11 @@
 """Tests for toron/node.py module."""
 
+import logging
 import sqlite3
 import sys
 import unittest
 from contextlib import suppress
+from io import StringIO
 from itertools import chain
 from unittest.mock import (
     Mock,
@@ -2027,6 +2029,18 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
 
 class TestNodeInsertRelations2(unittest.TestCase):
     def setUp(self):
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
+
+        # Add handler to 'toron' logger.
+        logger = logging.getLogger('toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        logger.addHandler(handler)
+        self.addCleanup(lambda: logger.removeHandler(handler))
+
+        # Build Node fixture to use in test cases.
         node = Node()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
@@ -2159,6 +2173,12 @@ class TestNodeInsertRelations2(unittest.TestCase):
             (3, 3, b'\x80', 15.0),
         ]
         self.node.insert_relations2('myfile', 'rel1', data)
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ('INFO: loaded 3 relations\n'
+             'WARNING: skipped 2 relations with invalid mapping levels\n'),
+        )
 
         self.assertEqual(
             self.get_relations_helper(),
