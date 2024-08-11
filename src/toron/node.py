@@ -1200,11 +1200,9 @@ class Node(object):
             crosswalk_id = crosswalk.id
 
             # Get allowed structure values.
-            structure = {bytes(BitFlags(x.bits))
+            structure = {bytes(BitFlags(x.bits)) if any(x.bits) else None
                          for x
                          in self._dal.StructureRepository(cursor).get_all()}
-            structure.remove(b'')  # Empty bit-flags are not allowed.
-            structure.add(None)  # `None` values are allowed.
 
             # Insert records from given `data`.
             for row in data:
