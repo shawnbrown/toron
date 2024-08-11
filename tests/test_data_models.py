@@ -815,6 +815,25 @@ class RelationRepositoryBaseTest(ABC):
         """Must inherit from appropriate abstract base class."""
         self.assertTrue(issubclass(self.dal.RelationRepository, BaseRelationRepository))
 
+    def test_add_type_coersion(self):
+        """String values should get converted to proper types."""
+        self.repository.add('1', '2', '3', '9393', '', '1.0')  # <- String values.
+        expected = {
+            # First crosswalk.
+            (1,  1, 1, 1, 131250.0, None,    1.0),
+            (2,  1, 2, 1, 40960.0,  b'\x40', 0.625),
+            (3,  1, 2, 2, 24576.0,  b'\x40', 0.375),
+            (4,  1, 3, 3, 100000.0, None,    1.0),
+            # Second crosswalk.
+            (5,  2, 1, 1,  583.75,  None,    1.0),
+            (6,  2, 2, 2,  416.25,  None,    1.0),
+            (7,  2, 3, 1,  336.0,   None,    0.328125),
+            (8,  2, 3, 2,  112.0,   None,    0.109375),
+            (9,  2, 3, 3,  576.0,   None,    0.5625),
+            (10, 1, 2, 3, 9393.0,   None,    1.0),  # <- Values coerced to proper types.
+        }
+        self.assertEqual(self.get_relations_helper(), expected)
+
     def test_find_by_index_id(self):
         results = self.repository.find_by_ids(index_id=3)
         expected = [
