@@ -1185,6 +1185,7 @@ class Node(object):
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
 
+            # Get crosswalk id.
             crosswalk = self._get_crosswalk(node_reference, crosswalk_name,
                                             crosswalk_repo)
             if not crosswalk:
@@ -1194,12 +1195,14 @@ class Node(object):
                 )
             crosswalk_id = crosswalk.id
 
+            # Get allowed structure values.
             structure = {bytes(BitFlags(x.bits))
                          for x
                          in self._dal.StructureRepository(cursor).get_all()}
             structure.remove(b'')  # Empty bit-flags are not allowed.
             structure.add(None)  # `None` values are allowed.
 
+            # Insert records from given `data`.
             for row in data:
                 other_index_id, index_id, mapping_level, value = row[:4]
 
