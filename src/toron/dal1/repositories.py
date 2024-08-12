@@ -727,36 +727,71 @@ class RelationRepository(BaseRelationRepository):
         """Initialize a new repository instance."""
         self._cursor = cursor
 
-    def add(
-        self,
-        crosswalk_id: int,
-        other_index_id: int,
-        index_id: int,
-        value: float,
-        mapping_level: Optional[bytes] = None,
-        proportion: Optional[float] = None,
-    ) -> None:
-        """Add a record to the repository."""
-        sql = """
-            INSERT INTO main.relation (
+    if sqlite3.sqlite_version_info >= (3, 32, 0):
+        def add(
+            self,
+            crosswalk_id: int,
+            other_index_id: int,
+            index_id: int,
+            value: float,
+            mapping_level: Optional[bytes] = None,
+            proportion: Optional[float] = None,
+        ) -> None:
+            """Add a record to the repository."""
+            sql = """
+                INSERT INTO main.relation (
+                    crosswalk_id,
+                    other_index_id,
+                    index_id,
+                    relation_value,
+                    mapping_level,
+                    proportion
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+            """
+            parameters = (
                 crosswalk_id,
                 other_index_id,
                 index_id,
-                relation_value,
-                mapping_level,
-                proportion
+                value,
+                bytes(mapping_level) if mapping_level else None,
+                proportion,
             )
-            VALUES (?, ?, ?, ?, ?, ?)
-        """
-        parameters = (
-            crosswalk_id,
-            other_index_id,
-            index_id,
-            value,
-            bytes(mapping_level) if mapping_level else None,
-            proportion,
-        )
-        self._cursor.execute(sql, parameters)
+            self._cursor.execute(sql, parameters)
+    else:
+        # Prior to SQLite 3.32.0, column affinity was not always applied before
+        # computing CHECK constraints. For proper behavior, 'other_index_id'
+        # and 'value' need to be converted *before* inserting or updating.
+        def add(
+            self,
+            crosswalk_id: int,
+            other_index_id: int,
+            index_id: int,
+            value: float,
+            mapping_level: Optional[bytes] = None,
+            proportion: Optional[float] = None,
+        ) -> None:
+            """Add a record to the repository."""
+            sql = """
+                INSERT INTO main.relation (
+                    crosswalk_id,
+                    other_index_id,
+                    index_id,
+                    relation_value,
+                    mapping_level,
+                    proportion
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+            """
+            parameters = (
+                crosswalk_id,
+                int(other_index_id),
+                index_id,
+                float(value),
+                bytes(mapping_level) if mapping_level else None,
+                proportion,
+            )
+            self._cursor.execute(sql, parameters)
 
     def get(self, id: int) -> Optional[Relation]:
         """Get a record from the repository."""
@@ -768,28 +803,55 @@ class RelationRepository(BaseRelationRepository):
             return Relation(*record)
         return None
 
-    def update(self, record: Relation) -> None:
-        """Update a record in the repository."""
-        sql = f"""
-            UPDATE main.relation
-            SET crosswalk_id=?,
-                other_index_id=?,
-                index_id=?,
-                relation_value=?,
-                mapping_level=?,
-                proportion=?
-            WHERE relation_id=?
-        """
-        parameters = (
-            record.crosswalk_id,
-            record.other_index_id,
-            record.index_id,
-            record.value,
-            record.mapping_level,
-            record.proportion,
-            record.id,
-        )
-        self._cursor.execute(sql, parameters)
+    if sqlite3.sqlite_version_info >= (3, 32, 0):
+        def update(self, record: Relation) -> None:
+            """Update a record in the repository."""
+            sql = f"""
+                UPDATE main.relation
+                SET crosswalk_id=?,
+                    other_index_id=?,
+                    index_id=?,
+                    relation_value=?,
+                    mapping_level=?,
+                    proportion=?
+                WHERE relation_id=?
+            """
+            parameters = (
+                record.crosswalk_id,
+                record.other_index_id,
+                record.index_id,
+                record.value,
+                record.mapping_level,
+                record.proportion,
+                record.id,
+            )
+            self._cursor.execute(sql, parameters)
+    else:
+        # Prior to SQLite 3.32.0, column affinity was not always applied before
+        # computing CHECK constraints. For proper behavior, 'other_index_id'
+        # and 'value' need to be converted *before* inserting or updating.
+        def update(self, record: Relation) -> None:
+            """Update a record in the repository."""
+            sql = f"""
+                UPDATE main.relation
+                SET crosswalk_id=?,
+                    other_index_id=?,
+                    index_id=?,
+                    relation_value=?,
+                    mapping_level=?,
+                    proportion=?
+                WHERE relation_id=?
+            """
+            parameters = (
+                record.crosswalk_id,
+                int(record.other_index_id),
+                record.index_id,
+                float(record.value),
+                record.mapping_level,
+                record.proportion,
+                record.id,
+            )
+            self._cursor.execute(sql, parameters)
 
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
