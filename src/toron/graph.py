@@ -38,7 +38,7 @@ NoValueType: TypeAlias = NOVALUE.__class__
 Direction: TypeAlias = Literal['->', '-->', '<->', '<-->', '<-', '<--']
 
 
-def add_edge(
+def xadd_edge(
     data : TabularData,
     name : str,
     left_node : xNode,

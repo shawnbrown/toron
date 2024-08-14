@@ -9,11 +9,11 @@ from toron._utils import (
     BitFlags,
 )
 from toron.graph import (
-    add_edge,
+    xadd_edge,
 )
 
 
-class TestAddEdge(unittest.TestCase):
+class TestXAddEdge(unittest.TestCase):
     def setUp(self):
         node1_data = [
             ['idx1', 'idx2', 'idx3', 'wght'],
@@ -65,7 +65,7 @@ class TestAddEdge(unittest.TestCase):
             ['D', 'y', 'h', 100, 'D', 'y', 'h'],
             ['D', 'y', 'i', 100, 'D', 'y', 'i'],
         ]
-        add_edge(  # <- The method under test.
+        xadd_edge(  # <- The method under test.
             data=mapping_data,
             name='population',
             left_node=self.node1,
@@ -104,7 +104,7 @@ class TestAddEdge(unittest.TestCase):
             ['D', 'x', 'g', 100, 'D', 'x', 'g'],  # <- Exact match (overlapps the records matched on "D" alone).
             ['D', '',  '',  300, 'D', '',  ''],   # <- Matched to 3 right-side records (4-ambiguous, minus 1-exact overlap).
         ]
-        add_edge(  # <- The method under test.
+        xadd_edge(  # <- The method under test.
             data=mapping_data,
             name='population',
             left_node=self.node1,
