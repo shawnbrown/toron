@@ -202,7 +202,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             value TEXT_JSON
         );
 
-        /* Reserve index_id 0 for the "undefined" and add triggers. */
+        /* Reserve index_id 0 for the "undefined" record. */
         INSERT INTO main.node_index (index_id) VALUES (0);
 
         /* Set properties for Toron schema and application versions. */
