@@ -425,8 +425,8 @@ class Mapper(object):
                 SELECT
                     other_index_id,
                     index_id,
-                    SUM(mapping_value * proportion) AS relation_value,
-                    mapping_level
+                    mapping_level,
+                    SUM(mapping_value * proportion) AS relation_value
                 FROM mapping_data
                 JOIN joint_probability USING (run_id)
                 GROUP BY other_index_id, index_id, mapping_level

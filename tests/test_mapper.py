@@ -542,12 +542,12 @@ class TestGetRelations(TwoNodesBaseTest):
 
         relations = mapper.get_relations(direction='->')  # <- Method under test.
 
-        self.assertEqual(list(relations), [(1, 1, 10.0, b'\xc0'),
-                                           (1, 2, 70.0, b'\xc0'),
-                                           (2, 3, 20.0, b'\xc0'),
-                                           (2, 4, 60.0, b'\xc0'),
-                                           (3, 5, 30.0, b'\xc0'),
-                                           (3, 6, 50.0, b'\xc0')])
+        self.assertEqual(list(relations), [(1, 1, b'\xc0', 10.0),
+                                           (1, 2, b'\xc0', 70.0),
+                                           (2, 3, b'\xc0', 20.0),
+                                           (2, 4, b'\xc0', 60.0),
+                                           (3, 5, b'\xc0', 30.0),
+                                           (3, 6, b'\xc0', 50.0)])
 
     def test_ambiguous_no_overlaps(self):
         mapper = Mapper(
@@ -565,12 +565,12 @@ class TestGetRelations(TwoNodesBaseTest):
         relations = mapper.get_relations(direction='->')  # <- Method under test.
 
         expected = [
-            (1, 1, 22.5, b'\x80'),
-            (1, 2, 67.5, b'\x80'),
-            (2, 3, 20.0, b'\xc0'),
-            (2, 4, 60.0, b'\xc0'),
-            (3, 5, 28.0, b'\x80'),  # <- Gets full weight, `3, 6` overlap omitted.
-            (3, 6,  7.0, b'\xc0'),  # <- `3, 6` already matched at finer granularity.
+            (1, 1, b'\x80', 22.5),
+            (1, 2, b'\x80', 67.5),
+            (2, 3, b'\xc0', 20.0),
+            (2, 4, b'\xc0', 60.0),
+            (3, 5, b'\x80', 28.0),  # <- Gets full weight, `3, 6` overlap omitted.
+            (3, 6, b'\xc0',  7.0),  # <- `3, 6` already matched at finer granularity.
         ]
         self.assertEqual(list(relations), expected)
 
@@ -590,12 +590,12 @@ class TestGetRelations(TwoNodesBaseTest):
         relations = mapper.get_relations(direction='->')  # <- Method under test.
 
         expected = [
-            (1, 1, 22.5, b'\x80'),
-            (1, 2, 67.5, b'\x80'),
-            (2, 3, 20.0, b'\xc0'),
-            (2, 4, 60.0, b'\xc0'),
-            (3, 5, 10.4, b'\x80'),  # <- Gets proportion of weight.
-            (3, 6, 17.6, b'\x80'),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
-            (3, 6,  7.0, b'\xc0'),  # <- Exact match overlapped by ambiguous match.
+            (1, 1, b'\x80', 22.5),
+            (1, 2, b'\x80', 67.5),
+            (2, 3, b'\xc0', 20.0),
+            (2, 4, b'\xc0', 60.0),
+            (3, 5, b'\x80', 10.4),  # <- Gets proportion of weight.
+            (3, 6, b'\x80', 17.6),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
+            (3, 6, b'\xc0',  7.0),  # <- Exact match overlapped by ambiguous match.
         ]
         self.assertEqual(list(relations), expected)
