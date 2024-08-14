@@ -167,6 +167,11 @@ class Node(object):
                 raise
 
     @property
+    def unique_id(self) -> str:
+        """Unique identifier for the node."""
+        return self._connector.unique_id
+
+    @property
     def discrete_categories(self) -> List[Set[str]]:
         with self._managed_cursor() as cursor:
             col_manager = self._dal.ColumnManager(cursor)
