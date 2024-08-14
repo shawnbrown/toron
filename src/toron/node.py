@@ -1222,6 +1222,18 @@ class Node(object):
                 )
                 counter['inserted'] += 1
 
+            # If missing, add the "undefined" relation (0 -> 0).
+            if next(relation_repo.find_by_ids(crosswalk_id=crosswalk_id,
+                                              other_index_id=0,
+                                              index_id=0), None) is None:
+                relation_repo.add(
+                    crosswalk_id=crosswalk_id,
+                    other_index_id=0,  # <- Undefined record.
+                    index_id=0,  # <- Undefined record.
+                    mapping_level=None,
+                    value=0.0,
+                )
+
             if counter['inserted'] and crosswalk:
                 logger.info(f"loaded {counter['inserted']} relations")
 

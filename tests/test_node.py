@@ -2126,6 +2126,30 @@ class TestNodeInsertRelations2(unittest.TestCase):
             ],
         )
 
+    def test_automatic_undefined_record(self):
+        """If not given, the unmapped-to-unmapped relation should be
+        added automatically.
+        """
+        data = [
+            ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
+            (1, 1, None, 10.0),
+            (2, 2, None, 20.0),
+            (3, 2, None,  5.0),
+            (3, 3, None, 15.0),
+        ]
+        self.node.insert_relations2('myfile', 'rel1', data)
+
+        self.assertEqual(
+            self.get_relations_helper(),
+            [
+                Relation(5, 1, 0, 0, value=0.0,  mapping_level=None, proportion=1.00),  # <- Auto-added.
+                Relation(1, 1, 1, 1, value=10.0, mapping_level=None, proportion=1.00),
+                Relation(2, 1, 2, 2, value=20.0, mapping_level=None, proportion=1.00),
+                Relation(3, 1, 3, 2, value=5.0,  mapping_level=None, proportion=0.25),
+                Relation(4, 1, 3, 3, value=15.0, mapping_level=None, proportion=0.75),
+            ],
+        )
+
     def test_ignore_proportion_in_data(self):
         """If 'proportion' is given as one of the columns in *data*,
         it's treated as an extra column and is ignored. This is done
@@ -2143,6 +2167,7 @@ class TestNodeInsertRelations2(unittest.TestCase):
         self.assertEqual(
             self.get_relations_helper(),
             [
+                Relation(3, 1, 0, 0, value=0.0,  mapping_level=None, proportion=1.00),  # <- Auto-added.
                 Relation(1, 1, 3, 2, value=5.0,  mapping_level=None, proportion=0.25),
                 Relation(2, 1, 3, 3, value=15.0, mapping_level=None, proportion=0.75),
             ],
