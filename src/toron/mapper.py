@@ -311,8 +311,13 @@ class Mapper(object):
                     # with records that have already been matched at a finer
                     # level of granularity.
                     if len_matches > 1:
-                        sql = f'SELECT EXISTS (SELECT 1 FROM {match_table} WHERE index_id=?)'
-                        is_overlap = lambda x: cur2.execute(sql, (x.id,),).fetchone()[0]
+                        sql = f"""
+                            SELECT EXISTS (
+                                SELECT 1 FROM {match_table}
+                                WHERE index_id = ? AND mapping_level != ?
+                            )
+                        """
+                        is_overlap = lambda x: cur2.execute(sql, (x.id, node_bytes)).fetchone()[0]
 
                         if allow_overlapping:
                             counter['overlaps_included'] += \

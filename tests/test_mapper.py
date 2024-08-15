@@ -524,6 +524,32 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
             msg='should include the overlap with `B, x` (index_id 3)',
         )
 
+    def test_duplicate_labels_not_always_overlapping(self):
+        """If there are multiple records that use the same labels, they
+        should be matched normally if they all use the same mapping
+        level--they should not count as being overlapped.
+        """
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 70, 'A', 'x'],
+                  ['A', 40, 'A', 'y'],
+                  ['B', 20, 'B', ''],   # <- Duplicate labels using same mapping level.
+                  ['B', 40, 'B', '']],  # <- Duplicate labels using same mapping level.
+        )
+
+        mapper.match_records(self.node2, 'right', match_limit=2)
+
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [(1, 1,  5.0, b'\xc0', 1.000),
+             (2, 2, 15.0, b'\xc0', 1.000),
+             (3, 3,  3.0, b'\x80', 0.375),   # <- Multiple matches.
+             (3, 4,  5.0, b'\x80', 0.625),   # <- Multiple matches.
+             (4, 3,  3.0, b'\x80', 0.375),   # <- Multiple matches.
+             (4, 4,  5.0, b'\x80', 0.625)],  # <- Multiple matches.
+        )
+
 
 class TestGetRelations(TwoNodesBaseTest):
     def test_exact_matches(self):
@@ -597,5 +623,35 @@ class TestGetRelations(TwoNodesBaseTest):
             (3, 5, b'\x80', 10.4),  # <- Gets proportion of weight.
             (3, 6, b'\x80', 17.6),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
             (3, 6, b'\xc0',  7.0),  # <- Exact match overlapped by ambiguous match.
+        ]
+        self.assertEqual(list(relations), expected)
+
+    def test_ambiguous_duplicate_mapping_labels(self):
+        """Duplicate records should not count as overlaps if they
+        share the same mapping level. When preparing a mappings, it's
+        convinient to delete values that cannot be precisely matched
+        but leave the original rows (rather than summing them before
+        loading). Instead, the mapper should accept such values and
+        sum them internally.
+        """
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2'],
+                  ['A', 30, 'A', ''],   # <- Duplicate labels using same mapping level.
+                  ['A', 50, 'A', ''],   # <- Duplicate labels using same mapping level.
+                  ['B', 20, 'B', ''],   # <- Duplicate labels using same mapping level.
+                  ['B', 40, 'B', '']],  # <- Duplicate labels using same mapping level.
+        )
+
+        mapper.match_records(self.node1, 'left')
+        mapper.match_records(self.node2, 'right', match_limit=2)
+
+        relations = mapper.get_relations(direction='->')  # <- Method under test.
+
+        expected = [
+            (1, 1, b'\x80', 20.0),
+            (1, 2, b'\x80', 60.0),
+            (2, 3, b'\x80', 22.5),
+            (2, 4, b'\x80', 37.5),
         ]
         self.assertEqual(list(relations), expected)
