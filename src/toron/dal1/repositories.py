@@ -733,8 +733,8 @@ class RelationRepository(BaseRelationRepository):
             crosswalk_id: int,
             other_index_id: int,
             index_id: int,
+            mapping_level: Union[bytes, None],
             value: float,
-            mapping_level: Optional[bytes] = None,
             proportion: Optional[float] = None,
         ) -> None:
             """Add a record to the repository."""
@@ -767,8 +767,8 @@ class RelationRepository(BaseRelationRepository):
             crosswalk_id: int,
             other_index_id: int,
             index_id: int,
+            mapping_level: Union[bytes, None],
             value: float,
-            mapping_level: Optional[bytes] = None,
             proportion: Optional[float] = None,
         ) -> None:
             """Add a record to the repository."""
@@ -811,8 +811,8 @@ class RelationRepository(BaseRelationRepository):
                 SET crosswalk_id=?,
                     other_index_id=?,
                     index_id=?,
-                    relation_value=?,
                     mapping_level=?,
+                    relation_value=?,
                     proportion=?
                 WHERE relation_id=?
             """
@@ -820,8 +820,8 @@ class RelationRepository(BaseRelationRepository):
                 record.crosswalk_id,
                 record.other_index_id,
                 record.index_id,
-                record.value,
                 record.mapping_level,
+                record.value,
                 record.proportion,
                 record.id,
             )
@@ -837,8 +837,8 @@ class RelationRepository(BaseRelationRepository):
                 SET crosswalk_id=?,
                     other_index_id=?,
                     index_id=?,
-                    relation_value=?,
                     mapping_level=?,
+                    relation_value=?,
                     proportion=?
                 WHERE relation_id=?
             """
@@ -846,8 +846,8 @@ class RelationRepository(BaseRelationRepository):
                 record.crosswalk_id,
                 int(record.other_index_id),
                 record.index_id,
-                float(record.value),
                 record.mapping_level,
+                float(record.value),
                 record.proportion,
                 record.id,
             )

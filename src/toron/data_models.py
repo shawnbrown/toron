@@ -722,8 +722,8 @@ class Relation(object):
     crosswalk_id: int
     other_index_id: int
     index_id: int
+    mapping_level: Union[bytes, None]
     value: float
-    mapping_level: Optional[bytes] = None
     proportion: Optional[float] = None
 
 
@@ -738,8 +738,8 @@ class BaseRelationRepository(ABC):
         crosswalk_id: int,
         other_index_id: int,
         index_id: int,
+        mapping_level: Union[bytes, None],
         value: float,
-        mapping_level: Optional[bytes] = None,
         proportion: Optional[float] = None,
     ) -> None:
         """Add a record to the repository."""

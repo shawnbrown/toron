@@ -19,8 +19,8 @@ application layer:
     | crosswalk_id         |------->| crosswalk_id   |     •  +-----------------+  |
     | other_unique_id      |  ••••••| other_index_id |<•••••                       |
     | other_filename_hint  |  •  •••| index_id       |<-+     +-----------------+  |
-    | name                 |  •  •  | relation_value |  |     | quantity        |  |
-    | description          |  •  •  | mapping_level  |  |     +-----------------+  |
+    | name                 |  •  •  | mapping_level  |  |     | quantity        |  |
+    | description          |  •  •  | relation_value |  |     +-----------------+  |
     | selectors            |  •  •  | proportion*    |  |     | quantity_id     |  |
     | is_default           |  •  •  +----------------+  |  +->| _location_id    |  |
     | user_properties      |  •  •                      |  |  | attribute_id    |<-+
@@ -189,8 +189,8 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             crosswalk_id INTEGER,
             other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = "integer"),
             index_id INTEGER,
-            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) = "real" AND 0.0 <= relation_value),
             mapping_level BLOB_BITFLAGS,
+            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) = "real" AND 0.0 <= relation_value),
             proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
             FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,
             FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
