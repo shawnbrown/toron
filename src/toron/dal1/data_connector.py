@@ -435,6 +435,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
     def from_file(
         cls,
         path: Union[str, bytes, os.PathLike],
+        *,
         cache_to_drive: bool = False,
     ) -> Self:
         """Read a node file into a new data connector object.
@@ -443,6 +444,8 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         ----------
         path : :py:term:`path-like-object`
             File path containing the node data.
+        cache_to_drive: bool
+            Cache data to drive rather than loading it into memory.
         """
         src_path = os.path.abspath(os.fsdecode(path))
         if not os.path.isfile(path):

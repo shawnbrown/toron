@@ -152,7 +152,7 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
     @classmethod
     @abstractmethod
     def from_file(
-        cls, path: Union[str, bytes, os.PathLike]
+        cls, path: Union[str, bytes, os.PathLike], *args: Any, **kwds: Any
     ) -> Self:
         """Read a node file into a new data connector object.
 
@@ -160,6 +160,10 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         ----------
         path : :py:term:`path-like-object`
             File path containing the node data.
+
+        .. note::
+            If a concrete method adds additional arguments, they should
+            be defined as keyword-only arguments.
         """
 
 
