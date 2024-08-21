@@ -718,6 +718,28 @@ class QuantityRepositoryBaseTest(ABC):
         self.assertIsInstance(self.repository.get(2).value, float)
         self.assertIsInstance(self.repository.get(3).value, float)
 
+    def test_find_by_location_id(self):
+        self.repository.add(location_id=1, attribute_id=1, value=15.0)  # Add quantity_id 1
+        self.repository.add(location_id=2, attribute_id=1, value=20.0)  # Add quantity_id 2
+        self.repository.add(location_id=1, attribute_id=2, value=25.0)  # Add quantity_id 3
+        self.repository.add(location_id=2, attribute_id=2, value=10.0)  # Add quantity_id 4
+        self.repository.add(location_id=2, attribute_id=2, value=35.0)  # Add quantity_id 5
+
+        result = self.repository.find_by_location_id(1)
+        self.assertEqual(
+            list(result),
+            [Quantity(id=1, location_id=1, attribute_id=1, value=15.0),
+             Quantity(id=3, location_id=1, attribute_id=2, value=25.0)],
+        )
+
+        result = self.repository.find_by_location_id(2)
+        self.assertEqual(
+            list(result),
+            [Quantity(id=2, location_id=2, attribute_id=1, value=20.0),
+             Quantity(id=4, location_id=2, attribute_id=2, value=10.0),
+             Quantity(id=5, location_id=2, attribute_id=2, value=35.0)],
+        )
+
     def test_find_by_ids(self):
         self.repository.add(location_id=1, attribute_id=1, value=15.0)  # Add quantity_id 1
         self.repository.add(location_id=2, attribute_id=1, value=20.0)  # Add quantity_id 2

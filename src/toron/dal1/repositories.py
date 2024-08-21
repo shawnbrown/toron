@@ -545,6 +545,16 @@ class QuantityRepository(BaseQuantityRepository):
             'DELETE FROM main.quantity WHERE quantity_id=?', (id,)
         )
 
+    def find_by_location_id(self, location_id: int) -> Iterator[Quantity]:
+        """Find records with matching location id."""
+        self._cursor.execute(
+            'SELECT * FROM main.quantity WHERE _location_id=?',
+            (location_id,),
+        )
+        for quantity in self._cursor:
+            quantity_id, loc_id, attr_id, val = quantity
+            yield Quantity(quantity_id, loc_id, attr_id, float(val))
+
     def find_by_ids(
         self,
         *,
