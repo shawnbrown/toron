@@ -1779,19 +1779,16 @@ class Node(object):
         with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4), \
                 self._managed_transaction(cur1):
 
-            # The weight, structure, and attribute repos can share a cursor.
+            # These repository instances can share a single cursor.
             property_repo = self._dal.PropertyRepository(cur1)
             weight_group_repo = self._dal.WeightGroupRepository(cur1)
             structure_repo = self._dal.StructureRepository(cur1)
             attribute_repo = self._dal.AttributeRepository(cur1)
+            index_repo = self._dal.IndexRepository(cur1)
 
-            # The location repo must have its own cursor.
+            # These repositories must have their own cursors.
             location_repo = self._dal.LocationRepository(cur2)
-
-            # The quantity repo can share a cursor with index or weight
-            # repos but index and weight cannot share the same cursor.
             quantity_repo = self._dal.QuantityRepository(cur3)
-            index_repo = self._dal.IndexRepository(cur3)
             weight_repo = self._dal.WeightRepository(cur4)
 
             # Get the default weight group and make sure it's complete.
@@ -1814,31 +1811,26 @@ class Node(object):
             # Get label column names (in table definition order).
             label_columns = location_repo.get_label_columns()
 
-            # For each attribute, loop over locations and disaggregate
-            # to index records using matching weight group.
-            for attribute in attribute_repo.find_all():
-                weight_group_id = get_greatest_unique_specificity(
-                    row_dict=attribute.value,
-                    selector_dict=selector_dict,
-                    default=default_weight_group.id,
-                )
+            for structure in structures:
+                for location in location_repo.find_by_structure(structure):
+                    # Make index matching criterial from location labels.
+                    zipped = zip(label_columns, location.labels)
+                    index_criteria = {k: v for k, v in zipped if v != ''}
 
-                for structure in structures:
-                    for location in location_repo.find_by_structure(structure):
-                        # Get sum of values for this location and attribute.
-                        quantity_value = get_quantity_value_sum(
-                            location.id, attribute.id, quantity_repo
+                    for quantity in quantity_repo.find_by_location_id(location.id):
+                        attribute = attribute_repo.get(quantity.attribute_id)
+                        if attribute is None:
+                            raise RuntimeError(f'attribute id {quantity.attribute_id} not found')
+
+                        weight_group_id = get_greatest_unique_specificity(
+                            row_dict=attribute.value,
+                            selector_dict=selector_dict,
+                            default=default_weight_group.id,
                         )
-                        if quantity_value is None:
-                            continue  # Skip to next location.
-
-                        # Make index matching criteria from location labels.
-                        zipped = zip(label_columns, location.labels)
-                        index_criteria = {k: v for k, v in zipped if v != ''}
 
                         # Get disaggregated results for each individual index.
                         disaggregated = disaggregate_value(
-                            quantity_value,
+                            quantity.value,
                             index_criteria,
                             weight_group_id,
                             index_repo,

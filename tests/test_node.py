@@ -3390,15 +3390,15 @@ class TestNodeDisaggregate(unittest.TestCase):
         results = self.node.disaggregate()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   668125.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   218.75),   # <- Disaggreated.
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   781.25),   # <- Disaggreated.
-            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   18432.0),  # <- Disaggreated.
-            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   55296.0),  # <- Disaggreated.
-            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
-            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 218.75),   # <- Disaggreated.
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 781.25),   # <- Disaggreated.
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   18432.0),  # <- Disaggreated.
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   55296.0),  # <- Disaggreated.
             (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 18432.0),  # <- Disaggreated.
             (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 55296.0),  # <- Disaggreated.
         ]
@@ -3418,21 +3418,21 @@ class TestNodeDisaggregate(unittest.TestCase):
         results = self.node.disaggregate()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   668125.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   500.0),    # <- Disaggreated by group 2
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   500.0),    # <- Disaggreated by group 2
-            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
-            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
-            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
-            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 218.75),   # <- Disaggreated by default (group 1)
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 781.25),   # <- Disaggreated by default (group 1)
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
             (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 18432.0),  # <- Disaggreated by default (group 1)
             (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 55296.0),  # <- Disaggreated by default (group 1)
         ]
         self.assertEqual(list(results), expected)
 
-    def test_matching_group_and_default(self):
+    def test_matching_multiple_groups(self):
         with self.node._managed_cursor() as cursor:
             weight_group_repo = self.node._dal.WeightGroupRepository(cursor)
             weight_repo = self.node._dal.WeightRepository(cursor)
@@ -3452,15 +3452,15 @@ class TestNodeDisaggregate(unittest.TestCase):
         results = self.node.disaggregate()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
+            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   668125.0),
+            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   500.0),    # <- Disaggreated by group 2
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   500.0),    # <- Disaggreated by group 2
-            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
-            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
-            (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
-            (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 668125.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 250.0),    # <- Disaggreated by group 3
             (Index(id=2, labels=('OH', 'FRANKLIN')), Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 750.0),    # <- Disaggreated by group 3
+            (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
+            (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   36864.0),  # <- Disaggreated by group 2
             (Index(id=3, labels=('IN', 'KNOX')),     Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 36864.0),  # <- Disaggreated by group 3
             (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 36864.0),  # <- Disaggreated by group 3
         ]
