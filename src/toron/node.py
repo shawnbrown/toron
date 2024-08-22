@@ -5,6 +5,7 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from itertools import chain, compress
 from logging import getLogger
+from os import PathLike
 
 from toron._typing import (
     Any,
@@ -14,6 +15,7 @@ from toron._typing import (
     Iterator,
     List,
     Optional,
+    Self,
     Sequence,
     Set,
     Tuple,
@@ -121,6 +123,24 @@ class Node(object):
     ) -> None:
         self._dal = data_access.get_data_access_layer(backend)
         self._connector = self._dal.DataConnector(**kwds)
+
+    @classmethod
+    def from_file(cls, path: Union[str, bytes, PathLike], **kwds) -> Self:
+        """Load a node from an existing file on drive."""
+        backend = data_access.get_backend_from_path(path)
+        if not backend:
+            raise RuntimeError(f'Cannot determine backend for {path!r}')
+
+        obj = cls.__new__(cls)
+        obj._dal = data_access.get_data_access_layer(backend)
+        obj._connector = obj._dal.DataConnector.from_file(path, **kwds)
+        return obj
+
+    def to_file(
+        self, path: Union[str, bytes, PathLike], *, fsync: bool = True
+    ) -> None:
+        """Write node data to a file."""
+        self._connector.to_file(path=path, fsync=fsync)
 
     @contextmanager
     def _managed_connection(self) -> Generator[Any, None, None]:

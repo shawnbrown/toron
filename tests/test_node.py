@@ -1,8 +1,10 @@
 """Tests for toron/node.py module."""
 
 import logging
+import os
 import sqlite3
 import sys
+import tempfile
 import unittest
 from contextlib import suppress
 from io import StringIO
@@ -56,6 +58,59 @@ class TestInstantiation(unittest.TestCase):
     def test_kwds(self):
         """The ``**kwds`` are used to create a DataConnector."""
         node = Node(cache_to_drive=True)
+
+
+class TestFileHandling(unittest.TestCase):
+    """Test ``Node.to_file()`` and ``Node.from_file()`` methods."""
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
+        self.addCleanup(self.temp_dir.cleanup)
+
+        if sys.version_info < (3, 7, 17):
+            # Fix for old bug https://github.com/python/cpython/issues/70847
+            def make_files_readwrite():
+                root_dir = self.temp_dir.name
+                for f in os.listdir(root_dir):
+                    f_path = os.path.join(root_dir, f)
+                    os.chmod(f_path, stat.S_IRUSR | stat.S_IWUSR)
+
+            self.addCleanup(make_files_readwrite)
+
+    def test_default_backend(self):
+        """Check default backend with standard arguments."""
+        file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
+        self.assertFalse(os.path.isfile(file_path))
+
+        node = Node()  # <- When unspecified, uses default backend.
+        original_unique_id = node.unique_id
+        node.to_file(file_path, fsync=True)  # <- Write node to file.
+        del node
+        self.assertTrue(os.path.isfile(file_path))
+
+        try:
+            node = Node.from_file(file_path)  # <- Load node from file.
+        except Exception as e:
+            self.fail(f'could not load file: {e}')
+        self.assertEqual(node.unique_id, original_unique_id,
+                         msg='unique_id values should match')
+
+    def test_dal1_backend(self):
+        """Specify DAL1 backend and use DAL1-specific **kwds."""
+        file_path = os.path.join(self.temp_dir.name, 'mynode-dal1.toron')
+        self.assertFalse(os.path.isfile(file_path))
+
+        node = Node(backend='DAL1')  # <- Specify DAL1 explicitly.
+        original_unique_id = node.unique_id
+        node.to_file(file_path, fsync=True)  # <- Write node to file.
+        del node
+        self.assertTrue(os.path.isfile(file_path))
+
+        try:
+            node = Node.from_file(file_path, cache_to_drive=True)  # <- Uses DAL1-specific `cache_to_drive` argument.
+        except Exception as e:
+            self.fail(f'could not load file: {e}')
+        self.assertEqual(node.unique_id, original_unique_id,
+                         msg='unique_id values should match')
 
 
 class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
