@@ -27,6 +27,7 @@ from toron.data_models import (
     Quantity, BaseQuantityRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
+    QuantityIterator2,
 )
 
 
@@ -1126,6 +1127,86 @@ class PropertyRepositoryBaseTest(ABC):
 
         repository.delete('foo')
         self.assertIsNone(repository.get('foo'))
+
+
+#######################################################################
+# Test Cases for Concrete Data Model Classes
+#######################################################################
+
+class TestQuantityIterator2(unittest.TestCase):
+    def test_iterator_protocol(self):
+        iterator = QuantityIterator2(
+            unique_id='0000-00-00-00-000000',
+            data=iter([]),  # <- Empty iterable for testing.
+            label_names=['x', 'y'],
+            attribute_keys=['a'],
+        )
+
+        self.assertIs(iter(iterator), iter(iterator))
+        self.assertTrue(hasattr(iterator, '__next__'))
+        with self.assertRaises(StopIteration):
+            next(iterator)
+
+    def test_properties(self):
+        unique_id = '0000-00-00-00-000000'
+        data = iter([])  # <- Empty iterable for testing.
+        label_names = ('x', 'y')
+        attribute_keys = ('a',)
+
+        iterator = QuantityIterator2(
+            unique_id=unique_id,
+            data=data,
+            label_names=label_names,
+            attribute_keys=attribute_keys,
+        )
+
+        # Check for expected getters.
+        self.assertEqual(iterator.unique_id, unique_id)
+        self.assertIs(iterator.data, data, msg='should be exact same object')
+        self.assertEqual(iterator.label_names, label_names)
+        self.assertEqual(iterator.attribute_keys, attribute_keys)
+
+        # Check for read-only (no setters).
+        with self.assertRaises(AttributeError):
+            iterator.unique_id = '9999-99-99-99-999999'
+
+        with self.assertRaises(AttributeError):
+            iterator.data = iter([])
+
+        with self.assertRaises(AttributeError):
+            iterator.label_names = ('q', 'r')
+
+        with self.assertRaises(AttributeError):
+            iterator.attribute_keys = ('b',)
+
+    def test_formatted_output(self):
+        """Basic iteration should yield flattened, CSV-like rows."""
+        iterator = QuantityIterator2(
+            unique_id='0000-00-00-00-000000',
+            data=[
+                (Index(1, 'FOO'), Attribute(1, {'a': 'baz'}), 50.0),
+                (Index(1, 'FOO'), Attribute(2, {'a': 'qux'}), 55.0),
+                (Index(2, 'BAR'), Attribute(1, {'a': 'baz'}), 60.0),
+                (Index(2, 'BAR'), Attribute(2, {'a': 'qux'}), 65.0),
+            ],
+            label_names=['x'],
+            attribute_keys=['a'],
+        )
+
+        self.assertEqual(
+            iterator.columns,
+            ('x', 'a', 'quantity_value'),
+            msg='`columns` should be usable as a header row',
+        )
+
+        self.assertEqual(
+            list(iterator),
+            [('FOO', 'baz', 50.0),
+             ('FOO', 'qux', 55.0),
+             ('BAR', 'baz', 60.0),
+             ('BAR', 'qux', 65.0)],
+            msg='iteration should yield flattened rows',
+        )
 
 
 #######################################################################

@@ -861,3 +861,46 @@ class BasePropertyRepository(ABC):
     @abstractmethod
     def delete(self, key: str) -> None:
         """Remove an item from the repository."""
+
+
+class QuantityIterator2(object):
+    """An iterator for disaggregated quantity data."""
+    def __init__(
+        self,
+        unique_id: str,
+        data: Iterable[Tuple[Index, Attribute, float]],
+        label_names: Sequence[str],
+        attribute_keys: Iterable[str],
+    ):
+        self._unique_id = unique_id
+        self._data = iter(data)
+        self._label_names = tuple(label_names)
+        self._attribute_keys = tuple(attribute_keys)
+
+    @property
+    def unique_id(self) -> str:
+        return self._unique_id
+
+    @property
+    def data(self) -> Iterator[Tuple[Index, Attribute, float]]:
+        return self._data
+
+    @property
+    def label_names(self) -> Tuple[str, ...]:
+        return self._label_names
+
+    @property
+    def attribute_keys(self) -> Tuple[str, ...]:
+        return self._attribute_keys
+
+    @property
+    def columns(self) -> Tuple[str, ...]:
+        return self._label_names + self._attribute_keys + ('quantity_value',)
+
+    def __next__(self) -> Tuple[Union[str, float, None], ...]:
+        index, attr, quant = next(self._data)
+        attr_vals = tuple(attr.value.get(x) for x in self._attribute_keys)
+        return index.labels + attr_vals + (quant,)
+
+    def __iter__(self):
+        return self
