@@ -583,7 +583,7 @@ class TestGetRelations(TwoNodesBaseTest):
                   ['B', 20, 'B', 'x'],   # <- Exact match.
                   ['B', 60, 'B', 'y'],   # <- Exact match.
                   ['C', 28, 'C',  ''],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
-                  ['C',  7, 'C', 'y']],  # <- Exact match (overlapps the records matched on "C" alone).
+                  ['C',  7, 'C', 'y']],  # <- Exact match (overlaps the records matched on "C" alone).
         )
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right', match_limit=2)
@@ -608,7 +608,7 @@ class TestGetRelations(TwoNodesBaseTest):
                   ['B', 20, 'B', 'x'],   # <- Exact match.
                   ['B', 60, 'B', 'y'],   # <- Exact match.
                   ['C', 28, 'C',  ''],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
-                  ['C',  7, 'C', 'y']],  # <- Exact match (overlapps the records matched on "C" alone).
+                  ['C',  7, 'C', 'y']],  # <- Exact match (overlaps the records matched on "C" alone).
         )
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right', match_limit=2, allow_overlapping=True)

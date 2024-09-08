@@ -146,7 +146,7 @@ class TestLoadMapping(unittest.TestCase):
             ['A', 'z', '',   50, 'A', 'z', ''],   # <- Matched to 2 right-side records.
             ['B', '',  '',  100, 'B', '',  ''],   # <- Exact right-side match because there's only one "B".
             ['C', '',  '',  105, 'C', '',  ''],   # <- Matched to 2 right-side records.
-            ['D', 'x', 'g', 100, 'D', 'x', 'g'],  # <- Exact match (overlapps the records matched on "D" alone).
+            ['D', 'x', 'g', 100, 'D', 'x', 'g'],  # <- Exact match (overlaps the records matched on "D" alone).
             ['D', '',  '',  300, 'D', '',  ''],   # <- Matched to 3 right-side records (4-ambiguous, minus 1-exact overlap).
         ]
 
@@ -332,7 +332,7 @@ class TestXAddEdge(unittest.TestCase):
             ['A', 'z', '',   50, 'A', 'z', ''],   # <- Matched to 2 right-side records.
             ['B', '',  '',  100, 'B', '',  ''],   # <- Exact right-side match because there's only one "B".
             ['C', '',  '',  105, 'C', '',  ''],   # <- Matched to 2 right-side records.
-            ['D', 'x', 'g', 100, 'D', 'x', 'g'],  # <- Exact match (overlapps the records matched on "D" alone).
+            ['D', 'x', 'g', 100, 'D', 'x', 'g'],  # <- Exact match (overlaps the records matched on "D" alone).
             ['D', '',  '',  300, 'D', '',  ''],   # <- Matched to 3 right-side records (4-ambiguous, minus 1-exact overlap).
         ]
         xadd_edge(  # <- The method under test.
