@@ -3,6 +3,7 @@
 import logging
 import os
 import sqlite3
+import stat
 import sys
 import tempfile
 import unittest
