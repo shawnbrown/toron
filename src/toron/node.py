@@ -1774,8 +1774,8 @@ class Node(object):
                 )
                 #counter['inserted'] += 1
 
-    def disaggregate(self) -> Iterator[Tuple[Index, Attribute, float]]:
-        """Return indexes, attributes, and disaggregated results."""
+    def _disaggregate(self) -> Iterator[Tuple[Index, Attribute, float]]:
+        """Generator to yield index, attribute, and quantity tuples."""
         with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4), \
                 self._managed_transaction(cur1):
 

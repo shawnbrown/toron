@@ -3333,7 +3333,7 @@ class TestNodeInsertQuantities(unittest.TestCase):
         )
 
 
-class TestNodeDisaggregate(unittest.TestCase):
+class TestNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):
         node = Node()
 
@@ -3387,7 +3387,7 @@ class TestNodeDisaggregate(unittest.TestCase):
 
     def test_default_weight_group(self):
         """Disaggregate using default weight group."""
-        results = self.node.disaggregate()
+        results = self.node._disaggregate()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
@@ -3415,7 +3415,7 @@ class TestNodeDisaggregate(unittest.TestCase):
             weight_repo.add(weight_group_id=2, index_id=3, value=10000)
             weight_repo.add(weight_group_id=2, index_id=4, value=10000)
 
-        results = self.node.disaggregate()
+        results = self.node._disaggregate()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
@@ -3449,7 +3449,7 @@ class TestNodeDisaggregate(unittest.TestCase):
             weight_repo.add(weight_group_id=3, index_id=3, value=10000)
             weight_repo.add(weight_group_id=3, index_id=4, value=10000)
 
-        results = self.node.disaggregate()
+        results = self.node._disaggregate()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=1, value={'category': 'TOTAL', 'sex': 'MALE'}),   187075.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 187075.0),
