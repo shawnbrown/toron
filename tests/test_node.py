@@ -27,6 +27,7 @@ from toron.data_models import (
     Structure,
     WeightGroup,
     Attribute,
+    QuantityIterator2,
 )
 from toron.node import Node
 
@@ -3465,3 +3466,67 @@ class TestNodeDisaggregateGenerator(unittest.TestCase):
             (Index(id=4, labels=('IN', 'LAPORTE')),  Attribute(id=2, value={'category': 'TOTAL', 'sex': 'FEMALE'}), 36864.0),  # <- Disaggreated by group 3
         ]
         self.assertEqual(list(results), expected)
+
+
+class TestNodeDisaggregate(unittest.TestCase):
+    def setUp(self):
+        node = Node()
+        node.add_index_columns('state', 'county')
+        node.add_discrete_categories({'state'}, {'state', 'county'})
+        node.insert_index([('state', 'county'),
+                           ('OH', 'BUTLER'),
+                           ('OH', 'FRANKLIN'),
+                           ('IN', 'KNOX'),
+                           ('IN', 'LAPORTE')])
+        node.add_weight_group('totpop')
+        node.insert_weights(
+            'totpop',
+            [('state', 'county',   'totpop'),
+             ('OH',    'BUTLER',   374150),
+             ('OH',    'FRANKLIN', 1336250),
+             ('IN',    'KNOX',     36864),
+             ('IN',    'LAPORTE',  110592)]
+        )
+        node.insert_quantities(
+            value='counts',
+            attributes=['category', 'sex'],
+            data=[('state', 'county',   'category', 'sex',    'counts'),
+                  ('OH',    'BUTLER',   'TOTAL',    'MALE',   187075),
+                  ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187075),
+                  ('OH',    'FRANKLIN', 'TOTAL',    'MALE',   668125),
+                  ('OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 668125),
+                  ('OH',    '',         'TOTAL',    'MALE',   1000),
+                  ('OH',    '',         'TOTAL',    'FEMALE', 1000),
+                  ('IN',    '',         'TOTAL',    'MALE',   73728),
+                  ('IN',    '',         'TOTAL',    'FEMALE', 73728)],
+        )
+        self.node = node
+
+    def test_default_weight_group(self):
+        """Disaggregate to tabular format (uses QuantityIterator2)."""
+        quant_iter = self.node.disaggregate()
+
+        self.assertIsInstance(quant_iter, QuantityIterator2)
+
+        self.assertEqual(quant_iter.unique_id, self.node.unique_id)
+
+        self.assertEqual(
+            quant_iter.columns,
+            ('state', 'county', 'category', 'sex', 'quantity_value'),
+        )
+
+        self.assertEqual(
+            list(quant_iter),
+            [('OH', 'BUTLER',   'TOTAL', 'MALE',   187075.0),
+             ('OH', 'BUTLER',   'TOTAL', 'FEMALE', 187075.0),
+             ('OH', 'FRANKLIN', 'TOTAL', 'MALE',   668125.0),
+             ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 668125.0),
+             ('OH', 'BUTLER',   'TOTAL', 'MALE',   218.75),
+             ('OH', 'FRANKLIN', 'TOTAL', 'MALE',   781.25),
+             ('OH', 'BUTLER',   'TOTAL', 'FEMALE', 218.75),
+             ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 781.25),
+             ('IN', 'KNOX',     'TOTAL', 'MALE',   18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'MALE',   55296.0),
+             ('IN', 'KNOX',     'TOTAL', 'FEMALE', 18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'FEMALE', 55296.0)],
+        )

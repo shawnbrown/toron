@@ -34,6 +34,7 @@ from .data_models import (
     BaseCrosswalkRepository,
     Crosswalk,
     JsonTypes,
+    QuantityIterator2,
 )
 from .data_service import (
     refresh_index_hash_property,
@@ -1840,3 +1841,23 @@ class Node(object):
                         # Yield disaggregated results for each index.
                         for index, result in disaggregated:
                             yield (index, attribute, result)
+
+    def disaggregate(self) -> QuantityIterator2:
+        """Return rows with disaggregated quantity values."""
+        with self._managed_cursor() as cursor:
+            col_manager = self._dal.ColumnManager(cursor)
+            attribute_repo = self._dal.AttributeRepository(cursor)
+
+            label_names = col_manager.get_columns()
+
+            attribute_keys: Set[str] = set()
+            for attr in attribute_repo.find_all():
+                attribute_keys.update(attr.value.keys())
+
+        quantity_iter = QuantityIterator2(
+            unique_id=self.unique_id,
+            data=self._disaggregate(),
+            label_names=label_names,
+            attribute_keys=sorted(attribute_keys),
+        )
+        return quantity_iter
