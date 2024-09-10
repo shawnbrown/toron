@@ -996,8 +996,7 @@ class Node(object):
     ) -> Optional[Crosswalk]:
         """Get crosswalk by node reference and name."""
         if isinstance(node, Node):  # If Node, find by 'unique_id' only.
-            node = node._connector.unique_id
-            matches = list(crosswalk_repo.find_by_other_unique_id(node))
+            matches = list(crosswalk_repo.find_by_other_unique_id(node.unique_id))
         else:
             matches = find_crosswalks_by_node_reference(node, crosswalk_repo)
 
