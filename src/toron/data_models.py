@@ -885,7 +885,7 @@ class QuantityIterator2(object):
 
     @property
     def index_hash(self) -> str:
-        return self._unique_id
+        return self._index_hash
 
     @property
     def data(self) -> Iterator[Tuple[Index, Attribute, float]]:
