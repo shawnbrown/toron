@@ -1847,6 +1847,8 @@ class Node(object):
             property_repo = self._dal.PropertyRepository(cursor)
             unique_id = property_repo.get('unique_id')
             index_hash = property_repo.get('index_hash')
+            if not isinstance(unique_id, str) or not isinstance(index_hash, str):
+                raise TypeError('unique_id and index_hash should both be str')
 
             col_manager = self._dal.ColumnManager(cursor)
             label_names = col_manager.get_columns()
