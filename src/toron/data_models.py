@@ -868,17 +868,23 @@ class QuantityIterator2(object):
     def __init__(
         self,
         unique_id: str,
+        index_hash: str,
         data: Iterable[Tuple[Index, Attribute, float]],
         label_names: Sequence[str],
         attribute_keys: Iterable[str],
     ):
         self._unique_id = unique_id
+        self._index_hash = index_hash
         self._data = iter(data)
         self._label_names = tuple(label_names)
         self._attribute_keys = tuple(attribute_keys)
 
     @property
     def unique_id(self) -> str:
+        return self._unique_id
+
+    @property
+    def index_hash(self) -> str:
         return self._unique_id
 
     @property

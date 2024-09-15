@@ -1137,6 +1137,7 @@ class TestQuantityIterator2(unittest.TestCase):
     def test_iterator_protocol(self):
         iterator = QuantityIterator2(
             unique_id='0000-00-00-00-000000',
+            index_hash='00000000000000000000000000000000',
             data=iter([]),  # <- Empty iterable for testing.
             label_names=['x', 'y'],
             attribute_keys=['a'],
@@ -1149,12 +1150,14 @@ class TestQuantityIterator2(unittest.TestCase):
 
     def test_properties(self):
         unique_id = '0000-00-00-00-000000'
+        index_hash = '00000000000000000000000000000000',
         data = iter([])  # <- Empty iterable for testing.
         label_names = ('x', 'y')
         attribute_keys = ('a',)
 
         iterator = QuantityIterator2(
             unique_id=unique_id,
+            index_hash=index_hash,
             data=data,
             label_names=label_names,
             attribute_keys=attribute_keys,
@@ -1162,6 +1165,7 @@ class TestQuantityIterator2(unittest.TestCase):
 
         # Check for expected getters.
         self.assertEqual(iterator.unique_id, unique_id)
+        self.assertEqual(iterator.index_hash, index_hash)
         self.assertIs(iterator.data, data, msg='should be exact same object')
         self.assertEqual(iterator.label_names, label_names)
         self.assertEqual(iterator.attribute_keys, attribute_keys)
@@ -1169,6 +1173,10 @@ class TestQuantityIterator2(unittest.TestCase):
         # Check for read-only (no setters).
         with self.assertRaises(AttributeError):
             iterator.unique_id = '9999-99-99-99-999999'
+
+        # Check for read-only (no setters).
+        with self.assertRaises(AttributeError):
+            iterator.index_hash = '99999999999999999999999999999999'
 
         with self.assertRaises(AttributeError):
             iterator.data = iter([])
@@ -1183,6 +1191,7 @@ class TestQuantityIterator2(unittest.TestCase):
         """Basic iteration should yield flattened, CSV-like rows."""
         iterator = QuantityIterator2(
             unique_id='0000-00-00-00-000000',
+            index_hash='00000000000000000000000000000000',
             data=[
                 (Index(1, 'FOO'), Attribute(1, {'a': 'baz'}), 50.0),
                 (Index(1, 'FOO'), Attribute(2, {'a': 'qux'}), 55.0),

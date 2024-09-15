@@ -1844,17 +1844,21 @@ class Node(object):
     def disaggregate(self) -> QuantityIterator2:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
-            attribute_repo = self._dal.AttributeRepository(cursor)
+            property_repo = self._dal.PropertyRepository(cursor)
+            unique_id = property_repo.get('unique_id')
+            index_hash = property_repo.get('index_hash')
 
+            col_manager = self._dal.ColumnManager(cursor)
             label_names = col_manager.get_columns()
 
+            attribute_repo = self._dal.AttributeRepository(cursor)
             attribute_keys: Set[str] = set()
             for attr in attribute_repo.find_all():
                 attribute_keys.update(attr.value.keys())
 
         quantity_iter = QuantityIterator2(
-            unique_id=self.unique_id,
+            unique_id=unique_id,
+            index_hash=index_hash,
             data=self._disaggregate(),
             label_names=label_names,
             attribute_keys=sorted(attribute_keys),
