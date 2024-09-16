@@ -30,6 +30,14 @@ from ._utils import (
     ToronWarning,
     BitFlags,
 )
+from .data_models import (
+    Index,
+    Attribute,
+    QuantityIterator2,
+)
+from .data_service import (
+    find_crosswalks_by_node_reference,
+)
 from .node import Node
 from .mapper import Mapper
 from ._xmapper import xMapper
@@ -83,6 +91,77 @@ def load_mapping(
             data=mapper.get_relations('<-'),
             columns=['other_index_id', crosswalk_name, 'index_id', 'mapping_level'],
         )
+
+
+def _translate(
+    quantity_iterator: QuantityIterator2, node: Node
+) -> Iterator[Tuple[Index, Attribute, float]]:
+    """Generator to yield index, attribute, and quantity tuples."""
+    with node._managed_cursor() as cursor:
+        crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+        property_repo = node._dal.PropertyRepository(cursor)
+        relation_repo = node._dal.RelationRepository(cursor)
+        index_repo = node._dal.IndexRepository(cursor)
+
+        # Get all crosswalks.
+        crosswalks = find_crosswalks_by_node_reference(
+            node_reference=quantity_iterator.unique_id,
+            crosswalk_repo=crosswalk_repo,
+        )
+
+        # Get the default crosswalk and make sure it's locally complete.
+        default_crosswalk = None
+        for crosswalk in crosswalks:
+            if crosswalk.is_default:
+                if crosswalk.other_index_hash != quantity_iterator.index_hash \
+                        or not crosswalk.is_locally_complete:
+                    msg = f'default crosswalk {crosswalk.name!r} is not complete'
+                    raise RuntimeError(msg)
+
+                default_crosswalk = crosswalk
+                break
+        else:  # IF NO BREAK!
+            msg = f'no default crosswalk found for node {node}'
+            raise RuntimeError(msg)
+
+        for index, attribute, quantity_value in quantity_iterator.data:
+            relations = relation_repo.find_by_ids(
+                crosswalk_id=1,  # <- TODO: Remove hard-coded crosswalk.
+                other_index_id=index.id,
+            )
+            for relation in list(relations):
+                new_proportion = relation.proportion
+                if not new_proportion:
+                    raise RuntimeError('proportion is missing')
+
+                new_index = index_repo.get(relation.index_id)
+                if not new_index:
+                    raise RuntimeError('index is missing')
+
+                new_quantity_value = quantity_value * new_proportion
+                yield (new_index, attribute, new_quantity_value)
+
+
+def translate(quantity_iterator: QuantityIterator2, node: Node):
+    """Translate quantities to the index of the target *node*."""
+    with node._managed_cursor() as cursor:
+        property_repo = node._dal.PropertyRepository(cursor)
+        unique_id = property_repo.get('unique_id')
+        index_hash = property_repo.get('index_hash')
+        if not isinstance(unique_id, str) or not isinstance(index_hash, str):
+            raise TypeError('unique_id and index_hash should both be str')
+
+        col_manager = node._dal.ColumnManager(cursor)
+        label_names = col_manager.get_columns()
+
+    new_quantity_iter = QuantityIterator2(
+        unique_id=unique_id,
+        index_hash=index_hash,
+        data=_translate(quantity_iterator, node),
+        label_names=label_names,
+        attribute_keys=quantity_iterator.attribute_keys,
+    )
+    return new_quantity_iter
 
 
 def xadd_edge(

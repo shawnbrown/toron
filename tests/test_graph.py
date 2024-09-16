@@ -11,8 +11,15 @@ from toron._utils import (
     ToronWarning,
     BitFlags,
 )
+from toron.data_models import (
+    Index,
+    Attribute,
+    QuantityIterator2,
+)
 from toron.graph import (
     load_mapping,
+    _translate,
+    translate,
     xadd_edge,
 )
 
@@ -242,6 +249,146 @@ class TestLoadMapping(unittest.TestCase):
                 (7, 1, 0, 0, None,     0.0, 1.0),
             ]
             self.assertEqual(results, expected)
+
+
+class TestTranslate(unittest.TestCase):
+    def setUp(self):
+        self.node = Node()
+        self.node.add_index_columns('A', 'B', 'C')
+        self.node.add_discrete_categories({'A', 'B', 'C'})
+        self.node.insert_index([
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],  # <- index_id=1
+            ['a1', 'b1', 'c2'],  # <- index_id=2
+            ['a1', 'b2', 'c3'],  # <- index_id=3
+            ['a1', 'b2', 'c4'],  # <- index_id=4
+        ])
+        self.node.add_crosswalk(
+            other_unique_id='00000000-0000-0000-0000-000000000000',
+            other_filename_hint='other-file.toron',
+            name='edge 1',
+            description='Edge one description.',
+            selectors=['[foo="bar"]'],
+            is_default=True,
+        )
+        self.node.insert_relations(
+            node='other-file',
+            name='edge 1',
+            data=[
+                ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C'),
+                (1,  39.0, 1, 'a1', 'b1', 'c1'),  # proportion: 0.6
+                (1,  26.0, 2, 'a1', 'b1', 'c2'),  # proportion: 0.4
+                (2,  16.0, 2, 'a1', 'b1', 'c2'),  # proportion: 1.0
+                (3,  50.0, 2, 'a1', 'b1', 'c2'),  # proportion: 0.250
+                (3,  25.0, 3, 'a1', 'b2', 'c3'),  # proportion: 0.125
+                (3, 125.0, 4, 'a1', 'b2', 'c4'),  # proportion: 0.625
+                (4,  64.0, 3, 'a1', 'b2', 'c3'),  # proportion: 1.0
+                (5,  19.0, 3, 'a1', 'b2', 'c3'),  # proportion: 0.38
+                (5,  31.0, 4, 'a1', 'b2', 'c4'),  # proportion: 0.62
+                (0,   0.0, 0, '-',  '-',  '-' ),  # proportion: 1.0
+            ],
+        )
+        self.node.add_crosswalk(
+            other_unique_id='00000000-0000-0000-0000-000000000000',
+            other_filename_hint='other-file.toron',
+            name='edge 2',
+            description='Edge two description.',
+            selectors=['[foo]'],
+        )
+        self.node.insert_relations(
+            node='other-file',
+            name='edge 2',
+            data=[
+                ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C'),
+                (1, 32.0,  1, 'a1', 'b1', 'c1'),  # proportion: 0.5
+                (1, 32.0,  2, 'a1', 'b1', 'c2'),  # proportion: 0.5
+                (2, 15.0,  2, 'a1', 'b1', 'c2'),  # proportion: 1.0
+                (3, 85.5,  2, 'a1', 'b1', 'c2'),  # proportion: 0.333984375
+                (3, 85.25, 3, 'a1', 'b2', 'c3'),  # proportion: 0.3330078125
+                (3, 85.25, 4, 'a1', 'b2', 'c4'),  # proportion: 0.3330078125
+                (4, 64.0,  3, 'a1', 'b2', 'c3'),  # proportion: 1.0
+                (5, 50.0,  3, 'a1', 'b2', 'c3'),  # proportion: 0.5
+                (5, 50.0,  4, 'a1', 'b2', 'c4'),  # proportion: 0.5
+                (0,  0.0,  0, '-',  '-',  '-' ),  # proportion: 1.0
+            ],
+        )
+
+    def test_translate_generator(self):
+        quantities = QuantityIterator2(
+            unique_id='00000000-0000-0000-0000-000000000000',
+            index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
+            data=[(Index(1, 'aaa'), Attribute(1, {'foo': 'bar'}), 100),
+                  (Index(2, 'bbb'), Attribute(1, {'foo': 'bar'}), 100),
+                  (Index(3, 'ccc'), Attribute(1, {'foo': 'bar'}), 100),
+                  (Index(4, 'ddd'), Attribute(1, {'foo': 'bar'}), 100),
+                  (Index(5, 'eee'), Attribute(1, {'foo': 'bar'}), 100)],
+            label_names=['X'],
+            attribute_keys=['foo'],
+        )
+
+        results_generator = _translate(quantities, self.node)
+
+        self.assertEqual(
+            list(results_generator),
+            [(Index(id=1, labels=('a1', 'b1', 'c1')), Attribute(id=1, value={'foo': 'bar'}), 60.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), Attribute(id=1, value={'foo': 'bar'}), 40.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), Attribute(id=1, value={'foo': 'bar'}), 100.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), Attribute(id=1, value={'foo': 'bar'}), 25.0),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), Attribute(id=1, value={'foo': 'bar'}), 12.5),
+             (Index(id=4, labels=('a1', 'b2', 'c4')), Attribute(id=1, value={'foo': 'bar'}), 62.5),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), Attribute(id=1, value={'foo': 'bar'}), 100.0),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), Attribute(id=1, value={'foo': 'bar'}), 38.0),
+             (Index(id=4, labels=('a1', 'b2', 'c4')), Attribute(id=1, value={'foo': 'bar'}), 62.0)],
+        )
+
+    def test_simple_case(self):
+        quantities = QuantityIterator2(
+            unique_id='00000000-0000-0000-0000-000000000000',
+            index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
+            data=[(Index(1, 'aaa'), Attribute(1, {'foo': 'bar'}), 100),
+                  (Index(2, 'bbb'), Attribute(1, {'foo': 'bar'}), 100),
+                  (Index(3, 'ccc'), Attribute(1, {'foo': 'bar'}), 100),
+                  (Index(4, 'ddd'), Attribute(1, {'foo': 'bar'}), 100),
+                  (Index(5, 'eee'), Attribute(1, {'foo': 'bar'}), 100)],
+            label_names=['X'],
+            attribute_keys=['foo'],
+        )
+
+        new_quantities = translate(quantities, self.node)
+
+        self.assertIsInstance(new_quantities, QuantityIterator2)
+        self.assertEqual(
+            new_quantities.columns,
+            ('A', 'B', 'C', 'foo', 'quantity_value'),
+        )
+        self.assertNotEqual(
+            new_quantities.unique_id,
+            quantities.unique_id,
+            msg='new result should NOT match previous unique_id',
+        )
+        self.assertEqual(
+            new_quantities.unique_id,
+            self.node.unique_id,
+            msg='new result should match unique_id of target node',
+        )
+        self.assertEqual(
+            list(new_quantities),
+            [('a1', 'b1', 'c1', 'bar', 60.0),
+             ('a1', 'b1', 'c2', 'bar', 40.0),
+             ('a1', 'b1', 'c2', 'bar', 100.0),
+             ('a1', 'b1', 'c2', 'bar', 25.0),
+             ('a1', 'b2', 'c3', 'bar', 12.5),
+             ('a1', 'b2', 'c4', 'bar', 62.5),
+             ('a1', 'b2', 'c3', 'bar', 100.0),
+             ('a1', 'b2', 'c3', 'bar', 38.0),
+             ('a1', 'b2', 'c4', 'bar', 62.0)]
+        )
+
+        # If `new_quantities` were accumulated, it would be:
+        #[('a1', 'b1', 'c1', 'bar', 60),
+        # ('a1', 'b1', 'c2', 'bar', 165),
+        # ('a1', 'b2', 'c3', 'bar', 150.5),
+        # ('a1', 'b2', 'c4', 'bar', 124.5)]
 
 
 class TestXAddEdge(unittest.TestCase):
