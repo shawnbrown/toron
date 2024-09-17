@@ -37,9 +37,24 @@ from ._typing import (
     Sequence,
     Set,
     Tuple,
+    Type,
     TypeAlias,
+    TypeVar,
     Union,
 )
+
+
+T = TypeVar('T')
+
+
+def check_type(obj: Any, required_type: Type[T]) -> T:
+    """Check that *obj* is instance of *required_type* and return value
+    unchanged or else raise a TypeError.
+    """
+    if isinstance(obj, required_type):
+        return obj  # <- EXIT, return unchanged.
+    msg = f'required type {required_type}, but got {obj.__class__}'
+    raise TypeError(msg)
 
 
 @overload

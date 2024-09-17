@@ -24,6 +24,7 @@ from ._typing import (
 )
 
 from ._utils import (
+    check_type,
     TabularData,
     make_readerlike,
     NOVALUE,
@@ -130,14 +131,8 @@ def _translate(
                 other_index_id=index.id,
             )
             for relation in list(relations):
-                new_proportion = relation.proportion
-                if not new_proportion:
-                    raise RuntimeError('proportion is missing')
-
-                new_index = index_repo.get(relation.index_id)
-                if not new_index:
-                    raise RuntimeError('index is missing')
-
+                new_proportion = check_type(relation.proportion, float)
+                new_index = check_type(index_repo.get(relation.index_id), Index)
                 new_quantity_value = quantity_value * new_proportion
                 yield (new_index, attribute, new_quantity_value)
 
