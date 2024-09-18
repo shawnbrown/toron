@@ -390,6 +390,75 @@ class TestTranslate(unittest.TestCase):
         # ('a1', 'b2', 'c3', 'bar', 150.5),
         # ('a1', 'b2', 'c4', 'bar', 124.5)]
 
+    def test_handling_multiple_edges(self):
+        """Check that quantities are translated using appropriate edges.
+
+        Quantities should be matched by their attributes to the edge
+        with the greatest unique specificity or the default edge if
+        there is no unique match.
+        """
+        quantities = QuantityIterator2(
+            unique_id='00000000-0000-0000-0000-000000000000',
+            index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
+            data=[
+                # Attributes {'foo': 'bar'} match 'edge 1' ([foo="bar"])
+                # and 'edge 2' ([foo]), but 'edge 1' is used because it
+                # has a greater specificity.
+                (Index(1, 'aaa'), Attribute(1, {'foo': 'bar'}), 100),
+                (Index(2, 'bbb'), Attribute(1, {'foo': 'bar'}), 100),
+                (Index(3, 'ccc'), Attribute(1, {'foo': 'bar'}), 100),
+                (Index(4, 'ddd'), Attribute(1, {'foo': 'bar'}), 100),
+                (Index(5, 'eee'), Attribute(1, {'foo': 'bar'}), 100),
+
+                # Attributes {'foo': 'baz'} match 'edge 2' ([foo]).
+                (Index(1, 'aaa'), Attribute(1, {'foo': 'baz'}), 100),
+                (Index(2, 'bbb'), Attribute(1, {'foo': 'baz'}), 100),
+                (Index(3, 'ccc'), Attribute(1, {'foo': 'baz'}), 100),
+                (Index(4, 'ddd'), Attribute(1, {'foo': 'baz'}), 100),
+
+                # Attributes {'qux': 'corge'} has no match, uses default ('edge 1').
+                (Index(5, 'eee'), Attribute(1, {'qux': 'corge'}), 100),
+            ],
+            label_names=['X'],
+            attribute_keys=['foo', 'qux'],
+        )
+
+        new_quantities = translate(quantities, self.node)
+
+        expected = [
+            ('a1', 'b1', 'c1', 'bar', None, 60.0),         # <- Edge 1
+            ('a1', 'b1', 'c2', 'bar', None, 40.0),         # <- Edge 1
+            ('a1', 'b1', 'c2', 'bar', None, 100.0),        # <- Edge 1
+            ('a1', 'b1', 'c2', 'bar', None, 25.0),         # <- Edge 1
+            ('a1', 'b2', 'c3', 'bar', None, 12.5),         # <- Edge 1
+            ('a1', 'b2', 'c4', 'bar', None, 62.5),         # <- Edge 1
+            ('a1', 'b2', 'c3', 'bar', None, 100.0),        # <- Edge 1
+            ('a1', 'b2', 'c3', 'bar', None, 38.0),         # <- Edge 1
+            ('a1', 'b2', 'c4', 'bar', None, 62.0),         # <- Edge 1
+            ('a1', 'b1', 'c1', 'baz', None, 50.0),         # <- Edge 2
+            ('a1', 'b1', 'c2', 'baz', None, 50.0),         # <- Edge 2
+            ('a1', 'b1', 'c2', 'baz', None, 100.0),        # <- Edge 2
+            ('a1', 'b1', 'c2', 'baz', None, 33.3984375),   # <- Edge 2
+            ('a1', 'b2', 'c3', 'baz', None, 33.30078125),  # <- Edge 2
+            ('a1', 'b2', 'c4', 'baz', None, 33.30078125),  # <- Edge 2
+            ('a1', 'b2', 'c3', 'baz', None, 100.0),        # <- Edge 2
+            ('a1', 'b2', 'c3', None, 'corge', 38.0),       # <- Default (Edge 1)
+            ('a1', 'b2', 'c4', None, 'corge', 62.0),       # <- Default (Edge 1)
+        ]
+        self.assertEqual(list(new_quantities), expected)
+
+        # If `new_quantities` were accumulated, it would be:
+        #[('a1', 'b1', 'c1', 'bar', None, 60),            # <- Edge 1
+        # ('a1', 'b1', 'c2', 'bar', None, 165),           # <- Edge 1
+        # ('a1', 'b2', 'c3', 'bar', None, 150.5),         # <- Edge 1
+        # ('a1', 'b2', 'c4', 'bar', None, 124.5),         # <- Edge 1
+        # ('a1', 'b1', 'c1', 'baz', None, 50),            # <- Edge 2
+        # ('a1', 'b1', 'c2', 'baz', None, 183.3984375),   # <- Edge 2
+        # ('a1', 'b2', 'c3', 'baz', None, 133.30078125),  # <- Edge 2
+        # ('a1', 'b2', 'c4', 'baz', None, 33.30078125),   # <- Edge 2
+        # ('a1', 'b2', 'c3', None, 'corge', 38.0),        # <- Default (Edge 1)
+        # ('a1', 'b2', 'c4', None, 'corge', 62.0)]        # <- Default (Edge 1)
+
 
 class TestXAddEdge(unittest.TestCase):
     def setUp(self):

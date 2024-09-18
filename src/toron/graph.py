@@ -41,6 +41,10 @@ from .data_service import (
 )
 from .node import Node
 from .mapper import Mapper
+from .selectors import (
+    parse_selector,
+    get_greatest_unique_specificity,
+)
 from ._xmapper import xMapper
 from .xnode import xNode
 
@@ -105,13 +109,13 @@ def _translate(
         index_repo = node._dal.IndexRepository(cursor)
 
         # Get all crosswalks.
-        crosswalks = find_crosswalks_by_node_reference(
+        crosswalks: List = find_crosswalks_by_node_reference(
             node_reference=quantity_iterator.unique_id,
             crosswalk_repo=crosswalk_repo,
         )
 
         # Get the default crosswalk and make sure it's locally complete.
-        default_crosswalk = None
+        default_crosswalk_id = None
         for crosswalk in crosswalks:
             if crosswalk.is_default:
                 if crosswalk.other_index_hash != quantity_iterator.index_hash \
@@ -119,17 +123,32 @@ def _translate(
                     msg = f'default crosswalk {crosswalk.name!r} is not complete'
                     raise RuntimeError(msg)
 
-                default_crosswalk = crosswalk
+                default_crosswalk_id = crosswalk.id
                 break
         else:  # IF NO BREAK!
             msg = f'no default crosswalk found for node {node}'
             raise RuntimeError(msg)
 
+        # Build dict of index id values and attribute selector objects.
+        crosswalks = [x for x in crosswalks if x.is_locally_complete and x.selectors]
+        func = lambda selectors: [parse_selector(s) for s in selectors]
+        selector_dict = {x.id: func(x.selectors) for x in crosswalks}
+
         for index, attribute, quantity_value in quantity_iterator.data:
+            # Find crosswalk that matches with greated unique specificity.
+            crosswalk_id = get_greatest_unique_specificity(
+                row_dict=attribute.value,
+                selector_dict=selector_dict,
+                default=default_crosswalk_id,
+            )
+
+            # Get relations for matching crosswalk and other_index_id.
             relations = relation_repo.find_by_ids(
-                crosswalk_id=1,  # <- TODO: Remove hard-coded crosswalk.
+                crosswalk_id=crosswalk_id,
                 other_index_id=index.id,
             )
+
+            # Yield disaggregated results for each relation.
             for relation in list(relations):
                 new_proportion = check_type(relation.proportion, float)
                 new_index = check_type(index_repo.get(relation.index_id), Index)
