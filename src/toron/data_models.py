@@ -831,6 +831,15 @@ class BaseRelationRepository(ABC):
             crosswalk_id=crosswalk_id, other_index_id=other_index_id
         ))
 
+        if other_index_id == 0:
+            # Set the proportion to 0.0 for undefined-to-defined relations.
+            # And set the proportion to 1.0 for the undefined-to-undefined
+            # relation.
+            for relation in relations:
+                relation.proportion = 0.0 if relation.index_id != 0 else 1.0
+                self.update(relation)
+            return  # <- EXIT!
+
         values_sum = sum(rel.value for rel in relations)
         for relation in relations:
             try:

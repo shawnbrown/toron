@@ -1078,6 +1078,44 @@ class RelationRepositoryBaseTest(ABC):
         }
         self.assertEqual(results, expected)
 
+    def test_refresh_proportions_undefined_handling(self):
+        """Check proportion handling for undefined points.
+
+        * undefined-to-undefined (0 -> 0) should be 100%
+        * undefined-to-defined (0 -> non-zero) should be 0%
+        * defined-to-undefined (non-zero -> 0) is calculated normally.
+        """
+        self.crosswalk.add('333-33-3333', None, 'other3')  # Adds crosswalk_id 3.
+        self.repository.add(3, 0, 0, None, 100.0, None)
+        self.repository.add(3, 0, 1, None, 100.0, None)
+        self.repository.add(3, 1, 1, None, 100.0, None)
+        self.repository.add(3, 1, 0, None, 100.0, None)
+        self.repository.add(3, 2, 2, None, 100.0, None)
+        self.repository.add(3, 3, 1, None, 100.0, None)
+        self.repository.add(3, 3, 2, None, 100.0, None)
+        self.repository.add(3, 3, 0, None, 100.0, None)
+        self.repository.add(3, 3, 3, None, 100.0, None)
+        self.repository.add(3, 0, 3, None, 100.0, None)
+
+        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=0)
+        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=1)
+        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=2)
+        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=3)
+
+        self.assertEqual(
+            list(self.repository.find_by_ids(crosswalk_id=3)),
+            [Relation(10, 3, 0, 0, None, 100.0, 1.0),  # <- 0 to 0 (100%, undefined to undefined)
+             Relation(11, 3, 0, 1, None, 100.0, 0.0),  # <- 0 to 1 (0%)
+             Relation(19, 3, 0, 3, None, 100.0, 0.0),  # <- 0 to 3 (0%)
+             Relation(13, 3, 1, 0, None, 100.0, 0.5),
+             Relation(12, 3, 1, 1, None, 100.0, 0.5),
+             Relation(14, 3, 2, 2, None, 100.0, 1.0),
+             Relation(17, 3, 3, 0, None, 100.0, 0.25),
+             Relation(15, 3, 3, 1, None, 100.0, 0.25),
+             Relation(16, 3, 3, 2, None, 100.0, 0.25),
+             Relation(18, 3, 3, 3, None, 100.0, 0.25)],
+        )
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property
