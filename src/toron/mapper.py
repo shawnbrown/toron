@@ -242,6 +242,14 @@ class Mapper(object):
             msg = f"side must be 'left' or 'right', got {side!r}"
             raise ValueError(msg)
 
+        # Check for unknown columns (maintaining given order).
+        unknown_columns = [x for x in match_columns if x not in node.index_columns]
+        if unknown_columns:
+            logger.error(
+                f'mapping contains columns not present in the node being '
+                f'matched: {", ".join(repr(x) for x in unknown_columns)}'
+            )
+
         invalid_categories = []
         counter: Counter = Counter()
         with node._managed_cursor() as node_cur, \

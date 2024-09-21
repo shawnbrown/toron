@@ -410,6 +410,34 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
                  'over the match limit'),
         )
 
+    def test_unknown_columns(self):
+        """Should log error-level message if unknown columns are given.
+
+        The presence of unknown columns will prevent matching and users
+        need to be informed why the match failed.
+        """
+        mapper = Mapper(
+            crosswalk_name='population',
+            data=[['idx', 'population', 'idx1', 'idx2', 'idx3'],
+                  ['A', 70, 'A', 'x', 'z'],
+                  ['B', 80, 'B', 'y', 'z'],
+                  ['C', 15, 'A', 'y', 'z']],
+        )
+
+        mapper.match_records(self.node2, 'right')
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ("ERROR: mapping contains columns not present in the node being "
+             "matched: 'idx3'\n"),
+        )
+
+        self.assertEqual(
+            self.select_all_helper(mapper, 'right_matches'),
+            [],
+            msg='should be empty, unknown columns will not match node indexes',
+        )
+
     def test_missing_weight_exact_match(self):
         """Exact matches are OK even when weight is missing."""
         mapper = Mapper(
