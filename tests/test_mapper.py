@@ -269,7 +269,7 @@ class TwoNodesBaseTest(unittest.TestCase):
         self.node1 = Node()
         self.node1.add_index_columns('idx')
         self.node1.insert_index([['idx'], ['A'], ['B'], ['C']])
-        self.node1.add_weight_group('wght')
+        self.node1.add_weight_group('wght', make_default=True)
         self.node1.insert_weights(
             weight_group_name='wght',
             data=[['idx', 'wght'], ['A', 16], ['B', 8], ['C', 32]],
@@ -287,7 +287,7 @@ class TwoNodesBaseTest(unittest.TestCase):
             ['C', 'x'],
             ['C', 'y'],
         ])
-        self.node2.add_weight_group('wght')
+        self.node2.add_weight_group('wght', make_default=True)
         self.node2.insert_weights(
             weight_group_name='wght',
             data=[

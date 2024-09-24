@@ -667,10 +667,10 @@ class Node(object):
             weight_group_repo = self._dal.WeightGroupRepository(cursor)
 
             if make_default is None and not weight_group_repo.get_all():
-                # If *make_default* is None and this is the first weight
-                # group, then make this one the default.
+                # If *make_default* is None and this is the first group,
+                # then log a warning and make this group the default.
+                logger.warning(f'setting default weight group: {name!r}')
                 make_default = True
-                # TODO: Log when a default weight_group is automatically set.
 
             weight_group_repo.add(
                 name=name,

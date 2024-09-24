@@ -43,7 +43,7 @@ class TestLoadMapping(unittest.TestCase):
             ['D', 'y', 'h'],
             ['D', 'y', 'i'],
         ])
-        self.node1.add_weight_group('wght')
+        self.node1.add_weight_group('wght', make_default=True)
         self.node1.insert_weights(
             weight_group_name='wght',
             data=[
@@ -75,7 +75,7 @@ class TestLoadMapping(unittest.TestCase):
             ['D', 'y', 'h'],
             ['D', 'y', 'i'],
         ])
-        self.node2.add_weight_group('wght')
+        self.node2.add_weight_group('wght', make_default=True)
         self.node2.insert_weights(
             weight_group_name='wght',
             data=[

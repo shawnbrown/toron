@@ -1401,9 +1401,20 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         self.assertIsNone(node.get_weight_group('name_zzz'))
 
     def test_add_weight_group(self):
-        node = Node()
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
 
-        node.add_weight_group('name_a')  # <- Only `name` is required.
+        # Add handler to 'toron' logger.
+        logger = logging.getLogger('toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        logger.addHandler(handler)
+        self.addCleanup(lambda: logger.removeHandler(handler))
+
+        # Test `add_weight_group()` behavior.
+        node = Node()
+        node.add_weight_group('name_a')  # <- Only `name` is required (should log a warning and set as default).
         node.add_weight_group(  # <- Defining all properties.
             name='name_b',
             description='Group B',
@@ -1411,23 +1422,25 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
             is_complete=True
         )
 
-        expected = [
-            WeightGroup(
-                id=1,
-                name='name_a',
-                description=None,
-                selectors=None,
-                is_complete=False,
-            ),
-            WeightGroup(
-                id=2,
-                name='name_b',
-                description='Group B',
-                selectors=['"[foo]"'],
-                is_complete=True,
-            ),
-        ]
-        self.assertEqual(self.get_weight_group_helper(node), expected)
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            "WARNING: setting default weight group: 'name_a'\n",
+        )
+
+        self.assertEqual(
+            self.get_weight_group_helper(node),
+            [WeightGroup(id=1,
+                         name='name_a',
+                         description=None,
+                         selectors=None,
+                         is_complete=False),
+             WeightGroup(id=2,
+                         name='name_b',
+                         description='Group B',
+                         selectors=['"[foo]"'],
+                         is_complete=True)]
+        )
+
         self.assertEqual(
             self.get_default_weight_group_id_helper(node),
             1,
@@ -3479,7 +3492,7 @@ class TestNodeDisaggregate(unittest.TestCase):
                            ('OH', 'FRANKLIN'),
                            ('IN', 'KNOX'),
                            ('IN', 'LAPORTE')])
-        node.add_weight_group('totpop')
+        node.add_weight_group('totpop', make_default=True)
         node.insert_weights(
             'totpop',
             [('state', 'county',   'totpop'),
