@@ -127,7 +127,8 @@ class TestLoadMapping(unittest.TestCase):
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            'INFO: loaded 10 relations\n',
+            ("WARNING: setting default crosswalk: 'population'\n"
+             "INFO: loaded 10 relations\n")
         )
 
         with self.node2._managed_cursor() as cur:
@@ -163,6 +164,7 @@ class TestLoadMapping(unittest.TestCase):
             right_node=self.node2,
             crosswalk_name='population',
             data=mapping_data,
+            is_default=True,
             match_limit=4,
         )
 
@@ -214,6 +216,7 @@ class TestLoadMapping(unittest.TestCase):
             crosswalk_name='population',
             data=mapping_data,
             match_limit=2,
+            is_default=True,
         )
 
         self.assertEqual(

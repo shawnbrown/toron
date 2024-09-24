@@ -61,6 +61,7 @@ def load_mapping(
     data: Union[Iterable[Sequence], Iterable[Dict]],
     columns: Optional[Sequence[str]] = None,
     selectors: Optional[Union[List[str], str]] = None,
+    is_default: Optional[bool] = None,
     match_limit: int = 1,
     allow_overlapping: bool = False,
 ) -> None:
@@ -75,6 +76,7 @@ def load_mapping(
             other_filename_hint=None,
             name=crosswalk_name,
             selectors=selectors,
+            is_default=is_default,
         )
         right_node.insert_relations2(
             node_reference=left_node,
@@ -89,6 +91,7 @@ def load_mapping(
             other_filename_hint=None,
             name=crosswalk_name,
             selectors=selectors,
+            is_default=is_default,
         )
         left_node.insert_relations2(
             node_reference=right_node,
