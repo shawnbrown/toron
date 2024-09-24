@@ -54,6 +54,7 @@ from .selectors import (
     get_greatest_unique_specificity,
 )
 from ._utils import (
+    check_type,
     BitFlags,
     ToronWarning,
     normalize_tabular,
@@ -664,6 +665,13 @@ class Node(object):
     ) -> None:
         with self._managed_transaction() as cursor:
             weight_group_repo = self._dal.WeightGroupRepository(cursor)
+
+            if make_default is None and not weight_group_repo.get_all():
+                # If *make_default* is None and this is the first weight
+                # group, then make this one the default.
+                make_default = True
+                # TODO: Log when a default weight_group is automatically set.
+
             weight_group_repo.add(
                 name=name,
                 description=description,
@@ -671,18 +679,12 @@ class Node(object):
                 is_complete=is_complete
             )
 
-            # Set as default weight group if *make_default* is True or
-            # if *make_default* is unspecified (None) and this is the
-            # first weight group to be added.
-            if (make_default == True
-                or (make_default is None
-                    and len(weight_group_repo.get_all()) == 1)):
+            if make_default:
                 weight_group = weight_group_repo.get_by_name(name)
-                if weight_group:
-                    set_default_weight_group(
-                        weight_group, self._dal.PropertyRepository(cursor)
-                    )
-                # TODO: Log when default_weight_group is automatically set.
+                set_default_weight_group(
+                    check_type(weight_group, WeightGroup),
+                    self._dal.PropertyRepository(cursor)
+                )
 
     def edit_weight_group(self, existing_name: str, **changes: Any) -> None:
         with self._managed_transaction() as cursor:
