@@ -1053,13 +1053,35 @@ class Node(object):
         *,
         description: Optional[str] = None,
         selectors: Optional[Union[List[str], str]] = None,
-        is_default: bool = False,
+        is_default: Optional[bool] = None,
         user_properties: Optional[Dict[str, JsonTypes]] = None,
         other_index_hash: Optional[str] = None,
         is_locally_complete: bool = False,
     ) -> None:
         with self._managed_transaction() as cursor:
-            self._dal.CrosswalkRepository(cursor).add(
+            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+
+            other_crosswalks = \
+                list(crosswalk_repo.find_by_other_unique_id(other_unique_id))
+
+            if is_default is None:
+                if not other_crosswalks:
+                    # If *is_default* is None and this is the first crosswalk
+                    # from *other_unique_id*, then log a warning and make this
+                    # crosswalk the default.
+                    logger.warning(f'setting default crosswalk: {name!r}')
+                    is_default = True
+                else:
+                    is_default = False
+
+            if is_default:
+                # If *is_default* is True, all other crosswalks coming from
+                # the same node should be set to False.
+                for crosswalk in other_crosswalks:
+                    if crosswalk.is_default:
+                        crosswalk_repo.update(replace(crosswalk, is_default=False))
+
+            crosswalk_repo.add(
                 other_unique_id=other_unique_id,
                 other_filename_hint=other_filename_hint,
                 name=name,
