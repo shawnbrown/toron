@@ -362,9 +362,9 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
 
         # Write data to temp file, then perform atomic `os.replace()`.
         try:
-            if fsync and sqlite3.sqlite_version_info >= (3, 40, 0):
-                # Save data to file and use SQLite's "synchronous" flag to
-                # flush buffered data to permanent storage. For details, see:
+            if fsync:
+                # Note: In SQLite versions 3.40.0 and newer, the "VACUUM INTO"
+                # statement honors the "synchronous" PRAGMA.
                 #
                 # - https://www.sqlite.org/changes.html#version_3_40_0
                 # - https://sqlite.org/src/info/86cb21ca12581cae
@@ -378,42 +378,40 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                         cur.execute('PRAGMA fullfsync')
                         original_fullfsync = cur.fetchone()[0]
 
-                        cur.execute('PRAGMA main.synchronous=3')  # EXTRA (3)
-                        cur.execute('PRAGMA fullfsync=1')
+                        # Set synchronous to EXTRA (3) to assure that the
+                        # xSync method of the VFS (the SQLite OS Interface)
+                        # is invoked after "VACUUM INTO". xSync will, in
+                        # turn, use fsync or fullfsync as appropriate.
+                        cur.execute('PRAGMA main.synchronous=3')
+                        cur.execute('PRAGMA fullfsync=1')  # Use F_FULLFSYNC for macOS.
                         try:
                             cur.execute('VACUUM main INTO ?', (tmp_path,))
+                        except sqlite3.OperationalError:  # No "VACUUM INTO" before SQLite 3.27.0.
+                            with closing(get_sqlite_connection(tmp_path)) as tmp_con:
+                                con.backup(tmp_con)
                         finally:
                             cur.execute(f'PRAGMA main.synchronous={original_sync}')
                             cur.execute(f'PRAGMA fullfsync={original_fullfsync}')
                 finally:
                     self.release_connection(con)
 
-                os.replace(tmp_path, dst_path)
-
-            elif fsync:
-                # Save data to file and use best_effort_fsync() to flush
-                # buffered data to permanent storage. For more info, see
-                # "Ensuring data reaches disk" by Jeff Moyer:
-                #  - https://lwn.net/Articles/457667/
-                con = self.acquire_connection()
-                try:
-                    with closing(con.cursor()) as cur:
-                        cur.execute('VACUUM main INTO ?', (tmp_path,))
-                except sqlite3.OperationalError:  # No `VACUUM INTO` before SQLite 3.27.0.
-                    with closing(get_sqlite_connection(tmp_path)) as tmp_con:
-                        con.backup(tmp_con)
-                finally:
-                    self.release_connection(con)
-
-                best_effort_fsync(tmp_path)
-                os.replace(tmp_path, dst_path)
-                if sys.platform != 'win32':  # Windows cannot fsync a directory.
-                    best_effort_fsync(dst_dirname, isdir=True)
-
+                # Move the file to its final location.
+                if sqlite3.sqlite_version_info >= (3, 40, 0):
+                    os.replace(tmp_path, dst_path)
+                else:
+                    # If using a SQLite version prior to 3.40.0, use the
+                    # best_effort_fsync() function to flush buffered data
+                    # to permanent storage. For more info, see "Ensuring
+                    # data reaches disk" by Jeff Moyer:
+                    #  - https://lwn.net/Articles/457667/
+                    best_effort_fsync(tmp_path)
+                    os.replace(tmp_path, dst_path)
+                    if sys.platform != 'win32':  # Windows cannot fsync a directory.
+                        best_effort_fsync(dst_dirname, isdir=True)
             else:
-                # When fsync is False, no extra steps are taken to ensure
+                # When *fsync* is False, no extra steps are taken to ensure
                 # that the data is flushed to drive. Although SQLite could
-                # still call fsync in versions 3.40.0 and newer, depending
+                # still invoke xSync in versions 3.40.0 and newer, depending
                 # on the database's initial synchronous setting.
                 con = self.acquire_connection()
                 try:
