@@ -149,6 +149,20 @@ if sys.platform == 'darwin':
         finally:
             os.close(fd)
 
+elif sys.platform == 'win32':
+    # If running on Windows, don't try to fsync directories. There is
+    # no straightforward way to acquire a Unix/Linux-style directory
+    # descriptor on Windows.
+
+    def best_effort_fsync(path: str, isdir: bool = False) -> None:
+        if isdir:
+            return  # EXIT early if directory.
+        fd = os.open(path, flags=os.O_RDWR)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
 else:
     def best_effort_fsync(path: str, isdir: bool = False) -> None:
         fd = os.open(path, flags=(os.O_RDONLY if isdir else os.O_RDWR))
@@ -395,19 +409,21 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                 finally:
                     self.release_connection(con)
 
-                # Move the file to its final location.
-                if sqlite3.sqlite_version_info >= (3, 40, 0):
-                    os.replace(tmp_path, dst_path)
-                else:
-                    # If using a SQLite version prior to 3.40.0, use the
-                    # best_effort_fsync() function to flush buffered data
-                    # to permanent storage. For more info, see "Ensuring
-                    # data reaches disk" by Jeff Moyer:
-                    #  - https://lwn.net/Articles/457667/
+                # If using a SQLite version prior to 3.40.0, use the
+                # `best_effort_fsync()` function to flush buffered file
+                # data to permanent storage.
+                if sqlite3.sqlite_version_info < (3, 40, 0):
                     best_effort_fsync(tmp_path)
-                    os.replace(tmp_path, dst_path)
-                    if sys.platform != 'win32':  # Windows cannot fsync a directory.
-                        best_effort_fsync(dst_dirname, isdir=True)
+
+                # Move the file to its final location.
+                os.replace(tmp_path, dst_path)
+
+                # Sync the directory containing the new file. This is done
+                # for cross filesystem (and mount option) compatibility.
+                # For more info, see "Ensuring data reaches disk" by Jeff
+                # Moyer <https://lwn.net/Articles/457667/>.
+                best_effort_fsync(dst_dirname, isdir=True)
+
             else:
                 # When *fsync* is False, no extra steps are taken to ensure
                 # that the data is flushed to drive. Although SQLite could
