@@ -462,7 +462,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
             Cache data to drive rather than loading it into memory.
         """
         src_path = os.path.abspath(os.fsdecode(path))
-        if not os.path.isfile(path):
+        if not os.path.isfile(src_path):
             raise FileNotFoundError(src_path)
 
         instance = cls.__new__(cls)
