@@ -167,6 +167,14 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
             attribute_repo=node._dal.AttributeGroupRepository(cursor),
         )
 
+        # Check old column names for conflicts.
+        all_reserved_identifiers = \
+            node._dal.reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
+        for col in mapping.keys():
+            if col in all_reserved_identifiers:
+                msg = f'cannot alter columns, {col!r} is a reserved identifier'
+                raise ValueError(msg)
+
         # Build a list of new column names.
         new_columns = []
         for old_col in column_manager.get_columns():

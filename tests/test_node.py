@@ -583,7 +583,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 node.rename_index_columns({'index_id': 'G'})
             else:
                 import toron.dal1
-                toron.dal1.legacy_rename_columns(node, {'B': 'value'})
+                toron.dal1.legacy_rename_columns(node, {'index_id': 'G'})
 
     def test_drop_index_columns(self):
         node = Node()
