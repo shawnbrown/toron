@@ -1173,6 +1173,13 @@ class PropertyRepositoryBaseTest(ABC):
         with self.assertRaises(Exception):
             self.repository.add('mykey', 'some other value')
 
+    def test_add_or_update(self):
+        """Adding an existing key should replace the value."""
+        self.repository.add('mykey', 'my value')  # Add initial value.
+
+        self.repository.add_or_update('mykey', 'some other value')  # <- Method under test.
+        self.assertEqual(self.repository.get('mykey'), 'some other value')
+
 
 #######################################################################
 # Test Cases for Concrete Data Model Classes

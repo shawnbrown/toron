@@ -871,6 +871,13 @@ class BasePropertyRepository(ABC):
     def delete(self, key: str) -> None:
         """Remove an item from the repository."""
 
+    def add_or_update(self, key: str, value: JsonTypes) -> None:
+        """Add a new item or update an existing item in the repository."""
+        try:
+            self.add(key, value)
+        except Exception:
+            self.update(key, value)
+
 
 class QuantityIterator2(object):
     """An iterator for disaggregated quantity data."""
