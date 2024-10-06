@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from .node import Node
 
 
-logger = logging.getLogger(__name__)
+applogger = logging.getLogger(f'app-{__name__}')
 
 
 class Mapper(object):
@@ -245,7 +245,7 @@ class Mapper(object):
         # Check for unknown columns (maintaining given order).
         unknown_columns = [x for x in match_columns if x not in node.index_columns]
         if unknown_columns:
-            logger.error(
+            applogger.error(
                 f'mapping contains columns not present in the node being '
                 f'matched: {", ".join(repr(x) for x in unknown_columns)}'
             )
@@ -365,29 +365,29 @@ class Mapper(object):
             self._refresh_proportions(cur1, side)
 
         if counter['overlaps_included']:
-            logger.info(
+            applogger.info(
                 f"included {counter['overlaps_included']} ambiguous matches "
                 f"that overlap with records that were also matched at a "
                 f"finer level of granularity"
             )
         elif counter['overlaps_excluded']:
-            logger.warning(
+            applogger.warning(
                 f"omitted {counter['overlaps_excluded']} ambiguous matches "
                 f"that overlap with records that were already matched at a "
                 f"finer level of granularity"
             )
 
         if counter['count_overlimit']:
-            logger.warning(
+            applogger.warning(
                 f"skipped {counter['count_overlimit']} values that matched too many records"
             )
-            logger.warning(
+            applogger.warning(
                 f"current match_limit is {match_limit} but data includes values "
                 f"that match up to {counter['overlimit_max']} records"
             )
 
         if counter['count_unweighted']:
-            logger.warning(
+            applogger.warning(
                 f"skipped {counter['count_unweighted']} values that ambiguously "
                 f"matched to one or more records that have no associated weight"
             )
@@ -395,7 +395,7 @@ class Mapper(object):
         if counter['invalid_rows']:
             category_list = [', '.join(c) for c in sorted(invalid_categories)]
             category_string = '\n  '.join(category_list)
-            logger.warning(
+            applogger.warning(
                 f"skipped {counter['invalid_rows']} values that used invalid "
                 f"categories:\n  {category_string}"
             )

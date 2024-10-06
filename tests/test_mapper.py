@@ -306,12 +306,12 @@ class TwoNodesBaseTest(unittest.TestCase):
         self.log_stream = StringIO()
         self.addCleanup(self.log_stream.close)
 
-        # Add handler to 'toron' logger.
-        logger = logging.getLogger('toron')
+        # Add handler to 'app-toron' logger.
+        applogger = logging.getLogger('app-toron')
         handler = logging.StreamHandler(self.log_stream)
         handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        logger.addHandler(handler)
-        self.addCleanup(lambda: logger.removeHandler(handler))
+        applogger.addHandler(handler)
+        self.addCleanup(lambda: applogger.removeHandler(handler))
 
 
 class TestMapperMatchRecords(TwoNodesBaseTest):

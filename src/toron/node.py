@@ -63,7 +63,7 @@ from ._utils import (
 )
 
 
-logger = getLogger(__name__)
+applogger = getLogger(f'app-{__name__}')
 
 
 def warn_if_issues(
@@ -669,7 +669,7 @@ class Node(object):
             if make_default is None and not weight_group_repo.get_all():
                 # If *make_default* is None and this is the first group,
                 # then log a warning and make this group the default.
-                logger.warning(f'setting default weight group: {name!r}')
+                applogger.warning(f'setting default weight group: {name!r}')
                 make_default = True
 
             weight_group_repo.add(
@@ -1069,7 +1069,7 @@ class Node(object):
                     # If *is_default* is None and this is the first crosswalk
                     # from *other_unique_id*, then log a warning and make this
                     # crosswalk the default.
-                    logger.warning(f'setting default crosswalk: {name!r}')
+                    applogger.warning(f'setting default crosswalk: {name!r}')
                     is_default = True
                 else:
                     is_default = False
@@ -1284,7 +1284,7 @@ class Node(object):
                 )
 
             if counter['inserted'] and crosswalk:
-                logger.info(f"loaded {counter['inserted']} relations")
+                applogger.info(f"loaded {counter['inserted']} relations")
 
                 # Get ordered sequence of other_index_id values.
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
@@ -1306,10 +1306,10 @@ class Node(object):
                     is_locally_complete=relation_repo.crosswalk_is_complete(crosswalk_id),
                 ))
             else:
-                logger.warning('no relations loaded')
+                applogger.warning('no relations loaded')
 
             if counter['bad_mapping_level']:
-                logger.warning(
+                applogger.warning(
                     f"skipped {counter['bad_mapping_level']} relations with "
                     f"invalid mapping levels"
                 )

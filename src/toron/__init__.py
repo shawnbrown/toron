@@ -30,6 +30,11 @@ from ._utils import (
 
 ToronError.__module__ = 'toron'
 
-# Define 'toron' logger and set level to INFO (20) but leave
-# handler unspecified--defaults to "handler of last resort".
-__import__('logging').getLogger(__name__).setLevel(level=20)
+# Define 'app-toron' logger and set level to INFO (20) but leave
+# the handler unspecified--defaults to "handler of last resort".
+#
+# This logger will receive messages intended for an application
+# enduser. The application should add its own handler to display
+# these messages in a context-appropriate format (CLI message,
+# GUI pop-up notification, etc.).
+__import__('logging').getLogger(f'app-{__name__}').setLevel(level=20)
