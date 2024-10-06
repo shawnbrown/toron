@@ -1206,7 +1206,7 @@ class Node(object):
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
-        """Insert relations for specified crosswalk.
+        r"""Insert relations for specified crosswalk.
 
         .. code-block:: python
 
