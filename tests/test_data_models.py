@@ -99,7 +99,7 @@ class DataConnectorBaseTest(ABC):
             with closing(open(file_path, 'w')) as f:
                 f.write('Hello World\n')
 
-            with self.assertRaises(RuntimeError):
+            with self.assertRaises(Exception):
                 self.dal.DataConnector.from_file(file_path)
 
 

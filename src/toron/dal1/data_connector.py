@@ -457,7 +457,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         Parameters
         ----------
         path : :py:term:`path-like-object`
-            File path containing the node data.
+            File path containing node data using the DAL1 backend.
         cache_to_drive: bool
             Cache data to drive rather than loading it into memory.
         """
@@ -473,13 +473,13 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                 database_path = os.path.abspath(f.name)
             weakref.finalize(instance, os.unlink, database_path)
 
-            # Read data from file into node database, then close all connections.
+            # Read data source into node database (then close all connections).
             with closing(get_sqlite_connection(database_path)) as con:
                 with closing(get_sqlite_connection(src_path)) as src_con:
-                    with closing(src_con.cursor()) as src_cur:
-                        schema.verify_node_schema(src_cur)
-                        unique_id = schema.get_unique_id(src_cur)
                     src_con.backup(con)
+
+                with closing(con.cursor()) as cur:
+                    unique_id = schema.get_unique_id(cur)
 
             # Keep file path, no in-memory connection.
             instance._unique_id = unique_id
@@ -492,12 +492,12 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
             con = get_sqlite_connection(':memory:', factory=ToronSqlite3Connection)
             weakref.finalize(instance, super(ToronSqlite3Connection, con).close)
 
-            # Read data from file into node database and close source connection.
+            # Read data from file into node database (keeping `con` open).
             with closing(get_sqlite_connection(src_path)) as src_con:
-                with closing(src_con.cursor()) as src_cur:
-                    schema.verify_node_schema(src_cur)
-                    unique_id = schema.get_unique_id(src_cur)
                 src_con.backup(con)
+
+            with closing(con.cursor()) as cur:
+                unique_id = schema.get_unique_id(cur)
 
             schema.create_functions_and_temporary_triggers(con)
 

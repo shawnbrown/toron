@@ -131,7 +131,7 @@ class Node(object):
         """Load a node from an existing file on drive."""
         backend = data_access.get_backend_from_path(path)
         if not backend:
-            raise RuntimeError(f'Cannot determine backend for {path!r}')
+            raise RuntimeError(f'invalid file format, cannot open {path!r}')
 
         obj = cls.__new__(cls)
         obj._dal = data_access.get_data_access_layer(backend)
