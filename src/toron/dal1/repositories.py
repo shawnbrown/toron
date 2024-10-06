@@ -967,3 +967,10 @@ class PropertyRepository(BasePropertyRepository):
             'DELETE FROM main.property WHERE key=?',
             (key,),
         )
+
+    def add_or_update(self, key: str, value: JsonTypes) -> None:
+        """Add a new item or update an existing item in the repository."""
+        self._cursor.execute(
+            'INSERT OR REPLACE INTO main.property (key, value) VALUES (?, ?)',
+            (key, json_dumps(value)),
+        )
