@@ -2,7 +2,7 @@
 
 __all__ = [
     # PACKAGE CONTENTS
-    'dal1',
+    #<modules or subpackages>,
 
     # CLASSES
     'Node',
@@ -20,7 +20,6 @@ def __dir__():  # Customize module attribute list (PEP 562).
     special_attrs = [x for x in globals().keys() if x.startswith('__')]
     return __all__ + special_attrs
 
-from . import dal1
 from .node import Node
 from .xnode import xNode
 from ._utils import (
