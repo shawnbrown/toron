@@ -1166,6 +1166,13 @@ class PropertyRepositoryBaseTest(ABC):
         repository.delete('foo')
         self.assertIsNone(repository.get('foo'))
 
+    def test_keys_are_unique(self):
+        """Attempting to add an existing key should raise an error."""
+        self.repository.add('mykey', 'my value')
+
+        with self.assertRaises(Exception):
+            self.repository.add('mykey', 'some other value')
+
 
 #######################################################################
 # Test Cases for Concrete Data Model Classes
