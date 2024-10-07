@@ -274,6 +274,42 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         ])
 
 
+class TestDomainMethods(unittest.TestCase):
+    def setUp(self):
+        self.node = Node()
+
+    def test_domain_property_no_value(self):
+        """Should return empty dict if 'domain' property is not set."""
+        self.assertEqual(self.node.domain, {})
+
+    def test_domain_property_existing_value(self):
+        """Should return existing 'domain' property."""
+        with self.node._managed_cursor() as cur:
+            self.node._dal.PropertyRepository(cur).add('domain', {'foo': 'bar'})
+
+        self.assertEqual(self.node.domain, {'foo': 'bar'})
+
+    def test_domain_setter_no_value(self):
+        """Should assign 'domain' to property repository."""
+        self.node.domain = {'foo': 'bar'}  # <- Using setter.
+
+        with self.node._managed_cursor() as cur:
+            self.assertEqual(
+                self.node._dal.PropertyRepository(cur).get('domain'),
+                {'foo': 'bar'},
+            )
+
+    def test_domain_setter_existing_value(self):
+        """Should assign 'domain' even if one already exists."""
+        with self.node._managed_cursor() as cur:
+            prop_repo = self.node._dal.PropertyRepository(cur)
+            prop_repo.add('domain', {'foo': 'bar'})
+
+            self.node.domain = {'baz': 'qux'}  # <- Replace existing value.
+
+            self.assertEqual(prop_repo.get('domain'), {'baz': 'qux'})
+
+
 class TestDiscreteCategoriesMethods(unittest.TestCase):
     def setUp(self):
         self.node = Node()

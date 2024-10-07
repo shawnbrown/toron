@@ -194,6 +194,22 @@ class Node(object):
         return self._connector.unique_id
 
     @property
+    def domain(self) -> Dict[str, str]:
+        """The common set of attributes associated with all node data."""
+        with self._managed_cursor() as cursor:
+            value = self._dal.PropertyRepository(cursor).get('domain') or {}
+        return check_type(value, dict)
+
+    @domain.setter
+    def domain(self, value: Dict[str, str]) -> None:
+        """Set the node's domain value."""
+        with self._managed_cursor() as cursor:
+            self._dal.PropertyRepository(cursor).add_or_update(
+                'domain',
+                {k: check_type(v, str) for k, v in value.items()},
+            )
+
+    @property
     def discrete_categories(self) -> List[Set[str]]:
         with self._managed_cursor() as cursor:
             col_manager = self._dal.ColumnManager(cursor)
