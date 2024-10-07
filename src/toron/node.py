@@ -200,8 +200,7 @@ class Node(object):
             value = self._dal.PropertyRepository(cursor).get('domain') or {}
         return check_type(value, dict)
 
-    @domain.setter
-    def domain(self, value: Dict[str, str]) -> None:
+    def set_domain(self, value: Dict[str, str]) -> None:
         """Set the node's domain value."""
         with self._managed_cursor() as cursor:
             self._dal.PropertyRepository(cursor).add_or_update(

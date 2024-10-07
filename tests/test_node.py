@@ -289,9 +289,9 @@ class TestDomainMethods(unittest.TestCase):
 
         self.assertEqual(self.node.domain, {'foo': 'bar'})
 
-    def test_domain_setter_no_value(self):
+    def test_set_domain_no_value(self):
         """Should assign 'domain' to property repository."""
-        self.node.domain = {'foo': 'bar'}  # <- Using setter.
+        self.node.set_domain({'foo': 'bar'})
 
         with self.node._managed_cursor() as cur:
             self.assertEqual(
@@ -299,13 +299,13 @@ class TestDomainMethods(unittest.TestCase):
                 {'foo': 'bar'},
             )
 
-    def test_domain_setter_existing_value(self):
+    def test_set_domain_existing_value(self):
         """Should assign 'domain' even if one already exists."""
         with self.node._managed_cursor() as cur:
             prop_repo = self.node._dal.PropertyRepository(cur)
             prop_repo.add('domain', {'foo': 'bar'})
 
-            self.node.domain = {'baz': 'qux'}  # <- Replace existing value.
+            self.node.set_domain({'baz': 'qux'})  # <- Replace existing value.
 
             self.assertEqual(prop_repo.get('domain'), {'baz': 'qux'})
 
