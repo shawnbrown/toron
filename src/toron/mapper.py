@@ -367,8 +367,8 @@ class Mapper(object):
         if counter['overlaps_included']:
             applogger.info(
                 f"included {counter['overlaps_included']} ambiguous matches "
-                f"that overlap with records that were also matched at a "
-                f"finer level of granularity"
+                f"that overlap with records that were also matched at a finer "
+                f"level of granularity"
             )
         elif counter['overlaps_excluded']:
             applogger.warning(
@@ -379,11 +379,12 @@ class Mapper(object):
 
         if counter['count_overlimit']:
             applogger.warning(
-                f"skipped {counter['count_overlimit']} values that matched too many records"
+                f"skipped {counter['count_overlimit']} values that matched "
+                f"too many records"
             )
             applogger.warning(
-                f"current match_limit is {match_limit} but data includes values "
-                f"that match up to {counter['overlimit_max']} records"
+                f"current match_limit is {match_limit} but mapping includes "
+                f"values that match up to {counter['overlimit_max']} records"
             )
 
         if counter['count_unweighted']:

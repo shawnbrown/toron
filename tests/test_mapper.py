@@ -355,7 +355,8 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         self.assertEqual(
             self.log_stream.getvalue(),
             ('WARNING: skipped 1 values that matched too many records\n'
-             'WARNING: current match_limit is 1 but data includes values that match up to 2 records\n'),
+             'WARNING: current match_limit is 1 but mapping includes '
+             'values that match up to 2 records\n'),
         )
 
         self.assertEqual(
