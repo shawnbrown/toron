@@ -502,6 +502,17 @@ class AttributeRepository(BaseAttributeRepository):
             self._cursor.execute(sql, flattened_items)
             return (Attribute(*record) for record in self._cursor)
 
+        def get_all_attribute_names(self) -> List[str]:
+            """Return a sorted list of distinct attribute names."""
+            self._cursor.execute("""
+                SELECT DISTINCT
+                    json_each.key
+                FROM
+                    main.attribute,
+                    json_each(attribute_value)
+            """)
+            return sorted(x[0] for x in self._cursor)
+
 
 class QuantityRepository(BaseQuantityRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
