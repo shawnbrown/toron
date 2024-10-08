@@ -609,6 +609,13 @@ class BaseAttributeRepository(ABC):
 
         raise RuntimeError('expected attribute was not created')
 
+    def get_all_attribute_names(self) -> List[str]:
+        """Return a sorted list of distinct attribute names."""
+        attribute_names: Set[str] = set()
+        for attr in self.find_all():
+            attribute_names.update(attr.value.keys())
+        return sorted(attribute_names)
+
 
 @dataclass
 class Quantity(object):

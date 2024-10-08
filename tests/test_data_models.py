@@ -673,6 +673,14 @@ class AttributeRepositoryBaseTest(ABC):
         method_under_test = self.repository.find_by_criteria
         self._helper_find_by_criteria(method_under_test)
 
+    def test_get_all_attribute_names(self):
+        self.repository.add({'C': 'foo'})
+        self.repository.add({'A': 'foo', 'B': 'qux'})
+        self.repository.add({'A': 'bar', 'B': 'qux'})
+
+        result = self.repository.get_all_attribute_names()
+        self.assertEqual(result, ['A', 'B', 'C'])
+
 
 class QuantityRepositoryBaseTest(ABC):
     @property
