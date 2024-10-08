@@ -1893,15 +1893,13 @@ class Node(object):
             label_names = col_manager.get_columns()
 
             attribute_repo = self._dal.AttributeRepository(cursor)
-            attribute_keys: Set[str] = set()
-            for attr in attribute_repo.find_all():
-                attribute_keys.update(attr.value.keys())
+            attribute_keys = attribute_repo.get_all_attribute_names()
 
         quantity_iter = QuantityIterator2(
             unique_id=unique_id,
             index_hash=index_hash,
             data=self._disaggregate(),
             label_names=label_names,
-            attribute_keys=sorted(attribute_keys),
+            attribute_keys=attribute_keys,
         )
         return quantity_iter
