@@ -5,6 +5,7 @@ from math import log2
 
 from toron._typing import (
     Dict,
+    Iterable,
     Iterator,
     List,
     Literal,
@@ -39,6 +40,37 @@ from ._utils import (
     check_type,
     SequenceHash,
 )
+
+
+def validate_new_index_columns(
+    new_column_names: Iterable[str],
+    column_manager: BaseColumnManager,
+    property_repo: BasePropertyRepository,
+    attribute_repo: BaseAttributeRepository,
+) -> None:
+    """Raise a ValueError if a new column conflicts with an existing
+    index column, the domain, or an attribute name.
+    """
+    existing_columns = set(column_manager.get_columns())
+    domain_keys = set(get_domain(property_repo).keys())
+    attribute_names = set(attribute_repo.get_all_attribute_names())
+
+    for col in new_column_names:
+        if col in existing_columns:
+            raise ValueError(
+                f'cannot update columns, {col!r} is already an index column'
+            )
+
+        if col in domain_keys:
+            raise ValueError(
+                f'cannot update columns, {col!r} is used in the domain'
+            )
+
+        if col in attribute_names:
+            raise ValueError(
+                f'cannot update columns, {col!r} is used as an attribute '
+                f'name'
+            )
 
 
 def refresh_index_hash_property(

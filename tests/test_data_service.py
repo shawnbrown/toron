@@ -10,6 +10,7 @@ from toron.data_models import (
 )
 from toron import data_access
 from toron.data_service import (
+    validate_new_index_columns,
     get_quantity_value_sum,
     disaggregate_value,
     find_crosswalks_by_node_reference,
@@ -21,6 +22,65 @@ from toron.data_service import (
     set_domain,
     get_domain,
 )
+
+
+class TestValidateNewIndexColumns(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        self.column_manager = dal.ColumnManager(cur)
+        self.property_repo = dal.PropertyRepository(cur)
+        self.attribute_repo = dal.AttributeRepository(cur)
+
+    def test_valid(self):
+        validate_new_index_columns(
+            new_column_names=iter(['baz', 'qux']),
+            column_manager=self.column_manager,
+            property_repo=self.property_repo,
+            attribute_repo=self.attribute_repo,
+        )
+
+    def test_column_collision(self):
+        self.column_manager.add_columns('foo', 'bar', 'baz')
+
+        regex = "cannot update columns, 'baz' is already an index column"
+        with self.assertRaisesRegex(ValueError, regex):
+            validate_new_index_columns(
+                new_column_names=iter(['baz', 'qux']),
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+                attribute_repo=self.attribute_repo,
+            )
+
+    def test_domain_collision(self):
+        self.property_repo.add('domain', {'qux': '444'})
+
+        regex = "cannot update columns, 'qux' is used in the domain"
+        with self.assertRaisesRegex(ValueError, regex):
+            validate_new_index_columns(
+                new_column_names=iter(['baz', 'qux']),
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+                attribute_repo=self.attribute_repo,
+            )
+
+    def test_attribute_collision(self):
+        self.attribute_repo.add({'corge': '555'})
+
+        regex = "cannot update columns, 'corge' is used as an attribute name"
+        with self.assertRaisesRegex(ValueError, regex):
+            validate_new_index_columns(
+                new_column_names=iter(['qux', 'corge']),
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+                attribute_repo=self.attribute_repo,
+            )
 
 
 class TestGetQuantityValueSum(unittest.TestCase):
