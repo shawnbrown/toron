@@ -202,10 +202,29 @@ class Node(object):
 
     def set_domain(self, value: Dict[str, str]) -> None:
         """Set the node's domain value."""
-        with self._managed_cursor() as cursor:
+        with self._managed_transaction() as cursor:
+            # Check that domain does not conflict with index columns
+            # or attribute names.
+            columns = self._dal.ColumnManager(cursor).get_columns()
+            attributes = \
+                self._dal.AttributeRepository(cursor).get_all_attribute_names()
+            for key in value.keys():
+                if key in columns:
+                    raise ValueError(
+                        f'cannot add domain, {key!r} is already used as '
+                        f'an index column'
+                    )
+
+                if key in attributes:
+                    raise ValueError(
+                        f'cannot add domain, {key!r} is already used as '
+                        f'a quantity attribute'
+                    )
+
+            # Save domain value in the property repository.
             self._dal.PropertyRepository(cursor).add_or_update(
                 'domain',
-                {k: check_type(v, str) for k, v in value.items()},
+                {check_type(k, str): check_type(v, str) for k, v in value.items()},
             )
 
     @property

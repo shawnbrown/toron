@@ -309,6 +309,30 @@ class TestDomainMethods(unittest.TestCase):
 
             self.assertEqual(prop_repo.get('domain'), {'baz': 'qux'})
 
+    def test_set_domain_index_conflict(self):
+        """A domain name cannot be the same as an index column."""
+        self.node.add_index_columns('foo', 'bar', 'baz')
+
+        regex = "cannot add domain, 'baz' is already used as an index column"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.set_domain({'baz': '111', 'qux': '222'})
+
+    def test_set_domain_attribute_conflict(self):
+        """A domain name cannot be the same as a quantity attribute."""
+        self.node.add_index_columns('foo', 'bar')
+        self.node.insert_quantities(
+            value='counts',
+            attributes=['baz'],
+            data=[('foo', 'bar', 'baz', 'counts'),
+                  ('A',   '111', 'xxx', 100),
+                  ('B',   '222', 'yyy', 175),
+                  ('C',   '333', 'zzz', 150)],
+        )
+
+        regex = "cannot add domain, 'baz' is already used as a quantity attribute"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.set_domain({'baz': '111', 'qux': '222'})
+
 
 class TestDiscreteCategoriesMethods(unittest.TestCase):
     def setUp(self):
