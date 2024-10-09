@@ -18,6 +18,8 @@ from toron.data_service import (
     rename_discrete_categories,
     rebuild_structure_table,
     refresh_structure_granularity,
+    set_domain,
+    get_domain,
 )
 
 
@@ -464,3 +466,73 @@ class TestRefreshStructureGranularity(unittest.TestCase):
                 Structure(id=1, granularity=None, bits=(0, 0, 0, 0)),
         ]
         self.assertEqual(self.structure_repo.get_all(), expected)
+
+
+class TestDomainMethods(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        self.column_manager = dal.ColumnManager(cur)
+        self.attribute_repo = dal.AttributeRepository(cur)
+        self.property_repo = dal.PropertyRepository(cur)
+
+    def test_set_domain_no_value(self):
+        """Should assign 'domain' to property repository."""
+        set_domain(
+            domain={'foo': 'bar'},
+            column_manager=self.column_manager,
+            attribute_repo=self.attribute_repo,
+            property_repo=self.property_repo,
+        )
+        self.assertEqual(self.property_repo.get('domain'), {'foo': 'bar'})
+
+    def test_set_domain_existing_value(self):
+        """Should assign 'domain' even if one already exists."""
+        self.property_repo.add('domain', {'foo': 'bar'})
+        set_domain(
+            domain={'baz': 'qux'},
+            column_manager=self.column_manager,
+            attribute_repo=self.attribute_repo,
+            property_repo=self.property_repo,
+        )
+        self.assertEqual(self.property_repo.get('domain'), {'baz': 'qux'})
+
+    def test_set_domain_index_conflict(self):
+        """A domain name cannot be the same as an index column."""
+        self.column_manager.add_columns('foo', 'bar', 'baz')
+        regex = "cannot add domain, 'baz' is already used as an index column"
+        with self.assertRaisesRegex(ValueError, regex):
+            set_domain(
+                domain={'baz': '111', 'qux': '222'},
+                column_manager=self.column_manager,
+                attribute_repo=self.attribute_repo,
+                property_repo=self.property_repo,
+            )
+
+    def test_set_domain_attribute_conflict(self):
+        """A domain name cannot be the same as a quantity attribute."""
+        self.column_manager.add_columns('foo', 'bar')
+        self.attribute_repo.add({'baz': 'xxx'})
+        regex = "cannot add domain, 'baz' is already used as a quantity attribute"
+        with self.assertRaisesRegex(ValueError, regex):
+            set_domain(
+                domain={'baz': '111', 'qux': '222'},
+                column_manager=self.column_manager,
+                attribute_repo=self.attribute_repo,
+                property_repo=self.property_repo,
+            )
+
+    def test_get_domain_no_value(self):
+        """Should return empty dict if 'domain' property is not set."""
+        self.assertEqual(get_domain(self.property_repo), {})
+
+    def test_get_domain_existing_value(self):
+        """Should return existing 'domain' property."""
+        self.property_repo.add('domain', {'foo': 'bar'})
+        self.assertEqual(get_domain(self.property_repo), {'foo': 'bar'})

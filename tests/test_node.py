@@ -278,60 +278,47 @@ class TestDomainMethods(unittest.TestCase):
     def setUp(self):
         self.node = Node()
 
-    def test_domain_property_no_value(self):
-        """Should return empty dict if 'domain' property is not set."""
-        self.assertEqual(self.node.domain, {})
-
-    def test_domain_property_existing_value(self):
-        """Should return existing 'domain' property."""
-        with self.node._managed_cursor() as cur:
-            self.node._dal.PropertyRepository(cur).add('domain', {'foo': 'bar'})
-
-        self.assertEqual(self.node.domain, {'foo': 'bar'})
-
-    def test_set_domain_no_value(self):
-        """Should assign 'domain' to property repository."""
-        self.node.set_domain({'foo': 'bar'})
-
-        with self.node._managed_cursor() as cur:
-            self.assertEqual(
-                self.node._dal.PropertyRepository(cur).get('domain'),
-                {'foo': 'bar'},
-            )
-
-    def test_set_domain_existing_value(self):
-        """Should assign 'domain' even if one already exists."""
+    def test_domain_property(self):
         with self.node._managed_cursor() as cur:
             prop_repo = self.node._dal.PropertyRepository(cur)
+
+            # Get domain when no value is set.
+            self.assertEqual(self.node.domain, {})
+
+            # Get domain when a value does exist.
             prop_repo.add('domain', {'foo': 'bar'})
+            self.assertEqual(self.node.domain, {'foo': 'bar'})
 
+    def test_set_domain(self):
+        with self.node._managed_cursor() as cur:
+            prop_repo = self.node._dal.PropertyRepository(cur)
+
+            # Set domain when none exists.
+            self.node.set_domain({'foo': 'bar'})
+            self.assertEqual(prop_repo.get('domain'), {'foo': 'bar'})
+
+            # Set domain when a value already exists.
             self.node.set_domain({'baz': 'qux'})  # <- Replace existing value.
-
             self.assertEqual(prop_repo.get('domain'), {'baz': 'qux'})
 
-    def test_set_domain_index_conflict(self):
-        """A domain name cannot be the same as an index column."""
-        self.node.add_index_columns('foo', 'bar', 'baz')
+            # Check for name conflict with index columns.
+            self.node.add_index_columns('A', 'B')
+            regex = "cannot add domain, 'A' is already used as an index column"
+            with self.assertRaisesRegex(ValueError, regex):
+                self.node.set_domain({'A': '111'})
 
-        regex = "cannot add domain, 'baz' is already used as an index column"
-        with self.assertRaisesRegex(ValueError, regex):
-            self.node.set_domain({'baz': '111', 'qux': '222'})
-
-    def test_set_domain_attribute_conflict(self):
-        """A domain name cannot be the same as a quantity attribute."""
-        self.node.add_index_columns('foo', 'bar')
-        self.node.insert_quantities(
-            value='counts',
-            attributes=['baz'],
-            data=[('foo', 'bar', 'baz', 'counts'),
-                  ('A',   '111', 'xxx', 100),
-                  ('B',   '222', 'yyy', 175),
-                  ('C',   '333', 'zzz', 150)],
-        )
-
-        regex = "cannot add domain, 'baz' is already used as a quantity attribute"
-        with self.assertRaisesRegex(ValueError, regex):
-            self.node.set_domain({'baz': '111', 'qux': '222'})
+            # Check for name conflict with attribute.
+            self.node.insert_quantities(
+                value='counts',
+                attributes=['corge'],
+                data=[('A', 'B',  'corge', 'counts'),
+                    ('1', '11', 'xxx',   100),
+                    ('2', '22', 'yyy',   175),
+                    ('3', '33', 'zzz',   150)],
+            )
+            regex = "cannot add domain, 'corge' is already used as a quantity attribute"
+            with self.assertRaisesRegex(ValueError, regex):
+                self.node.set_domain({'corge': 'flurm'})
 
 
 class TestDiscreteCategoriesMethods(unittest.TestCase):

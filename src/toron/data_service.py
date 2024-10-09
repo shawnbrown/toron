@@ -19,6 +19,7 @@ from .categories import (
     make_structure,
 )
 from .data_models import (
+    BaseAttributeRepository,
     BaseColumnManager,
     BaseIndexRepository,
     BaseWeightGroupRepository,
@@ -35,6 +36,7 @@ from .data_models import (
     JsonTypes,
 )
 from ._utils import (
+    check_type,
     SequenceHash,
 )
 
@@ -373,3 +375,40 @@ def refresh_structure_granularity(
         granularity = calculate_granularity(category, index_repo, aux_index_repo)
         structure.granularity = granularity
         structure_repo.update(structure)
+
+
+def set_domain(
+    domain: Dict[str, str],
+    column_manager: BaseColumnManager,
+    attribute_repo: BaseAttributeRepository,
+    property_repo: BasePropertyRepository,
+) -> None:
+    """Set the node's domain."""
+    # Check that domain does not conflict with index columns
+    # or attribute names.
+    columns = column_manager.get_columns()
+    attributes = attribute_repo.get_all_attribute_names()
+    for key in domain.keys():
+        if key in columns:
+            raise ValueError(
+                f'cannot add domain, {key!r} is already used as '
+                f'an index column'
+            )
+
+        if key in attributes:
+            raise ValueError(
+                f'cannot add domain, {key!r} is already used as '
+                f'a quantity attribute'
+            )
+
+    # Save domain value in the property repository.
+    property_repo.add_or_update(
+        'domain',
+        {check_type(k, str): check_type(v, str) for k, v in domain.items()},
+    )
+
+
+def get_domain(property_repo: BasePropertyRepository) -> Dict[str, str]:
+    """Return the node's domain."""
+    domain = property_repo.get('domain') or {}
+    return check_type(domain, dict)
