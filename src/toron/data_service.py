@@ -228,22 +228,6 @@ def set_default_weight_group(
     property_repo.add('default_weight_group_id', weight_group.id)
 
 
-def get_all_discrete_categories(
-    column_manager: BaseColumnManager,
-    property_repo: BasePropertyRepository,
-) -> List[Set[str]]:
-    values: Optional[List[List[str]]]
-    values = property_repo.get('discrete_categories')  # type: ignore [assignment]
-    if values:
-        return [set(x) for x in values]
-
-    columns = column_manager.get_columns()
-    if columns:
-        return [set(columns)]  # Default to whole space.
-
-    return []  # Empty when no columns defined.
-
-
 @overload
 def get_default_weight_group(
     property_repo: BasePropertyRepository,
@@ -269,6 +253,22 @@ def get_default_weight_group(property_repo, weight_group_repo, required=False):
     if required:
         raise RuntimeError('no default weight group is defined')
     return None
+
+
+def get_all_discrete_categories(
+    column_manager: BaseColumnManager,
+    property_repo: BasePropertyRepository,
+) -> List[Set[str]]:
+    values: Optional[List[List[str]]]
+    values = property_repo.get('discrete_categories')  # type: ignore [assignment]
+    if values:
+        return [set(x) for x in values]
+
+    columns = column_manager.get_columns()
+    if columns:
+        return [set(columns)]  # Default to whole space.
+
+    return []  # Empty when no columns defined.
 
 
 def rename_discrete_categories(
