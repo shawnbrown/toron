@@ -11,6 +11,7 @@ from toron._typing import (
     Optional,
     Set,
     Tuple,
+    cast,
     overload,
 )
 
@@ -28,6 +29,7 @@ from .data_models import (
     BasePropertyRepository,
     BaseStructureRepository,
     Index,
+    Weight,
     WeightGroup,
     Crosswalk,
     JsonTypes,
@@ -179,13 +181,14 @@ def disaggregate_value(
 
     # Yield disaggregated values for associated index records.
     for index in index_repo.find_by_label(index_criteria):
-        weight = weight_repo.get_by_weight_group_id_and_index_id(
-            weight_group_id, index.id
+        # Using cast() because any missing `weight` values would have
+        # already raised an error when summing `group_weight` above.
+        weight = cast(
+            Weight,
+            weight_repo.get_by_weight_group_id_and_index_id(weight_group_id, index.id),
         )
         try:
-            # Using "type: ignore ..." because any missing `weight` values
-            # would have already raised an error when summing `group_weight`.
-            proportion = weight.value / group_weight  # type: ignore [union-attr]
+            proportion = weight.value / group_weight
         except ZeroDivisionError:
             proportion = 1 / group_count
 
