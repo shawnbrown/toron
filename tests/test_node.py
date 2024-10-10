@@ -542,6 +542,21 @@ class TestIndexColumnMethods(unittest.TestCase):
             [{'A'}, {'A', 'G'}, {'A', 'G', 'C', 'T'}],
         )
 
+    def test_rename_index_columns_domain_conflict(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        with node._managed_cursor() as cursor:
+            node._dal.PropertyRepository(cursor).add('domain', {'T': 'xxx'})
+
+        regex = "cannot update columns, 'T' is used in the domain"
+        with self.assertRaisesRegex(ValueError, regex):
+            if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
+                node.rename_index_columns({'B': 'G', 'D': 'T'})
+            else:
+                import toron.dal1
+                toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
+
     def test_drop_index_columns(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')

@@ -144,18 +144,28 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
         msg = f"expected Node with 'DAL1' backend, got {node._dal.backend!r}"
         raise TypeError(msg)
 
+    from toron.data_service import validate_new_index_columns
     from toron.data_service import rename_discrete_categories
 
     with node._managed_cursor() as cursor:
-        manager = ColumnManager(cursor)
-
         if cursor.connection.in_transaction:
             msg = 'cannot rename columns inside an existing transaction'
             raise RuntimeError(msg)
 
+        column_manager = ColumnManager(cursor)
+        property_repo = node._dal.PropertyRepository(cursor)
+
+        # Check new column names for conflicts.
+        validate_new_index_columns(
+            new_column_names=mapping.values(),
+            column_manager=column_manager,
+            property_repo=property_repo,
+            attribute_repo=node._dal.AttributeRepository(cursor),
+        )
+
         # Build a list of new column names.
         new_columns = []
-        for old_col in manager.get_columns():
+        for old_col in column_manager.get_columns():
             new_col = mapping.get(old_col, old_col)  # Get new name or default to old.
             if new_col in new_columns:
                 raise ValueError(f'cannot create duplicate columns: {new_col}')
@@ -211,8 +221,7 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
             schema.create_schema_constraints(cursor)
 
             # Rename discrete categories to match new column names.
-            property_repo = node._dal.PropertyRepository(cursor)
-            rename_discrete_categories(mapping, manager, property_repo)
+            rename_discrete_categories(mapping, column_manager, property_repo)
 
             cursor.execute('COMMIT TRANSACTION')
 

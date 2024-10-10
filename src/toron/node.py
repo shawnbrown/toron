@@ -323,11 +323,20 @@ class Node(object):
 
     def rename_index_columns(self, mapping: Dict[str, str]) -> None:
         with self._managed_transaction() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
-            prop_repo = self._dal.PropertyRepository(cursor)
-
-            col_manager.rename_columns(mapping)
-            rename_discrete_categories(mapping, col_manager, prop_repo)
+            column_manager = self._dal.ColumnManager(cursor)
+            property_repo = self._dal.PropertyRepository(cursor)
+            validate_new_index_columns(
+                new_column_names=mapping.values(),
+                column_manager=column_manager,
+                property_repo=property_repo,
+                attribute_repo=self._dal.AttributeRepository(cursor),
+            )
+            column_manager.rename_columns(mapping)
+            rename_discrete_categories(
+                mapping=mapping,
+                column_manager=column_manager,
+                property_repo=property_repo,
+            )
 
     def drop_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
