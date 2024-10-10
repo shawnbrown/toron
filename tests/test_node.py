@@ -495,6 +495,16 @@ class TestIndexColumnMethods(unittest.TestCase):
         msg = 'should be empty tuple, no column names'
         self.assertEqual(self.get_cols_helper(node), (), msg=msg)
 
+    def test_add_index_columns_domain_conflict(self):
+        """An index column cannot be the same as a domain name."""
+        node = Node()
+        with node._managed_cursor() as cursor:
+            node._dal.PropertyRepository(cursor).add('domain', {'baz': '111', 'qux': '222'})
+
+        regex = "cannot update columns, 'baz' is used in the domain"
+        with self.assertRaisesRegex(ValueError, regex):
+            node.add_index_columns('foo', 'bar', 'baz')
+
     def test_index_columns_property(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')

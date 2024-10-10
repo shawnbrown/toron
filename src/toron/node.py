@@ -37,6 +37,7 @@ from .data_models import (
     QuantityIterator2,
 )
 from .data_service import (
+    validate_new_index_columns,
     refresh_index_hash_property,
     delete_index_record,
     get_quantity_value_sum,
@@ -311,8 +312,14 @@ class Node(object):
 
     def add_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
-            col_manager.add_columns(column, *columns)
+            column_manager = self._dal.ColumnManager(cursor)
+            validate_new_index_columns(
+                new_column_names=chain([column], columns),
+                column_manager=column_manager,
+                property_repo=self._dal.PropertyRepository(cursor),
+                attribute_repo=self._dal.AttributeRepository(cursor),
+            )
+            column_manager.add_columns(column, *columns)
 
     def rename_index_columns(self, mapping: Dict[str, str]) -> None:
         with self._managed_transaction() as cursor:
