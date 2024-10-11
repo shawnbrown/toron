@@ -290,6 +290,17 @@ class TestDomainMethods(unittest.TestCase):
             self.assertEqual(self.node.domain, {'foo': 'bar'})
 
     def test_set_domain(self):
+        # Set up initial node values for conflict checks.
+        self.node.add_index_columns('A', 'B')
+        self.node.insert_quantities(
+            value='counts',
+            attributes=['corge'],
+            data=[('A', 'B',  'corge', 'counts'),
+                  ('1', '11', 'xxx',   100),
+                  ('2', '22', 'yyy',   175),
+                  ('3', '33', 'zzz',   150)],
+        )
+
         with self.node._managed_cursor() as cur:
             prop_repo = self.node._dal.PropertyRepository(cur)
 
@@ -302,20 +313,11 @@ class TestDomainMethods(unittest.TestCase):
             self.assertEqual(prop_repo.get('domain'), {'baz': 'qux'})
 
             # Check for name conflict with index columns.
-            self.node.add_index_columns('A', 'B')
             regex = "cannot add domain, 'A' is already used as an index column"
             with self.assertRaisesRegex(ValueError, regex):
                 self.node.set_domain({'A': '111'})
 
             # Check for name conflict with attribute.
-            self.node.insert_quantities(
-                value='counts',
-                attributes=['corge'],
-                data=[('A', 'B',  'corge', 'counts'),
-                    ('1', '11', 'xxx',   100),
-                    ('2', '22', 'yyy',   175),
-                    ('3', '33', 'zzz',   150)],
-            )
             regex = "cannot add domain, 'corge' is already used as a quantity attribute"
             with self.assertRaisesRegex(ValueError, regex):
                 self.node.set_domain({'corge': 'flurm'})
