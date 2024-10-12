@@ -1802,20 +1802,31 @@ class Node(object):
 
         #counter: Counter = Counter()
         with self._managed_transaction() as cursor:
+            property_repo = self._dal.PropertyRepository(cursor)
             location_repo = self._dal.LocationRepository(cursor)
             attribute_repo = self._dal.AttributeRepository(cursor)
             quantity_repo = self._dal.QuantityRepository(cursor)
+
+            domain_dict = get_domain(property_repo)
+
+            if any((x in attributes) for x in domain_dict.keys()):
+                applogger.warning('removing domain columns from attributes')
+                attributes = [x for x in attributes if x not in domain_dict.keys()]
 
             label_columns = location_repo.get_label_columns()
 
             verify_columns_set(
                 columns=columns,
-                required_columns=chain(label_columns, attributes, [value]),
+                required_columns=chain(label_columns, domain_dict.keys(),
+                                       attributes, [value]),
                 allow_extras=True,
             )
 
             for row in data:
                 row_dict = dict(zip(columns, row))
+
+                if not all((row_dict.get(k) == v) for k, v in domain_dict.items()):
+                    raise ValueError('bad domain value')
 
                 labels_dict = {k: row_dict[k] for k in label_columns}
                 attr_dict = {k: row_dict[k] for k in attributes if row_dict[k]}

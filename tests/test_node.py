@@ -3320,11 +3320,20 @@ class TestNodeInsertQuantities(unittest.TestCase):
             return cursor.fetchall()
 
     def setUp(self):
-        node = Node()
-        self.add_cols_helper(node, 'state', 'county')
-        self.add_index_helper(node, [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')])
+        self.node = Node()
+        self.add_cols_helper(self.node, 'state', 'county')
+        self.add_index_helper(self.node, [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')])
 
-        self.node = node
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
+
+        # Add handler to 'app-toron' logger.
+        applogger = logging.getLogger('app-toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        applogger.addHandler(handler)
+        self.addCleanup(lambda: applogger.removeHandler(handler))
 
     def test_insert_quantities(self):
         data = [
@@ -3433,6 +3442,90 @@ class TestNodeInsertQuantities(unittest.TestCase):
             [(1, 1, 1, 180140),
              (2, 1, 2, 187990)],
         )
+
+    def test_insert_quantities_domain_included(self):
+        self.node.set_domain({'countryiso': 'US'})
+
+        self.node.insert_quantities(
+            value='counts',
+            attributes=['category', 'sex'],
+            data=[
+                ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
+                ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                ('US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+                ('US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+            ],
+        )
+
+        self.assertEqual(
+            self.get_quantities_helper(self.node),
+            [(1, 1, 1, 180140),
+             (2, 1, 2, 187990),
+             (3, 2, 1, 566499),
+             (4, 2, 2, 596915)],
+        )
+
+    def test_insert_quantities_domain_missing(self):
+        self.node.set_domain({'countryiso': 'US'})
+
+        regex = "invalid column names\n  missing required columns: 'countryiso'"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_quantities(
+                value='counts',
+                attributes=['category', 'sex'],
+                data=[
+                    ('state', 'county', 'category', 'sex', 'counts'),
+                    ('OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                    ('OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                    ('OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+                    ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+                ],
+            )
+
+    def test_insert_quantities_domain_listed_in_attributes(self):
+        self.node.set_domain({'countryiso': 'US'})
+
+        self.node.insert_quantities(
+            value='counts',
+            attributes=['category', 'sex', 'countryiso'],
+            data=[
+                ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
+                ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                ('US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+                ('US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+            ],
+        )
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            'WARNING: removing domain columns from attributes\n',
+        )
+
+        self.assertEqual(
+            self.get_quantities_helper(self.node),
+            [(1, 1, 1, 180140),
+             (2, 1, 2, 187990),
+             (3, 2, 1, 566499),
+             (4, 2, 2, 596915)],
+        )
+
+    def test_insert_quantities_domain_bad_values(self):
+        self.node.set_domain({'countryiso': 'US'})
+
+        with self.assertRaises(ValueError):
+            self.node.insert_quantities(
+                value='counts',
+                attributes=['category', 'sex'],
+                data=[
+                    ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
+                    ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                    ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                    ('', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),  # <- Bad domain value.
+                    ('', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),  # <- Bad domain value.
+                ],
+            )
 
 
 class TestNodeDisaggregateGenerator(unittest.TestCase):
