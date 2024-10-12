@@ -1800,7 +1800,7 @@ class Node(object):
         else:
             attributes = list(attributes)
 
-        #counter: Counter = Counter()
+        counter: Counter = Counter()
         with self._managed_transaction() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
             location_repo = self._dal.LocationRepository(cursor)
@@ -1826,7 +1826,8 @@ class Node(object):
                 row_dict = dict(zip(columns, row))
 
                 if not all((row_dict.get(k) == v) for k, v in domain_dict.items()):
-                    raise ValueError('bad domain value')
+                    counter['bad_domain'] += 1
+                    continue
 
                 labels_dict = {k: row_dict[k] for k in label_columns}
                 attr_dict = {k: row_dict[k] for k in attributes if row_dict[k]}
@@ -1841,7 +1842,19 @@ class Node(object):
                     attribute_id=attribute.id,
                     value=row_dict[value],
                 )
-                #counter['inserted'] += 1
+                counter['inserted'] += 1
+
+        if counter['inserted']:
+            applogger.info(f'loaded {counter["inserted"]} quantities')
+        else:
+            applogger.warning('no quantities loaded')
+
+        if counter['bad_domain']:
+            items = [f'{k} must be {v!r}' for k, v in domain_dict.items()]
+            applogger.warning(
+                f'skipped {counter["bad_domain"]} quantities with '
+                f'bad domain values: {", ".join(items)}'
+            )
 
     def _disaggregate(self) -> Iterator[Tuple[Index, Attribute, float]]:
         """Generator to yield index, attribute, and quantity tuples."""

@@ -3500,7 +3500,8 @@ class TestNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            'WARNING: removing domain columns from attributes\n',
+            ('WARNING: removing domain columns from attributes\n'
+             'INFO: loaded 4 quantities\n'),
         )
 
         self.assertEqual(
@@ -3514,18 +3515,30 @@ class TestNodeInsertQuantities(unittest.TestCase):
     def test_insert_quantities_domain_bad_values(self):
         self.node.set_domain({'countryiso': 'US'})
 
-        with self.assertRaises(ValueError):
-            self.node.insert_quantities(
-                value='counts',
-                attributes=['category', 'sex'],
-                data=[
-                    ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
-                    ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
-                    ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
-                    ('', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),  # <- Bad domain value.
-                    ('', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),  # <- Bad domain value.
-                ],
-            )
+        self.node.insert_quantities(
+            value='counts',
+            attributes=['category', 'sex'],
+            data=[
+                ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
+                ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                ('', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+                ('', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+            ],
+        )
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ("INFO: loaded 2 quantities\n"
+             "WARNING: skipped 2 quantities with bad domain values: "
+             "countryiso must be 'US'\n"),
+        )
+
+        self.assertEqual(
+            self.get_quantities_helper(self.node),
+            [(1, 1, 1, 180140),
+             (2, 1, 2, 187990)],
+        )
 
 
 class TestNodeDisaggregateGenerator(unittest.TestCase):
