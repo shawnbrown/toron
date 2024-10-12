@@ -95,31 +95,41 @@ class TestNormalizeTabular(unittest.TestCase):
 class TestVerifyColumnsSet(unittest.TestCase):
     def test_passing(self):
         try:
-            verify_columns_set(['A', 'B', 'C'], ['A', 'B', 'C'])
+            verify_columns_set(iter(['A', 'B', 'C']), iter(['A', 'B', 'C']))
         except Exception:
             self.fail('columns are the same, should pass without error')
 
     def test_missing(self):
         regex = r"^invalid column names\s+missing required columns: 'B', 'C'$"
         with self.assertRaisesRegex(ValueError, regex):
-            verify_columns_set(['A'], ['A', 'B', 'C'])
+            verify_columns_set(iter(['A']), iter(['A', 'B', 'C']))
 
     def test_extra(self):
         regex = r"^invalid column names\s+extra columns found: 'D', 'E'$"
         with self.assertRaisesRegex(ValueError, regex):
-            verify_columns_set(['A', 'B', 'C', 'D', 'E'], ['A', 'B', 'C'])
+            verify_columns_set(
+                iter(['A', 'B', 'C', 'D', 'E']), iter(['A', 'B', 'C'])
+            )
 
     def test_missing_and_extra(self):
         regex = r"^invalid column names\s+missing required columns: 'C'\s+extra columns found: 'E'$"
         with self.assertRaisesRegex(ValueError, regex):
-            verify_columns_set(['A', 'B', 'E'], ['A', 'B', 'C'])
+            verify_columns_set(iter(['A', 'B', 'E']), iter(['A', 'B', 'C']))
 
     def test_allow_extras(self):
-        verify_columns_set(['A', 'B', 'C', 'D', 'E'], ['A', 'B', 'C'], allow_extras=True)
+        verify_columns_set(
+            iter(['A', 'B', 'C', 'D', 'E']),
+            iter(['A', 'B', 'C']),
+            allow_extras=True,
+        )
 
         regex = r"^invalid column names\s+missing required columns: 'C'$"
         with self.assertRaisesRegex(ValueError, regex):
-            verify_columns_set(['A', 'B', 'E'], ['A', 'B', 'C'], allow_extras=True)
+            verify_columns_set(
+                iter(['A', 'B', 'E']),
+                iter(['A', 'B', 'C']),
+                allow_extras=True,
+            )
 
 
 class TestMakeReaderLike(unittest.TestCase):

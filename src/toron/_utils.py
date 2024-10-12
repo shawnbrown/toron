@@ -131,26 +131,30 @@ def verify_columns_set(
     allow_extras: bool = False,
 ) -> None:
     """Raise error if columns do not match set of required columns."""
-    if set(columns) == set(required_columns):
-        return  # <- EXIT!
+    if allow_extras:
+        columns = set(columns)
 
-    if allow_extras and set(columns).issuperset(required_columns):
-        return  # <- EXIT!
+        missing = [repr(x) for x in required_columns if (x not in columns)]
 
-    msg = 'invalid column names'
+        if missing:
+            raise ValueError(
+                f'invalid column names\n'
+                f'  missing required columns: {", ".join(missing)}'
+            )
+    else:
+        columns = tuple(columns)
+        required_columns = tuple(required_columns)
 
-    missing = [x for x in required_columns if x not in columns]
-    if missing:
-        missing_fmt = ', '.join(repr(x) for x in missing)
-        msg = msg + f'\n  missing required columns: {missing_fmt}'
+        missing = [repr(x) for x in required_columns if (x not in columns)]
+        extra = [repr(x) for x in columns if (x not in required_columns)]
 
-    if not allow_extras:
-        extra = [x for x in columns if x not in required_columns]
-        if extra:
-            extra_fmt = ', '.join(repr(x) for x in extra)
-            msg = msg + f'\n  extra columns found: {extra_fmt}'
-
-    raise ValueError(msg)
+        if missing or extra:
+            msg = ['invalid column names']
+            if missing:
+                msg.append(f'missing required columns: {", ".join(missing)}')
+            if extra:
+                msg.append(f'extra columns found: {", ".join(extra)}')
+            raise ValueError('\n  '.join(msg))
 
 
 TabularData : TypeAlias = Union[
