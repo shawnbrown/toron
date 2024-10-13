@@ -1825,18 +1825,24 @@ class Node(object):
             for row in data:
                 row_dict = dict(zip(columns, row))
 
+                # Check that domain columns contain required values.
                 if not all((row_dict.get(k) == v) for k, v in domain_dict.items()):
                     counter['bad_domain'] += 1
                     continue
 
+                # Parse row into separate label and attribute dictionaries.
                 labels_dict = {k: row_dict[k] for k in label_columns}
                 attr_dict = {k: row_dict[k] for k in attributes if row_dict[k]}
+
+                # Skip record if it has no attribute values.
                 if not attr_dict:
                     continue
 
+                # Get `location` and `attribute` instances.
                 location = location_repo.get_by_labels_add_if_missing(labels_dict)
                 attribute = attribute_repo.get_by_value_add_if_missing(attr_dict)
 
+                # Add quantity.
                 quantity_repo.add(
                     location_id=location.id,
                     attribute_id=attribute.id,
