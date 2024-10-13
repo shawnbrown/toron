@@ -17,7 +17,7 @@ from toron._utils import (
     SequenceHash,
     eagerly_initialize,
     BitFlags,
-    QuantityIterator,
+    XQuantityIterator,
 )
 
 
@@ -738,7 +738,7 @@ class TestBitFlags(unittest.TestCase):
 
 class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):
-        iterator = QuantityIterator('0000-00-00-00-000000', [
+        iterator = XQuantityIterator('0000-00-00-00-000000', [
             (1, {'a': 'foo'}, 4.5),
             (2, {'a': 'foo'}, 2.5),
             (3, {'a': 'foo'}, 3.0),
@@ -762,11 +762,11 @@ class TestQuantityIterator(unittest.TestCase):
             (3, {'a': 'foo'}, 3.0),
             (4, {'a': 'foo'}, 9.0),
         ]
-        iterator = QuantityIterator('0000-00-00-00-000000', data)
+        iterator = XQuantityIterator('0000-00-00-00-000000', data)
         self.assertEqual(list(iterator), data)
 
     def test_aggregated_output(self):
-        iterator = QuantityIterator('0000-00-00-00-000000', [
+        iterator = XQuantityIterator('0000-00-00-00-000000', [
             (1, {'a': 'foo'}, 4.5),
             (2, {'a': 'foo'}, 2.5),
             (3, {'a': 'foo'}, 3.0),
@@ -791,13 +791,13 @@ class TestQuantityIterator(unittest.TestCase):
             (4, {'c': 'qux'}, 9.0),
         ]
 
-        iterator1 = QuantityIterator(
+        iterator1 = XQuantityIterator(
             '0000-00-00-00-000000',
             data,
         )
         self.assertEqual(iterator1.attribute_keys, {'a', 'b', 'c'})
 
-        iterator2 = QuantityIterator(
+        iterator2 = XQuantityIterator(
             '0000-00-00-00-000000',
             data,
             _attribute_keys={'a', 'b', 'c'},
@@ -814,4 +814,4 @@ class TestQuantityIterator(unittest.TestCase):
 
         msg = 'failure to load should only raise a sqlite3.IntegrityError'
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            QuantityIterator('0000-00-00-00-000000', bogus_data)
+            XQuantityIterator('0000-00-00-00-000000', bogus_data)

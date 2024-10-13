@@ -29,7 +29,7 @@ from toron._dal import _temp_files_to_delete_atexit
 from toron._utils import (
     ToronError,
     ToronWarning,
-    QuantityIterator,
+    XQuantityIterator,
 )
 from toron._schema import BitFlags2
 
@@ -5008,7 +5008,7 @@ class TestTranslate(unittest.TestCase):
         #print(self.cur.execute('SELECT * FROM main.relation').fetchall())
 
     def test_translate_generator(self):
-        quantities = QuantityIterator(
+        quantities = XQuantityIterator(
             '00000000-0000-0000-0000-000000000000',
             [
                 (1, {'foo': 'bar'}, 100),
@@ -5034,7 +5034,7 @@ class TestTranslate(unittest.TestCase):
         self.assertEqual(list(results), expected)
 
     def test_simple_case(self):
-        quantities = QuantityIterator(
+        quantities = XQuantityIterator(
             '00000000-0000-0000-0000-000000000000',
             [
                 (1, {'foo': 'bar'}, 100),
@@ -5046,7 +5046,7 @@ class TestTranslate(unittest.TestCase):
         )
         results = self.dal.translate(quantities)
 
-        self.assertIsInstance(results, QuantityIterator)
+        self.assertIsInstance(results, XQuantityIterator)
         self.assertNotEqual(
             quantities.unique_id,
             results.unique_id,
@@ -5072,7 +5072,7 @@ class TestTranslate(unittest.TestCase):
         with the greatest unique specificity or the default edge if
         there is no unique match.
         """
-        quantities = QuantityIterator(
+        quantities = XQuantityIterator(
             '00000000-0000-0000-0000-000000000000',
             [
                 # Attributes {'foo': 'bar'} match 'edge 1' ([foo="bar"])

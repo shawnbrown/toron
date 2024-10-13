@@ -775,7 +775,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
         return hash((self.__class__, self._bytes))
 
 
-class QuantityIterator(object):
+class XQuantityIterator(object):
     """An iterator to temporarily store disaggregated quantity data.
 
     When consumed, the iterator returns reaggregated results sorted
@@ -796,7 +796,7 @@ class QuantityIterator(object):
             (2, {'key1': 'val1', 'key2': 'val2'}, 50.0),
             ...
         ]
-        iterator = QuantityIterator(unique_id, data)
+        iterator = XQuantityIterator(unique_id, data)
 
     The keyword-only argument '_attribute_keys' is intended for
     internal use but can be provided directly::
@@ -808,7 +808,7 @@ class QuantityIterator(object):
             (4, {'key4': 'val4'}, 71.0),
             ...
         ]
-        iterator = QuantityIterator(
+        iterator = XQuantityIterator(
             unique_id,
             data,
             _attribute_keys={'key1', 'key2', 'key3, 'key4'},

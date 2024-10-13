@@ -34,7 +34,7 @@ from ._utils import (
 from .data_models import (
     Index,
     Attribute,
-    QuantityIterator2,
+    QuantityIterator,
 )
 from .data_service import (
     find_crosswalks_by_node_reference,
@@ -102,7 +102,7 @@ def load_mapping(
 
 
 def _translate(
-    quantity_iterator: QuantityIterator2, node: Node
+    quantity_iterator: QuantityIterator, node: Node
 ) -> Iterator[Tuple[Index, Attribute, float]]:
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
@@ -159,7 +159,7 @@ def _translate(
                 yield (new_index, attribute, new_quantity_value)
 
 
-def translate(quantity_iterator: QuantityIterator2, node: Node):
+def translate(quantity_iterator: QuantityIterator, node: Node):
     """Translate quantities to the index of the target *node*."""
     with node._managed_cursor() as cursor:
         property_repo = node._dal.PropertyRepository(cursor)
@@ -171,7 +171,7 @@ def translate(quantity_iterator: QuantityIterator2, node: Node):
         col_manager = node._dal.ColumnManager(cursor)
         label_names = col_manager.get_columns()
 
-    new_quantity_iter = QuantityIterator2(
+    new_quantity_iter = QuantityIterator(
         unique_id=unique_id,
         index_hash=index_hash,
         data=_translate(quantity_iterator, node),

@@ -28,7 +28,7 @@ from toron.data_models import (
     Structure,
     WeightGroup,
     Attribute,
-    QuantityIterator2,
+    QuantityIterator,
 )
 from toron.node import Node
 
@@ -3710,10 +3710,10 @@ class TestNodeDisaggregate(unittest.TestCase):
         self.node = node
 
     def test_default_weight_group(self):
-        """Disaggregate to tabular format (uses QuantityIterator2)."""
+        """Disaggregate to tabular format (uses QuantityIterator)."""
         quant_iter = self.node.disaggregate()
 
-        self.assertIsInstance(quant_iter, QuantityIterator2)
+        self.assertIsInstance(quant_iter, QuantityIterator)
 
         self.assertEqual(quant_iter.unique_id, self.node.unique_id)
 

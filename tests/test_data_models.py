@@ -27,7 +27,7 @@ from toron.data_models import (
     Quantity, BaseQuantityRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
-    QuantityIterator2,
+    QuantityIterator,
 )
 
 
@@ -1193,9 +1193,9 @@ class PropertyRepositoryBaseTest(ABC):
 # Test Cases for Concrete Data Model Classes
 #######################################################################
 
-class TestQuantityIterator2(unittest.TestCase):
+class TestQuantityIterator(unittest.TestCase):
     def test_iterator_protocol(self):
-        iterator = QuantityIterator2(
+        iterator = QuantityIterator(
             unique_id='0000-00-00-00-000000',
             index_hash='00000000000000000000000000000000',
             data=iter([]),  # <- Empty iterable for testing.
@@ -1215,7 +1215,7 @@ class TestQuantityIterator2(unittest.TestCase):
         label_names = ('x', 'y')
         attribute_keys = ('a',)
 
-        iterator = QuantityIterator2(
+        iterator = QuantityIterator(
             unique_id=unique_id,
             index_hash=index_hash,
             data=data,
@@ -1249,7 +1249,7 @@ class TestQuantityIterator2(unittest.TestCase):
 
     def test_formatted_output(self):
         """Basic iteration should yield flattened, CSV-like rows."""
-        iterator = QuantityIterator2(
+        iterator = QuantityIterator(
             unique_id='0000-00-00-00-000000',
             index_hash='00000000000000000000000000000000',
             data=[

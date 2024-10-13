@@ -14,7 +14,7 @@ from toron._utils import (
 from toron.data_models import (
     Index,
     Attribute,
-    QuantityIterator2,
+    QuantityIterator,
 )
 from toron.graph import (
     load_mapping,
@@ -317,7 +317,7 @@ class TestTranslate(unittest.TestCase):
         )
 
     def test_translate_generator(self):
-        quantities = QuantityIterator2(
+        quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
             data=[(Index(1, 'aaa'), Attribute(1, {'foo': 'bar'}), 100),
@@ -345,7 +345,7 @@ class TestTranslate(unittest.TestCase):
         )
 
     def test_simple_case(self):
-        quantities = QuantityIterator2(
+        quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
             data=[(Index(1, 'aaa'), Attribute(1, {'foo': 'bar'}), 100),
@@ -359,7 +359,7 @@ class TestTranslate(unittest.TestCase):
 
         new_quantities = translate(quantities, self.node)
 
-        self.assertIsInstance(new_quantities, QuantityIterator2)
+        self.assertIsInstance(new_quantities, QuantityIterator)
         self.assertEqual(
             new_quantities.columns,
             ('A', 'B', 'C', 'foo', 'quantity_value'),
@@ -400,7 +400,7 @@ class TestTranslate(unittest.TestCase):
         with the greatest unique specificity or the default edge if
         there is no unique match.
         """
-        quantities = QuantityIterator2(
+        quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
             data=[

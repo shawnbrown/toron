@@ -887,7 +887,7 @@ class BasePropertyRepository(ABC):
             self.update(key, value)
 
 
-class QuantityIterator2(object):
+class QuantityIterator(object):
     """An iterator for disaggregated quantity data."""
     def __init__(
         self,

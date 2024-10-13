@@ -62,7 +62,7 @@ from ._utils import (
     make_hash,
     eagerly_initialize,
     NOVALUE,
-    QuantityIterator,
+    XQuantityIterator,
 )
 from ._schema import BitFlags2
 
@@ -3145,7 +3145,7 @@ class DataAccessLayer(object):
 
     @staticmethod
     def _translate_generator(
-        cursor: sqlite3.Cursor, data: QuantityIterator
+        cursor: sqlite3.Cursor, data: XQuantityIterator
     ) -> Iterable[Tuple[int, Dict[str, str], float]]:
         """Translate incoming *data* to use index_id values from the
         database associated with the given *cursor*. Data records are
@@ -3157,7 +3157,7 @@ class DataAccessLayer(object):
         :param cursor: Cursor object for local node instance.
         :param data: Incoming data iterator.
         :return: A generator that yields tuple rows suitable for
-            constructing a new QuantityIterator instance.
+            constructing a new XQuantityIterator instance.
         """
         # Get default 'edge_id' for matching 'other_unique_id'.
         sql = """
@@ -3207,11 +3207,11 @@ class DataAccessLayer(object):
                     yield index_id, attributes, quantity_value * proportion
 
     def translate(
-        self, data: QuantityIterator,
-    ) -> QuantityIterator:
+        self, data: XQuantityIterator,
+    ) -> XQuantityIterator:
         """Compute crosswalk for incoming data and return result."""
         with self._transaction(method=None) as cur:
-            iterator = QuantityIterator(
+            iterator = XQuantityIterator(
                 self.unique_id,  # Use destination ID.
                 self._translate_generator(cur, data),  # Translate to destination.
                 _attribute_keys=data.attribute_keys,  # Reuse keys from source.
