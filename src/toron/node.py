@@ -1935,6 +1935,7 @@ class Node(object):
             property_repo = self._dal.PropertyRepository(cursor)
             unique_id = check_type(property_repo.get('unique_id'), str)
             index_hash = check_type(property_repo.get('index_hash'), str)
+            domain = get_domain(property_repo)
 
             col_manager = self._dal.ColumnManager(cursor)
             label_names = col_manager.get_columns()
@@ -1945,6 +1946,7 @@ class Node(object):
         quantity_iter = QuantityIterator(
             unique_id=unique_id,
             index_hash=index_hash,
+            domain=domain,
             data=self._disaggregate(),
             label_names=label_names,
             attribute_keys=attribute_keys,

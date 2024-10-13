@@ -893,12 +893,22 @@ class QuantityIterator(object):
         self,
         unique_id: str,
         index_hash: str,
+        domain: Dict[str, str],
         data: Iterable[Tuple[Index, Attribute, float]],
         label_names: Sequence[str],
         attribute_keys: Iterable[str],
     ):
         self._unique_id = unique_id
         self._index_hash = index_hash
+
+        if domain:
+            domain_names, domain_values = zip(*sorted(domain.items()))
+            self._domain_names = domain_names
+            self._domain_values = domain_values
+        else:
+            self._domain_names = tuple()
+            self._domain_values = tuple()
+
         self._data = iter(data)
         self._label_names = tuple(label_names)
         self._attribute_keys = tuple(attribute_keys)
@@ -910,6 +920,10 @@ class QuantityIterator(object):
     @property
     def index_hash(self) -> str:
         return self._index_hash
+
+    @property
+    def domain(self) -> Dict[str, str]:
+        return dict(zip(self._domain_names, self._domain_values))
 
     @property
     def data(self) -> Iterator[Tuple[Index, Attribute, float]]:
@@ -925,12 +939,12 @@ class QuantityIterator(object):
 
     @property
     def columns(self) -> Tuple[str, ...]:
-        return self._label_names + self._attribute_keys + ('quantity_value',)
+        return self._label_names + self._domain_names + self._attribute_keys + ('quantity_value',)
 
     def __next__(self) -> Tuple[Union[str, float, None], ...]:
         index, attr, quant = next(self._data)
         attr_vals = tuple(attr.value.get(x) for x in self._attribute_keys)
-        return index.labels + attr_vals + (quant,)
+        return index.labels + self._domain_values + attr_vals + (quant,)
 
     def __iter__(self):
         return self

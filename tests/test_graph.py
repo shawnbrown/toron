@@ -320,6 +320,7 @@ class TestTranslate(unittest.TestCase):
         quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
+            domain={},
             data=[(Index(1, 'aaa'), Attribute(1, {'foo': 'bar'}), 100),
                   (Index(2, 'bbb'), Attribute(1, {'foo': 'bar'}), 100),
                   (Index(3, 'ccc'), Attribute(1, {'foo': 'bar'}), 100),
@@ -348,6 +349,7 @@ class TestTranslate(unittest.TestCase):
         quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
+            domain={},
             data=[(Index(1, 'aaa'), Attribute(1, {'foo': 'bar'}), 100),
                   (Index(2, 'bbb'), Attribute(1, {'foo': 'bar'}), 100),
                   (Index(3, 'ccc'), Attribute(1, {'foo': 'bar'}), 100),
@@ -403,6 +405,7 @@ class TestTranslate(unittest.TestCase):
         quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
+            domain={},
             data=[
                 # Attributes {'foo': 'bar'} match 'edge 1' ([foo="bar"])
                 # and 'edge 2' ([foo]), but 'edge 1' is used because it

@@ -170,6 +170,7 @@ def translate(quantity_iterator: QuantityIterator, node: Node):
     new_quantity_iter = QuantityIterator(
         unique_id=new_unique_id,
         index_hash=new_index_hash,
+        domain=quantity_iterator.domain,
         data=_translate(quantity_iterator, node),
         label_names=new_label_names,
         attribute_keys=quantity_iterator.attribute_keys,

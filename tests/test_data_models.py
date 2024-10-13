@@ -1198,6 +1198,7 @@ class TestQuantityIterator(unittest.TestCase):
         iterator = QuantityIterator(
             unique_id='0000-00-00-00-000000',
             index_hash='00000000000000000000000000000000',
+            domain={},
             data=iter([]),  # <- Empty iterable for testing.
             label_names=['x', 'y'],
             attribute_keys=['a'],
@@ -1210,7 +1211,8 @@ class TestQuantityIterator(unittest.TestCase):
 
     def test_properties(self):
         unique_id = '0000-00-00-00-000000'
-        index_hash = '00000000000000000000000000000000',
+        index_hash = '00000000000000000000000000000000'
+        domain = {'foo': 'bar'}
         data = iter([])  # <- Empty iterable for testing.
         label_names = ('x', 'y')
         attribute_keys = ('a',)
@@ -1218,6 +1220,7 @@ class TestQuantityIterator(unittest.TestCase):
         iterator = QuantityIterator(
             unique_id=unique_id,
             index_hash=index_hash,
+            domain=domain,
             data=data,
             label_names=label_names,
             attribute_keys=attribute_keys,
@@ -1226,6 +1229,7 @@ class TestQuantityIterator(unittest.TestCase):
         # Check for expected getters.
         self.assertEqual(iterator.unique_id, unique_id)
         self.assertEqual(iterator.index_hash, index_hash)
+        self.assertEqual(iterator.domain, domain)
         self.assertIs(iterator.data, data, msg='should be exact same object')
         self.assertEqual(iterator.label_names, label_names)
         self.assertEqual(iterator.attribute_keys, attribute_keys)
@@ -1234,9 +1238,11 @@ class TestQuantityIterator(unittest.TestCase):
         with self.assertRaises(AttributeError):
             iterator.unique_id = '9999-99-99-99-999999'
 
-        # Check for read-only (no setters).
         with self.assertRaises(AttributeError):
             iterator.index_hash = '99999999999999999999999999999999'
+
+        with self.assertRaises(AttributeError):
+            iterator.domain = {'baz': 'qux'}
 
         with self.assertRaises(AttributeError):
             iterator.data = iter([])
@@ -1252,6 +1258,7 @@ class TestQuantityIterator(unittest.TestCase):
         iterator = QuantityIterator(
             unique_id='0000-00-00-00-000000',
             index_hash='00000000000000000000000000000000',
+            domain={'xxx': 'yyy'},
             data=[
                 (Index(1, 'FOO'), Attribute(1, {'a': 'baz'}), 50.0),
                 (Index(1, 'FOO'), Attribute(2, {'a': 'qux'}), 55.0),
@@ -1264,16 +1271,16 @@ class TestQuantityIterator(unittest.TestCase):
 
         self.assertEqual(
             iterator.columns,
-            ('x', 'a', 'quantity_value'),
+            ('x', 'xxx', 'a', 'quantity_value'),
             msg='`columns` should be usable as a header row',
         )
 
         self.assertEqual(
             list(iterator),
-            [('FOO', 'baz', 50.0),
-             ('FOO', 'qux', 55.0),
-             ('BAR', 'baz', 60.0),
-             ('BAR', 'qux', 65.0)],
+            [('FOO', 'yyy', 'baz', 50.0),
+             ('FOO', 'yyy', 'qux', 55.0),
+             ('BAR', 'yyy', 'baz', 60.0),
+             ('BAR', 'yyy', 'qux', 65.0)],
             msg='iteration should yield flattened rows',
         )
 
