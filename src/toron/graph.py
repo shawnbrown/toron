@@ -163,11 +163,8 @@ def translate(quantity_iterator: QuantityIterator, node: Node):
     """Translate quantities to the index of the target *node*."""
     with node._managed_cursor() as cursor:
         property_repo = node._dal.PropertyRepository(cursor)
-        unique_id = property_repo.get('unique_id')
-        index_hash = property_repo.get('index_hash')
-        if not isinstance(unique_id, str) or not isinstance(index_hash, str):
-            raise TypeError('unique_id and index_hash should both be str')
-
+        unique_id = check_type(property_repo.get('unique_id'), str)
+        index_hash = check_type(property_repo.get('index_hash'), str)
         col_manager = node._dal.ColumnManager(cursor)
         label_names = col_manager.get_columns()
 
