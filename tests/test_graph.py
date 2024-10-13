@@ -364,7 +364,7 @@ class TestTranslate(unittest.TestCase):
         self.assertIsInstance(new_quantities, QuantityIterator)
         self.assertEqual(
             new_quantities.columns,
-            ('A', 'B', 'C', 'foo', 'quantity_value'),
+            ('A', 'B', 'C', 'foo', 'value'),
         )
         self.assertNotEqual(
             new_quantities.unique_id,

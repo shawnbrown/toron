@@ -3719,7 +3719,7 @@ class TestNodeDisaggregate(unittest.TestCase):
 
         self.assertEqual(
             quant_iter.columns,
-            ('state', 'county', 'category', 'sex', 'quantity_value'),
+            ('state', 'county', 'category', 'sex', 'value'),
         )
 
         self.assertEqual(

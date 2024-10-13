@@ -1271,7 +1271,7 @@ class TestQuantityIterator(unittest.TestCase):
 
         self.assertEqual(
             iterator.columns,
-            ('x', 'xxx', 'a', 'quantity_value'),
+            ('x', 'xxx', 'a', 'value'),
             msg='`columns` should be usable as a header row',
         )
 

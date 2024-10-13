@@ -939,12 +939,12 @@ class QuantityIterator(object):
 
     @property
     def columns(self) -> Tuple[str, ...]:
-        return self._label_names + self._domain_names + self._attribute_keys + ('quantity_value',)
+        return self._label_names + self._domain_names + self._attribute_keys + ('value',)
 
     def __next__(self) -> Tuple[Union[str, float, None], ...]:
-        index, attr, quant = next(self._data)
+        index, attr, quantity = next(self._data)
         attr_vals = tuple(attr.value.get(x) for x in self._attribute_keys)
-        return index.labels + self._domain_values + attr_vals + (quant,)
+        return index.labels + self._domain_values + attr_vals + (quantity,)
 
     def __iter__(self):
         return self
