@@ -26,6 +26,7 @@ from ._utils import (
     ToronError,
     ToronWarning,
     wide_to_narrow,
+    wide_to_long,
 )
 
 ToronError.__module__ = 'toron'

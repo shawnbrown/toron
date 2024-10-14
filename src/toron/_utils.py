@@ -567,6 +567,152 @@ def eagerly_initialize(func_or_iter):
     raise Exception(msg)
 
 
+@overload
+def wide_to_long(
+    data: Iterable[Sequence],
+    cols_to_stack: Union[Iterable[Any], Any],
+    var_name: Any = 'variable',
+    val_name: Any = 'value',
+) -> Iterator[Tuple]:
+    ...
+@overload
+def wide_to_long(
+    data: Iterable[Mapping],
+    cols_to_stack: Union[Iterable[Hashable], Hashable],
+    var_name: Hashable = 'variable',
+    val_name: Hashable = 'value',
+) -> Iterator[Dict]:
+    ...
+@eagerly_initialize
+def wide_to_long(data, cols_to_stack, var_name='variable', val_name='value'):
+    """A generator function that takes an iterable of wide-format
+    records and yields long-format records.
+
+    Parameters
+    ----------
+
+    data:
+        Wide-format tabular data.
+    cols_to_stack:
+        Name of column(s) to stack.
+    var_name:
+        Name to use for the variable column.
+    value_name:
+        Name to use for the value column.
+
+    Returns
+    -------
+
+    Generator
+        Narrow-format records.
+
+    Examples
+    --------
+
+    .. code-block::
+
+        >>> from toron import wide_to_long
+        >>> wide_data = [
+        ...     ('A', 'B', 'C', 'D'),
+        ...     ('x', 10,  20,  30),
+        ...     ('y', 40,  50,  60),
+        ...     ('z', 70,  80,  90),
+        ... ]
+
+    Stack columns ``'B'``, ``'C'``, and ``'D'``:
+
+    .. code-block::
+
+        >>> long_data = wide_to_long(wide_data, ['B', 'C', 'D'])
+        >>> list(long_data)
+        [('A', 'variable', 'value'),
+         ('x', 'B', 10),
+         ('x', 'C', 20),
+         ('x', 'D', 30),
+         ('y', 'B', 40),
+         ('y', 'C', 50),
+         ('y', 'D', 60),
+         ('z', 'B', 70),
+         ('z', 'C', 80),
+         ('z', 'D', 90)]
+
+    Because column ``'A'`` (above) was left unstacked, its values are
+    repeated for each associated item.
+
+    When given an iterable of dictionaries, an iterable of dictionaries
+    is returned:
+
+    .. code-block::
+
+        >>> from toron import wide_to_long
+        >>> wide_data = [
+        ...     {'A': 'x', 'B': 10, 'C': 20, 'D': 30},
+        ...     {'A': 'y', 'B': 40, 'C': 50, 'D': 60},
+        ...     {'A': 'z', 'B': 70, 'C': 80, 'D': 90},
+        ... ]
+        >>> long_data = wide_to_long(wide_data, ['B', 'C', 'D'])
+        >>> list(long_data)
+        [{'A': 'x', 'variable': 'B', 'value': 10},
+         {'A': 'x', 'variable': 'C', 'value': 20},
+         {'A': 'x', 'variable': 'D', 'value': 30},
+         {'A': 'y', 'variable': 'B', 'value': 40},
+         {'A': 'y', 'variable': 'C', 'value': 50},
+         {'A': 'y', 'variable': 'D', 'value': 60},
+         {'A': 'z', 'variable': 'B', 'value': 70},
+         {'A': 'z', 'variable': 'C', 'value': 80},
+         {'A': 'z', 'variable': 'D', 'value': 90}]
+    """
+    data = iter(data)
+    first_item = next(data)
+
+    if not isinstance(cols_to_stack, Iterable) \
+            or isinstance(cols_to_stack, str):
+        cols_to_stack = [cols_to_stack]
+
+    if isinstance(first_item, Sequence):
+        header = tuple(first_item)
+
+        if not all((col in header) for col in cols_to_stack):
+            missing = [repr(x) for x in cols_to_stack if (x not in header)]
+            raise ValueError(f'columns missing from data: {", ".join(missing)}')
+
+        cols_to_keep = tuple(x for x in header if x not in cols_to_stack)
+
+        # Yield header with variable and value columns.
+        yield cols_to_keep + (var_name, val_name)
+
+        # Yield rows with stacked values.
+        for row in data:
+            row_dict = dict(zip_longest(header, row))
+            vals_to_keep = tuple(row_dict.get(x) for x in cols_to_keep)
+            for col in cols_to_stack:
+                yield vals_to_keep + (col, row_dict.get(col))
+
+    elif isinstance(first_item, Mapping):
+        data = chain([first_item], data)  # Add first item back to `data`.
+
+        if not all((col in first_item) for col in cols_to_stack):
+            missing = [repr(x) for x in cols_to_stack if (x not in first_item)]
+            raise ValueError(f'columns missing from data: {", ".join(missing)}')
+
+        cols_to_keep = tuple(x for x in first_item if x not in cols_to_stack)
+
+        # Yield dictionary rows with stacked values.
+        for row_dict in data:
+            items_to_keep = {x: row_dict.get(x) for x in cols_to_keep}
+            for col in cols_to_stack:
+                new_row_dict = items_to_keep.copy()
+                new_row_dict[var_name] = col
+                new_row_dict[val_name] = row_dict.get(col)
+                yield new_row_dict
+
+    else:
+        raise TypeError(
+            f'iterable must contain sequences or mappings, '
+            f'got {first_item.__class__.__qualname__}'
+        )
+
+
 # Define and instantiate NOVALUE inline (keeps class reference out of scope).
 NOVALUE = type('NoValueType', (object,), {
     '__doc__': """

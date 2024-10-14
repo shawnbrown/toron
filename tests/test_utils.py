@@ -12,6 +12,7 @@ from toron._utils import (
     verify_columns_set,
     make_readerlike,
     make_dictreaderlike,
+    wide_to_long,
     wide_to_narrow,
     make_hash,
     SequenceHash,
@@ -290,6 +291,153 @@ class TestMakeDictReaderLike(unittest.TestCase):
         regex = "rows must be sequences, got 'set': {.+}"
         with self.assertRaisesRegex(TypeError, regex):
             result = make_dictreaderlike(data)
+
+
+class TestWideToLong(unittest.TestCase):
+    maxDiff = None
+
+    def test_multiple_value_vars(self):
+        result = wide_to_long(
+            data=[('state', 'county',   'TOT_MALE', 'TOT_FEMALE'),
+                  ('OH',    'BUTLER',   180140,     187990),
+                  ('OH',    'FRANKLIN', 566499,     596915)],
+            cols_to_stack=['TOT_MALE', 'TOT_FEMALE'],
+        )
+
+        self.assertEqual(
+            list(result),
+            [('state', 'county',   'variable',   'value'),
+             ('OH',    'BUTLER',   'TOT_MALE',   180140),
+             ('OH',    'BUTLER',   'TOT_FEMALE', 187990),
+             ('OH',    'FRANKLIN', 'TOT_MALE',   566499),
+             ('OH',    'FRANKLIN', 'TOT_FEMALE', 596915)],
+        )
+
+    def test_single_value_var(self):
+        result = wide_to_long(
+            data=[('state', 'county',   'TOT_ALL'),
+                  ('OH',    'BUTLER',   368130),
+                  ('OH',    'FRANKLIN', 1163414)],
+            cols_to_stack=['TOT_ALL'],
+        )
+
+        self.assertEqual(
+            list(result),
+            [('state', 'county',   'variable', 'value'),
+             ('OH',    'BUTLER',   'TOT_ALL',  368130),
+             ('OH',    'FRANKLIN', 'TOT_ALL',  1163414)],
+        )
+
+    def test_explicit_var_name(self):
+        result = wide_to_long(
+            data=[('state', 'county',   'TOT_MALE', 'TOT_FEMALE'),
+                  ('OH',    'BUTLER',   180140,     187990),
+                  ('OH',    'FRANKLIN', 566499,     596915)],
+            cols_to_stack=['TOT_MALE', 'TOT_FEMALE'],
+            var_name='census',
+        )
+
+        self.assertEqual(
+            list(result),
+            [('state', 'county',   'census',     'value'),  # <- Uses 'census' as variable name.
+             ('OH',    'BUTLER',   'TOT_MALE',   180140),
+             ('OH',    'BUTLER',   'TOT_FEMALE', 187990),
+             ('OH',    'FRANKLIN', 'TOT_MALE',   566499),
+             ('OH',    'FRANKLIN', 'TOT_FEMALE', 596915)],
+        )
+
+    def test_explicit_value_name(self):
+        result = wide_to_long(
+            data=[('state', 'county',   'TOT_MALE', 'TOT_FEMALE'),
+                  ('OH',    'BUTLER',   180140,     187990),
+                  ('OH',    'FRANKLIN', 566499,     596915)],
+            cols_to_stack=['TOT_MALE', 'TOT_FEMALE'],
+            val_name='count',
+        )
+
+        self.assertEqual(
+            list(result),
+            [('state', 'county',   'variable',   'count'),  # <- Uses 'count' as value name.
+             ('OH',    'BUTLER',   'TOT_MALE',   180140),
+             ('OH',    'BUTLER',   'TOT_FEMALE', 187990),
+             ('OH',    'FRANKLIN', 'TOT_MALE',   566499),
+             ('OH',    'FRANKLIN', 'TOT_FEMALE', 596915)],
+        )
+
+    def test_row_dicts(self):
+        result = wide_to_long(
+            data=[{'state': 'OH', 'county': 'BUTLER',   'TOT_MALE': 180140, 'TOT_FEMALE': 187990},
+                  {'state': 'OH', 'county': 'FRANKLIN', 'TOT_MALE': 566499, 'TOT_FEMALE': 596915}],
+            cols_to_stack=['TOT_MALE', 'TOT_FEMALE'],
+        )
+
+        self.assertEqual(
+            list(result),
+            [{'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_MALE',   'value': 180140},
+             {'state': 'OH', 'county': 'BUTLER',   'variable': 'TOT_FEMALE', 'value': 187990},
+             {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_MALE',   'value': 566499},
+             {'state': 'OH', 'county': 'FRANKLIN', 'variable': 'TOT_FEMALE', 'value': 596915}],
+        )
+
+    def test_non_mapping_non_sequence(self):
+        """Given *data* must contain dict-rows or sequence-rows."""
+        list_of_sets = [
+            {'state', 'county',   'TOT_MALE', 'TOT_FEMALE'},
+            {'OH',    'BUTLER',   180140,     187990},
+            {'OH',    'FRANKLIN', 566499,     596915},
+        ]
+
+        with self.assertRaises(TypeError):
+            generator = wide_to_long(
+                data=list_of_sets,
+                cols_to_stack=['TOT_MALE', 'TOT_FEMALE'],
+            )
+
+    def test_empty_values(self):
+        result = wide_to_long(
+            data=[('state', 'county',   'TOT_MALE', 'TOT_FEMALE', 'OTHER'),
+                  ('OH',    'BUTLER',   180140,     187990,        None),  # <- Omits None.
+                  ('OH',    'FRANKLIN', 566499,     596915,        ''),    # <- Omits empty string.
+                  ('OH',    '-',        None,       '',            0),     # <- Retains zero.
+                  ('OH',    None,       123,        123,           123)],  # <- Retains None if in kept column.
+            cols_to_stack=['TOT_MALE', 'TOT_FEMALE', 'OTHER'],
+        )
+
+        self.assertEqual(
+            list(result),
+            [('state', 'county',   'variable',   'value'),
+             ('OH',    'BUTLER',   'TOT_MALE',   180140),
+             ('OH',    'BUTLER',   'TOT_FEMALE', 187990),
+             ('OH',    'BUTLER',   'OTHER',      None),  # <- Omitted.
+             ('OH',    'FRANKLIN', 'TOT_MALE',   566499),
+             ('OH',    'FRANKLIN', 'TOT_FEMALE', 596915),
+             ('OH',    'FRANKLIN', 'OTHER',      ''),    # <- Omitted.
+             ('OH',    '-',        'TOT_MALE',   None),  # <- Omitted.
+             ('OH',    '-',        'TOT_FEMALE', ''),    # <- Omitted.
+             ('OH',    '-',        'OTHER',      0),
+             ('OH',    None,       'TOT_MALE',   123),
+             ('OH',    None,       'TOT_FEMALE', 123),
+             ('OH',    None,       'OTHER',      123)],
+        )
+
+    def test_missing_cols_to_stack(self):
+        data = [
+            ('state', 'county',   'TOT_MALE', 'TOT_FEMALE'),
+            ('OH',    'BUTLER',   180140,     187990),
+            ('OH',    'FRANKLIN', 566499,     596915),
+        ]
+        regex = ("columns missing from data: 'BAD_VAR'")
+        with self.assertRaisesRegex(ValueError, regex):
+            generator = wide_to_long(data, ['TOT_MALE', 'TOT_FEMALE', 'BAD_VAR'])
+
+    def test_missing_cols_to_stack_row_dicts(self):
+        data = [
+            {'state': 'OH', 'county': 'BUTLER', 'TOT_MALE': 180140, 'TOT_FEMALE': 187990},
+            {'state': 'OH', 'county': 'FRANKLIN', 'TOT_MALE': 566499, 'TOT_FEMALE': 596915},
+        ]
+        regex = ("columns missing from data: 'BAD_VAR'")
+        with self.assertRaisesRegex(ValueError, regex):
+            generator = wide_to_long(data, ['TOT_MALE', 'TOT_FEMALE', 'BAD_VAR'])
 
 
 class TestWideToNarrow(unittest.TestCase):
