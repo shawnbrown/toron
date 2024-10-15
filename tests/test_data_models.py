@@ -578,24 +578,24 @@ class AttributeRepositoryBaseTest(ABC):
         )
 
     def test_get_by_value_add_if_missing(self):
-        self.repository.add({'foo': 'A'})  # <- Create attribute_id 1.
+        self.repository.add({'foo': 'A'})  # <- Create attribute_group_id 1.
 
         self.assertEqual(
             self.repository.get_by_value_add_if_missing({'foo': 'A'}),
             AttributeGroup(1, {'foo': 'A'}),
-            msg='should return existing attribute_id 1',
+            msg='should return existing attribute_group_id 1',
         )
 
         self.assertEqual(
-            self.repository.get_by_value_add_if_missing({'foo': 'B'}),  # <- Creates attribute_id 2.
+            self.repository.get_by_value_add_if_missing({'foo': 'B'}),  # <- Creates attribute_group_id 2.
             AttributeGroup(2, {'foo': 'B'}),
-            msg='should create and return record with attribute_id 2'
+            msg='should create and return record with attribute_group_id 2'
         )
 
         self.assertEqual(
-            self.repository.get_by_value_add_if_missing({'foo': 'B'}),  # <- Gets existing attribute_id 2.
+            self.repository.get_by_value_add_if_missing({'foo': 'B'}),  # <- Gets existing attribute_group_id 2.
             AttributeGroup(2, {'foo': 'B'}),
-            msg='should return existing record with attribute_id 2'
+            msg='should return existing record with attribute_group_id 2'
         )
 
     def test_find_all(self):
@@ -705,8 +705,8 @@ class QuantityRepositoryBaseTest(ABC):
         location_repo.add('bar', 'quux')  # Add location_id 2
 
         attribute_repo = self.dal.AttributeRepository(cursor)
-        attribute_repo.add({'aaa': 'one'})  # Add attribute_id 1
-        attribute_repo.add({'bbb': 'two'})  # Add attribute_id 2
+        attribute_repo.add({'aaa': 'one'})  # Add attribute_group_id 1
+        attribute_repo.add({'bbb': 'two'})  # Add attribute_group_id 2
 
         # Create QuantityRepository for testing.
         self.repository = self.dal.QuantityRepository(cursor)

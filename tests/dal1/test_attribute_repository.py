@@ -81,11 +81,11 @@ class TestAttributeRepository(unittest.TestCase):
         ]
         self.assertRecords(expected)
 
-        repository.update(AttributeGroup(3, {'yyy': 'Y'}))  # No attribute_id=3.
+        repository.update(AttributeGroup(3, {'yyy': 'Y'}))  # No attribute_group_id=3.
 
         self.assertRecords(
             expected,
-            msg='should be unchanged, there is no attribute_id=3',
+            msg='should be unchanged, there is no attribute_group_id=3',
         )
 
     def test_delete(self):
@@ -101,5 +101,5 @@ class TestAttributeRepository(unittest.TestCase):
         repository.delete(2)
         self.assertRecords([])
 
-        repository.delete(3)  # No attribute_id=3, should pass without error.
+        repository.delete(3)  # No attribute_group_id=3, should pass without error.
         self.assertRecords([])
