@@ -33,7 +33,7 @@ from ._utils import (
 )
 from .data_models import (
     Index,
-    Attribute,
+    AttributeGroup,
     QuantityIterator,
 )
 from .data_service import (
@@ -103,7 +103,7 @@ def load_mapping(
 
 def _translate(
     quantity_iterator: QuantityIterator, node: Node
-) -> Iterator[Tuple[Index, Attribute, float]]:
+) -> Iterator[Tuple[Index, AttributeGroup, float]]:
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
         crosswalk_repo = node._dal.CrosswalkRepository(cursor)

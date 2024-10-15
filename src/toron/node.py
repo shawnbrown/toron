@@ -29,7 +29,7 @@ from .categories import (
 )
 from .data_models import (
     Index,
-    Attribute,
+    AttributeGroup,
     WeightGroup,
     BaseCrosswalkRepository,
     Crosswalk,
@@ -1862,7 +1862,7 @@ class Node(object):
                 f'bad domain values: {", ".join(items)}'
             )
 
-    def _disaggregate(self) -> Iterator[Tuple[Index, Attribute, float]]:
+    def _disaggregate(self) -> Iterator[Tuple[Index, AttributeGroup, float]]:
         """Generator to yield index, attribute, and quantity tuples."""
         with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4), \
                 self._managed_transaction(cur1):

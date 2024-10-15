@@ -5,7 +5,7 @@ import unittest
 from collections import OrderedDict
 
 from toron.dal1.data_connector import DataConnector
-from toron.data_models import Attribute
+from toron.data_models import AttributeGroup
 from toron.dal1.repositories import AttributeRepository
 
 
@@ -62,8 +62,8 @@ class TestAttributeRepository(unittest.TestCase):
         """)
         repository = AttributeRepository(self.cursor)
 
-        self.assertEqual(repository.get(1), Attribute(1, {'aaa': 'A', 'bbb': 'B'}))
-        self.assertEqual(repository.get(2), Attribute(2, {'aaa': 'A', 'ccc': 'C'}))
+        self.assertEqual(repository.get(1), AttributeGroup(1, {'aaa': 'A', 'bbb': 'B'}))
+        self.assertEqual(repository.get(2), AttributeGroup(2, {'aaa': 'A', 'ccc': 'C'}))
         self.assertIsNone(repository.get(3))
 
     def test_update(self):
@@ -73,7 +73,7 @@ class TestAttributeRepository(unittest.TestCase):
         """)
         repository = AttributeRepository(self.cursor)
 
-        repository.update(Attribute(1, {'xxx': 'X', 'zzz': 'Z'}))
+        repository.update(AttributeGroup(1, {'xxx': 'X', 'zzz': 'Z'}))
 
         expected = [
             (1, {'xxx': 'X', 'zzz': 'Z'}),  # <- Value modified.
@@ -81,7 +81,7 @@ class TestAttributeRepository(unittest.TestCase):
         ]
         self.assertRecords(expected)
 
-        repository.update(Attribute(3, {'yyy': 'Y'}))  # No attribute_id=3.
+        repository.update(AttributeGroup(3, {'yyy': 'Y'}))  # No attribute_id=3.
 
         self.assertRecords(
             expected,

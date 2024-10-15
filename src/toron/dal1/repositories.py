@@ -26,7 +26,7 @@ from ..data_models import (
     Structure, BaseStructureRepository,
     WeightGroup, BaseWeightGroupRepository,
     Weight, BaseWeightRepository,
-    Attribute, BaseAttributeRepository,
+    AttributeGroup, BaseAttributeRepository,
     Quantity, BaseQuantityRepository,
     Crosswalk, BaseCrosswalkRepository,
     Relation, BaseRelationRepository,
@@ -434,17 +434,17 @@ class AttributeRepository(BaseAttributeRepository):
         sql = 'INSERT INTO main.attribute (attribute_value) VALUES (?)'
         self._cursor.execute(sql, (json_dumps(value, sort_keys=True),))
 
-    def get(self, id: int) -> Optional[Attribute]:
+    def get(self, id: int) -> Optional[AttributeGroup]:
         """Get a record from the repository."""
         self._cursor.execute(
             'SELECT * FROM main.attribute WHERE attribute_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record:
-            return Attribute(*record)
+            return AttributeGroup(*record)
         return None
 
-    def update(self, record: Attribute) -> None:
+    def update(self, record: AttributeGroup) -> None:
         """Update a record in the repository."""
         value = record.value
 
@@ -463,7 +463,7 @@ class AttributeRepository(BaseAttributeRepository):
             'DELETE FROM main.attribute WHERE attribute_id=?', (id,)
         )
 
-    def get_by_value(self, value: Dict[str, str]) -> Optional[Attribute]:
+    def get_by_value(self, value: Dict[str, str]) -> Optional[AttributeGroup]:
         """Get the record matching the given value."""
         self._cursor.execute(
             'SELECT * FROM main.attribute WHERE attribute_value=?',
@@ -471,16 +471,16 @@ class AttributeRepository(BaseAttributeRepository):
         )
         record = self._cursor.fetchone()
         if record:
-            return Attribute(*record)
+            return AttributeGroup(*record)
         return None
 
-    def find_all(self) -> Iterable[Attribute]:
+    def find_all(self) -> Iterable[AttributeGroup]:
         """Get all records in the repository."""
         self._cursor.execute('SELECT * FROM main.attribute')
-        return (Attribute(*record) for record in self._cursor)
+        return (AttributeGroup(*record) for record in self._cursor)
 
     if SQLITE_ENABLE_JSON1:
-        def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
+        def find_by_criteria(self, **criteria) -> Iterable[AttributeGroup]:
             """Find records matching given criteria values."""
             # If one or more keys is not a simple alpha-numeric string,
             # then call the unoptimized parent class' method instead.
@@ -500,7 +500,7 @@ class AttributeRepository(BaseAttributeRepository):
             flattened_items = list(chain.from_iterable(formatted_items))
 
             self._cursor.execute(sql, flattened_items)
-            return (Attribute(*record) for record in self._cursor)
+            return (AttributeGroup(*record) for record in self._cursor)
 
         def get_all_attribute_names(self) -> List[str]:
             """Return a sorted list of distinct attribute names."""

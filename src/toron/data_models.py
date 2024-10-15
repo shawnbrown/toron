@@ -553,8 +553,8 @@ class BaseWeightRepository(ABC):
 
 
 @dataclass
-class Attribute(object):
-    """Attribute record."""
+class AttributeGroup(object):
+    """AttributeGroup record."""
     id: int
     value: Dict[str, str]
 
@@ -569,11 +569,11 @@ class BaseAttributeRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Attribute]:
+    def get(self, id: int) -> Optional[AttributeGroup]:
         """Get a record from the repository."""
 
     @abstractmethod
-    def update(self, record: Attribute) -> None:
+    def update(self, record: AttributeGroup) -> None:
         """Update a record in the repository."""
 
     @abstractmethod
@@ -581,21 +581,21 @@ class BaseAttributeRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
-    def get_by_value(self, value: Dict[str, str]) -> Optional[Attribute]:
+    def get_by_value(self, value: Dict[str, str]) -> Optional[AttributeGroup]:
         """Get the record matching the given value."""
 
     @abstractmethod
-    def find_all(self) -> Iterable[Attribute]:
+    def find_all(self) -> Iterable[AttributeGroup]:
         """Get all records in the repository."""
 
-    def find_by_criteria(self, **criteria) -> Iterable[Attribute]:
+    def find_by_criteria(self, **criteria) -> Iterable[AttributeGroup]:
         """Find records matching given criteria values."""
         for attribute in self.find_all():
             attr_val = attribute.value
             if all(attr_val.get(k) == v for k, v in criteria.items()):
                 yield attribute
 
-    def get_by_value_add_if_missing(self, value: Dict[str, str]) -> Attribute:
+    def get_by_value_add_if_missing(self, value: Dict[str, str]) -> AttributeGroup:
         """Return the attribute that matches given value. If there is
         no matching attribute, a new record is added and then returned.
         """
@@ -894,7 +894,7 @@ class QuantityIterator(object):
         unique_id: str,
         index_hash: str,
         domain: Dict[str, str],
-        data: Iterable[Tuple[Index, Attribute, float]],
+        data: Iterable[Tuple[Index, AttributeGroup, float]],
         label_names: Sequence[str],
         attribute_keys: Iterable[str],
     ):
@@ -926,7 +926,7 @@ class QuantityIterator(object):
         return dict(zip(self._domain_names, self._domain_values))
 
     @property
-    def data(self) -> Iterator[Tuple[Index, Attribute, float]]:
+    def data(self) -> Iterator[Tuple[Index, AttributeGroup, float]]:
         return self._data
 
     @property

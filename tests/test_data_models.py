@@ -23,7 +23,7 @@ from toron.data_models import (
     Location, BaseLocationRepository,
     Structure,
     Weight, BaseWeightRepository,
-    Attribute, BaseAttributeRepository,
+    AttributeGroup, BaseAttributeRepository,
     Quantity, BaseQuantityRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
@@ -540,10 +540,10 @@ class AttributeRepositoryBaseTest(ABC):
         repository = self.repository
 
         repository.add({'foo': 'A'})
-        self.assertEqual(repository.get(1), Attribute(1, {'foo': 'A'}))
+        self.assertEqual(repository.get(1), AttributeGroup(1, {'foo': 'A'}))
 
-        repository.update(Attribute(1, {'foo': 'B'}))
-        self.assertEqual(repository.get(1), Attribute(1, {'foo': 'B'}))
+        repository.update(AttributeGroup(1, {'foo': 'B'}))
+        self.assertEqual(repository.get(1), AttributeGroup(1, {'foo': 'B'}))
 
         repository.delete(1)
         self.assertIsNone(repository.get(1))
@@ -574,7 +574,7 @@ class AttributeRepositoryBaseTest(ABC):
         self.repository.add({'foo': 'A'})
         self.assertEqual(
             self.repository.get_by_value({'foo': 'A'}),
-            Attribute(1, {'foo': 'A'}),
+            AttributeGroup(1, {'foo': 'A'}),
         )
 
     def test_get_by_value_add_if_missing(self):
@@ -582,19 +582,19 @@ class AttributeRepositoryBaseTest(ABC):
 
         self.assertEqual(
             self.repository.get_by_value_add_if_missing({'foo': 'A'}),
-            Attribute(1, {'foo': 'A'}),
+            AttributeGroup(1, {'foo': 'A'}),
             msg='should return existing attribute_id 1',
         )
 
         self.assertEqual(
             self.repository.get_by_value_add_if_missing({'foo': 'B'}),  # <- Creates attribute_id 2.
-            Attribute(2, {'foo': 'B'}),
+            AttributeGroup(2, {'foo': 'B'}),
             msg='should create and return record with attribute_id 2'
         )
 
         self.assertEqual(
             self.repository.get_by_value_add_if_missing({'foo': 'B'}),  # <- Gets existing attribute_id 2.
-            Attribute(2, {'foo': 'B'}),
+            AttributeGroup(2, {'foo': 'B'}),
             msg='should return existing record with attribute_id 2'
         )
 
@@ -605,9 +605,9 @@ class AttributeRepositoryBaseTest(ABC):
 
         self.assertEqual(
             list(self.repository.find_all()),
-            [Attribute(id=1, value={'A': 'foo'}),
-             Attribute(id=2, value={'A': 'bar'}),
-             Attribute(id=3, value={'A': 'baz'})]
+            [AttributeGroup(id=1, value={'A': 'foo'}),
+             AttributeGroup(id=2, value={'A': 'bar'}),
+             AttributeGroup(id=3, value={'A': 'baz'})]
         )
 
     def _helper_find_by_criteria(self, method_under_test):
@@ -619,24 +619,24 @@ class AttributeRepositoryBaseTest(ABC):
 
         self.assertEqual(
             list(method_under_test(A='foo')),
-            [Attribute(id=1, value={'A': 'foo'}),
-             Attribute(id=2, value={'A': 'foo', 'B': 'qux'})],
+            [AttributeGroup(id=1, value={'A': 'foo'}),
+             AttributeGroup(id=2, value={'A': 'foo', 'B': 'qux'})],
         )
 
         self.assertEqual(
             list(method_under_test(B='qux')),
-            [Attribute(id=2, value={'A': 'foo', 'B': 'qux'}),
-             Attribute(id=3, value={'A': 'bar', 'B': 'qux'})],
+            [AttributeGroup(id=2, value={'A': 'foo', 'B': 'qux'}),
+             AttributeGroup(id=3, value={'A': 'bar', 'B': 'qux'})],
         )
 
         self.assertEqual(
             list(method_under_test(A='foo', B='qux')),
-            [Attribute(id=2, value={'A': 'foo', 'B': 'qux'})],
+            [AttributeGroup(id=2, value={'A': 'foo', 'B': 'qux'})],
         )
 
         self.assertEqual(
             list(method_under_test(A='foo', B=None)),
-            [Attribute(id=1, value={'A': 'foo'})],
+            [AttributeGroup(id=1, value={'A': 'foo'})],
             msg='criteria B=None should match records without B',
         )
 
@@ -657,7 +657,7 @@ class AttributeRepositoryBaseTest(ABC):
         self.repository.add(ugly_attr)
         self.assertEqual(
             list(method_under_test(**ugly_attr)),
-            [Attribute(id=4, value=ugly_attr)],
+            [AttributeGroup(id=4, value=ugly_attr)],
             msg='special characters should survive round-trip matching',
         )
 
@@ -1260,10 +1260,10 @@ class TestQuantityIterator(unittest.TestCase):
             index_hash='00000000000000000000000000000000',
             domain={'xxx': 'yyy'},
             data=[
-                (Index(1, 'FOO'), Attribute(1, {'a': 'baz'}), 50.0),
-                (Index(1, 'FOO'), Attribute(2, {'a': 'qux'}), 55.0),
-                (Index(2, 'BAR'), Attribute(1, {'a': 'baz'}), 60.0),
-                (Index(2, 'BAR'), Attribute(2, {'a': 'qux'}), 65.0),
+                (Index(1, 'FOO'), AttributeGroup(1, {'a': 'baz'}), 50.0),
+                (Index(1, 'FOO'), AttributeGroup(2, {'a': 'qux'}), 55.0),
+                (Index(2, 'BAR'), AttributeGroup(1, {'a': 'baz'}), 60.0),
+                (Index(2, 'BAR'), AttributeGroup(2, {'a': 'qux'}), 65.0),
             ],
             label_names=['x'],
             attribute_keys=['a'],
