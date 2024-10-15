@@ -135,13 +135,13 @@ def delete_index_record(
 
 def get_quantity_value_sum(
     location_id: int,
-    attribute_id: int,
+    attribute_group_id: int,
     quantity_repo: BaseQuantityRepository,
 ) -> Optional[float]:
-    """Return sum of quantities matching location_id and attribute_id."""
+    """Return sum of quantities matching location_id and attribute_group_id."""
     quantities = quantity_repo.find_by_ids(
         location_id=location_id,
-        attribute_id=attribute_id,
+        attribute_group_id=attribute_group_id,
     )
     quantity = next(quantities, None)
     if quantity is None:

@@ -103,14 +103,14 @@ class TestGetQuantityValueSum(unittest.TestCase):
         location_repo.add('bar', 'quux')  # Add location_id 2
 
         attribute_repo = dal.AttributeRepository(cursor)
-        attribute_repo.add({'aaa': 'one'})  # Add attribute_id 1
-        attribute_repo.add({'bbb': 'two'})  # Add attribute_id 2
+        attribute_repo.add({'aaa': 'one'})  # Add attribute_group_id 1
+        attribute_repo.add({'bbb': 'two'})  # Add attribute_group_id 2
 
         quantity_repo = dal.QuantityRepository(cursor)
-        quantity_repo.add(location_id=1, attribute_id=1, value=20.0)  # Add quantity_id 1
-        quantity_repo.add(location_id=1, attribute_id=2, value=0.0)   # Add quantity_id 2
-        quantity_repo.add(location_id=2, attribute_id=2, value=10.0)  # Add quantity_id 3
-        quantity_repo.add(location_id=2, attribute_id=2, value=35.0)  # Add quantity_id 4
+        quantity_repo.add(location_id=1, attribute_group_id=1, value=20.0)  # Add quantity_id 1
+        quantity_repo.add(location_id=1, attribute_group_id=2, value=0.0)   # Add quantity_id 2
+        quantity_repo.add(location_id=2, attribute_group_id=2, value=10.0)  # Add quantity_id 3
+        quantity_repo.add(location_id=2, attribute_group_id=2, value=35.0)  # Add quantity_id 4
 
         self.quantity_repo = quantity_repo
 

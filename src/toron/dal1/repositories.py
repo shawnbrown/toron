@@ -519,13 +519,13 @@ class QuantityRepository(BaseQuantityRepository):
         """Initialize a new repository instance."""
         self._cursor = cursor
 
-    def add(self, location_id: int, attribute_id: int, value: float) -> None:
+    def add(self, location_id: int, attribute_group_id: int, value: float) -> None:
         """Add a record to the repository."""
         sql = """
             INSERT INTO main.quantity (_location_id, attribute_group_id, quantity_value)
             VALUES (?, ?, ?)
         """
-        self._cursor.execute(sql, (location_id, attribute_id, value))
+        self._cursor.execute(sql, (location_id, attribute_group_id, value))
 
     def get(self, id: int) -> Optional[Quantity]:
         """Get a record from the repository."""
@@ -544,7 +544,7 @@ class QuantityRepository(BaseQuantityRepository):
             UPDATE main.quantity
             SET
                 _location_id=:location_id,
-                attribute_group_id=:attribute_id,
+                attribute_group_id=:attribute_group_id,
                 quantity_value=:value
             WHERE quantity_id=:id
         """
@@ -570,20 +570,20 @@ class QuantityRepository(BaseQuantityRepository):
         self,
         *,
         location_id: Optional[int] = None,
-        attribute_id:  Optional[int] = None,
+        attribute_group_id:  Optional[int] = None,
     ) -> Iterator[Quantity]:
         """Find records with matching location and attribute ids."""
         criteria = []
         if location_id is not None:
             criteria.append('_location_id=:location_id')
-        if attribute_id is not None:
+        if attribute_group_id is not None:
             criteria.append('attribute_group_id=:attribute_group_id')
 
         if criteria:
             sql = f'SELECT * FROM main.quantity WHERE {" AND ".join(criteria)}'
             parameters = {
                 'location_id': location_id,
-                'attribute_group_id': attribute_id,
+                'attribute_group_id': attribute_group_id,
             }
             self._cursor.execute(sql, parameters)
 

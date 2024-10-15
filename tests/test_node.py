@@ -3578,18 +3578,18 @@ class TestNodeDisaggregateGenerator(unittest.TestCase):
             location_repo.add('IN', '')          # location_id 4
 
             attribute_repo = node._dal.AttributeRepository(cursor)
-            attribute_repo.add(value={'category': 'TOTAL', 'sex': 'MALE'})    # attribute_id 1
-            attribute_repo.add(value={'category': 'TOTAL', 'sex': 'FEMALE'})  # attribute_id 2
+            attribute_repo.add(value={'category': 'TOTAL', 'sex': 'MALE'})    # attribute_group_id 1
+            attribute_repo.add(value={'category': 'TOTAL', 'sex': 'FEMALE'})  # attribute_group_id 2
 
             quantity_repo = node._dal.QuantityRepository(cursor)
-            quantity_repo.add(location_id=1, attribute_id=1, value=187075)
-            quantity_repo.add(location_id=1, attribute_id=2, value=187075)
-            quantity_repo.add(location_id=2, attribute_id=1, value=668125)
-            quantity_repo.add(location_id=2, attribute_id=2, value=668125)
-            quantity_repo.add(location_id=3, attribute_id=1, value=1000)
-            quantity_repo.add(location_id=3, attribute_id=2, value=1000)
-            quantity_repo.add(location_id=4, attribute_id=1, value=73728)
-            quantity_repo.add(location_id=4, attribute_id=2, value=73728)
+            quantity_repo.add(location_id=1, attribute_group_id=1, value=187075)
+            quantity_repo.add(location_id=1, attribute_group_id=2, value=187075)
+            quantity_repo.add(location_id=2, attribute_group_id=1, value=668125)
+            quantity_repo.add(location_id=2, attribute_group_id=2, value=668125)
+            quantity_repo.add(location_id=3, attribute_group_id=1, value=1000)
+            quantity_repo.add(location_id=3, attribute_group_id=2, value=1000)
+            quantity_repo.add(location_id=4, attribute_group_id=1, value=73728)
+            quantity_repo.add(location_id=4, attribute_group_id=2, value=73728)
 
         self.node = node
 

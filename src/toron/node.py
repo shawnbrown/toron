@@ -1845,7 +1845,7 @@ class Node(object):
                 # Add quantity.
                 quantity_repo.add(
                     location_id=location.id,
-                    attribute_id=attribute_group.id,
+                    attribute_group_id=attribute_group.id,
                     value=row_dict[value],
                 )
                 counter['inserted'] += 1
@@ -1906,9 +1906,9 @@ class Node(object):
                     index_criteria = {k: v for k, v in zipped if v != ''}
 
                     for quantity in quantity_repo.find_by_location_id(location.id):
-                        attribute_group = attribute_repo.get(quantity.attribute_id)
+                        attribute_group = attribute_repo.get(quantity.attribute_group_id)
                         if attribute_group is None:
-                            raise RuntimeError(f'attribute id {quantity.attribute_id} not found')
+                            raise RuntimeError(f'attribute id {quantity.attribute_group_id} not found')
 
                         weight_group_id = get_greatest_unique_specificity(
                             row_dict=attribute_group.attributes,

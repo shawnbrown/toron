@@ -623,7 +623,7 @@ class Quantity(object):
     """Quantity record."""
     id: int
     location_id: int
-    attribute_id: int
+    attribute_group_id: int
     value: float
 
 
@@ -633,7 +633,7 @@ class BaseQuantityRepository(ABC):
         """Initialize a new repository instance."""
 
     @abstractmethod
-    def add(self, location_id: int, attribute_id: int, value: float) -> None:
+    def add(self, location_id: int, attribute_group_id: int, value: float) -> None:
         """Add a record to the repository."""
 
     @abstractmethod
@@ -657,12 +657,12 @@ class BaseQuantityRepository(ABC):
         self,
         *,
         location_id: Optional[int] = None,
-        attribute_id:  Optional[int] = None,
+        attribute_group_id:  Optional[int] = None,
     ) -> Iterator[Quantity]:
         """Find records with matching location and attribute ids."""
 
     #@abstractmethod
-    #def find_by_attribute_id(self, attribute_id: int) -> Iterable[Quantity]:
+    #def find_by_attribute_group_id(self, attribute_group_id: int) -> Iterable[Quantity]:
     #    """Filter to records associated with the given attribute."""
 
 

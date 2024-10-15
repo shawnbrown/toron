@@ -29,7 +29,7 @@ class TestQuantityRepository(unittest.TestCase):
         repository = QuantityRepository(self.cursor)
 
         repository.add(1, 1, 131.0)  # Test positional.
-        repository.add(location_id=1, attribute_id=2, value=109.0)  # Test keyword.
+        repository.add(location_id=1, attribute_group_id=2, value=109.0)  # Test keyword.
 
         self.assertRecords([(1, 1, 1, 131.0), (2, 1, 2, 109.0)])
 
@@ -38,8 +38,8 @@ class TestQuantityRepository(unittest.TestCase):
         # table restricts multiple index ids per weight_group).
 
         # Add second location (location_id=2).
-        repository.add(location_id=2, attribute_id=1, value=151.0)
-        repository.add(location_id=2, attribute_id=2, value=157.0)
+        repository.add(location_id=2, attribute_group_id=1, value=151.0)
+        repository.add(location_id=2, attribute_group_id=2, value=157.0)
 
         self.assertRecords([
             (1, 1, 1, 131),
@@ -91,5 +91,5 @@ class TestQuantityRepository(unittest.TestCase):
         self.assertRecords([])
 
     @unittest.skip('not implemented')
-    def find_by_attribute_id(self):
+    def find_by_attribute_group_id(self):
         raise NotImplementedError
