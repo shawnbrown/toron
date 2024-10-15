@@ -3309,7 +3309,7 @@ class TestNodeInsertQuantities(unittest.TestCase):
     def get_attributes_helper(node):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM attribute')
+            cursor.execute('SELECT * FROM attribute_group')
             return cursor.fetchall()
 
     @staticmethod

@@ -12,7 +12,7 @@ application layer:
 
                                        <Other Node> ••••••••
                                                            •  +-----------------+
-                                    +----------------+     •  | attribute       |
+                                    +----------------+     •  | attribute_group |
     +----------------------+        | relation       |     •  +-----------------+
     | crosswalk            |        +----------------+     •  | attribute_id    |--+
     +----------------------+        | relation_id    |     •  | attribute_value |  |
@@ -149,7 +149,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             UNIQUE (index_id, weight_group_id)
         );
 
-        CREATE TABLE main.attribute(
+        CREATE TABLE main.attribute_group(
             attribute_id INTEGER PRIMARY KEY,
             attribute_value TEXT_ATTRIBUTES NOT NULL,
             UNIQUE (attribute_value)
@@ -161,7 +161,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             attribute_id INTEGER,
             quantity_value NUMERIC NOT NULL,
             FOREIGN KEY(_location_id) REFERENCES location(_location_id),
-            FOREIGN KEY(attribute_id) REFERENCES attribute(attribute_id) ON DELETE CASCADE
+            FOREIGN KEY(attribute_id) REFERENCES attribute_group(attribute_id) ON DELETE CASCADE
         );
 
         /* Below, the `is_default` column uses 1 and NULL (instead
@@ -358,7 +358,7 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
         cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
         node_tables = {
-            'attribute',
+            'attribute_group',
             'crosswalk',
             'location',
             'node_index',
@@ -511,7 +511,7 @@ def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
 
 
 def create_triggers_attribute_value(cur: sqlite3.Cursor) -> None:
-    """Add temp triggers to validate ``attribute.attribute_value`` column.
+    """Add temp triggers to validate ``attribute_group.attribute_value`` column.
 
     The ``attribute_value`` column is of the type TEXT_ATTRIBUTES which
     must be a well-formed JSON "object" containing "text" values.
@@ -536,12 +536,12 @@ def create_triggers_attribute_value(cur: sqlite3.Cursor) -> None:
 
     sql = f"""
         CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_attribute_attribute_value
-        BEFORE {{event}} ON main.attribute FOR EACH ROW
+        BEFORE {{event}} ON main.attribute_group FOR EACH ROW
         WHEN
             NEW.attribute_value IS NOT NULL
             AND {attributes_are_invalid}
         BEGIN
-            SELECT RAISE(ABORT, 'attribute.attribute_value must be a JSON object with text values');
+            SELECT RAISE(ABORT, 'attribute_group.attribute_value must be a JSON object with text values');
         END;
     """
     cur.execute(sql.format(event='INSERT'))

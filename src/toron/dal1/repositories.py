@@ -431,13 +431,13 @@ class AttributeRepository(BaseAttributeRepository):
             msg = f'keys and values cannot be empty strings, got: {value!r}'
             raise ValueError(msg)
 
-        sql = 'INSERT INTO main.attribute (attribute_value) VALUES (?)'
+        sql = 'INSERT INTO main.attribute_group (attribute_value) VALUES (?)'
         self._cursor.execute(sql, (json_dumps(value, sort_keys=True),))
 
     def get(self, id: int) -> Optional[AttributeGroup]:
         """Get a record from the repository."""
         self._cursor.execute(
-            'SELECT * FROM main.attribute WHERE attribute_id=?', (id,)
+            'SELECT * FROM main.attribute_group WHERE attribute_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record:
@@ -453,20 +453,20 @@ class AttributeRepository(BaseAttributeRepository):
             raise ValueError(msg)
 
         self._cursor.execute(
-            'UPDATE main.attribute SET attribute_value=? WHERE attribute_id=?',
+            'UPDATE main.attribute_group SET attribute_value=? WHERE attribute_id=?',
             (json_dumps(attributes, sort_keys=True), record.id),
         )
 
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
-            'DELETE FROM main.attribute WHERE attribute_id=?', (id,)
+            'DELETE FROM main.attribute_group WHERE attribute_id=?', (id,)
         )
 
     def get_by_value(self, value: Dict[str, str]) -> Optional[AttributeGroup]:
         """Get the record matching the given value."""
         self._cursor.execute(
-            'SELECT * FROM main.attribute WHERE attribute_value=?',
+            'SELECT * FROM main.attribute_group WHERE attribute_value=?',
             (json_dumps(value, sort_keys=True),)
         )
         record = self._cursor.fetchone()
@@ -476,7 +476,7 @@ class AttributeRepository(BaseAttributeRepository):
 
     def find_all(self) -> Iterable[AttributeGroup]:
         """Get all records in the repository."""
-        self._cursor.execute('SELECT * FROM main.attribute')
+        self._cursor.execute('SELECT * FROM main.attribute_group')
         return (AttributeGroup(*record) for record in self._cursor)
 
     if SQLITE_ENABLE_JSON1:
@@ -495,7 +495,7 @@ class AttributeRepository(BaseAttributeRepository):
 
             expression = 'json_extract(attribute_value, ?) IS ?'
             where_clause = ' AND '.join([expression] * len(formatted_items))
-            sql = f'SELECT * FROM main.attribute WHERE {where_clause}'
+            sql = f'SELECT * FROM main.attribute_group WHERE {where_clause}'
 
             flattened_items = list(chain.from_iterable(formatted_items))
 
@@ -508,7 +508,7 @@ class AttributeRepository(BaseAttributeRepository):
                 SELECT DISTINCT
                     json_each.key
                 FROM
-                    main.attribute,
+                    main.attribute_group,
                     json_each(attribute_value)
             """)
             return sorted(x[0] for x in self._cursor)

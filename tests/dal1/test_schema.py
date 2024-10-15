@@ -57,7 +57,7 @@ class TestCreateNodeSchema(unittest.TestCase):
 
         tables = self.get_tables(self.cur)
         expected = {
-            'attribute',
+            'attribute_group',
             'crosswalk',
             'location',
             'node_index',
@@ -339,20 +339,20 @@ class TestCreateTriggersAttributeValue(BaseAttributeValueTestCase):
 
     def test_insert_valid_attributes(self):
         cur = self.cur.executemany(
-            'INSERT INTO attribute VALUES (?, ?)',
+            'INSERT INTO attribute_group VALUES (?, ?)',
             [(i, val) for i, val in enumerate(self.valid_attributes)],
         )
         self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
 
     def test_insert_invalid_attributes(self):
-        regex = 'attribute.attribute_value must be a JSON object with text values'
+        regex = 'attribute_group.attribute_value must be a JSON object with text values'
 
         for value, desc in self.invalid_attributes:
             with self.subTest(value=value):
                 msg = f'should raise IntegrityError, TEXT_ATTRIBUTES {value!r} {desc}'
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
                     self.cur.execute(
-                        'INSERT INTO attribute VALUES (?, ?)',
+                        'INSERT INTO attribute_group VALUES (?, ?)',
                         (1, value),
                     )
 
@@ -680,10 +680,10 @@ class TestRegisteredConverters(unittest.TestCase):
 
     def test_converter_text_attributes(self):
         cur = self.cur.execute(
-            'INSERT INTO attribute (attribute_id, attribute_value) VALUES (?, ?)',
+            'INSERT INTO attribute_group (attribute_id, attribute_value) VALUES (?, ?)',
             (1, '{"foo": "one", "bar": "two"}'),
         )
-        cur.execute('SELECT attribute_value FROM attribute')
+        cur.execute('SELECT attribute_value FROM attribute_group')
         self.assertEqual(cur.fetchall(), [({'foo': 'one', 'bar': 'two'},)])
 
     def test_converter_text_userproperties(self):

@@ -19,7 +19,7 @@ class TestAttributeRepository(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def assertRecords(self, expected_records, msg=None):
-        self.cursor.execute(f'SELECT * FROM attribute')
+        self.cursor.execute(f'SELECT * FROM attribute_group')
         actual_records = self.cursor.fetchall()
         self.assertEqual(actual_records, expected_records, msg=msg)
 
@@ -57,8 +57,8 @@ class TestAttributeRepository(unittest.TestCase):
 
     def test_get(self):
         self.cursor.executescript("""
-            INSERT INTO attribute VALUES (1, '{"aaa": "A", "bbb": "B"}');
-            INSERT INTO attribute VALUES (2, '{"aaa": "A", "ccc": "C"}');
+            INSERT INTO attribute_group VALUES (1, '{"aaa": "A", "bbb": "B"}');
+            INSERT INTO attribute_group VALUES (2, '{"aaa": "A", "ccc": "C"}');
         """)
         repository = AttributeRepository(self.cursor)
 
@@ -68,8 +68,8 @@ class TestAttributeRepository(unittest.TestCase):
 
     def test_update(self):
         self.cursor.executescript("""
-            INSERT INTO attribute VALUES (1, '{"aaa": "A", "bbb": "B"}');
-            INSERT INTO attribute VALUES (2, '{"aaa": "A", "ccc": "C"}');
+            INSERT INTO attribute_group VALUES (1, '{"aaa": "A", "bbb": "B"}');
+            INSERT INTO attribute_group VALUES (2, '{"aaa": "A", "ccc": "C"}');
         """)
         repository = AttributeRepository(self.cursor)
 
@@ -90,8 +90,8 @@ class TestAttributeRepository(unittest.TestCase):
 
     def test_delete(self):
         self.cursor.executescript("""
-            INSERT INTO attribute VALUES (1, '{"aaa": "A", "bbb": "B"}');
-            INSERT INTO attribute VALUES (2, '{"aaa": "A", "ccc": "C"}');
+            INSERT INTO attribute_group VALUES (1, '{"aaa": "A", "bbb": "B"}');
+            INSERT INTO attribute_group VALUES (2, '{"aaa": "A", "ccc": "C"}');
         """)
         repository = AttributeRepository(self.cursor)
 
