@@ -437,7 +437,7 @@ class AttributeRepository(BaseAttributeRepository):
     def get(self, id: int) -> Optional[AttributeGroup]:
         """Get a record from the repository."""
         self._cursor.execute(
-            'SELECT * FROM main.attribute_group WHERE attribute_id=?', (id,)
+            'SELECT * FROM main.attribute_group WHERE attribute_group_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record:
@@ -453,14 +453,14 @@ class AttributeRepository(BaseAttributeRepository):
             raise ValueError(msg)
 
         self._cursor.execute(
-            'UPDATE main.attribute_group SET attribute_value=? WHERE attribute_id=?',
+            'UPDATE main.attribute_group SET attribute_value=? WHERE attribute_group_id=?',
             (json_dumps(attributes, sort_keys=True), record.id),
         )
 
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
-            'DELETE FROM main.attribute_group WHERE attribute_id=?', (id,)
+            'DELETE FROM main.attribute_group WHERE attribute_group_id=?', (id,)
         )
 
     def get_by_value(self, value: Dict[str, str]) -> Optional[AttributeGroup]:
@@ -522,7 +522,7 @@ class QuantityRepository(BaseQuantityRepository):
     def add(self, location_id: int, attribute_id: int, value: float) -> None:
         """Add a record to the repository."""
         sql = """
-            INSERT INTO main.quantity (_location_id, attribute_id, quantity_value)
+            INSERT INTO main.quantity (_location_id, attribute_group_id, quantity_value)
             VALUES (?, ?, ?)
         """
         self._cursor.execute(sql, (location_id, attribute_id, value))
@@ -544,7 +544,7 @@ class QuantityRepository(BaseQuantityRepository):
             UPDATE main.quantity
             SET
                 _location_id=:location_id,
-                attribute_id=:attribute_id,
+                attribute_group_id=:attribute_id,
                 quantity_value=:value
             WHERE quantity_id=:id
         """
@@ -577,13 +577,13 @@ class QuantityRepository(BaseQuantityRepository):
         if location_id is not None:
             criteria.append('_location_id=:location_id')
         if attribute_id is not None:
-            criteria.append('attribute_id=:attribute_id')
+            criteria.append('attribute_group_id=:attribute_group_id')
 
         if criteria:
             sql = f'SELECT * FROM main.quantity WHERE {" AND ".join(criteria)}'
             parameters = {
                 'location_id': location_id,
-                'attribute_id': attribute_id,
+                'attribute_group_id': attribute_id,
             }
             self._cursor.execute(sql, parameters)
 

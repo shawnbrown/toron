@@ -11,21 +11,21 @@ application layer:
 .. code-block:: text
 
                                        <Other Node> ••••••••
-                                                           •  +-----------------+
-                                    +----------------+     •  | attribute_group |
-    +----------------------+        | relation       |     •  +-----------------+
-    | crosswalk            |        +----------------+     •  | attribute_id    |--+
-    +----------------------+        | relation_id    |     •  | attribute_value |  |
-    | crosswalk_id         |------->| crosswalk_id   |     •  +-----------------+  |
-    | other_unique_id      |  ••••••| other_index_id |<•••••                       |
-    | other_filename_hint  |  •  •••| index_id       |<-+     +-----------------+  |
-    | name                 |  •  •  | mapping_level  |  |     | quantity        |  |
-    | description          |  •  •  | relation_value |  |     +-----------------+  |
-    | selectors            |  •  •  | proportion*    |  |     | quantity_id     |  |
-    | is_default           |  •  •  +----------------+  |  +->| _location_id    |  |
-    | user_properties      |  •  •                      |  |  | attribute_id    |<-+
-    | other_index_hash*    |<••  •                      |  |  | quantity_value  |
-    | is_locally_complete* |<•••••    +-----------------+  |  +-----------------+
+                                                           •  +--------------------+
+                                    +----------------+     •  | attribute_group    |
+    +----------------------+        | relation       |     •  +--------------------+
+    | crosswalk            |        +----------------+     •  | attribute_group_id |--+
+    +----------------------+        | relation_id    |     •  | attribute_value    |  |
+    | crosswalk_id         |------->| crosswalk_id   |     •  +--------------------+  |
+    | other_unique_id      |  ••••••| other_index_id |<•••••                          |
+    | other_filename_hint  |  •  •••| index_id       |<-+     +--------------------+  |
+    | name                 |  •  •  | mapping_level  |  |     | quantity           |  |
+    | description          |  •  •  | relation_value |  |     +--------------------+  |
+    | selectors            |  •  •  | proportion*    |  |     | quantity_id        |  |
+    | is_default           |  •  •  +----------------+  |  +->| _location_id       |  |
+    | user_properties      |  •  •                      |  |  | attribute_group_id |<-+
+    | other_index_hash*    |<••  •                      |  |  | quantity_value     |
+    | is_locally_complete* |<•••••    +-----------------+  |  +--------------------+
     +----------------------+          |                    |
                                       |                    |  +---------------+
                       +------------+  |  +--------------+  |  | structure     |
@@ -150,7 +150,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
         );
 
         CREATE TABLE main.attribute_group(
-            attribute_id INTEGER PRIMARY KEY,
+            attribute_group_id INTEGER PRIMARY KEY,
             attribute_value TEXT_ATTRIBUTES NOT NULL,
             UNIQUE (attribute_value)
         );
@@ -158,10 +158,10 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
         CREATE TABLE main.quantity(
             quantity_id INTEGER PRIMARY KEY,
             _location_id INTEGER,
-            attribute_id INTEGER,
+            attribute_group_id INTEGER,
             quantity_value NUMERIC NOT NULL,
             FOREIGN KEY(_location_id) REFERENCES location(_location_id),
-            FOREIGN KEY(attribute_id) REFERENCES attribute_group(attribute_id) ON DELETE CASCADE
+            FOREIGN KEY(attribute_group_id) REFERENCES attribute_group(attribute_group_id) ON DELETE CASCADE
         );
 
         /* Below, the `is_default` column uses 1 and NULL (instead

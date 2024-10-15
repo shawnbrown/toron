@@ -680,7 +680,7 @@ class TestRegisteredConverters(unittest.TestCase):
 
     def test_converter_text_attributes(self):
         cur = self.cur.execute(
-            'INSERT INTO attribute_group (attribute_id, attribute_value) VALUES (?, ?)',
+            'INSERT INTO attribute_group (attribute_group_id, attribute_value) VALUES (?, ?)',
             (1, '{"foo": "one", "bar": "two"}'),
         )
         cur.execute('SELECT attribute_value FROM attribute_group')
