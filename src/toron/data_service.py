@@ -419,7 +419,7 @@ def set_domain(
     # Check that domain does not conflict with index columns
     # or attribute names.
     columns = column_manager.get_columns()
-    attributes = attribute_repo.get_all_attribute_names()
+    attribute_names = attribute_repo.get_all_attribute_names()
     for key in domain.keys():
         if key in columns:
             raise ValueError(
@@ -427,7 +427,7 @@ def set_domain(
                 f'an index column'
             )
 
-        if key in attributes:
+        if key in attribute_names:
             raise ValueError(
                 f'cannot add domain, {key!r} is already used as '
                 f'a quantity attribute'

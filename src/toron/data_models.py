@@ -590,31 +590,31 @@ class BaseAttributeRepository(ABC):
 
     def find_by_criteria(self, **criteria) -> Iterable[AttributeGroup]:
         """Find records matching given criteria values."""
-        for attribute in self.find_all():
-            attr_val = attribute.value
+        for attribute_group in self.find_all():
+            attr_val = attribute_group.value
             if all(attr_val.get(k) == v for k, v in criteria.items()):
-                yield attribute
+                yield attribute_group
 
     def get_by_value_add_if_missing(self, value: Dict[str, str]) -> AttributeGroup:
         """Return the attribute that matches given value. If there is
         no matching attribute, a new record is added and then returned.
         """
-        attribute = self.get_by_value(value)
-        if attribute:
-            return attribute
+        attribute_group = self.get_by_value(value)
+        if attribute_group:
+            return attribute_group
 
         self.add(value)
-        attribute = self.get_by_value(value)
-        if attribute:
-            return attribute
+        attribute_group = self.get_by_value(value)
+        if attribute_group:
+            return attribute_group
 
-        raise RuntimeError('expected attribute was not created')
+        raise RuntimeError('expected attribute_group was not created')
 
     def get_all_attribute_names(self) -> List[str]:
         """Return a sorted list of distinct attribute names."""
         attribute_names: Set[str] = set()
-        for attr in self.find_all():
-            attribute_names.update(attr.value.keys())
+        for attr_grp in self.find_all():
+            attribute_names.update(attr_grp.value.keys())
         return sorted(attribute_names)
 
 
@@ -942,8 +942,8 @@ class QuantityIterator(object):
         return self._label_names + self._domain_names + self._attribute_keys + ('value',)
 
     def __next__(self) -> Tuple[Union[str, float, None], ...]:
-        index, attr, quantity = next(self._data)
-        attr_vals = tuple(attr.value.get(x) for x in self._attribute_keys)
+        index, attr_grp, quantity = next(self._data)
+        attr_vals = tuple(attr_grp.value.get(x) for x in self._attribute_keys)
         return index.labels + self._domain_values + attr_vals + (quantity,)
 
     def __iter__(self):

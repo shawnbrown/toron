@@ -560,15 +560,15 @@ class AttributeRepositoryBaseTest(ABC):
         """If keys or values are empty string, should raise ValueError."""
         self.repository.add({'foo': 'A', 'bar': 'B'})
 
-        attribute = self.repository.get(1)
-        attribute.value = {'foo': 'A', '': 'B'}  # <- Second key is empty string.
+        attribute_group = self.repository.get(1)
+        attribute_group.value = {'foo': 'A', '': 'B'}  # <- Second key is empty string.
         with self.assertRaises(ValueError, msg='keys must not be empty strings'):
-            self.repository.update(attribute)
+            self.repository.update(attribute_group)
 
-        attribute = self.repository.get(1)
-        attribute.value = {'foo': 'A', 'bar': ''}  # <- Second value is empty string.
+        attribute_group = self.repository.get(1)
+        attribute_group.value = {'foo': 'A', 'bar': ''}  # <- Second value is empty string.
         with self.assertRaises(ValueError, msg='keys must not be empty strings'):
-            self.repository.update(attribute)
+            self.repository.update(attribute_group)
 
     def test_get_by_value(self):
         self.repository.add({'foo': 'A'})

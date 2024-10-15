@@ -1840,12 +1840,12 @@ class Node(object):
 
                 # Get `location` and `attribute` instances.
                 location = location_repo.get_by_labels_add_if_missing(labels_dict)
-                attribute = attribute_repo.get_by_value_add_if_missing(attr_dict)
+                attribute_group = attribute_repo.get_by_value_add_if_missing(attr_dict)
 
                 # Add quantity.
                 quantity_repo.add(
                     location_id=location.id,
-                    attribute_id=attribute.id,
+                    attribute_id=attribute_group.id,
                     value=row_dict[value],
                 )
                 counter['inserted'] += 1
@@ -1906,12 +1906,12 @@ class Node(object):
                     index_criteria = {k: v for k, v in zipped if v != ''}
 
                     for quantity in quantity_repo.find_by_location_id(location.id):
-                        attribute = attribute_repo.get(quantity.attribute_id)
-                        if attribute is None:
+                        attribute_group = attribute_repo.get(quantity.attribute_id)
+                        if attribute_group is None:
                             raise RuntimeError(f'attribute id {quantity.attribute_id} not found')
 
                         weight_group_id = get_greatest_unique_specificity(
-                            row_dict=attribute.value,
+                            row_dict=attribute_group.value,
                             selector_dict=selector_dict,
                             default=default_weight_group.id,
                         )
@@ -1927,7 +1927,7 @@ class Node(object):
 
                         # Yield disaggregated results for each index.
                         for index, result in disaggregated:
-                            yield (index, attribute, result)
+                            yield (index, attribute_group, result)
 
     def disaggregate(self) -> QuantityIterator:
         """Return rows with disaggregated quantity values."""
