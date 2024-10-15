@@ -334,15 +334,15 @@ class TestTranslate(unittest.TestCase):
 
         self.assertEqual(
             list(results_generator),
-            [(Index(id=1, labels=('a1', 'b1', 'c1')), AttributeGroup(id=1, value={'foo': 'bar'}), 60.0),
-             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, value={'foo': 'bar'}), 40.0),
-             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, value={'foo': 'bar'}), 100.0),
-             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, value={'foo': 'bar'}), 25.0),
-             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, value={'foo': 'bar'}), 12.5),
-             (Index(id=4, labels=('a1', 'b2', 'c4')), AttributeGroup(id=1, value={'foo': 'bar'}), 62.5),
-             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, value={'foo': 'bar'}), 100.0),
-             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, value={'foo': 'bar'}), 38.0),
-             (Index(id=4, labels=('a1', 'b2', 'c4')), AttributeGroup(id=1, value={'foo': 'bar'}), 62.0)],
+            [(Index(id=1, labels=('a1', 'b1', 'c1')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 60.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 40.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 100.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 25.0),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 12.5),
+             (Index(id=4, labels=('a1', 'b2', 'c4')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 62.5),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 100.0),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 38.0),
+             (Index(id=4, labels=('a1', 'b2', 'c4')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 62.0)],
         )
 
     def test_simple_case(self):

@@ -561,12 +561,12 @@ class AttributeRepositoryBaseTest(ABC):
         self.repository.add({'foo': 'A', 'bar': 'B'})
 
         attribute_group = self.repository.get(1)
-        attribute_group.value = {'foo': 'A', '': 'B'}  # <- Second key is empty string.
+        attribute_group.attributes = {'foo': 'A', '': 'B'}  # <- Second key is empty string.
         with self.assertRaises(ValueError, msg='keys must not be empty strings'):
             self.repository.update(attribute_group)
 
         attribute_group = self.repository.get(1)
-        attribute_group.value = {'foo': 'A', 'bar': ''}  # <- Second value is empty string.
+        attribute_group.attributes = {'foo': 'A', 'bar': ''}  # <- Second value is empty string.
         with self.assertRaises(ValueError, msg='keys must not be empty strings'):
             self.repository.update(attribute_group)
 
@@ -605,9 +605,9 @@ class AttributeRepositoryBaseTest(ABC):
 
         self.assertEqual(
             list(self.repository.find_all()),
-            [AttributeGroup(id=1, value={'A': 'foo'}),
-             AttributeGroup(id=2, value={'A': 'bar'}),
-             AttributeGroup(id=3, value={'A': 'baz'})]
+            [AttributeGroup(id=1, attributes={'A': 'foo'}),
+             AttributeGroup(id=2, attributes={'A': 'bar'}),
+             AttributeGroup(id=3, attributes={'A': 'baz'})]
         )
 
     def _helper_find_by_criteria(self, method_under_test):
@@ -619,24 +619,24 @@ class AttributeRepositoryBaseTest(ABC):
 
         self.assertEqual(
             list(method_under_test(A='foo')),
-            [AttributeGroup(id=1, value={'A': 'foo'}),
-             AttributeGroup(id=2, value={'A': 'foo', 'B': 'qux'})],
+            [AttributeGroup(id=1, attributes={'A': 'foo'}),
+             AttributeGroup(id=2, attributes={'A': 'foo', 'B': 'qux'})],
         )
 
         self.assertEqual(
             list(method_under_test(B='qux')),
-            [AttributeGroup(id=2, value={'A': 'foo', 'B': 'qux'}),
-             AttributeGroup(id=3, value={'A': 'bar', 'B': 'qux'})],
+            [AttributeGroup(id=2, attributes={'A': 'foo', 'B': 'qux'}),
+             AttributeGroup(id=3, attributes={'A': 'bar', 'B': 'qux'})],
         )
 
         self.assertEqual(
             list(method_under_test(A='foo', B='qux')),
-            [AttributeGroup(id=2, value={'A': 'foo', 'B': 'qux'})],
+            [AttributeGroup(id=2, attributes={'A': 'foo', 'B': 'qux'})],
         )
 
         self.assertEqual(
             list(method_under_test(A='foo', B=None)),
-            [AttributeGroup(id=1, value={'A': 'foo'})],
+            [AttributeGroup(id=1, attributes={'A': 'foo'})],
             msg='criteria B=None should match records without B',
         )
 
@@ -657,7 +657,7 @@ class AttributeRepositoryBaseTest(ABC):
         self.repository.add(ugly_attr)
         self.assertEqual(
             list(method_under_test(**ugly_attr)),
-            [AttributeGroup(id=4, value=ugly_attr)],
+            [AttributeGroup(id=4, attributes=ugly_attr)],
             msg='special characters should survive round-trip matching',
         )
 

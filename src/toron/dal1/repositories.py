@@ -446,15 +446,15 @@ class AttributeRepository(BaseAttributeRepository):
 
     def update(self, record: AttributeGroup) -> None:
         """Update a record in the repository."""
-        value = record.value
+        attributes = record.attributes
 
-        if '' in value.keys() or '' in value.values():
-            msg = f'keys and values cannot be empty strings, got: {value!r}'
+        if '' in attributes.keys() or '' in attributes.values():
+            msg = f'keys and values cannot be empty strings, got: {attributes!r}'
             raise ValueError(msg)
 
         self._cursor.execute(
             'UPDATE main.attribute SET attribute_value=? WHERE attribute_id=?',
-            (json_dumps(value, sort_keys=True), record.id),
+            (json_dumps(attributes, sort_keys=True), record.id),
         )
 
     def delete(self, id: int) -> None:

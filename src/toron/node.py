@@ -1911,7 +1911,7 @@ class Node(object):
                             raise RuntimeError(f'attribute id {quantity.attribute_id} not found')
 
                         weight_group_id = get_greatest_unique_specificity(
-                            row_dict=attribute_group.value,
+                            row_dict=attribute_group.attributes,
                             selector_dict=selector_dict,
                             default=default_weight_group.id,
                         )

@@ -140,7 +140,7 @@ def _translate(
         for index, attribute_group, quantity_value in quantity_iterator.data:
             # Find crosswalk that matches with greated unique specificity.
             crosswalk_id = get_greatest_unique_specificity(
-                row_dict=attribute_group.value,
+                row_dict=attribute_group.attributes,
                 selector_dict=selector_dict,
                 default=default_crosswalk_id,
             )

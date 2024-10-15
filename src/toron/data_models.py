@@ -556,7 +556,7 @@ class BaseWeightRepository(ABC):
 class AttributeGroup(object):
     """AttributeGroup record."""
     id: int
-    value: Dict[str, str]
+    attributes: Dict[str, str]
 
 
 class BaseAttributeRepository(ABC):
@@ -591,8 +591,8 @@ class BaseAttributeRepository(ABC):
     def find_by_criteria(self, **criteria) -> Iterable[AttributeGroup]:
         """Find records matching given criteria values."""
         for attribute_group in self.find_all():
-            attr_val = attribute_group.value
-            if all(attr_val.get(k) == v for k, v in criteria.items()):
+            attributes = attribute_group.attributes
+            if all(attributes.get(k) == v for k, v in criteria.items()):
                 yield attribute_group
 
     def get_by_value_add_if_missing(self, value: Dict[str, str]) -> AttributeGroup:
@@ -614,7 +614,7 @@ class BaseAttributeRepository(ABC):
         """Return a sorted list of distinct attribute names."""
         attribute_names: Set[str] = set()
         for attr_grp in self.find_all():
-            attribute_names.update(attr_grp.value.keys())
+            attribute_names.update(attr_grp.attributes.keys())
         return sorted(attribute_names)
 
 
@@ -943,8 +943,8 @@ class QuantityIterator(object):
 
     def __next__(self) -> Tuple[Union[str, float, None], ...]:
         index, attr_grp, quantity = next(self._data)
-        attr_vals = tuple(attr_grp.value.get(x) for x in self._attribute_keys)
-        return index.labels + self._domain_values + attr_vals + (quantity,)
+        attr_keys = tuple(attr_grp.attributes.get(x) for x in self._attribute_keys)
+        return index.labels + self._domain_values + attr_keys + (quantity,)
 
     def __iter__(self):
         return self
