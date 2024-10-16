@@ -940,8 +940,8 @@ class QuantityIterator(object):
 
     def __next__(self) -> Tuple[Union[str, float, None], ...]:
         index, attr_grp, quantity = next(self._data)
-        attr_keys = tuple(attr_grp.attributes.get(x) for x in self._attribute_keys)
-        return index.labels + self._domain_values + attr_keys + (quantity,)
+        attr_vals = tuple(attr_grp.attributes.get(x) for x in self._attribute_keys)
+        return index.labels + self._domain_values + attr_vals + (quantity,)
 
     def __iter__(self):
         return self
