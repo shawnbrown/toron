@@ -431,7 +431,7 @@ class AttributeRepository(BaseAttributeRepository):
             msg = f'keys and values cannot be empty strings, got: {value!r}'
             raise ValueError(msg)
 
-        sql = 'INSERT INTO main.attribute_group (attribute_value) VALUES (?)'
+        sql = 'INSERT INTO main.attribute_group (attributes) VALUES (?)'
         self._cursor.execute(sql, (json_dumps(value, sort_keys=True),))
 
     def get(self, id: int) -> Optional[AttributeGroup]:
@@ -453,7 +453,7 @@ class AttributeRepository(BaseAttributeRepository):
             raise ValueError(msg)
 
         self._cursor.execute(
-            'UPDATE main.attribute_group SET attribute_value=? WHERE attribute_group_id=?',
+            'UPDATE main.attribute_group SET attributes=? WHERE attribute_group_id=?',
             (json_dumps(attributes, sort_keys=True), record.id),
         )
 
@@ -466,7 +466,7 @@ class AttributeRepository(BaseAttributeRepository):
     def get_by_value(self, value: Dict[str, str]) -> Optional[AttributeGroup]:
         """Get the record matching the given value."""
         self._cursor.execute(
-            'SELECT * FROM main.attribute_group WHERE attribute_value=?',
+            'SELECT * FROM main.attribute_group WHERE attributes=?',
             (json_dumps(value, sort_keys=True),)
         )
         record = self._cursor.fetchone()
@@ -493,7 +493,7 @@ class AttributeRepository(BaseAttributeRepository):
             # docs for details <https://sqlite.org/json1.html#path_arguments>.
             formatted_items = [(f'$.{k}', v) for k, v in criteria.items()]
 
-            expression = 'json_extract(attribute_value, ?) IS ?'
+            expression = 'json_extract(attributes, ?) IS ?'
             where_clause = ' AND '.join([expression] * len(formatted_items))
             sql = f'SELECT * FROM main.attribute_group WHERE {where_clause}'
 
@@ -509,7 +509,7 @@ class AttributeRepository(BaseAttributeRepository):
                     json_each.key
                 FROM
                     main.attribute_group,
-                    json_each(attribute_value)
+                    json_each(attributes)
             """)
             return sorted(x[0] for x in self._cursor)
 

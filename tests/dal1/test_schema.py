@@ -15,8 +15,8 @@ from toron.dal1.schema import (
     create_sql_function,
     create_toron_check_property_value,
     create_triggers_property_value,
-    create_toron_check_attribute_value,
-    create_triggers_attribute_value,
+    create_toron_check_attributes,
+    create_triggers_attributes,
     create_toron_check_user_properties,
     create_triggers_user_properties,
     create_toron_check_selectors,
@@ -277,7 +277,7 @@ class TestCreateTriggersPropertyValue(BasePropertyValueTestCase):
                     )
 
 
-class BaseAttributeValueTestCase(unittest.TestCase):
+class BaseAttributesTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Valid TEXT_ATTRIBUTES values must be JSON objects with string values."""
@@ -303,39 +303,39 @@ class BaseAttributeValueTestCase(unittest.TestCase):
         ]
 
 
-class TestCreateToronCheckAttributeValue(BaseAttributeValueTestCase):
+class TestCreateToronCheckAttributes(BaseAttributesTestCase):
     """Check user-defined SQL function ``user_attributes_valid``."""
     def setUp(self):
         self.con = sqlite3.connect(':memory:')
         self.addCleanup(self.con.close)
-        create_toron_check_attribute_value(self.con)
+        create_toron_check_attributes(self.con)
 
     def test_valid_attributes(self):
         for value in self.valid_attributes:
             with self.subTest(value=value):
-                cur = self.con.execute('SELECT toron_check_attribute_value(?)', [value])
+                cur = self.con.execute('SELECT toron_check_attributes(?)', [value])
                 msg = f'should be 1 for well-formed TEXT_ATTRIBUTES: {value!r}'
                 self.assertEqual(cur.fetchall(), [(1,)], msg=msg)
 
     def test_invalid_attributes(self):
         for value, desc in self.invalid_attributes:
             with self.subTest(value=value):
-                cur = self.con.execute('SELECT toron_check_attribute_value(?)', [value])
+                cur = self.con.execute('SELECT toron_check_attributes(?)', [value])
                 msg = f'should be 0, TEXT_ATTRIBUTES {value!r} {desc}'
                 self.assertEqual(cur.fetchall(), [(0,)], msg=msg)
 
 
-class TestCreateTriggersAttributeValue(BaseAttributeValueTestCase):
+class TestCreateTriggersAttributes(BaseAttributesTestCase):
     def setUp(self):
         self.con = sqlite3.connect(':memory:')
         self.addCleanup(self.con.close)
         if not SQLITE_ENABLE_JSON1:
-            create_toron_check_attribute_value(self.con)
+            create_toron_check_attributes(self.con)
 
         self.cur = self.con.cursor()
         self.addCleanup(self.cur.close)
         create_node_schema(self.cur)
-        create_triggers_attribute_value(self.cur)
+        create_triggers_attributes(self.cur)
 
     def test_insert_valid_attributes(self):
         cur = self.cur.executemany(
@@ -345,7 +345,7 @@ class TestCreateTriggersAttributeValue(BaseAttributeValueTestCase):
         self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
 
     def test_insert_invalid_attributes(self):
-        regex = 'attribute_group.attribute_value must be a JSON object with text values'
+        regex = 'attribute_group.attributes must be a JSON object with text values'
 
         for value, desc in self.invalid_attributes:
             with self.subTest(value=value):
@@ -680,10 +680,10 @@ class TestRegisteredConverters(unittest.TestCase):
 
     def test_converter_text_attributes(self):
         cur = self.cur.execute(
-            'INSERT INTO attribute_group (attribute_group_id, attribute_value) VALUES (?, ?)',
+            'INSERT INTO attribute_group (attribute_group_id, attributes) VALUES (?, ?)',
             (1, '{"foo": "one", "bar": "two"}'),
         )
-        cur.execute('SELECT attribute_value FROM attribute_group')
+        cur.execute('SELECT attributes FROM attribute_group')
         self.assertEqual(cur.fetchall(), [({'foo': 'one', 'bar': 'two'},)])
 
     def test_converter_text_userproperties(self):

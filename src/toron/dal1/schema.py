@@ -15,7 +15,7 @@ application layer:
                                     +----------------+     •  | attribute_group    |
     +----------------------+        | relation       |     •  +--------------------+
     | crosswalk            |        +----------------+     •  | attribute_group_id |--+
-    +----------------------+        | relation_id    |     •  | attribute_value    |  |
+    +----------------------+        | relation_id    |     •  | attributes         |  |
     | crosswalk_id         |------->| crosswalk_id   |     •  +--------------------+  |
     | other_unique_id      |  ••••••| other_index_id |<•••••                          |
     | other_filename_hint  |  •  •••| index_id       |<-+     +--------------------+  |
@@ -151,8 +151,8 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
 
         CREATE TABLE main.attribute_group(
             attribute_group_id INTEGER PRIMARY KEY,
-            attribute_value TEXT_ATTRIBUTES NOT NULL,
-            UNIQUE (attribute_value)
+            attributes TEXT_ATTRIBUTES NOT NULL,
+            UNIQUE (attributes)
         );
 
         CREATE TABLE main.quantity(
@@ -482,8 +482,8 @@ def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
     cur.execute(sql.format(event='UPDATE', table='crosswalk'))
 
 
-def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
-    """Create a user defined SQL function named ``toron_check_attribute_value``.
+def create_toron_check_attributes(connection: sqlite3.Connection) -> None:
+    """Create a user defined SQL function named ``toron_check_attributes``.
 
     Returns True if *x* is a wellformed TEXT_ATTRIBUTES value or return
     False if it is not wellformed. A TEXT_ATTRIBUTES value should be a
@@ -491,7 +491,7 @@ def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
 
     This is used when JSON functions are not available in SQLite.
     """
-    def toron_check_attribute_value(x):
+    def toron_check_attributes(x):
         try:
             obj = json_loads(x)
         except (ValueError, TypeError):
@@ -504,16 +504,16 @@ def create_toron_check_attribute_value(connection: sqlite3.Connection) -> None:
         return 1
 
     create_sql_function(connection,
-                        name='toron_check_attribute_value',
+                        name='toron_check_attributes',
                         narg=1,
-                        func=toron_check_attribute_value,
+                        func=toron_check_attributes,
                         deterministic=True)
 
 
-def create_triggers_attribute_value(cur: sqlite3.Cursor) -> None:
-    """Add temp triggers to validate ``attribute_group.attribute_value`` column.
+def create_triggers_attributes(cur: sqlite3.Cursor) -> None:
+    """Add temp triggers to validate ``attribute_group.attributes`` column.
 
-    The ``attribute_value`` column is of the type TEXT_ATTRIBUTES which
+    The ``attributes`` column is of the type TEXT_ATTRIBUTES which
     must be a well-formed JSON "object" containing "text" values.
 
     The trigger will raise an error if the value is:
@@ -525,23 +525,23 @@ def create_triggers_attribute_value(cur: sqlite3.Cursor) -> None:
     """
     if SQLITE_ENABLE_JSON1:
         attributes_are_invalid = """
-            (json_valid(NEW.attribute_value) = 0
-                 OR json_type(NEW.attribute_value) != 'object'
+            (json_valid(NEW.attributes) = 0
+                 OR json_type(NEW.attributes) != 'object'
                  OR (SELECT COUNT(*)
-                     FROM json_each(NEW.attribute_value)
+                     FROM json_each(NEW.attributes)
                      WHERE json_each.type != 'text') != 0)
         """.strip()
     else:
-        attributes_are_invalid = f'toron_check_attribute_value(NEW.attribute_value) = 0'
+        attributes_are_invalid = f'toron_check_attributes(NEW.attributes) = 0'
 
     sql = f"""
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_attribute_attribute_value
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_attribute_attributes
         BEFORE {{event}} ON main.attribute_group FOR EACH ROW
         WHEN
-            NEW.attribute_value IS NOT NULL
+            NEW.attributes IS NOT NULL
             AND {attributes_are_invalid}
         BEGIN
-            SELECT RAISE(ABORT, 'attribute_group.attribute_value must be a JSON object with text values');
+            SELECT RAISE(ABORT, 'attribute_group.attributes must be a JSON object with text values');
         END;
     """
     cur.execute(sql.format(event='INSERT'))
@@ -772,13 +772,13 @@ def create_functions_and_temporary_triggers(
     """
     if not SQLITE_ENABLE_JSON1:
         create_toron_check_selectors(connection)
-        create_toron_check_attribute_value(connection)
+        create_toron_check_attributes(connection)
         create_toron_check_user_properties(connection)
         create_toron_check_property_value(connection)
 
     with closing(connection.cursor()) as cur:
         create_triggers_selectors(cur)
-        create_triggers_attribute_value(cur)
+        create_triggers_attributes(cur)
         create_triggers_user_properties(cur)
         create_triggers_property_value(cur)
 
