@@ -26,7 +26,7 @@ from ..data_models import (
     Structure, BaseStructureRepository,
     WeightGroup, BaseWeightGroupRepository,
     Weight, BaseWeightRepository,
-    AttributeGroup, BaseAttributeRepository,
+    AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
     Crosswalk, BaseCrosswalkRepository,
     Relation, BaseRelationRepository,
@@ -420,7 +420,7 @@ class WeightRepository(BaseWeightRepository):
         return not is_partial
 
 
-class AttributeRepository(BaseAttributeRepository):
+class AttributeGroupRepository(BaseAttributeGroupRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
         self._cursor = cursor

@@ -1,4 +1,4 @@
-"""Tests for AttributeRepository class."""
+"""Tests for AttributeGroupRepository class."""
 
 import sqlite3
 import unittest
@@ -6,10 +6,10 @@ from collections import OrderedDict
 
 from toron.dal1.data_connector import DataConnector
 from toron.data_models import AttributeGroup
-from toron.dal1.repositories import AttributeRepository
+from toron.dal1.repositories import AttributeGroupRepository
 
 
-class TestAttributeRepository(unittest.TestCase):
+class TestAttributeGroupRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
@@ -24,7 +24,7 @@ class TestAttributeRepository(unittest.TestCase):
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def test_add(self):
-        repository = AttributeRepository(self.cursor)
+        repository = AttributeGroupRepository(self.cursor)
 
         repository.add({'aaa': 'A', 'bbb': 'B'})
         repository.add({'aaa': 'A', 'ccc': 'C'})
@@ -60,7 +60,7 @@ class TestAttributeRepository(unittest.TestCase):
             INSERT INTO attribute_group VALUES (1, '{"aaa": "A", "bbb": "B"}');
             INSERT INTO attribute_group VALUES (2, '{"aaa": "A", "ccc": "C"}');
         """)
-        repository = AttributeRepository(self.cursor)
+        repository = AttributeGroupRepository(self.cursor)
 
         self.assertEqual(repository.get(1), AttributeGroup(1, {'aaa': 'A', 'bbb': 'B'}))
         self.assertEqual(repository.get(2), AttributeGroup(2, {'aaa': 'A', 'ccc': 'C'}))
@@ -71,7 +71,7 @@ class TestAttributeRepository(unittest.TestCase):
             INSERT INTO attribute_group VALUES (1, '{"aaa": "A", "bbb": "B"}');
             INSERT INTO attribute_group VALUES (2, '{"aaa": "A", "ccc": "C"}');
         """)
-        repository = AttributeRepository(self.cursor)
+        repository = AttributeGroupRepository(self.cursor)
 
         repository.update(AttributeGroup(1, {'xxx': 'X', 'zzz': 'Z'}))
 
@@ -93,7 +93,7 @@ class TestAttributeRepository(unittest.TestCase):
             INSERT INTO attribute_group VALUES (1, '{"aaa": "A", "bbb": "B"}');
             INSERT INTO attribute_group VALUES (2, '{"aaa": "A", "ccc": "C"}');
         """)
-        repository = AttributeRepository(self.cursor)
+        repository = AttributeGroupRepository(self.cursor)
 
         repository.delete(1)
         self.assertRecords([(2, {'aaa': 'A', 'ccc': 'C'})])

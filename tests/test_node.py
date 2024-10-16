@@ -3577,7 +3577,7 @@ class TestNodeDisaggregateGenerator(unittest.TestCase):
             location_repo.add('OH', '')          # location_id 3
             location_repo.add('IN', '')          # location_id 4
 
-            attribute_repo = node._dal.AttributeRepository(cursor)
+            attribute_repo = node._dal.AttributeGroupRepository(cursor)
             attribute_repo.add(value={'category': 'TOTAL', 'sex': 'MALE'})    # attribute_group_id 1
             attribute_repo.add(value={'category': 'TOTAL', 'sex': 'FEMALE'})  # attribute_group_id 2
 

@@ -559,7 +559,7 @@ class AttributeGroup(object):
     attributes: Dict[str, str]
 
 
-class BaseAttributeRepository(ABC):
+class BaseAttributeGroupRepository(ABC):
     @abstractmethod
     def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""

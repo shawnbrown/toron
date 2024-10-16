@@ -36,7 +36,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
 
         self.column_manager = dal.ColumnManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
-        self.attribute_repo = dal.AttributeRepository(cur)
+        self.attribute_repo = dal.AttributeGroupRepository(cur)
 
     def test_valid(self):
         validate_new_index_columns(
@@ -102,7 +102,7 @@ class TestGetQuantityValueSum(unittest.TestCase):
         location_repo.add('foo', 'qux')   # Add location_id 1
         location_repo.add('bar', 'quux')  # Add location_id 2
 
-        attribute_repo = dal.AttributeRepository(cursor)
+        attribute_repo = dal.AttributeGroupRepository(cursor)
         attribute_repo.add({'aaa': 'one'})  # Add attribute_group_id 1
         attribute_repo.add({'bbb': 'two'})  # Add attribute_group_id 2
 
@@ -539,7 +539,7 @@ class TestDomainMethods(unittest.TestCase):
         self.addCleanup(lambda: connector.release_cursor(cur))
 
         self.column_manager = dal.ColumnManager(cur)
-        self.attribute_repo = dal.AttributeRepository(cur)
+        self.attribute_repo = dal.AttributeGroupRepository(cur)
         self.property_repo = dal.PropertyRepository(cur)
 
     def test_set_domain_no_value(self):

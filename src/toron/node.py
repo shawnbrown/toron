@@ -208,7 +208,7 @@ class Node(object):
             set_domain(
                 domain=domain,
                 column_manager=self._dal.ColumnManager(cursor),
-                attribute_repo=self._dal.AttributeRepository(cursor),
+                attribute_repo=self._dal.AttributeGroupRepository(cursor),
                 property_repo=self._dal.PropertyRepository(cursor),
             )
 
@@ -317,7 +317,7 @@ class Node(object):
                 new_column_names=chain([column], columns),
                 column_manager=column_manager,
                 property_repo=self._dal.PropertyRepository(cursor),
-                attribute_repo=self._dal.AttributeRepository(cursor),
+                attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
             column_manager.add_columns(column, *columns)
 
@@ -329,7 +329,7 @@ class Node(object):
                 new_column_names=mapping.values(),
                 column_manager=column_manager,
                 property_repo=property_repo,
-                attribute_repo=self._dal.AttributeRepository(cursor),
+                attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
             column_manager.rename_columns(mapping)
             rename_discrete_categories(
@@ -1804,7 +1804,7 @@ class Node(object):
         with self._managed_transaction() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
             location_repo = self._dal.LocationRepository(cursor)
-            attribute_repo = self._dal.AttributeRepository(cursor)
+            attribute_repo = self._dal.AttributeGroupRepository(cursor)
             quantity_repo = self._dal.QuantityRepository(cursor)
 
             domain_dict = get_domain(property_repo)
@@ -1871,7 +1871,7 @@ class Node(object):
             property_repo = self._dal.PropertyRepository(cur1)
             weight_group_repo = self._dal.WeightGroupRepository(cur1)
             structure_repo = self._dal.StructureRepository(cur1)
-            attribute_repo = self._dal.AttributeRepository(cur1)
+            attribute_repo = self._dal.AttributeGroupRepository(cur1)
             index_repo = self._dal.IndexRepository(cur1)
 
             # These repositories must have their own cursors.
@@ -1940,7 +1940,7 @@ class Node(object):
             col_manager = self._dal.ColumnManager(cursor)
             label_names = col_manager.get_columns()
 
-            attribute_repo = self._dal.AttributeRepository(cursor)
+            attribute_repo = self._dal.AttributeGroupRepository(cursor)
             attribute_keys = attribute_repo.get_all_attribute_names()
 
         quantity_iter = QuantityIterator(

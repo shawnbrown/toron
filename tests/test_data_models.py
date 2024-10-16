@@ -23,7 +23,7 @@ from toron.data_models import (
     Location, BaseLocationRepository,
     Structure,
     Weight, BaseWeightRepository,
-    AttributeGroup, BaseAttributeRepository,
+    AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
@@ -515,7 +515,7 @@ class WeightRepositoryBaseTest(ABC):
         self.assertEqual(results, expected)
 
 
-class AttributeRepositoryBaseTest(ABC):
+class AttributeGroupRepositoryBaseTest(ABC):
     @property
     @abstractmethod
     def dal(self):
@@ -529,11 +529,11 @@ class AttributeRepositoryBaseTest(ABC):
         cursor = connector.acquire_cursor(self.connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.repository = self.dal.AttributeRepository(cursor)
+        self.repository = self.dal.AttributeGroupRepository(cursor)
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
-        self.assertTrue(isinstance(self.repository, BaseAttributeRepository))
+        self.assertTrue(isinstance(self.repository, BaseAttributeGroupRepository))
 
     def test_integration(self):
         """Test interoperation of add, get, update, and delete."""
@@ -662,14 +662,14 @@ class AttributeRepositoryBaseTest(ABC):
         )
 
     def test_find_by_criteria_abstract(self):
-        """Test BaseAttributeRepository.find_by_criteria() method."""
-        obj_type = self.dal.AttributeRepository
+        """Test BaseAttributeGroupRepository.find_by_criteria() method."""
+        obj_type = self.dal.AttributeGroupRepository
         obj_instance = self.repository
         method_under_test = super(obj_type, obj_instance).find_by_criteria
         self._helper_find_by_criteria(method_under_test)
 
     def test_find_by_criteria_concrete(self):
-        """Test AttributeRepository.find_by_criteria() method."""
+        """Test AttributeGroupRepository.find_by_criteria() method."""
         method_under_test = self.repository.find_by_criteria
         self._helper_find_by_criteria(method_under_test)
 
@@ -704,7 +704,7 @@ class QuantityRepositoryBaseTest(ABC):
         location_repo.add('foo', 'qux')   # Add location_id 1
         location_repo.add('bar', 'quux')  # Add location_id 2
 
-        attribute_repo = self.dal.AttributeRepository(cursor)
+        attribute_repo = self.dal.AttributeGroupRepository(cursor)
         attribute_repo.add({'aaa': 'one'})  # Add attribute_group_id 1
         attribute_repo.add({'bbb': 'two'})  # Add attribute_group_id 2
 
@@ -1307,7 +1307,7 @@ class LocationRepositoryDAL1(LocationRepositoryBaseTest, unittest.TestCase):
 class WeightRepositoryDAL1(WeightRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
-class AttributeRepositoryDAL1(AttributeRepositoryBaseTest, unittest.TestCase):
+class AttributeGroupRepositoryDAL1(AttributeGroupRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class QuantityRepositoryDAL1(QuantityRepositoryBaseTest, unittest.TestCase):

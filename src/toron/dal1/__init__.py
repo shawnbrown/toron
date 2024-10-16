@@ -22,7 +22,7 @@ from .repositories import (
     StructureRepository,
     WeightGroupRepository,
     WeightRepository,
-    AttributeRepository,
+    AttributeGroupRepository,
     QuantityRepository,
     CrosswalkRepository,
     RelationRepository,

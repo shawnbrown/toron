@@ -160,7 +160,7 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
             new_column_names=mapping.values(),
             column_manager=column_manager,
             property_repo=property_repo,
-            attribute_repo=node._dal.AttributeRepository(cursor),
+            attribute_repo=node._dal.AttributeGroupRepository(cursor),
         )
 
         # Build a list of new column names.

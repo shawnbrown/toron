@@ -20,7 +20,7 @@ from .categories import (
     make_structure,
 )
 from .data_models import (
-    BaseAttributeRepository,
+    BaseAttributeGroupRepository,
     BaseColumnManager,
     BaseIndexRepository,
     BaseWeightGroupRepository,
@@ -46,7 +46,7 @@ def validate_new_index_columns(
     new_column_names: Iterable[str],
     column_manager: BaseColumnManager,
     property_repo: BasePropertyRepository,
-    attribute_repo: BaseAttributeRepository,
+    attribute_repo: BaseAttributeGroupRepository,
 ) -> None:
     """Raise a ValueError if a new column conflicts with an existing
     index column, the domain, or an attribute name.
@@ -412,7 +412,7 @@ def refresh_structure_granularity(
 def set_domain(
     domain: Dict[str, str],
     column_manager: BaseColumnManager,
-    attribute_repo: BaseAttributeRepository,
+    attribute_repo: BaseAttributeGroupRepository,
     property_repo: BasePropertyRepository,
 ) -> None:
     """Set the node's domain."""
