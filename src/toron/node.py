@@ -29,7 +29,7 @@ from .categories import (
 )
 from .data_models import (
     Index,
-    AttributeGroup,
+    AttributesDict,
     WeightGroup,
     BaseCrosswalkRepository,
     Crosswalk,
@@ -1862,7 +1862,7 @@ class Node(object):
                 f'bad domain values: {", ".join(items)}'
             )
 
-    def _disaggregate(self) -> Iterator[Tuple[Index, AttributeGroup, float]]:
+    def _disaggregate(self) -> Iterator[Tuple[Index, AttributesDict, float]]:
         """Generator to yield index, attribute, and quantity tuples."""
         with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4), \
                 self._managed_transaction(cur1):
@@ -1910,8 +1910,10 @@ class Node(object):
                         if attribute_group is None:
                             raise RuntimeError(f'attribute-group id {quantity.attribute_group_id} not found')
 
+                        attributes = attribute_group.attributes
+
                         weight_group_id = get_greatest_unique_specificity(
-                            row_dict=attribute_group.attributes,
+                            row_dict=attributes,
                             selector_dict=selector_dict,
                             default=default_weight_group.id,
                         )
@@ -1927,7 +1929,7 @@ class Node(object):
 
                         # Yield disaggregated results for each index.
                         for index, result in disaggregated:
-                            yield (index, attribute_group, result)
+                            yield (index, attributes, result)
 
     def disaggregate(self) -> QuantityIterator:
         """Return rows with disaggregated quantity values."""

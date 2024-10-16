@@ -552,11 +552,15 @@ class BaseWeightRepository(ABC):
             )
 
 
+
+AttributesDict: TypeAlias = Dict[str, str]
+
+
 @dataclass
 class AttributeGroup(object):
     """AttributeGroup record."""
     id: int
-    attributes: Dict[str, str]
+    attributes: AttributesDict
 
 
 class BaseAttributeGroupRepository(ABC):
@@ -891,7 +895,7 @@ class QuantityIterator(object):
         unique_id: str,
         index_hash: str,
         domain: Dict[str, str],
-        data: Iterable[Tuple[Index, AttributeGroup, float]],
+        data: Iterable[Tuple[Index, AttributesDict, float]],
         label_names: Sequence[str],
         attribute_keys: Iterable[str],
     ):
@@ -923,7 +927,7 @@ class QuantityIterator(object):
         return dict(zip(self._domain_names, self._domain_values))
 
     @property
-    def data(self) -> Iterator[Tuple[Index, AttributeGroup, float]]:
+    def data(self) -> Iterator[Tuple[Index, AttributesDict, float]]:
         return self._data
 
     @property
@@ -939,8 +943,8 @@ class QuantityIterator(object):
         return self._label_names + self._domain_names + self._attribute_keys + ('value',)
 
     def __next__(self) -> Tuple[Union[str, float, None], ...]:
-        index, attr_grp, quantity = next(self._data)
-        attr_vals = tuple(attr_grp.attributes.get(x) for x in self._attribute_keys)
+        index, attributes, quantity = next(self._data)
+        attr_vals = tuple(attributes.get(x) for x in self._attribute_keys)
         return index.labels + self._domain_values + attr_vals + (quantity,)
 
     def __iter__(self):

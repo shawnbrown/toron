@@ -13,7 +13,6 @@ from toron._utils import (
 )
 from toron.data_models import (
     Index,
-    AttributeGroup,
     QuantityIterator,
 )
 from toron.graph import (
@@ -321,11 +320,11 @@ class TestTranslate(unittest.TestCase):
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
             domain={},
-            data=[(Index(1, 'aaa'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                  (Index(2, 'bbb'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                  (Index(3, 'ccc'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                  (Index(4, 'ddd'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                  (Index(5, 'eee'), AttributeGroup(1, {'foo': 'bar'}), 100)],
+            data=[(Index(1, 'aaa'), {'foo': 'bar'}, 100),
+                  (Index(2, 'bbb'), {'foo': 'bar'}, 100),
+                  (Index(3, 'ccc'), {'foo': 'bar'}, 100),
+                  (Index(4, 'ddd'), {'foo': 'bar'}, 100),
+                  (Index(5, 'eee'), {'foo': 'bar'}, 100)],
             label_names=['X'],
             attribute_keys=['foo'],
         )
@@ -334,15 +333,15 @@ class TestTranslate(unittest.TestCase):
 
         self.assertEqual(
             list(results_generator),
-            [(Index(id=1, labels=('a1', 'b1', 'c1')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 60.0),
-             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 40.0),
-             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 100.0),
-             (Index(id=2, labels=('a1', 'b1', 'c2')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 25.0),
-             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 12.5),
-             (Index(id=4, labels=('a1', 'b2', 'c4')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 62.5),
-             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 100.0),
-             (Index(id=3, labels=('a1', 'b2', 'c3')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 38.0),
-             (Index(id=4, labels=('a1', 'b2', 'c4')), AttributeGroup(id=1, attributes={'foo': 'bar'}), 62.0)],
+            [(Index(id=1, labels=('a1', 'b1', 'c1')), {'foo': 'bar'}, 60.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), {'foo': 'bar'}, 40.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), {'foo': 'bar'}, 100.0),
+             (Index(id=2, labels=('a1', 'b1', 'c2')), {'foo': 'bar'}, 25.0),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), {'foo': 'bar'}, 12.5),
+             (Index(id=4, labels=('a1', 'b2', 'c4')), {'foo': 'bar'}, 62.5),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), {'foo': 'bar'}, 100.0),
+             (Index(id=3, labels=('a1', 'b2', 'c3')), {'foo': 'bar'}, 38.0),
+             (Index(id=4, labels=('a1', 'b2', 'c4')), {'foo': 'bar'}, 62.0)],
         )
 
     def test_simple_case(self):
@@ -350,11 +349,11 @@ class TestTranslate(unittest.TestCase):
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
             domain={},
-            data=[(Index(1, 'aaa'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                  (Index(2, 'bbb'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                  (Index(3, 'ccc'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                  (Index(4, 'ddd'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                  (Index(5, 'eee'), AttributeGroup(1, {'foo': 'bar'}), 100)],
+            data=[(Index(1, 'aaa'), {'foo': 'bar'}, 100),
+                  (Index(2, 'bbb'), {'foo': 'bar'}, 100),
+                  (Index(3, 'ccc'), {'foo': 'bar'}, 100),
+                  (Index(4, 'ddd'), {'foo': 'bar'}, 100),
+                  (Index(5, 'eee'), {'foo': 'bar'}, 100)],
             label_names=['X'],
             attribute_keys=['foo'],
         )
@@ -410,20 +409,20 @@ class TestTranslate(unittest.TestCase):
                 # Attributes {'foo': 'bar'} match 'edge 1' ([foo="bar"])
                 # and 'edge 2' ([foo]), but 'edge 1' is used because it
                 # has a greater specificity.
-                (Index(1, 'aaa'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                (Index(2, 'bbb'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                (Index(3, 'ccc'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                (Index(4, 'ddd'), AttributeGroup(1, {'foo': 'bar'}), 100),
-                (Index(5, 'eee'), AttributeGroup(1, {'foo': 'bar'}), 100),
+                (Index(1, 'aaa'), {'foo': 'bar'}, 100),
+                (Index(2, 'bbb'), {'foo': 'bar'}, 100),
+                (Index(3, 'ccc'), {'foo': 'bar'}, 100),
+                (Index(4, 'ddd'), {'foo': 'bar'}, 100),
+                (Index(5, 'eee'), {'foo': 'bar'}, 100),
 
                 # Attributes {'foo': 'baz'} match 'edge 2' ([foo]).
-                (Index(1, 'aaa'), AttributeGroup(1, {'foo': 'baz'}), 100),
-                (Index(2, 'bbb'), AttributeGroup(1, {'foo': 'baz'}), 100),
-                (Index(3, 'ccc'), AttributeGroup(1, {'foo': 'baz'}), 100),
-                (Index(4, 'ddd'), AttributeGroup(1, {'foo': 'baz'}), 100),
+                (Index(1, 'aaa'), {'foo': 'baz'}, 100),
+                (Index(2, 'bbb'), {'foo': 'baz'}, 100),
+                (Index(3, 'ccc'), {'foo': 'baz'}, 100),
+                (Index(4, 'ddd'), {'foo': 'baz'}, 100),
 
                 # Attributes {'qux': 'corge'} has no match, uses default ('edge 1').
-                (Index(5, 'eee'), AttributeGroup(1, {'qux': 'corge'}), 100),
+                (Index(5, 'eee'), {'qux': 'corge'}, 100),
             ],
             label_names=['X'],
             attribute_keys=['foo', 'qux'],

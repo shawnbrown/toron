@@ -33,7 +33,7 @@ from ._utils import (
 )
 from .data_models import (
     Index,
-    AttributeGroup,
+    AttributesDict,
     QuantityIterator,
 )
 from .data_service import (
@@ -103,7 +103,7 @@ def load_mapping(
 
 def _translate(
     quantity_iterator: QuantityIterator, node: Node
-) -> Iterator[Tuple[Index, AttributeGroup, float]]:
+) -> Iterator[Tuple[Index, AttributesDict, float]]:
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
         crosswalk_repo = node._dal.CrosswalkRepository(cursor)
@@ -137,10 +137,10 @@ def _translate(
         func = lambda selectors: [parse_selector(s) for s in selectors]
         selector_dict = {x.id: func(x.selectors) for x in crosswalks}
 
-        for index, attribute_group, quantity_value in quantity_iterator.data:
+        for index, attributes, quantity_value in quantity_iterator.data:
             # Find crosswalk that matches with greated unique specificity.
             crosswalk_id = get_greatest_unique_specificity(
-                row_dict=attribute_group.attributes,
+                row_dict=attributes,
                 selector_dict=selector_dict,
                 default=default_crosswalk_id,
             )
@@ -156,7 +156,7 @@ def _translate(
                 new_proportion = check_type(relation.proportion, float)
                 new_index = check_type(index_repo.get(relation.index_id), Index)
                 new_quantity_value = quantity_value * new_proportion
-                yield (new_index, attribute_group, new_quantity_value)
+                yield (new_index, attributes, new_quantity_value)
 
 
 def translate(quantity_iterator: QuantityIterator, node: Node):
