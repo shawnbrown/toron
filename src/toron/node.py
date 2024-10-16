@@ -1838,7 +1838,7 @@ class Node(object):
                 if not attr_dict:
                     continue
 
-                # Get `location` and `attribute` instances.
+                # Get `location` and `attribute_group` instances.
                 location = location_repo.get_by_labels_add_if_missing(labels_dict)
                 attribute_group = attribute_repo.get_by_value_add_if_missing(attr_dict)
 
@@ -1908,7 +1908,7 @@ class Node(object):
                     for quantity in quantity_repo.find_by_location_id(location.id):
                         attribute_group = attribute_repo.get(quantity.attribute_group_id)
                         if attribute_group is None:
-                            raise RuntimeError(f'attribute id {quantity.attribute_group_id} not found')
+                            raise RuntimeError(f'attribute-group id {quantity.attribute_group_id} not found')
 
                         weight_group_id = get_greatest_unique_specificity(
                             row_dict=attribute_group.attributes,

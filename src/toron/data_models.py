@@ -596,8 +596,9 @@ class BaseAttributeGroupRepository(ABC):
                 yield attribute_group
 
     def get_by_value_add_if_missing(self, value: Dict[str, str]) -> AttributeGroup:
-        """Return the attribute that matches given value. If there is
-        no matching attribute, a new record is added and then returned.
+        """Return the attribute-group that matches given value. If there
+        is no matching attribute-group, a new record is added and then
+        returned.
         """
         attribute_group = self.get_by_value(value)
         if attribute_group:
@@ -608,7 +609,7 @@ class BaseAttributeGroupRepository(ABC):
         if attribute_group:
             return attribute_group
 
-        raise RuntimeError('expected attribute_group was not created')
+        raise RuntimeError('expected attribute-group was not created')
 
     def get_all_attribute_names(self) -> List[str]:
         """Return a sorted list of distinct attribute names."""
@@ -659,11 +660,7 @@ class BaseQuantityRepository(ABC):
         location_id: Optional[int] = None,
         attribute_group_id:  Optional[int] = None,
     ) -> Iterator[Quantity]:
-        """Find records with matching location and attribute ids."""
-
-    #@abstractmethod
-    #def find_by_attribute_group_id(self, attribute_group_id: int) -> Iterable[Quantity]:
-    #    """Filter to records associated with the given attribute."""
+        """Find records with matching location and attribute-group ids."""
 
 
 @dataclass

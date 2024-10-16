@@ -572,7 +572,7 @@ class QuantityRepository(BaseQuantityRepository):
         location_id: Optional[int] = None,
         attribute_group_id:  Optional[int] = None,
     ) -> Iterator[Quantity]:
-        """Find records with matching location and attribute ids."""
+        """Find records with matching location and attribute-group ids."""
         criteria = []
         if location_id is not None:
             criteria.append('_location_id=:location_id')
