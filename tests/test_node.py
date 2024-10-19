@@ -563,10 +563,24 @@ class TestIndexColumnMethods(unittest.TestCase):
                 import toron.dal1
                 toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
 
+    def test_rename_index_columns_reserved_identifier(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        # Check target-name conflict.
         regex = "cannot alter columns, 'value' is a reserved identifier"
         with self.assertRaisesRegex(ValueError, regex):
             if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
                 node.rename_index_columns({'B': 'value'})
+            else:
+                import toron.dal1
+                toron.dal1.legacy_rename_columns(node, {'B': 'value'})
+
+        # Check source-name conflict.
+        regex = "cannot alter columns, 'index_id' is a reserved identifier"
+        with self.assertRaisesRegex(ValueError, regex):
+            if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
+                node.rename_index_columns({'index_id': 'G'})
             else:
                 import toron.dal1
                 toron.dal1.legacy_rename_columns(node, {'B': 'value'})
@@ -593,6 +607,18 @@ class TestIndexColumnMethods(unittest.TestCase):
         regex = 'cannot remove all index columns'
         with self.assertRaisesRegex(RuntimeError, regex):
             node.drop_index_columns('A', 'B', 'C')
+
+    def test_drop_index_columns_reserved_identifier(self):
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B', 'C')
+
+        regex = "cannot alter columns, 'index_id' is a reserved identifier"
+        with self.assertRaisesRegex(ValueError, regex):
+            if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
+                node.drop_index_columns('C', 'index_id')
+            else:
+                import toron.dal1
+                toron.dal1.legacy_drop_columns(node, 'C', 'index_id')
 
 
 class TestIndexMethods(unittest.TestCase):

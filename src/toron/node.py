@@ -328,6 +328,14 @@ class Node(object):
             column_manager = self._dal.ColumnManager(cursor)
             property_repo = self._dal.PropertyRepository(cursor)
 
+            # Check old column names.
+            all_reserved_identifiers = \
+                self._dal.reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
+            for col in mapping.keys():
+                if col in all_reserved_identifiers:
+                    msg = f'cannot alter columns, {col!r} is a reserved identifier'
+                    raise ValueError(msg)
+
             # Check new column names.
             validate_new_index_columns(
                 new_column_names=mapping.values(),
@@ -348,6 +356,13 @@ class Node(object):
     def drop_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
             col_manager = self._dal.ColumnManager(cursor)
+
+            all_reserved_identifiers = \
+                self._dal.reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
+            for col in chain([column], columns):
+                if col in all_reserved_identifiers:
+                    msg = f'cannot alter columns, {col!r} is a reserved identifier'
+                    raise ValueError(msg)
 
             if set(col_manager.get_columns()).issubset(chain([column], columns)):
                 msg = (

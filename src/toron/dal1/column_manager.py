@@ -13,7 +13,10 @@ if TYPE_CHECKING:
     from toron import Node
 
 from . import schema
-from ..data_models import BaseColumnManager
+from ..data_models import (
+    COMMON_RESERVED_IDENTIFIERS,
+    BaseColumnManager,
+)
 
 
 class ColumnManager(BaseColumnManager):
@@ -254,8 +257,16 @@ def legacy_drop_columns(node: 'Node', column: str, *columns: str) -> None:
             msg = 'cannot delete columns inside an existing transaction'
             raise RuntimeError(msg)
 
-        # Get list of columns to keep (must preserve existing order).
         columns_to_delete = tuple(chain([column], columns))
+
+        all_reserved_identifiers = \
+            node._dal.reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
+        for col in columns_to_delete:
+            if col in all_reserved_identifiers:
+                msg = f'cannot alter columns, {col!r} is a reserved identifier'
+                raise ValueError(msg)
+
+        # Get list of columns to keep (must preserve existing order).
         columns_to_keep = [
             col for col in manager.get_columns() if col not in columns_to_delete
         ]
