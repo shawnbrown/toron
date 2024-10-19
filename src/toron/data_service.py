@@ -62,22 +62,22 @@ def validate_new_index_columns(
     for col in new_column_names:
         if col in all_reserved_identifiers:
             raise ValueError(
-                f'cannot update columns, {col!r} is a reserved identifier'
+                f'cannot alter columns, {col!r} is a reserved identifier'
             )
 
         if col in existing_columns:
             raise ValueError(
-                f'cannot update columns, {col!r} is already an index column'
+                f'cannot alter columns, {col!r} is already an index column'
             )
 
         if col in domain_keys:
             raise ValueError(
-                f'cannot update columns, {col!r} is used in the domain'
+                f'cannot alter columns, {col!r} is used in the domain'
             )
 
         if col in attribute_names:
             raise ValueError(
-                f'cannot update columns, {col!r} is used as an attribute '
+                f'cannot alter columns, {col!r} is used as an attribute '
                 f'name'
             )
 

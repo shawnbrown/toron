@@ -49,7 +49,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         )
 
     def test_reserved_identifier_collision(self):
-        regex = "cannot update columns, 'value' is a reserved identifier"
+        regex = "cannot alter columns, 'value' is a reserved identifier"
         with self.assertRaisesRegex(ValueError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['value']),
@@ -62,7 +62,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
     def test_column_collision(self):
         self.column_manager.add_columns('foo', 'bar', 'baz')
 
-        regex = "cannot update columns, 'baz' is already an index column"
+        regex = "cannot alter columns, 'baz' is already an index column"
         with self.assertRaisesRegex(ValueError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['baz', 'qux']),
@@ -75,7 +75,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
     def test_domain_collision(self):
         self.property_repo.add('domain', {'qux': '444'})
 
-        regex = "cannot update columns, 'qux' is used in the domain"
+        regex = "cannot alter columns, 'qux' is used in the domain"
         with self.assertRaisesRegex(ValueError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['baz', 'qux']),
@@ -88,7 +88,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
     def test_attribute_collision(self):
         self.attribute_repo.add({'corge': '555'})
 
-        regex = "cannot update columns, 'corge' is used as an attribute name"
+        regex = "cannot alter columns, 'corge' is used as an attribute name"
         with self.assertRaisesRegex(ValueError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['qux', 'corge']),

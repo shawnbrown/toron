@@ -503,11 +503,11 @@ class TestIndexColumnMethods(unittest.TestCase):
         with node._managed_cursor() as cursor:
             node._dal.PropertyRepository(cursor).add('domain', {'baz': '111', 'qux': '222'})
 
-        regex = "cannot update columns, 'baz' is used in the domain"
+        regex = "cannot alter columns, 'baz' is used in the domain"
         with self.assertRaisesRegex(ValueError, regex):
             node.add_index_columns('foo', 'bar', 'baz')
 
-        regex = "cannot update columns, 'value' is a reserved identifier"
+        regex = "cannot alter columns, 'value' is a reserved identifier"
         with self.assertRaisesRegex(ValueError, regex):
             node.add_index_columns('value')
 
@@ -555,7 +555,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         with node._managed_cursor() as cursor:
             node._dal.PropertyRepository(cursor).add('domain', {'T': 'xxx'})
 
-        regex = "cannot update columns, 'T' is used in the domain"
+        regex = "cannot alter columns, 'T' is used in the domain"
         with self.assertRaisesRegex(ValueError, regex):
             if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
                 node.rename_index_columns({'B': 'G', 'D': 'T'})
@@ -563,7 +563,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 import toron.dal1
                 toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
 
-        regex = "cannot update columns, 'value' is a reserved identifier"
+        regex = "cannot alter columns, 'value' is a reserved identifier"
         with self.assertRaisesRegex(ValueError, regex):
             if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
                 node.rename_index_columns({'B': 'value'})
