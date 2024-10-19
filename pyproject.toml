@@ -7,8 +7,7 @@ name = "toron"
 version = "0.0.1"
 dependencies = [
   "lark >= 0.10.1",
-  "typing_extensions >= 3.10.0.0; python_version > '3.7' and python_version < '3.11'",
-  "typing_extensions >= 3.10.0.0, < 4.8; python_version == '3.7'",
+  "typing_extensions>=3.10.0.0; python_version < '3.11'",
 ]
 requires-python = ">=3.7"
 authors = [
