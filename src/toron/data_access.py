@@ -6,12 +6,14 @@ from dataclasses import dataclass
 from ._typing import (
     Dict,
     Optional,
+    Set,
     Type,
     Union,
 )
 
 from .data_models import (
     TORON_MAGIC_NUMBER,
+    COMMON_RESERVED_IDENTIFIERS,
     BaseDataConnector,
     BaseColumnManager,
     BaseIndexRepository,
@@ -36,6 +38,7 @@ else:
 class DataAccessLayer(object):
     """A namespace for related data access classes."""
     backend: str
+    reserved_identifiers: Set[str]
     DataConnector: Type[BaseDataConnector]
     ColumnManager: Type[BaseColumnManager]
     IndexRepository: Type[BaseIndexRepository]
@@ -68,8 +71,10 @@ def get_data_access_layer(backend: str = 'DAL1') -> DataAccessLayer:
 
     if backend == 'DAL1':
         from . import dal1 as mod
+
         dal = DataAccessLayer(
             backend=backend,
+            reserved_identifiers=mod.RESERVED_IDENTIFIERS,
             DataConnector=mod.DataConnector,
             ColumnManager=mod.ColumnManager,
             IndexRepository=mod.IndexRepository,

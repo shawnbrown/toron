@@ -68,9 +68,18 @@ from toron._typing import (
     Callable,
     Final,
     Optional,
+    Set,
 )
 from toron._utils import BitFlags
 from ..data_models import TORON_MAGIC_NUMBER  # Used as 'application_id'.
+
+
+RESERVED_IDENTIFIERS: Final[Set[str]] = {
+    'index_id',
+    '_location_id',
+    '_structure_id',
+    '_granularity',
+}
 
 
 sqlite3.register_converter('TEXT_SELECTORS', json_loads)

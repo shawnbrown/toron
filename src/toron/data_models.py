@@ -42,6 +42,17 @@ JsonTypes: TypeAlias = Union[
 TORON_MAGIC_NUMBER: Final[bytes] = b'\x01\x2d\x84\xc8'
 
 
+# Reserved identifiers should not be used for index columns,
+# attribute keys, or weight group names. In addition to the
+# common set of reserved identifiers here, individual backends
+# (like DAL1) may define additional ones.
+COMMON_RESERVED_IDENTIFIERS: Final[Set[str]] = {
+    'index_id',
+    'value',
+    'weight',
+}
+
+
 class BaseDataConnector(ABC, Generic[T1, T2]):
     @abstractmethod
     def __init__(self, **kwds) -> None:
