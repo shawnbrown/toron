@@ -20,6 +20,7 @@ from .categories import (
     make_structure,
 )
 from .data_models import (
+    COMMON_RESERVED_IDENTIFIERS,
     BaseAttributeGroupRepository,
     BaseColumnManager,
     BaseIndexRepository,
@@ -44,6 +45,7 @@ from ._utils import (
 
 def validate_new_index_columns(
     new_column_names: Iterable[str],
+    reserved_identifiers: Set[str],
     column_manager: BaseColumnManager,
     property_repo: BasePropertyRepository,
     attribute_repo: BaseAttributeGroupRepository,
@@ -51,11 +53,18 @@ def validate_new_index_columns(
     """Raise a ValueError if a new column conflicts with an existing
     index column, the domain, or an attribute name.
     """
+    all_reserved_identifiers = \
+        reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
     existing_columns = set(column_manager.get_columns())
     domain_keys = set(get_domain(property_repo).keys())
     attribute_names = set(attribute_repo.get_all_attribute_names())
 
     for col in new_column_names:
+        if col in all_reserved_identifiers:
+            raise ValueError(
+                f'cannot update columns, {col!r} is a reserved identifier'
+            )
+
         if col in existing_columns:
             raise ValueError(
                 f'cannot update columns, {col!r} is already an index column'

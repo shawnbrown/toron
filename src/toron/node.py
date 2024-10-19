@@ -28,6 +28,7 @@ from .categories import (
     minimize_discrete_categories,
 )
 from .data_models import (
+    COMMON_RESERVED_IDENTIFIERS,
     Index,
     AttributesDict,
     WeightGroup,
@@ -315,6 +316,7 @@ class Node(object):
             column_manager = self._dal.ColumnManager(cursor)
             validate_new_index_columns(
                 new_column_names=chain([column], columns),
+                reserved_identifiers=self._dal.reserved_identifiers,
                 column_manager=column_manager,
                 property_repo=self._dal.PropertyRepository(cursor),
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
@@ -325,12 +327,17 @@ class Node(object):
         with self._managed_transaction() as cursor:
             column_manager = self._dal.ColumnManager(cursor)
             property_repo = self._dal.PropertyRepository(cursor)
+
+            # Check new column names.
             validate_new_index_columns(
                 new_column_names=mapping.values(),
+                reserved_identifiers=self._dal.reserved_identifiers,
                 column_manager=column_manager,
                 property_repo=property_repo,
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
+
+            # Rename columns and discrete categories.
             column_manager.rename_columns(mapping)
             rename_discrete_categories(
                 mapping=mapping,

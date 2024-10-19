@@ -507,6 +507,10 @@ class TestIndexColumnMethods(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             node.add_index_columns('foo', 'bar', 'baz')
 
+        regex = "cannot update columns, 'value' is a reserved identifier"
+        with self.assertRaisesRegex(ValueError, regex):
+            node.add_index_columns('value')
+
     def test_index_columns_property(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
@@ -558,6 +562,14 @@ class TestIndexColumnMethods(unittest.TestCase):
             else:
                 import toron.dal1
                 toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
+
+        regex = "cannot update columns, 'value' is a reserved identifier"
+        with self.assertRaisesRegex(ValueError, regex):
+            if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
+                node.rename_index_columns({'B': 'value'})
+            else:
+                import toron.dal1
+                toron.dal1.legacy_rename_columns(node, {'B': 'value'})
 
     def test_drop_index_columns(self):
         node = Node()

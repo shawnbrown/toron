@@ -158,6 +158,7 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
         # Check new column names for conflicts.
         validate_new_index_columns(
             new_column_names=mapping.values(),
+            reserved_identifiers=node._dal.reserved_identifiers,
             column_manager=column_manager,
             property_repo=property_repo,
             attribute_repo=node._dal.AttributeGroupRepository(cursor),

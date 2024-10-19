@@ -34,6 +34,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
+        self.reserved_identifiers = dal.reserved_identifiers
         self.column_manager = dal.ColumnManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
         self.attribute_repo = dal.AttributeGroupRepository(cur)
@@ -41,10 +42,22 @@ class TestValidateNewIndexColumns(unittest.TestCase):
     def test_valid(self):
         validate_new_index_columns(
             new_column_names=iter(['baz', 'qux']),
+            reserved_identifiers=self.reserved_identifiers,
             column_manager=self.column_manager,
             property_repo=self.property_repo,
             attribute_repo=self.attribute_repo,
         )
+
+    def test_reserved_identifier_collision(self):
+        regex = "cannot update columns, 'value' is a reserved identifier"
+        with self.assertRaisesRegex(ValueError, regex):
+            validate_new_index_columns(
+                new_column_names=iter(['value']),
+                reserved_identifiers=self.reserved_identifiers,
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+                attribute_repo=self.attribute_repo,
+            )
 
     def test_column_collision(self):
         self.column_manager.add_columns('foo', 'bar', 'baz')
@@ -53,6 +66,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['baz', 'qux']),
+                reserved_identifiers=self.reserved_identifiers,
                 column_manager=self.column_manager,
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
@@ -65,6 +79,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['baz', 'qux']),
+                reserved_identifiers=self.reserved_identifiers,
                 column_manager=self.column_manager,
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
@@ -77,6 +92,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['qux', 'corge']),
+                reserved_identifiers=self.reserved_identifiers,
                 column_manager=self.column_manager,
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
