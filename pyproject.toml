@@ -60,6 +60,7 @@ legacy_tox_ini = """
   # Build source-distribution and wheel in the 'dist/' directory.
   skip_install = true
   deps =
+    setuptools>=61.0.0
     build
     twine
   commands =
