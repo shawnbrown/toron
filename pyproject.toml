@@ -46,6 +46,7 @@ legacy_tox_ini = """
   package = editable
   commands =
     python --version
+    pip freeze --exclude toron
     python -c 'import sqlite3; print(f"SQLite {sqlite3.sqlite_version}")'
     python -O -W default -m unittest
 
