@@ -767,6 +767,41 @@ class Node(object):
 
             group_repo.delete(group.id)
 
+    def _select_weights(
+        self,
+        weight_group_name: str,
+        **criteria: str,
+    ) -> Iterator[Tuple[Index, AttributesDict, Optional[float]]]:
+        """Generator to yield index, attribute, and weight value tuples."""
+        with self._managed_cursor(n=2) as (cursor, aux_cursor):
+            index_repo = self._dal.IndexRepository(cursor)
+            group_repo = self._dal.WeightGroupRepository(cursor)
+            weight_repo = self._dal.WeightRepository(aux_cursor)
+
+            weight_group = group_repo.get_by_name(weight_group_name)
+            if not weight_group:
+                import warnings
+                msg = f'no weight group named {weight_group_name!r}'
+                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+                return  # <- EXIT! (stops iteration)
+
+            if criteria:
+                index_records = index_repo.find_by_label(criteria, include_undefined=False)
+            else:
+                index_records = index_repo.get_all(include_undefined=False)
+
+            weight_group_id = weight_group.id
+            for index in index_records:
+                attributes_dict = {'weight': weight_group_name}
+
+                weight = weight_repo.get_by_weight_group_id_and_index_id(
+                    weight_group_id,
+                    index.id,
+                )
+                weight_value = weight.value if weight else None
+
+                yield (index, attributes_dict, weight_value)
+
     def select_weights(
         self,
         weight_group_name: str,

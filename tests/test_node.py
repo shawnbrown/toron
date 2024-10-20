@@ -1621,6 +1621,83 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         self.assertEqual(str(cm.warning), "no weight group named 'name_x'")
 
 
+class TestNodeSelectWeightsGenerator(unittest.TestCase):
+    def setUp(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            col_manager = node._dal.ColumnManager(cursor)
+            index_repo = node._dal.IndexRepository(cursor)
+            weight_group_repo = node._dal.WeightGroupRepository(cursor)
+            weight_repo = node._dal.WeightRepository(cursor)
+
+            # Add index columns and records.
+            col_manager.add_columns('A', 'B')
+            index_repo.add('foo', 'x')
+            index_repo.add('bar', 'y')
+            index_repo.add('bar', 'z')
+
+            # Add weight_group_id 1.
+            weight_group_repo.add('weight1')
+
+            # Add weights for weight_group_id 1.
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        self.node = node
+
+    def test_select_all(self):
+        generator = self.node._select_weights('weight1')
+        expected = [
+            (Index(id=1, labels=('foo', 'x')), {'weight': 'weight1'}, 10.0),
+            (Index(id=2, labels=('bar', 'y')), {'weight': 'weight1'}, 25.0),
+            (Index(id=3, labels=('bar', 'z')), {'weight': 'weight1'}, 15.0),
+        ]
+        self.assertEqual(list(generator), expected)
+
+    def test_select_with_criteria(self):
+        """Test with selection criteria A='bar'."""
+        generator = self.node._select_weights('weight1', A='bar')
+        expected = [
+            (Index(id=2, labels=('bar', 'y')), {'weight': 'weight1'}, 25.0),
+            (Index(id=3, labels=('bar', 'z')), {'weight': 'weight1'}, 15.0),
+        ]
+        self.assertEqual(list(generator), expected)
+
+    def test_select_no_matching_criteria(self):
+        """When no criteria matches, generator should be empty."""
+        weights = self.node._select_weights('weight1', A='NOMATCH')
+        self.assertEqual(list(weights), [], msg='generator should be empty')
+
+    def test_select_with_missing_weights(self):
+        """The the full set of index matches should be returned even if
+        there are no associated weights.
+        """
+        with self.node._managed_cursor() as cursor:
+            weight_group_repo = self.node._dal.WeightGroupRepository(cursor)
+            weight_repo = self.node._dal.WeightRepository(cursor)
+
+            weight_group_repo.add('weight2')
+            weight_repo.add(2, 1, 12.0)
+            weight_repo.add(2, 3, 16.0)
+
+        generator = self.node._select_weights('weight2')
+        expected = [
+            (Index(id=1, labels=('foo', 'x')), {'weight': 'weight2'}, 12.0),
+            (Index(id=2, labels=('bar', 'y')), {'weight': 'weight2'}, None),  # <- Missing weight.
+            (Index(id=3, labels=('bar', 'z')), {'weight': 'weight2'}, 16.0),
+        ]
+        self.assertEqual(list(generator), expected, msg='missing weights should be None')
+
+        # Select with criteria (should return weights with matching index records).
+        generator = self.node._select_weights('weight2', A='bar')
+        expected = [
+            (Index(id=2, labels=('bar', 'y')), {'weight': 'weight2'}, None),  # <- Missing weight.
+            (Index(id=3, labels=('bar', 'z')), {'weight': 'weight2'}, 16.0),
+        ]
+        self.assertEqual(list(generator), expected, msg='expected matching indexes only')
+
+
 class TestNodeWeightMethods(unittest.TestCase):
     def setUp(self):
         node = Node()
