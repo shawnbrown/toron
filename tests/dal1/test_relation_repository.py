@@ -112,10 +112,6 @@ class TestRelationRepository(unittest.TestCase):
         repository.delete(3)  # No relation_id=3, should pass without error.
         self.assertRecords([])
 
-    @unittest.skip('not implemented')
-    def test_find_by_crosswalk_id(self):
-        raise NotImplementedError
-
     def test_crosswalk_is_complete(self):
         self.cursor.executescript("""
             ALTER TABLE main.node_index ADD COLUMN

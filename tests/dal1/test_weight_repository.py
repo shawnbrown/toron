@@ -90,10 +90,6 @@ class TestWeightRepository(unittest.TestCase):
         repository.delete(3)  # No weight_id=3, should pass without error.
         self.assertRecords([])
 
-    @unittest.skip('not implemented')
-    def test_find_by_weight_group_id(self):
-        raise NotImplementedError
-
     def test_weight_group_is_complete(self):
         repository = WeightRepository(self.cursor)
 

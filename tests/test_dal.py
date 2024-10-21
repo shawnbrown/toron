@@ -1663,12 +1663,12 @@ class TestAddIndexRecords(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    @unittest.expectedFailure
-    def test_no_columns_added(self):
-        """Specify behavior when attempting to add records before
-        index columns have been defined.
-        """
-        raise NotImplementedError
+    #@unittest.expectedFailure
+    #def test_no_columns_added(self):
+    #    """Specify behavior when attempting to add records before
+    #    index columns have been defined.
+    #    """
+    #    raise NotImplementedError
 
 
 class TestIndexRecords(unittest.TestCase):
@@ -2060,13 +2060,13 @@ class TestAddWeights(unittest.TestCase):
         }
         self.assertEqual(set(self.cursor.fetchall()), expected)
 
-    @unittest.expectedFailure
-    def test_match_by_index_id(self):
-        raise NotImplementedError
+    #@unittest.expectedFailure
+    #def test_match_by_index_id(self):
+    #    raise NotImplementedError
 
-    @unittest.expectedFailure
-    def test_mismatched_columns_and_index_id(self):
-        raise NotImplementedError
+    #@unittest.expectedFailure
+    #def test_mismatched_columns_and_index_id(self):
+    #    raise NotImplementedError
 
     def test_default_weighting_implicit(self):
         default_weighting = self.dal._get_data_property(self.cursor, 'default_weighting')

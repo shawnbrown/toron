@@ -89,7 +89,3 @@ class TestQuantityRepository(unittest.TestCase):
 
         repository.delete(3)  # No quantity_id=3, should pass without error.
         self.assertRecords([])
-
-    @unittest.skip('not implemented')
-    def find_by_attribute_group_id(self):
-        raise NotImplementedError

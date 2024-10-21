@@ -164,13 +164,13 @@ class TestNodeRemoveDiscreteCategories(unittest.TestCase):
         structure = {(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1), (1, 1, 0)}
         self.assertEqual(actual, structure)
 
-    @unittest.skip('not yet implemented')
-    def test_mandatory_category_warning(self):
-        raise NotImplementedError
+    #@unittest.skip('not yet implemented')
+    #def test_mandatory_category_warning(self):
+    #   raise NotImplementedError
 
-    @unittest.skip('not yet implemented')
-    def test_no_match_warning(self):
-        raise NotImplementedError
+    #@unittest.skip('not yet implemented')
+    #def test_no_match_warning(self):
+    #    raise NotImplementedError
 
 
 class TestNodeWrapperMethods(unittest.TestCase):
