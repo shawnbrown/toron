@@ -138,6 +138,9 @@ def _translate(
         selector_dict = {x.id: func(x.selectors) for x in crosswalks}
 
         for index, attributes, quantity_value in quantity_iterator.data:
+            if quantity_value is None:
+                continue  # Skip to next relation.
+
             # Find crosswalk that matches with greated unique specificity.
             crosswalk_id = get_greatest_unique_specificity(
                 row_dict=attributes,

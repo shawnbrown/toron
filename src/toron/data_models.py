@@ -906,7 +906,7 @@ class QuantityIterator(object):
         unique_id: str,
         index_hash: str,
         domain: Dict[str, str],
-        data: Iterable[Tuple[Index, AttributesDict, float]],
+        data: Iterable[Tuple[Index, AttributesDict, Optional[float]]],
         label_names: Sequence[str],
         attribute_keys: Iterable[str],
     ):
@@ -938,7 +938,7 @@ class QuantityIterator(object):
         return dict(zip(self._domain_names, self._domain_values))
 
     @property
-    def data(self) -> Iterator[Tuple[Index, AttributesDict, float]]:
+    def data(self) -> Iterator[Tuple[Index, AttributesDict, Optional[float]]]:
         return self._data
 
     @property
