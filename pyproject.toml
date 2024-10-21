@@ -32,6 +32,9 @@ classifiers = [
   'Programming Language :: Python :: Implementation :: PyPy',
 ]
 
+[project.scripts]
+toron = "toron.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/shawnbrown/toron"
 
