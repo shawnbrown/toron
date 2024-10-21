@@ -19,7 +19,7 @@ class TestPackageDependencies(unittest.TestCase):
         """
         args = [
             # List installed packages.
-            'pip', 'freeze',
+            'python', '-m', 'pip', 'freeze',
 
             # Exclude Toron itself.
             '--exclude', 'toron',
