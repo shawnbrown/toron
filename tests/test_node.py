@@ -1621,32 +1621,33 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         self.assertEqual(str(cm.warning), "no weight group named 'name_x'")
 
 
-class TestNodeSelectWeightsGenerator(unittest.TestCase):
+class TestNodeSelectWeights(unittest.TestCase):
     def setUp(self):
         node = Node()
         with node._managed_cursor() as cursor:
-            col_manager = node._dal.ColumnManager(cursor)
-            index_repo = node._dal.IndexRepository(cursor)
-            weight_group_repo = node._dal.WeightGroupRepository(cursor)
-            weight_repo = node._dal.WeightRepository(cursor)
-
             # Add index columns and records.
-            col_manager.add_columns('A', 'B')
+            node._dal.ColumnManager(cursor).add_columns('A', 'B')
+            index_repo = node._dal.IndexRepository(cursor)
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
 
-            # Add weight_group_id 1.
-            weight_group_repo.add('weight1')
-
-            # Add weights for weight_group_id 1.
+            # Add weight_group_id 1 and weights.
+            node._dal.WeightGroupRepository(cursor).add('weight1')
+            weight_repo = node._dal.WeightRepository(cursor)
             weight_repo.add(1, 1, 10.0)
             weight_repo.add(1, 2, 25.0)
             weight_repo.add(1, 3, 15.0)
 
+            # Add index hash (needed for QuantityIterator).
+            node._dal.PropertyRepository(cursor).add(
+                'index_hash',
+                'c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
+            )
+
         self.node = node
 
-    def test_select_all(self):
+    def test_generator_select_all(self):
         generator = self.node._select_weights('weight1')
         expected = [
             (Index(id=1, labels=('foo', 'x')), {'weight': 'weight1'}, 10.0),
@@ -1655,7 +1656,7 @@ class TestNodeSelectWeightsGenerator(unittest.TestCase):
         ]
         self.assertEqual(list(generator), expected)
 
-    def test_select_with_criteria(self):
+    def test_generator_with_criteria(self):
         """Test with selection criteria A='bar'."""
         generator = self.node._select_weights('weight1', A='bar')
         expected = [
@@ -1664,12 +1665,12 @@ class TestNodeSelectWeightsGenerator(unittest.TestCase):
         ]
         self.assertEqual(list(generator), expected)
 
-    def test_select_no_matching_criteria(self):
+    def test_generator_no_matching_criteria(self):
         """When no criteria matches, generator should be empty."""
         weights = self.node._select_weights('weight1', A='NOMATCH')
         self.assertEqual(list(weights), [], msg='generator should be empty')
 
-    def test_select_with_missing_weights(self):
+    def test_generator_missing_weights(self):
         """The the full set of index matches should be returned even if
         there are no associated weights.
         """
@@ -1697,6 +1698,22 @@ class TestNodeSelectWeightsGenerator(unittest.TestCase):
         ]
         self.assertEqual(list(generator), expected, msg='expected matching indexes only')
 
+    def test_public_wrapper_method(self):
+        """The `select_weights()` method wraps generator output."""
+        weights = self.node.select_weights('weight1')
+
+        self.assertIsInstance(weights, QuantityIterator)
+        self.assertEqual(
+            weights.columns,
+            ('A', 'B', 'weight', 'value'),
+        )
+        self.assertEqual(
+            list(weights),
+            [('foo', 'x', 'weight1', 10.0),
+             ('bar', 'y', 'weight1', 25.0),
+             ('bar', 'z', 'weight1', 15.0)],
+        )
+
 
 class TestNodeWeightMethods(unittest.TestCase):
     def setUp(self):
@@ -1722,40 +1739,6 @@ class TestNodeWeightMethods(unittest.TestCase):
         with self.node._managed_cursor() as cursor:
             cursor.execute('SELECT * FROM weight')
             return cursor.fetchall()
-
-    def test_select(self):
-        with self.node._managed_cursor() as cursor:
-            weight_repo = self.node._dal.WeightRepository(cursor)
-            weight_repo.add(1, 1, 10.0)
-            weight_repo.add(1, 2, 25.0)
-            weight_repo.add(1, 3, 15.0)
-
-        weights = self.node.select_weights('weight1', header=True)
-        expected = [
-            ('index_id', 'A', 'B', 'weight1'),
-            (1, 'foo', 'x', 10.0),
-            (2, 'bar', 'y', 25.0),
-            (3, 'bar', 'z', 15.0),
-        ]
-        self.assertEqual(list(weights), expected)
-
-        # Test with selection `header=False` and `A='bar'`.
-        weights = self.node.select_weights('weight1', header=False, A='bar')
-        expected = [
-            (2, 'bar', 'y', 25.0),
-            (3, 'bar', 'z', 15.0),
-        ]
-        self.assertEqual(list(weights), expected)
-
-        # Test with selection `header=True` and `A='NOMATCH'`.
-        weights = self.node.select_weights('weight1', header=True, A='NOMATCH')
-        expected = [('index_id', 'A', 'B', 'weight1')]
-        msg = 'header row only, when there are no matches'
-        self.assertEqual(list(weights), expected, msg=msg)
-
-        # Test with selection `header=False` and `A='NOMATCH'`.
-        weights = self.node.select_weights('weight1', header=False, A='NOMATCH')
-        self.assertEqual(list(weights), [], msg='iterator should be empty')
 
     def test_insert_by_label(self):
         data = [

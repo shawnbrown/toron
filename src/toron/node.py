@@ -805,41 +805,26 @@ class Node(object):
     def select_weights(
         self,
         weight_group_name: str,
-        header: bool = False,
         **criteria: str,
-    ) -> Iterator[Sequence]:
-        with self._managed_cursor(n=2) as (cursor, aux_cursor):
+    ) -> QuantityIterator:
+        with self._managed_cursor() as cursor:
+            property_repo = self._dal.PropertyRepository(cursor)
+            unique_id = check_type(property_repo.get('unique_id'), str)
+            index_hash = check_type(property_repo.get('index_hash'), str)
+            domain = get_domain(property_repo)
+
             col_manager = self._dal.ColumnManager(cursor)
-            group_repo = self._dal.WeightGroupRepository(cursor)
-            index_repo = self._dal.IndexRepository(cursor)
+            label_names = col_manager.get_columns()
 
-            if header:
-                label_columns = col_manager.get_columns()
-                header_row = ('index_id',) + label_columns + (weight_group_name,)
-                yield header_row
-
-            weight_group = group_repo.get_by_name(weight_group_name)
-            if not weight_group:
-                import warnings
-                msg = f'no weight group named {weight_group_name!r}'
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
-                return  # <- EXIT! (stops iteration)
-
-            if criteria:
-                index_records = index_repo.find_by_label(criteria, include_undefined=False)
-            else:
-                index_records = index_repo.get_all(include_undefined=False)
-
-            weight_repo = self._dal.WeightRepository(aux_cursor)
-            weight_group_id = weight_group.id
-            for index in index_records:
-                index_id = index.id
-                weight = weight_repo.get_by_weight_group_id_and_index_id(
-                    weight_group_id,
-                    index_id,
-                )
-                weight_value = getattr(weight, 'value', None)
-                yield (index.id,) + index.labels + (weight_value,)
+        quantity_iter = QuantityIterator(
+            unique_id=unique_id,
+            index_hash=index_hash,
+            domain=domain,
+            data=self._select_weights(weight_group_name, **criteria),
+            label_names=label_names,
+            attribute_keys=['weight'],
+        )
+        return quantity_iter
 
     def insert_weights(
         self,
