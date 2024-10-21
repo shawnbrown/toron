@@ -1633,7 +1633,7 @@ class TestNodeSelectWeights(unittest.TestCase):
             index_repo.add('bar', 'z')
 
             # Add weight_group_id 1 and weights.
-            node._dal.WeightGroupRepository(cursor).add('weight1')
+            node._dal.WeightGroupRepository(cursor).add('group1')
             weight_repo = node._dal.WeightRepository(cursor)
             weight_repo.add(1, 1, 10.0)
             weight_repo.add(1, 2, 25.0)
@@ -1648,26 +1648,26 @@ class TestNodeSelectWeights(unittest.TestCase):
         self.node = node
 
     def test_generator_select_all(self):
-        generator = self.node._select_weights('weight1')
+        generator = self.node._select_weights('group1')
         expected = [
-            (Index(id=1, labels=('foo', 'x')), {'weight': 'weight1'}, 10.0),
-            (Index(id=2, labels=('bar', 'y')), {'weight': 'weight1'}, 25.0),
-            (Index(id=3, labels=('bar', 'z')), {'weight': 'weight1'}, 15.0),
+            (Index(id=1, labels=('foo', 'x')), {'weight': 'group1'}, 10.0),
+            (Index(id=2, labels=('bar', 'y')), {'weight': 'group1'}, 25.0),
+            (Index(id=3, labels=('bar', 'z')), {'weight': 'group1'}, 15.0),
         ]
         self.assertEqual(list(generator), expected)
 
     def test_generator_with_criteria(self):
         """Test with selection criteria A='bar'."""
-        generator = self.node._select_weights('weight1', A='bar')
+        generator = self.node._select_weights('group1', A='bar')
         expected = [
-            (Index(id=2, labels=('bar', 'y')), {'weight': 'weight1'}, 25.0),
-            (Index(id=3, labels=('bar', 'z')), {'weight': 'weight1'}, 15.0),
+            (Index(id=2, labels=('bar', 'y')), {'weight': 'group1'}, 25.0),
+            (Index(id=3, labels=('bar', 'z')), {'weight': 'group1'}, 15.0),
         ]
         self.assertEqual(list(generator), expected)
 
     def test_generator_no_matching_criteria(self):
         """When no criteria matches, generator should be empty."""
-        weights = self.node._select_weights('weight1', A='NOMATCH')
+        weights = self.node._select_weights('group1', A='NOMATCH')
         self.assertEqual(list(weights), [], msg='generator should be empty')
 
     def test_generator_missing_weights(self):
@@ -1678,29 +1678,29 @@ class TestNodeSelectWeights(unittest.TestCase):
             weight_group_repo = self.node._dal.WeightGroupRepository(cursor)
             weight_repo = self.node._dal.WeightRepository(cursor)
 
-            weight_group_repo.add('weight2')
+            weight_group_repo.add('group2')
             weight_repo.add(2, 1, 12.0)
             weight_repo.add(2, 3, 16.0)
 
-        generator = self.node._select_weights('weight2')
+        generator = self.node._select_weights('group2')
         expected = [
-            (Index(id=1, labels=('foo', 'x')), {'weight': 'weight2'}, 12.0),
-            (Index(id=2, labels=('bar', 'y')), {'weight': 'weight2'}, None),  # <- Missing weight.
-            (Index(id=3, labels=('bar', 'z')), {'weight': 'weight2'}, 16.0),
+            (Index(id=1, labels=('foo', 'x')), {'weight': 'group2'}, 12.0),
+            (Index(id=2, labels=('bar', 'y')), {'weight': 'group2'}, None),  # <- Missing weight.
+            (Index(id=3, labels=('bar', 'z')), {'weight': 'group2'}, 16.0),
         ]
         self.assertEqual(list(generator), expected, msg='missing weights should be None')
 
         # Select with criteria (should return weights with matching index records).
-        generator = self.node._select_weights('weight2', A='bar')
+        generator = self.node._select_weights('group2', A='bar')
         expected = [
-            (Index(id=2, labels=('bar', 'y')), {'weight': 'weight2'}, None),  # <- Missing weight.
-            (Index(id=3, labels=('bar', 'z')), {'weight': 'weight2'}, 16.0),
+            (Index(id=2, labels=('bar', 'y')), {'weight': 'group2'}, None),  # <- Missing weight.
+            (Index(id=3, labels=('bar', 'z')), {'weight': 'group2'}, 16.0),
         ]
         self.assertEqual(list(generator), expected, msg='expected matching indexes only')
 
     def test_public_wrapper_method(self):
         """The `select_weights()` method wraps generator output."""
-        weights = self.node.select_weights('weight1')
+        weights = self.node.select_weights('group1')
 
         self.assertIsInstance(weights, QuantityIterator)
         self.assertEqual(
@@ -1709,9 +1709,9 @@ class TestNodeSelectWeights(unittest.TestCase):
         )
         self.assertEqual(
             list(weights),
-            [('foo', 'x', 'weight1', 10.0),
-             ('bar', 'y', 'weight1', 25.0),
-             ('bar', 'z', 'weight1', 15.0)],
+            [('foo', 'x', 'group1', 10.0),
+             ('bar', 'y', 'group1', 25.0),
+             ('bar', 'z', 'group1', 15.0)],
         )
 
 
@@ -1730,7 +1730,7 @@ class TestNodeWeightMethods(unittest.TestCase):
             index_repo.add('bar', 'z')
 
             # Add weight_group_id 1.
-            weight_group_repo.add('weight1')
+            weight_group_repo.add('group1')
 
         self.node = node
 
@@ -1742,101 +1742,101 @@ class TestNodeWeightMethods(unittest.TestCase):
 
     def test_insert_by_label(self):
         data = [
-            ('A', 'B', 'weight1'),
+            ('A', 'B', 'group1'),
             ('foo', 'x', 10.0),
             ('bar', 'y', 25.0),
             ('bar', 'z', 15.0),
         ]
-        self.node.insert_weights('weight1', data)
+        self.node.insert_weights('group1', data)
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
     def test_insert_by_label_different_order(self):
         data = [
-            ('B', 'A', 'weight1'),
+            ('B', 'A', 'group1'),
             ('x', 'foo', 10.0),
             ('y', 'bar', 25.0),
             ('z', 'bar', 15.0),
         ]
-        self.node.insert_weights('weight1', data)
+        self.node.insert_weights('group1', data)
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
     def test_insert_by_label_extra_columns(self):
         data = [
-            ('A', 'B', 'C', 'weight1'),
+            ('A', 'B', 'C', 'group1'),
             ('foo', 'x', 'a', 10.0),
             ('bar', 'y', 'b', 25.0),
             ('bar', 'z', 'c', 15.0),
         ]
-        self.node.insert_weights('weight1', data)
+        self.node.insert_weights('group1', data)
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
     def test_insert_by_index_and_label(self):
         data = [
-            ('index_id', 'A', 'B', 'weight1'),
+            ('index_id', 'A', 'B', 'group1'),
             (1, 'foo', 'x', 10.0),
             (2, 'bar', 'y', 25.0),
             (3, 'bar', 'z', 15.0),
         ]
-        self.node.insert_weights('weight1', data)
+        self.node.insert_weights('group1', data)
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
     def test_insert_is_complete_status(self):
         data = [
-            ('index_id', 'A', 'B', 'weight1'),
+            ('index_id', 'A', 'B', 'group1'),
             (1, 'foo', 'x', 10.0),
             (2, 'bar', 'y', 25.0),
             # Omits weight for index_id 3.
         ]
-        self.node.insert_weights('weight1', data)
+        self.node.insert_weights('group1', data)
 
-        group = self.node.get_weight_group('weight1')
+        group = self.node.get_weight_group('group1')
         self.assertFalse(group.is_complete,
                          msg='no weight for index_id 3, should be false')
 
         # Add weight for index_id 3 and check again.
         data = [
-            ('index_id', 'A', 'B', 'weight1'),
+            ('index_id', 'A', 'B', 'group1'),
             (3, 'bar', 'z', 15.0),
         ]
-        self.node.insert_weights('weight1', data)
-        group = self.node.get_weight_group('weight1')
+        self.node.insert_weights('group1', data)
+        group = self.node.get_weight_group('group1')
         self.assertTrue(group.is_complete)
 
     def test_insert_by_index_and_label_extra_columns(self):
         data = [
-            ('index_id', 'A', 'B', 'C', 'weight1'),
+            ('index_id', 'A', 'B', 'C', 'group1'),
             (1, 'foo', 'x', 'a', 10.0),
             (2, 'bar', 'y', 'b', 25.0),
             (3, 'bar', 'z', 'c', 15.0),
         ]
-        self.node.insert_weights('weight1', data)
+        self.node.insert_weights('group1', data)
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
     def test_insert_by_index_and_label_different_order(self):
         data = [
-            ('B', 'weight1', 'A', 'index_id'),
+            ('B', 'group1', 'A', 'index_id'),
             ('x', 10.0, 'foo', 1),
             ('y', 25.0, 'bar', 2),
             ('z', 15.0, 'bar', 3),
         ]
-        self.node.insert_weights('weight1', data)
+        self.node.insert_weights('group1', data)
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
     def test_insert_warnings_with_index_id(self):
         data = [
-            ('index_id', 'A', 'B', 'weight1'),
+            ('index_id', 'A', 'B', 'group1'),
             (9, 'foo', 'x', 10.0),    # <- No matching index.
             (2, 'bar', 'YYY', 25.0),  # <- Mismatched labels.
             (3, 'bar', 'z', 15.0),    # <- OK (gets inserted)
@@ -1844,7 +1844,7 @@ class TestNodeWeightMethods(unittest.TestCase):
 
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.insert_weights('weight1', data)
+            self.node.insert_weights('group1', data)
 
         # Check the warning's message.
         self.assertEqual(
@@ -1859,7 +1859,7 @@ class TestNodeWeightMethods(unittest.TestCase):
 
     def test_insert_warnings_not_index_id(self):
         data = [
-            ('A', 'B', 'weight1'),
+            ('A', 'B', 'group1'),
             ('foo', 'XXX', 10.0),  # <- No matching labels.
             ('bar', 'YYY', 25.0),  # <- No matching labels.
             ('bar', 'z', 15.0),    # <- OK (gets inserted)
@@ -1867,7 +1867,7 @@ class TestNodeWeightMethods(unittest.TestCase):
 
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.insert_weights('weight1', data)
+            self.node.insert_weights('group1', data)
 
         # Check the warning's message.
         self.assertEqual(
@@ -1887,10 +1887,10 @@ class TestNodeWeightMethods(unittest.TestCase):
             weight_repo.add(1, 3, 15.0)
 
         data = [
-            ('index_id', 'A', 'B','weight1'),
+            ('index_id', 'A', 'B','group1'),
             (2, 'bar', 'y', 555.0),
         ]
-        self.node.update_weights('weight1', data)
+        self.node.update_weights('group1', data)
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 555.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
@@ -1903,10 +1903,10 @@ class TestNodeWeightMethods(unittest.TestCase):
             weight_repo.add(1, 3, 15.0)
 
         data = [
-            ('B', 'index_id', 'A', 'weight1'),
+            ('B', 'index_id', 'A', 'group1'),
             ('y', 2, 'bar', 555.0),
         ]
-        self.node.update_weights('weight1', data)
+        self.node.update_weights('group1', data)
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 555.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
@@ -1918,18 +1918,18 @@ class TestNodeWeightMethods(unittest.TestCase):
             weight_repo.add(1, 2, 25.0)
 
         # Check that `is_complete` status is False.
-        group = self.node.get_weight_group('weight1')
+        group = self.node.get_weight_group('group1')
         self.assertFalse(group.is_complete)
 
         # Upate weights and check that warning is raised.
         data = [
-            ('B', 'index_id', 'A', 'weight1'),
+            ('B', 'index_id', 'A', 'group1'),
             ('x', 1, 'foo', 111.0),
             ('y', 2, 'bar', 222.0),
             ('z', 3, 'bar', 333.0),  # <- Does not previously exist.
         ]
         with self.assertWarns(ToronWarning) as cm:
-            self.node.update_weights('weight1', data)
+            self.node.update_weights('group1', data)
 
         # Check the warning's message.
         self.assertEqual(
@@ -1947,7 +1947,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         self.assertEqual(self.get_weights_helper(), expected)
 
         # Check that `is_complete` status is now True.
-        group = self.node.get_weight_group('weight1')
+        group = self.node.get_weight_group('group1')
         self.assertTrue(group.is_complete)
 
     def test_update_missing_and_mismatched(self):
@@ -1958,14 +1958,14 @@ class TestNodeWeightMethods(unittest.TestCase):
             weight_repo.add(1, 3, 15.0)
 
         data = [
-            ('index_id', 'A', 'B','weight1'),
+            ('index_id', 'A', 'B','group1'),
             (2, 'bar', 'YYY', 444.0),  # <- Mismatch.
             (9, 'bar', 'z', 555.0),    # <- No index_id 9.
         ]
 
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.update_weights('weight1', data)
+            self.node.update_weights('group1', data)
 
         # Check the warning's message.
         self.assertEqual(
@@ -1987,7 +1987,7 @@ class TestNodeWeightMethods(unittest.TestCase):
             weight_repo.add(1, 3, 15.0)
 
             group_repo = self.node._dal.WeightGroupRepository(cursor)
-            group = group_repo.get_by_name('weight1')
+            group = group_repo.get_by_name('group1')
             group.is_complete = True
             group_repo.update(group)
 
@@ -1996,20 +1996,20 @@ class TestNodeWeightMethods(unittest.TestCase):
             (1, 'foo', 'x'),
             (2, 'bar', 'y'),
         ]
-        self.node.delete_weights('weight1', data)
+        self.node.delete_weights('group1', data)
         expected = [(3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
         # Check that `is_complete` was changed to False.
-        group = self.node.get_weight_group('weight1')
+        group = self.node.get_weight_group('group1')
         self.assertFalse(group.is_complete)
 
         # Test with weight column (can be present but is ignored).
         data = [
-            ('index_id', 'A', 'B', 'weight1'),
+            ('index_id', 'A', 'B', 'group1'),
             (3, 'bar', 'z', 15.0),
         ]
-        self.node.delete_weights('weight1', data)
+        self.node.delete_weights('group1', data)
         self.assertEqual(self.get_weights_helper(), [])
 
     def test_delete_warnings(self):
@@ -2026,7 +2026,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         ]
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.delete_weights('weight1', data)
+            self.node.delete_weights('group1', data)
 
         # Check the warning's message.
         self.assertEqual(
@@ -2049,12 +2049,12 @@ class TestNodeWeightMethods(unittest.TestCase):
             weight_repo.add(1, 3, 15.0)
 
         # Test single criteria (matches 2 rows).
-        self.node.delete_weights('weight1', A='bar')
+        self.node.delete_weights('group1', A='bar')
         expected = [(1, 1, 1, 10.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
         # Test multiple criteria (matches 1 row).
-        self.node.delete_weights('weight1', A='foo', B='x')
+        self.node.delete_weights('group1', A='foo', B='x')
         self.assertEqual(self.get_weights_helper(), [])
 
 
