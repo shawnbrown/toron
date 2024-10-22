@@ -1,17 +1,18 @@
 """Command-line interface for the Toron project."""
 
-from enum import IntEnum
+from ._typing import (
+    Final,
+)
 
 from . import (
     __version__,
 )
 
 
-class ExitCode(IntEnum):
-    OK: int = 0
-    ERR: int = 1
+EXITCODE_OK: Final[int] = 0
+EXITCODE_ERR: Final[int] = 1
 
 
-def main() -> ExitCode:
+def main() -> int:
     print(f'Toron {__version__}')
-    return ExitCode.OK
+    return EXITCODE_OK
