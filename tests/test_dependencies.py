@@ -44,4 +44,7 @@ class TestPackageDependencies(unittest.TestCase):
         if sys.version_info < (3, 11):
             package_dependencies.add('typing_extensions')
 
+        if sys.platform == 'win32':
+            package_dependencies.add('colorama')
+
         self.assertEqual(self.get_installed_packages(), package_dependencies)

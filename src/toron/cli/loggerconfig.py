@@ -10,6 +10,10 @@ from .._typing import (
     Optional,
 )
 
+if sys.platform == 'win32':
+    from colorama import just_fix_windows_console
+    just_fix_windows_console()
+
 
 if sys.version_info < (3, 8):
     # Prior to Python 3.8, logging.Formatter did not support the *validate* or

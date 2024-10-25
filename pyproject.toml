@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "toron"
 version = "0.0.1"
 dependencies = [
+  "colorama >= 0.4.6; platform_system == 'Windows'",
   "lark >= 0.10.1",
   "typing_extensions>=3.10.0.0; python_version < '3.11'",
 ]
