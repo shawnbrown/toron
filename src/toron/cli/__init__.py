@@ -1,10 +1,10 @@
 """Command-line interface for the Toron project."""
 
-from ._typing import (
+from .._typing import (
     Final,
 )
 
-from . import (
+from .. import (
     __version__,
 )
 
