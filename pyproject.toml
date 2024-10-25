@@ -58,6 +58,7 @@ legacy_tox_ini = """
   [testenv:mypy]
   deps =
     mypy >= 0.990
+    types-colorama >= 0.4.15; platform_system == 'Windows'
   commands =
     python --version
     mypy src/toron

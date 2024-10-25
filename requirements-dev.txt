@@ -5,3 +5,5 @@
 
 lark>=0.10.1
 typing_extensions>=3.10.0.0; python_version < "3.11"
+colorama >= 0.4.6; platform_system == "Windows"
+types-colorama >= 0.4.15; platform_system == "Windows"
