@@ -106,6 +106,7 @@ def configure_applogger(applogger: logging.Logger) -> None:
             'cli_handler': {
                 'class': 'logging.StreamHandler',
                 'formatter': 'cli_formatter',
+                'stream': 'ext://sys.stderr',
             },
         },
         'loggers': {
