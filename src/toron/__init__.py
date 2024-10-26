@@ -30,7 +30,11 @@ from ._utils import (
     wide_to_long,
 )
 
+# Set class modules to 'toron' to keep interface tidy.
+Node.__module__ = 'toron'
 ToronError.__module__ = 'toron'
+ToronWarning.__module__ = 'toron'
+xNode.__module__ = 'toron'
 
 # Define 'app-toron' logger and set level to INFO (20) but leave
 # the handler unspecified--defaults to "handler of last resort".

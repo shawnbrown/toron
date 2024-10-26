@@ -3835,3 +3835,13 @@ class TestNodeDisaggregate(unittest.TestCase):
              ('IN', 'KNOX',     'TOTAL', 'FEMALE', 18432.0),
              ('IN', 'LAPORTE',  'TOTAL', 'FEMALE', 55296.0)],
         )
+
+
+class TestNodeRepr(unittest.TestCase):
+    def test_empty_node(self):
+        node = Node()
+
+        self.assertEqual(node.__module__, 'toron')
+
+        regex = r'^<toron.Node object at 0x[0-9A-Fa-f]+>$'
+        self.assertRegex(repr(node), regex)
