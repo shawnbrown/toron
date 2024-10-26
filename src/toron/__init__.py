@@ -12,6 +12,7 @@ __all__ = [
 
     # FUNCTIONS
     'wide_to_narrow',
+    'wide_to_long',
 ]
 __version__ = '0.1.0'
 __author__ = 'Shawn Brown <shawnbrown@users.noreply.github.com>'
