@@ -466,7 +466,10 @@ def get_node_info(
 ) -> Dict[str, Any]:
     """Return dictionary of node information appropriate for repr."""
     index_columns = column_manager.get_columns()
-    structure = structure_repo.get_by_bits((1,) * len(index_columns))
+
+    bits = (1,) * len(index_columns)  # Bit pattern for highest granularity.
+    structure = structure_repo.get_by_bits(cast(Tuple[Literal[0, 1]], bits))
+
     return {
         'domain': dict(sorted(get_domain(property_repo).items())),
         'index': index_columns,
