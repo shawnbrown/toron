@@ -2003,6 +2003,7 @@ class Node(object):
         with self._managed_cursor() as cursor:
             info = get_node_info(
                 property_repo=self._dal.PropertyRepository(cursor),
+                column_manager=self._dal.ColumnManager(cursor),
             )
 
         if info['domain']:
@@ -2011,8 +2012,15 @@ class Node(object):
         else:
             domain_text = None
 
+        if info['index']:
+            index_text = ', '.join(info['index'])
+        else:
+            index_text = None
+
         return (
             f'{super().__repr__()}\n'  # Use default repr as a first line.
             f'domain:\n'
-            f'  {domain_text}'
+            f'  {domain_text}\n'
+            f'index:\n'
+            f'  {index_text}'
         )

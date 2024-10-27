@@ -458,15 +458,14 @@ def get_domain(property_repo: BasePropertyRepository) -> Dict[str, str]:
 
 def get_node_info(
     property_repo: BasePropertyRepository,
-    #column_manager: BaseColumnManager,
+    column_manager: BaseColumnManager,
     #structure_repo: BaseStructureRepository,
     #weight_group_repo: BaseWeightGroupRepository,
     #attribute_repo: BaseAttributeGroupRepository,
     #crosswalk_repo: BaseCrosswalkRepository,
 ) -> Dict[str, Any]:
     """Return dictionary of node information appropriate for repr."""
-    domain = dict(sorted(get_domain(property_repo).items())) or None
-
     return {
-        'domain': domain,
+        'domain': dict(sorted(get_domain(property_repo).items())),
+        'index': column_manager.get_columns(),
     }

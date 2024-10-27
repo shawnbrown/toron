@@ -3864,6 +3864,8 @@ class TestNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
+            index:
+              None
         """
 
         self.assertEqual(
@@ -3879,6 +3881,24 @@ class TestNodeRepr(unittest.TestCase):
             domain:
               baz: qux
               foo: bar
+            index:
+              None
+        """
+
+        self.assertEqual(
+            self.strip_first_line(repr(node)),
+            dedent(expected).strip(),
+        )
+
+    def test_index_columns(self):
+        node = Node()
+        node.add_index_columns('foo', 'bar', 'baz')
+
+        expected = """
+            domain:
+              None
+            index:
+              foo, bar, baz
         """
 
         self.assertEqual(
