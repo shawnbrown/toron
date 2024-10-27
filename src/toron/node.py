@@ -2004,6 +2004,7 @@ class Node(object):
             info = get_node_info(
                 property_repo=self._dal.PropertyRepository(cursor),
                 column_manager=self._dal.ColumnManager(cursor),
+                structure_repo = self._dal.StructureRepository(cursor)
             )
 
         if info['domain']:
@@ -2022,5 +2023,7 @@ class Node(object):
             f'domain:\n'
             f'  {domain_text}\n'
             f'index:\n'
-            f'  {index_text}'
+            f'  {index_text}\n'
+            f'granularity:\n'
+            f'  {info["granularity"]}'
         )

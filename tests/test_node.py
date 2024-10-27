@@ -3866,6 +3866,8 @@ class TestNodeRepr(unittest.TestCase):
               None
             index:
               None
+            granularity:
+              None
         """
 
         self.assertEqual(
@@ -3883,6 +3885,8 @@ class TestNodeRepr(unittest.TestCase):
               foo: bar
             index:
               None
+            granularity:
+              None
         """
 
         self.assertEqual(
@@ -3899,6 +3903,30 @@ class TestNodeRepr(unittest.TestCase):
               None
             index:
               foo, bar, baz
+            granularity:
+              None
+        """
+
+        self.assertEqual(
+            self.strip_first_line(repr(node)),
+            dedent(expected).strip(),
+        )
+
+    def test_granularity(self):
+        node = Node()
+        node.add_index_columns('A', 'B', 'C')
+        with node._managed_cursor() as cursor:
+            structure_repo = node._dal.StructureRepository(cursor)
+            structure_repo.add(None, 0, 0, 0)
+            structure_repo.add(2.75, 1, 1, 1)
+
+        expected = """
+            domain:
+              None
+            index:
+              A, B, C
+            granularity:
+              2.75
         """
 
         self.assertEqual(
