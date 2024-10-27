@@ -21,7 +21,7 @@ from toron.data_models import (
     BaseDataConnector,
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
-    Structure,
+    Structure, BaseStructureRepository,
     Weight, BaseWeightRepository,
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
@@ -414,6 +414,46 @@ class LocationRepositoryBaseTest(ABC):
             list(self.repository.find_by_structure(Structure(3, None, bits=(0, 0)))),
             [],
         )
+
+
+class StructureRepositoryBaseTest(ABC):
+    @property
+    @abstractmethod
+    def dal(self):
+        ...
+
+    def setUp(self):
+        connector = self.dal.DataConnector()
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
+
+        cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        self.manager = self.dal.ColumnManager(cursor)
+        self.repository = self.dal.StructureRepository(cursor)
+
+    def test_inheritance(self):
+        """Must inherit from appropriate abstract base class."""
+        self.assertTrue(issubclass(self.dal.StructureRepository, BaseStructureRepository))
+
+    def test_integration(self):
+        """Test add(), get(), update() and delete() interaction."""
+        self.manager.add_columns('A', 'B', 'C')
+
+        self.repository.add(None, 0, 0, 0)
+        self.repository.add(1.25, 1, 0, 0)
+        self.repository.add(2.75, 1, 1, 1)
+
+        self.assertEqual(self.repository.get(1), Structure(1, None, 0, 0, 0))
+        self.assertEqual(self.repository.get(2), Structure(2, 1.25, 1, 0, 0))
+        self.assertEqual(self.repository.get(3), Structure(3, 2.75, 1, 1, 1))
+
+        self.repository.update(Structure(2, 1.5, 1, 1, 0))
+        self.assertEqual(self.repository.get(2), Structure(2, 1.5, 1, 1, 0))
+
+        self.repository.delete(2)
+        self.assertIsNone(self.repository.get(2))
 
 
 class WeightRepositoryBaseTest(ABC):
@@ -1302,6 +1342,9 @@ class IndexRepositoryDAL1(IndexRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class LocationRepositoryDAL1(LocationRepositoryBaseTest, unittest.TestCase):
+    dal = dal1
+
+class StructureRepositoryDAL1(StructureRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class WeightRepositoryDAL1(WeightRepositoryBaseTest, unittest.TestCase):
