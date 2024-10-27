@@ -440,7 +440,6 @@ class StructureRepositoryBaseTest(ABC):
     def test_integration(self):
         """Test add(), get(), update() and delete() interaction."""
         self.manager.add_columns('A', 'B', 'C')
-
         self.repository.add(None, 0, 0, 0)
         self.repository.add(1.25, 1, 0, 0)
         self.repository.add(2.75, 1, 1, 1)
@@ -455,6 +454,19 @@ class StructureRepositoryBaseTest(ABC):
         self.repository.delete(2)
         self.assertIsNone(self.repository.get(2))
 
+    def test_get_by_bits(self):
+        self.manager.add_columns('A', 'B', 'C')
+        self.repository.add(None, 0, 0, 0)
+        self.repository.add(2.75, 1, 1, 1)
+
+        self.assertEqual(
+            self.repository.get_by_bits([1, 1, 1]),
+            Structure(2, 2.75, 1, 1, 1),
+        )
+        self.assertIsNone(
+            self.repository.get_by_bits([0, 0, 1]),
+            msg='should return None if no match is found'
+        )
 
 class WeightRepositoryBaseTest(ABC):
     @property

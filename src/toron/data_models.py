@@ -440,6 +440,16 @@ class BaseStructureRepository(ABC):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
+    def get_by_bits(
+        self, bits: Sequence[Literal[0, 1]]
+    ) -> Optional[Structure]:
+        """Get record with the matching bit pattern."""
+        bits = tuple(bits)
+        for structure in self.get_all():
+            if structure.bits == bits:
+                return structure
+        return None
+
 
 @dataclass
 class WeightGroup(object):
