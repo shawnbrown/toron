@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import sqlite3
 import stat
 import sys
@@ -10,6 +11,7 @@ import unittest
 from contextlib import suppress
 from io import StringIO
 from itertools import chain
+from textwrap import dedent
 from unittest.mock import (
     Mock,
     call,
@@ -3838,10 +3840,48 @@ class TestNodeDisaggregate(unittest.TestCase):
 
 
 class TestNodeRepr(unittest.TestCase):
-    def test_empty_node(self):
+    @staticmethod
+    def strip_first_line(text):  # <- Helper function.
+        """Return given text without the first line."""
+        return text[text.find('\n')+1:]
+
+    def test_first_line(self):
         node = Node()
 
         self.assertEqual(node.__module__, 'toron')
 
-        regex = r'^<toron.Node object at 0x[0-9A-Fa-f]+>$'
-        self.assertRegex(repr(node), regex)
+        repr_text = repr(node)
+        first_line = repr_text[:repr_text.find('\n')]
+
+        self.assertRegex(
+            first_line,
+            r'^<toron.Node object at 0x[0-9A-Fa-f]+>$',
+        )
+
+    def test_empty_node(self):
+        node = Node()
+
+        expected = """
+            domain:
+              None
+        """
+
+        self.assertEqual(
+            self.strip_first_line(repr(node)),
+            dedent(expected).strip(),
+        )
+
+    def test_domain(self):
+        node = Node()
+        node.set_domain({'foo': 'bar', 'baz': 'qux'})
+
+        expected = """
+            domain:
+              baz: qux
+              foo: bar
+        """
+
+        self.assertEqual(
+            self.strip_first_line(repr(node)),
+            dedent(expected).strip(),
+        )
