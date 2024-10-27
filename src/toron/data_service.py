@@ -4,6 +4,7 @@ from itertools import compress
 from math import log2
 
 from toron._typing import (
+    Any,
     Dict,
     Iterable,
     Iterator,
@@ -453,3 +454,19 @@ def get_domain(property_repo: BasePropertyRepository) -> Dict[str, str]:
     """Return the node's domain."""
     domain = property_repo.get('domain') or {}
     return check_type(domain, dict)
+
+
+def get_node_info(
+    property_repo: BasePropertyRepository,
+    #column_manager: BaseColumnManager,
+    #structure_repo: BaseStructureRepository,
+    #weight_group_repo: BaseWeightGroupRepository,
+    #attribute_repo: BaseAttributeGroupRepository,
+    #crosswalk_repo: BaseCrosswalkRepository,
+) -> Dict[str, Any]:
+    """Return dictionary of node information appropriate for repr."""
+    domain = dict(sorted(get_domain(property_repo).items())) or None
+
+    return {
+        'domain': domain,
+    }

@@ -52,6 +52,7 @@ from .data_service import (
     refresh_structure_granularity,
     set_domain,
     get_domain,
+    get_node_info,
 )
 from .selectors import (
     parse_selector,
@@ -2000,19 +2001,18 @@ class Node(object):
     def __repr__(self):
         """Return string representation of Node object."""
         with self._managed_cursor() as cursor:
-            property_repo = self._dal.PropertyRepository(cursor)
-            domain = get_domain(property_repo)
+            info = get_node_info(
+                property_repo=self._dal.PropertyRepository(cursor),
+            )
 
-        title_text = super().__repr__()  # Use default repr as a first line.
-
-        if domain:
+        if info['domain']:
             domain_text = \
-                '\n  '.join(sorted(f'{k}: {v}' for k, v in domain.items()))
+                '\n  '.join(f'{k}: {v}' for k, v in info['domain'].items())
         else:
             domain_text = None
 
         return (
-            f'{title_text}\n'
+            f'{super().__repr__()}\n'  # Use default repr as a first line.
             f'domain:\n'
             f'  {domain_text}'
         )
