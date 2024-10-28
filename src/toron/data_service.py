@@ -467,7 +467,8 @@ def get_node_info(
     """Return dictionary of node information appropriate for repr."""
     index_columns = column_manager.get_columns()
 
-    bits = (1,) * len(index_columns)  # Bit pattern for highest granularity.
+    # Get structure for highest granularity (whole space).
+    bits = (1,) * len(index_columns)  # Bit pattern is all ones.
     structure = structure_repo.get_by_bits(cast(Tuple[Literal[0, 1]], bits))
 
     # Get weight group text.
