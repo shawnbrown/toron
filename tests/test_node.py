@@ -3868,6 +3868,8 @@ class TestNodeRepr(unittest.TestCase):
               None
             granularity:
               None
+            weights:
+              None
         """
 
         self.assertEqual(
@@ -3887,6 +3889,8 @@ class TestNodeRepr(unittest.TestCase):
               None
             granularity:
               None
+            weights:
+              None
         """
 
         self.assertEqual(
@@ -3904,6 +3908,8 @@ class TestNodeRepr(unittest.TestCase):
             index:
               foo, bar, baz
             granularity:
+              None
+            weights:
               None
         """
 
@@ -3927,6 +3933,31 @@ class TestNodeRepr(unittest.TestCase):
               A, B, C
             granularity:
               2.75
+            weights:
+              None
+        """
+
+        self.assertEqual(
+            self.strip_first_line(repr(node)),
+            dedent(expected).strip(),
+        )
+
+    def test_weight_groups(self):
+        node = Node()
+        node.add_index_columns('A', 'B', 'C')
+        node.add_weight_group('foo', is_complete=False, make_default=False)
+        node.add_weight_group('bar', is_complete=True, make_default=False)
+        node.add_weight_group('baz', is_complete=False, make_default=True)
+
+        expected = """
+            domain:
+              None
+            index:
+              A, B, C
+            granularity:
+              None
+            weights:
+              bar, baz (default, incomplete), foo (incomplete)
         """
 
         self.assertEqual(

@@ -460,7 +460,7 @@ def get_node_info(
     property_repo: BasePropertyRepository,
     column_manager: BaseColumnManager,
     structure_repo: BaseStructureRepository,
-    #weight_group_repo: BaseWeightGroupRepository,
+    weight_group_repo: BaseWeightGroupRepository,
     #attribute_repo: BaseAttributeGroupRepository,
     #crosswalk_repo: BaseCrosswalkRepository,
 ) -> Dict[str, Any]:
@@ -470,8 +470,19 @@ def get_node_info(
     bits = (1,) * len(index_columns)  # Bit pattern for highest granularity.
     structure = structure_repo.get_by_bits(cast(Tuple[Literal[0, 1]], bits))
 
+    # Get weight group text.
+    weight_groups = sorted(weight_group_repo.get_all(), key=lambda x: x.name)
+    default_group = get_default_weight_group(property_repo, weight_group_repo)
+    default_group_id = getattr(default_group, 'id', None)
+    def make_note(group):
+        if group.id == default_group_id:
+            return ' (default)' if group.is_complete else ' (default, incomplete)'
+        return '' if group.is_complete else ' (incomplete)'
+    weights = [f'{group.name}{make_note(group)}' for group in weight_groups]
+
     return {
         'domain': dict(sorted(get_domain(property_repo).items())),
         'index': index_columns,
         'granularity': structure.granularity if structure else None,
+        'weights': weights,
     }

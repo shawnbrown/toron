@@ -2004,7 +2004,8 @@ class Node(object):
             info = get_node_info(
                 property_repo=self._dal.PropertyRepository(cursor),
                 column_manager=self._dal.ColumnManager(cursor),
-                structure_repo = self._dal.StructureRepository(cursor)
+                structure_repo = self._dal.StructureRepository(cursor),
+                weight_group_repo=self._dal.WeightGroupRepository(cursor),
             )
 
         if info['domain']:
@@ -2018,6 +2019,11 @@ class Node(object):
         else:
             index_text = None
 
+        if info['weights']:
+            weights_text = ', '.join(info['weights'])
+        else:
+            weights_text = None
+
         return (
             f'{super().__repr__()}\n'  # Use default repr as a first line.
             f'domain:\n'
@@ -2025,5 +2031,7 @@ class Node(object):
             f'index:\n'
             f'  {index_text}\n'
             f'granularity:\n'
-            f'  {info["granularity"]}'
+            f'  {info["granularity"]}\n'
+            f'weights:\n'
+            f'  {weights_text}'
         )
