@@ -1,4 +1,4 @@
-"""Command-line interface for the Toron project."""
+"""Main command line application function."""
 
 import logging
 from .._typing import (
