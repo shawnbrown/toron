@@ -1,13 +1,25 @@
 """Main command line application function."""
 
+import argparse
 import logging
+import sys
+from pathlib import Path
+from shutil import get_terminal_size
 from .._typing import (
     Final,
 )
 from .. import (
     __version__,
+    Node,
 )
 from .loggerconfig import configure_applogger
+
+
+parser = argparse.ArgumentParser(
+    prog='toron',
+    epilog=f'Version: Toron {__version__}',
+)
+parser.add_argument('path', help='path to file')
 
 
 applogger = logging.getLogger('app-toron')
@@ -19,5 +31,27 @@ EXITCODE_ERR: Final[int] = 1
 
 
 def main() -> int:
-    applogger.info(f'Toron {__version__}')
+    args = parser.parse_args()
+
+    if Path(args.path).is_file():
+        path = args.path
+    elif Path(f'{args.path}.toron').is_file():
+        path = f'{args.path}.toron'
+    else:
+        applogger.error(f'file not found {args.path!r}')
+        return EXITCODE_ERR  # <- EXIT!
+
+    try:
+        node = Node.from_file(path)
+    except Exception as err:
+        applogger.error(str(err))
+        return EXITCODE_ERR  # <- EXIT!
+
+    # Define horizontal rule `hr` made from "Box Drawings" character.
+    hr = '─' * min(len(path), (get_terminal_size()[0] - 1))
+
+    sys.stdout.write(
+        f'{hr}\n{path}\n{hr}\n'
+        f'{repr(node)}\n'
+    )
     return EXITCODE_OK
