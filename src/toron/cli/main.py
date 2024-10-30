@@ -64,22 +64,26 @@ def main() -> int:
             crosswalk_repo=node._dal.CrosswalkRepository(cursor),
         )
 
+    # ANSI style codes.
+    bright = '\33[1m'
+    reset = '\33[0m'
+
     # Prepare and write output.
     domain_str = '\n  '.join(info_dict['domain_list'])
     crosswalks_str = '\n  '.join(info_dict['crosswalks_list'])
     sys.stdout.write(
         f"{hr}\n{filename}\n{hr}\n"
-        f"domain:\n"
+        f"{bright}domain:{reset}\n"
         f"  {domain_str}\n"
-        f"index:\n"
+        f"{bright}index:{reset}\n"
         f"  {', '.join(info_dict['index_list'])}\n"
-        f"granularity:\n"
+        f"{bright}granularity:{reset}\n"
         f"  {info_dict['granularity_str']}\n"
-        f"weights:\n"
+        f"{bright}weights:{reset}\n"
         f"  {', '.join(info_dict['weights_list'])}\n"
-        f"attributes:\n"
+        f"{bright}attributes:{reset}\n"
         f"  {', '.join(info_dict['attribute_list'])}\n"
-        f"incoming crosswalks:\n"
+        f"{bright}incoming crosswalks:{reset}\n"
         f"  {crosswalks_str}\n"
     )
     return EXITCODE_OK
