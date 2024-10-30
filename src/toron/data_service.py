@@ -13,6 +13,7 @@ from toron._typing import (
     Optional,
     Set,
     Tuple,
+    Union,
     cast,
     overload,
 )
@@ -456,34 +457,50 @@ def get_domain(property_repo: BasePropertyRepository) -> Dict[str, str]:
     return check_type(domain, dict)
 
 
-def get_node_info(
+def get_node_info_text(
     property_repo: BasePropertyRepository,
     column_manager: BaseColumnManager,
     structure_repo: BaseStructureRepository,
     weight_group_repo: BaseWeightGroupRepository,
     #attribute_repo: BaseAttributeGroupRepository,
     #crosswalk_repo: BaseCrosswalkRepository,
-) -> Dict[str, Any]:
+) -> Dict[str, Union[List[str], str]]:
     """Return dictionary of node information appropriate for repr."""
+    # Get list of domain items.
+    domain = get_domain(property_repo)
+    if domain:
+        domain_list = [f'{k}: {v}' for k, v in sorted(domain.items())]
+    else:
+        domain_list = ['None']
+
+    # Get list of index column names.
     index_columns = column_manager.get_columns()
+    if index_columns:
+        index_list = list(index_columns)
+    else:
+        index_list = ['None']
 
     # Get structure for highest granularity (whole space).
     bits = (1,) * len(index_columns)  # Bit pattern is all ones.
     structure = structure_repo.get_by_bits(cast(Tuple[Literal[0, 1]], bits))
+    granularity_str = str(structure.granularity) if structure else 'None'
 
-    # Get weight group text.
+    # Get list of weight group names.
     weight_groups = sorted(weight_group_repo.get_all(), key=lambda x: x.name)
-    default_group = get_default_weight_group(property_repo, weight_group_repo)
-    default_group_id = getattr(default_group, 'id', None)
-    def make_note(group):
-        if group.id == default_group_id:
-            return ' (default)' if group.is_complete else ' (default, incomplete)'
-        return '' if group.is_complete else ' (incomplete)'
-    weights = [f'{group.name}{make_note(group)}' for group in weight_groups]
+    if weight_groups:
+        default_group = get_default_weight_group(property_repo, weight_group_repo)
+        default_group_id = getattr(default_group, 'id', None)
+        def make_note(group):
+            if group.id == default_group_id:
+                return ' (default)' if group.is_complete else ' (default, incomplete)'
+            return '' if group.is_complete else ' (incomplete)'
+        weights_list = [f'{x.name}{make_note(x)}' for x in weight_groups]
+    else:
+        weights_list = ['None']
 
     return {
-        'domain': dict(sorted(get_domain(property_repo).items())),
-        'index': index_columns,
-        'granularity': structure.granularity if structure else None,
-        'weights': weights,
+        'domain_list': domain_list,
+        'index_list': index_list,
+        'granularity_str': granularity_str,
+        'weights_list': weights_list,
     }

@@ -52,7 +52,7 @@ from .data_service import (
     refresh_structure_granularity,
     set_domain,
     get_domain,
-    get_node_info,
+    get_node_info_text,
 )
 from .selectors import (
     parse_selector,
@@ -2001,37 +2001,23 @@ class Node(object):
     def __repr__(self):
         """Return string representation of Node object."""
         with self._managed_cursor() as cursor:
-            info = get_node_info(
+            info = get_node_info_text(
                 property_repo=self._dal.PropertyRepository(cursor),
                 column_manager=self._dal.ColumnManager(cursor),
                 structure_repo = self._dal.StructureRepository(cursor),
                 weight_group_repo=self._dal.WeightGroupRepository(cursor),
             )
 
-        if info['domain']:
-            domain_text = \
-                '\n  '.join(f'{k}: {v}' for k, v in info['domain'].items())
-        else:
-            domain_text = None
-
-        if info['index']:
-            index_text = ', '.join(info['index'])
-        else:
-            index_text = None
-
-        if info['weights']:
-            weights_text = ', '.join(info['weights'])
-        else:
-            weights_text = None
+        domain_str = '\n  '.join(info['domain_list'])
 
         return (
-            f'{super().__repr__()}\n'  # Use default repr as a first line.
-            f'domain:\n'
-            f'  {domain_text}\n'
-            f'index:\n'
-            f'  {index_text}\n'
-            f'granularity:\n'
-            f'  {info["granularity"]}\n'
-            f'weights:\n'
-            f'  {weights_text}'
+            f"{super().__repr__()}\n"  # Use default repr as a first line.
+            f"domain:\n"
+            f"  {domain_str}\n"
+            f"index:\n"
+            f"  {', '.join(info['index_list'])}\n"
+            f"granularity:\n"
+            f"  {info['granularity_str']}\n"
+            f"weights:\n"
+            f"  {', '.join(info['weights_list'])}"
         )
