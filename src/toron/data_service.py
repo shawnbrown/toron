@@ -462,7 +462,7 @@ def get_node_info_text(
     column_manager: BaseColumnManager,
     structure_repo: BaseStructureRepository,
     weight_group_repo: BaseWeightGroupRepository,
-    #attribute_repo: BaseAttributeGroupRepository,
+    attribute_repo: BaseAttributeGroupRepository,
     #crosswalk_repo: BaseCrosswalkRepository,
 ) -> Dict[str, Union[List[str], str]]:
     """Return dictionary of node information appropriate for repr."""
@@ -498,9 +498,14 @@ def get_node_info_text(
     else:
         weights_list = ['None']
 
+    attribute_list = sorted(attribute_repo.get_all_attribute_names())
+    if not attribute_list:
+        attribute_list = ['None']
+
     return {
         'domain_list': domain_list,
         'index_list': index_list,
         'granularity_str': granularity_str,
         'weights_list': weights_list,
+        'attribute_list': attribute_list,
     }

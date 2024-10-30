@@ -2006,6 +2006,7 @@ class Node(object):
                 column_manager=self._dal.ColumnManager(cursor),
                 structure_repo = self._dal.StructureRepository(cursor),
                 weight_group_repo=self._dal.WeightGroupRepository(cursor),
+                attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
 
         domain_str = '\n  '.join(info['domain_list'])
@@ -2019,5 +2020,7 @@ class Node(object):
             f"granularity:\n"
             f"  {info['granularity_str']}\n"
             f"weights:\n"
-            f"  {', '.join(info['weights_list'])}"
+            f"  {', '.join(info['weights_list'])}\n"
+            f"attributes:\n"
+            f"  {', '.join(info['attribute_list'])}"
         )

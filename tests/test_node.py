@@ -3870,6 +3870,8 @@ class TestNodeRepr(unittest.TestCase):
               None
             weights:
               None
+            attributes:
+              None
         """
 
         self.assertEqual(
@@ -3891,6 +3893,8 @@ class TestNodeRepr(unittest.TestCase):
               None
             weights:
               None
+            attributes:
+              None
         """
 
         self.assertEqual(
@@ -3910,6 +3914,8 @@ class TestNodeRepr(unittest.TestCase):
             granularity:
               None
             weights:
+              None
+            attributes:
               None
         """
 
@@ -3935,6 +3941,8 @@ class TestNodeRepr(unittest.TestCase):
               2.75
             weights:
               None
+            attributes:
+              None
         """
 
         self.assertEqual(
@@ -3958,6 +3966,33 @@ class TestNodeRepr(unittest.TestCase):
               None
             weights:
               bar, baz (default, incomplete), foo (incomplete)
+            attributes:
+              None
+        """
+
+        self.assertEqual(
+            self.strip_first_line(repr(node)),
+            dedent(expected).strip(),
+        )
+
+    def test_attributes(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            attrgroup_repo = node._dal.AttributeGroupRepository(cursor)
+            attrgroup_repo.add({'foo': 'aaa', 'bar': 'bbb'})
+            attrgroup_repo.add({'foo': 'ccc', 'baz': 'ddd'})
+
+        expected = """
+            domain:
+              None
+            index:
+              None
+            granularity:
+              None
+            weights:
+              None
+            attributes:
+              bar, baz, foo
         """
 
         self.assertEqual(
