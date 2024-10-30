@@ -41,6 +41,8 @@ def main() -> int:
         applogger.error(f'file not found {args.path!r}')
         return EXITCODE_ERR  # <- EXIT!
 
+    filename = Path(path).name  # File only, no parent directory text.
+
     try:
         node = Node.from_file(path)
     except Exception as err:
@@ -48,10 +50,10 @@ def main() -> int:
         return EXITCODE_ERR  # <- EXIT!
 
     # Define horizontal rule `hr` made from "Box Drawings" character.
-    hr = '─' * min(len(path), (get_terminal_size()[0] - 1))
+    hr = '─' * min(len(filename), (get_terminal_size()[0] - 1))
 
     sys.stdout.write(
-        f'{hr}\n{path}\n{hr}\n'
+        f'{hr}\n{filename}\n{hr}\n'
         f'{repr(node)}\n'
     )
     return EXITCODE_OK
