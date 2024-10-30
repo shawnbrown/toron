@@ -2007,9 +2007,11 @@ class Node(object):
                 structure_repo = self._dal.StructureRepository(cursor),
                 weight_group_repo=self._dal.WeightGroupRepository(cursor),
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
+                crosswalk_repo=self._dal.CrosswalkRepository(cursor),
             )
 
         domain_str = '\n  '.join(info['domain_list'])
+        crosswalks_str = '\n  '.join(info['crosswalks_list'])
 
         return (
             f"{super().__repr__()}\n"  # Use default repr as a first line.
@@ -2022,5 +2024,7 @@ class Node(object):
             f"weights:\n"
             f"  {', '.join(info['weights_list'])}\n"
             f"attributes:\n"
-            f"  {', '.join(info['attribute_list'])}"
+            f"  {', '.join(info['attribute_list'])}\n"
+            f"incoming crosswalks:\n"
+            f"  {crosswalks_str}"
         )

@@ -1,6 +1,6 @@
 """Application logic functions that interact with repository objects."""
 
-from itertools import compress
+from itertools import chain, compress, groupby
 from math import log2
 
 from toron._typing import (
@@ -463,7 +463,7 @@ def get_node_info_text(
     structure_repo: BaseStructureRepository,
     weight_group_repo: BaseWeightGroupRepository,
     attribute_repo: BaseAttributeGroupRepository,
-    #crosswalk_repo: BaseCrosswalkRepository,
+    crosswalk_repo: BaseCrosswalkRepository,
 ) -> Dict[str, Union[List[str], str]]:
     """Return dictionary of node information appropriate for repr."""
     # Get list of domain items.
@@ -502,10 +502,36 @@ def get_node_info_text(
     if not attribute_list:
         attribute_list = ['None']
 
+    # Get list of crosswalk nodes and names.
+    crosswalks = crosswalk_repo.get_all()
+    if crosswalks:
+        def make_note(crosswalk):
+            if crosswalk.is_default:
+                if crosswalk.is_locally_complete:
+                    return ' (default)'
+                return ' (default, locally incomplete)'
+            if crosswalk.is_locally_complete:
+                return ''
+            return ' (locally incomplete)'
+
+        crosswalks = sorted(crosswalks, key=lambda x: (x.other_unique_id, x.id))
+        crosswalks_list = []
+        for key, grp in groupby(crosswalks, key=lambda x: x.other_unique_id):
+            first_crosswalk = next(grp)
+            node_ref = (first_crosswalk.other_filename_hint
+                            or f'[{first_crosswalk.other_unique_id[:7]}]')
+            sub_list = sorted(
+                f'{x.name}{make_note(x)}' for x in chain([first_crosswalk], grp)
+            )
+            crosswalks_list.append(f'{node_ref}: {", ".join(sub_list)}')
+    else:
+        crosswalks_list = ['None']
+
     return {
         'domain_list': domain_list,
         'index_list': index_list,
         'granularity_str': granularity_str,
         'weights_list': weights_list,
         'attribute_list': attribute_list,
+        'crosswalks_list': crosswalks_list,
     }

@@ -3872,6 +3872,8 @@ class TestNodeRepr(unittest.TestCase):
               None
             attributes:
               None
+            incoming crosswalks:
+              None
         """
 
         self.assertEqual(
@@ -3895,6 +3897,8 @@ class TestNodeRepr(unittest.TestCase):
               None
             attributes:
               None
+            incoming crosswalks:
+              None
         """
 
         self.assertEqual(
@@ -3916,6 +3920,8 @@ class TestNodeRepr(unittest.TestCase):
             weights:
               None
             attributes:
+              None
+            incoming crosswalks:
               None
         """
 
@@ -3943,6 +3949,8 @@ class TestNodeRepr(unittest.TestCase):
               None
             attributes:
               None
+            incoming crosswalks:
+              None
         """
 
         self.assertEqual(
@@ -3967,6 +3975,8 @@ class TestNodeRepr(unittest.TestCase):
             weights:
               bar, baz (default, incomplete), foo (incomplete)
             attributes:
+              None
+            incoming crosswalks:
               None
         """
 
@@ -3993,6 +4003,66 @@ class TestNodeRepr(unittest.TestCase):
               None
             attributes:
               bar, baz, foo
+            incoming crosswalks:
+              None
+        """
+
+        self.assertEqual(
+            self.strip_first_line(repr(node)),
+            dedent(expected).strip(),
+        )
+
+    def test_crosswalks(self):
+        node = Node()
+        with node._managed_cursor() as cursor:
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo.add(
+                other_unique_id='111-111-1111',
+                other_filename_hint='node1.toron',
+                name='foo',
+                is_locally_complete=True,
+            )
+            crosswalk_repo.add(
+                other_unique_id='111-111-1111',
+                other_filename_hint='node1.toron',
+                name='bar',
+                is_default=True,
+                is_locally_complete=False,
+            )
+            crosswalk_repo.add(
+                other_unique_id='222-222-2222',
+                other_filename_hint='node2.toron',
+                name='baz',
+                is_locally_complete=True,
+            )
+            crosswalk_repo.add(
+                other_unique_id='222-222-2222',
+                other_filename_hint=None,
+                name='qux',
+                is_locally_complete=False,
+            )
+            crosswalk_repo.add(
+                other_unique_id='222-222-2222',
+                other_filename_hint='node2.toron',
+                name='corge',
+                is_default=True,
+                is_locally_complete=True,
+            )
+
+        expected = """
+            domain:
+              None
+            index:
+              None
+            granularity:
+              None
+            weights:
+              None
+            attributes:
+              None
+            incoming crosswalks:
+              node1.toron: bar (default, locally incomplete), foo
+              node2.toron: baz, corge (default), qux (locally incomplete)
         """
 
         self.assertEqual(
