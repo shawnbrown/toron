@@ -9,10 +9,7 @@ from .._typing import (
     Literal,
     Optional,
 )
-
-if sys.platform == 'win32':
-    from colorama import just_fix_windows_console
-    just_fix_windows_console()
+from .colorconfig import stderr_styles
 
 
 if sys.version_info < (3, 8):
@@ -68,19 +65,22 @@ class ColorFormatter(_Formatter):
         # Initialize self as un-colored formatter (for fall-back).
         super().__init__(fmt, *common_args, defaults=defaults)
 
+        # Define short alias for styles dataclass (used in f-strings).
+        s = stderr_styles
+
         # Instantiate color formatters.
         self.color_formatters = {
             logging.INFO: _Formatter(
-                f'\33[38;5;33m{fmt}\33[0m', *common_args, defaults=defaults
+                f'{s.info}{fmt}{s.reset}', *common_args, defaults=defaults
             ),
             logging.WARNING: _Formatter(
-                f'\33[38;5;214m{fmt}\33[0m', *common_args, defaults=defaults
+                f'{s.warning}{fmt}{s.reset}', *common_args, defaults=defaults
             ),
             logging.ERROR: _Formatter(
-                f'\33[38;5;196m{fmt}\33[0m', *common_args, defaults=defaults
+                f'{s.error}{fmt}{s.reset}', *common_args, defaults=defaults
             ),
             logging.CRITICAL: _Formatter(
-                f'\33[48;5;196m\33[38;5;16m{fmt}\33[0m', *common_args, defaults=defaults
+                f'{s.critical}{fmt}{s.reset}', *common_args, defaults=defaults
             ),
         }
 
