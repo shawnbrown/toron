@@ -13,6 +13,7 @@ from .. import (
     __version__,
     Node,
 )
+from .colorconfig import stdout_styles
 from .loggerconfig import configure_applogger
 
 
@@ -64,9 +65,9 @@ def main() -> int:
             crosswalk_repo=node._dal.CrosswalkRepository(cursor),
         )
 
-    # ANSI style codes.
-    bright = '\33[1m'
-    reset = '\33[0m'
+    # Define short alias for style values (used in f-string).
+    bright = stdout_styles.bright
+    reset = stdout_styles.reset
 
     # Prepare and write output.
     domain_str = '\n  '.join(info_dict['domain_list'])
