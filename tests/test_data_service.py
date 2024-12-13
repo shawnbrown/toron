@@ -249,6 +249,20 @@ class TestDisaggregateValue(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+    def test_matching_undefined_record(self):
+        """When matching undefined record, should return value as-is."""
+        results = disaggregate_value(
+            quantity_value=10000,
+            index_criteria={'A': '-'},  # <- Matches undefined record.
+            weight_group_id=1,
+            index_repo=self.index_repo,
+            weight_repo=self.weight_repo,
+        )
+        expected = [
+            (Index(id=0, labels=('-', '-')), 10000),  # <- Undefined (index id 0).
+        ]
+        self.assertEqual(list(results), expected)
+
     def test_no_matching_weight(self):
         regex = 'no weight value matching weight_group_id 9 and index_id 3'
         with self.assertRaisesRegex(RuntimeError, regex):

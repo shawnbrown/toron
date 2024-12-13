@@ -383,7 +383,11 @@ class WeightRepository(BaseWeightRepository):
         weight_group_id: int,
         index_id: int,
     ) -> Optional[Weight]:
-        """Get record with matching weight_group_id and index_id."""
+        """Get record with matching weight_group_id and index_id.
+
+        The undefined record (index_id 0) should get the dummy weight
+        ``Weight(-1, weight_group_id, 0, 0.0)`` having a value of zero.
+        """
         self._cursor.execute(
             'SELECT * FROM main.weight WHERE weight_group_id=? AND index_id=?',
             (weight_group_id, index_id)
@@ -391,6 +395,8 @@ class WeightRepository(BaseWeightRepository):
         record = self._cursor.fetchone()
         if record:
             return Weight(*record)
+        elif index_id == 0:  # Undefined record gets dummy weight of 0.
+            return Weight(-1, weight_group_id, 0, 0.0)
         return None
 
     def find_by_index_id(self, index_id: int) -> Iterator[Weight]:

@@ -533,6 +533,11 @@ class WeightRepositoryBaseTest(ABC):
         result = self.repository.get_by_weight_group_id_and_index_id(2, 99)
         self.assertIsNone(result)
 
+        # The index_id 0 is the undefined record, should return dummy weight.
+        result = self.repository.get_by_weight_group_id_and_index_id(2, 0)
+        dummy_weight = Weight(id=-1, weight_group_id=2, index_id=0, value=0.0)
+        self.assertEqual(result, dummy_weight)
+
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids={1, 2}, target=1)
         results = self.get_weights_helper()
