@@ -524,6 +524,15 @@ class WeightRepositoryBaseTest(ABC):
         results = self.repository.find_by_index_id(99)  # No index_id 99
         self.assertEqual(list(results), [], msg='should return empty iterator')
 
+    def test_get_by_weight_group_id_and_index_id(self):
+        result = self.repository.get_by_weight_group_id_and_index_id(2, 1)
+        expected = Weight(id=4, weight_group_id=2, index_id=1, value=583.75)
+        self.assertEqual(result, expected)
+
+        # No index_id ``99``, should return None.
+        result = self.repository.get_by_weight_group_id_and_index_id(2, 99)
+        self.assertIsNone(result)
+
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids={1, 2}, target=1)
         results = self.get_weights_helper()
