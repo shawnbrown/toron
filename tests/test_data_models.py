@@ -439,7 +439,7 @@ class StructureRepositoryBaseTest(ABC):
 
     def test_integration(self):
         """Test add(), get(), update() and delete() interaction."""
-        self.manager.add_columns('A', 'B', 'C')
+        self.manager.add_columns('A', 'B', 'C\'*" -`C')  # 3rd col using special chars.
         self.repository.add(None, 0, 0, 0)
         self.repository.add(1.25, 1, 0, 0)
         self.repository.add(2.75, 1, 1, 1)

@@ -240,14 +240,20 @@ class StructureRepository(BaseStructureRepository):
 
     def update(self, record: Structure) -> None:
         """Update a record in the repository."""
+        # Get index column names (slice off "_structure_id" and "_granularity").
         self._cursor.execute(f"PRAGMA main.table_info('structure')")
-        columns = ', '.join(row[1] for row in self._cursor.fetchall()[2:])
+        col_names = (row[1] for row in self._cursor.fetchall()[2:])
+
+        # Format SQL statement.
+        columns = ', '.join(format_identifier(row) for row in col_names)
         qmarks = ', '.join('?' * len(record.bits))
         sql = f"""
             UPDATE main.structure
             SET (_granularity, {columns}) = (?, {qmarks})
             WHERE _structure_id=?
         """
+
+        # Format parameters and execute SQL statement.
         parameters = (record.granularity,) + record.bits + (record.id,)
         self._cursor.execute(sql, parameters)
 
