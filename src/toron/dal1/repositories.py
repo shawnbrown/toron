@@ -395,8 +395,9 @@ class WeightRepository(BaseWeightRepository):
         ``Weight(-1, weight_group_id, 0, 0.0)`` having a value of zero.
         """
         self._cursor.execute(
-            'SELECT * FROM main.weight WHERE weight_group_id=? AND index_id=?',
-            (weight_group_id, index_id)
+            'SELECT weight_id, weight_group_id, index_id, weight_value ' \
+                'FROM main.weight WHERE weight_group_id=? AND index_id=?',
+            (weight_group_id, index_id),
         )
         record = self._cursor.fetchone()
         if record:
