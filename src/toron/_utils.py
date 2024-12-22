@@ -596,9 +596,11 @@ def wide_to_long(data, cols_to_stack, var_name='variable', val_name='value'):
     cols_to_stack:
         Name of column(s) to stack.
     var_name:
-        Name to use for the variable column.
-    value_name:
-        Name to use for the value column.
+        Name to use for the variable column (defaults to "variable").
+        This is the new column that contains the stacked column names.
+    val_name:
+        Name to use for the value column (defaults to "value). This
+        is the new column that contains the stacked cell values.
 
     Returns
     -------
