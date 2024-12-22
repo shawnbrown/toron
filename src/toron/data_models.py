@@ -539,8 +539,20 @@ class BaseWeightRepository(ABC):
     ) -> Optional[Weight]:
         """Get record with matching weight_group_id and index_id.
 
-        The undefined record (index_id 0) should get the dummy weight
-        ``Weight(-1, weight_group_id, 0, 0.0)`` having a value of zero.
+        .. code-block::
+
+            >>> weight_repo.get_by_weight_group_id_and_index_id(
+            ...     weight_group_id=4, index_id=102
+            ... )
+            Weight(id=733, weight_group_id=4, index_id=102, value=84.75)
+
+        If given the undefined record (index_id 0), returns a dummy
+        weight with the same `weight_group_id` and a value of `0.0`::
+
+            >>> weight_repo.get_by_weight_group_id_and_index_id(
+            ...     weight_group_id=4, index_id=0
+            ... )
+            Weight(id=-1, weight_group_id=4, index_id=0, value=0.0)
         """
 
     @abstractmethod
