@@ -624,6 +624,18 @@ class TestIndexColumnMethods(unittest.TestCase):
 
 
 class TestIndexMethods(unittest.TestCase):
+    def setUp(self):
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
+
+        # Add handler to 'app-toron' logger.
+        applogger = logging.getLogger('app-toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        applogger.addHandler(handler)
+        self.addCleanup(lambda: applogger.removeHandler(handler))
+
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -720,17 +732,18 @@ class TestIndexMethods(unittest.TestCase):
     def test_insert_extra_columns(self):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
+        node.insert_index([
+            ('C',   'B', 'D', 'A'),  # <- Extra columns (C and D).
+            ('111', 'x', '1', 'foo'),
+            ('222', 'y', '2', 'bar'),
+        ])
 
-        # Check that a warning is raised.
-        with self.assertWarns(ToronWarning) as cm:
-            node.insert_index([
-                ('C',   'B', 'D', 'A'),
-                ('111', 'x', '1', 'foo'),
-                ('222', 'y', '2', 'bar'),
-            ])
-
-        # Check the warning's message.
-        self.assertEqual( str(cm.warning), "extra columns ignored: 'C', 'D'")
+        # Check the logged messages.
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ("INFO: loaded 2 index records\n"
+             "WARNING: ignored extra columns: 'C', 'D'\n"),
+        )
 
         expected = [
             Index(0, '-', '-'),
@@ -743,23 +756,21 @@ class TestIndexMethods(unittest.TestCase):
         node = Node()
         self.add_cols_helper(node, 'A', 'B')
 
-        data = [
+        node.insert_index([
             ('A', 'B'),
             ('foo', 'x'),
             ('foo', 'x'),  # <- Duplicate of previous record.
             ('bar', ''),   # <- Contains empty string.
             ('bar', 'y'),
             ('baz', 'z'),
-        ]
+        ])
 
-        # Check that a warning is raised.
-        with self.assertWarns(ToronWarning) as cm:
-            node.insert_index(data)
-
-        # Check the warning's message.
+        # Check the logged messages.
         self.assertEqual(
-            str(cm.warning),
-            'skipped 2 rows with duplicate labels or empty strings, loaded 3 rows',
+            self.log_stream.getvalue(),
+            ('INFO: loaded 3 index records\n'
+             'WARNING: skipped 1 duplicate records\n'
+             'WARNING: skipped 1 records having some empty string labels\n'),
         )
 
         # Check the loaded data.

@@ -89,7 +89,6 @@ def warn_if_issues(
     import warnings
 
     warning_text = {
-        'dupe_or_empty_str': 'skipped {dupe_or_empty_str} rows with duplicate labels or empty strings',
         'empty_str': 'skipped {empty_str} rows with empty string values',
         'no_index': 'skipped {no_index} rows with non-matching index_id values',
         'mismatch': 'skipped {mismatch} rows with mismatched labels',
@@ -393,11 +392,6 @@ class Node(object):
             index_columns = col_manager.get_columns()
             verify_columns_set(columns, index_columns, allow_extras=True)
             extra_columns = [x for x in columns if x not in index_columns]
-            if extra_columns:
-                import warnings
-                extra_fmt = ', '.join(repr(x) for x in extra_columns)
-                msg = f'extra columns ignored: {extra_fmt}'
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
             label_positions = [
                 columns.index(x) for x in index_columns if x in columns
@@ -416,7 +410,10 @@ class Node(object):
                     index_repo.add(*labels)
                     counter['inserted'] += 1
                 except ValueError:
-                    counter['dupe_or_empty_str'] += 1
+                    if '' in labels:
+                        counter['empty_labels'] += 1
+                    else:
+                        counter['duplicate_labels'] += 1
 
             if counter['inserted']:
                 refresh_index_hash_property(
@@ -443,7 +440,18 @@ class Node(object):
                     if crosswalk.is_locally_complete:
                         crosswalk_repo.update(replace(crosswalk, is_locally_complete=False))
 
-        warn_if_issues(counter, expected='inserted')
+        if counter['inserted']:
+            applogger.info(f"loaded {counter['inserted']} index records")
+
+        if extra_columns:
+            extra_fmt = ', '.join(repr(x) for x in extra_columns)
+            applogger.warning(f'ignored extra columns: {extra_fmt}')
+
+        if counter['duplicate_labels']:
+            applogger.warning(f"skipped {counter['duplicate_labels']} duplicate records")
+
+        if counter['empty_labels']:
+            applogger.warning(f"skipped {counter['empty_labels']} records having some empty string labels")
 
     def select_index(
         self, header: bool = False, **criteria: str
