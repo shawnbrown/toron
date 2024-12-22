@@ -481,8 +481,8 @@ class TestRebuildStructureTable(unittest.TestCase):
 
         The trivial topology (also called the "indiscrete topology")
         is one where the only open sets are the empty set (represented
-        by bits ``(0, 0, 0)``) and the entire space (represented by
-        ``(1, 1, 1)``).
+        by all zeros e.g., ``(0, 0, 0)``) and the entire space
+        (represented by all ones, e.g., ``(1, 1, 1)``).
         """
         self.property_repo.delete('discrete_categories')  # <- No categories!
 
