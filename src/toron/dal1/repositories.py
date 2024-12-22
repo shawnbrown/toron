@@ -416,6 +416,7 @@ class WeightRepository(BaseWeightRepository):
 
     def weight_group_is_complete(self, weight_group_id: int) -> bool:
         """Return True if there's a weight for every index record."""
+        # Query returns `1` if it finds an index without a weight.
         self._cursor.execute(
             """
                 SELECT 1
@@ -429,8 +430,8 @@ class WeightRepository(BaseWeightRepository):
             """,
             (weight_group_id,),
         )
-        is_partial = bool(self._cursor.fetchall())
-        return not is_partial
+        incomplete = bool(self._cursor.fetchall())
+        return not incomplete
 
 
 class AttributeGroupRepository(BaseAttributeGroupRepository):
