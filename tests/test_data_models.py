@@ -524,6 +524,14 @@ class WeightRepositoryBaseTest(ABC):
         results = self.repository.find_by_index_id(99)  # No index_id 99
         self.assertEqual(list(results), [], msg='should return empty iterator')
 
+    def test_add_undefined(self):
+        """WeightRepository.add()` should raise an exception if given `index_id=0`."""
+        with self.assertRaises(Exception):
+            self.repository.add(weight_group_id=1, index_id=0, value=0.0)
+
+        with self.assertRaises(Exception):
+            self.repository.add(weight_group_id=1, index_id=0, value=7.0)
+
     def test_get_by_weight_group_id_and_index_id(self):
         result = self.repository.get_by_weight_group_id_and_index_id(2, 1)
         expected = Weight(id=4, weight_group_id=2, index_id=1, value=583.75)

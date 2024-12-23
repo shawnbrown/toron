@@ -513,7 +513,11 @@ class BaseWeightRepository(ABC):
 
     @abstractmethod
     def add(self, weight_group_id: int, index_id: int, value: int) -> None:
-        """Add a record to the repository."""
+        """Add a record to the repository.
+
+        If this methid is called to add a weight for the undefined
+        record (``index_id=0``), it should raise an exception.
+        """
 
     @abstractmethod
     def get(self, id: int) -> Optional[Weight]:
