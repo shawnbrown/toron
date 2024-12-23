@@ -886,18 +886,28 @@ class Node(object):
                         counter['no_match'] += 1
                         continue  # <- Skip to next item.
 
-                weight_repo.add(
-                    weight_group_id=weight_group_id,
-                    index_id=index_record.id,
-                    value=weight_value,
-                )
-                counter['inserted'] += 1
+                try:
+                    weight_repo.add(
+                        weight_group_id=weight_group_id,
+                        index_id=index_record.id,
+                        value=weight_value,
+                    )
+                    counter['inserted'] += 1
+                except Exception:
+                    # Log if given undefined record, or else reraise error.
+                    if index_record.id == 0:
+                        counter['undefined_record'] += 1
+                    else:
+                        raise
 
             if (counter['inserted'] and group
                     and weight_repo.weight_group_is_complete(weight_group_id)):
                 group_repo.update(replace(group, is_complete=True))
 
         applogger.info(f"loaded {counter['inserted']} weights")
+
+        if counter['undefined_record']:
+            applogger.warning(f"skipped {counter['undefined_record']} rows matching the undefined record")
 
         if counter['no_index']:
             applogger.warning(f"skipped {counter['no_index']} rows with no matching index_id")

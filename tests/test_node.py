@@ -1899,6 +1899,29 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check inserted records (only one).
         self.assertEqual(self.get_weights_helper(), [(1, 1, 3, 15.0)])
 
+    def test_insert_undefined_record(self):
+        """Should log a warning when given a weight for the undefined record."""
+        data = [
+            ('A', 'B', 'C', 'group1'),
+            ('foo', 'x', 'a', 10.0),
+            ('-',   '-', '-',  0.0),  # <- Undefined record.
+            ('bar', 'y', 'b', 25.0),
+            ('bar', 'z', 'c', 15.0),
+            ('-',   '-', '-',  7.0),  # <- Undefined record.
+        ]
+        self.node.insert_weights('group1', data)
+
+        # Check the logged messages.
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ('INFO: loaded 3 weights\n'
+             'WARNING: skipped 2 rows matching the undefined record\n'),
+        )
+
+        # Check that the other weights were loaded as normal.
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
     def test_update(self):
         with self.node._managed_cursor() as cursor:
             weight_repo = self.node._dal.WeightRepository(cursor)
