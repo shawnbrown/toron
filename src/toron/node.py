@@ -857,13 +857,10 @@ class Node(object):
             if group:
                 weight_group_id = group.id
             else:
+                applogger.info(f'creating new weight group: {weight_group_name!r}')
                 group_repo.add(weight_group_name)
                 group = group_repo.get_by_name(weight_group_name)
                 weight_group_id = group.id  # type: ignore [union-attr]
-
-                import warnings
-                msg = f'weight_group {weight_group_name!r} created'
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
             for row in data:
                 row_dict = dict(zip(columns, row))
@@ -900,7 +897,16 @@ class Node(object):
                     and weight_repo.weight_group_is_complete(weight_group_id)):
                 group_repo.update(replace(group, is_complete=True))
 
-        warn_if_issues(counter, expected='inserted')
+        applogger.info(f"loaded {counter['inserted']} weights")
+
+        if counter['no_index']:
+            applogger.warning(f"skipped {counter['no_index']} rows with no matching index_id")
+
+        if counter['mismatch']:
+            applogger.warning(f"skipped {counter['mismatch']} rows whose labels do not match the given index_id")
+
+        if counter['no_match']:
+            applogger.warning(f"skipped {counter['no_match']} rows whose labels do not match any existing index record")
 
     def update_weights(
         self,

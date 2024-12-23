@@ -1747,6 +1747,17 @@ class TestNodeWeightMethods(unittest.TestCase):
 
         self.node = node
 
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
+
+        # Add handler to 'app-toron' logger.
+        applogger = logging.getLogger('app-toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        applogger.addHandler(handler)
+        self.addCleanup(lambda: applogger.removeHandler(handler))
+
     def get_weights_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
@@ -1855,16 +1866,14 @@ class TestNodeWeightMethods(unittest.TestCase):
             (3, 'bar', 'z', 15.0),    # <- OK (gets inserted)
         ]
 
-        # Check that a warning is raised.
-        with self.assertWarns(ToronWarning) as cm:
-            self.node.insert_weights('group1', data)
+        self.node.insert_weights('group1', data)
 
-        # Check the warning's message.
+        # Check the logged messages.
         self.assertEqual(
-            str(cm.warning),
-            ('skipped 1 rows with non-matching index_id values, '
-             'skipped 1 rows with mismatched labels, '
-             'loaded 1 rows'),
+            self.log_stream.getvalue(),
+            ('INFO: loaded 1 weights\n'
+             'WARNING: skipped 1 rows with no matching index_id\n'
+             'WARNING: skipped 1 rows whose labels do not match the given index_id\n'),
         )
 
         # Check inserted records (only one).
@@ -1878,15 +1887,13 @@ class TestNodeWeightMethods(unittest.TestCase):
             ('bar', 'z', 15.0),    # <- OK (gets inserted)
         ]
 
-        # Check that a warning is raised.
-        with self.assertWarns(ToronWarning) as cm:
-            self.node.insert_weights('group1', data)
+        self.node.insert_weights('group1', data)
 
-        # Check the warning's message.
+        # Check the logged messages.
         self.assertEqual(
-            str(cm.warning),
-            ('skipped 2 rows with labels that match no index, '
-             'loaded 1 rows'),
+            self.log_stream.getvalue(),
+            ('INFO: loaded 1 weights\n'
+             'WARNING: skipped 2 rows whose labels do not match any existing index record\n'),
         )
 
         # Check inserted records (only one).
