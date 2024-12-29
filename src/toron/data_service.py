@@ -20,6 +20,7 @@ from toron._typing import (
 
 from .categories import (
     make_structure,
+    minimize_discrete_categories,
 )
 from .data_models import (
     COMMON_RESERVED_IDENTIFIERS,
@@ -42,6 +43,7 @@ from .data_models import (
 from ._utils import (
     check_type,
     SequenceHash,
+    ToronWarning,
 )
 
 
@@ -404,6 +406,44 @@ def rebuild_structure_table(
         granularity = calculate_granularity(list(cat), index_repo, aux_index_repo)
         bits = [(x in cat) for x in columns]
         structure_repo.add(granularity, *bits)
+
+
+def add_discrete_categories(
+    categories: Iterable[Set[str]],
+    column_manager: BaseColumnManager,
+    property_repo: BasePropertyRepository,
+) -> None:
+    columns = column_manager.get_columns()
+    if not columns:
+        msg = 'must add index columns before defining categories'
+        raise RuntimeError(msg)
+
+    for field in set(chain(*categories)):
+        if field not in columns:
+            raise ValueError(
+                f'invalid category value {field!r}, values '
+                f'must be present in index columns'
+            )
+
+    existing_categories = get_all_discrete_categories(column_manager, property_repo)
+
+    whole_space = set(columns)
+    category_sets = minimize_discrete_categories(
+        categories, existing_categories, [whole_space]
+    )
+
+    omitting = [cat for cat in categories if (cat not in category_sets)]
+    if omitting:
+        import warnings
+        formatted = ', '.join(repr(cat) for cat in omitting)
+        msg = f'omitting redundant categories: {formatted}'
+        warnings.warn(msg, category=ToronWarning, stacklevel=2)
+
+    category_lists: JsonTypes = [list(cat) for cat in category_sets]
+    try:
+        property_repo.add('discrete_categories', category_lists)
+    except Exception:
+        property_repo.update('discrete_categories', category_lists)
 
 
 def refresh_structure_granularity(

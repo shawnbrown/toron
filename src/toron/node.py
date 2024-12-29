@@ -49,6 +49,7 @@ from .data_service import (
     get_all_discrete_categories,
     rename_discrete_categories,
     rebuild_structure_table,
+    add_discrete_categories,
     refresh_structure_granularity,
     set_domain,
     get_domain,
@@ -223,7 +224,7 @@ class Node(object):
     def add_discrete_categories(
         self, category: Set[str], *categories: Set[str]
     ) -> None:
-        new_categories = (category,) + categories
+        categories_to_add = (category,) + categories
 
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
@@ -231,30 +232,11 @@ class Node(object):
             col_manager = self._dal.ColumnManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
 
-            columns = col_manager.get_columns()
-            if not columns:
-                msg = 'must add index columns before defining categories'
-                raise RuntimeError(msg)
-
-            for field in set(chain(*new_categories)):
-                if field not in columns:
-                    raise ValueError(
-                        f'invalid category value {field!r}, values '
-                        f'must be present in index columns'
-                    )
-
-            existing_categories = get_all_discrete_categories(col_manager, prop_repo)
-            whole_space = set(columns)
-
-            category_sets = minimize_discrete_categories(
-                new_categories, existing_categories, [whole_space]
+            add_discrete_categories(
+                categories=categories_to_add,
+                column_manager=col_manager,
+                property_repo=prop_repo,
             )
-
-            category_lists: JsonTypes = [list(cat) for cat in category_sets]
-            try:
-                prop_repo.add('discrete_categories', category_lists)
-            except Exception:
-                prop_repo.update('discrete_categories', category_lists)
 
             rebuild_structure_table(
                 column_manager=col_manager,
@@ -263,13 +245,6 @@ class Node(object):
                 index_repo=self._dal.IndexRepository(cursor),
                 aux_index_repo=self._dal.IndexRepository(aux_cursor),
             )
-
-        omitting = [cat for cat in new_categories if (cat not in category_sets)]
-        if omitting:
-            import warnings
-            formatted = ', '.join(repr(cat) for cat in omitting)
-            msg = f'omitting redundant categories: {formatted}'
-            warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
     def drop_discrete_categories(
         self, category: Set[str], *categories: Set[str]

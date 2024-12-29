@@ -9,6 +9,7 @@ from toron.data_models import (
     Crosswalk,
 )
 from toron import data_access
+from toron._utils import ToronWarning
 from toron.data_service import (
     validate_new_index_columns,
     get_quantity_value_sum,
@@ -18,6 +19,7 @@ from toron.data_service import (
     get_default_weight_group,
     rename_discrete_categories,
     rebuild_structure_table,
+    add_discrete_categories,
     refresh_structure_granularity,
     set_domain,
     get_domain,
@@ -499,6 +501,97 @@ class TestRebuildStructureTable(unittest.TestCase):
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
         ]
         self.assertEqual(self.structure_repo.get_all(), trivial_topology)
+
+
+class TestAddDiscreteCategories(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        self.column_manager = dal.ColumnManager(cur)
+        self.property_repo = dal.PropertyRepository(cur)
+
+    def get_categories_helper(self):
+        """Helper function to return existing categories."""
+        return [set(x) for x in self.property_repo.get('discrete_categories')]
+
+    def test_create_new_categories(self):
+        """Test creating new categories when none previously exist."""
+        self.column_manager.add_columns('A', 'B')
+
+        add_discrete_categories(
+            categories=[{'A', 'B'}, {'A'}],
+            column_manager=self.column_manager,
+            property_repo=self.property_repo,
+        )
+
+        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+
+    def test_add_to_existing(self):
+        """Test adding new categories to previously existing categories."""
+        self.column_manager.add_columns('A', 'B')
+        add_discrete_categories([{'A', 'B'}], self.column_manager, self.property_repo)
+
+        add_discrete_categories(
+            categories=[{'A'}],  # <- Adds {'A'} to list of existing columns.
+            column_manager=self.column_manager,
+            property_repo=self.property_repo,
+        )
+
+        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+
+    def test_add_whole_space_if_missing(self):
+        """The whole space ({'A', 'B'}) should be included when necessary."""
+        self.column_manager.add_columns('A', 'B')
+
+        add_discrete_categories(
+            categories=[{'A'}],
+            column_manager=self.column_manager,
+            property_repo=self.property_repo,
+        )
+
+        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+
+    def test_warn_on_redundent_categories(self):
+        """Check that a warning is raised on redundant categories."""
+        self.column_manager.add_columns('A', 'B')
+        add_discrete_categories([{'A'}, {'B'}], self.column_manager, self.property_repo)
+
+        with self.assertWarns(ToronWarning) as cm:
+            add_discrete_categories(
+                categories=[{'A', 'B'}],  # <- Category already covered by existing categories.
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+            )
+
+        # Check warning message.
+        regex = r"omitting redundant categories: \{(?:'A', 'B'|'B', 'A')\}"
+        self.assertRegex(str(cm.warning), regex)
+
+    def test_no_columns_defined(self):
+        regex = 'must add index columns before defining categories'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            add_discrete_categories(
+                categories=[{'A', 'B'}, {'A'}],
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+            )
+
+    def test_bad_column_name(self):
+        self.column_manager.add_columns('A', 'B')
+
+        regex = "invalid category value 'C', values must be present in index columns"
+        with self.assertRaisesRegex(ValueError, regex):
+            add_discrete_categories(
+                categories=[{'A', 'B'}, {'C'}],
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+            )
 
 
 class TestRefreshStructureGranularity(unittest.TestCase):
