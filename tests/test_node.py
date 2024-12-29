@@ -689,6 +689,23 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_structure_helper(node), expected)
 
+    def test_insert_no_existing_structure(self):
+        """Should auto-add categories and structure if not defined."""
+        node = Node()
+        self.add_cols_helper(node, 'A', 'B')
+
+        self.assertEqual(self.get_structure_helper(node), [], msg='should start empty')
+
+        node.insert_index([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
+        expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')]
+        self.assertEqual(self.get_index_helper(node), expected)
+
+        expected = [
+            Structure(id=1, granularity=None, bits=(0, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 1)),
+        ]
+        self.assertEqual(self.get_structure_helper(node), expected, msg='should be automatically added')
+
     def test_insert_skip_empty_rows(self):
         """Text based files (like CSV files) often end with a newline
         character. Many parsers interpret this as an empty row of data.

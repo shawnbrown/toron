@@ -391,17 +391,36 @@ class Node(object):
                         counter['duplicate_labels'] += 1
 
             if counter['inserted']:
+                prop_repo=self._dal.PropertyRepository(cursor)
+
                 refresh_index_hash_property(
                     index_repo=index_repo,
-                    prop_repo=self._dal.PropertyRepository(cursor),
+                    prop_repo=prop_repo,
                 )
 
-                refresh_structure_granularity(
-                    column_manager=col_manager,
-                    structure_repo=self._dal.StructureRepository(cursor),
-                    index_repo=index_repo,
-                    aux_index_repo=self._dal.IndexRepository(aux_cursor),
-                )
+                if prop_repo.get('discrete_categories'):
+                    # If categories already exist, then refresh granularity.
+                    refresh_structure_granularity(
+                        column_manager=col_manager,
+                        structure_repo=self._dal.StructureRepository(cursor),
+                        index_repo=index_repo,
+                        aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                    )
+                else:
+                    # If no categories yet, add "whole space" and build structure.
+                    whole_space = set(index_columns)
+                    add_discrete_categories(
+                        categories=[whole_space],
+                        column_manager=col_manager,
+                        property_repo=prop_repo,
+                    )
+                    rebuild_structure_table(
+                        column_manager=col_manager,
+                        property_repo=prop_repo,
+                        structure_repo=self._dal.StructureRepository(cursor),
+                        index_repo=index_repo,
+                        aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                    )
 
                 # Existing groups will not include newly inserted indexes.
                 group_repo = self._dal.WeightGroupRepository(cursor)
@@ -1943,7 +1962,7 @@ class Node(object):
 
             for structure in structures:
                 for location in location_repo.find_by_structure(structure):
-                    # Make index matching criterial from location labels.
+                    # Use location labels to make index search criteria.
                     zipped = zip(label_columns, location.labels)
                     index_criteria = {k: v for k, v in zipped if v != ''}
 
