@@ -834,6 +834,7 @@ class Node(object):
         weight_group_name: str,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
+        value_column: Optional[str] = None,
     ) -> None:
         data, columns = normalize_tabular(data, columns)
 
@@ -856,9 +857,10 @@ class Node(object):
                 group = group_repo.get_by_name(weight_group_name)
                 weight_group_id = group.id  # type: ignore [union-attr]
 
+            value_column = value_column or weight_group_name
             for row in data:
                 row_dict = dict(zip(columns, row))
-                weight_value = row_dict.pop(weight_group_name)
+                weight_value = row_dict.pop(value_column)
 
                 if 'index_id' in row_dict:
                     index_record = index_repo.get(row_dict['index_id'])

@@ -1805,6 +1805,32 @@ class TestNodeWeightMethods(unittest.TestCase):
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
 
+    def test_insert_using_value_column(self):
+        """Test *value_column* when `data` has no column matching weight_group."""
+        data = [
+            ('A', 'B', 'weight'),  # <- No column named 'group1'.
+            ('foo', 'x', 10.0),
+            ('bar', 'y', 25.0),
+            ('bar', 'z', 15.0),
+        ]
+        self.node.insert_weights('group1', data, value_column='weight')
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_insert_using_value_column_with_matching(self):
+        """Test *value_column* even if matching weight_group exists."""
+        data = [
+            ('A', 'B', 'group1', 'group1fixed'),
+            ('foo', 'x', 0.0, 10.0),
+            ('bar', 'y', 0.0, 25.0),
+            ('bar', 'z', 0.0, 15.0),
+        ]
+        self.node.insert_weights('group1', data, value_column='group1fixed')
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
     def test_insert_by_label_extra_columns(self):
         data = [
             ('A', 'B', 'C', 'group1'),
