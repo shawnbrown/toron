@@ -2036,6 +2036,40 @@ class TestNodeWeightMethods(unittest.TestCase):
         group = self.node.get_weight_group('group1')
         self.assertTrue(group.is_complete)
 
+    def test_update_using_value_column(self):
+        """Test *value_column* when `data` has no column matching weight_group."""
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        data = [
+            ('index_id', 'A', 'B','weight'),
+            (2, 'bar', 'y', 555.0),
+        ]
+        self.node.update_weights('group1', data, value_column='weight')
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 555.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_update_using_value_column_with_matching(self):
+        """Test *value_column* even if matching weight_group exists."""
+        with self.node._managed_cursor() as cursor:
+            weight_repo = self.node._dal.WeightRepository(cursor)
+            weight_repo.add(1, 1, 10.0)
+            weight_repo.add(1, 2, 25.0)
+            weight_repo.add(1, 3, 15.0)
+
+        data = [
+            ('index_id', 'A', 'B', 'group1', 'group1fixed'),
+            (2, 'bar', 'y', 25.0, 555.0),
+        ]
+        self.node.update_weights('group1', data, value_column='group1fixed')
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 555.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
     def test_update_missing_and_mismatched(self):
         with self.node._managed_cursor() as cursor:
             weight_repo = self.node._dal.WeightRepository(cursor)

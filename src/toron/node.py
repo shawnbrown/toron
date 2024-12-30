@@ -919,13 +919,15 @@ class Node(object):
         weight_group_name: str,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
+        value_column: Optional[str] = None,
     ) -> None:
         data, columns = normalize_tabular(data, columns)
+        value_column = value_column or weight_group_name
 
         if 'index_id' not in columns:
             raise ValueError("column 'index_id' required to update weights")
-        elif weight_group_name not in columns:
-            raise ValueError(f'no column named {weight_group_name!r} in  data')
+        elif value_column not in columns:
+            raise ValueError(f'no column named {value_column!r} in data')
 
         counter: Counter = Counter()
         with self._managed_transaction() as cursor:
@@ -961,8 +963,8 @@ class Node(object):
                     weight_group_id, index_id,
                 )
                 if weight_record:
-                    # Update weight if it exists.
-                    weight_record.value = row_dict[weight_group_name]
+                    # Update the weight if it exists.
+                    weight_record.value = row_dict[value_column]
                     weight_repo.update(weight_record)
                     counter['updated'] += 1
                 else:
@@ -970,7 +972,7 @@ class Node(object):
                     weight_repo.add(
                         weight_group_id=weight_group_id,
                         index_id=index_id,
-                        value=row_dict[weight_group_name],
+                        value=row_dict[value_column],
                     )
                     counter['inserted'] += 1
 
