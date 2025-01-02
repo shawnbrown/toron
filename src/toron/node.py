@@ -1963,48 +1963,74 @@ class Node(object):
 
             # Get structure records (ordered from most to least granular).
             structures = structure_repo.get_all()
+            finest_granularity = structures[0].granularity
 
             # Get label column names (in table definition order).
             label_columns = location_repo.get_label_columns()
 
             for structure in structures:
-                for location in location_repo.find_by_structure(structure):
-                    # Use location labels to make index search criteria.
-                    zipped = zip(label_columns, location.labels)
-                    criteria = {k: v for k, v in zipped if v != ''}
+                if structure.granularity == finest_granularity:
+                    # If this `structure` has the finest possible granularity,
+                    # then it represents the node's grain-level and quantities
+                    # do not need to be disaggregated. They can be yielded
+                    # as-is without additional handling.
+                    for location in location_repo.find_by_structure(structure):
+                        # Use location labels to make index search criteria.
+                        zipped = zip(label_columns, location.labels)
+                        criteria = {k: v for k, v in zipped if v != ''}
 
-                    # Using `array` for smallest memory footprint.
-                    index_ids = array.array(
-                        'i',
-                        (idx.id for idx in index_repo.find_by_label(criteria)),
-                    )
+                        # Since we're at max-granularity, can only have one index.
+                        index = next(index_repo.find_by_label(criteria))
 
-                    for quantity in quantity_repo.find_by_location_id(location.id):
-                        attribute_group = cast(
-                            AttributeGroup,
-                            attribute_repo.get(quantity.attribute_group_id),
+                        # Yield whole quantity values as-is.
+                        for quantity in quantity_repo.find_by_location_id(location.id):
+                            attribute_group = cast(
+                                AttributeGroup,
+                                attribute_repo.get(quantity.attribute_group_id),
+                            )
+                            yield (index, attribute_group.attributes, quantity.value)
+                else:
+                    # If the `structure` does _not_ have the finest possible
+                    # granularity, then quantities are stored with some degree
+                    # of aggregation. They must be disaggregated before being
+                    # yielded.
+                    for location in location_repo.find_by_structure(structure):
+                        # Use location labels to make index search criteria.
+                        zipped = zip(label_columns, location.labels)
+                        criteria = {k: v for k, v in zipped if v != ''}
+
+                        # Using `array` for smallest memory footprint.
+                        index_ids = array.array(
+                            'i',
+                            (idx.id for idx in index_repo.find_by_label(criteria)),
                         )
 
-                        attributes = attribute_group.attributes
+                        for quantity in quantity_repo.find_by_location_id(location.id):
+                            attribute_group = cast(
+                                AttributeGroup,
+                                attribute_repo.get(quantity.attribute_group_id),
+                            )
 
-                        weight_group_id = get_greatest_unique_specificity(
-                            row_dict=attributes,
-                            selector_dict=selector_dict,
-                            default=default_weight_group.id,
-                        )
+                            attributes = attribute_group.attributes
 
-                        # Get disaggregated results for each individual index.
-                        disaggregated = disaggregate_value(
-                            quantity.value,
-                            index_ids,
-                            weight_group_id,
-                            index_repo,
-                            weight_repo,
-                        )
+                            weight_group_id = get_greatest_unique_specificity(
+                                row_dict=attributes,
+                                selector_dict=selector_dict,
+                                default=default_weight_group.id,
+                            )
 
-                        # Yield disaggregated results for each index.
-                        for index, result in disaggregated:
-                            yield (index, attributes, result)
+                            # Get disaggregated results for each individual index.
+                            disaggregated = disaggregate_value(
+                                quantity.value,
+                                index_ids,
+                                weight_group_id,
+                                index_repo,
+                                weight_repo,
+                            )
+
+                            # Yield disaggregated results for each index.
+                            for index, result in disaggregated:
+                                yield (index, attributes, result)
 
     def disaggregate(self) -> QuantityIterator:
         """Return rows with disaggregated quantity values."""
