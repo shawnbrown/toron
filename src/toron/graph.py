@@ -148,14 +148,16 @@ def _translate(
                 default=default_crosswalk_id,
             )
 
-            # Get relations for matching crosswalk and other_index_id.
-            relations = relation_repo.find_by_ids(
+            # Get relations for matching crosswalk and other_index_id
+            # (assign as a tuple to consume the iterator and free-up
+            # the underlying cursor obj for the following yield-loop).
+            relations = tuple(relation_repo.find_by_ids(
                 crosswalk_id=crosswalk_id,
                 other_index_id=index.id,
-            )
+            ))
 
-            # Yield disaggregated results for each relation.
-            for relation in list(relations):
+            # Yield translated results for each relation.
+            for relation in relations:
                 new_proportion = check_type(relation.proportion, float)
                 new_index = check_type(index_repo.get(relation.index_id), Index)
                 new_quantity_value = quantity_value * new_proportion
