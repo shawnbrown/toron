@@ -1,5 +1,6 @@
 """Tests for toron/data_service.py module."""
 
+import array
 import unittest
 
 from toron.data_models import (
@@ -195,7 +196,7 @@ class TestDisaggregateValue(unittest.TestCase):
         """Result should keep whole quantity with only matching index."""
         results = disaggregate_value(
             quantity_value=10000,
-            index_criteria={'A': 'OH', 'B': 'FRANKLIN'},
+            index_ids=[2],
             weight_group_id=1,
             index_repo=self.index_repo,
             weight_repo=self.weight_repo,
@@ -209,7 +210,22 @@ class TestDisaggregateValue(unittest.TestCase):
         """Result should divide quantity across multiple matching indexes."""
         results = disaggregate_value(
             quantity_value=10000,
-            index_criteria={'A': 'IN'},
+            index_ids=[3, 4],
+            weight_group_id=1,
+            index_repo=self.index_repo,
+            weight_repo=self.weight_repo,
+        )
+        expected = [
+            (Index(id=3, labels=('IN', 'KNOX')), 2500.0),
+            (Index(id=4, labels=('IN', 'LAPORTE')), 7500.0),
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_multiple_results_using_array_of_index_ids(self):
+        """Should work with `array` type input, too."""
+        results = disaggregate_value(
+            quantity_value=10000,
+            index_ids=array.array('i', [3, 4]),
             weight_group_id=1,
             index_repo=self.index_repo,
             weight_repo=self.weight_repo,
@@ -226,7 +242,7 @@ class TestDisaggregateValue(unittest.TestCase):
         """
         results = disaggregate_value(
             quantity_value=10000,
-            index_criteria={'A': 'OH', 'B': 'FRANKLIN'},
+            index_ids=[2],
             weight_group_id=2,  # <- Weight group 2 has weights of 0.
             index_repo=self.index_repo,
             weight_repo=self.weight_repo,
@@ -240,7 +256,7 @@ class TestDisaggregateValue(unittest.TestCase):
         """When weight sum is 0, should be divided evenly among indexes."""
         results = disaggregate_value(
             quantity_value=10000,
-            index_criteria={'A': 'IN'},
+            index_ids=[3, 4],
             weight_group_id=2,  # <- Weight group 2 has weights of 0.
             index_repo=self.index_repo,
             weight_repo=self.weight_repo,
@@ -255,7 +271,7 @@ class TestDisaggregateValue(unittest.TestCase):
         """When matching undefined record, should return value as-is."""
         results = disaggregate_value(
             quantity_value=10000,
-            index_criteria={'A': '-'},  # <- Matches undefined record.
+            index_ids=[0],
             weight_group_id=1,
             index_repo=self.index_repo,
             weight_repo=self.weight_repo,
@@ -270,7 +286,7 @@ class TestDisaggregateValue(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, regex):
             results = disaggregate_value(
                 quantity_value=10000,
-                index_criteria={'A': 'IN', 'B': 'KNOX'},
+                index_ids=[3],
                 weight_group_id=9,  # <- No weight_group_id 9 exists!
                 index_repo=self.index_repo,
                 weight_repo=self.weight_repo,
@@ -278,11 +294,11 @@ class TestDisaggregateValue(unittest.TestCase):
             list(results)  # Consume iterator.
 
     def test_no_matching_index(self):
-        regex = "no index matching {'A': 'ZZ'}"
+        regex = 'no weight value matching weight_group_id 1 and index_id 999'
         with self.assertRaisesRegex(RuntimeError, regex):
             results = disaggregate_value(
                 quantity_value=10000,
-                index_criteria={'A': 'ZZ'},  # <- No index matching ZZ!
+                index_ids=[999],  # <- No index matching 999!
                 weight_group_id=1,
                 index_repo=self.index_repo,
                 weight_repo=self.weight_repo,

@@ -5,6 +5,7 @@ from math import log2
 
 from toron._typing import (
     Any,
+    Collection,
     Dict,
     Iterable,
     Iterator,
@@ -164,7 +165,7 @@ def get_quantity_value_sum(
 
 def disaggregate_value(
     quantity_value: float,
-    index_criteria: Dict[str, str],
+    index_ids: Collection[int],
     weight_group_id: int,
     index_repo: BaseIndexRepository,
     weight_repo: BaseWeightRepository,
@@ -180,60 +181,34 @@ def disaggregate_value(
           (not an intensive property). If an intensive property is
           given--like a percentage or temperature--the results will
           be nonsensical.
-        * The *index_criteria* should use keys that correspond with an
-          existing structure record. If this condition is not satisfied,
-          the level of granularity may be invalid and the disaggregation
-          process could return misallocated results.
-        * The *index_criteria* should match one or more index records.
-          If there are no matching records, a RuntimeError is raised.
-        * The weight group should exist and it should be complete--a
-          weight should exist for every index record. If there is no
-          matching weight, a RuntimeError is raised.
-        * The given ``index_repo`` and ``weight_repo`` objects must
-          use different cursor instances. If the same instance is used
-          for both objects, the output could be incomplete. Many cursor
-          implementations (like DBAPI2 cursors) return stateful
-          iterators which will truncate the output of earlier results
-          when given new queries to execute.
+        * The weight group should exist and an associated weight should
+          exist for every index record. If there is no matching weight,
+          a RuntimeError is raised.
 
         These conditions should be assured by the parent operation
         before calling this function.
     """
-    # NOTE: The following implementation calls find_by_label() twice.
-    # This is done so that the entire collection of returned items is
-    # not loaded into memory. It's possible that a very large number of
-    # Index records match the *index_criteria*.
+    # Assign shorter func name and reduce dot-lookups.
+    get_weight = weight_repo.get_by_weight_group_id_and_index_id
 
-    # TODO: Once this code is in production, investigate ways to
-    # optimize this function--there could be significant performance
-    # improvements to be gained.
-
-    # Get sum of index values and count of index records for location.
+    # Get sum of weight values associated with index_ids.
     group_weight = 0.0
-    group_count = 0
-    for index in index_repo.find_by_label(index_criteria):
-        weight = weight_repo.get_by_weight_group_id_and_index_id(
-            weight_group_id, index.id
-        )
-        if not weight:
-            raise RuntimeError(
-                f'no weight value matching weight_group_id {weight_group_id} '
-                f'and index_id {index.id}'
-            )
-        group_weight += weight.value
-        group_count += 1
+    for index_id in index_ids:
+        weight = get_weight(weight_group_id, index_id)
+        if weight:
+            group_weight += weight.value
+        else:
+            raise RuntimeError(f'no weight value matching weight_group_id '
+                               f'{weight_group_id} and index_id {index_id}')
 
-    if group_count == 0:
-        raise RuntimeError(f'no index matching {index_criteria!r}')
+    group_count = len(index_ids)  # Get count for zero-division handling.
 
     # Yield disaggregated values for associated index records.
-    for index in index_repo.find_by_label(index_criteria):
-        # Using cast() because any missing `weight` values would have
-        # already raised an error when summing `group_weight` above.
-        weight = cast(
-            Weight,
-            weight_repo.get_by_weight_group_id_and_index_id(weight_group_id, index.id),
-        )
+    for index_id in index_ids:
+        # OK to cast() since `group_weight` loop would have already errored.
+        index = cast(Index, index_repo.get(index_id))
+        weight = cast(Weight, get_weight(weight_group_id, index_id))
+
         try:
             proportion = weight.value / group_weight
         except ZeroDivisionError:

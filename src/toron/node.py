@@ -1,5 +1,6 @@
 """Node implementation for the Toron project."""
 
+import array
 from collections import Counter
 from contextlib import contextmanager, nullcontext
 from dataclasses import replace
@@ -20,6 +21,7 @@ from toron._typing import (
     Set,
     Tuple,
     Union,
+    cast,
     overload,
 )
 
@@ -31,6 +33,7 @@ from .data_models import (
     COMMON_RESERVED_IDENTIFIERS,
     Index,
     AttributesDict,
+    AttributeGroup,
     WeightGroup,
     BaseCrosswalkRepository,
     Crosswalk,
@@ -1929,7 +1932,7 @@ class Node(object):
 
     def _disaggregate(self) -> Iterator[Tuple[Index, AttributesDict, float]]:
         """Generator to yield index, attribute, and quantity tuples."""
-        with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4), \
+        with self._managed_cursor(n=3) as (cur1, cur2, cur3), \
                 self._managed_transaction(cur1):
 
             # These repository instances can share a single cursor.
@@ -1938,11 +1941,11 @@ class Node(object):
             structure_repo = self._dal.StructureRepository(cur1)
             attribute_repo = self._dal.AttributeGroupRepository(cur1)
             index_repo = self._dal.IndexRepository(cur1)
+            weight_repo = self._dal.WeightRepository(cur1)
 
             # These repositories must have their own cursors.
             location_repo = self._dal.LocationRepository(cur2)
             quantity_repo = self._dal.QuantityRepository(cur3)
-            weight_repo = self._dal.WeightRepository(cur4)
 
             # Get the default weight group and make sure it's complete.
             default_weight_group = get_default_weight_group(
@@ -1968,12 +1971,19 @@ class Node(object):
                 for location in location_repo.find_by_structure(structure):
                     # Use location labels to make index search criteria.
                     zipped = zip(label_columns, location.labels)
-                    index_criteria = {k: v for k, v in zipped if v != ''}
+                    criteria = {k: v for k, v in zipped if v != ''}
+
+                    # Using `array` for smallest memory footprint.
+                    index_ids = array.array(
+                        'i',
+                        (idx.id for idx in index_repo.find_by_label(criteria)),
+                    )
 
                     for quantity in quantity_repo.find_by_location_id(location.id):
-                        attribute_group = attribute_repo.get(quantity.attribute_group_id)
-                        if attribute_group is None:
-                            raise RuntimeError(f'attribute-group id {quantity.attribute_group_id} not found')
+                        attribute_group = cast(
+                            AttributeGroup,
+                            attribute_repo.get(quantity.attribute_group_id),
+                        )
 
                         attributes = attribute_group.attributes
 
@@ -1986,7 +1996,7 @@ class Node(object):
                         # Get disaggregated results for each individual index.
                         disaggregated = disaggregate_value(
                             quantity.value,
-                            index_criteria,
+                            index_ids,
                             weight_group_id,
                             index_repo,
                             weight_repo,
