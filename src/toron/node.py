@@ -1987,15 +1987,11 @@ class Node(object):
                     criteria = {k: v for k, v in zipped if v != ''}
 
                     if current_granularity == finest_granularity:
-                        # If the current `structure` has the finest possible
-                        # granularity, then the quantities cannot be further
-                        # disaggregated. We can simply yield them as-is without
-                        # additional handling.
-
                         # Since we're at max-granularity, can only have one index.
                         index = next(index_repo.find_by_label(criteria))
 
-                        # Yield whole quantity values as-is.
+                        # Yield whole quantity values (cannot be disaggregated
+                        # further).
                         for quantity in group:
                             attribute_group = cast(
                                 AttributeGroup,
@@ -2003,11 +1999,6 @@ class Node(object):
                             )
                             yield (index, attribute_group.attributes, quantity.value)
                     else:
-                        # If the current `structure` does _not_ have the finest
-                        # possible granularity, then quantities are stored with
-                        # some degree of aggregation. And they must be
-                        # disaggregated before being yielded.
-
                         # Get all index records associated with the location
                         # (using `array` for smallest memory footprint).
                         index_ids = array.array(
@@ -2028,8 +2019,8 @@ class Node(object):
                                 default=default_weight_group.id,
                             )
 
-                            # Split aggregate quantity value into individual
-                            # components (one record for each associated index).
+                            # Split quantity into individual components (one
+                            # record for each associated index).
                             disaggregated = disaggregate_value(
                                 quantity.value,
                                 index_ids,
@@ -2038,9 +2029,9 @@ class Node(object):
                                 weight_repo=weight_repo,
                             )
 
-                            # Yield disaggregated record for each index.
-                            for index, result in disaggregated:
-                                yield (index, attributes, result)
+                            # Yield disaggregated values.
+                            for index, value in disaggregated:
+                                yield (index, attributes, value)
 
     def disaggregate(self) -> QuantityIterator:
         """Return rows with disaggregated quantity values."""
