@@ -2,7 +2,7 @@
 
 import sqlite3
 from dataclasses import asdict
-from itertools import chain
+from itertools import chain, repeat
 from json import dumps as json_dumps
 
 from toron._typing import (
@@ -604,6 +604,61 @@ class QuantityRepository(BaseQuantityRepository):
             for quantity in self._cursor:
                 quantity_id, loc_id, attr_id, val = quantity
                 yield Quantity(quantity_id, loc_id, attr_id, float(val))
+
+    def find_by_multiple(
+        self,
+        structure: Structure,
+        location_criteria: Dict[str, str],
+        attribute_ids: List[int],
+    ) -> Iterator[Quantity]:
+        """Find all quantities that match given filter objects and
+        return them ordered by `location_id`.
+
+        If *location_criteria* filter is empty, all matching locations
+        will be returned. If the *attribute_ids* filter is empty, all
+        matching attributes will be returned.
+        """
+        self._cursor.execute(f"PRAGMA main.table_info('location')")
+        label_cols = tuple(row[1] for row in self._cursor.fetchall())
+        label_cols = label_cols[1:]  # Slice-off "_location_id".
+
+        where_clause_parts: List[str] = []
+        parameters: List[Union[str, int]] = []
+
+        for col, bit in zip(label_cols, structure.bits):
+            if bit:
+                if col in location_criteria:
+                    where_clause_parts.append(f'b.{format_identifier(col)}=?')
+                    parameters.append(location_criteria[col])
+                else:
+                    where_clause_parts.append(f"b.{format_identifier(col)}!=''")
+            else:
+                if location_criteria.get(col):
+                    return  # <- EXIT! (stop generator early)
+                else:
+                    where_clause_parts.append(f"b.{format_identifier(col)}=''")
+
+        if attribute_ids:
+            attr_qmarks = ', '.join(repeat('?', len(attribute_ids)))
+            where_clause_parts.append(f'a.attribute_group_id IN ({attr_qmarks})')
+            parameters.extend(attribute_ids)
+
+        sql_query = f"""
+            SELECT
+                a.quantity_id,
+                a._location_id,
+                a.attribute_group_id,
+                a.quantity_value
+            FROM main.quantity a
+            JOIN main.location b USING (_location_id)
+            WHERE {' AND '.join(where_clause_parts)}
+            ORDER BY a._location_id
+        """
+        self._cursor.execute(sql_query, parameters)
+
+        for quantity in self._cursor:
+            quant_id, loc_id, attr_id, val = quantity
+            yield Quantity(quant_id, loc_id, attr_id, float(val))
 
 
 class CrosswalkRepository(BaseCrosswalkRepository):

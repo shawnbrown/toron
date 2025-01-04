@@ -707,6 +707,38 @@ class BaseQuantityRepository(ABC):
     ) -> Iterator[Quantity]:
         """Find records with matching location and attribute-group ids."""
 
+    @abstractmethod
+    def find_by_multiple(
+        self,
+        structure: Structure,
+        location_criteria: Dict[str, str],
+        attribute_ids: List[int],
+    ) -> Iterator[Quantity]:
+        """Find all quantities that match given filter objects.
+
+        If *location_criteria* filter is empty, all matching locations
+        will be returned. If the *attribute_ids* filter is empty, all
+        matching attributes will be returned.
+
+        .. note::
+            If it's possible to do so efficiently, the returned
+            `Quantity` records should be ordered by their `location_id`
+            properties. Doing so will speed-up disaggregation which
+            uses `itertools.groupby()` to reduce the number of index
+            record lookups.
+
+        .. note::
+            While part of the "quantity" repository, this method must
+            also interact with the back-end "location" data. This steps
+            outside the normal scope of repository methods.
+
+            Using loosely coupled methods helps to keep the design
+            flexible, but it can limit the ability to implement data
+            access optimizations. In this project's critical loops,
+            we need to fetch many Quantity objects quickly, so
+            performance is important.
+        """
+
 
 @dataclass
 class Crosswalk(object):

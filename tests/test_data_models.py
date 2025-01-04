@@ -872,6 +872,177 @@ class QuantityRepositoryBaseTest(ABC):
         )
 
 
+class QuantityRepositoryFindByMultipleBaseTest(ABC):
+    @property
+    @abstractmethod
+    def dal(self):
+        ...
+
+    def setUp(self):
+        connector = self.dal.DataConnector()
+        self.connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(self.connection))
+
+        cursor = connector.acquire_cursor(self.connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        # Set-up test values for quantity table to use.
+        manager = self.dal.ColumnManager(cursor)
+        manager.add_columns('A', 'B')
+
+        location_repo = self.dal.LocationRepository(cursor)
+        location_repo.add('foo', 'bar')  # Add location_id 1
+        location_repo.add('foo', 'baz')  # Add location_id 2
+        location_repo.add('foo', '')     # Add location_id 3
+        location_repo.add('', 'baz')     # Add location_id 4
+
+        attribute_repo = self.dal.AttributeGroupRepository(cursor)
+        attribute_repo.add({'aaa': 'one'})    # Add attribute_group_id 1
+        attribute_repo.add({'aaa': 'two'})    # Add attribute_group_id 2
+        attribute_repo.add({'bbb': 'three'})  # Add attribute_group_id 3
+
+        # Create QuantityRepository for testing.
+        self.repository = self.dal.QuantityRepository(cursor)
+        self.repository.add(location_id=1, attribute_group_id=1, value=15.0)  # Add quantity_id 1
+        self.repository.add(location_id=2, attribute_group_id=1, value=20.0)  # Add quantity_id 2
+        self.repository.add(location_id=3, attribute_group_id=1, value=5.0)   # Add quantity_id 3
+        self.repository.add(location_id=4, attribute_group_id=1, value=2.0)   # Add quantity_id 4
+        self.repository.add(location_id=1, attribute_group_id=2, value=25.0)  # Add quantity_id 5
+        self.repository.add(location_id=2, attribute_group_id=2, value=10.0)  # Add quantity_id 6
+        self.repository.add(location_id=2, attribute_group_id=2, value=35.0)  # Add quantity_id 7
+        self.repository.add(location_id=3, attribute_group_id=3, value=3.0)   # Add quantity_id 8
+        self.repository.add(location_id=4, attribute_group_id=3, value=7.0)   # Add quantity_id 9
+
+    def test_structure_and_location(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 1)),
+            location_criteria={'B': 'bar'},
+            attribute_ids=[],
+        )
+        self.assertEqual(
+            list(result),
+            [Quantity(id=1, location_id=1, attribute_group_id=1, value=15.0),
+             Quantity(id=5, location_id=1, attribute_group_id=2, value=25.0)],
+            msg='should match location_id 1',
+        )
+
+    def test_structure_and_attribute_ids(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 1)),
+            location_criteria={},
+            attribute_ids=[1],
+        )
+        self.assertEqual(
+            list(result),
+            [Quantity(id=1, location_id=1, attribute_group_id=1, value=15.0),
+             Quantity(id=2, location_id=2, attribute_group_id=1, value=20.0)],
+            msg='should match attribute_group_id 1',
+        )
+
+    def test_structure_location_and_attribute(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 1)),
+            location_criteria={'A': 'foo'},
+            attribute_ids=[2],
+        )
+        self.assertEqual(
+            list(result),
+            [Quantity(id=5, location_id=1, attribute_group_id=2, value=25.0),
+             Quantity(id=6, location_id=2, attribute_group_id=2, value=10.0),
+             Quantity(id=7, location_id=2, attribute_group_id=2, value=35.0)],
+            msg='should match location_id 1 and 2, attribute_group_id 2',
+        )
+
+    def test_structure_compound_location_and_attribute(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 1)),
+            location_criteria={'A': 'foo', 'B': 'baz'},
+            attribute_ids=[2],
+        )
+        self.assertEqual(
+            list(result),
+            [Quantity(id=6, location_id=2, attribute_group_id=2, value=10.0),
+             Quantity(id=7, location_id=2, attribute_group_id=2, value=35.0)],
+            msg='should match location_id 2 and attribute_group_id 2',
+        )
+
+    def test_conflicting_structure_and_location_criteria(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 0)),  # <- The "B" bit is 0!
+            location_criteria={'B': 'bar'},  # <- Trying to filter by a "B" value.
+            attribute_ids=[1, 2, 3],
+        )
+        self.assertEqual(
+            list(result),
+            [],
+            msg='should be no results when filtering to location that is not in structure',
+        )
+
+    def test_no_matching_location(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 1)),
+            location_criteria={'A': 'zzz'},
+            attribute_ids=[2],
+        )
+        self.assertEqual(
+            list(result),
+            [],
+            msg='should match no results (no matching location_id)',
+        )
+
+    def test_no_matching_attribute_ids(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 1)),
+            location_criteria={'A': 'foo'},
+            attribute_ids=[999],
+        )
+        self.assertEqual(
+            list(result),
+            [],
+            msg='should match no results (no matching attribute_group_id)',
+        )
+
+    def test_structure_only(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 1)),  # <- A and B values.
+            location_criteria={},
+            attribute_ids=[],
+        )
+        self.assertEqual(
+            list(result),
+            [Quantity(id=1, location_id=1, attribute_group_id=1, value=15.0),
+             Quantity(id=5, location_id=1, attribute_group_id=2, value=25.0),
+             Quantity(id=2, location_id=2, attribute_group_id=1, value=20.0),
+             Quantity(id=6, location_id=2, attribute_group_id=2, value=10.0),
+             Quantity(id=7, location_id=2, attribute_group_id=2, value=35.0)],
+            msg='should match records that have "A" and "B" location values',
+        )
+
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 0)),  # <- A values only.
+            location_criteria={},
+            attribute_ids=[],
+        )
+        self.assertEqual(
+            list(result),
+            [Quantity(id=3, location_id=3, attribute_group_id=1, value=5.0),
+             Quantity(id=8, location_id=3, attribute_group_id=3, value=3.0)],
+            msg='should match records that have only "A" location values',
+        )
+
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(0, 1)),  # <- B values only.
+            location_criteria={},
+            attribute_ids=[],
+        )
+        self.assertEqual(
+            list(result),
+            [Quantity(id=4, location_id=4, attribute_group_id=1, value=2.0),
+             Quantity(id=9, location_id=4, attribute_group_id=3, value=7.0)],
+            msg='should match records that have only "B" location values',
+        )
+
+
 class RelationRepositoryBaseTest(ABC):
     @property
     @abstractmethod
@@ -1388,6 +1559,9 @@ class AttributeGroupRepositoryDAL1(AttributeGroupRepositoryBaseTest, unittest.Te
     dal = dal1
 
 class QuantityRepositoryDAL1(QuantityRepositoryBaseTest, unittest.TestCase):
+    dal = dal1
+
+class QuantityRepositoryFindByMultipleBaseTestDAL1(QuantityRepositoryFindByMultipleBaseTest, unittest.TestCase):
     dal = dal1
 
 class RelationRepositoryDAL1(RelationRepositoryBaseTest, unittest.TestCase):
