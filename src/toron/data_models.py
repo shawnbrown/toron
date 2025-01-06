@@ -711,14 +711,15 @@ class BaseQuantityRepository(ABC):
     def find_by_multiple(
         self,
         structure: Structure,
-        location_criteria: Dict[str, str],
-        attribute_ids: List[int],
+        attribute_id_filter: Optional[List[int]] = None,
     ) -> Iterator[Quantity]:
-        """Find all quantities that match given filter objects.
+        """Find all quantities matching given structure and ids and
+        return records ordered by `location_id`.
 
-        If *location_criteria* filter is empty, all matching locations
-        will be returned. If the *attribute_ids* filter is empty, all
-        matching attributes will be returned.
+        If *attribute_id_filter* is given, only those records with
+        matching attribute id values will be returned. If it's `None`,
+        no records wil lbe filtered. But if an empty list is provided,
+        then no records will be returned at all.
 
         .. note::
             If it's possible to do so efficiently, the returned

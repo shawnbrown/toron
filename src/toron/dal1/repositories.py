@@ -608,40 +608,39 @@ class QuantityRepository(BaseQuantityRepository):
     def find_by_multiple(
         self,
         structure: Structure,
-        location_criteria: Dict[str, str],
-        attribute_ids: List[int],
+        attribute_id_filter: Optional[List[int]] = None,
     ) -> Iterator[Quantity]:
-        """Find all quantities that match given filter objects and
-        return them ordered by `location_id`.
+        """Find all quantities matching given structure and ids and
+        return records ordered by `location_id`.
 
-        If *location_criteria* filter is empty, all matching locations
-        will be returned. If the *attribute_ids* filter is empty, all
-        matching attributes will be returned.
+        If *attribute_id_filter* is given, only those records with
+        matching attribute id values will be returned. If it's `None`,
+        no records wil lbe filtered. But if an empty list is provided,
+        then no records will be returned at all.
         """
+        # No results if filter container is given but empty.
+        if attribute_id_filter == []:
+            return  # <- EXIT! (stop generator early)
+
         self._cursor.execute(f"PRAGMA main.table_info('location')")
         label_cols = tuple(row[1] for row in self._cursor.fetchall())
         label_cols = label_cols[1:]  # Slice-off "_location_id".
 
-        where_clause_parts: List[str] = []
-        parameters: List[Union[str, int]] = []
+        where_clause_parts = []
 
+        # Build conditions to select locations by matching structure.
         for col, bit in zip(label_cols, structure.bits):
-            if bit:
-                if col in location_criteria:
-                    where_clause_parts.append(f'b.{format_identifier(col)}=?')
-                    parameters.append(location_criteria[col])
-                else:
-                    where_clause_parts.append(f"b.{format_identifier(col)}!=''")
-            else:
-                if location_criteria.get(col):
-                    return  # <- EXIT! (stop generator early)
-                else:
-                    where_clause_parts.append(f"b.{format_identifier(col)}=''")
+            where_clause_parts.append(
+                f"b.{format_identifier(col)}{'!=' if bit else '='}''"
+            )
 
-        if attribute_ids:
-            attr_qmarks = ', '.join(repeat('?', len(attribute_ids)))
+        # Add condition to filter to `attribute_id` values if given.
+        if attribute_id_filter is not None:
+            attr_qmarks = ', '.join(repeat('?', len(attribute_id_filter)))
             where_clause_parts.append(f'a.attribute_group_id IN ({attr_qmarks})')
-            parameters.extend(attribute_ids)
+            parameters = attribute_id_filter
+        else:
+            parameters = []
 
         sql_query = f"""
             SELECT

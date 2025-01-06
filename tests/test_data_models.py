@@ -913,24 +913,10 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
         self.repository.add(location_id=3, attribute_group_id=3, value=3.0)   # Add quantity_id 8
         self.repository.add(location_id=4, attribute_group_id=3, value=7.0)   # Add quantity_id 9
 
-    def test_structure_and_location(self):
+    def test_attribute_id_single(self):
         result = self.repository.find_by_multiple(
             structure=Structure(1, None, bits=(1, 1)),
-            location_criteria={'B': 'bar'},
-            attribute_ids=[],
-        )
-        self.assertEqual(
-            list(result),
-            [Quantity(id=1, location_id=1, attribute_group_id=1, value=15.0),
-             Quantity(id=5, location_id=1, attribute_group_id=2, value=25.0)],
-            msg='should match location_id 1',
-        )
-
-    def test_structure_and_attribute_ids(self):
-        result = self.repository.find_by_multiple(
-            structure=Structure(1, None, bits=(1, 1)),
-            location_criteria={},
-            attribute_ids=[1],
+            attribute_id_filter=[1],
         )
         self.assertEqual(
             list(result),
@@ -939,62 +925,33 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
             msg='should match attribute_group_id 1',
         )
 
-    def test_structure_location_and_attribute(self):
+    def test_attribute_id_multiple(self):
         result = self.repository.find_by_multiple(
-            structure=Structure(1, None, bits=(1, 1)),
-            location_criteria={'A': 'foo'},
-            attribute_ids=[2],
+            structure=Structure(1, None, bits=(0, 1)),  # <- Column B only.
+            attribute_id_filter=[1, 3],
         )
         self.assertEqual(
             list(result),
-            [Quantity(id=5, location_id=1, attribute_group_id=2, value=25.0),
-             Quantity(id=6, location_id=2, attribute_group_id=2, value=10.0),
-             Quantity(id=7, location_id=2, attribute_group_id=2, value=35.0)],
-            msg='should match location_id 1 and 2, attribute_group_id 2',
-        )
-
-    def test_structure_compound_location_and_attribute(self):
-        result = self.repository.find_by_multiple(
-            structure=Structure(1, None, bits=(1, 1)),
-            location_criteria={'A': 'foo', 'B': 'baz'},
-            attribute_ids=[2],
-        )
-        self.assertEqual(
-            list(result),
-            [Quantity(id=6, location_id=2, attribute_group_id=2, value=10.0),
-             Quantity(id=7, location_id=2, attribute_group_id=2, value=35.0)],
-            msg='should match location_id 2 and attribute_group_id 2',
-        )
-
-    def test_conflicting_structure_and_location_criteria(self):
-        result = self.repository.find_by_multiple(
-            structure=Structure(1, None, bits=(1, 0)),  # <- The "B" bit is 0!
-            location_criteria={'B': 'bar'},  # <- Trying to filter by a "B" value.
-            attribute_ids=[1, 2, 3],
-        )
-        self.assertEqual(
-            list(result),
-            [],
-            msg='should be no results when filtering to location that is not in structure',
-        )
-
-    def test_no_matching_location(self):
-        result = self.repository.find_by_multiple(
-            structure=Structure(1, None, bits=(1, 1)),
-            location_criteria={'A': 'zzz'},
-            attribute_ids=[2],
-        )
-        self.assertEqual(
-            list(result),
-            [],
-            msg='should match no results (no matching location_id)',
+            [Quantity(id=4, location_id=4, attribute_group_id=1, value=2.0),
+             Quantity(id=9, location_id=4, attribute_group_id=3, value=7.0)],
+            msg='should match attribute_group_id 1 and 3 where column B is defined',
         )
 
     def test_no_matching_attribute_ids(self):
         result = self.repository.find_by_multiple(
             structure=Structure(1, None, bits=(1, 1)),
-            location_criteria={'A': 'foo'},
-            attribute_ids=[999],
+            attribute_id_filter=[999],
+        )
+        self.assertEqual(
+            list(result),
+            [],
+            msg='should match no results (no matching attribute_group_id)',
+        )
+
+    def test_empty_attribute_id_filter(self):
+        result = self.repository.find_by_multiple(
+            structure=Structure(1, None, bits=(1, 1)),
+            attribute_id_filter=[],  # <- Empty container.
         )
         self.assertEqual(
             list(result),
@@ -1005,8 +962,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
     def test_structure_only(self):
         result = self.repository.find_by_multiple(
             structure=Structure(1, None, bits=(1, 1)),  # <- A and B values.
-            location_criteria={},
-            attribute_ids=[],
+            attribute_id_filter=None,
         )
         self.assertEqual(
             list(result),
@@ -1020,8 +976,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
 
         result = self.repository.find_by_multiple(
             structure=Structure(1, None, bits=(1, 0)),  # <- A values only.
-            location_criteria={},
-            attribute_ids=[],
+            attribute_id_filter=None,
         )
         self.assertEqual(
             list(result),
@@ -1032,8 +987,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
 
         result = self.repository.find_by_multiple(
             structure=Structure(1, None, bits=(0, 1)),  # <- B values only.
-            location_criteria={},
-            attribute_ids=[],
+            attribute_id_filter=None,
         )
         self.assertEqual(
             list(result),
