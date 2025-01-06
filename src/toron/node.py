@@ -1931,7 +1931,10 @@ class Node(object):
                 f'bad domain values: {", ".join(items)}'
             )
 
-    def _disaggregate(self) -> Iterator[Tuple[Index, AttributesDict, float]]:
+    def _disaggregate(
+        self,
+        attribute_id_filter: Optional[List[int]] = None,
+    ) -> Iterator[Tuple[Index, AttributesDict, float]]:
         """Generator to yield index, attribute, and quantity tuples."""
         with self._managed_cursor(n=3) as (cur1, cur2, cur3), \
                 self._managed_transaction(cur1):
@@ -1970,15 +1973,13 @@ class Node(object):
             label_columns = location_repo.get_label_columns()
 
             for structure in structures:
-                current_granularity = structure.granularity
-
                 quantities = quantity_repo.find_by_multiple(
                     structure=structure,
-                    location_criteria={},
-                    attribute_ids=[],
+                    attribute_id_filter=attribute_id_filter,
                 )
-                grouped = groupby(quantities, key=lambda x: x.location_id)
 
+                current_granularity = structure.granularity
+                grouped = groupby(quantities, key=lambda x: x.location_id)
                 for location_id, group in grouped:
                     location = cast(Location, location_repo.get(location_id))
 
@@ -2033,7 +2034,7 @@ class Node(object):
                             for index, value in disaggregated:
                                 yield (index, attributes, value)
 
-    def disaggregate(self) -> QuantityIterator:
+    def disaggregate(self, **criteria: str) -> QuantityIterator:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
@@ -2047,11 +2048,17 @@ class Node(object):
             attribute_repo = self._dal.AttributeGroupRepository(cursor)
             attribute_keys = attribute_repo.get_all_attribute_names()
 
+            if criteria:
+                attrs = attribute_repo.find_by_criteria(**criteria)
+                attribute_id_filter = [attr.id for attr in attrs]
+            else:
+                attribute_id_filter = None
+
         quantity_iter = QuantityIterator(
             unique_id=unique_id,
             index_hash=index_hash,
             domain=domain,
-            data=self._disaggregate(),
+            data=self._disaggregate(attribute_id_filter),
             label_names=label_names,
             attribute_keys=attribute_keys,
         )

@@ -3956,6 +3956,25 @@ class TestNodeDisaggregate(unittest.TestCase):
              ('IN', 'LAPORTE',  'TOTAL', 'FEMALE', 55296.0)],
         )
 
+    def test_attribute_criteria(self):
+        """Filter by matching attribute."""
+        quant_iter = self.node.disaggregate(sex='MALE')
+
+        self.assertEqual(
+            list(quant_iter),
+            [('OH', 'BUTLER',   'TOTAL', 'MALE', 187075.0),
+             ('OH', 'FRANKLIN', 'TOTAL', 'MALE', 668125.0),
+             ('OH', 'BUTLER',   'TOTAL', 'MALE', 218.75),
+             ('OH', 'FRANKLIN', 'TOTAL', 'MALE', 781.25),
+             ('IN', 'KNOX',     'TOTAL', 'MALE', 18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'MALE', 55296.0)],
+        )
+
+    def test_no_matching_attribute_criteria(self):
+        """Filter has no match, should return no results."""
+        quant_iter = self.node.disaggregate(sex='MALE', category='BLERG')
+        self.assertEqual(list(quant_iter), [])
+
 
 class TestNodeRepr(unittest.TestCase):
     @staticmethod
