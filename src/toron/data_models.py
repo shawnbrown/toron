@@ -633,7 +633,7 @@ class BaseAttributeGroupRepository(ABC):
     def find_all(self) -> Iterable[AttributeGroup]:
         """Get all records in the repository."""
 
-    def find_by_criteria(self, **criteria) -> Iterable[AttributeGroup]:
+    def find_by_criteria(self, **criteria: str) -> Iterable[AttributeGroup]:
         """Find records matching given criteria values."""
         for attribute_group in self.find_all():
             attributes = attribute_group.attributes
