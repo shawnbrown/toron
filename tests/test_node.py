@@ -3956,9 +3956,9 @@ class TestNodeDisaggregate(unittest.TestCase):
              ('IN', 'LAPORTE',  'TOTAL', 'FEMALE', 55296.0)],
         )
 
-    def test_attribute_criteria(self):
-        """Filter by matching attribute."""
-        quant_iter = self.node.disaggregate(sex='MALE')
+    def test_attribute_selector(self):
+        """Testing single selector."""
+        quant_iter = self.node.disaggregate('[sex="MALE"][category="TOTAL"]')
 
         self.assertEqual(
             list(quant_iter),
@@ -3970,10 +3970,35 @@ class TestNodeDisaggregate(unittest.TestCase):
              ('IN', 'LAPORTE',  'TOTAL', 'MALE', 55296.0)],
         )
 
-    def test_no_matching_attribute_criteria(self):
-        """Filter has no match, should return no results."""
-        quant_iter = self.node.disaggregate(sex='MALE', category='BLERG')
+    def test_multiple_attribute_selectors(self):
+        """Testing multiple selectors."""
+        quant_iter = self.node.disaggregate('[sex="MALE"]', '[sex="FEMALE"]')
+
+        self.assertEqual(
+            list(quant_iter),
+            [('OH', 'BUTLER',   'TOTAL', 'MALE',   187075.0),
+             ('OH', 'BUTLER',   'TOTAL', 'FEMALE', 187075.0),
+             ('OH', 'FRANKLIN', 'TOTAL', 'MALE',   668125.0),
+             ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 668125.0),
+             ('OH', 'BUTLER',   'TOTAL', 'MALE',   218.75),
+             ('OH', 'FRANKLIN', 'TOTAL', 'MALE',   781.25),
+             ('OH', 'BUTLER',   'TOTAL', 'FEMALE', 218.75),
+             ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 781.25),
+             ('IN', 'KNOX',     'TOTAL', 'MALE',   18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'MALE',   55296.0),
+             ('IN', 'KNOX',     'TOTAL', 'FEMALE', 18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'FEMALE', 55296.0)],
+        )
+
+    def test_no_matching_attribute_selectors(self):
+        """Selector has no match, should return no results."""
+        quant_iter = self.node.disaggregate('[sex="MALE"][category="BLERG"]')
         self.assertEqual(list(quant_iter), [])
+
+    def test_malformed_selector(self):
+        """Malformed selector should raise an error."""
+        with self.assertRaises(Exception):
+            quant_iter = self.node.disaggregate('sex="MALE"')
 
 
 class TestNodeRepr(unittest.TestCase):

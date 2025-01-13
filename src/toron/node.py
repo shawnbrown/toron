@@ -2034,7 +2034,7 @@ class Node(object):
                             for index, value in disaggregated:
                                 yield (index, attributes, value)
 
-    def disaggregate(self, **criteria: str) -> QuantityIterator:
+    def disaggregate(self, *selectors: str) -> QuantityIterator:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
@@ -2048,9 +2048,14 @@ class Node(object):
             attribute_repo = self._dal.AttributeGroupRepository(cursor)
             attribute_keys = attribute_repo.get_all_attribute_names()
 
-            if criteria:
-                attrs = attribute_repo.find_by_criteria(**criteria)
-                attribute_id_filter = [attr.id for attr in attrs]
+            if selectors:
+                selector_objs = [parse_selector(s) for s in selectors]
+                attribute_id_filter = []
+                for attr in attribute_repo.find_all():
+                    for sel in selector_objs:
+                        if sel(attr.attributes):
+                            attribute_id_filter.append(attr.id)
+                            break  # If match found, move to next attr.
             else:
                 attribute_id_filter = None
 
