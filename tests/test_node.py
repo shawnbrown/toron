@@ -3929,7 +3929,7 @@ class TestNodeDisaggregate(unittest.TestCase):
 
     def test_default_weight_group(self):
         """Disaggregate to tabular format (uses QuantityIterator)."""
-        quant_iter = self.node.disaggregate()
+        quant_iter = self.node()  # <- Disaggregate.
 
         self.assertIsInstance(quant_iter, QuantityIterator)
 
@@ -3958,7 +3958,7 @@ class TestNodeDisaggregate(unittest.TestCase):
 
     def test_attribute_selector(self):
         """Testing single selector."""
-        quant_iter = self.node.disaggregate('[sex="MALE"][category="TOTAL"]')
+        quant_iter = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
 
         self.assertEqual(
             list(quant_iter),
@@ -3972,7 +3972,7 @@ class TestNodeDisaggregate(unittest.TestCase):
 
     def test_multiple_attribute_selectors(self):
         """Testing multiple selectors."""
-        quant_iter = self.node.disaggregate('[sex="MALE"]', '[sex="FEMALE"]')
+        quant_iter = self.node('[sex="MALE"]', '[sex="FEMALE"]')  # <- Disaggregate.
 
         self.assertEqual(
             list(quant_iter),
@@ -3992,13 +3992,13 @@ class TestNodeDisaggregate(unittest.TestCase):
 
     def test_no_matching_attribute_selectors(self):
         """Selector has no match, should return no results."""
-        quant_iter = self.node.disaggregate('[sex="MALE"][category="BLERG"]')
+        quant_iter = self.node('[sex="MALE"][category="BLERG"]')  # <- Disaggregate.
         self.assertEqual(list(quant_iter), [])
 
     def test_malformed_selector(self):
         """Malformed selector should raise an error."""
         with self.assertRaises(Exception):
-            quant_iter = self.node.disaggregate('sex="MALE"')
+            quant_iter = self.node('sex="MALE"')  # <- Disaggregate.
 
 
 class TestNodeRepr(unittest.TestCase):

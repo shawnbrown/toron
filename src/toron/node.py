@@ -2034,7 +2034,7 @@ class Node(object):
                             for index, value in disaggregated:
                                 yield (index, attributes, value)
 
-    def disaggregate(self, *selectors: str) -> QuantityIterator:
+    def __call__(self, *selectors: str) -> QuantityIterator:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
