@@ -464,6 +464,45 @@ class TestTranslate(unittest.TestCase):
         # ('a1', 'b2', 'c3', None, 'corge', 38.0),        # <- Default (Edge 1)
         # ('a1', 'b2', 'c4', None, 'corge', 62.0)]        # <- Default (Edge 1)
 
+    def test_rshift(self):
+        # TODO: Move this test into a different module when
+        # QuantityIterator class definition is moved.
+
+        quantities = QuantityIterator(
+            unique_id='00000000-0000-0000-0000-000000000000',
+            index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
+            domain={},
+            data=[(Index(1, 'aaa'), {'foo': 'bar'}, 100),
+                  (Index(2, 'bbb'), {'foo': 'bar'}, 100),
+                  (Index(3, 'ccc'), {'foo': 'bar'}, 100),
+                  (Index(4, 'ddd'), {'foo': 'bar'}, 100),
+                  (Index(5, 'eee'), {'foo': 'bar'}, 100)],
+            label_names=['X'],
+            attribute_keys=['foo'],
+        )
+
+        new_quantities = quantities >> self.node  # Translate with right-shift.
+
+        self.assertIsInstance(new_quantities, QuantityIterator)
+        self.assertEqual(
+            list(new_quantities),
+            [('a1', 'b1', 'c1', 'bar', 60.0),
+             ('a1', 'b1', 'c2', 'bar', 40.0),
+             ('a1', 'b1', 'c2', 'bar', 100.0),
+             ('a1', 'b1', 'c2', 'bar', 25.0),
+             ('a1', 'b2', 'c3', 'bar', 12.5),
+             ('a1', 'b2', 'c4', 'bar', 62.5),
+             ('a1', 'b2', 'c3', 'bar', 100.0),
+             ('a1', 'b2', 'c3', 'bar', 38.0),
+             ('a1', 'b2', 'c4', 'bar', 62.0)]
+        )
+
+        # If `new_quantities` were accumulated, it would be:
+        #[('a1', 'b1', 'c1', 'bar', 60),
+        # ('a1', 'b1', 'c2', 'bar', 165),
+        # ('a1', 'b2', 'c3', 'bar', 150.5),
+        # ('a1', 'b2', 'c4', 'bar', 124.5)]
+
 
 class TestXAddEdge(unittest.TestCase):
     def setUp(self):

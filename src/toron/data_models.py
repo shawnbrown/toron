@@ -28,7 +28,11 @@ from toron._typing import (
     TypeVar,
     Union,
     overload,
+    TYPE_CHECKING,  # <- Temporary.
 )
+
+if TYPE_CHECKING:  # <- Temporary (remove after moving QuantityIterator).
+    from .node import Node
 
 
 T1 = TypeVar('T1')
@@ -1023,3 +1027,10 @@ class QuantityIterator(object):
 
     def __iter__(self):
         return self
+
+    def __rshift__(self, other: 'Node') -> 'QuantityIterator':
+        """Translate quantities to the index of the *other* node."""
+        # TODO: Update this method and fix import after this
+        # class is moved into a different module.
+        from toron.graph import translate
+        return translate(self, other)
