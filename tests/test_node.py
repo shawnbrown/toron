@@ -63,6 +63,20 @@ class TestInstantiation(unittest.TestCase):
         """The ``**kwds`` are used to create a DataConnector."""
         node = Node(cache_to_drive=True)
 
+    def test_new_node_index_hash(self):
+        """Should set index_hash for newly created nodes."""
+        node = Node()  # Create empty node.
+
+        with node._managed_cursor() as cursor:
+            property_repo = node._dal.PropertyRepository(cursor)
+            index_hash = property_repo.get('index_hash')
+
+        self.assertTrue(
+            index_hash,
+            msg=('index_hash should be set (truthy) for new nodes event if '
+                 'they are empty'),
+        )
+
 
 class TestFileHandling(unittest.TestCase):
     """Test ``Node.to_file()`` and ``Node.from_file()`` methods."""
@@ -954,7 +968,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
             repository.add('bar', 'y')
 
             prop_repo = node._dal.PropertyRepository(cursor)
-            prop_repo.add('index_hash', '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177')
+            prop_repo.update('index_hash', '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177')
 
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_group_repo.add('group1')  # Adds weight_group_id 1.
@@ -1246,7 +1260,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
 
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
-            prop_repo.add('index_hash', '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177')
+            prop_repo.update('index_hash', '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177')
 
         self.node = node
 
@@ -1670,7 +1684,7 @@ class TestNodeSelectWeights(unittest.TestCase):
             weight_repo.add(1, 3, 15.0)
 
             # Add index hash (needed for QuantityIterator).
-            node._dal.PropertyRepository(cursor).add(
+            node._dal.PropertyRepository(cursor).update(
                 'index_hash',
                 'c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
             )

@@ -135,6 +135,12 @@ class Node(object):
         self._dal = data_access.get_data_access_layer(backend)
         self._connector = self._dal.DataConnector(**kwds)
 
+        with self._managed_cursor() as cursor:
+            refresh_index_hash_property(
+                index_repo=self._dal.IndexRepository(cursor),
+                prop_repo=self._dal.PropertyRepository(cursor),
+            )
+
     @classmethod
     def from_file(cls, path: Union[str, bytes, PathLike], **kwds) -> Self:
         """Load a node from an existing file on drive."""
