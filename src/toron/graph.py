@@ -164,7 +164,9 @@ def _translate(
                 yield (new_index, attributes, new_quantity_value)
 
 
-def translate(quantity_iterator: QuantityIterator, node: Node):
+def translate(
+    quantity_iterator: QuantityIterator, node: Node
+) -> QuantityIterator:
     """Translate quantities to the index of the target *node*."""
     with node._managed_cursor() as cursor:
         property_repo = node._dal.PropertyRepository(cursor)
