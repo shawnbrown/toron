@@ -43,7 +43,7 @@ Homepage = "https://github.com/shawnbrown/toron"
 legacy_tox_ini = """
   [tox]
   minversion = 4.0.0
-  envlist = mypy, py3{7,8,9,10,11,12,13,14}, pypy3{9,10}
+  envlist = mypy, check_deps, py3{7,8,9,10,11,12,13,14}, pypy3{9,10}
   skip_missing_interpreters = true
   isolated_build = true
 
@@ -62,6 +62,12 @@ legacy_tox_ini = """
   commands =
     python --version
     mypy src/toron
+
+  [testenv:check_deps]
+  # Install toron by itself and verify dependencies.
+  deps =
+  commands =
+    python -m unittest -v tests/check_dependencies.py
 
   [testenv:build_dist]
   # Build source-distribution and wheel in the 'dist/' directory.
