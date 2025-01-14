@@ -32,6 +32,7 @@ from toron._typing import (
 )
 
 if TYPE_CHECKING:  # <- Temporary (remove after moving QuantityIterator).
+    import pandas as pd
     from .node import Node
 
 
@@ -1034,3 +1035,24 @@ class QuantityIterator(object):
         # class is moved into a different module.
         from toron.graph import translate
         return translate(self, other)
+
+    def to_pandas(self, index: bool = False) -> 'pd.DataFrame':
+        """Return data as a pandas DataFrame object."""
+        try:
+            import pandas as pd
+        except ImportError:
+            msg = (
+                "Missing optional dependency 'pandas'.  Install pandas to "
+                "use this method."
+            )
+            raise ImportError(msg) from None
+
+        df = pd.DataFrame(self, columns=self.columns)
+        string_cols = df.columns[:-1]  # Slice-off "value" column (float64).
+        for col in string_cols:  # Using loop for memory efficiency.
+            df[col] = df[col].astype('string')
+
+        if index:
+            df.set_index(list(self.label_names), inplace=True)
+
+        return df

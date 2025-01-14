@@ -12,6 +12,10 @@ import unittest
 from abc import ABC, abstractmethod
 from contextlib import closing, suppress
 
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 
 #######################################################################
 # Abstract Test Cases
@@ -1482,6 +1486,54 @@ class TestQuantityIterator(unittest.TestCase):
              ('BAR', 'yyy', 'qux', 65.0)],
             msg='iteration should yield flattened rows',
         )
+
+    @unittest.skipUnless(pd, 'requires pandas')
+    def test_to_pandas(self):
+        """Check convertion to Pandas DataFrame."""
+        iterator = QuantityIterator(
+            unique_id='0000-00-00-00-000000',
+            index_hash='00000000000000000000000000000000',
+            domain={'xxx': 'yyy'},
+            data=[
+                (Index(1, 'FOO'), {'a': 'baz'}, 50.0),
+                (Index(1, 'FOO'), {'a': 'qux'}, 55.0),
+                (Index(2, 'BAR'), {'a': 'baz'}, 60.0),
+                (Index(2, 'BAR'), {'a': 'qux'}, 65.0),
+            ],
+            label_names=['x'],
+            attribute_keys=['a'],
+        )
+        df1 = iterator.to_pandas()  # <- Method under test.
+        expected_df1 = pd.DataFrame({
+            'x': pd.Series(['FOO', 'FOO', 'BAR', 'BAR'], dtype='string'),
+            'xxx': pd.Series(['yyy', 'yyy', 'yyy', 'yyy'], dtype='string'),
+            'a': pd.Series(['baz', 'qux', 'baz', 'qux'], dtype='string'),
+            'value': pd.Series([50.0, 55.0, 60.0, 65.0], dtype='float64'),
+        })
+        pd.testing.assert_frame_equal(df1, expected_df1)
+
+        # Check result with `index=True`.
+        iterator = QuantityIterator(
+            unique_id='0000-00-00-00-000000',
+            index_hash='00000000000000000000000000000000',
+            domain={'xxx': 'yyy'},
+            data=[
+                (Index(1, 'FOO'), {'a': 'baz'}, 50.0),
+                (Index(1, 'FOO'), {'a': 'qux'}, 55.0),
+                (Index(2, 'BAR'), {'a': 'baz'}, 60.0),
+                (Index(2, 'BAR'), {'a': 'qux'}, 65.0),
+            ],
+            label_names=['x'],
+            attribute_keys=['a'],
+        )
+        df2 = iterator.to_pandas(index=True)  # <- Method under test.
+        expected_df2 = pd.DataFrame({
+            'xxx': pd.Series(['yyy', 'yyy', 'yyy', 'yyy'], dtype='string'),
+            'a': pd.Series(['baz', 'qux', 'baz', 'qux'], dtype='string'),
+            'value': pd.Series([ 50.0,  55.0,  60.0,  65.0], dtype='float64'),
+        })
+        expected_df2.index = pd.Index(['FOO', 'FOO', 'BAR', 'BAR'], dtype='string', name='x')
+        pd.testing.assert_frame_equal(df2, expected_df2)
 
 
 #######################################################################
