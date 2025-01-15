@@ -147,6 +147,7 @@ class TestIdiomaticUsage(unittest.TestCase):
 
     @unittest.skipUnless(pd, 'requires pandas')
     def test_disagg_trans_pandas(self):
+        # Disaggregate, translate, and convert to DataFrame.
         df = (self.node1('[variable="foo"]') >> self.node2).to_pandas()
 
         expected_df = pd.DataFrame({
@@ -155,4 +156,16 @@ class TestIdiomaticUsage(unittest.TestCase):
             'variable': pd.Series(['foo', 'foo', 'foo'], dtype='string'),
             'value': pd.Series([50.0, 50.0, 100.0], dtype='float64'),
         })
+        pd.testing.assert_frame_equal(df, expected_df)
+
+        # Disaggregate, translate, convert to DataFrame, and set the index.
+        df = (self.node1('[variable="foo"]') >> self.node2).to_pandas(index=True)
+
+        expected_df = pd.DataFrame({
+            'idx1': pd.Series(['A', 'A', 'B'], dtype='string'),
+            'idx2': pd.Series(['Athens', 'Boston', 'Charleston'], dtype='string'),
+            'variable': pd.Series(['foo', 'foo', 'foo'], dtype='string'),
+            'value': pd.Series([50.0, 50.0, 100.0], dtype='float64'),
+        })
+        expected_df.set_index(['idx1', 'idx2'], inplace=True)
         pd.testing.assert_frame_equal(df, expected_df)
