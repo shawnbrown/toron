@@ -6,7 +6,7 @@
 name: Tests
 
 #run-name: "${{ inputs.platform && format('Test {0} on {1}, commit: {2}, timeout: {3} minutes', github.ref_name, inputs.platform, github.sha, inputs.timeout || 10) }}"
-run-name: "${{ inputs.platform && format('Test {0}, commit: {1}, timeout: {2} minutes', inputs.platform, github.sha, inputs.timeout || 10) }}"
+run-name: "${{ inputs.platform && format('Test {0}, commit: {1}, timeout: {2} minutes', inputs.platform, github.sha, inputs.timeout || 25) }}"
 
 on:
   push:
@@ -26,7 +26,7 @@ on:
         type: number
         description: Timeout in minutes
         required: true
-        default: 10
+        default: 25
 
 jobs:
   run-tox-envs:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
-    timeout-minutes: ${{ inputs.timeout && fromJSON(inputs.timeout) || 10 }}
+    timeout-minutes: ${{ inputs.timeout && fromJSON(inputs.timeout) || 25 }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
