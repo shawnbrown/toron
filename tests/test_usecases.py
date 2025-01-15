@@ -131,7 +131,7 @@ class TestIdiomaticUsage(unittest.TestCase):
             ],
         )
 
-    def test_disagg_translate(self):
+    def test_disagg_trans(self):
         result_iter = self.node1('[variable="foo"]') >> self.node2
 
         self.assertEqual(
@@ -146,7 +146,7 @@ class TestIdiomaticUsage(unittest.TestCase):
         )
 
     @unittest.skipUnless(pd, 'requires pandas')
-    def test_disagg_translate_to_pandas(self):
+    def test_disagg_trans_pandas(self):
         df = (self.node1('[variable="foo"]') >> self.node2).to_pandas()
 
         expected_df = pd.DataFrame({
