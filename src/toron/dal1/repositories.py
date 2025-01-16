@@ -345,7 +345,7 @@ class WeightRepository(BaseWeightRepository):
         """Initialize a new repository instance."""
         self._cursor = cursor
 
-    def add(self, weight_group_id: int, index_id: int, value: int) -> None:
+    def add(self, weight_group_id: int, index_id: int, value: float) -> None:
         """Add a record to the repository."""
         sql = """
             INSERT INTO main.weight (weight_group_id, index_id, weight_value)

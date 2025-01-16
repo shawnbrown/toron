@@ -517,7 +517,7 @@ class BaseWeightRepository(ABC):
         """Initialize a new repository instance."""
 
     @abstractmethod
-    def add(self, weight_group_id: int, index_id: int, value: int) -> None:
+    def add(self, weight_group_id: int, index_id: int, value: float) -> None:
         """Add a record to the repository.
 
         If this methid is called to add a weight for the undefined
