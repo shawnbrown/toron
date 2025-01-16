@@ -9,6 +9,7 @@ import sys
 import tempfile
 import unittest
 from contextlib import suppress
+from decimal import Decimal
 from io import StringIO
 from itertools import chain
 from textwrap import dedent
@@ -1978,6 +1979,46 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check that the other weights were loaded as normal.
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
+
+    def test_insert_other_types(self):
+        data = [
+            ('A', 'B', 'group1'),
+            ('foo', 'x', '10.0'),         # <- String.
+            ('bar', 'y', 25),             # <- Integer.
+            ('bar', 'z', Decimal('15')),  # <- Decimal.
+        ]
+        self.node.insert_weights('group1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+        for record in self.get_weights_helper():
+            with self.subTest(record=record):
+                *_, weight_value = record
+                self.assertIsInstance(weight_value, float)
+
+    def test_insert_non_real_nums(self):
+        """Should log a warning when given a weight for the undefined record."""
+        data = [
+            ('A', 'B', 'group1'),
+            ('foo', 'x', 'foobar'),      # <- Non-numeric string.
+            ('foo', 'x', 10.0),
+            ('foo', 'x', float('nan')),  # <- Not A Number
+            ('bar', 'y', 25.0),
+            ('foo', 'x', float('inf')),  # <- Infinity.
+            ('bar', 'z', 15.0),
+        ]
+        self.node.insert_weights('group1', data)
+
+        expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
+        self.assertEqual(self.get_weights_helper(), expected)
+
+        # Check the logged messages.
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ('INFO: loaded 3 weights\n'
+             'WARNING: skipped 3 rows without real number values\n'),
+        )
 
     def test_update(self):
         with self.node._managed_cursor() as cursor:

@@ -6,6 +6,7 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from itertools import chain, compress, groupby
 from logging import getLogger
+from math import isnan, isinf
 from os import PathLike
 
 from toron._typing import (
@@ -872,6 +873,17 @@ class Node(object):
                 row_dict = dict(zip(columns, row))
                 weight_value = row_dict.pop(value_column)
 
+                if not isinstance(weight_value, float):
+                    try:
+                        weight_value = float(weight_value)
+                    except (ValueError, TypeError):
+                        counter['not_realnum'] += 1
+                        continue  # <- Skip to next item.
+
+                if isnan(weight_value) or isinf(weight_value):
+                    counter['not_realnum'] += 1
+                    continue  # <- Skip to next item.
+
                 if 'index_id' in row_dict:
                     index_record = index_repo.get(row_dict['index_id'])
                     if not index_record:
@@ -911,6 +923,9 @@ class Node(object):
                 group_repo.update(replace(group, is_complete=True))
 
         applogger.info(f"loaded {counter['inserted']} weights")
+
+        if counter['not_realnum']:
+            applogger.warning(f"skipped {counter['not_realnum']} rows without real number values")
 
         if counter['undefined_record']:
             applogger.warning(f"skipped {counter['undefined_record']} rows matching the undefined record")
