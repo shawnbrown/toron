@@ -347,6 +347,10 @@ class WeightRepository(BaseWeightRepository):
 
     def add(self, weight_group_id: int, index_id: int, value: float) -> None:
         """Add a record to the repository."""
+        if value < 0.0:
+            msg = f'value cannot be negative, got {value!r}'
+            raise ValueError(msg)
+
         sql = """
             INSERT INTO main.weight (weight_group_id, index_id, weight_value)
             VALUES (?, ?, ?)
@@ -365,6 +369,10 @@ class WeightRepository(BaseWeightRepository):
 
     def update(self, record: Weight) -> None:
         """Update a record in the repository."""
+        if record.value < 0.0:
+            msg = f'value cannot be negative, got {record.value!r}'
+            raise ValueError(msg)
+
         sql = f"""
             UPDATE main.weight
             SET

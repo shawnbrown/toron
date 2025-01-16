@@ -520,8 +520,11 @@ class BaseWeightRepository(ABC):
     def add(self, weight_group_id: int, index_id: int, value: float) -> None:
         """Add a record to the repository.
 
-        If this methid is called to add a weight for the undefined
-        record (``index_id=0``), it should raise an exception.
+        If this method is called to add a weight for the undefined
+        record (``index_id=0``), it must raise an exception.
+
+        If this method is called to add a weight with a negative value,
+        it must raise an exception.
         """
 
     @abstractmethod
@@ -530,7 +533,11 @@ class BaseWeightRepository(ABC):
 
     @abstractmethod
     def update(self, record: Weight) -> None:
-        """Update a record in the repository."""
+        """Update a record in the repository.
+
+        If this method is called to update a weight with a negative
+        value, it must raise an exception.
+        """
 
     @abstractmethod
     def delete(self, id: int) -> None:

@@ -536,6 +536,17 @@ class WeightRepositoryBaseTest(ABC):
         with self.assertRaises(Exception):
             self.repository.add(weight_group_id=1, index_id=0, value=7.0)
 
+    def test_negative_value_handling(self):
+        """Raise exception if `add()` or `update()` gets negative value."""
+        regex = '.*negative.*'  # Message should mention "negative" values aren't alowed.
+
+        with self.assertRaisesRegex(ValueError, regex):
+            self.repository.update(Weight(1, 1, 1, -3000.0))
+
+        self.repository.delete(1)
+        with self.assertRaisesRegex(ValueError, regex):
+            self.repository.add(weight_group_id=1, index_id=1, value=-9000.0)
+
     def test_get_by_weight_group_id_and_index_id(self):
         result = self.repository.get_by_weight_group_id_and_index_id(2, 1)
         expected = Weight(id=4, weight_group_id=2, index_id=1, value=583.75)
