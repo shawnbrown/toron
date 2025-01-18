@@ -41,6 +41,7 @@ from ._typing import (
     TypeAlias,
     TypeVar,
     Union,
+    cast,
 )
 
 
@@ -848,7 +849,7 @@ class BitFlags(Sequence[Literal[0, 1]]):
         for byte in byte_string:
             for i in range (7, -1, -1):  # range() yields 7 thru 0.
                 # Shift right and get the right-most bit.
-                yield (byte >> i) & 1  # type: ignore [misc]
+                yield cast(Literal[0, 1], (byte >> i) & 1)
 
     def __bytes__(self) -> bytes:
         """Return a bytes object representing the sequence of bits."""
