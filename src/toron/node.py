@@ -865,8 +865,8 @@ class Node(object):
             else:
                 applogger.info(f'creating new weight group: {weight_group_name!r}')
                 group_repo.add(weight_group_name)
-                group = group_repo.get_by_name(weight_group_name)
-                weight_group_id = group.id  # type: ignore [union-attr]
+                group = cast(WeightGroup, group_repo.get_by_name(weight_group_name))
+                weight_group_id = group.id
 
             value_column = value_column or weight_group_name
             for row in data:
@@ -918,7 +918,7 @@ class Node(object):
                     else:
                         raise
 
-            if (counter['inserted'] and group
+            if (counter['inserted']
                     and weight_repo.weight_group_is_complete(weight_group_id)):
                 group_repo.update(replace(group, is_complete=True))
 
