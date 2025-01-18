@@ -382,7 +382,7 @@ class CompoundSelector(SelectorContainer):
         sum of the specificity values of the selectors it contains.
         """
         specificity_values = [x.specificity for x in self.selector_list]
-        return tuple(sum(tup) for tup in zip(*specificity_values))  # type: ignore[return-value]
+        return tuple(sum(tup) for tup in zip(*specificity_values))
 
 
 class accepts_json_input(object):
@@ -511,12 +511,12 @@ _parse_selector = Lark(
 ).parse
 
 
-def parse_selector(text: str) -> SelectorBase:
+def parse_selector(text: str) -> Union[SimpleSelector, SelectorContainer]:
     """Parse selector text and return a selector object."""
     obj = _parse_selector(text)
-    if not isinstance(obj, SelectorBase):
+    if not isinstance(obj, (SimpleSelector, SelectorContainer)):
         qualname = obj.__class__.__qualname__
-        raise TypeError(f'expected SelectorBase, got: {qualname!r}')
+        raise TypeError(f'expected subset of SelectorBase, got: {qualname!r}')
     return obj
 
 
@@ -524,7 +524,9 @@ class SelectorSyntaxError(SyntaxError):
     """Error parsing selector syntax."""
 
 
-def convert_text_selectors(selector_json: AnyStr) -> List[CompoundSelector]:
+def convert_text_selectors(
+    selector_json: AnyStr
+) -> List[Union[SimpleSelector, SelectorContainer]]:
     """Convert JSON TEXT_SELECTORS into list of Selector objects.
 
     .. code-block::
@@ -538,10 +540,7 @@ def convert_text_selectors(selector_json: AnyStr) -> List[CompoundSelector]:
     list_of_strings = loads(selector_json)
     try:
         list_of_selectors = [parse_selector(x) for x in list_of_strings]
-        # Ignoring return-value because Mypy cannot (apparently) see
-        # result of the SelectorTransformer which is registered with
-        # the parser.
-        return list_of_selectors  # type: ignore[return-value]
+        return list_of_selectors
 
     except UnexpectedInput as err:
         while err.__context__ and isinstance(err.__context__, UnexpectedInput):
