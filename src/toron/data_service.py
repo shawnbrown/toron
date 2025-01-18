@@ -284,8 +284,7 @@ def get_all_discrete_categories(
     column_manager: BaseColumnManager,
     property_repo: BasePropertyRepository,
 ) -> List[Set[str]]:
-    values: Optional[List[List[str]]]
-    values = property_repo.get('discrete_categories')  # type: ignore [assignment]
+    values = cast(Optional[List[List[str]]], property_repo.get('discrete_categories'))
     if values:
         return [set(x) for x in values]
 
@@ -403,7 +402,7 @@ def add_discrete_categories(
     existing_categories = get_all_discrete_categories(column_manager, property_repo)
 
     whole_space = set(columns)
-    category_sets = minimize_discrete_categories(
+    category_sets: List[Set[str]] = minimize_discrete_categories(
         categories, existing_categories, [whole_space]
     )
 
@@ -414,7 +413,7 @@ def add_discrete_categories(
         msg = f'omitting redundant categories: {formatted}'
         warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
-    category_lists: JsonTypes = [list(cat) for cat in category_sets]
+    category_lists = cast(JsonTypes, [list(cat) for cat in category_sets])
     try:
         property_repo.add('discrete_categories', category_lists)
     except Exception:
