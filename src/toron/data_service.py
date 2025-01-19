@@ -5,6 +5,7 @@ from math import log2
 
 from toron._typing import (
     Any,
+    Callable,
     Collection,
     Dict,
     Iterable,
@@ -368,7 +369,14 @@ def rebuild_structure_table(
     structure_repo: BaseStructureRepository,
     index_repo: BaseIndexRepository,
     aux_index_repo: BaseIndexRepository,
+    optimizations: Optional[Dict[str, Callable]] = None
 ) -> None:
+    make_granularity = (
+        optimizations.get('calculate_granularity', calculate_granularity)
+        if optimizations
+        else calculate_granularity
+    )
+
     # Remove existing structure.
     for structure in structure_repo.get_all():
         structure_repo.delete(structure.id)
@@ -377,7 +385,7 @@ def rebuild_structure_table(
     categories = get_all_discrete_categories(column_manager, property_repo)
     columns = column_manager.get_columns()
     for cat in make_structure(categories):
-        granularity = calculate_granularity(list(cat), index_repo, aux_index_repo)
+        granularity = make_granularity(list(cat), index_repo, aux_index_repo)
         bits = [(x in cat) for x in columns]
         structure_repo.add(granularity, *bits)
 
@@ -425,11 +433,18 @@ def refresh_structure_granularity(
     structure_repo: BaseStructureRepository,
     index_repo: BaseIndexRepository,
     aux_index_repo: BaseIndexRepository,
+    optimizations: Optional[Dict[str, Callable]] = None
 ) -> None:
+    make_granularity = (
+        optimizations.get('calculate_granularity', calculate_granularity)
+        if optimizations
+        else calculate_granularity
+    )
+
     label_columns = column_manager.get_columns()
     for structure in structure_repo.get_all():
         category = list(compress(label_columns, structure.bits))
-        granularity = calculate_granularity(category, index_repo, aux_index_repo)
+        granularity = make_granularity(category, index_repo, aux_index_repo)
         structure.granularity = granularity
         structure_repo.update(structure)
 

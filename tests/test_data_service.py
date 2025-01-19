@@ -463,6 +463,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         self.structure_repo = dal.StructureRepository(cur)
         self.index_repo = dal.IndexRepository(cur)
         self.alt_index_repo = dal.IndexRepository(alt_cur)
+        self.optimizations = dal.optimizations
 
         self.column_manager.add_columns('A', 'B', 'C')
         self.index_repo.add('a1', 'b1', 'c1')
@@ -477,20 +478,33 @@ class TestRebuildStructureTable(unittest.TestCase):
     def test_rebuild_structure(self):
         self.property_repo.add('discrete_categories', [['A'], ['A', 'B'], ['A', 'B', 'C']])
 
-        rebuild_structure_table(
-            self.column_manager,
-            self.property_repo,
-            self.structure_repo,
-            self.index_repo,
-            self.alt_index_repo,
-        )
-
         expected = [
             Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
             Structure(id=3, granularity=2.0,  bits=(1, 1, 0)),
             Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
         ]
+
+        # Using standard granularity function.
+        rebuild_structure_table(
+            self.column_manager,
+            self.property_repo,
+            self.structure_repo,
+            self.index_repo,
+            self.alt_index_repo,
+            optimizations=None,
+        )
+        self.assertEqual(self.structure_repo.get_all(), expected)
+
+        # Using optimized granularity function.
+        rebuild_structure_table(
+            self.column_manager,
+            self.property_repo,
+            self.structure_repo,
+            self.index_repo,
+            self.alt_index_repo,
+            optimizations=self.optimizations,
+        )
         self.assertEqual(self.structure_repo.get_all(), expected)
 
     def test_rebuild_structure_no_categories(self):
@@ -504,18 +518,31 @@ class TestRebuildStructureTable(unittest.TestCase):
         """
         self.property_repo.delete('discrete_categories')  # <- No categories!
 
+        trivial_topology = [
+            Structure(id=2, granularity=3.0,  bits=(1, 1, 1)),
+            Structure(id=1, granularity=None, bits=(0, 0, 0)),
+        ]
+
+        # Using standard granularity function.
         rebuild_structure_table(
             self.column_manager,
             self.property_repo,
             self.structure_repo,
             self.index_repo,
             self.alt_index_repo,
+            optimizations=None,
         )
+        self.assertEqual(self.structure_repo.get_all(), trivial_topology)
 
-        trivial_topology = [
-            Structure(id=2, granularity=3.0,  bits=(1, 1, 1)),
-            Structure(id=1, granularity=None, bits=(0, 0, 0)),
-        ]
+        # Using optimized granularity function.
+        rebuild_structure_table(
+            self.column_manager,
+            self.property_repo,
+            self.structure_repo,
+            self.index_repo,
+            self.alt_index_repo,
+            optimizations=self.optimizations,
+        )
         self.assertEqual(self.structure_repo.get_all(), trivial_topology)
 
 
@@ -627,6 +654,7 @@ class TestRefreshStructureGranularity(unittest.TestCase):
         self.structure_repo = dal.StructureRepository(cur)
         self.index_repo = dal.IndexRepository(cur)
         self.alt_index_repo = dal.IndexRepository(alt_cur)
+        self.optimizations = dal.optimizations
 
         self.column_manager.add_columns('A', 'B', 'C', 'D')
         self.index_repo.add('a1', 'b1', 'c1', 'd1')
@@ -650,13 +678,6 @@ class TestRefreshStructureGranularity(unittest.TestCase):
         self.structure_repo.add(None, 1, 1, 1, 0)
         self.structure_repo.add(None, 1, 1, 1, 1)
 
-        # Calculate and assign granularity.
-        refresh_structure_granularity(
-            column_manager=self.column_manager,
-            structure_repo=self.structure_repo,
-            index_repo=self.index_repo,
-            aux_index_repo=self.alt_index_repo,
-        )
         expected = [
                 Structure(id=5, granularity=3.0,  bits=(1, 1, 1, 1)),
                 Structure(id=4, granularity=2.0,  bits=(1, 1, 1, 0)),
@@ -664,6 +685,25 @@ class TestRefreshStructureGranularity(unittest.TestCase):
                 Structure(id=2, granularity=0.0,  bits=(1, 0, 0, 0)),  # <- Only one unique value gives granularity of 0.0.
                 Structure(id=1, granularity=None, bits=(0, 0, 0, 0)),
         ]
+
+        # Calculate and assign granularity (standard function).
+        refresh_structure_granularity(
+            column_manager=self.column_manager,
+            structure_repo=self.structure_repo,
+            index_repo=self.index_repo,
+            aux_index_repo=self.alt_index_repo,
+            optimizations=None,
+        )
+        self.assertEqual(self.structure_repo.get_all(), expected)
+
+        # Calculate and assign granularity (using optimizations).
+        refresh_structure_granularity(
+            column_manager=self.column_manager,
+            structure_repo=self.structure_repo,
+            index_repo=self.index_repo,
+            aux_index_repo=self.alt_index_repo,
+            optimizations=self.optimizations,
+        )
         self.assertEqual(self.structure_repo.get_all(), expected)
 
 

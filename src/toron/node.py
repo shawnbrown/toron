@@ -255,6 +255,7 @@ class Node(object):
                 structure_repo=self._dal.StructureRepository(cursor),
                 index_repo=self._dal.IndexRepository(cursor),
                 aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                optimizations=self._dal.optimizations,
             )
 
     def drop_discrete_categories(
@@ -290,6 +291,7 @@ class Node(object):
                 structure_repo=self._dal.StructureRepository(cursor),
                 index_repo=self._dal.IndexRepository(cursor),
                 aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                optimizations=self._dal.optimizations,
             )
 
     @property
@@ -416,6 +418,7 @@ class Node(object):
                         structure_repo=self._dal.StructureRepository(cursor),
                         index_repo=index_repo,
                         aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                        optimizations=self._dal.optimizations,
                     )
                 else:
                     # If no categories yet, add "whole space" and build structure.
@@ -431,6 +434,7 @@ class Node(object):
                         structure_repo=self._dal.StructureRepository(cursor),
                         index_repo=index_repo,
                         aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                        optimizations=self._dal.optimizations,
                     )
 
                 # Existing groups will not include newly inserted indexes.
@@ -553,6 +557,7 @@ class Node(object):
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
                     aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                    optimizations=self._dal.optimizations,
                 )
 
             if counter['merged']:
@@ -663,6 +668,7 @@ class Node(object):
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
                     aux_index_repo=aux_index_repo,
+                    optimizations=self._dal.optimizations,
                 )
 
                 # All unweighted indexes may have been deleted.
