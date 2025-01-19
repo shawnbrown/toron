@@ -1929,9 +1929,9 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             self.log_stream.getvalue(),
-            ('INFO: loaded 1 weights\n'
-             'WARNING: skipped 1 rows with no matching index_id\n'
-             'WARNING: skipped 1 rows whose labels do not match the given index_id\n'),
+            ("INFO: loaded 1 weights into 'group1'\n"
+             "WARNING: skipped 1 rows with no matching index_id\n"
+             "WARNING: skipped 1 rows whose labels do not match the given index_id\n"),
         )
 
         # Check inserted records (only one).
@@ -1950,8 +1950,8 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             self.log_stream.getvalue(),
-            ('INFO: loaded 1 weights\n'
-             'WARNING: skipped 2 rows whose labels do not match any existing index record\n'),
+            ("INFO: loaded 1 weights into 'group1'\n"
+             "WARNING: skipped 2 rows whose labels do not match any existing index record\n"),
         )
 
         # Check inserted records (only one).
@@ -1972,8 +1972,8 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             self.log_stream.getvalue(),
-            ('INFO: loaded 3 weights\n'
-             'WARNING: skipped 2 rows matching the undefined record\n'),
+            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
+             "WARNING: skipped 2 rows matching the undefined record\n"),
         )
 
         # Check that the other weights were loaded as normal.
@@ -2016,8 +2016,8 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             self.log_stream.getvalue(),
-            ('INFO: loaded 3 weights\n'
-             'WARNING: skipped 3 rows without real number values\n'),
+            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
+             "WARNING: skipped 3 rows without real number values\n"),
         )
 
     def test_update(self):

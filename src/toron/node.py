@@ -894,7 +894,6 @@ class Node(object):
                     if any(row_dict[k] != v for k, v in labels_dict.items()):
                         counter['mismatch'] += 1
                         continue  # <- Skip to next item.
-
                 else:
                     index_records = index_repo.find_by_label(
                         {k: v for k, v in row_dict.items() if k in label_columns}
@@ -918,11 +917,14 @@ class Node(object):
                     else:
                         raise
 
-            if (counter['inserted']
-                    and weight_repo.weight_group_is_complete(weight_group_id)):
+            group_is_complete = weight_repo.weight_group_is_complete(weight_group_id)
+            if counter['inserted'] and group_is_complete:
                 group_repo.update(replace(group, is_complete=True))
 
-        applogger.info(f"loaded {counter['inserted']} weights")
+        applogger.info(
+            f"loaded {counter['inserted']} weights into {group.name!r}"
+            f"{', weight group is complete' if group_is_complete else ''}"
+        )
 
         if counter['not_realnum']:
             applogger.warning(f"skipped {counter['not_realnum']} rows without real number values")
