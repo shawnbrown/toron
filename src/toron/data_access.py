@@ -4,6 +4,7 @@ import os
 import sys
 from dataclasses import dataclass
 from ._typing import (
+    Callable,
     Dict,
     Optional,
     Set,
@@ -51,6 +52,7 @@ class DataAccessLayer(object):
     CrosswalkRepository: Type[BaseCrosswalkRepository]
     RelationRepository: Type[BaseRelationRepository]
     PropertyRepository: Type[BasePropertyRepository]
+    optimizations: Dict[str, Callable]
 
 
 _loaded_backends: Dict[str, DataAccessLayer] = {}
@@ -87,6 +89,7 @@ def get_data_access_layer(backend: str = 'DAL1') -> DataAccessLayer:
             CrosswalkRepository=mod.CrosswalkRepository,
             RelationRepository=mod.RelationRepository,
             PropertyRepository=mod.PropertyRepository,
+            optimizations=mod.optimizations,
         )
         _loaded_backends[backend] = dal
         return dal

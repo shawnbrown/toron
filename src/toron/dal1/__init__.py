@@ -28,4 +28,5 @@ from .repositories import (
     RelationRepository,
     PropertyRepository,
 )
+from .optimizations import optimizations
 from .schema import RESERVED_IDENTIFIERS
