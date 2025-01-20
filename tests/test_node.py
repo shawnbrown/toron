@@ -1493,6 +1493,18 @@ class TestNodeDeleteIndex(unittest.TestCase):
 
 
 class TestNodeWeightGroupMethods(unittest.TestCase):
+    def setUp(self):
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
+
+        # Add handler to 'app-toron' logger.
+        applogger = logging.getLogger('app-toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        applogger.addHandler(handler)
+        self.addCleanup(lambda: applogger.removeHandler(handler))
+
     @staticmethod
     def get_weight_group_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -1562,17 +1574,6 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         self.assertIsNone(node.get_weight_group('name_zzz'))
 
     def test_add_weight_group(self):
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
-
         # Test `add_weight_group()` behavior.
         node = Node()
         node.add_weight_group('name_a')  # <- Only `name` is required (should log a warning and set as default).
@@ -1631,11 +1632,13 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_weight_group_helper(node), expected)
 
-        # Check that a warning is raised.
-        with self.assertWarns(ToronWarning) as cm:
-            node.edit_weight_group('name_x', description='Description of X.')
+        node.edit_weight_group('name_x', description='Description of X.')
 
-        self.assertEqual(str(cm.warning), "no weight group named 'name_x'")
+        # Check warning message.
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            "WARNING: no weight group named 'name_x'\n",
+        )
 
     def test_drop_weight_group(self):
         node = Node()
@@ -1657,17 +1660,27 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
             weight_repo.add(1, 2, 25.0)
             weight_repo.add(1, 3, 15.0)
 
-        node.drop_weight_group('name_a')
+        node.drop_weight_group('name_a')  # <- Method under test.
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            "INFO: removed weight group 'name_a'\n",
+        )
 
         msg = 'weight group and associated weights should be deleted'
         self.assertEqual(self.get_weight_group_helper(node), [], msg=msg)
         self.assertEqual(self.get_weight_helper(node), [], msg=msg)
 
-        # Check that a warning is raised.
-        with self.assertWarns(ToronWarning) as cm:
-            node.drop_weight_group('name_x')
+        # Clear `log_stream` buffer (for next assertion).
+        self.log_stream.truncate(0)
+        self.log_stream.seek(0)
 
-        self.assertEqual(str(cm.warning), "no weight group named 'name_x'")
+        node.drop_weight_group('name_x')  # <- Method under test.
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            "WARNING: no weight group named 'name_x'\n",
+        )
 
 
 class TestNodeSelectWeights(unittest.TestCase):

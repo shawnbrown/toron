@@ -767,9 +767,7 @@ class Node(object):
             group_repo = self._dal.WeightGroupRepository(cursor)
             group = group_repo.get_by_name(existing_name)
             if not group:
-                import warnings
-                msg = f'no weight group named {existing_name!r}'
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+                applogger.warning(f'no weight group named {existing_name!r}')
                 return  # <- EXIT!
 
             group = replace(group, **changes)
@@ -780,12 +778,11 @@ class Node(object):
             group_repo = self._dal.WeightGroupRepository(cursor)
             group = group_repo.get_by_name(existing_name)
             if not group:
-                import warnings
-                msg = f'no weight group named {existing_name!r}'
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+                applogger.warning(f'no weight group named {existing_name!r}')
                 return  # <- EXIT!
 
             group_repo.delete(group.id)
+            applogger.info(f'removed weight group {existing_name!r}')
 
     def _select_weights(
         self,
@@ -800,9 +797,7 @@ class Node(object):
 
             weight_group = group_repo.get_by_name(weight_group_name)
             if not weight_group:
-                import warnings
-                msg = f'no weight group named {weight_group_name!r}'
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
+                applogger.warning(f'no weight group named {existing_name!r}')
                 return  # <- EXIT! (stops iteration)
 
             if criteria:
