@@ -2,6 +2,7 @@
 
 import array
 import unittest
+from .common import normalize_structures
 
 from toron.data_models import (
     Index,
@@ -505,7 +506,7 @@ class TestRebuildStructureTable(unittest.TestCase):
             self.alt_index_repo,
             optimizations=self.optimizations,
         )
-        self.assertEqual(self.structure_repo.get_all(), expected)
+        self.assertEqual(normalize_structures(self.structure_repo.get_all()), expected)
 
     def test_rebuild_structure_no_categories(self):
         """When no discrete categories are defined, the function should
@@ -543,7 +544,7 @@ class TestRebuildStructureTable(unittest.TestCase):
             self.alt_index_repo,
             optimizations=self.optimizations,
         )
-        self.assertEqual(self.structure_repo.get_all(), trivial_topology)
+        self.assertEqual(normalize_structures(self.structure_repo.get_all()), trivial_topology)
 
 
 class TestAddDiscreteCategories(unittest.TestCase):
@@ -704,7 +705,7 @@ class TestRefreshStructureGranularity(unittest.TestCase):
             aux_index_repo=self.alt_index_repo,
             optimizations=self.optimizations,
         )
-        self.assertEqual(self.structure_repo.get_all(), expected)
+        self.assertEqual(normalize_structures(self.structure_repo.get_all()), expected)
 
 
 class TestDomainMethods(unittest.TestCase):

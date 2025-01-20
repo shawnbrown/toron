@@ -23,6 +23,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import get_args
 
+from .common import normalize_structures
+
 from toron._utils import ToronWarning
 from toron.data_models import (
     Crosswalk,
@@ -361,7 +363,8 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         """Return structure in order of structure_id."""
         with self.node._managed_cursor() as cursor:
             resutls = self.node._dal.StructureRepository(cursor).get_all()
-            return sorted(resutls, key=lambda structure: structure.id)
+            structures = sorted(resutls, key=lambda structure: structure.id)
+        return normalize_structures(structures)
 
     def test_discrete_categories_property(self):
         node = self.node
@@ -681,7 +684,8 @@ class TestIndexMethods(unittest.TestCase):
     def get_structure_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             repository = node._dal.StructureRepository(cursor)
-            return sorted(repository.get_all(), key=lambda x: x.id)
+            structures = sorted(repository.get_all(), key=lambda x: x.id)
+        return normalize_structures(structures)
 
     def test_insert(self):
         node = Node()
@@ -1157,7 +1161,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
             Structure(id=1, granularity=None, bits=(0, 0)),
             Structure(id=2, granularity=1.0,  bits=(1, 1))
         ]
-        self.assertEqual(actual, expected)
+        self.assertEqual(normalize_structures(actual), expected)
 
     def test_merging_and_is_complete_status(self):
         with self.node._managed_cursor() as cursor:
@@ -1463,7 +1467,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
             Structure(id=1, granularity=None, bits=(0, 0)),
             Structure(id=2, granularity=0.0,  bits=(1, 1))  # <- Gets `0.0` because there is only 1 record.
         ]
-        self.assertEqual(actual, expected)
+        self.assertEqual(normalize_structures(actual), expected)
 
     def test_delete_and_index_hash_updates(self):
         with self.node._managed_cursor() as cursor:
