@@ -17,6 +17,8 @@ if sys.platform == 'darwin' and sqlite3.sqlite_version_info == (3, 35, 5):
     # precision differences (getting 2.9999999999999996 when expecting
     # 3.0). This is only an issue when testing behavior that uses the
     # DAL1 optimized version of `calculate_granularity()`.
+    sys.stderr.write('[macOS: using approximate values for `calculate_granularity()` tests]\n')
+
     def normalize_structures(structures: Iterable[Structure]) -> List[Structure]:
         """Return list of structures with granularity rounded to 7 places."""
         normalized = []
