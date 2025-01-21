@@ -508,9 +508,15 @@ class WeightRepositoryBaseTest(ABC):
         self.repository.add(2, 2, 416.25)
         self.repository.add(2, 3, 500.0)
 
-    def get_weights_helper(self):  # <- Helper function.
+    def get_weights_helper(self, weight_group_id=None):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
-        cur = self.connection.execute('SELECT * FROM main.weight')
+        if weight_group_id is None:
+            cur = self.connection.execute('SELECT * FROM main.weight')
+        else:
+            cur = self.connection.execute(
+                'SELECT * FROM main.weight WHERE weight_group_id=?',
+                (weight_group_id,),
+            )
         return cur.fetchall()
 
     def test_inheritance(self):
