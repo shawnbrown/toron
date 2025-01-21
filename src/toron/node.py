@@ -803,7 +803,7 @@ class Node(object):
 
             weight_group = group_repo.get_by_name(weight_group_name)
             if not weight_group:
-                applogger.warning(f'no weight group named {existing_name!r}')
+                applogger.warning(f'no weight group named {weight_group_name!r}')
                 return  # <- EXIT! (stops iteration)
 
             if criteria:
