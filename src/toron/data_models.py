@@ -579,6 +579,73 @@ class BaseWeightRepository(ABC):
     def weight_group_is_complete(self, weight_group_id: int) -> bool:
         """Return True if there's a weight for every index record."""
 
+    def add_or_resolve(
+        self,
+        weight_group_id: int,
+        index_id: int,
+        value: float,
+        on_conflict: Literal['fail', 'ignore', 'replace', 'sum'] = 'fail',
+    ) -> Literal['inserted', 'on_conflict_ignored', 'on_conflict_replaced', 'on_conflict_summed']:
+        """Add a record to the repository or resolve conflict.
+
+        Returns a result code depending on the action performed (one of
+        'inserted', 'on_conflict_ignored', 'on_conflict_replaced',
+        'on_conflict_summed').
+
+        Any conflicts are resolved according to the ``on_conflict``
+        argument:
+
+        +-----------------+--------------------------------------------+
+        | ``on_conflict`` | description                                |
+        +=================+============================================+
+        | ``'fail'``      | raise an error when conflict arises        |
+        |                 | (same as ``add()`` method)                 |
+        +-----------------+--------------------------------------------+
+        | ``'ignore'``    | ignore the conflict and exit without error |
+        +-----------------+--------------------------------------------+
+        | ``'replace'``   | replace value of conflicting record with   |
+        |                 | new value                                  |
+        +-----------------+--------------------------------------------+
+        | ``'sum'``       | replace value of conflicting record with   |
+        |                 | sum of old and new values                  |
+        +-----------------+--------------------------------------------+
+        """
+        weight = self.get_by_weight_group_id_and_index_id(
+            weight_group_id,
+            index_id,
+        )
+
+        if weight is None:
+            self.add(weight_group_id, index_id, value)
+            return 'inserted'  # <- EXIT!
+
+        if on_conflict == 'ignore':
+            return 'on_conflict_ignored'  # <- EXIT!
+
+        if on_conflict == 'replace':
+            weight.value = value  # Replace value.
+            self.update(weight)
+            return 'on_conflict_replaced'  # <- EXIT!
+
+        if on_conflict == 'sum':
+            weight.value += value  # Sum values.
+            self.update(weight)
+            return 'on_conflict_summed'  # <- EXIT!
+
+        if on_conflict == 'fail':
+            msg = (
+                f"a weight record already exists for weight_group_id "
+                f"{weight_group_id} and index_id {index_id}; change load "
+                f"behavior by setting on_conflict to 'ignore', 'replace', "
+                f"or 'sum'"
+            )
+            raise Exception(msg)
+
+        raise ValueError(
+            f"on_conflict must be 'fail', 'ignore', 'replace', or 'sum'; "
+            f"got {on_conflict!r}"
+        )
+
     def merge_by_index_id(
         self, index_ids: Union[Iterable[int], int], target: int
     ) -> None:

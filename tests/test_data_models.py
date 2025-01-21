@@ -567,6 +567,66 @@ class WeightRepositoryBaseTest(ABC):
         dummy_weight = Weight(id=-1, weight_group_id=2, index_id=0, value=0.0)
         self.assertEqual(result, dummy_weight)
 
+    def test_add_or_resolve(self):
+        self.weight_group_repo.add('alt_weight')  # Adds weight_group_id 3.
+
+        # Default behavior with no conflict (on_conflict='fail').
+        code = self.repository.add_or_resolve(3, 1, 1111)
+        self.assertEqual(code, 'inserted')
+        self.assertEqual(
+            self.get_weights_helper(weight_group_id=3),
+            [(7, 3, 1, 1111.0)],
+            msg='should add new value just like `add()` method does',
+        )
+
+        # Default behavior with conflicting record (on_conflict='fail').
+        with self.assertRaises(Exception):
+            self.repository.add_or_resolve(3, 1, 2222)
+
+        self.assertEqual(
+            self.get_weights_helper(weight_group_id=3),
+            [(7, 3, 1, 1111.0)],
+            msg='values should be unchanged',
+        )
+
+        # Ignore value of conflicting record (keeps 1111).
+        code = self.repository.add_or_resolve(3, 1, 2222, on_conflict='ignore')
+        self.assertEqual(code, 'on_conflict_ignored')
+        self.assertEqual(
+            self.get_weights_helper(weight_group_id=3),
+            [(7, 3, 1, 1111.0)],
+            msg='values should be unchanged',
+        )
+
+        # Replace value of conflicting record (replaces with 2222).
+        code = self.repository.add_or_resolve(3, 1, 2222, on_conflict='replace')
+        self.assertEqual(code, 'on_conflict_replaced')
+        self.assertEqual(
+            self.get_weights_helper(weight_group_id=3),
+            [(7, 3, 1, 2222.0)],
+            msg='value should be replaced',
+        )
+
+        # Sum values of conflicting record (sums 2222 and 3333).
+        code = self.repository.add_or_resolve(3, 1, 3333, on_conflict='sum')
+        self.assertEqual(code, 'on_conflict_summed')
+        self.assertEqual(
+            self.get_weights_helper(weight_group_id=3),
+            [(7, 3, 1, 5555.0)],
+            msg='values should be summed together',
+        )
+
+        # Passes invalid `on_conflict` value.
+        regex = r"on_conflict must be 'fail', 'ignore', 'replace', or 'sum'; got 'bad_option'"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.repository.add_or_resolve(3, 1, 3333, on_conflict='bad_option')
+
+        self.assertEqual(
+            self.get_weights_helper(weight_group_id=3),
+            [(7, 3, 1, 5555.0)],
+            msg='value should be unchanged',
+        )
+
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids={1, 2}, target=1)
         results = self.get_weights_helper()
