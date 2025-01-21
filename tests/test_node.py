@@ -2042,6 +2042,93 @@ class TestNodeWeightMethods(unittest.TestCase):
              "WARNING: skipped 3 rows without real number values\n"),
         )
 
+    def test_insert_on_conflict_fail(self):
+        data = [
+            ('A', 'B', 'group1'),
+            ('foo', 'x', 10.0),
+            ('bar', 'y', 25.0),
+            ('bar', 'z', 15.0),
+            ('bar', 'z', 84.0),  # <- Conflicts with previous record.
+        ]
+        regex = r'weight record already exists'
+        with self.assertRaisesRegex(Exception, regex):
+            self.node.insert_weights('group1', data)
+
+        self.assertEqual(
+            self.get_weights_helper(),
+            [],
+            msg='no records should be loaded',
+        )
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            '',
+            msg='should not log any messages',
+        )
+
+    def test_insert_on_conflict_ignore(self):
+        data = [
+            ('A', 'B', 'group1'),
+            ('foo', 'x', 10.0),
+            ('bar', 'y', 25.0),
+            ('bar', 'z', 15.0),
+            ('bar', 'z', 84.0),  # <- Conflicts with previous record.
+        ]
+        self.node.insert_weights('group1', data, on_conflict='ignore')
+
+        self.assertEqual(
+            self.get_weights_helper(),
+            [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)],
+        )
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
+             "WARNING: ignored 1 records that already have weights\n"),
+        )
+
+    def test_insert_on_conflict_replace(self):
+        data = [
+            ('A', 'B', 'group1'),
+            ('foo', 'x', 10.0),
+            ('bar', 'y', 25.0),
+            ('bar', 'z', 15.0),
+            ('bar', 'z', 84.0),  # <- Conflicts with previous record.
+        ]
+        self.node.insert_weights('group1', data, on_conflict='replace')
+
+        self.assertEqual(
+            self.get_weights_helper(),
+            [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 84.0)],
+        )
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
+             "WARNING: replaced 1 records with new weights\n"),
+        )
+
+    def test_insert_on_conflict_sum(self):
+        data = [
+            ('A', 'B', 'group1'),
+            ('foo', 'x', 10.0),
+            ('bar', 'y', 25.0),
+            ('bar', 'z', 15.0),
+            ('bar', 'z', 84.0),  # <- Conflicts with previous record.
+        ]
+        self.node.insert_weights('group1', data, on_conflict='sum')
+
+        self.assertEqual(
+            self.get_weights_helper(),
+            [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 99.0)],
+        )
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
+             "WARNING: summed 1 records together with new weights\n"),
+        )
+
     def test_update(self):
         with self.node._managed_cursor() as cursor:
             weight_repo = self.node._dal.WeightRepository(cursor)

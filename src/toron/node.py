@@ -16,6 +16,7 @@ from toron._typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Self,
     Sequence,
@@ -853,7 +854,13 @@ class Node(object):
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
         value_column: Optional[str] = None,
+        on_conflict: Literal['fail', 'ignore', 'replace', 'sum'] = 'fail',
     ) -> None:
+        if on_conflict not in ('fail', 'ignore', 'replace', 'sum'):
+            msg = (f"on_conflict must be 'fail', 'ignore', 'replace', "
+                   f"or 'sum'; got {on_conflict!r}")
+            raise ValueError(msg)
+
         data, columns = normalize_tabular(data, columns)
 
         counter: Counter = Counter()
@@ -914,12 +921,18 @@ class Node(object):
                     counter['undefined_record'] += 1
                     continue  # <- Skip to next item.
 
-                weight_repo.add(
-                    weight_group_id=weight_group_id,
-                    index_id=index_record.id,
-                    value=weight_value,
-                )
-                counter['inserted'] += 1
+                try:
+                    result_code = weight_repo.add_or_resolve(
+                        weight_group_id=weight_group_id,
+                        index_id=index_record.id,
+                        value=weight_value,
+                        on_conflict=on_conflict,
+                    )
+                except Exception as err:
+                    msg = f'{err}; this error occured on record: {row!r}'
+                    raise Exception(msg)
+
+                counter[result_code] += 1
 
             group_is_complete = weight_repo.weight_group_is_complete(weight_group_id)
             if counter['inserted'] and group_is_complete:
@@ -929,6 +942,15 @@ class Node(object):
             f"loaded {counter['inserted']} weights into {group.name!r}"
             f"{', weight group is complete' if group_is_complete else ''}"
         )
+
+        if counter['on_conflict_ignored']:
+            applogger.warning(f"ignored {counter['on_conflict_ignored']} records that already have weights")
+
+        if counter['on_conflict_replaced']:
+            applogger.warning(f"replaced {counter['on_conflict_replaced']} records with new weights")
+
+        if counter['on_conflict_summed']:
+            applogger.warning(f"summed {counter['on_conflict_summed']} records together with new weights")
 
         if counter['not_realnum']:
             applogger.warning(f"skipped {counter['not_realnum']} rows without real number values")
