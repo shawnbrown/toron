@@ -776,6 +776,8 @@ class Node(object):
     def drop_weight_group(self, existing_name: str) -> None:
         with self._managed_transaction() as cursor:
             group_repo = self._dal.WeightGroupRepository(cursor)
+            property_repo = self._dal.PropertyRepository(cursor)
+
             group = group_repo.get_by_name(existing_name)
             if not group:
                 applogger.warning(f'no weight group named {existing_name!r}')
@@ -783,6 +785,10 @@ class Node(object):
 
             group_repo.delete(group.id)
             applogger.info(f'removed weight group {existing_name!r}')
+
+            if group.id == property_repo.get('default_weight_group_id'):
+                property_repo.delete('default_weight_group_id')
+                applogger.warning(f'default weight group was removed')
 
     def _select_weights(
         self,

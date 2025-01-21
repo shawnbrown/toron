@@ -1645,6 +1645,7 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         with node._managed_cursor() as cursor:
             manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
+            property_repo = node._dal.PropertyRepository(cursor)
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_repo = node._dal.WeightRepository(cursor)
 
@@ -1660,11 +1661,15 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
             weight_repo.add(1, 2, 25.0)
             weight_repo.add(1, 3, 15.0)
 
+            # Make weight group the default.
+            property_repo.add('default_weight_group_id', 1)
+
         node.drop_weight_group('name_a')  # <- Method under test.
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            "INFO: removed weight group 'name_a'\n",
+            ("INFO: removed weight group 'name_a'\n"
+             "WARNING: default weight group was removed\n"),
         )
 
         msg = 'weight group and associated weights should be deleted'
