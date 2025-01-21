@@ -138,7 +138,7 @@ class IndexRepository(BaseIndexRepository):
 
 class LocationRepository(BaseLocationRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
-        """Initialize a new PropertyRepository instance."""
+        """Initialize a new LocationRepository instance."""
         self._cursor = cursor
 
     def add(self, label: str, *labels: str) -> None:
