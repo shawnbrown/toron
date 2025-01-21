@@ -910,19 +910,16 @@ class Node(object):
                         counter['no_match'] += 1
                         continue  # <- Skip to next item.
 
-                try:
-                    weight_repo.add(
-                        weight_group_id=weight_group_id,
-                        index_id=index_record.id,
-                        value=weight_value,
-                    )
-                    counter['inserted'] += 1
-                except Exception:
-                    # Log if given undefined record, or else reraise error.
-                    if index_record.id == 0:
-                        counter['undefined_record'] += 1
-                    else:
-                        raise
+                if index_record.id == 0:
+                    counter['undefined_record'] += 1
+                    continue  # <- Skip to next item.
+
+                weight_repo.add(
+                    weight_group_id=weight_group_id,
+                    index_id=index_record.id,
+                    value=weight_value,
+                )
+                counter['inserted'] += 1
 
             group_is_complete = weight_repo.weight_group_is_complete(weight_group_id)
             if counter['inserted'] and group_is_complete:
