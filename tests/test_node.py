@@ -1677,8 +1677,8 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         self.assertEqual(self.get_weight_helper(node), [], msg=msg)
 
         # Clear `log_stream` buffer (for next assertion).
-        self.log_stream.truncate(0)
         self.log_stream.seek(0)
+        self.log_stream.truncate()
 
         node.drop_weight_group('name_x')  # <- Method under test.
 
