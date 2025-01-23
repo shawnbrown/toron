@@ -939,18 +939,18 @@ class Node(object):
                 group_repo.update(replace(group, is_complete=True))
 
         applogger.info(
-            f"loaded {counter['inserted']} weights into {group.name!r}"
+            f"loaded {counter['inserted']} new records into {group.name!r}"
             f"{', weight group is complete' if group_is_complete else ''}"
         )
 
-        if counter['on_conflict_ignored']:
-            applogger.warning(f"ignored {counter['on_conflict_ignored']} records that already have weights")
+        if counter['ignored_on_conflict']:
+            applogger.warning(f"ignored {counter['ignored_on_conflict']} existing records that already have weights")
 
-        if counter['on_conflict_replaced']:
-            applogger.warning(f"replaced {counter['on_conflict_replaced']} records with new weights")
+        if counter['replaced_on_conflict']:
+            applogger.warning(f"replaced {counter['replaced_on_conflict']} existing records with new weights")
 
-        if counter['on_conflict_summed']:
-            applogger.warning(f"summed {counter['on_conflict_summed']} records together with new weights")
+        if counter['summed_on_conflict']:
+            applogger.warning(f"summed {counter['summed_on_conflict']} existing records together with new weights")
 
         if counter['not_realnum']:
             applogger.warning(f"skipped {counter['not_realnum']} rows without real number values")

@@ -1951,7 +1951,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("INFO: loaded 1 weights into 'group1'\n"
+            ("INFO: loaded 1 new records into 'group1'\n"
              "WARNING: skipped 1 rows with no matching index_id\n"
              "WARNING: skipped 1 rows whose labels do not match the given index_id\n"),
         )
@@ -1972,7 +1972,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("INFO: loaded 1 weights into 'group1'\n"
+            ("INFO: loaded 1 new records into 'group1'\n"
              "WARNING: skipped 2 rows whose labels do not match any existing index record\n"),
         )
 
@@ -1994,7 +1994,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
+            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
              "WARNING: skipped 2 rows matching the undefined record\n"),
         )
 
@@ -2038,7 +2038,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
+            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
              "WARNING: skipped 3 rows without real number values\n"),
         )
 
@@ -2083,8 +2083,8 @@ class TestNodeWeightMethods(unittest.TestCase):
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
-             "WARNING: ignored 1 records that already have weights\n"),
+            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
+             "WARNING: ignored 1 existing records that already have weights\n"),
         )
 
     def test_insert_on_conflict_replace(self):
@@ -2104,8 +2104,8 @@ class TestNodeWeightMethods(unittest.TestCase):
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
-             "WARNING: replaced 1 records with new weights\n"),
+            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
+             "WARNING: replaced 1 existing records with new weights\n"),
         )
 
     def test_insert_on_conflict_sum(self):
@@ -2125,8 +2125,8 @@ class TestNodeWeightMethods(unittest.TestCase):
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("INFO: loaded 3 weights into 'group1', weight group is complete\n"
-             "WARNING: summed 1 records together with new weights\n"),
+            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
+             "WARNING: summed 1 existing records together with new weights\n"),
         )
 
     def test_update(self):

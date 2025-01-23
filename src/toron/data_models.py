@@ -585,12 +585,8 @@ class BaseWeightRepository(ABC):
         index_id: int,
         value: float,
         on_conflict: Literal['fail', 'ignore', 'replace', 'sum'] = 'fail',
-    ) -> Literal['inserted', 'on_conflict_ignored', 'on_conflict_replaced', 'on_conflict_summed']:
+    ) -> Literal['inserted', 'ignored_on_conflict', 'replaced_on_conflict', 'summed_on_conflict']:
         """Add a record to the repository or resolve conflict.
-
-        Returns a result code depending on the action performed (one of
-        'inserted', 'on_conflict_ignored', 'on_conflict_replaced',
-        'on_conflict_summed').
 
         Any conflicts are resolved according to the ``on_conflict``
         argument:
@@ -609,6 +605,14 @@ class BaseWeightRepository(ABC):
         | ``'sum'``       | replace value of conflicting record with   |
         |                 | sum of old and new values                  |
         +-----------------+--------------------------------------------+
+
+        This function returns a **result code** string to indicate the
+        action performed:
+
+        * ``'inserted'``
+        * ``'ignored_on_conflict'``
+        * ``'replaced_on_conflict'``
+        * ``'summed_on_conflict'``
         """
         weight = self.get_by_weight_group_id_and_index_id(
             weight_group_id,
@@ -620,17 +624,17 @@ class BaseWeightRepository(ABC):
             return 'inserted'  # <- EXIT!
 
         if on_conflict == 'ignore':
-            return 'on_conflict_ignored'  # <- EXIT!
+            return 'ignored_on_conflict'  # <- EXIT!
 
         if on_conflict == 'replace':
             weight.value = value  # Replace value.
             self.update(weight)
-            return 'on_conflict_replaced'  # <- EXIT!
+            return 'replaced_on_conflict'  # <- EXIT!
 
         if on_conflict == 'sum':
             weight.value += value  # Sum values.
             self.update(weight)
-            return 'on_conflict_summed'  # <- EXIT!
+            return 'summed_on_conflict'  # <- EXIT!
 
         if on_conflict == 'fail':
             msg = (
