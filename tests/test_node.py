@@ -2308,17 +2308,16 @@ class TestNodeWeightMethods(unittest.TestCase):
             (2, 'bar', 'YYY'),  # <- Label mismatch.
             (3, 'bar', 'z'),    # <- No matching weight.
         ]
-        # Check that a warning is raised.
-        with self.assertWarns(ToronWarning) as cm:
-            self.node.delete_weights('group1', data)
 
-        # Check the warning's message.
+        self.node.delete_weights('group1', data)
+
+        # Check the applogger messages.
         self.assertEqual(
-            str(cm.warning),
-            ('skipped 1 rows with non-matching index_id values, '
-             'skipped 1 rows with mismatched labels, '
-             'skipped 1 rows with no matching weights, '
-             'deleted 0 rows'),
+            self.log_stream.getvalue(),
+            ("INFO: deleted 0 weights from 'group1'\n"
+             "WARNING: skipped 1 rows with mismatched labels\n"
+             "WARNING: skipped 1 rows with no matching index_id\n"
+             "WARNING: skipped 1 rows with no matching weight record\n"),
         )
 
         # Check weights (unchanged--only two weights were added).

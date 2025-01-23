@@ -478,6 +478,10 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         self.node2.delete_weights('wght', idx1='A', idx2='x')  # <- gets matched exactly
         self.node2.delete_weights('wght', idx1='B', idx2='y')  # <- gets matched ambiguously
 
+        # Clear `log_stream` buffer to remove delete_weights() messages.
+        self.log_stream.seek(0)
+        self.log_stream.truncate()
+
         mapper.match_records(self.node2, 'right', match_limit=2)
 
         self.assertEqual(

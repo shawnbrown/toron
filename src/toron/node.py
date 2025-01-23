@@ -1135,7 +1135,16 @@ class Node(object):
             if counter['deleted'] and group and group.is_complete:
                 group_repo.update(replace(group, is_complete=False))
 
-        warn_if_issues(counter, expected='deleted')
+        applogger.info(f"deleted {counter['deleted']} weights from {group.name!r}")
+
+        if counter['mismatch']:
+            applogger.warning(f"skipped {counter['mismatch']} rows with mismatched labels")
+
+        if counter['no_index']:
+            applogger.warning(f"skipped {counter['no_index']} rows with no matching index_id")
+
+        if counter['no_weight']:
+            applogger.warning(f"skipped {counter['no_weight']} rows with no matching weight record")
 
     @property
     def crosswalks(self) -> List[Crosswalk]:
