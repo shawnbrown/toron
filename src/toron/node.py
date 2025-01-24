@@ -1188,10 +1188,8 @@ class Node(object):
         if name:
             filtered = [x for x in matches if x.name == name]
             if not filtered and matches:
-                import warnings
                 names = ', '.join(repr(x.name) for x in matches)
-                msg = f'crosswalk {name!r} not found, can be: {names}'
-                warnings.warn(msg, ToronWarning, stacklevel=2)
+                applogger.warning(f'crosswalk {name!r} not found, can be: {names}')
         else:
             filtered = matches
 
@@ -1201,8 +1199,9 @@ class Node(object):
             defaults = [x for x in filtered if x.is_default]
             if len(defaults) == 1:
                 crosswalk = defaults[0]
-                msg = f'found multiple crosswalks, using default: {crosswalk.name!r}'
-                warnings.warn(msg, ToronWarning, stacklevel=2)
+                applogger.warning(
+                    f'found multiple crosswalks, using default: {crosswalk.name!r}'
+                )
                 return crosswalk
             else:
                 names = ', '.join(repr(x.name) for x in filtered)
@@ -1280,12 +1279,10 @@ class Node(object):
             crosswalk = self._get_crosswalk(node, current_name, crosswalk_repo)
 
             if not crosswalk:
-                import warnings
-                msg = (
+                applogger.warning(
                     f'no crosswalk matching node reference {node!r} '
                     f'and name {current_name!r}'
                 )
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
                 return  # <- EXIT!
 
             # If setting is_default=True, all other crosswalks coming from
@@ -1307,12 +1304,10 @@ class Node(object):
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             crosswalk = self._get_crosswalk(node, name, crosswalk_repo)
             if not crosswalk:
-                import warnings
-                msg = (
+                applogger.warning(
                     f'no crosswalk matching node reference {node!r} '
                     f'and name {name!r}'
                 )
-                warnings.warn(msg, category=ToronWarning, stacklevel=2)
                 return  # <- EXIT!
 
             crosswalk_repo.delete(crosswalk.id)

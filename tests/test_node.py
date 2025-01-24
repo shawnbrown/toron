@@ -2342,6 +2342,17 @@ class TestNodeWeightMethods(unittest.TestCase):
 
 class TestNodeCrosswalkMethods(unittest.TestCase):
     def setUp(self):
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
+
+        # Add handler to 'app-toron' logger.
+        applogger = logging.getLogger('app-toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        applogger.addHandler(handler)
+        self.addCleanup(lambda: applogger.removeHandler(handler))
+
         node = Node()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
@@ -2354,6 +2365,10 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
             index_repo.add('bar', 'z')
 
         self.node = node
+
+    def clear_log_stream_helper(self):  # <- Helper function.
+        self.log_stream.seek(0)
+        self.log_stream.truncate()
 
     @staticmethod
     def get_crosswalk_helper(node):  # <- Helper function.
@@ -2418,13 +2433,11 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex, msg=msg):
             result = self.node.get_crosswalk('111-111')  # <- Ambiguous shortcode.
 
-        msg = 'should warn if there are multiple matches'
-        with self.assertWarns(ToronWarning, msg=msg) as cm:
-            result = self.node.get_crosswalk('111-111-2222')
+        result = self.node.get_crosswalk('111-111-2222')
         self.assertEqual(
-            str(cm.warning),  # Check warning message.
-            "found multiple crosswalks, using default: 'name1'",
-            msg='should return default crosswalk'
+            self.log_stream.getvalue(),
+            "WARNING: found multiple crosswalks, using default: 'name1'\n",
+            msg='should warn if there are multiple matches',
         )
         self.assertEqual(result.id, 2, msg='should return default crosswalk')
 
@@ -2439,26 +2452,18 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
         result = self.node.get_crosswalk('333-333-3333', 'name1')
         self.assertEqual(result.id, 4, msg='specified name should match non-default crosswalk')
 
-        msg = "crosswalk 'unknown_name' not found, can be: 'name1', 'name2'"
-        with self.assertWarns(ToronWarning, msg=msg) as cm:
-            result = self.node.get_crosswalk('333-333-3333', 'unknown_name')
+        self.clear_log_stream_helper()  # Clear log before calling get_crosswalk().
+        result = self.node.get_crosswalk('333-333-3333', 'unknown_name')
         self.assertIsNone(result, msg='if specified name does not exist, should be None')
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            "WARNING: crosswalk 'unknown_name' not found, can be: 'name1', 'name2'\n",
+        )
 
         result = self.node.get_crosswalk('000-unknown-0000')
         self.assertIsNone(result, msg='if specified node does not exist, should be None')
 
     def test_add_crosswalk(self):
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
-
         node = Node()
 
         node.add_crosswalk('111-111-1111', None, 'name1')  # <- Only required args (sets as default and logs warning).
