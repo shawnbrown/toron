@@ -2178,14 +2178,14 @@ class TestNodeWeightMethods(unittest.TestCase):
             ('y', 2, 'bar', 222.0),
             ('z', 3, 'bar', 333.0),  # <- Does not previously exist.
         ]
-        with self.assertWarns(ToronWarning) as cm:
-            self.node.update_weights('group1', data)
 
-        # Check the warning's message.
+        self.node.update_weights('group1', data)
+
+        # Check the logged messages.
         self.assertEqual(
-            str(cm.warning),
-            ('inserted 1 rows that did not previously exist, '
-             'updated 2 rows'),
+            self.log_stream.getvalue(),
+            ("INFO: updated 2 existing records in 'group1'\n"
+             "WARNING: loaded 1 new records, weight group is complete\n"),
         )
 
         # Check updated values.
@@ -2247,16 +2247,15 @@ class TestNodeWeightMethods(unittest.TestCase):
             (9, 'bar', 'z', 555.0),    # <- No index_id 9.
         ]
 
-        # Check that a warning is raised.
-        with self.assertWarns(ToronWarning) as cm:
-            self.node.update_weights('group1', data)
+        self.node.update_weights('group1', data)
 
-        # Check the warning's message.
+        # Check the logged messages.
         self.assertEqual(
-            str(cm.warning),
-            ('skipped 1 rows with non-matching index_id values, '
-             'skipped 1 rows with mismatched labels, '
-             'updated 0 rows'),
+            self.log_stream.getvalue(),
+            ("INFO: updated 0 existing records in 'group1'\n"
+             "WARNING: skipped 1 rows with no matching index_id\n"
+             "WARNING: skipped 1 rows whose labels do not match the "
+               "given index_id\n"),
         )
 
         # Check that values are unchanged.

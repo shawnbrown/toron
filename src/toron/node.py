@@ -1029,15 +1029,30 @@ class Node(object):
                     )
                     counter['inserted'] += 1
 
-            if (counter['inserted'] and group
-                    and weight_repo.weight_group_is_complete(weight_group_id)):
+            group_is_complete = weight_repo.weight_group_is_complete(weight_group_id)
+            if counter['inserted'] and group_is_complete:
                 group_repo.update(replace(group, is_complete=True))
 
-        warn_if_issues(
-            counter,
-            expected='updated',
-            inserted='inserted {inserted} rows that did not previously exist',
+        applogger.info(
+            f"updated {counter['updated']} existing records in {group.name!r}"
         )
+
+        if counter['inserted']:
+            applogger.warning(
+                f"loaded {counter['inserted']} new records"
+                f"{', weight group is complete' if group_is_complete else ''}"
+            )
+
+        if counter['no_index']:
+            applogger.warning(
+                f"skipped {counter['no_index']} rows with no matching index_id"
+            )
+
+        if counter['mismatch']:
+            applogger.warning(
+                f"skipped {counter['mismatch']} rows whose labels do not "
+                f"match the given index_id"
+            )
 
     @overload
     def delete_weights(
