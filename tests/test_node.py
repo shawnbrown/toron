@@ -366,6 +366,49 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
             call.release_connection(sentinel.con),
         ])
 
+    def test_managed_transaction_unfinished_rollback(self):
+        """Unfinished transactions should be rolled back."""
+        shared_vars = {'active_trans': False}
+
+        def make_active(*args, **kwds):
+            shared_vars['active_trans'] = True
+
+        def make_inactive(*args, **kwds):
+            shared_vars['active_trans'] = False
+
+        node = Node()
+        node._connector = Mock()
+        node._connector.acquire_connection.return_value = sentinel.con
+        node._connector.acquire_cursor.return_value = sentinel.cur
+        node._connector.transaction_begin.side_effect = make_active
+        node._connector.transaction_rollback.side_effect = make_inactive
+        node._connector.transaction_is_active.side_effect = lambda *args: shared_vars['active_trans']
+
+        def generator_func():
+            with node._managed_connection() as connection:
+                with node._managed_cursor(connection) as cursor:
+                    with node._managed_transaction(cursor) as cursor:
+                        yield 1
+                        yield 2
+
+        generator = generator_func()
+
+        next(generator)  # Run the generator up to the first `yield`.
+        node._connector.assert_has_calls([
+            call.acquire_connection(),
+            call.acquire_cursor(sentinel.con),
+            call.transaction_is_active(sentinel.cur),
+            call.transaction_begin(sentinel.cur),  # <- BEGIN
+        ])
+
+        del generator  # Delete it before finishing the transaction.
+        node._connector.assert_has_calls([
+            call.transaction_is_active(sentinel.cur),
+            call.transaction_rollback(sentinel.cur),  # <- ROLLBACK
+            call.release_cursor(sentinel.cur),
+            call.release_connection(sentinel.con),
+        ])
+
 
 class TestDomainMethods(unittest.TestCase):
     def setUp(self):
