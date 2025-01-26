@@ -11,6 +11,7 @@ from itertools import (
 )
 from ._typing import (
     Dict,
+    Generator,
     Iterable,
     Iterator,
     List,
@@ -103,7 +104,7 @@ def load_mapping(
 
 def _translate(
     quantity_iterator: QuantityIterator, node: Node
-) -> Iterator[Tuple[Index, AttributesDict, float]]:
+) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
         crosswalk_repo = node._dal.CrosswalkRepository(cursor)

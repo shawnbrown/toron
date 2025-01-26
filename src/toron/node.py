@@ -795,7 +795,7 @@ class Node(object):
         self,
         weight_group_name: str,
         **criteria: str,
-    ) -> Iterator[Tuple[Index, AttributesDict, Optional[float]]]:
+    ) -> Generator[Tuple[Index, AttributesDict, Optional[float]], None, None]:
         """Generator to yield index, attribute, and weight value tuples."""
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
             index_repo = self._dal.IndexRepository(cursor)
@@ -2002,7 +2002,7 @@ class Node(object):
     def _disaggregate(
         self,
         attribute_id_filter: Optional[List[int]] = None,
-    ) -> Iterator[Tuple[Index, AttributesDict, float]]:
+    ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
         """Generator to yield index, attribute, and quantity tuples."""
         with self._managed_cursor(n=3) as (cur1, cur2, cur3), \
                 self._managed_transaction(cur1):
