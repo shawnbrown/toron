@@ -2012,8 +2012,7 @@ class Node(object):
         attribute_id_filter: Optional[List[int]] = None,
     ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
         """Generator to yield index, attribute, and quantity tuples."""
-        with self._managed_cursor(n=3) as (cur1, cur2, cur3), \
-                self._managed_transaction(cur1):
+        with self._managed_cursor(n=3) as (cur1, cur2, cur3):
 
             # These repository instances can share a single cursor.
             property_repo = self._dal.PropertyRepository(cur1)

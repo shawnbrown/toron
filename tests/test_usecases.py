@@ -131,6 +131,23 @@ class TestIdiomaticUsage(unittest.TestCase):
             ],
         )
 
+    def test_multiple_disagg(self):
+        """Should be able to iterate over multiple disaggregations concurrently."""
+        result_iter1 = self.node1('[variable="foo"]')
+        result_iter2 = self.node1('[variable="bar"]')
+
+        # Iterate over multiple disaggregations at the same time.
+        self.assertEqual(next(result_iter1), ('A', 'z', 'a', 'foo', 100.0))
+        self.assertEqual(next(result_iter2), ('B', 'y', 'c', 'bar', 100.0))
+        self.assertEqual(next(result_iter1), ('B', 'x', 'b', 'foo', 100.0))
+        self.assertEqual(next(result_iter2), ('C', 'x', 'd', 'bar', 100.0))
+        self.assertEqual(next(result_iter2), ('C', 'y', 'e', 'bar', 100.0))
+        self.assertEqual(next(result_iter2), ('D', 'x', 'f', 'bar', 100.0))
+        with self.assertRaises(StopIteration):
+            next(result_iter1)
+        with self.assertRaises(StopIteration):
+            next(result_iter2)
+
     def test_disagg_trans(self):
         result_iter = self.node1('[variable="foo"]') >> self.node2
 
