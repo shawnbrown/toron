@@ -106,6 +106,28 @@ class DataConnectorBaseTest(ABC):
             with self.assertRaises(Exception):
                 self.dal.DataConnector.from_file(file_path)
 
+    def test_transaction_is_active(self):
+        connector = self.dal.DataConnector()
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
+        cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        # Should start with no active transaction.
+        self.assertFalse(connector.transaction_is_active(cursor))
+
+        # Check begin-and-commit behavior.
+        connector.transaction_begin(cursor)
+        self.assertTrue(connector.transaction_is_active(cursor))
+        connector.transaction_commit(cursor)
+        self.assertFalse(connector.transaction_is_active(cursor))
+
+        # Check begin-and-rollback behavior.
+        connector.transaction_begin(cursor)
+        self.assertTrue(connector.transaction_is_active(cursor))
+        connector.transaction_rollback(cursor)
+        self.assertFalse(connector.transaction_is_active(cursor))
+
 
 class ColumnManagerBaseTest(ABC):
     @property

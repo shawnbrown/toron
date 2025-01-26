@@ -128,6 +128,10 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         """
 
     @abstractmethod
+    def transaction_is_active(self, cursor: T2) -> bool:
+        """Return True if a transaction is active, otherwise False."""
+
+    @abstractmethod
     def transaction_rollback(self, cursor: T2) -> None:
         """Roll-back the transaction.
 
