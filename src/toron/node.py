@@ -197,6 +197,10 @@ class Node(object):
         cm = nullcontext(cursor) if cursor else self._managed_cursor()
 
         with cm as cursor:
+            if self._connector.transaction_is_active(cursor):
+                msg = 'cannot start a transaction within a transaction'
+                raise Exception(msg)
+
             self._connector.transaction_begin(cursor)
             try:
                 yield cursor
@@ -204,6 +208,10 @@ class Node(object):
             except Exception:
                 self._connector.transaction_rollback(cursor)
                 raise
+            finally:
+                # If the transaction never completed, roll it back.
+                if self._connector.transaction_is_active(cursor):
+                    self._connector.transaction_rollback(cursor)
 
     @property
     def unique_id(self) -> str:

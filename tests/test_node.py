@@ -212,10 +212,21 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_transaction(self):
         """Should commit changes when no errors occur."""
+        shared_vars = {'active_trans': False}
+
+        def make_active(*args, **kwds):
+            shared_vars['active_trans'] = True
+
+        def make_inactive(*args, **kwds):
+            shared_vars['active_trans'] = False
+
         node = Node()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
+        node._connector.transaction_begin.side_effect = make_active
+        node._connector.transaction_commit.side_effect = make_inactive
+        node._connector.transaction_is_active.side_effect = lambda *args: shared_vars['active_trans']
 
         with node._managed_connection() as connection:
             with node._managed_cursor(connection) as cursor:
@@ -223,21 +234,76 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
                     node._connector.assert_has_calls([
                         call.acquire_connection(),
                         call.acquire_cursor(sentinel.con),
+                        call.transaction_is_active(sentinel.cur),
                         call.transaction_begin(sentinel.cur),  # <- BEGIN
                     ])
 
         node._connector.assert_has_calls([
             call.transaction_commit(sentinel.cur),  # <- COMMIT
+            call.transaction_is_active(sentinel.cur),
+            call.release_cursor(sentinel.cur),
+            call.release_connection(sentinel.con)
+        ])
+
+    def test_managed_transaction_no_nesting(self):
+        """Should not allow a transaction within a transaction."""
+        shared_vars = {'active_trans': False}
+
+        def make_active(*args, **kwds):
+            shared_vars['active_trans'] = True
+
+        def make_inactive(*args, **kwds):
+            shared_vars['active_trans'] = False
+
+        node = Node()
+        node._connector = Mock()
+        node._connector.acquire_connection.return_value = sentinel.con
+        node._connector.acquire_cursor.return_value = sentinel.cur
+        node._connector.transaction_begin.side_effect = make_active
+        node._connector.transaction_rollback.side_effect = make_inactive
+        node._connector.transaction_is_active.side_effect = lambda *args: shared_vars['active_trans']
+
+        regex = 'cannot start a transaction within a transaction'
+        with self.assertRaisesRegex(Exception, regex):
+            with node._managed_connection() as connection:
+                with node._managed_cursor(connection) as cursor:
+                    with node._managed_transaction(cursor) as cursor:
+                        node._connector.assert_has_calls([
+                            call.acquire_connection(),
+                            call.acquire_cursor(sentinel.con),
+                            call.transaction_is_active(sentinel.cur),
+                            call.transaction_begin(sentinel.cur),  # <- BEGIN
+                        ])
+
+                        # ATTEMPT TO START A TRANSACTION INSIDE ANOTHER TRANSACTION!
+                        with node._managed_transaction(cursor) as cursor2:  # <- SHOULD RAISE AN ERROR!
+                            pass
+
+        node._connector.assert_has_calls([
+            call.transaction_is_active(sentinel.cur),
+            call.transaction_rollback(sentinel.cur),
+            call.transaction_is_active(sentinel.cur),
             call.release_cursor(sentinel.cur),
             call.release_connection(sentinel.con),
         ])
 
     def test_managed_transaction_rollback(self):
         """Should roll-back changes when an error occurs."""
+        shared_vars = {'active_trans': False}
+
+        def make_active(*args, **kwds):
+            shared_vars['active_trans'] = True
+
+        def make_inactive(*args, **kwds):
+            shared_vars['active_trans'] = False
+
         node = Node()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
+        node._connector.transaction_begin.side_effect = make_active
+        node._connector.transaction_rollback.side_effect = make_inactive
+        node._connector.transaction_is_active.side_effect = lambda *args: shared_vars['active_trans']
 
         with suppress(RuntimeError):
             with node._managed_connection() as connection:
@@ -248,8 +314,10 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         node._connector.assert_has_calls([
             call.acquire_connection(),
             call.acquire_cursor(sentinel.con),
+            call.transaction_is_active(sentinel.cur),
             call.transaction_begin(sentinel.cur),
             call.transaction_rollback(sentinel.cur),  # <- ROLLBACK
+            call.transaction_is_active(sentinel.cur),
             call.release_cursor(sentinel.cur),
             call.release_connection(sentinel.con),
         ])
@@ -260,6 +328,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
+        node._connector.transaction_is_active.return_value = False
 
         with node._managed_transaction() as cursor:
             pass
@@ -267,8 +336,10 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         node._connector.assert_has_calls([
             call.acquire_connection(),
             call.acquire_cursor(sentinel.con),
+            call.transaction_is_active(sentinel.cur),
             call.transaction_begin(sentinel.cur),
             call.transaction_commit(sentinel.cur),  # <- COMMIT
+            call.transaction_is_active(sentinel.cur),
             call.release_cursor(sentinel.cur),
             call.release_connection(sentinel.con),
         ])
@@ -278,6 +349,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
+        node._connector.transaction_is_active.return_value = False
 
         with suppress(RuntimeError):
             with node._managed_transaction() as cursor:
@@ -286,8 +358,10 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         node._connector.assert_has_calls([
             call.acquire_connection(),
             call.acquire_cursor(sentinel.con),
+            call.transaction_is_active(sentinel.cur),
             call.transaction_begin(sentinel.cur),
             call.transaction_rollback(sentinel.cur),  # <- ROLLBACK
+            call.transaction_is_active(sentinel.cur),
             call.release_cursor(sentinel.cur),
             call.release_connection(sentinel.con),
         ])
