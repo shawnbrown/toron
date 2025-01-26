@@ -254,7 +254,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
             call.release_connection(sentinel.con),
         ])
 
-    def test_managed_transaction_implicit_resources(self):
+    def test_managed_transaction_implicit_resources_commit(self):
         """When called without args, should auto-acquire resources."""
         node = Node()
         node._connector = Mock()
@@ -273,7 +273,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
             call.release_connection(sentinel.con),
         ])
 
-    def test_managed_transaction_implicit_resources(self):
+    def test_managed_transaction_implicit_resources_rollback(self):
         node = Node()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
