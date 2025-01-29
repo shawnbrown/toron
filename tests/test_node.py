@@ -212,21 +212,18 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_transaction(self):
         """Should commit changes when no errors occur."""
-        shared_vars = {'active_trans': False}
-
-        def make_active(*args, **kwds):
-            shared_vars['active_trans'] = True
-
-        def make_inactive(*args, **kwds):
-            shared_vars['active_trans'] = False
+        shared_state = {}
 
         node = Node()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
-        node._connector.transaction_begin.side_effect = make_active
-        node._connector.transaction_commit.side_effect = make_inactive
-        node._connector.transaction_is_active.side_effect = lambda *args: shared_vars['active_trans']
+        node._connector.transaction_is_active.side_effect = \
+            lambda cur: shared_state.get('is_active', False)
+        node._connector.transaction_begin.side_effect = \
+            lambda cur: shared_state.update({'is_active': True})
+        node._connector.transaction_commit.side_effect = \
+            lambda cur: shared_state.update({'is_active': False})
 
         with node._managed_connection() as connection:
             with node._managed_cursor(connection) as cursor:
@@ -247,21 +244,18 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_transaction_no_nesting(self):
         """Should not allow a transaction within a transaction."""
-        shared_vars = {'active_trans': False}
-
-        def make_active(*args, **kwds):
-            shared_vars['active_trans'] = True
-
-        def make_inactive(*args, **kwds):
-            shared_vars['active_trans'] = False
+        shared_state = {}
 
         node = Node()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
-        node._connector.transaction_begin.side_effect = make_active
-        node._connector.transaction_rollback.side_effect = make_inactive
-        node._connector.transaction_is_active.side_effect = lambda *args: shared_vars['active_trans']
+        node._connector.transaction_is_active.side_effect = \
+            lambda cur: shared_state.get('is_active', False)
+        node._connector.transaction_begin.side_effect = \
+            lambda cur: shared_state.update({'is_active': True})
+        node._connector.transaction_rollback.side_effect = \
+            lambda cur: shared_state.update({'is_active': False})
 
         regex = 'cannot start a transaction within a transaction'
         with self.assertRaisesRegex(Exception, regex):
@@ -289,21 +283,18 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_transaction_rollback(self):
         """Should roll-back changes when an error occurs."""
-        shared_vars = {'active_trans': False}
-
-        def make_active(*args, **kwds):
-            shared_vars['active_trans'] = True
-
-        def make_inactive(*args, **kwds):
-            shared_vars['active_trans'] = False
+        shared_state = {}
 
         node = Node()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
-        node._connector.transaction_begin.side_effect = make_active
-        node._connector.transaction_rollback.side_effect = make_inactive
-        node._connector.transaction_is_active.side_effect = lambda *args: shared_vars['active_trans']
+        node._connector.transaction_is_active.side_effect = \
+            lambda cur: shared_state.get('is_active', False)
+        node._connector.transaction_begin.side_effect = \
+            lambda cur: shared_state.update({'is_active': True})
+        node._connector.transaction_rollback.side_effect = \
+            lambda cur: shared_state.update({'is_active': False})
 
         with suppress(RuntimeError):
             with node._managed_connection() as connection:
@@ -368,21 +359,18 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_transaction_unfinished_rollback(self):
         """Unfinished transactions should be rolled back."""
-        shared_vars = {'active_trans': False}
-
-        def make_active(*args, **kwds):
-            shared_vars['active_trans'] = True
-
-        def make_inactive(*args, **kwds):
-            shared_vars['active_trans'] = False
+        shared_state = {}
 
         node = Node()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
-        node._connector.transaction_begin.side_effect = make_active
-        node._connector.transaction_rollback.side_effect = make_inactive
-        node._connector.transaction_is_active.side_effect = lambda *args: shared_vars['active_trans']
+        node._connector.transaction_is_active.side_effect = \
+            lambda cur: shared_state.get('is_active', False)
+        node._connector.transaction_begin.side_effect = \
+            lambda cur: shared_state.update({'is_active': True})
+        node._connector.transaction_rollback.side_effect = \
+            lambda cur: shared_state.update({'is_active': False})
 
         def generator_func():
             with node._managed_connection() as connection:
