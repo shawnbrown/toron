@@ -186,3 +186,47 @@ class TestIdiomaticUsage(unittest.TestCase):
         })
         expected_df.set_index(['idx1', 'idx2'], inplace=True)
         pd.testing.assert_frame_equal(df, expected_df)
+
+    @unittest.skipUnless(pd, 'requires pandas')
+    def test_disagg_trans_pandas_pivot(self):
+        # Disaggregate, translate, convert to DataFrame, and pivot.
+        data = self.node1() >> self.node2
+        df_pivoted = data.to_pandas().pivot_table(
+            index=data.label_names,
+            columns=('variable',),
+            values='value',
+        )
+
+        # Create the expected DataFrame.
+        df_expected = pd.DataFrame(
+            data=[
+                [float('nan'), float('nan'), 50.0],
+                [float('nan'), float('nan'), 50.0],
+                [100.0,        float('nan'), 100.0],
+                [100.0,        float('nan'), float('nan')],
+                [100.0,        float('nan'), float('nan')],
+                [100.0,        float('nan'), float('nan')],
+                [float('nan'), 100.0,        float('nan')],
+                [float('nan'), 100.0,        float('nan')],
+                [float('nan'), 100.0,        float('nan')],
+            ],
+            index=pd.MultiIndex.from_arrays([
+                pd.Series(
+                    data=['A', 'A', 'B', 'C', 'C', 'D', 'D', 'D', 'D'],
+                    dtype='string',
+                    name='idx1',
+                ),
+                pd.Series(
+                    data=['Athens', 'Boston', 'Charleston', 'Dover', 'Erie',
+                          'Fayetteville', 'Greensboro', 'Hartford', 'Irvine'],
+                    dtype='string',
+                    name='idx2',
+                ),
+            ]),
+            columns=pd.Index(pd.Series(
+                data=['bar', 'baz', 'foo'], dtype='string', name='variable'
+            )),
+            dtype='float64',
+        )
+
+        pd.testing.assert_frame_equal(df_pivoted, df_expected)
