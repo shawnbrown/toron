@@ -1,4 +1,4 @@
-"""Node implementation for the Toron project."""
+"""TopoNode implementation for the Toron project."""
 
 import array
 from collections import Counter
@@ -127,7 +127,16 @@ def warn_if_issues(
     )
 
 
-class Node(object):
+class TopoNode(object):
+    """Topologically organized dataset of quantities, weights, and edges.
+
+    This data structure's primary purpose is to:
+
+    * Disaggregate coarse-grained data to a fine-grained base level.
+    * Translate external data to use local, base level labels.
+
+    This is the primary toron data structure.
+    """
     def __init__(
         self,
         *,
@@ -1176,12 +1185,12 @@ class Node(object):
 
     @staticmethod
     def _get_crosswalk(
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         name: Optional[str],
         crosswalk_repo: BaseCrosswalkRepository,
     ) -> Optional[Crosswalk]:
         """Get crosswalk by node reference and name."""
-        if isinstance(node, Node):  # If Node, find by 'unique_id' only.
+        if isinstance(node, TopoNode):  # If TopoNode, find by 'unique_id' only.
             matches = list(crosswalk_repo.find_by_other_unique_id(node.unique_id))
         else:
             matches = find_crosswalks_by_node_reference(node, crosswalk_repo)
@@ -1222,7 +1231,7 @@ class Node(object):
         return None
 
     def get_crosswalk(
-        self, node: Union[str, 'Node'], name: Optional[str] = None,
+        self, node: Union[str, 'TopoNode'], name: Optional[str] = None,
     ) -> Optional[Crosswalk]:
         with self._managed_cursor() as cursor:
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
@@ -1278,7 +1287,7 @@ class Node(object):
 
     def edit_crosswalk(
         self,
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         current_name: str,
         **changes: Any,
     ) -> None:
@@ -1305,7 +1314,7 @@ class Node(object):
 
     def drop_crosswalk(
         self,
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         name: str,
     ) -> None:
         with self._managed_transaction() as cursor:
@@ -1322,7 +1331,7 @@ class Node(object):
 
     def select_relations(
         self,
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         name: Optional[str] = None,
         header: bool = False,
         **criteria: str,
@@ -1380,7 +1389,7 @@ class Node(object):
 
     def insert_relations2(
         self,
-        node_reference: Union[str, 'Node'],
+        node_reference: Union[str, 'TopoNode'],
         crosswalk_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1495,7 +1504,7 @@ class Node(object):
 
     def insert_relations(
         self,
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1589,7 +1598,7 @@ class Node(object):
 
     def update_relations(
         self,
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1711,7 +1720,7 @@ class Node(object):
     @overload
     def delete_relations(
         self,
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1720,7 +1729,7 @@ class Node(object):
     @overload
     def delete_relations(
         self,
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         name: Optional[str],
         **criteria: str,
     ) -> None:
@@ -1858,7 +1867,7 @@ class Node(object):
 
     def reify_relations(
         self,
-        node: Union[str, 'Node'],
+        node: Union[str, 'TopoNode'],
         name: str,
         **criteria: str,
     ) -> None:
@@ -1873,7 +1882,7 @@ class Node(object):
 
         Parameters
         ----------
-        node : Union[str, Node]
+        node : Union[str, TopoNode]
             The node from which the crosswalk is coming.
         name : str
             The name of the crosswalk. This is needed because multiple
@@ -2145,7 +2154,7 @@ class Node(object):
         return quantity_iter
 
     def __repr__(self):
-        """Return string representation of Node object."""
+        """Return string representation of TopoNode object."""
         with self._managed_cursor() as cursor:
             info = get_node_info_text(
                 property_repo=self._dal.PropertyRepository(cursor),

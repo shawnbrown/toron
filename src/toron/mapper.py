@@ -39,7 +39,7 @@ from ._utils import (
 
 if TYPE_CHECKING:
     from .data_models import Structure
-    from .node import Node
+    from .node import TopoNode
 
 
 applogger = logging.getLogger(f'app-{__name__}')
@@ -215,7 +215,7 @@ class Mapper(object):
 
     def match_records(
         self,
-        node: 'Node',
+        node: 'TopoNode',
         side: Literal['left', 'right'],
         match_limit: int = 1,
         allow_overlapping: bool = False,

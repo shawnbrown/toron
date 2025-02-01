@@ -6,7 +6,7 @@ import unittest
 from contextlib import closing
 from io import StringIO
 
-from toron.node import Node
+from toron.node import TopoNode
 from toron.mapper import Mapper
 from toron.data_models import Structure
 from toron._utils import BitFlags
@@ -266,7 +266,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
 class TwoNodesBaseTest(unittest.TestCase):
     """A base class that sets-up node fixtures and a logging handler."""
     def setUp(self):
-        self.node1 = Node()
+        self.node1 = TopoNode()
         self.node1.add_index_columns('idx')
         self.node1.insert_index([['idx'], ['A'], ['B'], ['C']])
         self.node1.add_weight_group('wght', make_default=True)
@@ -276,7 +276,7 @@ class TwoNodesBaseTest(unittest.TestCase):
         )
         self.node1.add_discrete_categories({'idx'})
 
-        self.node2 = Node()
+        self.node2 = TopoNode()
         self.node2.add_index_columns('idx1', 'idx2')
         self.node2.insert_index([
             ['idx1', 'idx2'],

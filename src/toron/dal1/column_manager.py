@@ -10,7 +10,7 @@ from toron._typing import (
 )
 
 if TYPE_CHECKING:
-    from toron import Node
+    from toron import TopoNode
 
 from . import schema
 from ..data_models import (
@@ -135,7 +135,7 @@ def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
     raise RuntimeError(msg)
 
 
-def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
+def legacy_rename_columns(node: 'TopoNode', mapping: Dict[str, str]) -> None:
     """Rename label columns (for legacy SQLite versions).
 
     RENAME COLUMN support was added in SQLite 3.25.0 (2018-09-15).
@@ -144,7 +144,7 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
     # changes (see https://www.sqlite.org/lang_altertable.html#otheralter).
 
     if node._dal.backend != 'DAL1':
-        msg = f"expected Node with 'DAL1' backend, got {node._dal.backend!r}"
+        msg = f"expected TopoNode with 'DAL1' backend, got {node._dal.backend!r}"
         raise TypeError(msg)
 
     from toron.data_service import validate_new_index_columns
@@ -245,7 +245,7 @@ def legacy_rename_columns(node: 'Node', mapping: Dict[str, str]) -> None:
             cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
 
 
-def legacy_drop_columns(node: 'Node', column: str, *columns: str) -> None:
+def legacy_drop_columns(node: 'TopoNode', column: str, *columns: str) -> None:
     """Remove columns (for legacy SQLite versions).
 
     DROP COLUMN support was first added in SQLite 3.35.0 and important
@@ -255,7 +255,7 @@ def legacy_drop_columns(node: 'Node', column: str, *columns: str) -> None:
     # changes (see https://www.sqlite.org/lang_altertable.html#otheralter).
 
     if node._dal.backend != 'DAL1':
-        msg = f"expected Node with 'DAL1' backend, got {node._dal.backend!r}"
+        msg = f"expected TopoNode with 'DAL1' backend, got {node._dal.backend!r}"
         raise TypeError(msg)
 
     with node._managed_cursor() as cursor:

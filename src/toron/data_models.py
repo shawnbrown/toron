@@ -33,7 +33,7 @@ from toron._typing import (
 
 if TYPE_CHECKING:  # <- Temporary (remove after moving QuantityIterator).
     import pandas as pd
-    from .node import Node
+    from .node import TopoNode
 
 
 T1 = TypeVar('T1')
@@ -248,7 +248,7 @@ class BaseIndexRepository(ABC):
     Label Columns (TEXT)
         * Additional columns can be added with the ``add_columns()``
           method.
-        * Label values in the Node Index table must never be empty
+        * Label values in the TopoNode Index table must never be empty
           strings or NULL.
         * If a column has no value for a given record, a dash/hyphen
           (``"-"``) should be used.
@@ -257,7 +257,7 @@ class BaseIndexRepository(ABC):
     It is used in correspondence mappings for external records that
     cannot be linked to local records.
 
-    A record's labels must be unique within the Node Index table.
+    A record's labels must be unique within the TopoNode Index table.
     """
     @abstractmethod
     def __init__(self, cursor: Any) -> None:
@@ -1111,7 +1111,7 @@ class QuantityIterator(object):
     def __iter__(self):
         return self
 
-    def __rshift__(self, other: 'Node') -> 'QuantityIterator':
+    def __rshift__(self, other: 'TopoNode') -> 'QuantityIterator':
         """Translate quantities to the index of the *other* node."""
         # TODO: Update this method and fix import after this
         # class is moved into a different module.

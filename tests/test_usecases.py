@@ -11,7 +11,7 @@ try:
 except ImportError:
     pd = None
 
-from toron.node import Node
+from toron.node import TopoNode
 from toron.graph import load_mapping
 
 
@@ -19,7 +19,7 @@ class TestIdiomaticUsage(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-        self.node1 = Node()
+        self.node1 = TopoNode()
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
         self.node1.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
         self.node1.insert_index([
@@ -67,7 +67,7 @@ class TestIdiomaticUsage(unittest.TestCase):
             attributes='variable',
         )
 
-        self.node2 = Node()
+        self.node2 = TopoNode()
         self.node2.add_index_columns('idx1', 'idx2')
         self.node2.add_discrete_categories({'idx1'})
         self.node2.insert_index([

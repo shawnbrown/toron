@@ -40,7 +40,7 @@ from .data_models import (
 from .data_service import (
     find_crosswalks_by_node_reference,
 )
-from .node import Node
+from .node import TopoNode
 from .mapper import Mapper
 from .selectors import (
     parse_selector,
@@ -55,9 +55,9 @@ Direction: TypeAlias = Literal['->', '-->', '<->', '<-->', '<-', '<--']
 
 
 def load_mapping(
-    left_node : Node,
+    left_node : TopoNode,
     direction : Direction,
-    right_node : Node,
+    right_node : TopoNode,
     crosswalk_name: str,
     data: Union[Iterable[Sequence], Iterable[Dict]],
     columns: Optional[Sequence[str]] = None,
@@ -103,7 +103,7 @@ def load_mapping(
 
 
 def _translate(
-    quantity_iterator: QuantityIterator, node: Node
+    quantity_iterator: QuantityIterator, node: TopoNode
 ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
@@ -166,7 +166,7 @@ def _translate(
 
 
 def translate(
-    quantity_iterator: QuantityIterator, node: Node
+    quantity_iterator: QuantityIterator, node: TopoNode
 ) -> QuantityIterator:
     """Translate quantities to the index of the target *node*."""
     with node._managed_cursor() as cursor:

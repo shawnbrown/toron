@@ -5,7 +5,7 @@ __all__ = [
     #<modules or subpackages>,
 
     # CLASSES
-    'Node',
+    'TopoNode',
     'ToronError',
     'ToronWarning',
     'xNode',
@@ -21,7 +21,7 @@ def __dir__():  # Customize module attribute list (PEP 562).
     special_attrs = [x for x in globals().keys() if x.startswith('__')]
     return __all__ + special_attrs
 
-from .node import Node
+from .node import TopoNode
 from .xnode import xNode
 from ._utils import (
     ToronError,
@@ -31,7 +31,7 @@ from ._utils import (
 )
 
 # Set class modules to 'toron' to keep interface tidy.
-Node.__module__ = 'toron'
+TopoNode.__module__ = 'toron'
 ToronError.__module__ = 'toron'
 ToronWarning.__module__ = 'toron'
 xNode.__module__ = 'toron'

@@ -5,7 +5,7 @@ import unittest
 import warnings
 from io import StringIO
 
-from toron.node import Node
+from toron.node import TopoNode
 from toron.xnode import xNode
 from toron._utils import (
     ToronWarning,
@@ -27,7 +27,7 @@ class TestLoadMapping(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-        self.node1 = Node()
+        self.node1 = TopoNode()
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
         self.node1.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
         self.node1.insert_index([
@@ -59,7 +59,7 @@ class TestLoadMapping(unittest.TestCase):
             ],
         )
 
-        self.node2 = Node()
+        self.node2 = TopoNode()
         self.node2.add_index_columns('idx1', 'idx2', 'idx3')
         self.node2.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
         self.node2.insert_index([
@@ -255,7 +255,7 @@ class TestLoadMapping(unittest.TestCase):
 
 class TestTranslate(unittest.TestCase):
     def setUp(self):
-        self.node = Node()
+        self.node = TopoNode()
         self.node.add_index_columns('A', 'B', 'C')
         self.node.add_discrete_categories({'A', 'B', 'C'})
         self.node.insert_index([

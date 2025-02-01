@@ -36,40 +36,40 @@ from toron.data_models import (
     AttributeGroup,
     QuantityIterator,
 )
-from toron.node import Node
+from toron.node import TopoNode
 
 
 class TestInstantiation(unittest.TestCase):
     def test_backend_implicit(self):
         """When no arguments are given, should create empty node."""
-        node = Node()
+        node = TopoNode()
         self.assertEqual(node._dal.backend, 'DAL1')
 
     def test_backend_explicit(self):
         """The ``backend`` can be given explicitly."""
-        node = Node(backend='DAL1')
+        node = TopoNode(backend='DAL1')
         self.assertEqual(node._dal.backend, 'DAL1')
 
     def test_backend_keyword_only(self):
         """The ``backend`` argument is keyword-only (not positional)."""
         with self.assertRaises(TypeError):
-            node = Node('DAL1')  # Using positional argument.
+            node = TopoNode('DAL1')  # Using positional argument.
 
     def test_backend_unknown(self):
         """Invalid ``backend`` values should raise an error."""
         with self.assertRaises(RuntimeError):
-            node = Node(backend=None)
+            node = TopoNode(backend=None)
 
         with self.assertRaises(RuntimeError):
-            node = Node(backend='DAL#')
+            node = TopoNode(backend='DAL#')
 
     def test_kwds(self):
         """The ``**kwds`` are used to create a DataConnector."""
-        node = Node(cache_to_drive=True)
+        node = TopoNode(cache_to_drive=True)
 
     def test_new_node_index_hash(self):
         """Should set index_hash for newly created nodes."""
-        node = Node()  # Create empty node.
+        node = TopoNode()  # Create empty node.
 
         with node._managed_cursor() as cursor:
             property_repo = node._dal.PropertyRepository(cursor)
@@ -83,7 +83,7 @@ class TestInstantiation(unittest.TestCase):
 
 
 class TestFileHandling(unittest.TestCase):
-    """Test ``Node.to_file()`` and ``Node.from_file()`` methods."""
+    """Test ``TopoNode.to_file()`` and ``TopoNode.from_file()`` methods."""
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
         self.addCleanup(self.temp_dir.cleanup)
@@ -103,14 +103,14 @@ class TestFileHandling(unittest.TestCase):
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
         self.assertFalse(os.path.isfile(file_path))
 
-        node = Node()  # <- When unspecified, uses default backend.
+        node = TopoNode()  # <- When unspecified, uses default backend.
         original_unique_id = node.unique_id
         node.to_file(file_path, fsync=True)  # <- Write node to file.
         del node
         self.assertTrue(os.path.isfile(file_path))
 
         try:
-            node = Node.from_file(file_path)  # <- Load node from file.
+            node = TopoNode.from_file(file_path)  # <- Load node from file.
         except Exception as e:
             self.fail(f'could not load file: {e}')
         self.assertEqual(node.unique_id, original_unique_id,
@@ -121,14 +121,14 @@ class TestFileHandling(unittest.TestCase):
         file_path = os.path.join(self.temp_dir.name, 'mynode-dal1.toron')
         self.assertFalse(os.path.isfile(file_path))
 
-        node = Node(backend='DAL1')  # <- Specify DAL1 explicitly.
+        node = TopoNode(backend='DAL1')  # <- Specify DAL1 explicitly.
         original_unique_id = node.unique_id
         node.to_file(file_path, fsync=True)  # <- Write node to file.
         del node
         self.assertTrue(os.path.isfile(file_path))
 
         try:
-            node = Node.from_file(file_path, cache_to_drive=True)  # <- Uses DAL1-specific `cache_to_drive` argument.
+            node = TopoNode.from_file(file_path, cache_to_drive=True)  # <- Uses DAL1-specific `cache_to_drive` argument.
         except Exception as e:
             self.fail(f'could not load file: {e}')
         self.assertEqual(node.unique_id, original_unique_id,
@@ -138,7 +138,7 @@ class TestFileHandling(unittest.TestCase):
 class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
     def test_managed_connection_type(self):
         """Connection manager should return appropriate type."""
-        node = Node()  # Create node and get connection type (generic T1).
+        node = TopoNode()  # Create node and get connection type (generic T1).
         connection_type = get_args(node._dal.DataConnector.__orig_bases__[0])[0]
 
         with node._managed_connection() as connection:
@@ -148,7 +148,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_connection_calls(self):
         """Connection manager should interact with connection methods."""
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
 
         with node._managed_connection() as connection:
@@ -165,7 +165,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_cursor_type(self):
         """Data cursor manager should return appropriate type."""
-        node = Node()  # Create node and get cursor type (generic T2).
+        node = TopoNode()  # Create node and get cursor type (generic T2).
         cursor_type = get_args(node._dal.DataConnector.__orig_bases__[0])[1]
 
         with node._managed_connection() as connection:
@@ -176,7 +176,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_cursor_calls(self):
         """Cursor manager should interact with cursor methods."""
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
 
         # The acquire_connection() mock must return unique objects.
@@ -209,7 +209,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Test ``_managed_cursor`` called without ``connection`` argument
         (should automatically create a connection internally).
         """
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
         dummy_connections = [sentinel.con1, sentinel.con2]
         node._connector.acquire_connection.side_effect = dummy_connections
@@ -229,7 +229,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Should commit changes when no errors occur."""
         shared_state = {}
 
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -261,7 +261,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Should not allow a transaction within a transaction."""
         shared_state = {}
 
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -300,7 +300,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Should roll-back changes when an error occurs."""
         shared_state = {}
 
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -330,7 +330,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_transaction_implicit_resources_commit(self):
         """When called without args, should auto-acquire resources."""
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -351,7 +351,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         ])
 
     def test_managed_transaction_implicit_resources_rollback(self):
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -376,7 +376,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Unfinished transactions should be rolled back."""
         shared_state = {}
 
-        node = Node()
+        node = TopoNode()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -417,7 +417,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
 class TestDomainMethods(unittest.TestCase):
     def setUp(self):
-        self.node = Node()
+        self.node = TopoNode()
 
     def test_domain_property(self):
         with self.node._managed_cursor() as cur:
@@ -466,7 +466,7 @@ class TestDomainMethods(unittest.TestCase):
 
 class TestDiscreteCategoriesMethods(unittest.TestCase):
     def setUp(self):
-        self.node = Node()
+        self.node = TopoNode()
         with self.node._managed_cursor() as cur:
             column_manager = self.node._dal.ColumnManager(cur)
             index_repo = self.node._dal.IndexRepository(cur)
@@ -620,7 +620,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             prop_repo.add('discrete_categories', categories)
 
     def test_add_index_columns(self):
-        node = Node()
+        node = TopoNode()
 
         node.add_index_columns('A', 'B')
 
@@ -630,7 +630,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         """Adding columns should be an atomic operation (either all
         columns should be added or none should be added).
         """
-        node = Node()
+        node = TopoNode()
 
         with suppress(Exception):
             # Second 'baz' causes an error (cannot have duplicate names).
@@ -641,7 +641,7 @@ class TestIndexColumnMethods(unittest.TestCase):
 
     def test_add_index_columns_domain_conflict(self):
         """An index column cannot be the same as a domain name."""
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             node._dal.PropertyRepository(cursor).add('domain', {'baz': '111', 'qux': '222'})
 
@@ -654,7 +654,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             node.add_index_columns('value')
 
     def test_index_columns_property(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         columns = node.index_columns  # Accessed as property attribute.
@@ -662,7 +662,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         self.assertEqual(columns, ('A', 'B'))
 
     def test_rename_index_columns(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
@@ -674,7 +674,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
 
     def test_rename_index_columns_and_categories(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
         self.add_categories_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
 
@@ -691,7 +691,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         )
 
     def test_rename_index_columns_domain_conflict(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         with node._managed_cursor() as cursor:
@@ -706,7 +706,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
 
     def test_rename_index_columns_reserved_identifier(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         # Check target-name conflict.
@@ -728,7 +728,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 toron.dal1.legacy_rename_columns(node, {'index_id': 'G'})
 
     def test_drop_index_columns(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         if sqlite3.sqlite_version_info >= (3, 35, 5) or node._dal.backend != 'DAL1':
@@ -740,7 +740,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         self.assertEqual(self.get_cols_helper(node), ('A', 'C'))
 
     def test_drop_index_columns_all(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C')
 
         if node._dal.backend == 'DAL1' and sqlite3.sqlite_version_info < (3, 35, 5):
@@ -751,7 +751,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             node.drop_index_columns('A', 'B', 'C')
 
     def test_drop_index_columns_reserved_identifier(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C')
 
         regex = "cannot alter columns, 'index_id' is a reserved identifier"
@@ -810,7 +810,7 @@ class TestIndexMethods(unittest.TestCase):
         return normalize_structures(structures)
 
     def test_insert(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
 
@@ -832,7 +832,7 @@ class TestIndexMethods(unittest.TestCase):
 
     def test_insert_no_existing_structure(self):
         """Should auto-add categories and structure if not defined."""
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         self.assertEqual(self.get_structure_helper(node), [], msg='should start empty')
@@ -851,7 +851,7 @@ class TestIndexMethods(unittest.TestCase):
         """Text based files (like CSV files) often end with a newline
         character. Many parsers interpret this as an empty row of data.
         """
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         # Insert data where second and last items are empty.
@@ -866,7 +866,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_different_order(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         data = [('B', 'A'), ('x', 'foo'), ('y', 'bar')]  # <- Different order.
@@ -880,7 +880,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_missing_columns(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = r"missing required columns: 'C', 'D'"
@@ -888,7 +888,7 @@ class TestIndexMethods(unittest.TestCase):
             node.insert_index([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
 
     def test_insert_extra_columns(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         node.insert_index([
             ('C',   'B', 'D', 'A'),  # <- Extra columns (C and D).
@@ -911,7 +911,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_duplicate_or_empty_strings(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         node.insert_index([
@@ -941,7 +941,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_index_group_is_complete(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('bar', 'y')]
         self.add_index_helper(node, data)
@@ -971,7 +971,7 @@ class TestIndexMethods(unittest.TestCase):
             self.assertFalse(group.is_complete)
 
     def test_insert_index_crosswalk_is_complete(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('bar', 'y')]
         self.add_index_helper(node, data)
@@ -1002,7 +1002,7 @@ class TestIndexMethods(unittest.TestCase):
             self.assertFalse(crosswalk.is_locally_complete)
 
     def test_insert_index_modifies_index_hash(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         with node._managed_cursor() as cursor:
@@ -1023,7 +1023,7 @@ class TestIndexMethods(unittest.TestCase):
             )
 
     def test_select(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('foo', 'y'), ('bar', 'x'), ('bar', 'y')]
         self.add_index_helper(node, data)
@@ -1063,7 +1063,7 @@ class TestIndexMethods(unittest.TestCase):
         )
 
 
-class TestNodeUpdateIndex(unittest.TestCase):
+class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -1085,7 +1085,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
             return cursor.fetchall()
 
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             manager = node._dal.ColumnManager(cursor)
             manager.add_columns('A', 'B')
@@ -1346,7 +1346,7 @@ class TestNodeUpdateIndex(unittest.TestCase):
             )
 
 
-class TestNodeDeleteIndex(unittest.TestCase):
+class TestTopoNodeDeleteIndex(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -1381,7 +1381,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
             return list(repository.get_all())
 
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
 
@@ -1614,7 +1614,7 @@ class TestNodeDeleteIndex(unittest.TestCase):
             )
 
 
-class TestNodeWeightGroupMethods(unittest.TestCase):
+class TestTopoNodeWeightGroupMethods(unittest.TestCase):
     def setUp(self):
         # Set up stream object to capture log messages.
         self.log_stream = StringIO()
@@ -1650,7 +1650,7 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         """The `node.weight_groups` property should be list of groups
         ordered by name.
         """
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_group_repo.add('name_b')
@@ -1683,7 +1683,7 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         self.assertEqual(node.weight_groups, expected)
 
     def test_get_weight_group(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_group_repo.add('name_a', 'Group A')
@@ -1697,7 +1697,7 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
 
     def test_add_weight_group(self):
         # Test `add_weight_group()` behavior.
-        node = Node()
+        node = TopoNode()
         node.add_weight_group('name_a')  # <- Only `name` is required (should log a warning and set as default).
         node.add_weight_group(  # <- Defining all properties.
             name='name_b',
@@ -1732,7 +1732,7 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         )
 
     def test_edit_weight_group(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_group_repo.add(
@@ -1763,7 +1763,7 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         )
 
     def test_drop_weight_group(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -1810,9 +1810,9 @@ class TestNodeWeightGroupMethods(unittest.TestCase):
         )
 
 
-class TestNodeSelectWeights(unittest.TestCase):
+class TestTopoNodeSelectWeights(unittest.TestCase):
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             # Add index columns and records.
             node._dal.ColumnManager(cursor).add_columns('A', 'B')
@@ -1904,9 +1904,9 @@ class TestNodeSelectWeights(unittest.TestCase):
         )
 
 
-class TestNodeWeightMethods(unittest.TestCase):
+class TestTopoNodeWeightMethods(unittest.TestCase):
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -2462,7 +2462,7 @@ class TestNodeWeightMethods(unittest.TestCase):
         self.assertEqual(self.get_weights_helper(), [])
 
 
-class TestNodeCrosswalkMethods(unittest.TestCase):
+class TestTopoNodeCrosswalkMethods(unittest.TestCase):
     def setUp(self):
         # Set up stream object to capture log messages.
         self.log_stream = StringIO()
@@ -2475,7 +2475,7 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
         applogger.addHandler(handler)
         self.addCleanup(lambda: applogger.removeHandler(handler))
 
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -2586,7 +2586,7 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
         self.assertIsNone(result, msg='if specified node does not exist, should be None')
 
     def test_add_crosswalk(self):
-        node = Node()
+        node = TopoNode()
 
         node.add_crosswalk('111-111-1111', None, 'name1')  # <- Only required args (sets as default and logs warning).
 
@@ -2691,7 +2691,7 @@ class TestNodeCrosswalkMethods(unittest.TestCase):
         self.assertEqual(self.get_crosswalk_helper(self.node), expected)
 
 
-class TestNodeInsertRelations2(unittest.TestCase):
+class TestTopoNodeInsertRelations2(unittest.TestCase):
     def setUp(self):
         # Set up stream object to capture log messages.
         self.log_stream = StringIO()
@@ -2704,8 +2704,8 @@ class TestNodeInsertRelations2(unittest.TestCase):
         applogger.addHandler(handler)
         self.addCleanup(lambda: applogger.removeHandler(handler))
 
-        # Build Node fixture to use in test cases.
-        node = Node()
+        # Build TopoNode fixture to use in test cases.
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -2915,9 +2915,9 @@ class TestNodeInsertRelations2(unittest.TestCase):
             )
 
 
-class TestNodeRelationMethods(unittest.TestCase):
+class TestTopoNodeRelationMethods(unittest.TestCase):
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -3195,7 +3195,7 @@ class TestNodeRelationMethods(unittest.TestCase):
             )
 
 
-class TestNodeUpdateRelations(unittest.TestCase):
+class TestTopoNodeUpdateRelations(unittest.TestCase):
     def get_relations_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
@@ -3203,7 +3203,7 @@ class TestNodeUpdateRelations(unittest.TestCase):
             return cursor.fetchall()
 
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -3399,7 +3399,7 @@ class TestNodeUpdateRelations(unittest.TestCase):
             )
 
 
-class TestNodeDeleteRelations(unittest.TestCase):
+class TestTopoNodeDeleteRelations(unittest.TestCase):
     def get_relations_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
@@ -3407,7 +3407,7 @@ class TestNodeDeleteRelations(unittest.TestCase):
             return cursor.fetchall()
 
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -3685,9 +3685,9 @@ class TestNodeDeleteRelations(unittest.TestCase):
         self.assertEqual(self.get_relations_helper(), expected)
 
 
-class TestNodeRefiyRelations(unittest.TestCase):
+class TestTopoNodeRefiyRelations(unittest.TestCase):
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -3791,7 +3791,7 @@ class TestNodeRefiyRelations(unittest.TestCase):
         self.assertEqual(self.get_relations_helper(), expected)
 
 
-class TestNodeInsertQuantities(unittest.TestCase):
+class TestTopoNodeInsertQuantities(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -3827,7 +3827,7 @@ class TestNodeInsertQuantities(unittest.TestCase):
             return cursor.fetchall()
 
     def setUp(self):
-        self.node = Node()
+        self.node = TopoNode()
         self.add_cols_helper(self.node, 'state', 'county')
         self.add_index_helper(self.node, [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')])
 
@@ -4048,9 +4048,9 @@ class TestNodeInsertQuantities(unittest.TestCase):
         )
 
 
-class TestNodeDisaggregateGenerator(unittest.TestCase):
+class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):
-        node = Node()
+        node = TopoNode()
 
         with node._managed_cursor() as cursor:
             manager = node._dal.ColumnManager(cursor)
@@ -4182,9 +4182,9 @@ class TestNodeDisaggregateGenerator(unittest.TestCase):
         self.assertEqual(list(results), expected)
 
 
-class TestNodeDisaggregate(unittest.TestCase):
+class TestTopoNodeDisaggregate(unittest.TestCase):
     def setUp(self):
-        node = Node()
+        node = TopoNode()
         node.add_index_columns('state', 'county')
         node.add_discrete_categories({'state'}, {'state', 'county'})
         node.insert_index([('state', 'county'),
@@ -4290,14 +4290,14 @@ class TestNodeDisaggregate(unittest.TestCase):
             quant_iter = self.node('sex="MALE"')  # <- Disaggregate.
 
 
-class TestNodeRepr(unittest.TestCase):
+class TestTopoNodeRepr(unittest.TestCase):
     @staticmethod
     def strip_first_line(text):  # <- Helper function.
         """Return given text without the first line."""
         return text[text.find('\n')+1:]
 
     def test_first_line(self):
-        node = Node()
+        node = TopoNode()
 
         self.assertEqual(node.__module__, 'toron')
 
@@ -4306,11 +4306,11 @@ class TestNodeRepr(unittest.TestCase):
 
         self.assertRegex(
             first_line,
-            r'^<toron.Node object at 0x[0-9A-Fa-f]+>$',
+            r'^<toron.TopoNode object at 0x[0-9A-Fa-f]+>$',
         )
 
     def test_empty_node(self):
-        node = Node()
+        node = TopoNode()
 
         expected = """
             domain:
@@ -4333,7 +4333,7 @@ class TestNodeRepr(unittest.TestCase):
         )
 
     def test_domain(self):
-        node = Node()
+        node = TopoNode()
         node.set_domain({'foo': 'bar', 'baz': 'qux'})
 
         expected = """
@@ -4358,7 +4358,7 @@ class TestNodeRepr(unittest.TestCase):
         )
 
     def test_index_columns(self):
-        node = Node()
+        node = TopoNode()
         node.add_index_columns('foo', 'bar', 'baz')
 
         expected = """
@@ -4382,7 +4382,7 @@ class TestNodeRepr(unittest.TestCase):
         )
 
     def test_granularity(self):
-        node = Node()
+        node = TopoNode()
         node.add_index_columns('A', 'B', 'C')
         with node._managed_cursor() as cursor:
             structure_repo = node._dal.StructureRepository(cursor)
@@ -4410,7 +4410,7 @@ class TestNodeRepr(unittest.TestCase):
         )
 
     def test_weight_groups(self):
-        node = Node()
+        node = TopoNode()
         node.add_index_columns('A', 'B', 'C')
         node.add_weight_group('foo', is_complete=False, make_default=False)
         node.add_weight_group('bar', is_complete=True, make_default=False)
@@ -4437,7 +4437,7 @@ class TestNodeRepr(unittest.TestCase):
         )
 
     def test_attributes(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             attrgroup_repo = node._dal.AttributeGroupRepository(cursor)
             attrgroup_repo.add({'foo': 'aaa', 'bar': 'bbb'})
@@ -4464,7 +4464,7 @@ class TestNodeRepr(unittest.TestCase):
         )
 
     def test_crosswalks(self):
-        node = Node()
+        node = TopoNode()
         with node._managed_cursor() as cursor:
             crosswalk_repo = node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add(

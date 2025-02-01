@@ -11,7 +11,7 @@ from toron.dal1.column_manager import (
     legacy_rename_columns,
     legacy_drop_columns,
 )
-from toron.node import Node
+from toron.node import TopoNode
 
 
 class TestColumnManager(unittest.TestCase):
@@ -203,7 +203,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def setUp(self):
-        self.node = Node()
+        self.node = TopoNode()
         connection = self.node._connector.acquire_connection()
         self.addCleanup(lambda: self.node._connector.release_connection(connection))
         self.cursor = connection.cursor()

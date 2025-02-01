@@ -11,7 +11,7 @@ from .._typing import (
 from ..data_service import get_node_info_text
 from .. import (
     __version__,
-    Node,
+    TopoNode,
 )
 from .colorconfig import stdout_styles
 from .loggerconfig import configure_applogger
@@ -46,7 +46,7 @@ def main() -> int:
     filename = Path(path).name  # File only, no parent directory text.
 
     try:
-        node = Node.from_file(path)
+        node = TopoNode.from_file(path)
     except Exception as err:
         applogger.error(str(err))
         return EXITCODE_ERR  # <- EXIT!
