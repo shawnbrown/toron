@@ -68,10 +68,11 @@ legacy_tox_ini = """
     mypy src/toron
 
   [testenv:check_deps]
-  # Install toron by itself and verify dependencies.
+  # Install toron by itself and verify minimum dependencies.
   deps =
   commands =
-    python -m unittest -v tests/check_dependencies.py
+    python --version
+    python tests/check_dependencies.py
 
   [testenv:build_dist]
   # Build source-distribution and wheel in the 'dist/' directory.
