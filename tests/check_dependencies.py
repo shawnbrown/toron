@@ -43,10 +43,11 @@ def main(package_dependencies):
     installed_packages = {x.partition('==')[0] for x in result_list}
 
     if installed_packages == package_dependencies:
+        package_text = '\n'.join(f'* {x}' for x in sorted(installed_packages))
         sys.stdout.write(
-            f"Dependency check passed!\n"
-            f"Installed dependencies include:\n"
-            f"* {'\n* '.join(sorted(installed_packages))}\n"
+            f'Dependency check passed!\n'
+            f'Installed dependencies include:\n'
+            f'{package_text}\n'
         )
         return EXITCODE_OK  # <- EXIT!
 
@@ -55,14 +56,16 @@ def main(package_dependencies):
     missing = package_dependencies - installed_packages
     extra = installed_packages - package_dependencies
     if missing:
+        missing_text = '\n'.join(f'* {x}' for x in sorted(missing))
         sys.stderr.write(
-            f"\nMissing expected packages:\n"
-            f"* {'\n* '.join(sorted(missing))}\n"
+            f'\nMissing expected packages:\n'
+            f'{missing_text}\n'
         )
     if extra:
+        extra_text = '\n'.join(f'* {x}' for x in sorted(extra))
         sys.stderr.write(
             f"\nFound extra unexpected packages:\n"
-            f"* {'\n* '.join(sorted(extra))}\n"
+            f'{extra_text}\n'
         )
 
     sys.stderr.write('\n')
