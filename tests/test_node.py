@@ -151,14 +151,16 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         node._connector = Mock()
 
         with node._managed_connection() as connection:
-            node._connector.assert_has_calls([
-                call.acquire_connection(),  # <- Connection acquired.
-            ])
+            self.assertEqual(
+                node._connector.method_calls,
+                [call.acquire_connection()],  # <- Connection acquired.
+            )
 
-        node._connector.assert_has_calls([
-            call.acquire_connection(),
-            call.release_connection(connection),  # <- Connection released.
-        ])
+        self.assertEqual(
+            node._connector.method_calls,
+            [call.acquire_connection(),
+             call.release_connection(connection)],  # <- Connection released.
+        )
 
     def test_managed_cursor_type(self):
         """Data cursor manager should return appropriate type."""
@@ -181,14 +183,26 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
         with node._managed_connection() as connection:
             with node._managed_cursor(connection) as cursor:
-                node._connector.assert_has_calls([
-                    call.acquire_cursor(connection),  # <- Cursor acquired.
-                ])
+                self.assertEqual(
+                    node._connector.method_calls,
+                    [call.acquire_connection(),  # <- Connection acquired.
+                     call.acquire_cursor(connection)],  # <- Cursor acquired.
+                )
 
-            node._connector.assert_has_calls([
-                call.acquire_cursor(connection),
-                call.release_cursor(cursor),  # <- Cursor released.
-            ])
+            self.assertEqual(
+                node._connector.method_calls,
+                [call.acquire_connection(),
+                 call.acquire_cursor(connection),
+                 call.release_cursor(cursor)],  # <- Cursor released.
+            )
+
+        self.assertEqual(
+            node._connector.method_calls,
+            [call.acquire_connection(),
+             call.acquire_cursor(connection),
+             call.release_cursor(cursor),
+             call.release_connection(connection)],  # <- Connection released.
+        )
 
     def test_managed_cursor_calls_implicit_connection(self):
         """Test ``_managed_cursor`` called without ``connection`` argument
