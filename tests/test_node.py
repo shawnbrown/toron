@@ -1,5 +1,6 @@
 """Tests for toron/node.py module."""
 
+import gc
 import logging
 import os
 import re
@@ -404,6 +405,8 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         ])
 
         del generator  # Delete it before finishing the transaction.
+        gc.collect()  # Explicitly trigger full garbage collection.
+
         node._connector.assert_has_calls([
             call.transaction_is_active(sentinel.cur),
             call.transaction_rollback(sentinel.cur),  # <- ROLLBACK
