@@ -22,7 +22,7 @@ class NodeReader(object):
         # Assign finalizer as a `close()` method.
         self.close = weakref.finalize(self, self._cleanup)
 
-        self._data = iter([])
+        self._data = (_ for _ in [])
 
     def _cleanup(self):
         with suppress(FileNotFoundError):
