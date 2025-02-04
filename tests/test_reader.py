@@ -12,11 +12,11 @@ from toron.reader import NodeReader
 
 class TestInstantiation(unittest.TestCase):
     def test_simple_case(self):
-        reader = NodeReader([])
+        reader = NodeReader([], TopoNode())
         self.assertEqual(list(reader), [])
 
     def test_close_finalizer(self):
-        reader = NodeReader([])
+        reader = NodeReader([], TopoNode())
 
         filepath = reader._filepath  # Get database file path.
         self.assertTrue(os.path.isfile(filepath))
@@ -33,6 +33,7 @@ class TestInstantiation(unittest.TestCase):
                 (11, {'a': 'foo'}, 75.0),
                 (12, {'a': 'bar'}, 50.0),
             ],
+            node=TopoNode(),
         )
 
         with closing(sqlite3.connect(reader._filepath)) as con:
@@ -53,6 +54,15 @@ class TestInstantiation(unittest.TestCase):
                 self.assertEqual(cur.fetchall(), quant_data)
 
     def test_iteration_and_aggregation(self):
+        node = TopoNode()
+        node.set_domain({'state': 'CA'})
+        node.add_index_columns('county', 'town')
+        node.insert_index([
+            ('county', 'town'),
+            ('ALAMEDA', 'HAYWARD'),
+            ('BUTTE', 'PALERMO'),
+            ('COLUSA', 'GRIMES'),
+        ])
         reader = NodeReader(
             data=[
                 (1, {'someattr': 'foo'}, 25.0),
@@ -60,22 +70,33 @@ class TestInstantiation(unittest.TestCase):
                 (3, {'someattr': 'bar'}, 25.0),
                 (3, {'someattr': 'bar'}, 25.0),
             ],
+            node=node,
         )
         result = list(reader)
         expected = [
-            (1, {'someattr': 'foo'}, 25.0),
-            (2, {'someattr': 'foo'}, 75.0),
-            (3, {'someattr': 'bar'}, 50.0),
+            ('ALAMEDA', 'HAYWARD', 'CA', 'foo', 25.0),
+            ('BUTTE', 'PALERMO', 'CA', 'foo', 75.0),
+            ('COLUSA', 'GRIMES', 'CA', 'bar', 50.0),
         ]
         self.assertEqual(result, expected)
 
     def test_iteration_and_cleanup(self):
+        node = TopoNode()
+        node.add_index_columns('county', 'town')
+        node.insert_index([
+            ('county', 'town'),
+            ('ALAMEDA', 'HAYWARD'),
+            ('BUTTE', 'PALERMO'),
+            ('COLUSA', 'GRIMES'),
+        ])
+
         reader = NodeReader(
             data=[
                 (1, {'someattr': 'foo'}, 25.0),
                 (2, {'someattr': 'foo'}, 75.0),
                 (3, {'someattr': 'bar'}, 50.0),
             ],
+            node=node,
         )
         next(reader)  # Start iteration.
         reader.close()  # Call finalizer before iteration is finished.

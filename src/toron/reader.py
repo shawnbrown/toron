@@ -6,6 +6,7 @@ import weakref
 from contextlib import closing, suppress
 from json import dumps, loads
 from tempfile import NamedTemporaryFile
+
 from toron._typing import (
     Dict,
     Generator,
@@ -13,7 +14,11 @@ from toron._typing import (
     Optional,
     Self,
     Tuple,
+    Union,
+    cast,
 )
+from toron.data_models import Index
+from toron.node import TopoNode
 
 
 class NodeReader(object):
@@ -21,6 +26,7 @@ class NodeReader(object):
     def __init__(
         self,
         data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
+        node: TopoNode,
     ) -> None:
         # Create temp file and get its path (resolve symlinks with realpath).
         with closing(NamedTemporaryFile(delete=False)) as f:
@@ -59,8 +65,9 @@ class NodeReader(object):
                 con.rollback()
                 raise
 
-        self._data: Optional[Generator[Tuple[int, Dict[str, str], Optional[float]], None, None]]
+        self._data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
         self._data = None
+        self._node = node
 
     @staticmethod
     def _add_attr_get_id(cur: sqlite3.Cursor, attributes: Dict[str, str]):
@@ -78,16 +85,21 @@ class NodeReader(object):
 
     def _generate_records(
         self
-    ) -> Generator[Tuple[int, Dict[str, str], Optional[float]], None, None]:
-        with closing(sqlite3.connect(self._filepath)) as con:
-            cur = con.execute("""
-                SELECT index_id, attributes, SUM(quant_value) AS quant_value
-                FROM main.quant_data
-                JOIN main.attr_data USING (attr_data_id)
-                GROUP BY index_id, attributes
-            """)
-            for index_id, attributes, quant_value in cur:
-                yield index_id, loads(attributes), quant_value
+    ) -> Generator[Tuple[Union[str, float], ...], None, None]:
+        domain_vals = tuple(self._node.domain.values())
+        with self._node._managed_cursor() as node_cur:
+            index_repo = self._node._dal.IndexRepository(node_cur)
+            with closing(sqlite3.connect(self._filepath)) as con:
+                cur = con.execute("""
+                    SELECT index_id, attributes, SUM(quant_value) AS quant_value
+                    FROM main.quant_data
+                    JOIN main.attr_data USING (attr_data_id)
+                    GROUP BY index_id, attributes
+                """)
+                for index_id, attributes, quant_value in cur:
+                    labels = cast(Index, index_repo.get(index_id)).labels
+                    attr_vals = tuple(loads(attributes).values())
+                    yield labels + domain_vals + attr_vals + (quant_value,)
 
     def _cleanup(self):
         if self._data:
@@ -99,7 +111,7 @@ class NodeReader(object):
     def __iter__(self) -> Self:
         return self
 
-    def __next__(self) -> Tuple[int, Dict[str, str], Optional[float]]:
+    def __next__(self) -> Tuple[Union[str, float], ...]:
         try:
             return next(self._data)  # type: ignore [arg-type]
         except TypeError:
