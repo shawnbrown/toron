@@ -61,6 +61,9 @@ from .data_service import (
     get_domain,
     get_node_info_text,
 )
+from toron.reader import (
+    NodeReader,
+)
 from .selectors import (
     parse_selector,
     get_greatest_unique_specificity,
@@ -2152,6 +2155,47 @@ class TopoNode(object):
             attribute_keys=attribute_keys,
         )
         return quantity_iter
+
+    def _disaggregate2(
+        self,
+        attribute_id_filter: Optional[List[int]] = None,
+    ) -> Generator[Tuple[int, AttributesDict, float], None, None]:
+        domain = self.domain
+        results = self._disaggregate(attribute_id_filter)
+        for index, attributes, value in results:
+            attributes.update(domain)
+            yield (index.id, attributes, value)
+
+    def _call(self, *selectors: str) -> NodeReader:
+        """Return rows with disaggregated quantity values."""
+        with self._managed_cursor() as cursor:
+            property_repo = self._dal.PropertyRepository(cursor)
+            unique_id = check_type(property_repo.get('unique_id'), str)
+            index_hash = check_type(property_repo.get('index_hash'), str)
+            domain = get_domain(property_repo)
+
+            col_manager = self._dal.ColumnManager(cursor)
+            label_names = col_manager.get_columns()
+
+            attribute_repo = self._dal.AttributeGroupRepository(cursor)
+            attribute_keys = attribute_repo.get_all_attribute_names()
+
+            if selectors:
+                selector_objs = [parse_selector(s) for s in selectors]
+                attribute_id_filter = []
+                for attr in attribute_repo.find_all():
+                    for sel in selector_objs:
+                        if sel(attr.attributes):
+                            attribute_id_filter.append(attr.id)
+                            break  # If match found, move to next attr.
+            else:
+                attribute_id_filter = None
+
+        node_reader = NodeReader(
+            data=self._disaggregate2(attribute_id_filter),
+            node=self,
+        )
+        return node_reader
 
     def __repr__(self):
         """Return string representation of TopoNode object."""
