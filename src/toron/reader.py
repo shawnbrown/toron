@@ -18,9 +18,12 @@ from toron._typing import (
     Tuple,
     Union,
     cast,
+    TYPE_CHECKING,
 )
 from toron.data_models import Index
-from toron.node import TopoNode
+
+if TYPE_CHECKING:
+    from toron import TopoNode
 
 
 class NodeReader(object):
@@ -28,7 +31,7 @@ class NodeReader(object):
     def __init__(
         self,
         data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
-        node: TopoNode,
+        node: 'TopoNode',
     ) -> None:
         # Create temp file and get its path (resolve symlinks with realpath).
         with closing(NamedTemporaryFile(delete=False)) as f:
