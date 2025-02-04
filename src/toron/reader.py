@@ -11,6 +11,7 @@ from toron._typing import (
     Dict,
     Generator,
     Iterator,
+    List,
     Optional,
     Self,
     Set,
@@ -71,8 +72,16 @@ class NodeReader(object):
         self._data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
         self._data = None
         self._node = node
-        self.index_columns = self._node.index_columns
+        self._index_columns = self._node.index_columns
         self._attr_keys = tuple(sorted(attr_keys))
+
+    @property
+    def index_columns(self) -> List[str]:
+        return list(self._index_columns)
+
+    @property
+    def columns(self) -> List[str]:
+        return list(self._index_columns + self._attr_keys + ('value',))
 
     @staticmethod
     def _add_attr_get_id(cur: sqlite3.Cursor, attributes: Dict[str, str]):

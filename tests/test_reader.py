@@ -36,6 +36,10 @@ class TestInstantiation(unittest.TestCase):
             node=TopoNode(),
         )
 
+        # Check column names.
+        self.assertEqual(reader.index_columns, [])
+        self.assertEqual(reader.columns, ['a', 'value'])
+
         with closing(sqlite3.connect(reader._filepath)) as con:
             with closing(con.cursor()) as cur:
                 cur.execute('SELECT * FROM attr_data')
@@ -71,6 +75,10 @@ class TestInstantiation(unittest.TestCase):
             ],
             node=node,
         )
+
+        self.assertEqual(reader.index_columns, ['county', 'town'])
+        self.assertEqual(reader.columns, ['county', 'town', 'attr1', 'attr2', 'value'])
+
         result = list(reader)
         expected = [
             ('ALAMEDA', 'HAYWARD', 'foo', '',    25.0),
