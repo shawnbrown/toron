@@ -101,7 +101,7 @@ class NodeReader(object):
 
     def __next__(self) -> Tuple[int, Dict[str, str], Optional[float]]:
         try:
-            return next(self._data)
+            return next(self._data)  # type: ignore [arg-type]
         except TypeError:
             self._data = self._generate_records()
             return next(self._data)
