@@ -55,7 +55,6 @@ class TestInstantiation(unittest.TestCase):
 
     def test_iteration_and_aggregation(self):
         node = TopoNode()
-        node.set_domain({'state': 'CA'})
         node.add_index_columns('county', 'town')
         node.insert_index([
             ('county', 'town'),
@@ -65,18 +64,18 @@ class TestInstantiation(unittest.TestCase):
         ])
         reader = NodeReader(
             data=[
-                (1, {'someattr': 'foo'}, 25.0),
-                (2, {'someattr': 'foo'}, 75.0),
-                (3, {'someattr': 'bar'}, 25.0),
-                (3, {'someattr': 'bar'}, 25.0),
+                (1, {'attr1': 'foo'},                 25.0),
+                (2, {'attr1': 'foo'},                 75.0),
+                (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
+                (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
             ],
             node=node,
         )
         result = list(reader)
         expected = [
-            ('ALAMEDA', 'HAYWARD', 'CA', 'foo', 25.0),
-            ('BUTTE', 'PALERMO', 'CA', 'foo', 75.0),
-            ('COLUSA', 'GRIMES', 'CA', 'bar', 50.0),
+            ('ALAMEDA', 'HAYWARD', 'foo',        25.0),
+            ('BUTTE',   'PALERMO', 'foo',        75.0),
+            ('COLUSA',  'GRIMES',  'bar', 'baz', 50.0),
         ]
         self.assertEqual(result, expected)
 

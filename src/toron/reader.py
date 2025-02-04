@@ -86,7 +86,6 @@ class NodeReader(object):
     def _generate_records(
         self
     ) -> Generator[Tuple[Union[str, float], ...], None, None]:
-        domain_vals = tuple(self._node.domain.values())
         with self._node._managed_cursor() as node_cur:
             index_repo = self._node._dal.IndexRepository(node_cur)
             with closing(sqlite3.connect(self._filepath)) as con:
@@ -99,7 +98,7 @@ class NodeReader(object):
                 for index_id, attributes, quant_value in cur:
                     labels = cast(Index, index_repo.get(index_id)).labels
                     attr_vals = tuple(loads(attributes).values())
-                    yield labels + domain_vals + attr_vals + (quant_value,)
+                    yield labels + attr_vals + (quant_value,)
 
     def _cleanup(self):
         if self._data:
