@@ -13,6 +13,7 @@ from toron._typing import (
     Iterator,
     Optional,
     Self,
+    Set,
     Tuple,
     Union,
     cast,
@@ -35,7 +36,8 @@ class NodeReader(object):
         # Assign finalizer as a `close()` method.
         self.close = weakref.finalize(self, self._cleanup)
 
-        # Create tables and insert records.
+        # Create tables, insert records, and accumulate `attr_keys`.
+        attr_keys: Set[str] = set()
         with closing(sqlite3.connect(self._filepath)) as con:
             try:
                 cur = con.executescript("""
@@ -53,6 +55,7 @@ class NodeReader(object):
                     );
                 """)
                 for index_id, attributes, quant_value in data:
+                    attr_keys.update(attributes)
                     attr_data_id = self._add_attr_get_id(cur, attributes)
                     sql = """
                         INSERT INTO main.quant_data (index_id, attr_data_id, quant_value)
@@ -68,6 +71,8 @@ class NodeReader(object):
         self._data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
         self._data = None
         self._node = node
+        self.index_columns = self._node.index_columns
+        self._attr_keys = tuple(sorted(attr_keys))
 
     @staticmethod
     def _add_attr_get_id(cur: sqlite3.Cursor, attributes: Dict[str, str]):
@@ -98,6 +103,8 @@ class NodeReader(object):
                 for index_id, attributes, quant_value in cur:
                     labels = cast(Index, index_repo.get(index_id)).labels
                     attr_vals = tuple(loads(attributes).values())
+                    attr_dict = loads(attributes)
+                    attr_vals = tuple(attr_dict.get(x, '') for x in self._attr_keys)
                     yield labels + attr_vals + (quant_value,)
 
     def _cleanup(self):

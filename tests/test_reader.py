@@ -73,8 +73,8 @@ class TestInstantiation(unittest.TestCase):
         )
         result = list(reader)
         expected = [
-            ('ALAMEDA', 'HAYWARD', 'foo',        25.0),
-            ('BUTTE',   'PALERMO', 'foo',        75.0),
+            ('ALAMEDA', 'HAYWARD', 'foo', '',    25.0),
+            ('BUTTE',   'PALERMO', 'foo', '',    75.0),
             ('COLUSA',  'GRIMES',  'bar', 'baz', 50.0),
         ]
         self.assertEqual(result, expected)
