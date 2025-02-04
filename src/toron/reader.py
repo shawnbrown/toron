@@ -8,6 +8,7 @@ from json import dumps, loads
 from tempfile import NamedTemporaryFile
 from toron._typing import (
     Dict,
+    Generator,
     Iterator,
     Optional,
     Self,
@@ -58,7 +59,8 @@ class NodeReader(object):
                 con.rollback()
                 raise
 
-        self._data = (_ for _ in [])
+        self._data: Optional[Generator[Tuple[int, Dict[str, str], Optional[float]], None, None]]
+        self._data = None
 
     @staticmethod
     def _add_attr_get_id(cur: sqlite3.Cursor, attributes: Dict[str, str]):
@@ -74,7 +76,23 @@ class NodeReader(object):
         cur.execute(sql, parameters)
         return cur.lastrowid  # Row id of the last inserted row.
 
+    def _generate_records(
+        self
+    ) -> Generator[Tuple[int, Dict[str, str], Optional[float]], None, None]:
+        with closing(sqlite3.connect(self._filepath)) as con:
+            cur = con.execute("""
+                SELECT index_id, attributes, SUM(quant_value) AS quant_value
+                FROM main.quant_data
+                JOIN main.attr_data USING (attr_data_id)
+                GROUP BY index_id, attributes
+            """)
+            for index_id, attributes, quant_value in cur:
+                yield index_id, loads(attributes), quant_value
+
     def _cleanup(self):
+        if self._data:
+            self._data.close()
+
         with suppress(FileNotFoundError):
             os.unlink(self._filepath)
 
@@ -82,4 +100,8 @@ class NodeReader(object):
         return self
 
     def __next__(self) -> Tuple[int, Dict[str, str], Optional[float]]:
-        return next(self._data)
+        try:
+            return next(self._data)
+        except TypeError:
+            self._data = self._generate_records()
+            return next(self._data)

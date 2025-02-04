@@ -6,6 +6,7 @@ import weakref
 import unittest
 from contextlib import closing
 
+from toron.node import TopoNode
 from toron.reader import NodeReader
 
 
@@ -50,3 +51,34 @@ class TestInstantiation(unittest.TestCase):
                     (12, 2, 50.0),
                 ]
                 self.assertEqual(cur.fetchall(), quant_data)
+
+    def test_iteration_and_aggregation(self):
+        reader = NodeReader(
+            data=[
+                (1, {'someattr': 'foo'}, 25.0),
+                (2, {'someattr': 'foo'}, 75.0),
+                (3, {'someattr': 'bar'}, 25.0),
+                (3, {'someattr': 'bar'}, 25.0),
+            ],
+        )
+        result = list(reader)
+        expected = [
+            (1, {'someattr': 'foo'}, 25.0),
+            (2, {'someattr': 'foo'}, 75.0),
+            (3, {'someattr': 'bar'}, 50.0),
+        ]
+        self.assertEqual(result, expected)
+
+    def test_iteration_and_cleanup(self):
+        reader = NodeReader(
+            data=[
+                (1, {'someattr': 'foo'}, 25.0),
+                (2, {'someattr': 'foo'}, 75.0),
+                (3, {'someattr': 'bar'}, 50.0),
+            ],
+        )
+        next(reader)  # Start iteration.
+        reader.close()  # Call finalizer before iteration is finished.
+
+        self.assertFalse(os.path.isfile(reader._filepath))  # File should be removed.
+        self.assertEqual(list(reader), [])  # No more records after closing.
