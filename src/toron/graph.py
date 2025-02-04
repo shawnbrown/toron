@@ -108,7 +108,6 @@ def _translate(
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
         crosswalk_repo = node._dal.CrosswalkRepository(cursor)
-        property_repo = node._dal.PropertyRepository(cursor)
         relation_repo = node._dal.RelationRepository(cursor)
         index_repo = node._dal.IndexRepository(cursor)
 
