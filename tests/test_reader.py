@@ -57,10 +57,10 @@ class TestInstantiation(unittest.TestCase):
         node = TopoNode()
         node.add_index_columns('county', 'town')
         node.insert_index([
-            ('county', 'town'),
+            ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
-            ('BUTTE', 'PALERMO'),
-            ('COLUSA', 'GRIMES'),
+            ('BUTTE',   'PALERMO'),
+            ('COLUSA',  'GRIMES'),
         ])
         reader = NodeReader(
             data=[
@@ -83,10 +83,10 @@ class TestInstantiation(unittest.TestCase):
         node = TopoNode()
         node.add_index_columns('county', 'town')
         node.insert_index([
-            ('county', 'town'),
+            ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
-            ('BUTTE', 'PALERMO'),
-            ('COLUSA', 'GRIMES'),
+            ('BUTTE',   'PALERMO'),
+            ('COLUSA',  'GRIMES'),
         ])
 
         reader = NodeReader(
