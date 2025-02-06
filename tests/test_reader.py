@@ -10,8 +10,8 @@ from toron.node import TopoNode
 from toron.reader import NodeReader
 
 
-class TestInstantiation(unittest.TestCase):
-    def test_simple_case(self):
+class TestNodeReader(unittest.TestCase):
+    def test_minimal_instantiation(self):
         reader = NodeReader([], TopoNode())
         self.assertEqual(list(reader), [])
 
