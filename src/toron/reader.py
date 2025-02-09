@@ -137,9 +137,9 @@ class NodeReader(object):
         """Assign instance attributes and `close()` method."""
         # Assign instance attributes.
         self._filepath = filepath
-        self._data = None
+        self._data = None  # <- Assigned only when iteration begins.
         self._node = node
-        self._index_columns = self._node.index_columns
+        self._index_columns = node.index_columns
         self._attr_keys = tuple(sorted(attr_keys))
 
         # Assign `close()` method (gets a callable finalizer object).
