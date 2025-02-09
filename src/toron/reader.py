@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile
 from toron._typing import (
     Dict,
     Generator,
+    Iterable,
     Iterator,
     List,
     Optional,
@@ -102,6 +103,12 @@ def _generate_reader_output(
 
 class NodeReader(object):
     """An iterator for base level TopoNode data."""
+    _data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
+    _filepath: str
+    _index_columns: Tuple[str, ...]
+    _attr_keys: Tuple[str, ...]
+    close: weakref.finalize
+
     def __init__(
         self,
         data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
@@ -109,13 +116,10 @@ class NodeReader(object):
     ) -> None:
         # Create temp file and get its path (resolve symlinks with realpath).
         with closing(NamedTemporaryFile(delete=False)) as f:
-            self._filepath = os.path.realpath(f.name)
-
-        # Assign finalizer as a `close()` method.
-        self.close = weakref.finalize(self, self._cleanup)
+            filepath = os.path.realpath(f.name)
 
         # Create tables, insert records, and accumulate `attr_keys`.
-        with closing(sqlite3.connect(self._filepath)) as con:
+        with closing(sqlite3.connect(filepath)) as con:
             try:
                 cur = con.cursor()
                 _create_reader_schema(cur)
@@ -125,11 +129,21 @@ class NodeReader(object):
                 con.rollback()
                 raise
 
-        self._data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
+        self._initializer(filepath, attr_keys, node)
+
+    def _initializer(
+        self, filepath: str, attr_keys: Iterable[str], node: 'TopoNode'
+    ) -> None:
+        """Assign instance attributes and `close()` method."""
+        # Assign instance attributes.
+        self._filepath = filepath
         self._data = None
         self._node = node
         self._index_columns = self._node.index_columns
         self._attr_keys = tuple(sorted(attr_keys))
+
+        # Assign `close()` method (gets a callable finalizer object).
+        self.close = weakref.finalize(self, self._cleanup)
 
     @property
     def index_columns(self) -> List[str]:
