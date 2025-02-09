@@ -145,6 +145,14 @@ class NodeReader(object):
         # Assign `close()` method (gets a callable finalizer object).
         self.close = weakref.finalize(self, self._finalizer)
 
+    def _finalizer(self) -> None:
+        """Close `_data` generator and remove temporary database file."""
+        if self._data:
+            self._data.close()
+
+        with suppress(FileNotFoundError):
+            os.unlink(self._filepath)
+
     @property
     def index_columns(self) -> List[str]:
         return list(self._index_columns)
@@ -152,14 +160,6 @@ class NodeReader(object):
     @property
     def columns(self) -> List[str]:
         return list(self._index_columns + self._attr_keys + ('value',))
-
-    def _finalizer(self):
-        """Close `_data` generator and remove temporary database file."""
-        if self._data:
-            self._data.close()
-
-        with suppress(FileNotFoundError):
-            os.unlink(self._filepath)
 
     def __iter__(self) -> Self:
         return self
