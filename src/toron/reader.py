@@ -44,10 +44,10 @@ def _create_reader_schema(cur: sqlite3.Cursor) -> None:
     """)
 
 
-def _add_attr_get_id(cur: sqlite3.Cursor, attributes: Dict[str, str]):
-    """Add attribute group to reader and get its id or return existing
-    id if already present.
-    """
+def _get_attr_data_id_add_if_missing(
+    cur: sqlite3.Cursor, attributes: Dict[str, str]
+) -> int:
+    """Get associated 'attr_data_id' and add if missing."""
     parameters = (dumps(attributes, sort_keys=False),)
 
     sql = 'SELECT attr_data_id FROM attr_data WHERE attributes=?'
@@ -58,7 +58,7 @@ def _add_attr_get_id(cur: sqlite3.Cursor, attributes: Dict[str, str]):
 
     sql = 'INSERT INTO main.attr_data (attributes) VALUES (?)'
     cur.execute(sql, parameters)
-    return cur.lastrowid  # Row id of the last inserted row.
+    return cast(int, cur.lastrowid)  # Cast because we know it exists (just inserted).
 
 
 def _insert_quant_data_get_attr_keys(
@@ -69,7 +69,7 @@ def _insert_quant_data_get_attr_keys(
     attr_keys: Set[str] = set()
     for index_id, attributes, quant_value in data:
         attr_keys.update(attributes)
-        attr_data_id = _add_attr_get_id(cur, attributes)
+        attr_data_id = _get_attr_data_id_add_if_missing(cur, attributes)
         sql = """
             INSERT INTO main.quant_data (index_id, attr_data_id, quant_value)
             VALUES (?, ?, ?)
@@ -79,7 +79,7 @@ def _insert_quant_data_get_attr_keys(
     return attr_keys
 
 
-def _generate_records(
+def _generate_reader_output(
     reader: 'NodeReader'
 ) -> Generator[Tuple[Union[str, float], ...], None, None]:
     """Return generator that iterates over NodeReader data."""
@@ -153,5 +153,5 @@ class NodeReader(object):
         try:
             return next(self._data)  # type: ignore [arg-type]
         except TypeError:
-            self._data = _generate_records(self)
+            self._data = _generate_reader_output(self)
             return next(self._data)
