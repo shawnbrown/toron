@@ -143,7 +143,7 @@ class NodeReader(object):
         self._attr_keys = tuple(sorted(attr_keys))
 
         # Assign `close()` method (gets a callable finalizer object).
-        self.close = weakref.finalize(self, self._cleanup)
+        self.close = weakref.finalize(self, self._finalizer)
 
     @property
     def index_columns(self) -> List[str]:
@@ -153,7 +153,8 @@ class NodeReader(object):
     def columns(self) -> List[str]:
         return list(self._index_columns + self._attr_keys + ('value',))
 
-    def _cleanup(self):
+    def _finalizer(self):
+        """Close `_data` generator and remove temporary database file."""
         if self._data:
             self._data.close()
 
