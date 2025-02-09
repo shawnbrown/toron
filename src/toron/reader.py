@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 
 def _create_reader_schema(cur: sqlite3.Cursor) -> None:
+    """Create database tables for NodeReader instance."""
     cur.executescript("""
         CREATE TABLE attr_data (
             attr_data_id INTEGER PRIMARY KEY,
@@ -44,6 +45,9 @@ def _create_reader_schema(cur: sqlite3.Cursor) -> None:
 
 
 def _add_attr_get_id(cur: sqlite3.Cursor, attributes: Dict[str, str]):
+    """Add attribute group to reader and get its id or return existing
+    id if already present.
+    """
     parameters = (dumps(attributes, sort_keys=False),)
 
     sql = 'SELECT attr_data_id FROM attr_data WHERE attributes=?'
@@ -61,6 +65,7 @@ def _insert_quant_data_get_attr_keys(
     cur: sqlite3.Cursor,
     data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
 ) -> Set[str]:
+    """Insert 'quant_data' values and get associated attribute keys."""
     attr_keys: Set[str] = set()
     for index_id, attributes, quant_value in data:
         attr_keys.update(attributes)
@@ -70,12 +75,14 @@ def _insert_quant_data_get_attr_keys(
             VALUES (?, ?, ?)
         """
         cur.execute(sql, (index_id, attr_data_id, quant_value))
+
     return attr_keys
 
 
 def _generate_records(
     reader: 'NodeReader'
 ) -> Generator[Tuple[Union[str, float], ...], None, None]:
+    """Return generator that iterates over NodeReader data."""
     with reader._node._managed_cursor() as node_cur:
         index_repo = reader._node._dal.IndexRepository(node_cur)
         with closing(sqlite3.connect(reader._filepath)) as con:
