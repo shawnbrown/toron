@@ -4,6 +4,7 @@ import os
 import sqlite3
 import weakref
 from contextlib import closing, suppress
+from itertools import chain
 from json import dumps, loads
 from tempfile import NamedTemporaryFile
 
@@ -23,6 +24,9 @@ from toron._typing import (
     TYPE_CHECKING,
 )
 from toron.data_models import Index
+from toron.data_service import (
+    find_crosswalks_by_node_reference,
+)
 from toron.selectors import (
     parse_selector,
     get_greatest_unique_specificity,
@@ -84,6 +88,18 @@ def _insert_quant_data_get_attr_keys(
         cur.execute(sql, (index_id, attr_data_id, quant_value))
 
     return attr_keys
+
+
+def _insert_raw_quant_data(
+    cur: sqlite3.Cursor,
+    data: Iterator[Tuple[int, int, Optional[float]]],
+) -> None:
+    """Insert raw 'quant_data' by id values."""
+    sql = """
+        INSERT INTO main.quant_data (index_id, attr_data_id, quant_value)
+        VALUES (?, ?, ?)
+    """
+    cur.executemany(sql, data)
 
 
 def _generate_reader_output(
@@ -207,3 +223,77 @@ def _make_get_crosswalk_id_func(
         return crosswalk_id
 
     return get_crosswalk_id_func
+
+
+def translate2(reader: NodeReader, node: 'TopoNode') -> NodeReader:
+    """Translate quantities to the index of the target node."""
+
+    # Create temp file and get its path (resolve symlinks with realpath).
+    with closing(NamedTemporaryFile(delete=False)) as f:
+        filepath = os.path.realpath(f.name)
+
+    # Create tables, insert records, and accumulate `attr_keys`.
+    with closing(sqlite3.connect(filepath)) as con:
+        try:
+            cur1 = con.cursor()
+            cur2 = con.cursor()
+            cur1.execute('ATTACH DATABASE ? AS old_reader', (reader._filepath,))
+
+            _create_reader_schema(cur1)
+
+            with reader._node._managed_cursor() as cur:
+                property_repo = reader._node._dal.PropertyRepository(cur)
+                old_index_hash = property_repo.get('index_hash')
+
+            with node._managed_cursor() as node_cur:
+                crosswalk_repo = node._dal.CrosswalkRepository(node_cur)
+                relation_repo = node._dal.RelationRepository(node_cur)
+
+                crosswalks = find_crosswalks_by_node_reference(
+                    node_reference=reader._node.unique_id,
+                    crosswalk_repo=crosswalk_repo,
+                )
+                if not crosswalks:
+                    raise RuntimeError('no crosswalk found connecting nodes')
+
+                crosswalks = [x for x in crosswalks if x.other_index_hash == old_index_hash]
+                if not crosswalks:
+                    raise RuntimeError('crosswalks are out of date, need to relink')
+                get_crosswalk_id = _make_get_crosswalk_id_func(crosswalks)
+
+                cur1.execute('SELECT attr_data_id, attributes FROM old_reader.attr_data')
+                for attr_data_id, attributes in cur1:
+                    attributes_obj = loads(attributes)
+                    matched_crosswalk_id = get_crosswalk_id(attributes_obj)
+                    cur2.execute(
+                        'INSERT INTO main.attr_data VALUES (?, ?, ?)',
+                        (attr_data_id, attributes, matched_crosswalk_id),
+                    )
+
+                def get_new_rels(x):
+                    index_id, attr_data_id, quant_value, crosswalk_id = x
+                    rels = relation_repo.find_by_ids(
+                        crosswalk_id=crosswalk_id,
+                        other_index_id=index_id,
+                    )
+                    for rel in rels:
+                        yield (rel.index_id, attr_data_id, quant_value * rel.proportion)
+
+                cur1.execute("""
+                    SELECT index_id, attr_data_id, quant_value, matched_crosswalk_id
+                    FROM old_reader.quant_data
+                    JOIN main.attr_data USING (attr_data_id)
+                """)
+                translated_data = chain.from_iterable(get_new_rels(x) for x in cur1)
+                _insert_raw_quant_data(cur2, translated_data)
+
+            con.commit()
+        except Exception:
+            con.rollback()
+            raise
+        finally:
+            cur1.execute('DETACH DATABASE old_reader')
+
+    new_reader = NodeReader.__new__(NodeReader)
+    new_reader._initializer(filepath, reader._attr_keys, node)
+    return new_reader

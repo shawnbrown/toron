@@ -7,7 +7,7 @@ import unittest
 from contextlib import closing
 
 from toron.node import TopoNode
-from toron.reader import NodeReader
+from toron.reader import NodeReader, translate2
 
 
 class TestNodeReader(unittest.TestCase):
@@ -110,3 +110,145 @@ class TestNodeReader(unittest.TestCase):
 
         self.assertFalse(os.path.isfile(reader._filepath))  # File should be removed.
         self.assertEqual(list(reader), [])  # No more records after closing.
+
+
+class TestTranslate2(unittest.TestCase):
+    def setUp(self):
+        self.node = TopoNode()
+        self.node.add_index_columns('A', 'B', 'C')
+        self.node.add_discrete_categories({'A', 'B', 'C'})
+        self.node.insert_index([
+            ['A', 'B', 'C'],
+            ['a1', 'b1', 'c1'],  # <- index_id=1
+            ['a1', 'b1', 'c2'],  # <- index_id=2
+            ['a1', 'b2', 'c3'],  # <- index_id=3
+            ['a1', 'b2', 'c4'],  # <- index_id=4
+        ])
+        self.node.add_crosswalk(
+            other_unique_id='00000000-0000-0000-0000-000000000000',
+            other_filename_hint='other-file.toron',
+            name='edge 1',
+            description='Edge one description.',
+            selectors=['[foo="bar"]'],
+            is_default=True,
+        )
+        self.node.insert_relations(
+            node='other-file',
+            name='edge 1',
+            data=[
+                ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C'),
+                (1,  39.0, 1, 'a1', 'b1', 'c1'),  # proportion: 0.6
+                (1,  26.0, 2, 'a1', 'b1', 'c2'),  # proportion: 0.4
+                (2,  16.0, 2, 'a1', 'b1', 'c2'),  # proportion: 1.0
+                (3,  50.0, 2, 'a1', 'b1', 'c2'),  # proportion: 0.250
+                (3,  25.0, 3, 'a1', 'b2', 'c3'),  # proportion: 0.125
+                (3, 125.0, 4, 'a1', 'b2', 'c4'),  # proportion: 0.625
+                (4,  64.0, 3, 'a1', 'b2', 'c3'),  # proportion: 1.0
+                (5,  19.0, 3, 'a1', 'b2', 'c3'),  # proportion: 0.38
+                (5,  31.0, 4, 'a1', 'b2', 'c4'),  # proportion: 0.62
+                (0,   0.0, 0, '-',  '-',  '-' ),  # proportion: 1.0
+            ],
+        )
+        self.node.add_crosswalk(
+            other_unique_id='00000000-0000-0000-0000-000000000000',
+            other_filename_hint='other-file.toron',
+            name='edge 2',
+            description='Edge two description.',
+            selectors=['[foo]'],
+        )
+        self.node.insert_relations(
+            node='other-file',
+            name='edge 2',
+            data=[
+                ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C'),
+                (1, 32.0,  1, 'a1', 'b1', 'c1'),  # proportion: 0.5
+                (1, 32.0,  2, 'a1', 'b1', 'c2'),  # proportion: 0.5
+                (2, 15.0,  2, 'a1', 'b1', 'c2'),  # proportion: 1.0
+                (3, 85.5,  2, 'a1', 'b1', 'c2'),  # proportion: 0.333984375
+                (3, 85.25, 3, 'a1', 'b2', 'c3'),  # proportion: 0.3330078125
+                (3, 85.25, 4, 'a1', 'b2', 'c4'),  # proportion: 0.3330078125
+                (4, 64.0,  3, 'a1', 'b2', 'c3'),  # proportion: 1.0
+                (5, 50.0,  3, 'a1', 'b2', 'c3'),  # proportion: 0.5
+                (5, 50.0,  4, 'a1', 'b2', 'c4'),  # proportion: 0.5
+                (0,  0.0,  0, '-',  '-',  '-' ),  # proportion: 1.0
+            ],
+        )
+
+    def test_simple_case(self):
+        source_node = TopoNode()
+        source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
+        source_node.add_index_columns('X')
+        source_node.insert_index(
+            data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
+            columns=['X']
+        )
+        data = [
+            (1, {'foo': 'bar'}, 100),
+            (2, {'foo': 'bar'}, 100),
+            (3, {'foo': 'bar'}, 100),
+            (4, {'foo': 'bar'}, 100),
+            (5, {'foo': 'bar'}, 100),
+        ]
+        reader = NodeReader(data, source_node)
+
+        new_reader = translate2(reader, self.node)
+
+        expected = [
+            ('a1', 'b1', 'c1', 'bar', 60.0),
+            ('a1', 'b1', 'c2', 'bar', 165.0),
+            ('a1', 'b2', 'c3', 'bar', 150.5),
+            ('a1', 'b2', 'c4', 'bar', 124.5)
+        ]
+        self.assertEqual(sorted(new_reader), expected)
+
+    def test_handling_multiple_edges(self):
+        """Check that quantities are translated using appropriate edges.
+
+        Quantities should be matched by their attributes to the edge
+        with the greatest unique specificity or the default edge if
+        there is no unique match.
+        """
+        source_node = TopoNode()
+        source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
+        source_node.add_index_columns('X')
+        source_node.insert_index(
+            data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
+            columns=['X']
+        )
+        data = [
+            # Attributes {'foo': 'bar'} match 'edge 1' ([foo="bar"])
+            # and 'edge 2' ([foo]), but 'edge 1' is used because it
+            # has a greater specificity.
+            (1, {'foo': 'bar'}, 100),
+            (2, {'foo': 'bar'}, 100),
+            (3, {'foo': 'bar'}, 100),
+            (4, {'foo': 'bar'}, 100),
+            (5, {'foo': 'bar'}, 100),
+
+            # Attributes {'foo': 'baz'} match 'edge 2' ([foo]).
+            (1, {'foo': 'baz'}, 100),
+            (2, {'foo': 'baz'}, 100),
+            (3, {'foo': 'baz'}, 100),
+            (4, {'foo': 'baz'}, 100),
+
+            # Attributes {'qux': 'corge'} has no match, uses default ('edge 1').
+            (5, {'qux': 'corge'}, 100),
+        ]
+        reader = NodeReader(data, source_node)
+
+        new_reader = translate2(reader, self.node)
+
+        # If `new_quantities` were accumulated, it would be:
+        expected = [
+            ('a1', 'b1', 'c1', 'bar', '',      60),            # <- Edge 1
+            ('a1', 'b1', 'c1', 'baz', '',      50),            # <- Edge 2
+            ('a1', 'b1', 'c2', 'bar', '',      165),           # <- Edge 1
+            ('a1', 'b1', 'c2', 'baz', '',      183.3984375),   # <- Edge 2
+            ('a1', 'b2', 'c3', '',    'corge', 38.0),          # <- Default (Edge 1)
+            ('a1', 'b2', 'c3', 'bar', '',      150.5),         # <- Edge 1
+            ('a1', 'b2', 'c3', 'baz', '',      133.30078125),  # <- Edge 2
+            ('a1', 'b2', 'c4', '',    'corge', 62.0),          # <- Default (Edge 1)
+            ('a1', 'b2', 'c4', 'bar', '',      124.5),         # <- Edge 1
+            ('a1', 'b2', 'c4', 'baz', '',      33.30078125),   # <- Edge 2
+        ]
+        self.assertEqual(sorted(new_reader), expected)
