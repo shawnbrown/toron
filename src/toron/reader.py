@@ -8,6 +8,7 @@ from json import dumps, loads
 from tempfile import NamedTemporaryFile
 
 from toron._typing import (
+    Callable,
     Dict,
     Generator,
     Iterable,
@@ -22,9 +23,14 @@ from toron._typing import (
     TYPE_CHECKING,
 )
 from toron.data_models import Index
+from toron.selectors import (
+    parse_selector,
+    get_greatest_unique_specificity,
+)
 
 if TYPE_CHECKING:
     from toron import TopoNode
+    from toron.data_models import Crosswalk
 
 
 def _create_reader_schema(cur: sqlite3.Cursor) -> None:
@@ -170,3 +176,34 @@ class NodeReader(object):
         except TypeError:
             self._data = _generate_reader_output(self)
             return next(self._data)
+
+
+def _make_get_crosswalk_id_func(
+    crosswalks: List['Crosswalk']
+) -> Callable[[Dict[str, str]], int]:
+    """Build a `get_crosswalk_id_func()` to match crosswalks."""
+    # Get the default crosswalk and make sure it's locally complete.
+    default_crosswalk_id = None
+    for crosswalk in crosswalks:
+        if crosswalk.is_default:
+            default_crosswalk_id = crosswalk.id
+            break
+    else:  # IF NO BREAK!
+        raise RuntimeError('no default crosswalk found for node')
+
+    # Build dict of index id values and attribute selector objects.
+    crosswalks = [x for x in crosswalks if x.is_locally_complete and x.selectors]
+    func = lambda selectors: [parse_selector(s) for s in selectors]
+    selector_dict = {x.id: func(x.selectors) for x in crosswalks}
+
+    # Define function to match the crosswalk with the greatest unique
+    # specificity (closes over selector_dict and default_crosswalk_id).
+    def get_crosswalk_id_func(attributes: Dict[str, str]) -> int:
+        crosswalk_id = get_greatest_unique_specificity(
+            row_dict=attributes,
+            selector_dict=selector_dict,
+            default=default_crosswalk_id,
+        )
+        return crosswalk_id
+
+    return get_crosswalk_id_func
