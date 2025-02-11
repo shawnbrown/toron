@@ -37,16 +37,16 @@ if TYPE_CHECKING:
     from toron.data_models import Crosswalk
 
 
-def _create_reader_schema(cur: sqlite3.Cursor) -> None:
+def _create_reader_schema(cur: sqlite3.Cursor, schema: str = 'main') -> None:
     """Create database tables for NodeReader instance."""
-    cur.executescript("""
-        CREATE TABLE attr_data (
+    cur.executescript(f"""
+        CREATE TABLE {schema}.attr_data (
             attr_data_id INTEGER PRIMARY KEY,
             attributes TEXT NOT NULL,
             matched_crosswalk_id INTEGER DEFAULT NULL,
             UNIQUE (attributes)
         );
-        CREATE TABLE quant_data (
+        CREATE TABLE {schema}.quant_data (
             index_id INTEGER NOT NULL,
             attr_data_id INTEGER NOT NULL,
             quant_value REAL,
@@ -296,4 +296,65 @@ def translate2(reader: NodeReader, node: 'TopoNode') -> NodeReader:
 
     new_reader = NodeReader.__new__(NodeReader)
     new_reader._initializer(filepath, reader._attr_keys, node)
+    return new_reader
+
+
+def translate3(reader: NodeReader, node: 'TopoNode') -> NodeReader:
+    """Translate quantities to the index of the target node."""
+
+    # Get `old_index_hash` from source reader.
+    with reader._node._managed_cursor() as cur:
+        property_repo = reader._node._dal.PropertyRepository(cur)
+        old_index_hash = property_repo.get('index_hash')
+
+    # Create temp file and get its path (resolve symlinks with realpath).
+    with closing(NamedTemporaryFile(delete=False)) as f:
+        new_filepath = os.path.realpath(f.name)
+
+    with node._managed_cursor(n=2) as (cur1, cur2):
+        cur1.execute('ATTACH DATABASE ? AS old_reader', (reader._filepath,))
+        cur1.execute('ATTACH DATABASE ? AS new_reader', (new_filepath,))
+
+        _create_reader_schema(cur1, schema='new_reader')
+
+        # Make `get_crosswalk_id()` function.
+        crosswalk_repo = node._dal.CrosswalkRepository(cur1)
+        relation_repo = node._dal.RelationRepository(cur1)
+        crosswalks = find_crosswalks_by_node_reference(
+            node_reference=reader._node.unique_id,
+            crosswalk_repo=crosswalk_repo,
+        )
+        if not crosswalks:
+            raise RuntimeError('no crosswalk found connecting nodes')
+        crosswalks = [x for x in crosswalks if x.other_index_hash == old_index_hash]
+        if not crosswalks:
+            raise RuntimeError('crosswalks are out of date, need to relink')
+        get_crosswalk_id = _make_get_crosswalk_id_func(crosswalks)
+
+        # Insert attribute data and best-matching 'crosswalk_id'.
+        cur1.execute('SELECT attr_data_id, attributes FROM old_reader.attr_data')
+        for attr_data_id, attributes in cur1:
+            attributes_obj = loads(attributes)
+            matched_crosswalk_id = get_crosswalk_id(attributes_obj)
+            cur2.execute(
+                'INSERT INTO new_reader.attr_data VALUES (?, ?, ?)',
+                (attr_data_id, attributes, matched_crosswalk_id),
+            )
+
+        # Insert quantity data translated to new node index.
+        sql = """
+            INSERT INTO new_reader.quant_data (index_id, attr_data_id, quant_value)
+            SELECT a.index_id, c.attr_data_id, SUM(b.quant_value * a.proportion)
+            FROM main.relation a
+            JOIN old_reader.quant_data b ON (a.other_index_id=b.index_id)
+            JOIN new_reader.attr_data c ON (b.attr_data_id=c.attr_data_id
+                                            AND a.crosswalk_id=c.matched_crosswalk_id)
+            GROUP BY a.index_id, c.attr_data_id
+        """
+        cur1.execute(sql)
+        cur1.execute('DETACH DATABASE old_reader')
+        cur1.execute('DETACH DATABASE new_reader')
+
+    new_reader = NodeReader.__new__(NodeReader)
+    new_reader._initializer(new_filepath, reader._attr_keys, node)
     return new_reader
