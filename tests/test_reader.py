@@ -6,6 +6,11 @@ import weakref
 import unittest
 from contextlib import closing
 
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
+
 from toron.node import TopoNode
 from toron.reader import NodeReader, _managed_reader_connection
 
@@ -111,6 +116,71 @@ class TestNodeReader(unittest.TestCase):
 
         self.assertFalse(os.path.isfile(reader._current_working_path))  # File should be removed.
         self.assertEqual(list(reader), [])  # No more records after closing.
+
+    @unittest.skipUnless(pd, 'requires pandas')
+    def test_to_pandas(self):
+        """Check convertion to Pandas DataFrame."""
+        node = TopoNode()
+        node.add_index_columns('county', 'town')
+        node.insert_index([
+            ('county',  'town'),
+            ('ALAMEDA', 'HAYWARD'),
+            ('BUTTE',   'PALERMO'),
+            ('COLUSA',  'GRIMES'),
+        ])
+        reader = NodeReader(
+            data=[
+                (1, {'attr1': 'foo'},                 25.0),
+                (2, {'attr1': 'foo'},                 75.0),
+                (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
+                (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
+            ],
+            node=node,
+        )
+
+        df = reader.to_pandas()  # <- Method under test.
+
+        expected_df = pd.DataFrame({
+            'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
+            'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
+            'attr1': pd.Series(['foo', 'foo', 'bar'], dtype='string'),
+            'attr2': pd.Series(['', '', 'baz'], dtype='string'),
+            'value': pd.Series([25.0, 75.0, 50.0], dtype='float64'),
+        })
+        pd.testing.assert_frame_equal(df, expected_df)
+
+    @unittest.skipUnless(pd, 'requires pandas')
+    def test_to_pandas_with_index(self):
+        """Check convertion to Pandas DataFrame."""
+        node = TopoNode()
+        node.add_index_columns('county', 'town')
+        node.insert_index([
+            ('county',  'town'),
+            ('ALAMEDA', 'HAYWARD'),
+            ('BUTTE',   'PALERMO'),
+            ('COLUSA',  'GRIMES'),
+        ])
+        reader = NodeReader(
+            data=[
+                (1, {'attr1': 'foo'},                 25.0),
+                (2, {'attr1': 'foo'},                 75.0),
+                (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
+                (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
+            ],
+            node=node,
+        )
+
+        df = reader.to_pandas(index=True)  # <- Method under test.
+
+        expected_df = pd.DataFrame({
+            'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
+            'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
+            'attr1': pd.Series(['foo', 'foo', 'bar'], dtype='string'),
+            'attr2': pd.Series(['', '', 'baz'], dtype='string'),
+            'value': pd.Series([25.0, 75.0, 50.0], dtype='float64'),
+        })
+        expected_df.set_index(['county', 'town'], inplace=True)
+        pd.testing.assert_frame_equal(df, expected_df)
 
 
 class TestNodeReaderTranslate(unittest.TestCase):

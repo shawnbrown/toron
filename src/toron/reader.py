@@ -34,6 +34,7 @@ from toron.selectors import (
 )
 
 if TYPE_CHECKING:
+    import pandas as pd
     from toron import TopoNode
     from toron.data_models import Crosswalk
 
@@ -258,6 +259,27 @@ class NodeReader(object):
     @property
     def columns(self) -> List[str]:
         return list(self._index_columns + self._attr_keys + ('value',))
+
+    def to_pandas(self, index: bool = False) -> 'pd.DataFrame':
+        """Return data as a pandas DataFrame object."""
+        try:
+            import pandas as pd
+        except ImportError:
+            msg = (
+                "Missing optional dependency 'pandas'.  Install pandas to "
+                "use this method."
+            )
+            raise ImportError(msg) from None
+
+        df = pd.DataFrame(self, columns=self.columns)
+        string_cols = df.columns[:-1]  # Slice-off "value" column (float64).
+        for col in string_cols:  # Using loop for memory efficiency.
+            df[col] = df[col].astype('string')
+
+        if index:
+            df.set_index(self.index_columns, inplace=True)
+
+        return df
 
     def __iter__(self) -> Self:
         return self
