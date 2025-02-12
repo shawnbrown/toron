@@ -86,8 +86,8 @@ class TestNodeReader(unittest.TestCase):
 
         result = list(reader)
         expected = [
-            ('ALAMEDA', 'HAYWARD', 'foo', '',    25.0),
-            ('BUTTE',   'PALERMO', 'foo', '',    75.0),
+            ('ALAMEDA', 'HAYWARD', 'foo', None,  25.0),
+            ('BUTTE',   'PALERMO', 'foo', None,  75.0),
             ('COLUSA',  'GRIMES',  'bar', 'baz', 50.0),
         ]
         self.assertEqual(result, expected)
@@ -144,7 +144,7 @@ class TestNodeReader(unittest.TestCase):
             'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
             'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
             'attr1': pd.Series(['foo', 'foo', 'bar'], dtype='string'),
-            'attr2': pd.Series(['', '', 'baz'], dtype='string'),
+            'attr2': pd.Series([None, None, 'baz'], dtype='string'),
             'value': pd.Series([25.0, 75.0, 50.0], dtype='float64'),
         })
         pd.testing.assert_frame_equal(df, expected_df)
@@ -176,7 +176,7 @@ class TestNodeReader(unittest.TestCase):
             'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
             'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
             'attr1': pd.Series(['foo', 'foo', 'bar'], dtype='string'),
-            'attr2': pd.Series(['', '', 'baz'], dtype='string'),
+            'attr2': pd.Series([None, None, 'baz'], dtype='string'),
             'value': pd.Series([25.0, 75.0, 50.0], dtype='float64'),
         })
         expected_df.set_index(['county', 'town'], inplace=True)
@@ -311,16 +311,16 @@ class TestNodeReaderTranslate(unittest.TestCase):
 
         # If `new_quantities` were accumulated, it would be:
         expected = {
-            ('a1', 'b1', 'c1', 'bar', '',      60),            # <- Edge 1
-            ('a1', 'b1', 'c2', 'bar', '',      165),           # <- Edge 1
-            ('a1', 'b2', 'c3', '',    'corge', 38.0),          # <- Default (Edge 1)
-            ('a1', 'b2', 'c3', 'bar', '',      150.5),         # <- Edge 1
-            ('a1', 'b2', 'c4', '',    'corge', 62.0),          # <- Default (Edge 1)
-            ('a1', 'b2', 'c4', 'bar', '',      124.5),         # <- Edge 1
-            ('a1', 'b1', 'c1', 'baz', '',      50),            # <- Edge 2
-            ('a1', 'b1', 'c2', 'baz', '',      183.3984375),   # <- Edge 2
-            ('a1', 'b2', 'c3', 'baz', '',      133.30078125),  # <- Edge 2
-            ('a1', 'b2', 'c4', 'baz', '',      33.30078125),   # <- Edge 2
+            ('a1', 'b1', 'c1', 'bar', None,    60),            # <- Edge 1
+            ('a1', 'b1', 'c2', 'bar', None,    165),           # <- Edge 1
+            ('a1', 'b2', 'c3', None,  'corge', 38.0),          # <- Default (Edge 1)
+            ('a1', 'b2', 'c3', 'bar', None,    150.5),         # <- Edge 1
+            ('a1', 'b2', 'c4', None,  'corge', 62.0),          # <- Default (Edge 1)
+            ('a1', 'b2', 'c4', 'bar', None,    124.5),         # <- Edge 1
+            ('a1', 'b1', 'c1', 'baz', None,    50),            # <- Edge 2
+            ('a1', 'b1', 'c2', 'baz', None,    183.3984375),   # <- Edge 2
+            ('a1', 'b2', 'c3', 'baz', None,    133.30078125),  # <- Edge 2
+            ('a1', 'b2', 'c4', 'baz', None,    33.30078125),   # <- Edge 2
         }
         self.assertEqual(set(reader), expected)
 

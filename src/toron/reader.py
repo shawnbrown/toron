@@ -154,7 +154,7 @@ def _generate_reader_output(
                 labels = cast(Index, index_repo.get(index_id)).labels
                 attr_vals = tuple(loads(attributes).values())
                 attr_dict = loads(attributes)
-                attr_vals = tuple(attr_dict.get(x, '') for x in reader._attr_keys)
+                attr_vals = tuple(attr_dict.get(x) for x in reader._attr_keys)
                 yield labels + attr_vals + (quant_value,)
 
 
