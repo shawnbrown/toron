@@ -254,6 +254,33 @@ class TestNodeReaderTranslate(unittest.TestCase):
         }
         self.assertEqual(set(reader), expected)
 
+    def test_rshift_operator(self):
+        source_node = TopoNode()
+        source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
+        source_node.add_index_columns('X')
+        source_node.insert_index(
+            data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
+            columns=['X']
+        )
+        data = [
+            (1, {'foo': 'bar'}, 100),
+            (2, {'foo': 'bar'}, 100),
+            (3, {'foo': 'bar'}, 100),
+            (4, {'foo': 'bar'}, 100),
+            (5, {'foo': 'bar'}, 100),
+        ]
+        reader = NodeReader(data, source_node)
+
+        reader = reader >> self.node  # <- Use right-shift operator.
+
+        expected = {
+            ('a1', 'b1', 'c1', 'bar', 60.0),
+            ('a1', 'b1', 'c2', 'bar', 165.0),
+            ('a1', 'b2', 'c3', 'bar', 150.5),
+            ('a1', 'b2', 'c4', 'bar', 124.5)
+        }
+        self.assertEqual(set(reader), expected)
+
 
 class TestTranslate2(unittest.TestCase):
     def setUp(self):

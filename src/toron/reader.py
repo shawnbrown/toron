@@ -337,6 +337,11 @@ class NodeReader(object):
 
         self._node = node  # Replace old node reference with the new node.
 
+    def __rshift__(self, other: 'TopoNode') -> 'NodeReader':
+        """Translate quantities to the index of the *other* node."""
+        self.translate(other)
+        return self
+
 
 def _make_get_crosswalk_id_func(
     crosswalks: List['Crosswalk']
