@@ -358,6 +358,7 @@ class NodeReader(object):
                 cur1.execute('ALTER TABLE main.new_quant_data RENAME TO quant_data')
 
         self._node = node  # Replace old node reference with the new node.
+        self._index_columns = node.index_columns
 
     def __rshift__(self, other: 'TopoNode') -> 'NodeReader':
         """Translate quantities to the index of the *other* node."""
