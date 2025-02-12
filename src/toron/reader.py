@@ -3,7 +3,7 @@
 import os
 import sqlite3
 import weakref
-from contextlib import closing, suppress
+from contextlib import closing, contextmanager, suppress
 from itertools import chain
 from json import dumps, loads
 from tempfile import NamedTemporaryFile
@@ -21,6 +21,7 @@ from toron._typing import (
     Tuple,
     Union,
     cast,
+    overload,
     TYPE_CHECKING,
 )
 from toron.data_models import Index
@@ -102,13 +103,46 @@ def _insert_raw_quant_data(
     cur.executemany(sql, data)
 
 
+@contextmanager
+def _managed_reader_connection(
+    reader: 'NodeReader'
+) -> Generator[sqlite3.Connection, None, None]:
+    """Acquire and manage a connection to a NodeReader's database."""
+    in_memory_connection = reader._in_memory_connection
+    on_drive_path = reader._current_working_path
+
+    if in_memory_connection and on_drive_path:
+        raise RuntimeError(
+            'NodeReader must have _in_memory_connection or '
+            '_in_memory_connection, but not both'
+        )
+
+    if on_drive_path:
+        connection = sqlite3.connect(on_drive_path)
+        connection.execute('PRAGMA main.synchronous = OFF')
+    elif in_memory_connection:
+        connection = in_memory_connection
+    else:
+        raise RuntimeError('unable to establish connection')
+
+    try:
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        if on_drive_path:
+            connection.close()
+
+
 def _generate_reader_output(
     reader: 'NodeReader'
 ) -> Generator[Tuple[Union[str, float], ...], None, None]:
     """Return generator that iterates over NodeReader data."""
     with reader._node._managed_cursor() as node_cur:
         index_repo = reader._node._dal.IndexRepository(node_cur)
-        with closing(sqlite3.connect(reader._filepath)) as con:
+        with _managed_reader_connection(reader) as con:
             cur = con.execute("""
                 SELECT index_id, attributes, SUM(quant_value) AS quant_value
                 FROM main.quant_data
@@ -126,7 +160,8 @@ def _generate_reader_output(
 class NodeReader(object):
     """An iterator for base level TopoNode data."""
     _data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
-    _filepath: str
+    _current_working_path: Optional[str]
+    _in_memory_connection: Optional[sqlite3.Connection]
     _index_columns: Tuple[str, ...]
     _attr_keys: Tuple[str, ...]
     close: weakref.finalize
@@ -135,30 +170,67 @@ class NodeReader(object):
         self,
         data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
         node: 'TopoNode',
+        cache_to_drive: bool = False,
     ) -> None:
-        # Create temp file and get its path (resolve symlinks with realpath).
-        with closing(NamedTemporaryFile(delete=False)) as f:
-            filepath = os.path.realpath(f.name)
+        if cache_to_drive:
+            # Create temp file and get its path (resolve symlinks with realpath).
+            with closing(NamedTemporaryFile(delete=False)) as f:
+                filepath = os.path.realpath(f.name)
+            connection = None
 
-        # Create tables, insert records, and accumulate `attr_keys`.
-        with closing(sqlite3.connect(filepath)) as con:
+            with closing(sqlite3.connect(filepath)) as temp_con:
+                try:
+                    # Create tables, insert records, and accumulate `attr_keys`.
+                    cur = temp_con.cursor()
+                    cur.execute('PRAGMA main.synchronous = OFF')
+                    _create_reader_schema(cur)
+                    attr_keys = _insert_quant_data_get_attr_keys(cur, data)
+                    temp_con.commit()
+                except Exception:
+                    temp_con.rollback()
+                    raise
+
+            self._initializer(filepath, connection, attr_keys, node)
+
+        else:
+            filepath = None
+            connection = sqlite3.connect(':memory:')  # Persistent connection.
+
             try:
-                cur = con.cursor()
+                # Create tables, insert records, and accumulate `attr_keys`.
+                cur = connection.cursor()
                 _create_reader_schema(cur)
                 attr_keys = _insert_quant_data_get_attr_keys(cur, data)
-                con.commit()
+                connection.commit()
             except Exception:
-                con.rollback()
+                connection.rollback()
                 raise
 
-        self._initializer(filepath, attr_keys, node)
+            self._initializer(filepath, connection, attr_keys, node)
 
+    @overload
     def _initializer(
-        self, filepath: str, attr_keys: Iterable[str], node: 'TopoNode'
+        self,
+        filepath: None,
+        connection: sqlite3.Connection,
+        attr_keys: Iterable[str],
+        node: 'TopoNode',
     ) -> None:
+        ...
+    @overload
+    def _initializer(
+        self,
+        filepath: str,
+        connection: None,
+        attr_keys: Iterable[str],
+        node: 'TopoNode',
+    ) -> None:
+        ...
+    def _initializer(self, filepath, connection, attr_keys, node):
         """Assign instance attributes and `close()` method."""
         # Assign instance attributes.
-        self._filepath = filepath
+        self._current_working_path = filepath
+        self._in_memory_connection = connection
         self._data = None  # <- Assigned only when iteration begins.
         self._node = node
         self._index_columns = node.index_columns
@@ -172,8 +244,12 @@ class NodeReader(object):
         if self._data:
             self._data.close()
 
-        with suppress(FileNotFoundError):
-            os.unlink(self._filepath)
+        if self._in_memory_connection:
+            self._in_memory_connection.close()
+
+        if self._current_working_path:
+            with suppress(FileNotFoundError):
+                os.unlink(self._current_working_path)
 
     @property
     def index_columns(self) -> List[str]:
@@ -237,7 +313,7 @@ def translate2(reader: NodeReader, node: 'TopoNode') -> NodeReader:
         try:
             cur1 = con.cursor()
             cur2 = con.cursor()
-            cur1.execute('ATTACH DATABASE ? AS old_reader', (reader._filepath,))
+            cur1.execute('ATTACH DATABASE ? AS old_reader', (reader._current_working_path,))
 
             _create_reader_schema(cur1)
 
@@ -295,7 +371,7 @@ def translate2(reader: NodeReader, node: 'TopoNode') -> NodeReader:
             cur1.execute('DETACH DATABASE old_reader')
 
     new_reader = NodeReader.__new__(NodeReader)
-    new_reader._initializer(filepath, reader._attr_keys, node)
+    new_reader._initializer(filepath, None, reader._attr_keys, node)
     return new_reader
 
 
@@ -312,7 +388,7 @@ def translate3(reader: NodeReader, node: 'TopoNode') -> NodeReader:
         new_filepath = os.path.realpath(f.name)
 
     with node._managed_cursor(n=2) as (cur1, cur2):
-        cur1.execute('ATTACH DATABASE ? AS old_reader', (reader._filepath,))
+        cur1.execute('ATTACH DATABASE ? AS old_reader', (reader._current_working_path,))
         cur1.execute('ATTACH DATABASE ? AS new_reader', (new_filepath,))
 
         _create_reader_schema(cur1, schema='new_reader')
@@ -356,5 +432,5 @@ def translate3(reader: NodeReader, node: 'TopoNode') -> NodeReader:
         cur1.execute('DETACH DATABASE new_reader')
 
     new_reader = NodeReader.__new__(NodeReader)
-    new_reader._initializer(new_filepath, reader._attr_keys, node)
+    new_reader._initializer(new_filepath, None, reader._attr_keys, node)
     return new_reader

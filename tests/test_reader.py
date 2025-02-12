@@ -7,7 +7,7 @@ import unittest
 from contextlib import closing
 
 from toron.node import TopoNode
-from toron.reader import NodeReader, translate2
+from toron.reader import NodeReader, translate2, _managed_reader_connection
 
 
 class TestNodeReader(unittest.TestCase):
@@ -16,9 +16,9 @@ class TestNodeReader(unittest.TestCase):
         self.assertEqual(list(reader), [])
 
     def test_close_finalizer(self):
-        reader = NodeReader([], TopoNode())
+        reader = NodeReader([], TopoNode(), cache_to_drive=True)
 
-        filepath = reader._filepath  # Get database file path.
+        filepath = reader._current_working_path  # Get database file path.
         self.assertTrue(os.path.isfile(filepath))
 
         self.assertIsInstance(reader.close, weakref.finalize)
@@ -40,7 +40,7 @@ class TestNodeReader(unittest.TestCase):
         self.assertEqual(reader.index_columns, [])
         self.assertEqual(reader.columns, ['a', 'value'])
 
-        with closing(sqlite3.connect(reader._filepath)) as con:
+        with _managed_reader_connection(reader) as con:
             with closing(con.cursor()) as cur:
                 cur.execute('SELECT * FROM attr_data')
                 attr_data = [
@@ -104,11 +104,12 @@ class TestNodeReader(unittest.TestCase):
                 (3, {'someattr': 'bar'}, 50.0),
             ],
             node=node,
+            cache_to_drive=True,
         )
         next(reader)  # Start iteration.
         reader.close()  # Call finalizer before iteration is finished.
 
-        self.assertFalse(os.path.isfile(reader._filepath))  # File should be removed.
+        self.assertFalse(os.path.isfile(reader._current_working_path))  # File should be removed.
         self.assertEqual(list(reader), [])  # No more records after closing.
 
 
@@ -189,7 +190,7 @@ class TestTranslate2(unittest.TestCase):
             (4, {'foo': 'bar'}, 100),
             (5, {'foo': 'bar'}, 100),
         ]
-        reader = NodeReader(data, source_node)
+        reader = NodeReader(data, source_node, cache_to_drive=True)
 
         new_reader = translate2(reader, self.node)
 
@@ -234,7 +235,7 @@ class TestTranslate2(unittest.TestCase):
             # Attributes {'qux': 'corge'} has no match, uses default ('edge 1').
             (5, {'qux': 'corge'}, 100),
         ]
-        reader = NodeReader(data, source_node)
+        reader = NodeReader(data, source_node, cache_to_drive=True)
 
         new_reader = translate2(reader, self.node)
 
