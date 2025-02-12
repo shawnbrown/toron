@@ -269,6 +269,74 @@ class NodeReader(object):
             self._data = _generate_reader_output(self)
             return next(self._data)
 
+    def translate(self, node: 'TopoNode') -> None:
+        """Translate quantities to use the index of the target node."""
+        # Get `old_index_hash` from source node.
+        with self._node._managed_cursor() as node_cur:
+            property_repo = self._node._dal.PropertyRepository(node_cur)
+            old_index_hash = property_repo.get('index_hash')
+
+        with node._managed_cursor() as node_cur:
+            crosswalk_repo = node._dal.CrosswalkRepository(node_cur)
+            relation_repo = node._dal.RelationRepository(node_cur)
+
+            # Make `get_crosswalk_id()` function.
+            crosswalks = find_crosswalks_by_node_reference(
+                node_reference=self._node.unique_id,
+                crosswalk_repo=crosswalk_repo,
+            )
+            if not crosswalks:
+                raise RuntimeError('no crosswalk found connecting nodes')
+            crosswalks = [x for x in crosswalks if x.other_index_hash == old_index_hash]
+            if not crosswalks:
+                raise RuntimeError('crosswalks are out of date, need to relink')
+            get_crosswalk_id = _make_get_crosswalk_id_func(crosswalks)
+
+            with _managed_reader_connection(self) as con:
+                cur1 = con.cursor()
+                cur2 = con.cursor()
+
+                # Update 'matched_crosswalk_id' to use ids from new node.
+                cur1.execute('SELECT attr_data_id, attributes FROM main.attr_data')
+                for attr_data_id, attributes in cur1:
+                    attributes_obj = loads(attributes)
+                    matched_crosswalk_id = get_crosswalk_id(attributes_obj)
+                    cur2.execute(
+                        'UPDATE main.attr_data SET matched_crosswalk_id=? WHERE attr_data_id=?',
+                        (matched_crosswalk_id, attr_data_id),
+                    )
+
+                # Create and populate 'new_quant_data' table.
+                cur1.execute("""
+                    CREATE TABLE main.new_quant_data (
+                        index_id INTEGER NOT NULL,
+                        attr_data_id INTEGER NOT NULL,
+                        quant_value REAL,
+                        FOREIGN KEY(attr_data_id) REFERENCES attr_data(attr_data_id)
+                    )
+                """)
+                cur1.execute("""
+                    SELECT index_id, attr_data_id, quant_value, matched_crosswalk_id
+                    FROM main.quant_data
+                    JOIN main.attr_data USING (attr_data_id)
+                """)
+                for index_id, attr_data_id, quant_value, crosswalk_id in cur1:
+                        rels = relation_repo.find_by_ids(
+                            crosswalk_id=crosswalk_id,
+                            other_index_id=index_id,
+                        )
+                        for rel in rels:
+                            cur2.execute(
+                                'INSERT INTO main.new_quant_data VALUES (?, ?, ?)',
+                                (rel.index_id, attr_data_id, quant_value * rel.proportion),
+                            )
+
+                # Replace the old quantity table with the new table.
+                cur1.execute('DROP TABLE main.quant_data')
+                cur1.execute('ALTER TABLE main.new_quant_data RENAME TO quant_data')
+
+        self._node = node  # Replace old node reference with the new node.
+
 
 def _make_get_crosswalk_id_func(
     crosswalks: List['Crosswalk']
