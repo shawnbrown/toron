@@ -92,18 +92,6 @@ def _insert_quant_data_get_attr_keys(
     return attr_keys
 
 
-def _insert_raw_quant_data(
-    cur: sqlite3.Cursor,
-    data: Iterator[Tuple[int, int, Optional[float]]],
-) -> None:
-    """Insert raw 'quant_data' by id values."""
-    sql = """
-        INSERT INTO main.quant_data (index_id, attr_data_id, quant_value)
-        VALUES (?, ?, ?)
-    """
-    cur.executemany(sql, data)
-
-
 @contextmanager
 def _managed_reader_connection(
     reader: 'NodeReader'
