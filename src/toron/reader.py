@@ -161,6 +161,7 @@ class NodeReader(object):
         node: 'TopoNode',
         cache_to_drive: bool = False,
     ) -> None:
+        """Initialize a new NodeReader instance."""
         if cache_to_drive:
             # Create temp file and get its path (resolve symlinks with realpath).
             with closing(NamedTemporaryFile(delete=False)) as f:
@@ -242,10 +243,12 @@ class NodeReader(object):
 
     @property
     def index_columns(self) -> List[str]:
+        """The index (row labels) of the NodeReader."""
         return list(self._index_columns)
 
     @property
     def columns(self) -> List[str]:
+        """All column labels of the NodeReader."""
         return list(self._index_columns + self._attr_keys + ('value',))
 
     def to_pandas(self, index: bool = False) -> 'pd.DataFrame':
@@ -270,9 +273,11 @@ class NodeReader(object):
         return df
 
     def __iter__(self) -> Self:
+        """Returns self (iterator protocol)."""
         return self
 
     def __next__(self) -> Tuple[Union[str, float], ...]:
+        """Return the next item from the NodeReader."""
         try:
             return next(self._data)  # type: ignore [arg-type]
         except TypeError:
@@ -280,7 +285,11 @@ class NodeReader(object):
             return next(self._data)
 
     def translate(self, node: 'TopoNode') -> None:
-        """Translate quantities to use the index of the target node."""
+        """Translate quantities to use the index of the target node.
+
+        This method modifies the NodeReader in place and does not
+        return a value.
+        """
         # Get `old_index_hash` from source node.
         with self._node._managed_cursor() as node_cur:
             property_repo = self._node._dal.PropertyRepository(node_cur)
