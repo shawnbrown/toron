@@ -964,13 +964,13 @@ class TopoNode(object):
         )
 
         if counter['ignored_on_conflict']:
-            applogger.warning(f"ignored {counter['ignored_on_conflict']} existing records that already have weights")
+            applogger.warning(f"ignored {counter['ignored_on_conflict']} rows that match existing records")
 
         if counter['replaced_on_conflict']:
             applogger.warning(f"replaced {counter['replaced_on_conflict']} existing records with new weights")
 
         if counter['summed_on_conflict']:
-            applogger.warning(f"summed {counter['summed_on_conflict']} existing records together with new weights")
+            applogger.warning(f"combined sum of {counter['summed_on_conflict']} new weights together with existing record")
 
         if counter['not_realnum']:
             applogger.warning(f"skipped {counter['not_realnum']} rows without real number values")
@@ -985,7 +985,7 @@ class TopoNode(object):
             applogger.warning(f"skipped {counter['mismatch']} rows whose labels do not match the given index_id")
 
         if counter['no_match']:
-            applogger.warning(f"skipped {counter['no_match']} rows whose labels do not match any existing index record")
+            applogger.warning(f"skipped {counter['no_match']} rows whose labels do not match any existing index")
 
     def update_weights(
         self,

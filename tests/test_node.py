@@ -2096,7 +2096,7 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
         self.assertEqual(
             self.log_stream.getvalue(),
             ("INFO: loaded 1 new records into 'group1'\n"
-             "WARNING: skipped 2 rows whose labels do not match any existing index record\n"),
+             "WARNING: skipped 2 rows whose labels do not match any existing index\n"),
         )
 
         # Check inserted records (only one).
@@ -2207,7 +2207,7 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
         self.assertEqual(
             self.log_stream.getvalue(),
             ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
-             "WARNING: ignored 1 existing records that already have weights\n"),
+             "WARNING: ignored 1 rows that match existing records\n"),
         )
 
     def test_insert_on_conflict_replace(self):
@@ -2249,7 +2249,7 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
         self.assertEqual(
             self.log_stream.getvalue(),
             ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
-             "WARNING: summed 1 existing records together with new weights\n"),
+             "WARNING: combined sum of 1 new weights together with existing record\n"),
         )
 
     def test_update(self):
