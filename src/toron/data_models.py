@@ -588,7 +588,7 @@ class BaseWeightRepository(ABC):
         weight_group_id: int,
         index_id: int,
         value: float,
-        on_conflict: Literal['fail', 'ignore', 'replace', 'sum'] = 'fail',
+        on_conflict: Literal['fail', 'ignore', 'replace', 'combine'] = 'fail',
     ) -> Literal['inserted', 'ignored_on_conflict', 'replaced_on_conflict', 'summed_on_conflict']:
         """Add a record to the repository or resolve conflict.
 
@@ -606,7 +606,7 @@ class BaseWeightRepository(ABC):
         | ``'replace'``   | replace value of conflicting record with   |
         |                 | new value                                  |
         +-----------------+--------------------------------------------+
-        | ``'sum'``       | replace value of conflicting record with   |
+        | ``'combine'``   | replace value of conflicting record with   |
         |                 | sum of old and new values                  |
         +-----------------+--------------------------------------------+
 
@@ -635,7 +635,7 @@ class BaseWeightRepository(ABC):
             self.update(weight)
             return 'replaced_on_conflict'  # <- EXIT!
 
-        if on_conflict == 'sum':
+        if on_conflict == 'combine':
             weight.value += value  # Sum values.
             self.update(weight)
             return 'summed_on_conflict'  # <- EXIT!
@@ -650,7 +650,7 @@ class BaseWeightRepository(ABC):
             raise Exception(msg)
 
         raise ValueError(
-            f"on_conflict must be 'fail', 'ignore', 'replace', or 'sum'; "
+            f"on_conflict must be 'fail', 'ignore', 'replace', or 'combine'; "
             f"got {on_conflict!r}"
         )
 

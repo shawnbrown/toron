@@ -874,11 +874,11 @@ class TopoNode(object):
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
         value_column: Optional[str] = None,
-        on_conflict: Literal['fail', 'ignore', 'replace', 'sum'] = 'fail',
+        on_conflict: Literal['fail', 'ignore', 'replace', 'combine'] = 'fail',
     ) -> None:
-        if on_conflict not in ('fail', 'ignore', 'replace', 'sum'):
+        if on_conflict not in ('fail', 'ignore', 'replace', 'combine'):
             msg = (f"on_conflict must be 'fail', 'ignore', 'replace', "
-                   f"or 'sum'; got {on_conflict!r}")
+                   f"or 'combine'; got {on_conflict!r}")
             raise ValueError(msg)
 
         data, columns = normalize_tabular(data, columns)

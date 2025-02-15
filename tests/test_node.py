@@ -2231,7 +2231,7 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
              "WARNING: replaced 1 existing records with new weights\n"),
         )
 
-    def test_insert_on_conflict_sum(self):
+    def test_insert_on_conflict_combine(self):
         data = [
             ('A', 'B', 'group1'),
             ('foo', 'x', 10.0),
@@ -2239,7 +2239,7 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('bar', 'z', 15.0),
             ('bar', 'z', 84.0),  # <- Conflicts with previous record.
         ]
-        self.node.insert_weights('group1', data, on_conflict='sum')
+        self.node.insert_weights('group1', data, on_conflict='combine')
 
         self.assertEqual(
             self.get_weights_helper(),

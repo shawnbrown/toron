@@ -629,8 +629,8 @@ class WeightRepositoryBaseTest(ABC):
             msg='value should be replaced',
         )
 
-        # Sum values of conflicting record (sums 2222 and 3333).
-        code = self.repository.add_or_resolve(3, 1, 3333, on_conflict='sum')
+        # Combine values of conflicting record (sums 2222 and 3333).
+        code = self.repository.add_or_resolve(3, 1, 3333, on_conflict='combine')
         self.assertEqual(code, 'summed_on_conflict')
         self.assertEqual(
             self.get_weights_helper(weight_group_id=3),
@@ -639,7 +639,7 @@ class WeightRepositoryBaseTest(ABC):
         )
 
         # Passes invalid `on_conflict` value.
-        regex = r"on_conflict must be 'fail', 'ignore', 'replace', or 'sum'; got 'bad_option'"
+        regex = r"on_conflict must be 'fail', 'ignore', 'replace', or 'combine'; got 'bad_option'"
         with self.assertRaisesRegex(ValueError, regex):
             self.repository.add_or_resolve(3, 1, 3333, on_conflict='bad_option')
 
