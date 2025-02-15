@@ -40,39 +40,6 @@ if TYPE_CHECKING:
     from toron.data_models import Crosswalk
 
 
-@contextmanager
-def _managed_reader_connection(
-    reader: 'NodeReader'
-) -> Generator[sqlite3.Connection, None, None]:
-    """Acquire and manage a connection to a NodeReader's database."""
-    in_memory_connection = reader._in_memory_connection
-    on_drive_path = reader._current_working_path
-
-    if in_memory_connection and on_drive_path:
-        raise RuntimeError(
-            'NodeReader must have _in_memory_connection or '
-            '_in_memory_connection, but not both'
-        )
-
-    if on_drive_path:
-        connection = sqlite3.connect(on_drive_path)
-        connection.execute('PRAGMA main.synchronous = OFF')
-    elif in_memory_connection:
-        connection = in_memory_connection
-    else:
-        raise RuntimeError('unable to establish connection')
-
-    try:
-        yield connection
-        connection.commit()
-    except Exception:
-        connection.rollback()
-        raise
-    finally:
-        if on_drive_path:
-            connection.close()
-
-
 class NodeReader(object):
     """An iterator for base level TopoNode data."""
     _data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
@@ -223,13 +190,45 @@ class NodeReader(object):
             self._data = self._generate_reader_output()
             return next(self._data)
 
+    @contextmanager
+    def _managed_connection(
+        self
+    ) -> Generator[sqlite3.Connection, None, None]:
+        """Acquire and manage a connection to a NodeReader's database."""
+        in_memory_connection = self._in_memory_connection
+        on_drive_path = self._current_working_path
+
+        if in_memory_connection and on_drive_path:
+            raise RuntimeError(
+                'NodeReader must have _in_memory_connection or '
+                '_in_memory_connection, but not both'
+            )
+
+        if on_drive_path:
+            connection = sqlite3.connect(on_drive_path)
+            connection.execute('PRAGMA main.synchronous = OFF')
+        elif in_memory_connection:
+            connection = in_memory_connection
+        else:
+            raise RuntimeError('unable to establish connection')
+
+        try:
+            yield connection
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            if on_drive_path:
+                connection.close()
+
     def _generate_reader_output(
         self
     ) -> Generator[Tuple[Union[str, float], ...], None, None]:
         """Return generator that iterates over NodeReader data."""
         with self._node._managed_cursor() as node_cur:
             index_repo = self._node._dal.IndexRepository(node_cur)
-            with _managed_reader_connection(self) as con:
+            with self._managed_connection() as con:
                 cur = con.execute("""
                     SELECT index_id, attributes, SUM(quant_value) AS quant_value
                     FROM main.quant_data
@@ -264,7 +263,7 @@ class NodeReader(object):
                 other_index_hash=old_index_hash,
             )
 
-            with _managed_reader_connection(self) as con:
+            with self._managed_connection() as con:
                 cur1 = con.cursor()
                 cur2 = con.cursor()
 

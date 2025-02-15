@@ -12,7 +12,7 @@ except ImportError:
     pd = None
 
 from toron.node import TopoNode
-from toron.reader import NodeReader, _managed_reader_connection
+from toron.reader import NodeReader
 
 
 class TestNodeReader(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestNodeReader(unittest.TestCase):
         self.assertEqual(reader.index_columns, [])
         self.assertEqual(reader.columns, ['a', 'value'])
 
-        with _managed_reader_connection(reader) as con:
+        with reader._managed_connection() as con:
             with closing(con.cursor()) as cur:
                 cur.execute('SELECT * FROM attr_data')
                 attr_data = [
