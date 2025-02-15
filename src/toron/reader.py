@@ -3,13 +3,19 @@
 import os
 import sqlite3
 import weakref
-from contextlib import closing, contextmanager, suppress
+from contextlib import (
+    closing,
+    contextmanager,
+    nullcontext,
+    suppress,
+)
 from itertools import chain
 from json import dumps, loads
 from tempfile import NamedTemporaryFile
 
 from toron._typing import (
     Callable,
+    ContextManager,
     Dict,
     Generator,
     Iterable,
@@ -158,41 +164,32 @@ class NodeReader(object):
         cache_to_drive: bool = False,
     ) -> None:
         """Initialize a new NodeReader instance."""
+        connection_cm: ContextManager[sqlite3.Connection]
+
+        # Set up database and connection context manager (cm).
         if cache_to_drive:
-            # Create temp file and get its path (resolve symlinks with realpath).
             with closing(NamedTemporaryFile(delete=False)) as f:
-                filepath = os.path.realpath(f.name)
+                filepath = os.path.realpath(f.name)  # resolve symlinks with realpath
             connection = None
-
-            with closing(sqlite3.connect(filepath)) as temp_con:
-                try:
-                    # Create tables, insert records, and accumulate `attr_keys`.
-                    cur = temp_con.cursor()
-                    cur.execute('PRAGMA main.synchronous = OFF')
-                    _create_reader_schema(cur)
-                    attr_keys = _insert_quant_data_get_attr_keys(cur, data)
-                    temp_con.commit()
-                except Exception:
-                    temp_con.rollback()
-                    raise
-
-            self._initializer(filepath, connection, attr_keys, node)
-
+            connection_cm = closing(sqlite3.connect(filepath))
         else:
             filepath = None
-            connection = sqlite3.connect(':memory:')  # Persistent connection.
+            connection = sqlite3.connect(':memory:')
+            connection_cm = nullcontext(connection)
 
+        # Create tables, insert records, and accumulate `attr_keys`.
+        with connection_cm as con:
             try:
-                # Create tables, insert records, and accumulate `attr_keys`.
-                cur = connection.cursor()
+                cur = con.cursor()
+                cur.execute('PRAGMA main.synchronous = OFF')
                 _create_reader_schema(cur)
                 attr_keys = _insert_quant_data_get_attr_keys(cur, data)
-                connection.commit()
+                con.commit()
             except Exception:
-                connection.rollback()
+                con.rollback()
                 raise
 
-            self._initializer(filepath, connection, attr_keys, node)
+        self._initializer(filepath, connection, attr_keys, node)
 
     @overload
     def _initializer(
