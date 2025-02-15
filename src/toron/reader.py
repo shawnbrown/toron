@@ -40,24 +40,6 @@ if TYPE_CHECKING:
     from toron.data_models import Crosswalk
 
 
-def _create_reader_schema(cur: sqlite3.Cursor, schema: str = 'main') -> None:
-    """Create database tables for NodeReader instance."""
-    cur.executescript(f"""
-        CREATE TABLE {schema}.attr_data (
-            attr_data_id INTEGER PRIMARY KEY,
-            attributes TEXT NOT NULL,
-            matched_crosswalk_id INTEGER DEFAULT NULL,
-            UNIQUE (attributes)
-        );
-        CREATE TABLE {schema}.quant_data (
-            index_id INTEGER NOT NULL,
-            attr_data_id INTEGER NOT NULL,
-            quant_value REAL,
-            FOREIGN KEY(attr_data_id) REFERENCES attr_data(attr_data_id)
-        );
-    """)
-
-
 def _get_attr_data_id_add_if_missing(
     cur: sqlite3.Cursor, attributes: Dict[str, str]
 ) -> int:
@@ -73,24 +55,6 @@ def _get_attr_data_id_add_if_missing(
     sql = 'INSERT INTO main.attr_data (attributes) VALUES (?)'
     cur.execute(sql, parameters)
     return cast(int, cur.lastrowid)  # Cast because we know it exists (just inserted).
-
-
-def _insert_quant_data_get_attr_keys(
-    cur: sqlite3.Cursor,
-    data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
-) -> Set[str]:
-    """Insert 'quant_data' values and get associated attribute keys."""
-    attr_keys: Set[str] = set()
-    for index_id, attributes, quant_value in data:
-        attr_keys.update(attributes)
-        attr_data_id = _get_attr_data_id_add_if_missing(cur, attributes)
-        sql = """
-            INSERT INTO main.quant_data (index_id, attr_data_id, quant_value)
-            VALUES (?, ?, ?)
-        """
-        cur.execute(sql, (index_id, attr_data_id, quant_value))
-
-    return attr_keys
 
 
 @contextmanager
@@ -179,10 +143,35 @@ class NodeReader(object):
         # Create tables, insert records, and accumulate `attr_keys`.
         with connection_cm as con:
             try:
-                cur = con.cursor()
-                cur.execute('PRAGMA main.synchronous = OFF')
-                _create_reader_schema(cur)
-                attr_keys = _insert_quant_data_get_attr_keys(cur, data)
+                cur = con.executescript("""
+                    PRAGMA main.synchronous = OFF;
+
+                    CREATE TABLE main.attr_data (
+                        attr_data_id INTEGER PRIMARY KEY,
+                        attributes TEXT NOT NULL,
+                        matched_crosswalk_id INTEGER DEFAULT NULL,
+                        UNIQUE (attributes)
+                    );
+
+                    CREATE TABLE main.quant_data (
+                        index_id INTEGER NOT NULL,
+                        attr_data_id INTEGER NOT NULL,
+                        quant_value REAL,
+                        FOREIGN KEY(attr_data_id) REFERENCES attr_data(attr_data_id)
+                    );
+                """)
+
+                # Load data into tables.
+                attr_keys: Set[str] = set()
+                for index_id, attributes, quant_value in data:
+                    attr_keys.update(attributes)
+                    attr_data_id = _get_attr_data_id_add_if_missing(cur, attributes)
+                    sql = """
+                        INSERT INTO main.quant_data (index_id, attr_data_id, quant_value)
+                        VALUES (?, ?, ?)
+                    """
+                    cur.execute(sql, (index_id, attr_data_id, quant_value))
+
                 con.commit()
             except Exception:
                 con.rollback()
