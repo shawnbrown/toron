@@ -31,9 +31,8 @@ from toron._typing import (
     TYPE_CHECKING,
 )
 from toron.data_models import Index
-from toron.data_service import (
-    make_get_crosswalk_id_func,
-)
+from toron.data_service import make_get_crosswalk_id_func
+from toron._utils import check_type
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -189,28 +188,6 @@ class NodeReader(object):
                 con.rollback()
                 raise
 
-        self._initializer(filepath, connection, attr_keys, node)
-
-    @overload
-    def _initializer(
-        self,
-        filepath: None,
-        connection: sqlite3.Connection,
-        attr_keys: Iterable[str],
-        node: 'TopoNode',
-    ) -> None:
-        ...
-    @overload
-    def _initializer(
-        self,
-        filepath: str,
-        connection: None,
-        attr_keys: Iterable[str],
-        node: 'TopoNode',
-    ) -> None:
-        ...
-    def _initializer(self, filepath, connection, attr_keys, node):
-        """Assign instance attributes and `close()` method."""
         # Assign instance attributes.
         self._current_working_path = filepath
         self._in_memory_connection = connection
@@ -286,7 +263,7 @@ class NodeReader(object):
         # Get `old_index_hash` from source node.
         with self._node._managed_cursor() as node_cur:
             property_repo = self._node._dal.PropertyRepository(node_cur)
-            old_index_hash = property_repo.get('index_hash')
+            old_index_hash = check_type(property_repo.get('index_hash'), str)
 
         # Translate "quant_data" table to use the index of the new *node*.
         with node._managed_cursor() as node_cur:
