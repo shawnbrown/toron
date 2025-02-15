@@ -963,14 +963,14 @@ class TopoNode(object):
             f"{', weight group is complete' if group_is_complete else ''}"
         )
 
-        if counter['ignored_on_conflict']:
-            applogger.warning(f"ignored {counter['ignored_on_conflict']} rows that match existing records")
+        if counter['ignored']:
+            applogger.warning(f"ignored {counter['ignored']} rows that match existing records")
 
-        if counter['replaced_on_conflict']:
-            applogger.warning(f"replaced {counter['replaced_on_conflict']} existing records with new weights")
+        if counter['replaced']:
+            applogger.warning(f"replaced {counter['replaced']} existing records with new weights")
 
-        if counter['summed_on_conflict']:
-            applogger.warning(f"combined sum of {counter['summed_on_conflict']} new weights together with existing record")
+        if counter['combined']:
+            applogger.warning(f"combined sum of {counter['combined']} new weights together with existing record")
 
         if counter['not_realnum']:
             applogger.warning(f"skipped {counter['not_realnum']} rows without real number values")

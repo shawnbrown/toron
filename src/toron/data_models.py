@@ -589,7 +589,7 @@ class BaseWeightRepository(ABC):
         index_id: int,
         value: float,
         on_conflict: Literal['fail', 'ignore', 'replace', 'combine'] = 'fail',
-    ) -> Literal['inserted', 'ignored_on_conflict', 'replaced_on_conflict', 'summed_on_conflict']:
+    ) -> Literal['inserted', 'ignored', 'replaced', 'combined']:
         """Add a record to the repository or resolve conflict.
 
         Any conflicts are resolved according to the ``on_conflict``
@@ -614,9 +614,9 @@ class BaseWeightRepository(ABC):
         action performed:
 
         * ``'inserted'``
-        * ``'ignored_on_conflict'``
-        * ``'replaced_on_conflict'``
-        * ``'summed_on_conflict'``
+        * ``'ignored'``
+        * ``'replaced'``
+        * ``'combined'``
         """
         weight = self.get_by_weight_group_id_and_index_id(
             weight_group_id,
@@ -628,17 +628,17 @@ class BaseWeightRepository(ABC):
             return 'inserted'  # <- EXIT!
 
         if on_conflict == 'ignore':
-            return 'ignored_on_conflict'  # <- EXIT!
+            return 'ignored'  # <- EXIT!
 
         if on_conflict == 'replace':
             weight.value = value  # Replace value.
             self.update(weight)
-            return 'replaced_on_conflict'  # <- EXIT!
+            return 'replaced'  # <- EXIT!
 
         if on_conflict == 'combine':
             weight.value += value  # Sum values.
             self.update(weight)
-            return 'summed_on_conflict'  # <- EXIT!
+            return 'combined'  # <- EXIT!
 
         if on_conflict == 'fail':
             msg = (

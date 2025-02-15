@@ -613,7 +613,7 @@ class WeightRepositoryBaseTest(ABC):
 
         # Ignore value of conflicting record (keeps 1111).
         code = self.repository.add_or_resolve(3, 1, 2222, on_conflict='ignore')
-        self.assertEqual(code, 'ignored_on_conflict')
+        self.assertEqual(code, 'ignored')
         self.assertEqual(
             self.get_weights_helper(weight_group_id=3),
             [(7, 3, 1, 1111.0)],
@@ -622,7 +622,7 @@ class WeightRepositoryBaseTest(ABC):
 
         # Replace value of conflicting record (replaces with 2222).
         code = self.repository.add_or_resolve(3, 1, 2222, on_conflict='replace')
-        self.assertEqual(code, 'replaced_on_conflict')
+        self.assertEqual(code, 'replaced')
         self.assertEqual(
             self.get_weights_helper(weight_group_id=3),
             [(7, 3, 1, 2222.0)],
@@ -631,7 +631,7 @@ class WeightRepositoryBaseTest(ABC):
 
         # Combine values of conflicting record (sums 2222 and 3333).
         code = self.repository.add_or_resolve(3, 1, 3333, on_conflict='combine')
-        self.assertEqual(code, 'summed_on_conflict')
+        self.assertEqual(code, 'combined')
         self.assertEqual(
             self.get_weights_helper(weight_group_id=3),
             [(7, 3, 1, 5555.0)],
