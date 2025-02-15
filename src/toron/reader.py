@@ -26,11 +26,7 @@ from toron._typing import (
 )
 from toron.data_models import Index
 from toron.data_service import (
-    find_crosswalks_by_node_reference,
-)
-from toron.selectors import (
-    parse_selector,
-    get_greatest_unique_specificity,
+    make_get_crosswalk_id_func,
 )
 
 if TYPE_CHECKING:
@@ -295,21 +291,15 @@ class NodeReader(object):
             property_repo = self._node._dal.PropertyRepository(node_cur)
             old_index_hash = property_repo.get('index_hash')
 
+        # Translate "quant_data" table to use the index of the new *node*.
         with node._managed_cursor() as node_cur:
-            crosswalk_repo = node._dal.CrosswalkRepository(node_cur)
             relation_repo = node._dal.RelationRepository(node_cur)
 
-            # Make `get_crosswalk_id()` function.
-            crosswalks = find_crosswalks_by_node_reference(
+            get_crosswalk_id = make_get_crosswalk_id_func(
                 node_reference=self._node.unique_id,
-                crosswalk_repo=crosswalk_repo,
+                crosswalk_repo=node._dal.CrosswalkRepository(node_cur),
+                other_index_hash=old_index_hash,
             )
-            if not crosswalks:
-                raise RuntimeError('no crosswalk found connecting nodes')
-            crosswalks = [x for x in crosswalks if x.other_index_hash == old_index_hash]
-            if not crosswalks:
-                raise RuntimeError('crosswalks are out of date, need to relink')
-            get_crosswalk_id = _make_get_crosswalk_id_func(crosswalks)
 
             with _managed_reader_connection(self) as con:
                 cur1 = con.cursor()
@@ -361,34 +351,3 @@ class NodeReader(object):
         """Translate quantities to the index of the *other* node."""
         self.translate(other)
         return self
-
-
-def _make_get_crosswalk_id_func(
-    crosswalks: List['Crosswalk']
-) -> Callable[[Dict[str, str]], int]:
-    """Build a `get_crosswalk_id_func()` to match crosswalks."""
-    # Get the default crosswalk and make sure it's locally complete.
-    default_crosswalk_id = None
-    for crosswalk in crosswalks:
-        if crosswalk.is_default:
-            default_crosswalk_id = crosswalk.id
-            break
-    else:  # IF NO BREAK!
-        raise RuntimeError('no default crosswalk found for node')
-
-    # Build dict of index id values and attribute selector objects.
-    crosswalks = [x for x in crosswalks if x.is_locally_complete and x.selectors]
-    func = lambda selectors: [parse_selector(s) for s in selectors]
-    selector_dict = {x.id: func(x.selectors) for x in crosswalks}
-
-    # Define function to match the crosswalk with the greatest unique
-    # specificity (closes over selector_dict and default_crosswalk_id).
-    def get_crosswalk_id_func(attributes: Dict[str, str]) -> int:
-        crosswalk_id = get_greatest_unique_specificity(
-            row_dict=attributes,
-            selector_dict=selector_dict,
-            default=default_crosswalk_id,
-        )
-        return crosswalk_id
-
-    return get_crosswalk_id_func

@@ -42,6 +42,10 @@ from .data_models import (
     Crosswalk,
     JsonTypes,
 )
+from .selectors import (
+    parse_selector,
+    get_greatest_unique_specificity,
+)
 from ._utils import (
     check_type,
     SequenceHash,
@@ -244,6 +248,58 @@ def find_crosswalks_by_node_reference(
         return [x for x in matches if x.other_unique_id.startswith(node_reference)]
 
     return []  # Return empty list if no match.
+
+
+def make_get_crosswalk_id_func(
+    node_reference: str,
+    crosswalk_repo: BaseCrosswalkRepository,
+    other_index_hash: str,
+) -> Callable[[Dict[str, str]], int]:
+    """Build a ``get_crosswalk_id()`` function that returns
+    ``crosswalk_id``values matched by the selector with the
+    greatest unique specificity. When no match is found or
+    when no unique match is found, the function will return
+    the default ``crosswalk_id``.
+    """
+    # Get crosswalks with matching node.
+    crosswalks = find_crosswalks_by_node_reference(
+        node_reference=node_reference,
+        crosswalk_repo=crosswalk_repo,
+    )
+    if not crosswalks:
+        raise RuntimeError('no crosswalk found connecting nodes')
+
+    # Verify that crosswalks are current.
+    crosswalks = [x for x in crosswalks if x.other_index_hash == other_index_hash]
+    if not crosswalks:
+        raise RuntimeError('crosswalks are out of date, need to relink')
+
+    # Get the default crosswalk and make sure it's locally complete.
+    default_crosswalk_id = None
+    for crosswalk in crosswalks:
+        if crosswalk.is_default:
+            default_crosswalk_id = crosswalk.id
+            break
+    else:  # IF NO BREAK!
+        raise RuntimeError('no default crosswalk found for node')
+
+    # Build dict of index id values and attribute selector objects.
+    crosswalks = [x for x in crosswalks if x.is_locally_complete and x.selectors]
+    func = lambda selectors: [parse_selector(s) for s in selectors]
+    selector_dict = {x.id: func(x.selectors) for x in crosswalks}
+
+    # Define function to match the crosswalk with the greatest unique
+    # specificity (closes over selector_dict and default_crosswalk_id).
+    def get_crosswalk_id_func(attributes: Dict[str, str]) -> int:
+        """Return crosswalk_id that matches with the greatest unique specificity."""
+        crosswalk_id = get_greatest_unique_specificity(
+            row_dict=attributes,
+            selector_dict=selector_dict,
+            default=default_crosswalk_id,
+        )
+        return crosswalk_id
+
+    return get_crosswalk_id_func
 
 
 def set_default_weight_group(
