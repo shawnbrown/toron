@@ -1974,8 +1974,7 @@ class TopoNode(object):
 
             verify_columns_set(
                 columns=columns,
-                required_columns=chain(label_columns, domain_dict.keys(),
-                                       attributes, [value]),
+                required_columns=chain(label_columns, domain_dict.keys(), attributes, [value]),
                 allow_extras=True,
             )
 
