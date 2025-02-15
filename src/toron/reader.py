@@ -73,27 +73,6 @@ def _managed_reader_connection(
             connection.close()
 
 
-def _generate_reader_output(
-    reader: 'NodeReader'
-) -> Generator[Tuple[Union[str, float], ...], None, None]:
-    """Return generator that iterates over NodeReader data."""
-    with reader._node._managed_cursor() as node_cur:
-        index_repo = reader._node._dal.IndexRepository(node_cur)
-        with _managed_reader_connection(reader) as con:
-            cur = con.execute("""
-                SELECT index_id, attributes, SUM(quant_value) AS quant_value
-                FROM main.quant_data
-                JOIN main.attr_data USING (attr_data_id)
-                GROUP BY index_id, attributes
-            """)
-            for index_id, attributes, quant_value in cur:
-                labels = cast(Index, index_repo.get(index_id)).labels
-                attr_vals = tuple(loads(attributes).values())
-                attr_dict = loads(attributes)
-                attr_vals = tuple(attr_dict.get(x) for x in reader._attr_keys)
-                yield labels + attr_vals + (quant_value,)
-
-
 class NodeReader(object):
     """An iterator for base level TopoNode data."""
     _data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
@@ -241,8 +220,28 @@ class NodeReader(object):
         try:
             return next(self._data)  # type: ignore [arg-type]
         except TypeError:
-            self._data = _generate_reader_output(self)
+            self._data = self._generate_reader_output()
             return next(self._data)
+
+    def _generate_reader_output(
+        self
+    ) -> Generator[Tuple[Union[str, float], ...], None, None]:
+        """Return generator that iterates over NodeReader data."""
+        with self._node._managed_cursor() as node_cur:
+            index_repo = self._node._dal.IndexRepository(node_cur)
+            with _managed_reader_connection(self) as con:
+                cur = con.execute("""
+                    SELECT index_id, attributes, SUM(quant_value) AS quant_value
+                    FROM main.quant_data
+                    JOIN main.attr_data USING (attr_data_id)
+                    GROUP BY index_id, attributes
+                """)
+                for index_id, attributes, quant_value in cur:
+                    labels = cast(Index, index_repo.get(index_id)).labels
+                    attr_vals = tuple(loads(attributes).values())
+                    attr_dict = loads(attributes)
+                    attr_vals = tuple(attr_dict.get(x) for x in self._attr_keys)
+                    yield labels + attr_vals + (quant_value,)
 
     def translate(self, node: 'TopoNode') -> None:
         """Translate quantities to use the index of the target node.
