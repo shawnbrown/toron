@@ -40,23 +40,6 @@ if TYPE_CHECKING:
     from toron.data_models import Crosswalk
 
 
-def _get_attr_data_id_add_if_missing(
-    cur: sqlite3.Cursor, attributes: Dict[str, str]
-) -> int:
-    """Get associated 'attr_data_id' and add if missing."""
-    parameters = (dumps(attributes, sort_keys=False),)
-
-    sql = 'SELECT attr_data_id FROM attr_data WHERE attributes=?'
-    cur.execute(sql, parameters)
-    result = cur.fetchone()
-    if result:
-        return result[0]
-
-    sql = 'INSERT INTO main.attr_data (attributes) VALUES (?)'
-    cur.execute(sql, parameters)
-    return cast(int, cur.lastrowid)  # Cast because we know it exists (just inserted).
-
-
 @contextmanager
 def _managed_reader_connection(
     reader: 'NodeReader'
@@ -162,10 +145,11 @@ class NodeReader(object):
                 """)
 
                 # Load data into tables.
+                get_attr_data_id = self._get_attr_data_id_add_if_missing
                 attr_keys: Set[str] = set()
                 for index_id, attributes, quant_value in data:
                     attr_keys.update(attributes)
-                    attr_data_id = _get_attr_data_id_add_if_missing(cur, attributes)
+                    attr_data_id = get_attr_data_id(cur, attributes)
                     sql = """
                         INSERT INTO main.quant_data (index_id, attr_data_id, quant_value)
                         VALUES (?, ?, ?)
@@ -187,6 +171,23 @@ class NodeReader(object):
 
         # Assign `close()` method (gets a callable finalizer object).
         self.close = weakref.finalize(self, self._finalizer)
+
+    @staticmethod
+    def _get_attr_data_id_add_if_missing(
+        cur: sqlite3.Cursor, attributes: Dict[str, str]
+    ) -> int:
+        """Get associated 'attr_data_id' and add if missing."""
+        parameters = (dumps(attributes, sort_keys=False),)
+
+        sql = 'SELECT attr_data_id FROM attr_data WHERE attributes=?'
+        cur.execute(sql, parameters)
+        result = cur.fetchone()
+        if result:
+            return result[0]
+
+        sql = 'INSERT INTO main.attr_data (attributes) VALUES (?)'
+        cur.execute(sql, parameters)
+        return cast(int, cur.lastrowid)  # Cast because we know it exists (just inserted).
 
     def _finalizer(self) -> None:
         """Close `_data` generator and remove temporary database file."""
