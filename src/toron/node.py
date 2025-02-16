@@ -2184,9 +2184,11 @@ class TopoNode(object):
                 attribute_id_filter = []
                 for attr in attribute_repo.find_all():
                     for sel in selector_objs:
+                        # If a selector matches, add id to filter,
+                        # then break inner-loop and skip to next attr.
                         if sel(attr.attributes):
                             attribute_id_filter.append(attr.id)
-                            break  # If match found, move to next attr.
+                            break
             else:
                 attribute_id_filter = None
 
