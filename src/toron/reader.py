@@ -249,7 +249,6 @@ class NodeReader(object):
                 """)
                 for index_id, attributes, quant_value in cur:
                     labels = cast(Index, index_repo.get(index_id)).labels
-                    attr_vals = tuple(loads(attributes).values())
                     attr_dict = loads(attributes)
                     attr_vals = tuple(attr_dict.get(x) for x in self._attr_keys)
                     yield labels + attr_vals + (quant_value,)
