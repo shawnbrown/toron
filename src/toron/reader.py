@@ -37,7 +37,6 @@ from toron._utils import check_type
 if TYPE_CHECKING:
     import pandas as pd
     from toron import TopoNode
-    from toron.data_models import Crosswalk
 
 
 class NodeReader(object):
