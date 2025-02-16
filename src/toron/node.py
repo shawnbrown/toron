@@ -2063,18 +2063,17 @@ class TopoNode(object):
                     structure=structure,
                     attribute_id_filter=attribute_id_filter,
                 )
-
-                current_granularity = structure.granularity
                 grouped = groupby(quantities, key=lambda x: x.location_id)
-                for location_id, group in grouped:
-                    location = cast(Location, location_repo.get(location_id))
 
-                    # Use location labels to make index search criteria.
-                    zipped = zip(label_columns, location.labels)
-                    criteria = {k: v for k, v in zipped if v != ''}
+                if structure.granularity == finest_granularity:
+                    for location_id, group in grouped:
+                        # Use location labels to make index search criteria.
+                        location = cast(Location, location_repo.get(location_id))
+                        zipped = zip(label_columns, location.labels)
+                        criteria = {k: v for k, v in zipped if v != ''}
 
-                    if current_granularity == finest_granularity:
-                        # Since we're at max-granularity, can only have one index.
+                        # Since we're at the finest granularity, there can
+                        # only be one matching index record.
                         index = next(index_repo.find_by_label(criteria))
 
                         # Yield whole quantity values (cannot be disaggregated
@@ -2085,7 +2084,13 @@ class TopoNode(object):
                                 attribute_repo.get(quantity.attribute_group_id),
                             )
                             yield (index, attribute_group.attributes, quantity.value)
-                    else:
+                else:
+                    for location_id, group in grouped:
+                        # Use location labels to make index search criteria.
+                        location = cast(Location, location_repo.get(location_id))
+                        zipped = zip(label_columns, location.labels)
+                        criteria = {k: v for k, v in zipped if v != ''}
+
                         # Get all index records associated with the location
                         # (using `array` for smallest memory footprint).
                         index_ids = array.array(
