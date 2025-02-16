@@ -4537,6 +4537,25 @@ class TestTopoNodeDisaggregate2(unittest.TestCase):
         with self.assertRaises(Exception):
             quant_iter = self.node._call('sex="MALE"')  # <- Disaggregate.
 
+    def test_explicit_cache_to_drive(self):
+        """Testing single selector."""
+        expected = {
+            ('OH', 'BUTLER',   'TOTAL', 'MALE', 187293.75),
+            ('OH', 'FRANKLIN', 'TOTAL', 'MALE', 668906.25),
+            ('IN', 'KNOX',     'TOTAL', 'MALE', 18432.0),
+            ('IN', 'LAPORTE',  'TOTAL', 'MALE', 55296.0),
+        }
+
+        quant_iter = self.node._call('[sex="MALE"][category="TOTAL"]', cache_to_drive=False)
+        self.assertEqual(set(quant_iter), expected)
+
+        quant_iter = self.node._call('[sex="MALE"][category="TOTAL"]', cache_to_drive=True)
+        self.assertEqual(set(quant_iter), expected)
+
+        regex = r'.+Did you mean to use a keyword-only argument\?$'
+        with self.assertRaisesRegex(TypeError, regex):
+            quant_iter = self.node._call('[sex="MALE"][category="TOTAL"]', False)
+
 
 class TestTopoNodeRepr(unittest.TestCase):
     @staticmethod

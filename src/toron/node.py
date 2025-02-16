@@ -2165,7 +2165,9 @@ class TopoNode(object):
             attributes.update(domain)
             yield (index.id, attributes, value)
 
-    def _call(self, *selectors: str) -> NodeReader:
+    def _call(
+        self, *selectors: str, cache_to_drive: bool = False
+    ) -> NodeReader:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
@@ -2180,7 +2182,11 @@ class TopoNode(object):
             attribute_keys = attribute_repo.get_all_attribute_names()
 
             if selectors:
-                selector_objs = [parse_selector(s) for s in selectors]
+                try:
+                    selector_objs = [parse_selector(s) for s in selectors]
+                except TypeError as e:
+                    msg = f'{e}. Did you mean to use a keyword-only argument?'
+                    raise TypeError(msg)
                 attribute_id_filter = []
                 for attr in attribute_repo.find_all():
                     for sel in selector_objs:
@@ -2195,6 +2201,7 @@ class TopoNode(object):
         node_reader = NodeReader(
             data=self._disaggregate2(attribute_id_filter),
             node=self,
+            cache_to_drive=cache_to_drive,
         )
         return node_reader
 
