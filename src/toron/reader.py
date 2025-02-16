@@ -238,6 +238,7 @@ class NodeReader(object):
         self
     ) -> Generator[Tuple[Union[str, float], ...], None, None]:
         """Return generator that iterates over NodeReader data."""
+        attr_keys = self._attr_keys  # Assign locally to reduce dot-lookups.
         with self._node._managed_cursor() as node_cur:
             index_repo = self._node._dal.IndexRepository(node_cur)
             with self._managed_connection() as con:
@@ -249,8 +250,8 @@ class NodeReader(object):
                 """)
                 for index_id, attributes, quant_value in cur:
                     labels = cast(Index, index_repo.get(index_id)).labels
-                    attr_dict = loads(attributes)
-                    attr_vals = tuple(attr_dict.get(x) for x in self._attr_keys)
+                    get_attr_value = loads(attributes).get  # Assign get() method directly.
+                    attr_vals = tuple(get_attr_value(x) for x in attr_keys)
                     yield labels + attr_vals + (quant_value,)
 
     def translate(self, node: 'TopoNode') -> None:
