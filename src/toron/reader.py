@@ -55,6 +55,19 @@ class NodeReader(object):
         cache_to_drive: bool = False,
     ) -> None:
         """Initialize a new NodeReader instance."""
+
+        # `NodeReader` data is managed using a temporary SQLite
+        # database with the following schema:
+        #
+        #    +--------------+
+        #    | quant_data   |    +--------------+
+        #    +--------------+    | attr_data    |
+        #    | index_id     |    +--------------+
+        #    | attr_data_id |<---| attr_data_id |
+        #    | quant_value  |    | attributes   |
+        #    +--------------+    | crosswalk_id |
+        #                        +--------------+
+
         connection_cm: ContextManager[sqlite3.Connection]
 
         # Set up database and connection context manager (cm).
