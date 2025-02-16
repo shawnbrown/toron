@@ -77,7 +77,7 @@ class NodeReader(object):
                     CREATE TABLE main.attr_data (
                         attr_data_id INTEGER PRIMARY KEY,
                         attributes TEXT NOT NULL,
-                        matched_crosswalk_id INTEGER DEFAULT NULL,
+                        crosswalk_id INTEGER DEFAULT NULL,
                         UNIQUE (attributes)
                     );
 
@@ -266,14 +266,14 @@ class NodeReader(object):
                 cur1 = con.cursor()
                 cur2 = con.cursor()
 
-                # Update 'matched_crosswalk_id' to use ids from new node.
+                # Update 'crosswalk_id' to use ids from new node.
                 cur1.execute('SELECT attr_data_id, attributes FROM main.attr_data')
                 for attr_data_id, attributes in cur1:
                     attributes_obj = loads(attributes)
-                    matched_crosswalk_id = get_crosswalk_id(attributes_obj)
+                    crosswalk_id = get_crosswalk_id(attributes_obj)
                     cur2.execute(
-                        'UPDATE main.attr_data SET matched_crosswalk_id=? WHERE attr_data_id=?',
-                        (matched_crosswalk_id, attr_data_id),
+                        'UPDATE main.attr_data SET crosswalk_id=? WHERE attr_data_id=?',
+                        (crosswalk_id, attr_data_id),
                     )
 
                 # Create and populate 'new_quant_data' table.
@@ -286,7 +286,7 @@ class NodeReader(object):
                     )
                 """)
                 cur1.execute("""
-                    SELECT index_id, attr_data_id, quant_value, matched_crosswalk_id
+                    SELECT index_id, attr_data_id, quant_value, crosswalk_id
                     FROM main.quant_data
                     JOIN main.attr_data USING (attr_data_id)
                 """)
