@@ -192,7 +192,7 @@ class TestIdiomaticUsage(unittest.TestCase):
         # Disaggregate, translate, convert to DataFrame, and pivot.
         data = self.node1() >> self.node2
         df_pivoted = data.to_pandas().pivot_table(
-            index=data.label_names,
+            index=data.index_columns,
             columns=('variable',),
             values='value',
         )

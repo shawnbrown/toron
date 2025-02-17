@@ -4049,7 +4049,7 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
         )
 
 
-class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
+class TestTopoNodeDisaggregateGeneratorLegacy(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
 
@@ -4103,7 +4103,7 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
 
     def test_default_weight_group(self):
         """Disaggregate using default weight group."""
-        results = self.node._disaggregate()
+        results = self.node._disaggregate_legacy()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   {'category': 'TOTAL', 'sex': 'MALE'},   187075.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   {'category': 'TOTAL', 'sex': 'FEMALE'}, 187075.0),
@@ -4131,7 +4131,7 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
             weight_repo.add(weight_group_id=2, index_id=3, value=10000)
             weight_repo.add(weight_group_id=2, index_id=4, value=10000)
 
-        results = self.node._disaggregate()
+        results = self.node._disaggregate_legacy()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   {'category': 'TOTAL', 'sex': 'MALE'},   187075.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   {'category': 'TOTAL', 'sex': 'FEMALE'}, 187075.0),
@@ -4165,7 +4165,7 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
             weight_repo.add(weight_group_id=3, index_id=3, value=10000)
             weight_repo.add(weight_group_id=3, index_id=4, value=10000)
 
-        results = self.node._disaggregate()
+        results = self.node._disaggregate_legacy()
         expected = [
             (Index(id=1, labels=('OH', 'BUTLER')),   {'category': 'TOTAL', 'sex': 'MALE'},   187075.0),
             (Index(id=1, labels=('OH', 'BUTLER')),   {'category': 'TOTAL', 'sex': 'FEMALE'}, 187075.0),
@@ -4291,7 +4291,7 @@ class TestTopoNodeDisaggregateLegacy(unittest.TestCase):
             quant_iter = self.node._call_legacy('sex="MALE"')  # <- Disaggregate.
 
 
-class TestTopoNodeDisaggregateGenerator2(unittest.TestCase):
+class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
 
@@ -4345,7 +4345,7 @@ class TestTopoNodeDisaggregateGenerator2(unittest.TestCase):
 
     def test_default_weight_group(self):
         """Disaggregate using default weight group."""
-        results = self.node._disaggregate2()
+        results = self.node._disaggregate()
         expected = [
             (1, {'category': 'TOTAL', 'sex': 'MALE'},   187075.0),
             (1, {'category': 'TOTAL', 'sex': 'FEMALE'}, 187075.0),
@@ -4373,7 +4373,7 @@ class TestTopoNodeDisaggregateGenerator2(unittest.TestCase):
             weight_repo.add(weight_group_id=2, index_id=3, value=10000)
             weight_repo.add(weight_group_id=2, index_id=4, value=10000)
 
-        results = self.node._disaggregate2()
+        results = self.node._disaggregate()
         expected = [
             (1, {'category': 'TOTAL', 'sex': 'MALE'},   187075.0),
             (1, {'category': 'TOTAL', 'sex': 'FEMALE'}, 187075.0),
@@ -4407,7 +4407,7 @@ class TestTopoNodeDisaggregateGenerator2(unittest.TestCase):
             weight_repo.add(weight_group_id=3, index_id=3, value=10000)
             weight_repo.add(weight_group_id=3, index_id=4, value=10000)
 
-        results = self.node._disaggregate2()
+        results = self.node._disaggregate()
         expected = [
             (1, {'category': 'TOTAL', 'sex': 'MALE'},   187075.0),
             (1, {'category': 'TOTAL', 'sex': 'FEMALE'}, 187075.0),

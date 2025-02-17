@@ -2018,11 +2018,11 @@ class TopoNode(object):
                 f'bad domain values: {", ".join(items)}'
             )
 
-    def _disaggregate(
+    def _disaggregate_legacy(
         self,
         attribute_id_filter: Optional[List[int]] = None,
     ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
-        """Generator to yield index, attribute, and quantity tuples."""
+        """Legacy disaggregation generator."""
         with self._managed_cursor(n=3) as (cur1, cur2, cur3):
 
             # These repository instances can share a single cursor.
@@ -2154,18 +2154,19 @@ class TopoNode(object):
             unique_id=unique_id,
             index_hash=index_hash,
             domain=domain,
-            data=self._disaggregate(attribute_id_filter),
+            data=self._disaggregate_legacy(attribute_id_filter),
             label_names=label_names,
             attribute_keys=attribute_keys,
         )
         return quantity_iter
 
-    def _disaggregate2(
+    def _disaggregate(
         self,
         attribute_id_filter: Optional[List[int]] = None,
     ) -> Generator[Tuple[int, AttributesDict, float], None, None]:
+        """Generator to yield index, attribute, and quantity tuples."""
         domain = self.domain
-        results = self._disaggregate(attribute_id_filter)
+        results = self._disaggregate_legacy(attribute_id_filter)
         for index, attributes, value in results:
             attributes.update(domain)
             yield (index.id, attributes, value)
@@ -2204,7 +2205,7 @@ class TopoNode(object):
                 attribute_id_filter = None
 
         node_reader = NodeReader(
-            data=self._disaggregate2(attribute_id_filter),
+            data=self._disaggregate(attribute_id_filter),
             node=self,
             cache_to_drive=cache_to_drive,
         )
