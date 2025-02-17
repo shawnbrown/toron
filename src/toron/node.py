@@ -2165,11 +2165,111 @@ class TopoNode(object):
         attribute_id_filter: Optional[List[int]] = None,
     ) -> Generator[Tuple[int, AttributesDict, float], None, None]:
         """Generator to yield index, attribute, and quantity tuples."""
-        domain = self.domain
-        results = self._disaggregate_legacy(attribute_id_filter)
-        for index, attributes, value in results:
-            attributes.update(domain)
-            yield (index.id, attributes, value)
+        domain = self.domain  # Assign locally to reduce dot-lookups.
+
+        with self._managed_cursor(n=3) as (cur1, cur2, cur3):
+            # These repository instances can share a single cursor.
+            property_repo = self._dal.PropertyRepository(cur1)
+            weight_group_repo = self._dal.WeightGroupRepository(cur1)
+            structure_repo = self._dal.StructureRepository(cur1)
+            attribute_repo = self._dal.AttributeGroupRepository(cur1)
+            index_repo = self._dal.IndexRepository(cur1)
+            weight_repo = self._dal.WeightRepository(cur1)
+
+            # These repositories must have their own cursors.
+            location_repo = self._dal.LocationRepository(cur2)
+            quantity_repo = self._dal.QuantityRepository(cur3)
+
+            # Get the default weight group and make sure it's complete.
+            default_weight_group = get_default_weight_group(
+                property_repo, weight_group_repo, required=True
+            )
+            if not default_weight_group.is_complete:
+                msg = f'default weight group {default_weight_group.name!r} is not complete'
+                raise RuntimeError(msg)
+
+            # Build dict of index id values and attribute selector objects.
+            weight_groups = weight_group_repo.get_all()
+            weight_groups = [wg for wg in weight_groups if (wg.is_complete and wg.selectors)]
+            func = lambda selectors: [parse_selector(s) for s in selectors]
+            selector_dict = {wg.id: func(wg.selectors) for wg in weight_groups}
+
+            # Get structure records (ordered from most to least granular).
+            structures = structure_repo.get_all()
+            finest_granularity = structures[0].granularity
+
+            # Get label column names (in table definition order).
+            label_columns = location_repo.get_label_columns()
+
+            for structure in structures:
+                quantities = quantity_repo.find_by_multiple(
+                    structure=structure,
+                    attribute_id_filter=attribute_id_filter,
+                )
+                grouped = groupby(quantities, key=lambda x: x.location_id)
+
+                if structure.granularity == finest_granularity:
+                    for location_id, group in grouped:
+                        # Use location labels to make index search criteria.
+                        location = cast(Location, location_repo.get(location_id))
+                        zipped = zip(label_columns, location.labels)
+                        criteria = {k: v for k, v in zipped if v != ''}
+
+                        # Since we're at the finest granularity, there can
+                        # only be one matching index record.
+                        index = next(index_repo.find_by_label(criteria))
+
+                        # Yield whole quantity values (cannot be disaggregated
+                        # further).
+                        for quantity in group:
+                            attribute_group = cast(
+                                AttributeGroup,
+                                attribute_repo.get(quantity.attribute_group_id),
+                            )
+                            attributes = attribute_group.attributes
+                            attributes.update(domain)
+                            yield (index.id, attributes, quantity.value)
+                else:
+                    for location_id, group in grouped:
+                        # Use location labels to make index search criteria.
+                        location = cast(Location, location_repo.get(location_id))
+                        zipped = zip(label_columns, location.labels)
+                        criteria = {k: v for k, v in zipped if v != ''}
+
+                        # Get all index records associated with the location
+                        # (using `array` for smallest memory footprint).
+                        index_ids = array.array(
+                            'i',
+                            (idx.id for idx in index_repo.find_by_label(criteria)),
+                        )
+
+                        for quantity in group:
+                            attribute_group = cast(
+                                AttributeGroup,
+                                attribute_repo.get(quantity.attribute_group_id),
+                            )
+                            attributes = attribute_group.attributes
+                            attributes.update(domain)
+
+                            weight_group_id = get_greatest_unique_specificity(
+                                row_dict=attributes,
+                                selector_dict=selector_dict,
+                                default=default_weight_group.id,
+                            )
+
+                            # Split quantity into individual components (one
+                            # record for each associated index).
+                            disaggregated = disaggregate_value(
+                                quantity.value,
+                                index_ids,
+                                weight_group_id,
+                                index_repo=index_repo,
+                                weight_repo=weight_repo,
+                            )
+
+                            # Yield disaggregated values.
+                            for index, value in disaggregated:
+                                yield (index.id, attributes, value)
 
     def __call__(
         self, *selectors: str, cache_to_drive: bool = False
