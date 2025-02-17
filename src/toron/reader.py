@@ -135,7 +135,7 @@ class NodeReader(object):
         cur: sqlite3.Cursor, attributes: Dict[str, str]
     ) -> int:
         """Get associated 'attr_data_id' and add if missing."""
-        parameters = (dumps(attributes, sort_keys=False),)
+        parameters = (dumps(attributes, sort_keys=True),)
 
         sql = 'SELECT attr_data_id FROM attr_data WHERE attributes=?'
         cur.execute(sql, parameters)
