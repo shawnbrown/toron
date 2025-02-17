@@ -2125,8 +2125,8 @@ class TopoNode(object):
                             for index, value in disaggregated:
                                 yield (index, attributes, value)
 
-    def __call__(self, *selectors: str) -> QuantityIterator:
-        """Return rows with disaggregated quantity values."""
+    def _call_legacy(self, *selectors: str) -> QuantityIterator:
+        """Legacy disaggregation implementation."""
         with self._managed_cursor() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
             unique_id = check_type(property_repo.get('unique_id'), str)
@@ -2170,7 +2170,7 @@ class TopoNode(object):
             attributes.update(domain)
             yield (index.id, attributes, value)
 
-    def _call(
+    def __call__(
         self, *selectors: str, cache_to_drive: bool = False
     ) -> NodeReader:
         """Return rows with disaggregated quantity values."""

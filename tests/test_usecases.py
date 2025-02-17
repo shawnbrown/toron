@@ -153,13 +153,13 @@ class TestIdiomaticUsage(unittest.TestCase):
 
         self.assertEqual(
             result_iter.columns,
-            ('idx1', 'idx2', 'variable', 'value'),
+            ['idx1', 'idx2', 'variable', 'value'],
         )
         self.assertEqual(
-            list(result_iter),
-            [('A', 'Athens', 'foo', 50.0),
+            set(result_iter),
+            {('A', 'Athens', 'foo', 50.0),
              ('A', 'Boston', 'foo', 50.0),
-             ('B', 'Charleston', 'foo', 100.0)],
+             ('B', 'Charleston', 'foo', 100.0)},
         )
 
     @unittest.skipUnless(pd, 'requires pandas')

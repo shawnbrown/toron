@@ -4183,7 +4183,7 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
         self.assertEqual(list(results), expected)
 
 
-class TestTopoNodeDisaggregate(unittest.TestCase):
+class TestTopoNodeDisaggregateLegacy(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
@@ -4219,7 +4219,7 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
 
     def test_default_weight_group(self):
         """Disaggregate to tabular format (uses QuantityIterator)."""
-        quant_iter = self.node()  # <- Disaggregate.
+        quant_iter = self.node._call_legacy()  # <- Disaggregate.
 
         self.assertIsInstance(quant_iter, QuantityIterator)
 
@@ -4248,7 +4248,7 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
 
     def test_attribute_selector(self):
         """Testing single selector."""
-        quant_iter = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
+        quant_iter = self.node._call_legacy('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
 
         self.assertEqual(
             list(quant_iter),
@@ -4262,7 +4262,7 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
 
     def test_multiple_attribute_selectors(self):
         """Testing multiple selectors."""
-        quant_iter = self.node('[sex="MALE"]', '[sex="FEMALE"]')  # <- Disaggregate.
+        quant_iter = self.node._call_legacy('[sex="MALE"]', '[sex="FEMALE"]')  # <- Disaggregate.
 
         self.assertEqual(
             list(quant_iter),
@@ -4282,13 +4282,13 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
 
     def test_no_matching_attribute_selectors(self):
         """Selector has no match, should return no results."""
-        quant_iter = self.node('[sex="MALE"][category="BLERG"]')  # <- Disaggregate.
+        quant_iter = self.node._call_legacy('[sex="MALE"][category="BLERG"]')  # <- Disaggregate.
         self.assertEqual(list(quant_iter), [])
 
     def test_malformed_selector(self):
         """Malformed selector should raise an error."""
         with self.assertRaises(Exception):
-            quant_iter = self.node('sex="MALE"')  # <- Disaggregate.
+            quant_iter = self.node._call_legacy('sex="MALE"')  # <- Disaggregate.
 
 
 class TestTopoNodeDisaggregateGenerator2(unittest.TestCase):
@@ -4461,7 +4461,7 @@ class TestTopoNodeDisaggregate2(unittest.TestCase):
 
     def test_default_weight_group(self):
         """Disaggregate to tabular format (uses NodeReader)."""
-        quant_iter = self.node._call()  # <- Disaggregate.
+        quant_iter = self.node()  # <- Disaggregate.
 
         self.assertIsInstance(quant_iter, NodeReader)
 
@@ -4484,7 +4484,7 @@ class TestTopoNodeDisaggregate2(unittest.TestCase):
 
     def test_attribute_selector(self):
         """Testing single selector."""
-        quant_iter = self.node._call('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
+        quant_iter = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
 
         self.assertEqual(
             set(quant_iter),
@@ -4497,7 +4497,7 @@ class TestTopoNodeDisaggregate2(unittest.TestCase):
     def test_domain_inclusion(self):
         """Domain items should be included with attributes."""
         self.node.set_domain({'country': 'USA'})
-        reader = self.node._call('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
+        reader = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
 
         self.assertEqual(
             reader.columns,
@@ -4513,7 +4513,7 @@ class TestTopoNodeDisaggregate2(unittest.TestCase):
 
     def test_multiple_attribute_selectors(self):
         """Testing multiple selectors."""
-        quant_iter = self.node._call('[sex="MALE"]', '[sex="FEMALE"]')  # <- Disaggregate.
+        quant_iter = self.node('[sex="MALE"]', '[sex="FEMALE"]')  # <- Disaggregate.
 
         self.assertEqual(
             set(quant_iter),
@@ -4529,13 +4529,13 @@ class TestTopoNodeDisaggregate2(unittest.TestCase):
 
     def test_no_matching_attribute_selectors(self):
         """Selector has no match, should return no results."""
-        quant_iter = self.node._call('[sex="MALE"][category="BLERG"]')  # <- Disaggregate.
+        quant_iter = self.node('[sex="MALE"][category="BLERG"]')  # <- Disaggregate.
         self.assertEqual(list(quant_iter), [])
 
     def test_malformed_selector(self):
         """Malformed selector should raise an error."""
         with self.assertRaises(Exception):
-            quant_iter = self.node._call('sex="MALE"')  # <- Disaggregate.
+            quant_iter = self.node('sex="MALE"')  # <- Disaggregate.
 
     def test_explicit_cache_to_drive(self):
         """Testing single selector."""
@@ -4546,15 +4546,15 @@ class TestTopoNodeDisaggregate2(unittest.TestCase):
             ('IN', 'LAPORTE',  'TOTAL', 'MALE', 55296.0),
         }
 
-        quant_iter = self.node._call('[sex="MALE"][category="TOTAL"]', cache_to_drive=False)
+        quant_iter = self.node('[sex="MALE"][category="TOTAL"]', cache_to_drive=False)
         self.assertEqual(set(quant_iter), expected)
 
-        quant_iter = self.node._call('[sex="MALE"][category="TOTAL"]', cache_to_drive=True)
+        quant_iter = self.node('[sex="MALE"][category="TOTAL"]', cache_to_drive=True)
         self.assertEqual(set(quant_iter), expected)
 
         regex = r'.+Did you mean to use a keyword-only argument\?$'
         with self.assertRaisesRegex(TypeError, regex):
-            quant_iter = self.node._call('[sex="MALE"][category="TOTAL"]', False)
+            quant_iter = self.node('[sex="MALE"][category="TOTAL"]', False)
 
 
 class TestTopoNodeRepr(unittest.TestCase):
