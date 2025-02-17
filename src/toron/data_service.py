@@ -174,7 +174,7 @@ def disaggregate_value(
     weight_group_id: int,
     weight_repo: BaseWeightRepository,
 ) -> Iterator[Tuple[int, float]]:
-    """Return Index records and disaggregated results for given value.
+    """Return disaggregated quantities for given index_id values.
 
     .. important::
 
