@@ -313,6 +313,22 @@ class BaseIndexRepository(ABC):
         If criteria is an empty dict, should raise ValueError.
         """
 
+    def find_index_ids_by_label(
+        self,
+        criteria: Optional[Dict[str, str]],
+        include_undefined: bool = True,
+    ) -> Iterator[int]:
+        """Find all index_id values where labels match criteria.
+
+        .. note::
+
+            This method should be implemented directly in the DAL
+            backend. This implementation should serve as a fall-back
+            or stop-gap until a DAL backend can be fully implemented.
+        """
+        matching_records = self.find_by_label(criteria, include_undefined)
+        return (index.id for index in matching_records)
+
 
 class Location(Index):
     """
