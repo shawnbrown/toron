@@ -2075,7 +2075,7 @@ class TopoNode(object):
 
                         # Since we're at the finest granularity, there can
                         # only be one matching index record.
-                        index = next(index_repo.find_by_label(criteria))
+                        index_id = next(index_repo.find_index_ids_by_label(criteria))
 
                         # Yield whole quantity values (cannot be disaggregated
                         # further).
@@ -2086,7 +2086,7 @@ class TopoNode(object):
                             )
                             attributes = attribute_group.attributes
                             attributes.update(domain)
-                            yield (index.id, attributes, quantity.value)
+                            yield (index_id, attributes, quantity.value)
                 else:
                     for location_id, group in grouped:
                         # Use location labels to make index search criteria.
@@ -2097,8 +2097,7 @@ class TopoNode(object):
                         # Get all index records associated with the location
                         # (using `array` for smallest memory footprint).
                         index_ids = array.array(
-                            'i',
-                            (idx.id for idx in index_repo.find_by_label(criteria)),
+                            'i', index_repo.find_index_ids_by_label(criteria)
                         )
 
                         for quantity in group:
