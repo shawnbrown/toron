@@ -2120,13 +2120,12 @@ class TopoNode(object):
                                 quantity.value,
                                 index_ids,
                                 weight_group_id,
-                                index_repo=index_repo,
                                 weight_repo=weight_repo,
                             )
 
                             # Yield disaggregated values.
-                            for index, value in disaggregated:
-                                yield (index.id, attributes, value)
+                            for index_id, value in disaggregated:
+                                yield (index_id, attributes, value)
 
     def __call__(
         self, *selectors: str, cache_to_drive: bool = False

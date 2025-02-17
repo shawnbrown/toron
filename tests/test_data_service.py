@@ -190,7 +190,6 @@ class TestDisaggregateValue(unittest.TestCase):
         finally:
             connector.release_cursor(cursor)
 
-        self.index_repo = index_repo
         self.weight_repo = weight_repo
 
     def test_single_result(self):
@@ -199,11 +198,10 @@ class TestDisaggregateValue(unittest.TestCase):
             quantity_value=10000,
             index_ids=[2],
             weight_group_id=1,
-            index_repo=self.index_repo,
             weight_repo=self.weight_repo,
         )
         expected = [
-            (Index(id=2, labels=('OH', 'FRANKLIN')), 10000.0),
+            (2, 10000.0),  # 'OH', 'FRANKLIN'
         ]
         self.assertEqual(list(results), expected)
 
@@ -213,12 +211,11 @@ class TestDisaggregateValue(unittest.TestCase):
             quantity_value=10000,
             index_ids=[3, 4],
             weight_group_id=1,
-            index_repo=self.index_repo,
             weight_repo=self.weight_repo,
         )
         expected = [
-            (Index(id=3, labels=('IN', 'KNOX')), 2500.0),
-            (Index(id=4, labels=('IN', 'LAPORTE')), 7500.0),
+            (3, 2500.0),  # 'IN', 'KNOX'
+            (4, 7500.0),  # 'IN', 'LAPORTE'
         ]
         self.assertEqual(list(results), expected)
 
@@ -228,12 +225,11 @@ class TestDisaggregateValue(unittest.TestCase):
             quantity_value=10000,
             index_ids=array.array('i', [3, 4]),
             weight_group_id=1,
-            index_repo=self.index_repo,
             weight_repo=self.weight_repo,
         )
         expected = [
-            (Index(id=3, labels=('IN', 'KNOX')), 2500.0),
-            (Index(id=4, labels=('IN', 'LAPORTE')), 7500.0),
+            (3, 2500.0),  # 'IN', 'KNOX'
+            (4, 7500.0),  # 'IN', 'LAPORTE'
         ]
         self.assertEqual(list(results), expected)
 
@@ -245,11 +241,10 @@ class TestDisaggregateValue(unittest.TestCase):
             quantity_value=10000,
             index_ids=[2],
             weight_group_id=2,  # <- Weight group 2 has weights of 0.
-            index_repo=self.index_repo,
             weight_repo=self.weight_repo,
         )
         expected = [
-            (Index(id=2, labels=('OH', 'FRANKLIN')), 10000.0),
+            (2, 10000.0),  # 'OH', 'FRANKLIN'
         ]
         self.assertEqual(list(results), expected)
 
@@ -259,12 +254,11 @@ class TestDisaggregateValue(unittest.TestCase):
             quantity_value=10000,
             index_ids=[3, 4],
             weight_group_id=2,  # <- Weight group 2 has weights of 0.
-            index_repo=self.index_repo,
             weight_repo=self.weight_repo,
         )
         expected = [
-            (Index(id=3, labels=('IN', 'KNOX')), 5000.0),  # <- Divided evenly among indexes.
-            (Index(id=4, labels=('IN', 'LAPORTE')), 5000.0),  # <- Divided evenly among indexes.
+            (3, 5000.0),  # <- Divided evenly among indexes ('IN', 'KNOX')
+            (4, 5000.0),  # <- Divided evenly among indexes ('IN', 'LAPORTE').
         ]
         self.assertEqual(list(results), expected)
 
@@ -274,11 +268,10 @@ class TestDisaggregateValue(unittest.TestCase):
             quantity_value=10000,
             index_ids=[0],
             weight_group_id=1,
-            index_repo=self.index_repo,
             weight_repo=self.weight_repo,
         )
         expected = [
-            (Index(id=0, labels=('-', '-')), 10000),  # <- Undefined (index id 0).
+            (0, 10000),  # <- index_id 0 is undefined record ('-', '-').
         ]
         self.assertEqual(list(results), expected)
 
@@ -289,7 +282,6 @@ class TestDisaggregateValue(unittest.TestCase):
                 quantity_value=10000,
                 index_ids=[3],
                 weight_group_id=9,  # <- No weight_group_id 9 exists!
-                index_repo=self.index_repo,
                 weight_repo=self.weight_repo,
             )
             list(results)  # Consume iterator.
@@ -301,7 +293,6 @@ class TestDisaggregateValue(unittest.TestCase):
                 quantity_value=10000,
                 index_ids=[999],  # <- No index matching 999!
                 weight_group_id=1,
-                index_repo=self.index_repo,
                 weight_repo=self.weight_repo,
             )
             list(results)  # Consume iterator.

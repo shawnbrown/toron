@@ -172,9 +172,8 @@ def disaggregate_value(
     quantity_value: float,
     index_ids: Collection[int],
     weight_group_id: int,
-    index_repo: BaseIndexRepository,
     weight_repo: BaseWeightRepository,
-) -> Iterator[Tuple[Index, float]]:
+) -> Iterator[Tuple[int, float]]:
     """Return Index records and disaggregated results for given value.
 
     .. important::
@@ -211,7 +210,6 @@ def disaggregate_value(
     # Yield disaggregated values for associated index records.
     for index_id in index_ids:
         # OK to cast() since `group_weight` loop would have already errored.
-        index = cast(Index, index_repo.get(index_id))
         weight = cast(Weight, get_weight(weight_group_id, index_id))
 
         try:
@@ -219,7 +217,7 @@ def disaggregate_value(
         except ZeroDivisionError:
             proportion = 1 / group_count
 
-        yield (index, quantity_value * proportion)
+        yield (index_id, quantity_value * proportion)
 
 
 def find_crosswalks_by_node_reference(
