@@ -12,7 +12,7 @@ except ImportError:
     pd = None
 
 from toron.node import TopoNode
-from toron.reader import NodeReader
+from toron.reader import NodeReader, pivot_reader
 
 
 class TestNodeReader(unittest.TestCase):
@@ -350,3 +350,38 @@ class TestNodeReaderTranslate(unittest.TestCase):
             ('a1', 'b2', 'c4', 'bar', 124.5)
         }
         self.assertEqual(set(reader), expected)
+
+
+class TestPivotReader(unittest.TestCase):
+    def test_pivot(self):
+        """Check convertion to Pandas DataFrame."""
+        node = TopoNode()
+        node.add_index_columns('county', 'town')
+        node.insert_index([
+            ('county',  'town'),
+            ('ALAMEDA', 'HAYWARD'),
+            ('BUTTE',   'PALERMO'),
+            ('COLUSA',  'GRIMES'),
+        ])
+        reader = NodeReader(
+            data=[
+                (1, {'attr1': 'foo', 'attr2': 'bar'}, 15.0),
+                (1, {'attr1': 'foo'},                 30.0),
+                (2, {'attr1': 'foo', 'attr2': 'bar'}, 25.0),
+                (3, {'attr1': 'foo', 'attr2': 'bar'}, 35.0),
+                (3, {'attr1': 'foo'},                 22.0),
+                (3, {'attr1': 'foo'},                 22.0),
+                (3, {'attr3': 'qux'},                 60.0),
+            ],
+            node=node,
+        )
+
+        result = pivot_reader(reader, ['attr1', 'attr2'])  # <- Method under test.
+
+        expected = [
+            ['county',  'town',    ('foo', 'bar'), ('foo', None), (None, None)],
+            ['ALAMEDA', 'HAYWARD', 15.0,           30.0,          None],
+            ['BUTTE',   'PALERMO', 25.0,           None,          None],
+            ['COLUSA',  'GRIMES',  35.0,           44.0,          60.0],
+        ]
+        self.assertEqual(list(result), expected)

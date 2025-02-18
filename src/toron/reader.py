@@ -9,7 +9,7 @@ from contextlib import (
     nullcontext,
     suppress,
 )
-from itertools import chain
+from itertools import chain, groupby
 from json import dumps, loads
 from tempfile import NamedTemporaryFile
 
@@ -23,6 +23,7 @@ from toron._typing import (
     List,
     Optional,
     Self,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -325,3 +326,60 @@ class NodeReader(object):
         """Translate quantities to the index of the *other* node."""
         self.translate(other)
         return self
+
+
+def pivot_reader(
+    reader: NodeReader,
+    columns: Iterable[str],
+    #max_width: Optional[int] = 256,
+) -> Generator[Sequence[Union[str, float, Tuple[Optional[str], ...]]], None, None]:
+    """An experimental pivot implementation for ``NodeReader`` data."""
+    # TODO: Fix type hinting for yield statements.
+
+    columns = list(columns)
+
+    with reader._managed_connection() as con:
+        cur1 = con.cursor()
+        cur2 = con.cursor()
+        cur1.execute("""
+            CREATE TEMPORARY TABLE pivot_temp (
+                attr_data_id INTEGER NOT NULL,
+                pivot_attrs TEXT NOT NULL
+            )
+        """)
+        try:
+            cur1.execute('SELECT attr_data_id, attributes FROM main.attr_data')
+            for attr_data_id, attributes in cur1:
+                attrs_dict = loads(attributes)
+                pivot_attrs = [attrs_dict.get(x) for x in columns]
+                cur2.execute(
+                    'INSERT INTO temp.pivot_temp VALUES (?, ?)',
+                    (attr_data_id, dumps(pivot_attrs)),
+                )
+
+            cur1.execute("""
+                SELECT DISTINCT pivot_attrs
+                FROM temp.pivot_temp
+                ORDER BY pivot_attrs
+            """)
+            pivoted_columns = [tuple(loads(x[0])) for x in cur1]
+            yield list(reader._node.index_columns) + pivoted_columns  # type: ignore [operator]
+
+            cur1.execute("""
+                SELECT index_id, pivot_attrs, SUM(quant_value) AS quant_value
+                FROM main.quant_data
+                JOIN temp.pivot_temp USING (attr_data_id)
+                GROUP BY index_id, pivot_attrs
+                ORDER BY index_id
+            """)
+            with reader._node._managed_cursor() as node_cur:
+                index_repo = reader._node._dal.IndexRepository(node_cur)
+                for index_id, group in groupby(cur1, key=lambda row: row[0]):
+                    label_vals = cast(Index, index_repo.get(index_id)).labels
+                    row_dict = {tuple(loads(row[1])): row[2] for row in group}
+                    data_vals: List[Optional[float]]
+                    data_vals = [row_dict.get(col) for col in pivoted_columns]
+                    yield list(label_vals) + data_vals  # type: ignore [operator]
+
+        finally:
+            cur1.execute('DROP TABLE temp.pivot_temp')
