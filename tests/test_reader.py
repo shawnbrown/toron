@@ -12,7 +12,11 @@ except ImportError:
     pd = None
 
 from toron.node import TopoNode
-from toron.reader import NodeReader, pivot_reader
+from toron.reader import (
+    NodeReader,
+    pivot_reader,
+    pivot_reader_to_pandas,
+)
 
 
 class TestNodeReader(unittest.TestCase):
@@ -387,3 +391,22 @@ class TestPivotReader(unittest.TestCase):
             ['COLUSA',  'GRIMES',  35.0,           44.0],
         ]
         self.assertEqual(list(result), expected)
+
+    @unittest.skipUnless(pd, 'requires pandas')
+    def test_pivot_to_pandas(self):
+        """Check conversion to pivoted format pandas DataFrame."""
+        expected_df = pd.DataFrame({
+            'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
+            'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
+            ('foo', 'bar'): pd.Series([15.0, 25.0, 35.0], dtype='float64'),
+            ('foo', None): pd.Series([30.0, None, 44.0], dtype='float64'),
+        })
+
+        # Test without explicit index.
+        df = pivot_reader_to_pandas(self.reader, ['attr1', 'attr2'])
+        pd.testing.assert_frame_equal(df, expected_df)
+
+        # Test with `index=True`.
+        df2 = pivot_reader_to_pandas(self.reader, ['attr1', 'attr2'], index=True)
+        expected_df2 = expected_df.set_index(['county', 'town'])
+        pd.testing.assert_frame_equal(df2, expected_df2)

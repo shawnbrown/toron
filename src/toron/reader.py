@@ -386,3 +386,32 @@ def pivot_reader(
 
         finally:
             cur1.execute('DROP TABLE temp.pivot_temp')
+
+
+def pivot_reader_to_pandas(
+    reader: NodeReader,
+    columns: Iterable[str],
+    #max_width: Optional[int] = 256,
+    index: bool = False
+    ) -> 'pd.DataFrame':
+    """An experimental pivot-to-pandas implementation for ``NodeReader``."""
+    try:
+        import pandas as pd
+    except ImportError:
+        msg = (
+            "Missing optional dependency 'pandas'.  Install pandas to "
+            "use this method."
+        )
+        raise ImportError(msg) from None
+
+    pivoted_data = pivot_reader(reader, columns)
+    pivoted_columns = next(pivoted_data)
+
+    df = pd.DataFrame(pivoted_data, columns=pivoted_columns)  # type: ignore [call-overload]
+    for col in reader.index_columns:  # Using loop for memory efficiency.
+        df[col] = df[col].astype('string')
+
+    if index:
+        df.set_index(reader.index_columns, inplace=True)
+
+    return df
