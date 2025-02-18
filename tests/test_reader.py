@@ -379,9 +379,9 @@ class TestPivotReader(unittest.TestCase):
         result = pivot_reader(reader, ['attr1', 'attr2'])  # <- Method under test.
 
         expected = [
-            ['county',  'town',    ('foo', 'bar'), ('foo', None), (None, None)],
-            ['ALAMEDA', 'HAYWARD', 15.0,           30.0,          None],
-            ['BUTTE',   'PALERMO', 25.0,           None,          None],
-            ['COLUSA',  'GRIMES',  35.0,           44.0,          60.0],
+            ['county',  'town',    ('foo', 'bar'), ('foo', None)],
+            ['ALAMEDA', 'HAYWARD', 15.0,           30.0],
+            ['BUTTE',   'PALERMO', 25.0,           None],
+            ['COLUSA',  'GRIMES',  35.0,           44.0],
         ]
         self.assertEqual(list(result), expected)

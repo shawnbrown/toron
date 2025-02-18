@@ -337,6 +337,7 @@ def pivot_reader(
     # TODO: Fix type hinting for yield statements.
 
     columns = list(columns)
+    all_missing = [None] * len(columns)
 
     with reader._managed_connection() as con:
         cur1 = con.cursor()
@@ -352,6 +353,8 @@ def pivot_reader(
             for attr_data_id, attributes in cur1:
                 attrs_dict = loads(attributes)
                 pivot_attrs = [attrs_dict.get(x) for x in columns]
+                if pivot_attrs == all_missing:
+                    continue  # Skip to next.
                 cur2.execute(
                     'INSERT INTO temp.pivot_temp VALUES (?, ?)',
                     (attr_data_id, dumps(pivot_attrs)),
