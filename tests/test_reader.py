@@ -385,10 +385,10 @@ class TestPivotReader(unittest.TestCase):
         result = pivot_reader(self.reader, ['attr1', 'attr2'])
 
         expected = [
-            ['county',  'town',    ('foo', 'bar'), ('foo', None)],
-            ['ALAMEDA', 'HAYWARD', 15.0,           30.0],
-            ['BUTTE',   'PALERMO', 25.0,           None],
-            ['COLUSA',  'GRIMES',  35.0,           44.0],
+            ['county',  'town',    ('foo', ''), ('foo', 'bar')],
+            ['ALAMEDA', 'HAYWARD', 30.0,        15.0],
+            ['BUTTE',   'PALERMO', None,        25.0],
+            ['COLUSA',  'GRIMES',  44.0,        35.0],
         ]
         self.assertEqual(list(result), expected)
 
@@ -398,8 +398,8 @@ class TestPivotReader(unittest.TestCase):
         expected_df = pd.DataFrame({
             'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
             'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
+            ('foo', ''): pd.Series([30.0, None, 44.0], dtype='float64'),
             ('foo', 'bar'): pd.Series([15.0, 25.0, 35.0], dtype='float64'),
-            ('foo', None): pd.Series([30.0, None, 44.0], dtype='float64'),
         })
 
         # Test without explicit index.

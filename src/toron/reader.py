@@ -337,7 +337,7 @@ def pivot_reader(
     # TODO: Fix type hinting for yield statements.
 
     columns = list(columns)
-    all_missing = [None] * len(columns)
+    all_missing = [''] * len(columns)
 
     with reader._managed_connection() as con:
         cur1 = con.cursor()
@@ -352,7 +352,7 @@ def pivot_reader(
             cur1.execute('SELECT attr_data_id, attributes FROM main.attr_data')
             for attr_data_id, attributes in cur1:
                 attrs_dict = loads(attributes)
-                pivot_attrs = [attrs_dict.get(x) for x in columns]
+                pivot_attrs = [attrs_dict.get(x, '') for x in columns]
                 if pivot_attrs == all_missing:
                     continue  # Skip to next.
                 cur2.execute(
