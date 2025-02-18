@@ -353,8 +353,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
 
 
 class TestPivotReader(unittest.TestCase):
-    def test_pivot(self):
-        """Check convertion to Pandas DataFrame."""
+    def setUp(self):
         node = TopoNode()
         node.add_index_columns('county', 'town')
         node.insert_index([
@@ -375,8 +374,11 @@ class TestPivotReader(unittest.TestCase):
             ],
             node=node,
         )
+        self.reader = reader
 
-        result = pivot_reader(reader, ['attr1', 'attr2'])  # <- Method under test.
+    def test_pivot(self):
+        """Check convertion to pivoted format."""
+        result = pivot_reader(self.reader, ['attr1', 'attr2'])
 
         expected = [
             ['county',  'town',    ('foo', 'bar'), ('foo', None)],
