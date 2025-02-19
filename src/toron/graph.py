@@ -28,6 +28,7 @@ from ._utils import (
     check_type,
     TabularData,
     make_readerlike,
+    normalize_tabular,
     NOVALUE,
     ToronWarning,
     BitFlags,
@@ -110,6 +111,15 @@ def load_mapping(
     allow_overlapping: bool = False,
 ) -> None:
     """Use mapping data to build a crosswalk between two nodes."""
+    data, columns = normalize_tabular(data, columns)
+    data, columns = normalize_mapping_data(
+        data=data,
+        columns=columns,
+        crosswalk_name=crosswalk_name,
+        left_domain=left_node.domain,
+        right_domain=right_node.domain,
+    )
+
     mapper = Mapper(crosswalk_name, data, columns)
     mapper.match_records(left_node, 'left', match_limit, allow_overlapping)
     mapper.match_records(right_node, 'right', match_limit, allow_overlapping)

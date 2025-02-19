@@ -333,6 +333,54 @@ class TestLoadMapping(unittest.TestCase):
             ]
             self.assertEqual(results, expected)
 
+    def test_mapping_with_domains(self):
+        self.node1.set_domain({'foo': 'bar'})
+        self.node2.set_domain({'baz': 'qux'})
+
+        mapping_data = [
+            ['foo', 'idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['bar', 'A', 'z', 'a',  25, 'A', 'z', 'a'],
+            ['bar', 'A', 'z', 'a',  25, 'A', 'z', 'b'],
+            ['bar', 'B', 'x', 'b',  50, 'B', 'x', 'c'],
+            ['bar', 'B', 'y', 'c',  50, 'B', 'x', 'c'],
+            ['bar', 'C', 'x', 'd',  55, 'C', 'x', 'd'],
+            ['bar', 'C', 'y', 'e',  50, 'C', 'y', 'e'],
+            ['bar', 'D', 'x', 'f', 100, 'D', 'x', 'f'],
+            ['bar', 'D', 'x', 'g', 100, 'D', 'x', 'g'],
+            ['bar', 'D', 'y', 'h', 100, 'D', 'y', 'h'],
+            ['bar', 'D', 'y', 'i', 100, 'D', 'y', 'i'],
+        ]
+        load_mapping(  # <- The method under test.
+            left_node=self.node1,
+            direction='->',
+            right_node=self.node2,
+            crosswalk_name='population',
+            data=mapping_data,
+        )
+
+        self.assertEqual(
+            self.log_stream.getvalue(),
+            ("WARNING: setting default crosswalk: 'population'\n"
+             "INFO: loaded 10 relations\n")
+        )
+
+        with self.node2._managed_cursor() as cur:
+            results = cur.execute('SELECT * FROM relation').fetchall()
+            expected = [
+                (1,  1, 1, 1, b'\xe0',  25.0, 0.5),
+                (2,  1, 1, 2, b'\xe0',  25.0, 0.5),
+                (3,  1, 2, 3, b'\xe0',  50.0, 1.0),
+                (4,  1, 3, 3, b'\xe0',  50.0, 1.0),
+                (5,  1, 4, 4, b'\xe0',  55.0, 1.0),
+                (6,  1, 5, 5, b'\xe0',  50.0, 1.0),
+                (7,  1, 6, 6, b'\xe0', 100.0, 1.0),
+                (8,  1, 7, 7, b'\xe0', 100.0, 1.0),
+                (9,  1, 8, 8, b'\xe0', 100.0, 1.0),
+                (10, 1, 9, 9, b'\xe0', 100.0, 1.0),
+                (11, 1, 0, 0, None,      0.0, 1.0),
+            ]
+            self.assertEqual(results, expected)
+
 
 class TestTranslate(unittest.TestCase):
     def setUp(self):
