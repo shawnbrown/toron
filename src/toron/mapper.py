@@ -45,6 +45,19 @@ if TYPE_CHECKING:
 applogger = logging.getLogger(f'app-{__name__}')
 
 
+def find_relation_value_index(
+    columns: Sequence[str], crosswalk_name: str
+) -> int:
+    """Return the position of the relation value column."""
+    for i, col in enumerate(columns):
+        if (crosswalk_name == col or
+                crosswalk_name == parse_edge_shorthand(col).get('edge_name')):
+            return i  # Get index position of value column
+
+    msg = f'{crosswalk_name!r} is not in data, got header: {columns!r}'
+    raise ValueError(msg)
+
+
 class Mapper(object):
     """Class to build a weighted crosswalk between sets of labels.
 
@@ -100,17 +113,7 @@ class Mapper(object):
 
             data, columns = normalize_tabular(data, columns)
 
-            for i, col in enumerate(columns):
-                if (
-                    crosswalk_name == col or
-                    crosswalk_name == parse_edge_shorthand(col).get('edge_name')
-                ):
-                    value_pos = i  # Get index position of value column
-                    break
-            else:  # no break
-                msg = f'{crosswalk_name!r} is not in data, got header: {columns!r}'
-                raise ValueError(msg)
-
+            value_pos = find_relation_value_index(columns, crosswalk_name)
             self.left_columns = columns[:value_pos]
             self.right_columns = columns[value_pos+1:]
 
