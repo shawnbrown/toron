@@ -41,7 +41,10 @@ from .data_service import (
     find_crosswalks_by_node_reference,
 )
 from .node import TopoNode
-from .mapper import Mapper
+from .mapper import (
+    find_relation_value_index,
+    Mapper,
+)
 from .selectors import (
     parse_selector,
     get_greatest_unique_specificity,
@@ -52,6 +55,46 @@ from .xnode import xNode
 
 NoValueType: TypeAlias = NOVALUE.__class__
 Direction: TypeAlias = Literal['->', '-->', '<->', '<-->', '<-', '<--']
+
+
+def normalize_mapping_data(
+    data: Iterator[Sequence],
+    columns: Sequence[str],
+    crosswalk_name: str,
+    left_domain: Dict[str, str],
+    right_domain: Dict[str, str],
+) -> Tuple[Iterator[Sequence], Sequence]:
+    """Validate domain and format *data* stream and *columns*."""
+    value_pos = find_relation_value_index(columns, crosswalk_name)
+
+    domain_indexes: Dict[int, Tuple[str, str]] = {}
+
+    for key, val in left_domain.items():
+        if key in columns[:value_pos]:  # Search left-side only.
+            pos = columns[:value_pos].index(key)
+            domain_indexes[pos] = (key, val)
+
+    for key, val in right_domain.items():
+        if key in columns[value_pos + 1:]:  # Search right-side only.
+            pos = columns.index(key, value_pos + 1)
+            domain_indexes[pos] = (key, val)
+
+    def validate_and_parse(row):
+        """Verify domain if given, return rows without domain items."""
+        for i, (key, val) in domain_indexes.items():
+            if row[i] != val:
+                side = 'left' if i < value_pos else 'right'
+                msg = (
+                    f'error in {side}-side domain: {key!r} should be '
+                    f'{val!r}, got {row[i]!r}'
+                )
+                raise ValueError(msg)
+        return [x for i, x in enumerate(row) if i not in domain_indexes]
+
+    data = (validate_and_parse(row) for row in data)
+    columns = [x for i, x in enumerate(columns) if i not in domain_indexes]
+
+    return data, columns
 
 
 def load_mapping(

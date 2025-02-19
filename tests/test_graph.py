@@ -16,11 +16,92 @@ from toron.data_models import (
     QuantityIterator,
 )
 from toron.graph import (
+    normalize_mapping_data,
     load_mapping,
     _translate,
     translate,
     xadd_edge,
 )
+
+
+class TestNormalizeMappingData(unittest.TestCase):
+    def setUp(self):
+        self.columns = [
+            'dom1', 'dom2', 'idx1', 'value', 'dom1', 'dom2', 'idx1'
+        ]
+        self.data = [
+            ['foo', 'bar', 'A', 25, 'baz', 'qux', 'a'],
+            ['foo', 'bar', 'B', 50, 'baz', 'qux', 'b'],
+            ['foo', 'bar', 'C', 55, 'baz', 'qux', 'c'],
+        ]
+
+    def test_full_domain(self):
+        data, columns = normalize_mapping_data(
+            data=self.data,
+            columns=self.columns,
+            crosswalk_name='value',
+            left_domain={'dom1': 'foo', 'dom2': 'bar'},
+            right_domain={'dom1': 'baz', 'dom2': 'qux'}
+        )
+        expected_columns = ['idx1', 'value', 'idx1']
+        self.assertEqual(columns, expected_columns)
+
+        expected_data = [
+            ['A', 25, 'a'],
+            ['B', 50, 'b'],
+            ['C', 55, 'c'],
+        ]
+        self.assertEqual(list(data), expected_data)
+
+    def test_no_domains_specified(self):
+        data, columns = normalize_mapping_data(
+            data=self.data,
+            columns=self.columns,
+            crosswalk_name='value',
+            left_domain={},
+            right_domain={}
+        )
+        self.assertEqual(columns, self.columns)
+        self.assertEqual(list(data), self.data)
+
+    def test_varrying_domain(self):
+        data, columns = normalize_mapping_data(
+            data=self.data,
+            columns=self.columns,
+            crosswalk_name='value',
+            left_domain={'dom1': 'foo'},
+            right_domain={'dom2': 'qux'}
+        )
+        expected_columns = ['dom2', 'idx1', 'value', 'dom1', 'idx1']
+        self.assertEqual(columns, expected_columns)
+
+        expected_data = [
+            ['bar', 'A', 25, 'baz', 'a'],
+            ['bar', 'B', 50, 'baz', 'b'],
+            ['bar', 'C', 55, 'baz', 'c'],
+        ]
+        self.assertEqual(list(data), expected_data)
+
+    def test_invalid_domain(self):
+        # Append row to `data` with invalid righ-side domain value.
+        self.data.append(
+            ['foo', 'bar', 'D', 65, 'baz', 'corge', 'd']
+        )
+
+        data, columns = normalize_mapping_data(
+            data=self.data,
+            columns=self.columns,
+            crosswalk_name='value',
+            left_domain={'dom1': 'foo', 'dom2': 'bar'},
+            right_domain={'dom1': 'baz', 'dom2': 'qux'}
+        )
+
+        expected_columns = ['idx1', 'value', 'idx1']
+        self.assertEqual(columns, expected_columns)
+
+        regex = "error in right-side domain: 'dom2' should be 'qux', got 'corge'"
+        with self.assertRaisesRegex(ValueError, regex):
+            list(data)  # Use list to consume iterator.
 
 
 class TestLoadMapping(unittest.TestCase):
