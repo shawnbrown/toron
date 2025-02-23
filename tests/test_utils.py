@@ -16,6 +16,7 @@ from toron._utils import (
     wide_to_narrow,
     make_hash,
     SequenceHash,
+    splitmix64,
     quantize_values,
     eagerly_initialize,
     BitFlags,
@@ -669,6 +670,22 @@ class TestSequenceHash(unittest.TestCase):
 
 
 class TestQuantizeValues(unittest.TestCase):
+    def test_splitmix64(self):
+        """Test SplitMix64 pseudo-random number generation."""
+        input_and_output = [
+            (0, 16294208416658607535),
+            (1, 10451216379200822465),
+            (9, 12587370737594032228),
+            (10, 614480483733483466),
+            (99, 4824385676517010403),
+            (100, 2532601429470541124),
+            ((2 ** 64 - 1), 16490336266968443936),  # <- Largest 64-bit int.
+        ]
+        for input_value, expected_output in input_and_output:
+            with self.subTest(input=input_value):
+                hash_digest = splitmix64(input_value)
+                self.assertEqual(hash_digest, expected_output)
+
     def test_whole_remainder(self):
         """Test when fractional parts sum to whole number (2)."""
         input_items = {

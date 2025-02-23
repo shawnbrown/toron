@@ -531,6 +531,32 @@ class SequenceHash(object):
         return self.hash_obj.hexdigest()
 
 
+def splitmix64(x: int) -> int:
+    """Hash 64-bit *x* and return a pseudo-random 64-bit integer digest.
+
+    This function implements a version of Sebastiano Vigna's SplitMix64
+    (CC0 1.0 Public Domain) which is, itself, based on "Fast Splittable
+    Pseudorandom Number Generators" by Steele, G. L., Lea, D., & Flood,
+    C. H. (2014, doi:10.1145/2714064.2660195).
+
+    .. important::
+
+        This function is intended to operate on unsigned, 64-bit integer
+        input (specifically "index_id" values). For speed, it does not
+        perform checks on its input values. The calling parent context
+        should assure that only 64-bit integers are used.
+
+        This function *will* operate on negative values and integers
+        that are larger than 64-bits. But that behavior is outside
+        of the intended scope, can cause potential hash collisions,
+        and is not being tested for.
+    """
+    x = (x + 0x9e3779b97f4a7c15) & 0xffffffffffffffff
+    x = ((x ^ (x >> 30)) * 0xbf58476d1ce4e5b9) & 0xffffffffffffffff
+    x = ((x ^ (x >> 27)) * 0x94d049bb133111eb) & 0xffffffffffffffff
+    return x ^ (x >> 31)
+
+
 def quantize_values(
     items: Iterator[Tuple[int, float]],
     sum_total: float,
