@@ -16,6 +16,7 @@ from toron._utils import (
     wide_to_narrow,
     make_hash,
     SequenceHash,
+    quantize_values,
     eagerly_initialize,
     BitFlags,
     XQuantityIterator,
@@ -665,6 +666,26 @@ class TestSequenceHash(unittest.TestCase):
         sequence_hash = SequenceHash()
         with self.assertRaisesRegex(ValueError, 'int too big'):
             sequence_hash.add_value(18446744073709551616)
+
+
+class TestQuantizeValues(unittest.TestCase):
+    def test_whole_remainder(self):
+        """Test when fractional parts sum to whole number (2)."""
+        input_items = {
+            (1, 3.250),
+            (2, 3.625),  # <- Second highest fractional part.
+            (3, 3.125),
+            (4, 2.125),
+            (5, 1.875),  # <- First highest fractional part.
+        }
+        expected_output = {
+            (1, 3.0),
+            (2, 4.0),  # <- Gets 1 remainder.
+            (3, 3.0),
+            (4, 2.0),
+            (5, 2.0),  # <- Gets 1 remainder.
+        }
+        self.assertEqual(set(quantize_values(input_items, 14.0)), expected_output)
 
 
 class TestEagerlyInitialize(unittest.TestCase):

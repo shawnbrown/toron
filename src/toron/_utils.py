@@ -20,6 +20,7 @@ from json import (
     dumps as _dumps,
     loads as _loads,
 )
+from math import modf
 from ._typing import (
     Any,
     Callable,
@@ -528,6 +529,52 @@ class SequenceHash(object):
     def get_hexdigest(self) -> str:
         """Return the current digest as a hexadecimal string."""
         return self.hash_obj.hexdigest()
+
+
+def quantize_values(
+    items: Iterator[Tuple[int, float]],
+    sum_total: float,
+) -> Iterator[Tuple[int, float]]:
+    """Quantize item values using Largest Remainder Method (LRM).
+
+    .. code-block::
+
+        >>> list(quantize_values([(1, 3.75), (2, 5.25)], sum_total=9))
+        [(1, 4.0), (2, 5.0)]
+
+    .. note::
+
+        This function is used to optionally quantize values during
+        disaggregation and translation. In these contexts, the sum
+        total is already known so it is used as a parameter rather
+        than calculating it again.
+    """
+    # Accumulate sum of whole parts and format items as 3-tuples.
+    sum_of_whole_parts = 0.0
+    idx_frac_whole: List[Tuple[int, float, float]] = []
+    for index_id, quantity_value in items:
+        fractional_part, whole_part = modf(quantity_value)
+        sum_of_whole_parts += whole_part
+        idx_frac_whole.append((index_id, fractional_part, whole_part))
+
+    # Sort items by largest to smallest fractional parts.
+    idx_frac_whole = sorted(idx_frac_whole, key=lambda x: -x[1])
+
+    # Get remainder from the total sum.
+    remainder = sum_total - sum_of_whole_parts
+
+    # Create a consumable iterator from the sorted list of items.
+    iterator = iter(idx_frac_whole)
+
+    # Yield items with the highest fractional parts (incrementing whole
+    # values by 1) for a number of items equal to the remainder.
+    for _ in range(int(remainder)):
+        index_id, _, whole_part = next(iterator)
+        yield (index_id, whole_part + 1.0)
+
+    # Yield remaining items without their fractional parts.
+    for index_id, _, whole_part in iterator:
+        yield (index_id, whole_part)
 
 
 @overload
