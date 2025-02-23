@@ -560,17 +560,22 @@ def quantize_values(
     # Sort items by largest to smallest fractional parts.
     idx_frac_whole = sorted(idx_frac_whole, key=lambda x: -x[1])
 
-    # Get remainder from the total sum.
-    remainder = sum_total - sum_of_whole_parts
+    # Get remainder from sum total (assign as fractional and whole parts).
+    remainder_frac, remainder_whole = modf(sum_total - sum_of_whole_parts)
 
     # Create a consumable iterator from the sorted list of items.
     iterator = iter(idx_frac_whole)
 
     # Yield items with the highest fractional parts (incrementing whole
-    # values by 1) for a number of items equal to the remainder.
-    for _ in range(int(remainder)):
+    # values by 1) for a number of items equal to the whole remainder.
+    for _ in range(int(remainder_whole)):
         index_id, _, whole_part = next(iterator)
         yield (index_id, whole_part + 1.0)
+
+    # If there's a fractional remainder, distribute it to the next item.
+    if remainder_frac:
+        index_id, _, whole_part = next(iterator)
+        yield (index_id, whole_part + remainder_frac)
 
     # Yield remaining items without their fractional parts.
     for index_id, _, whole_part in iterator:
