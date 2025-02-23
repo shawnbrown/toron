@@ -20,7 +20,7 @@ from json import (
     dumps as _dumps,
     loads as _loads,
 )
-from math import modf
+from math import copysign, modf
 from ._typing import (
     Any,
     Callable,
@@ -539,7 +539,7 @@ def quantize_values(
 
     .. code-block::
 
-        >>> list(quantize_values([(1, 3.75), (2, 5.25)], sum_total=9))
+        >>> list(quantize_values([(1, 3.75), (2, 5.25)], sum_total=9.0))
         [(1, 4.0), (2, 5.0)]
 
     .. note::
@@ -557,8 +557,8 @@ def quantize_values(
         sum_of_whole_parts += whole_part
         idx_frac_whole.append((index_id, fractional_part, whole_part))
 
-    # Sort items by largest to smallest fractional parts.
-    idx_frac_whole = sorted(idx_frac_whole, key=lambda x: -x[1])
+    # Sort items by largest to smallest magnitude of fractional parts.
+    idx_frac_whole = sorted(idx_frac_whole, key=lambda x: abs(x[1]), reverse=True)
 
     # Get remainder from sum total (assign as fractional and whole parts).
     remainder_frac, remainder_whole = modf(sum_total - sum_of_whole_parts)
@@ -567,10 +567,11 @@ def quantize_values(
     iterator = iter(idx_frac_whole)
 
     # Yield items with the highest fractional parts (incrementing whole
-    # values by 1) for a number of items equal to the whole remainder.
-    for _ in range(int(remainder_whole)):
+    # values by one) for a number of items equal to the whole remainder.
+    increment = copysign(1, sum_total)  # Increment by 1 or -1.
+    for _ in range(int(abs(remainder_whole))):
         index_id, _, whole_part = next(iterator)
-        yield (index_id, whole_part + 1.0)
+        yield (index_id, whole_part + increment)
 
     # If there's a fractional remainder, distribute it to the next item.
     if remainder_frac:

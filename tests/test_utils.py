@@ -705,6 +705,24 @@ class TestQuantizeValues(unittest.TestCase):
         }
         self.assertEqual(set(quantize_values(input_items, 14.125)), expected_output)
 
+    def test_negative_values(self):
+        """Test when values are negative."""
+        input_items = {
+            (1, -3.250),  # <- Third largest magnitude fractional part.
+            (2, -3.625),  # <- Second largest magnitude fractional part.
+            (3, -3.1875),
+            (4, -2.1875),
+            (5, -1.875),  # <- First largest magnitude fractional part.
+        }
+        expected_output = {
+            (1, -3.125),  # <- Gets fractional remainder.
+            (2, -4.0),    # <- Gets whole remainder.
+            (3, -3.0),
+            (4, -2.0),
+            (5, -2.0),    # <- Gets whole remainder.
+        }
+        self.assertEqual(set(quantize_values(input_items, -14.125)), expected_output)
+
 
 class TestEagerlyInitialize(unittest.TestCase):
     @staticmethod
