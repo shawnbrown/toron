@@ -4240,6 +4240,22 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
              ('IN', 'LAPORTE',  'TOTAL', 'MALE',   55296.0)},
         )
 
+    def test_quantize(self):
+        """Testing quantization process with default weight."""
+        quant_iter = self.node(quantize=True)  # <- Disaggregate.
+
+        self.assertEqual(
+            set(quant_iter),
+            {('OH', 'BUTLER',   'TOTAL', 'FEMALE', 187294.0),  # <- Gets whole remainder (instead of 187293.75)
+             ('OH', 'BUTLER',   'TOTAL', 'MALE',   187294.0),  # <- Gets whole remainder (instead of 187293.75)
+             ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 668906.0),  # <- Loses fractional part (instead of 668906.25)
+             ('OH', 'FRANKLIN', 'TOTAL', 'MALE',   668906.0),  # <- Loses fractional part (instead of 668906.25)
+             ('IN', 'KNOX',     'TOTAL', 'FEMALE', 18432.0),
+             ('IN', 'KNOX',     'TOTAL', 'MALE',   18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'FEMALE', 55296.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'MALE',   55296.0)},
+        )
+
     def test_attribute_selector(self):
         """Testing single selector."""
         quant_iter = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.

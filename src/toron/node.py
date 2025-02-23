@@ -75,6 +75,7 @@ from ._utils import (
     normalize_tabular,
     verify_columns_set,
     SequenceHash,
+    quantize_values,
 )
 
 
@@ -2021,6 +2022,7 @@ class TopoNode(object):
     def _disaggregate(
         self,
         attribute_id_filter: Optional[List[int]] = None,
+        quantize: bool = False,
     ) -> Generator[Tuple[int, AttributesDict, float], None, None]:
         """Generator to yield index, attribute, and quantity tuples."""
         domain = self.domain  # Assign locally to reduce dot-lookups.
@@ -2123,12 +2125,23 @@ class TopoNode(object):
                                 weight_repo=weight_repo,
                             )
 
+                            # Optionally, quantize results to whole values
+                            # where possible.
+                            if quantize:
+                                disaggregated = quantize_values(
+                                    items=disaggregated,
+                                    sum_total=quantity.value,
+                                )
+
                             # Yield disaggregated values.
                             for index_id, value in disaggregated:
                                 yield (index_id, attributes, value)
 
     def __call__(
-        self, *selectors: str, cache_to_drive: bool = False
+        self,
+        *selectors: str,
+        cache_to_drive: bool = False,
+        quantize: bool = False,
     ) -> NodeReader:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
@@ -2161,7 +2174,7 @@ class TopoNode(object):
                 attribute_id_filter = None
 
         node_reader = NodeReader(
-            data=self._disaggregate(attribute_id_filter),
+            data=self._disaggregate(attribute_id_filter, quantize=quantize),
             node=self,
             cache_to_drive=cache_to_drive,
         )
