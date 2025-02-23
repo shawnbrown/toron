@@ -741,7 +741,10 @@ class TestQuantizeValues(unittest.TestCase):
         self.assertEqual(set(quantize_values(input_items, -14.125)), expected_output)
 
     def test_tie_breaking(self):
-        """Test when many fractional parts have the same magnitude."""
+        """Test when many fractional parts have the same magnitude.
+
+        Ties are resolved using a repeatable, pseudo-random shuffle.
+        """
         input_items = [
             (1, 3.25),  # <- Fractional parts have equal magnitude.
             (2, 3.25),  # <- Fractional parts have equal magnitude.
@@ -754,11 +757,11 @@ class TestQuantizeValues(unittest.TestCase):
             (9, 4.00),
         ]
         expected_output = {
-            (1, 4.0),  # <- Gets 1 remainder.
-            (2, 4.0),  # <- Gets 1 remainder.
-            (3, 3.0),
+            (1, 3.0),
+            (2, 3.0),
+            (3, 4.0),  # <- Gets 1 remainder.
             (4, 2.0),
-            (5, 1.0),
+            (5, 2.0),  # <- Gets 1 remainder.
             (6, 2.0),
             (7, 3.0),
             (8, 4.0),

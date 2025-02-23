@@ -563,6 +563,10 @@ def quantize_values(
 ) -> Iterator[Tuple[int, float]]:
     """Quantize item values using Largest Remainder Method (LRM).
 
+    Ties in fractional remainders are resolved using a repeatable,
+    pseudo-random shuffle to ensure reproducibility and reduce
+    positional bias.
+
     .. code-block::
 
         >>> list(quantize_values([(1, 3.75), (2, 5.25)], sum_total=9.0))
@@ -583,8 +587,11 @@ def quantize_values(
         sum_of_whole_parts += whole_part
         idx_frac_whole.append((index_id, fractional_part, whole_part))
 
-    # Sort items by largest to smallest magnitude of fractional parts.
-    idx_frac_whole = sorted(idx_frac_whole, key=lambda x: abs(x[1]), reverse=True)
+    # Sort items by largest to smallest magnitude of their fractional
+    # parts. When fractional parts are equal, order items based on the
+    # SplitMix64 hash of their index_id values.
+    sort_key = lambda x: (-abs(x[1]), splitmix64(x[0]))
+    idx_frac_whole = sorted(idx_frac_whole, key=sort_key)
 
     # Get remainder from sum total (assign as fractional and whole parts).
     remainder_frac, remainder_whole = modf(sum_total - sum_of_whole_parts)
