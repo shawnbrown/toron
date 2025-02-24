@@ -551,7 +551,12 @@ def splitmix64(x: int) -> int:
         of the intended scope, can cause potential hash collisions,
         and is not being tested for.
     """
+    # Initialize using the odd integer closest to 2^64/phi.
     x = (x + 0x9e3779b97f4a7c15) & 0xffffffffffffffff
+
+    # Mix and disperse bits using David Stafford's Mix13 variant of
+    # the MurmurHash3 finalizer (uses constants proven to provide
+    # strong avalanche behavior and bit diffusion).
     x = ((x ^ (x >> 30)) * 0xbf58476d1ce4e5b9) & 0xffffffffffffffff
     x = ((x ^ (x >> 27)) * 0x94d049bb133111eb) & 0xffffffffffffffff
     return x ^ (x >> 31)
