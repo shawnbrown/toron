@@ -566,23 +566,28 @@ def quantize_values(
     items: Iterator[Tuple[int, float]],
     sum_total: float,
 ) -> Iterator[Tuple[int, float]]:
-    """Quantize item values using Largest Remainder Method (LRM).
+    """Quantizes item values using the Largest Remainder Method (LRM),
+    ensuring that the sum of quantized values remains equal to the
+    original total, unlike conventional rounding methods.
 
-    Ties in fractional remainders are resolved using a repeatable,
-    pseudo-random shuffle to ensure reproducibility and reduce
+    Fractional remainder ties are resolved through a repeatable,
+    pseudo-random shuffle, ensuring reproducibility and minimizing
     positional bias.
 
     .. code-block::
 
-        >>> list(quantize_values([(1, 3.75), (2, 5.25)], sum_total=9.0))
-        [(1, 4.0), (2, 5.0)]
+        input_items = [(1, 3.4375), (2, 4.3750), (3, 1.1875)]
+        >>> list(quantize_values(input_items, sum_total=9.0))
+        [(1, 4.0), (2, 4.0), (3, 1.0)]
 
     .. note::
 
-        This function is used to optionally quantize values during
-        disaggregation and translation. In these contexts, the sum
-        total is already known so it is used as a parameter rather
-        than calculating it again.
+        The *sum_total* parameter is required as an argument because
+        this function is designed for use in contexts where the value
+        is already known, such as during disaggregation and translation.
+        While it is technically possible to compute this value from the
+        provided *items*, doing so would be redundant and could
+        introduce unnecessary floating-point rounding errors.
     """
     # Accumulate sum of whole parts and format items as 3-tuples.
     sum_of_whole_parts = 0.0
