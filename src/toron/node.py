@@ -2054,7 +2054,7 @@ class TopoNode(object):
             func = lambda selectors: [parse_selector(s) for s in selectors]
             selector_dict = {wg.id: func(wg.selectors) for wg in weight_groups}
 
-            # Get structure records (ordered from most to least granular).
+            # Get structure records (ordered from most- to least-granular).
             structures = structure_repo.get_all()
             finest_granularity = structures[0].granularity
 
@@ -2108,7 +2108,7 @@ class TopoNode(object):
                                 attribute_repo.get(quantity.attribute_group_id),
                             )
                             attributes = attribute_group.attributes
-                            attributes.update(domain)
+                            attributes.update(domain)  # Add domain to attributes.
 
                             weight_group_id = get_greatest_unique_specificity(
                                 row_dict=attributes,
