@@ -82,6 +82,7 @@ def normalize_mapping_data(
 
     def validate_and_parse(row):
         """Verify domain if given, return rows without domain items."""
+        # This function closes over `domain_indexes` and `value_pos`.
         for i, (key, val) in domain_indexes.items():
             if row[i] != val:
                 side = 'left' if i < value_pos else 'right'
