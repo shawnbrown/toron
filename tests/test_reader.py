@@ -369,8 +369,10 @@ class TestPivotReader(unittest.TestCase):
         reader = NodeReader(
             data=[
                 (1, {'attr1': 'foo', 'attr2': 'bar'}, 15.0),
+                (1, {'attr2': 'bar'},                 17.0),
                 (1, {'attr1': 'foo'},                 30.0),
                 (2, {'attr1': 'foo', 'attr2': 'bar'}, 25.0),
+                (2, {'attr2': 'bar'},                 27.0),
                 (3, {'attr1': 'foo', 'attr2': 'bar'}, 35.0),
                 (3, {'attr1': 'foo'},                 22.0),
                 (3, {'attr1': 'foo'},                 22.0),
@@ -382,14 +384,14 @@ class TestPivotReader(unittest.TestCase):
 
     def test_pivot(self):
         """Check convertion to pivoted format."""
-        result = pivot_reader(self.reader, ['attr1', 'attr2'])
-
         expected = [
-            ['county',  'town',    ('foo', ''), ('foo', 'bar')],
-            ['ALAMEDA', 'HAYWARD', 30.0,        15.0],
-            ['BUTTE',   'PALERMO', None,        25.0],
-            ['COLUSA',  'GRIMES',  44.0,        35.0],
+            ['county',  'town',    'bar', 'foo', ('foo', 'bar')],
+            ['ALAMEDA', 'HAYWARD', 17.0,  30.0,  15.0],
+            ['BUTTE',   'PALERMO', 27.0,  None,  25.0],
+            ['COLUSA',  'GRIMES',  None,  44.0,  35.0],
         ]
+
+        result = pivot_reader(self.reader, ['attr1', 'attr2'])
         self.assertEqual(list(result), expected)
 
     @unittest.skipUnless(pd, 'requires pandas')
@@ -398,7 +400,8 @@ class TestPivotReader(unittest.TestCase):
         expected_df = pd.DataFrame({
             'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
             'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
-            ('foo', ''): pd.Series([30.0, None, 44.0], dtype='float64'),
+            'bar': pd.Series([17.0, 27.0, None], dtype='float64'),
+            'foo': pd.Series([30.0, None, 44.0], dtype='float64'),
             ('foo', 'bar'): pd.Series([15.0, 25.0, 35.0], dtype='float64'),
         })
 

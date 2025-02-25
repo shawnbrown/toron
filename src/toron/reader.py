@@ -328,6 +328,38 @@ class NodeReader(object):
         return self
 
 
+def format_column(parts: List[str]) -> Union[Tuple[str, ...], str]:
+    """Make *parts* into a label to use for a pivoted column.
+
+    JSON arrays are returned as tuples::
+
+        >>> format_column(['foo', 'bar', 'baz'])
+        ('foo', 'bar', 'baz')
+
+    Trailing empty strings are remove::
+
+        >>> format_column(['foo', 'bar', ''])
+        ('foo', 'bar')
+
+    Arrays with only a single value are unwrapped::
+
+        >>> format_column(['', 'bar', ''])
+        'bar'
+
+    Leading empty strings are not removed in multi-item lists::
+
+        >>> format_column(['', 'bar', 'baz'])
+        ('', 'bar', 'baz')
+    """
+    while parts and parts[-1] == '':
+        parts.pop()  # Remove trailing empty strings.
+    non_empty = tuple(filter(None, parts))  # Get non-empty values.
+
+    if len(non_empty) == 1:
+        return non_empty[0]  # Return string if single item.
+    return tuple(parts)  # Return tuple of string if multiple items.
+
+
 def pivot_reader(
     reader: NodeReader,
     columns: Iterable[str],
@@ -337,7 +369,6 @@ def pivot_reader(
     # TODO: Fix type hinting for yield statements.
 
     columns = list(columns)
-    all_missing = [''] * len(columns)
 
     with reader._managed_connection() as con:
         cur1 = con.cursor()
@@ -353,21 +384,29 @@ def pivot_reader(
             for attr_data_id, attributes in cur1:
                 attrs_dict = loads(attributes)
                 pivot_attrs = [attrs_dict.get(x, '') for x in columns]
-                if pivot_attrs == all_missing:
-                    continue  # Skip to next.
+
+                if not any(pivot_attrs):
+                    continue  # Skip to next if pivot attrs are all empty.
+
                 cur2.execute(
                     'INSERT INTO temp.pivot_temp VALUES (?, ?)',
                     (attr_data_id, dumps(pivot_attrs)),
                 )
 
+            # Get distinct list of columns after populating table.
             cur1.execute("""
                 SELECT DISTINCT pivot_attrs
                 FROM temp.pivot_temp
                 ORDER BY pivot_attrs
             """)
-            pivoted_columns = [tuple(loads(x[0])) for x in cur1]
-            yield list(reader._node.index_columns) + pivoted_columns  # type: ignore [operator]
+            pivoted_columns = [x[0] for x in cur1]  # Unwrap single item results.
 
+            # Format and yield header row.
+            formatted_columns = [format_column(loads(x)) for x in pivoted_columns]
+            header_row = list(reader._node.index_columns) + formatted_columns
+            yield header_row
+
+            # Yield data rows.
             cur1.execute("""
                 SELECT index_id, pivot_attrs, SUM(quant_value) AS quant_value
                 FROM main.quant_data
@@ -379,7 +418,7 @@ def pivot_reader(
                 index_repo = reader._node._dal.IndexRepository(node_cur)
                 for index_id, group in groupby(cur1, key=lambda row: row[0]):
                     label_vals = cast(Index, index_repo.get(index_id)).labels
-                    row_dict = {tuple(loads(row[1])): row[2] for row in group}
+                    row_dict = {row[1]: row[2] for row in group}
                     data_vals: List[Optional[float]]
                     data_vals = [row_dict.get(col) for col in pivoted_columns]
                     yield list(label_vals) + data_vals  # type: ignore [operator]
