@@ -576,7 +576,7 @@ def quantize_values(
 
     .. code-block::
 
-        input_items = [(1, 3.4375), (2, 4.3750), (3, 1.1875)]
+        >>> input_items = [(1, 3.4375), (2, 4.3750), (3, 1.1875)]
         >>> list(quantize_values(input_items, sum_total=9.0))
         [(1, 4.0), (2, 4.0), (3, 1.0)]
 
@@ -585,9 +585,9 @@ def quantize_values(
         The *sum_total* parameter is required as an argument because
         this function is designed for use in contexts where the value
         is already known, such as during disaggregation and translation.
-        While it is technically possible to compute this value from the
-        provided *items*, doing so would be redundant and could
-        introduce unnecessary floating-point rounding errors.
+        While it's trivial to compute this value from the provided
+        *items*, doing so would be redundant and could introduce
+        unnecessary floating-point rounding errors.
     """
     # Accumulate sum of whole parts and format items as 3-tuples.
     sum_of_whole_parts = 0.0
