@@ -54,8 +54,11 @@ class NodeReader(object):
         data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
         node: 'TopoNode',
         cache_to_drive: bool = False,
+        quantize_default: bool = False,
     ) -> None:
         """Initialize a new NodeReader instance."""
+        # Set default value for quantizing data during translation.
+        self.quantize_default = quantize_default
 
         # `NodeReader` data is managed using a temporary SQLite
         # database with the following schema:
@@ -255,12 +258,19 @@ class NodeReader(object):
                     attr_vals = tuple(get_attr_value(x) for x in attr_keys)
                     yield labels + attr_vals + (quant_value,)
 
-    def translate(self, node: 'TopoNode', quantize: bool = False) -> None:
+    def translate(
+        self,
+        node: 'TopoNode',
+        quantize: Optional[bool] = None,
+    ) -> None:
         """Translate quantities to use the index of the target node.
 
         This method modifies the NodeReader in place and does not
         return a value.
         """
+        if quantize is None:
+            quantize = self.quantize_default
+
         # Get `old_index_hash` from source node.
         with self._node._managed_cursor() as node_cur:
             property_repo = self._node._dal.PropertyRepository(node_cur)
@@ -330,7 +340,7 @@ class NodeReader(object):
 
     def __rshift__(self, other: 'TopoNode') -> 'NodeReader':
         """Translate quantities to the index of the *other* node."""
-        self.translate(other)
+        self.translate(other, quantize=self.quantize_default)
         return self
 
 
