@@ -355,6 +355,58 @@ class TestNodeReaderTranslate(unittest.TestCase):
         }
         self.assertEqual(set(reader), expected)
 
+    def test_quantize(self):
+        """Check that values are quantized properly."""
+        source_node = TopoNode()
+        source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
+        source_node.add_index_columns('X')
+        source_node.insert_index(
+            data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
+            columns=['X']
+        )
+        data = [
+            (1, {'foo': 'bar'}, 100),
+            (2, {'foo': 'bar'}, 100),
+            (3, {'foo': 'bar'}, 100),
+            (4, {'foo': 'bar'}, 100),
+            (5, {'foo': 'bar'}, 100),
+            (1, {'foo': 'baz'}, 100),
+            (2, {'foo': 'baz'}, 100),
+            (3, {'foo': 'baz'}, 100),
+            (4, {'foo': 'baz'}, 100),
+            (5, {'qux': 'corge'}, 100),
+        ]
+        reader = NodeReader(data, source_node)
+
+        reader.translate(self.node, quantize=True)  # <- Quantized translation.
+
+        expected = {
+            ('a1', 'b1', 'c1', 'bar', None,     60.0),  # <- Unchanged (Edge 1)
+            ('a1', 'b1', 'c2', 'bar', None,    165.0),  # <- Unchanged (Edge 1)
+            ('a1', 'b2', 'c3', None,  'corge',  38.0),  # <- Unchanged (Default, Edge 1)
+            ('a1', 'b2', 'c3', 'bar', None,    151.0),  # <- Gets whole remainder (Edge 1)
+            ('a1', 'b2', 'c4', None,  'corge',  62.0),  # <- Unchanged (Default, Edge 1)
+            ('a1', 'b2', 'c4', 'bar', None,    124.0),  # <- Remainder dropped (Edge 1)
+            ('a1', 'b1', 'c1', 'baz', None,     50.0),  # <- Unchanged (Edge 2)
+            ('a1', 'b1', 'c2', 'baz', None,    184.0),  # <- Gets whole remainder (Edge 2)
+            ('a1', 'b2', 'c3', 'baz', None,    133.0),  # <- Remainder dropped (Edge 2)
+            ('a1', 'b2', 'c4', 'baz', None,     33.0),  # <- Remainder dropped (Edge 2)
+        }
+        self.assertEqual(set(reader), expected)
+
+        # If values were not quantized, the result would be:
+        #
+        #    ('a1', 'b1', 'c1', 'bar', None,     60.0),
+        #    ('a1', 'b1', 'c2', 'bar', None,    165.0),
+        #    ('a1', 'b2', 'c3', None,  'corge',  38.0),
+        #    ('a1', 'b2', 'c3', 'bar', None,    150.5),
+        #    ('a1', 'b2', 'c4', None,  'corge',  62.0),
+        #    ('a1', 'b2', 'c4', 'bar', None,    124.5),
+        #    ('a1', 'b1', 'c1', 'baz', None,     50.0),
+        #    ('a1', 'b1', 'c2', 'baz', None,    183.3984375),
+        #    ('a1', 'b2', 'c3', 'baz', None,    133.30078125),
+        #    ('a1', 'b2', 'c4', 'baz', None,     33.30078125),
+
 
 class TestPivotReader(unittest.TestCase):
     def setUp(self):

@@ -33,7 +33,7 @@ from toron._typing import (
 )
 from toron.data_models import Index
 from toron.data_service import make_get_crosswalk_id_func
-from toron._utils import check_type
+from toron._utils import check_type, quantize_values
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -255,7 +255,7 @@ class NodeReader(object):
                     attr_vals = tuple(get_attr_value(x) for x in attr_keys)
                     yield labels + attr_vals + (quant_value,)
 
-    def translate(self, node: 'TopoNode') -> None:
+    def translate(self, node: 'TopoNode', quantize: bool = False) -> None:
         """Translate quantities to use the index of the target node.
 
         This method modifies the NodeReader in place and does not
@@ -309,11 +309,17 @@ class NodeReader(object):
                             crosswalk_id=crosswalk_id,
                             other_index_id=index_id,
                         )
-                        for rel in rels:
-                            cur2.execute(
-                                'INSERT INTO main.new_quant_data VALUES (?, ?, ?)',
-                                (rel.index_id, attr_data_id, quant_value * rel.proportion),
-                            )
+
+                        items = ((rel.index_id, quant_value * rel.proportion)
+                                 for rel in rels)
+
+                        if quantize:
+                            items = quantize_values(items, quant_value)
+
+                        cur2.executemany(
+                            'INSERT INTO main.new_quant_data VALUES (?, ?, ?)',
+                            ((x, attr_data_id, y) for x, y in items),
+                        )
 
                 # Replace the old quantity table with the new table.
                 cur1.execute('DROP TABLE main.quant_data')
