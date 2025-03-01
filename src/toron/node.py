@@ -2177,6 +2177,7 @@ class TopoNode(object):
             data=self._disaggregate(attribute_id_filter, quantize=quantize),
             node=self,
             cache_to_drive=cache_to_drive,
+            quantize_default=quantize,
         )
         return node_reader
 

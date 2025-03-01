@@ -4219,41 +4219,45 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
 
     def test_default_weight_group(self):
         """Disaggregate to tabular format (uses NodeReader)."""
-        quant_iter = self.node()  # <- Disaggregate.
+        node_reader = self.node()  # <- Disaggregate.
 
-        self.assertIsInstance(quant_iter, NodeReader)
+        self.assertIsInstance(node_reader, NodeReader)
+
+        self.assertFalse(node_reader.quantize_default)
 
         self.assertEqual(
-            quant_iter.columns,
+            node_reader.columns,
             ['state', 'county', 'category', 'sex', 'value'],
         )
 
         self.assertEqual(
-            set(quant_iter),
+            set(node_reader),
             {('OH', 'BUTLER',   'TOTAL', 'FEMALE', 187293.75),
              ('OH', 'BUTLER',   'TOTAL', 'MALE',   187293.75),
              ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 668906.25),
              ('OH', 'FRANKLIN', 'TOTAL', 'MALE',   668906.25),
-             ('IN', 'KNOX',     'TOTAL', 'FEMALE', 18432.0),
-             ('IN', 'KNOX',     'TOTAL', 'MALE',   18432.0),
-             ('IN', 'LAPORTE',  'TOTAL', 'FEMALE', 55296.0),
-             ('IN', 'LAPORTE',  'TOTAL', 'MALE',   55296.0)},
+             ('IN', 'KNOX',     'TOTAL', 'FEMALE',  18432.0),
+             ('IN', 'KNOX',     'TOTAL', 'MALE',    18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'FEMALE',  55296.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'MALE',    55296.0)},
         )
 
     def test_quantize(self):
         """Testing quantization process with default weight."""
-        quant_iter = self.node(quantize=True)  # <- Disaggregate.
+        node_reader = self.node(quantize=True)  # <- Disaggregate.
+
+        self.assertTrue(node_reader.quantize_default)
 
         self.assertEqual(
-            set(quant_iter),
+            set(node_reader),
             {('OH', 'BUTLER',   'TOTAL', 'FEMALE', 187294.0),  # <- Gets whole remainder (instead of 187293.75)
              ('OH', 'BUTLER',   'TOTAL', 'MALE',   187294.0),  # <- Gets whole remainder (instead of 187293.75)
              ('OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 668906.0),  # <- Loses fractional part (instead of 668906.25)
              ('OH', 'FRANKLIN', 'TOTAL', 'MALE',   668906.0),  # <- Loses fractional part (instead of 668906.25)
-             ('IN', 'KNOX',     'TOTAL', 'FEMALE', 18432.0),
-             ('IN', 'KNOX',     'TOTAL', 'MALE',   18432.0),
-             ('IN', 'LAPORTE',  'TOTAL', 'FEMALE', 55296.0),
-             ('IN', 'LAPORTE',  'TOTAL', 'MALE',   55296.0)},
+             ('IN', 'KNOX',     'TOTAL', 'FEMALE',  18432.0),
+             ('IN', 'KNOX',     'TOTAL', 'MALE',    18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'FEMALE',  55296.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'MALE',    55296.0)},
         )
 
     def test_attribute_selector(self):
