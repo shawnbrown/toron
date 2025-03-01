@@ -565,7 +565,7 @@ def splitmix64(x: int) -> int:
 def quantize_values(
     items: Iterator[Tuple[int, float]],
     sum_total: float,
-) -> Iterator[Tuple[int, float]]:
+) -> Generator[Tuple[int, float], None, None]:
     """Quantizes item values using the Largest Remainder Method (LRM),
     ensuring that the sum of quantized values remains equal to the
     original total, unlike conventional rounding methods.
