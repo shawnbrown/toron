@@ -1237,12 +1237,12 @@ class TopoNode(object):
     def get_crosswalk(
         self,
         node_or_ref: Union['TopoNode', str],
-        name: Optional[str] = None,
+        crosswalk_name: Optional[str] = None,
     ) -> Optional[Crosswalk]:
         with self._managed_cursor() as cursor:
             crosswalk = self._get_crosswalk(
                 node_or_ref,
-                name,
+                crosswalk_name,
                 self._dal.CrosswalkRepository(cursor),
             )
             return crosswalk
@@ -1251,7 +1251,7 @@ class TopoNode(object):
         self,
         other_unique_id: str,
         other_filename_hint: Union[str, None],
-        name: str,
+        crosswalk_name: str,
         *,
         description: Optional[str] = None,
         selectors: Optional[Union[List[str], str]] = None,
@@ -1271,7 +1271,7 @@ class TopoNode(object):
                     # If *is_default* is None and this is the first crosswalk
                     # from *other_unique_id*, then log a warning and make this
                     # crosswalk the default.
-                    applogger.warning(f'setting default crosswalk: {name!r}')
+                    applogger.warning(f'setting default crosswalk: {crosswalk_name!r}')
                     is_default = True
                 else:
                     is_default = False
@@ -1286,7 +1286,7 @@ class TopoNode(object):
             crosswalk_repo.add(
                 other_unique_id=other_unique_id,
                 other_filename_hint=other_filename_hint,
-                name=name,
+                name=crosswalk_name,
                 description=description,
                 selectors=selectors,
                 is_default=is_default,
@@ -1298,17 +1298,17 @@ class TopoNode(object):
     def edit_crosswalk(
         self,
         node_or_ref: Union['TopoNode', str],
-        current_name: str,
+        crosswalk_name: str,
         **changes: Any,
     ) -> None:
         with self._managed_transaction() as cursor:
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
-            crosswalk = self._get_crosswalk(node_or_ref, current_name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
 
             if not crosswalk:
                 applogger.warning(
                     f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {current_name!r}'
+                    f'and name {crosswalk_name!r}'
                 )
                 return  # <- EXIT!
 
@@ -1325,15 +1325,15 @@ class TopoNode(object):
     def drop_crosswalk(
         self,
         node_or_ref: Union['TopoNode', str],
-        name: str,
+        crosswalk_name: str,
     ) -> None:
         with self._managed_transaction() as cursor:
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
-            crosswalk = self._get_crosswalk(node_or_ref, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
                 applogger.warning(
                     f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {name!r}'
+                    f'and name {crosswalk_name!r}'
                 )
                 return  # <- EXIT!
 
@@ -1342,7 +1342,7 @@ class TopoNode(object):
     def select_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        name: Optional[str] = None,
+        crosswalk_name: Optional[str] = None,
         header: bool = False,
         **criteria: str,
     ) -> Iterator[Sequence]:
@@ -1351,11 +1351,11 @@ class TopoNode(object):
             index_repo = self._dal.IndexRepository(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_or_ref, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
                     f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {name!r}'
+                    f'and name {crosswalk_name!r}'
                 )
 
             label_columns = col_manager.get_columns()
@@ -1515,16 +1515,16 @@ class TopoNode(object):
     def insert_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        name: Optional[str],
+        crosswalk_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
         data, columns = normalize_tabular(data, columns)
 
-        if tuple(columns[:3]) != ('other_index_id', name, 'index_id'):
+        if tuple(columns[:3]) != ('other_index_id', crosswalk_name, 'index_id'):
             raise ValueError(
                 f"columns should be start with "
-                f"('other_index_id', {name!r}, 'index_id', ...); "
+                f"('other_index_id', {crosswalk_name!r}, 'index_id', ...); "
                 f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
             )
 
@@ -1540,11 +1540,11 @@ class TopoNode(object):
             label_columns = col_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            crosswalk = self._get_crosswalk(node_or_ref, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
                     f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {name!r}'
+                    f'and name {crosswalk_name!r}'
                 )
             crosswalk_id = crosswalk.id
 
@@ -1609,16 +1609,16 @@ class TopoNode(object):
     def update_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        name: Optional[str],
+        crosswalk_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
         data, columns = normalize_tabular(data, columns)
 
-        if tuple(columns[:3]) != ('other_index_id', name, 'index_id'):
+        if tuple(columns[:3]) != ('other_index_id', crosswalk_name, 'index_id'):
             raise ValueError(
                 f"columns should be start with "
-                f"('other_index_id', {name!r}, 'index_id', ...); "
+                f"('other_index_id', {crosswalk_name!r}, 'index_id', ...); "
                 f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
             )
 
@@ -1634,11 +1634,11 @@ class TopoNode(object):
             label_columns = col_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            crosswalk = self._get_crosswalk(node_or_ref, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
                     f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {name!r}'
+                    f'and name {crosswalk_name!r}'
                 )
             crosswalk_id = crosswalk.id
 
@@ -1731,7 +1731,7 @@ class TopoNode(object):
     def delete_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        name: Optional[str],
+        crosswalk_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
@@ -1740,14 +1740,14 @@ class TopoNode(object):
     def delete_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        name: Optional[str],
+        crosswalk_name: Optional[str],
         **criteria: str,
     ) -> None:
         ...
     def delete_relations(
         self,
         node_or_ref,
-        name=None,
+        crosswalk_name=None,
         data=None,
         columns=None,
         **criteria,
@@ -1765,11 +1765,11 @@ class TopoNode(object):
             aux_relation_repo = self._dal.RelationRepository(aux_cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_or_ref, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
                     f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {name!r}'
+                    f'and name {crosswalk_name!r}'
                 )
             crosswalk_id = crosswalk.id
 
@@ -1779,10 +1779,10 @@ class TopoNode(object):
                 label_columns = col_manager.get_columns()
                 verify_columns_set(columns, label_columns, allow_extras=True)
 
-                if tuple(columns[:3]) != ('other_index_id', name, 'index_id'):
+                if tuple(columns[:3]) != ('other_index_id', crosswalk_name, 'index_id'):
                     raise ValueError(
                         f"columns should be start with "
-                        f"('other_index_id', {name!r}, 'index_id', ...); "
+                        f"('other_index_id', {crosswalk_name!r}, 'index_id', ...); "
                         f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
                     )
 
@@ -1878,11 +1878,11 @@ class TopoNode(object):
     def reify_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        name: str,
+        crosswalk_name: str,
         **criteria: str,
     ) -> None:
         """Remove 'mapping_level' from approximate relations associated
-        with the specified crosswalk (*node* and *name*).
+        with the specified crosswalk (*node_or_ref* and *crosswalk_name*).
 
         A 'mapping_level' records the level of granularity at which an
         approximate relation (or partial relation) was established. By
@@ -1894,7 +1894,7 @@ class TopoNode(object):
         ----------
         node_or_ref : Union[TopoNode, str]
             The node from which the crosswalk is coming.
-        name : str
+        crosswalk_name : str
             The name of the crosswalk. This is needed because multiple
             crosswalks can come from the same node.
         **criteria : str
@@ -1907,11 +1907,11 @@ class TopoNode(object):
             index_repo = self._dal.IndexRepository(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_or_ref, name, crosswalk_repo)
+            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
                     f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {name!r}'
+                    f'and name {crosswalk_name!r}'
                 )
 
             if criteria:

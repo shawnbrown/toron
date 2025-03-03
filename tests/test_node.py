@@ -2599,7 +2599,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         node.add_crosswalk(  # <- Defining all properties.
                 other_unique_id='111-111-1111',
                 other_filename_hint=None,
-                name='name2',
+                crosswalk_name='name2',
                 description='The second crosswalk.',
                 selectors=['"[foo]"'],
                 is_default=True,  # <- Becomes new default, replacing 'name1'

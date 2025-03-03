@@ -129,7 +129,7 @@ def load_mapping(
         right_node.add_crosswalk(
             other_unique_id=left_node.unique_id,
             other_filename_hint=None,
-            name=crosswalk_name,
+            crosswalk_name=crosswalk_name,
             selectors=selectors,
             is_default=is_default,
         )
@@ -144,7 +144,7 @@ def load_mapping(
         left_node.add_crosswalk(
             other_unique_id=right_node.unique_id,
             other_filename_hint=None,
-            name=crosswalk_name,
+            crosswalk_name=crosswalk_name,
             selectors=selectors,
             is_default=is_default,
         )

@@ -202,14 +202,14 @@ class TestNodeReaderTranslate(unittest.TestCase):
         self.node.add_crosswalk(
             other_unique_id='00000000-0000-0000-0000-000000000000',
             other_filename_hint='other-file.toron',
-            name='edge 1',
+            crosswalk_name='edge 1',
             description='Edge one description.',
             selectors=['[foo="bar"]'],
             is_default=True,
         )
         self.node.insert_relations(
             node_or_ref='other-file',
-            name='edge 1',
+            crosswalk_name='edge 1',
             data=[
                 ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C'),
                 (1,  39.0, 1, 'a1', 'b1', 'c1'),  # proportion: 0.6
@@ -227,13 +227,13 @@ class TestNodeReaderTranslate(unittest.TestCase):
         self.node.add_crosswalk(
             other_unique_id='00000000-0000-0000-0000-000000000000',
             other_filename_hint='other-file.toron',
-            name='edge 2',
+            crosswalk_name='edge 2',
             description='Edge two description.',
             selectors=['[foo]'],
         )
         self.node.insert_relations(
             node_or_ref='other-file',
-            name='edge 2',
+            crosswalk_name='edge 2',
             data=[
                 ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C'),
                 (1, 32.0,  1, 'a1', 'b1', 'c1'),  # proportion: 0.5
