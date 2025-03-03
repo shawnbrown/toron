@@ -1237,12 +1237,12 @@ class TopoNode(object):
     def get_crosswalk(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str] = None,
+        name: Optional[str] = None,
     ) -> Optional[Crosswalk]:
         with self._managed_cursor() as cursor:
             crosswalk = self._get_crosswalk(
                 node_or_ref,
-                crosswalk_name,
+                name,
                 self._dal.CrosswalkRepository(cursor),
             )
             return crosswalk
