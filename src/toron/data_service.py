@@ -220,36 +220,36 @@ def disaggregate_value(
         yield (index_id, quantity_value * proportion)
 
 
-def find_crosswalks_by_node_reference(
-    node_reference: str,
+def find_crosswalks_by_ref(
+    ref: str,
     crosswalk_repo: BaseCrosswalkRepository,
 ) -> List[Crosswalk]:
-    """Search repository and return crosswalks from matching nodes."""
+    """Find crosswalks that match the given node reference."""
     # Try to match by exact 'other_unique_id'.
-    matches = list(crosswalk_repo.find_by_other_unique_id(node_reference))
+    matches = list(crosswalk_repo.find_by_other_unique_id(ref))
     if matches:
         return matches
 
     # Try to match by exact 'other_filename_hint'.
-    matches = list(crosswalk_repo.find_by_other_filename_hint(node_reference))
+    matches = list(crosswalk_repo.find_by_other_filename_hint(ref))
     if matches:
         return matches
 
     # Try to match by stem of 'other_filename_hint' (name without '.toron' extension).
-    matches = list(crosswalk_repo.find_by_other_filename_hint(f'{node_reference}.toron'))
+    matches = list(crosswalk_repo.find_by_other_filename_hint(f'{ref}.toron'))
     if matches:
         return matches
 
     # Try to match by short code of 'other_unique_id'.
-    if isinstance(node_reference, str) and len(node_reference) >= 7:
+    if isinstance(ref, str) and len(ref) >= 7:
         matches = crosswalk_repo.get_all()
-        return [x for x in matches if x.other_unique_id.startswith(node_reference)]
+        return [x for x in matches if x.other_unique_id.startswith(ref)]
 
     return []  # Return empty list if no match.
 
 
 def make_get_crosswalk_id_func(
-    node_reference: str,
+    ref: str,
     crosswalk_repo: BaseCrosswalkRepository,
     other_index_hash: str,
 ) -> Callable[[Dict[str, str]], int]:
@@ -260,8 +260,8 @@ def make_get_crosswalk_id_func(
     the default ``crosswalk_id``.
     """
     # Get crosswalks with matching node.
-    crosswalks = find_crosswalks_by_node_reference(
-        node_reference=node_reference,
+    crosswalks = find_crosswalks_by_ref(
+        ref=ref,
         crosswalk_repo=crosswalk_repo,
     )
     if not crosswalks:

@@ -39,7 +39,7 @@ from .data_models import (
     QuantityIterator,
 )
 from .data_service import (
-    find_crosswalks_by_node_reference,
+    find_crosswalks_by_ref,
 )
 from .node import TopoNode
 from .mapper import (
@@ -134,7 +134,7 @@ def load_mapping(
             is_default=is_default,
         )
         right_node.insert_relations2(
-            node_reference=left_node,
+            node_or_ref=left_node,
             crosswalk_name=crosswalk_name,
             data=mapper.get_relations('->'),
             columns=['other_index_id', crosswalk_name, 'index_id', 'mapping_level'],
@@ -149,7 +149,7 @@ def load_mapping(
             is_default=is_default,
         )
         left_node.insert_relations2(
-            node_reference=right_node,
+            node_or_ref=right_node,
             crosswalk_name=crosswalk_name,
             data=mapper.get_relations('<-'),
             columns=['other_index_id', crosswalk_name, 'index_id', 'mapping_level'],
@@ -166,8 +166,8 @@ def _translate(
         index_repo = node._dal.IndexRepository(cursor)
 
         # Get all crosswalks.
-        crosswalks: List = find_crosswalks_by_node_reference(
-            node_reference=quantity_iterator.unique_id,
+        crosswalks: List = find_crosswalks_by_ref(
+            ref=quantity_iterator.unique_id,
             crosswalk_repo=crosswalk_repo,
         )
 

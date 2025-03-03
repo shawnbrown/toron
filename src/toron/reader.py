@@ -281,7 +281,7 @@ class NodeReader(object):
             relation_repo = node._dal.RelationRepository(node_cur)
 
             get_crosswalk_id = make_get_crosswalk_id_func(
-                node_reference=self._node.unique_id,
+                ref=self._node.unique_id,
                 crosswalk_repo=node._dal.CrosswalkRepository(node_cur),
                 other_index_hash=old_index_hash,
             )

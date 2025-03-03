@@ -16,7 +16,7 @@ from toron.data_service import (
     validate_new_index_columns,
     get_quantity_value_sum,
     disaggregate_value,
-    find_crosswalks_by_node_reference,
+    find_crosswalks_by_ref,
     set_default_weight_group,
     get_default_weight_group,
     rename_discrete_categories,
@@ -324,40 +324,40 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
 
     def test_other_unique_id(self):
         """Should return exact match on 'other_unique_id' value."""
-        crosswalks = find_crosswalks_by_node_reference('111-111-1111', self.crosswalk_repo)
+        crosswalks = find_crosswalks_by_ref('111-111-1111', self.crosswalk_repo)
         self.assertEqual([x.id for x in crosswalks], [1, 2])
 
-        crosswalks = find_crosswalks_by_node_reference('222-222-2222', self.crosswalk_repo)
+        crosswalks = find_crosswalks_by_ref('222-222-2222', self.crosswalk_repo)
         self.assertEqual([x.id for x in crosswalks], [3])
 
     def test_other_filename_hint(self):
         """Should return exact match on 'other_filename_hint' value."""
-        crosswalks = find_crosswalks_by_node_reference('file1.toron', self.crosswalk_repo)
+        crosswalks = find_crosswalks_by_ref('file1.toron', self.crosswalk_repo)
         self.assertEqual([x.id for x in crosswalks], [1, 2])
 
     def test_other_filename_hint_stem_only(self):
         """Should return match on filename stem of 'other_filename_hint'
         value (matches name without ".toron" extension).
         """
-        crosswalks = find_crosswalks_by_node_reference('file1', self.crosswalk_repo)  # <- Stem 'file1'.
+        crosswalks = find_crosswalks_by_ref('file1', self.crosswalk_repo)  # <- Stem 'file1'.
         self.assertEqual([x.id for x in crosswalks], [1, 2])
 
     def test_other_unique_id_shortcode(self):
         """If node reference is 7 characters or more, try to match the
         start of 'other_unique_id' values.
         """
-        crosswalks = find_crosswalks_by_node_reference('111-111', self.crosswalk_repo)  # <- Short code.
+        crosswalks = find_crosswalks_by_ref('111-111', self.crosswalk_repo)  # <- Short code.
         self.assertEqual([x.id for x in crosswalks], [1, 2])
 
     def test_no_match(self):
-        crosswalks = find_crosswalks_by_node_reference('unknown-reference', self.crosswalk_repo)
+        crosswalks = find_crosswalks_by_ref('unknown-reference', self.crosswalk_repo)
         self.assertEqual(crosswalks, [])
 
     def test_empty(self):
-        crosswalks = find_crosswalks_by_node_reference('', self.crosswalk_repo)
+        crosswalks = find_crosswalks_by_ref('', self.crosswalk_repo)
         self.assertEqual(crosswalks, [])
 
-        crosswalks = find_crosswalks_by_node_reference(None, self.crosswalk_repo)
+        crosswalks = find_crosswalks_by_ref(None, self.crosswalk_repo)
         self.assertEqual(crosswalks, [])
 
 

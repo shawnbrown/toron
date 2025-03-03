@@ -403,7 +403,7 @@ class TestTranslate(unittest.TestCase):
             is_default=True,
         )
         self.node.insert_relations(
-            node='other-file',
+            node_or_ref='other-file',
             name='edge 1',
             data=[
                 ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C'),
@@ -427,7 +427,7 @@ class TestTranslate(unittest.TestCase):
             selectors=['[foo]'],
         )
         self.node.insert_relations(
-            node='other-file',
+            node_or_ref='other-file',
             name='edge 2',
             data=[
                 ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C'),
