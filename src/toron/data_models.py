@@ -604,8 +604,8 @@ class BaseWeightRepository(ABC):
         weight_group_id: int,
         index_id: int,
         value: float,
-        on_conflict: Literal['fail', 'ignore', 'replace', 'combine'] = 'fail',
-    ) -> Literal['inserted', 'ignored', 'replaced', 'combined']:
+        on_conflict: Literal['abort', 'skip', 'overwrite', 'sum'] = 'abort',
+    ) -> Literal['inserted', 'skipped', 'overwritten', 'summed']:
         """Add a record to the repository or resolve conflict.
 
         Any conflicts are resolved according to the ``on_conflict``
@@ -614,25 +614,25 @@ class BaseWeightRepository(ABC):
         +-----------------+--------------------------------------------+
         | ``on_conflict`` | description                                |
         +=================+============================================+
-        | ``'fail'``      | raise an error when conflict arises        |
+        | ``'abort'``     | raise an error when conflict arises        |
         |                 | (same as ``add()`` method)                 |
         +-----------------+--------------------------------------------+
-        | ``'ignore'``    | ignore the conflict and exit without error |
+        | ``'skip'``      | ignore the conflict and exit without error |
         +-----------------+--------------------------------------------+
-        | ``'replace'``   | replace value of conflicting record with   |
+        | ``'overwrite'`` | replace value of conflicting record with   |
         |                 | new value                                  |
         +-----------------+--------------------------------------------+
-        | ``'combine'``   | replace value of conflicting record with   |
-        |                 | sum of old and new values                  |
+        | ``'sum'``       | replace value of conflicting record with   |
+        |                 | the sum of existing and new values         |
         +-----------------+--------------------------------------------+
 
         This function returns a **result code** string to indicate the
         action performed:
 
         * ``'inserted'``
-        * ``'ignored'``
-        * ``'replaced'``
-        * ``'combined'``
+        * ``'skipped'``
+        * ``'overwritten'``
+        * ``'summed'``
         """
         weight = self.get_by_weight_group_id_and_index_id(
             weight_group_id,
@@ -643,30 +643,30 @@ class BaseWeightRepository(ABC):
             self.add(weight_group_id, index_id, value)
             return 'inserted'  # <- EXIT!
 
-        if on_conflict == 'ignore':
-            return 'ignored'  # <- EXIT!
+        if on_conflict == 'skip':
+            return 'skipped'  # <- EXIT!
 
-        if on_conflict == 'replace':
+        if on_conflict == 'overwrite':
             weight.value = value  # Replace value.
             self.update(weight)
-            return 'replaced'  # <- EXIT!
+            return 'overwritten'  # <- EXIT!
 
-        if on_conflict == 'combine':
+        if on_conflict == 'sum':
             weight.value += value  # Sum values.
             self.update(weight)
-            return 'combined'  # <- EXIT!
+            return 'summed'  # <- EXIT!
 
-        if on_conflict == 'fail':
+        if on_conflict == 'abort':
             msg = (
                 f"a weight record already exists for weight_group_id "
                 f"{weight_group_id} and index_id {index_id}; change load "
-                f"behavior by setting on_conflict to 'ignore', 'replace', "
+                f"behavior by setting on_conflict to 'skip', 'overwrite', "
                 f"or 'sum'"
             )
             raise Exception(msg)
 
         raise ValueError(
-            f"on_conflict must be 'fail', 'ignore', 'replace', or 'combine'; "
+            f"on_conflict must be 'abort', 'skip', 'overwrite', or 'sum'; "
             f"got {on_conflict!r}"
         )
 

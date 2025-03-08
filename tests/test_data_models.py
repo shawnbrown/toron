@@ -592,7 +592,7 @@ class WeightRepositoryBaseTest(ABC):
     def test_add_or_resolve(self):
         self.weight_group_repo.add('alt_weight')  # Adds weight_group_id 3.
 
-        # Default behavior with no conflict (on_conflict='fail').
+        # Default behavior with no conflict (on_conflict='abort').
         code = self.repository.add_or_resolve(3, 1, 1111)
         self.assertEqual(code, 'inserted')
         self.assertEqual(
@@ -601,7 +601,7 @@ class WeightRepositoryBaseTest(ABC):
             msg='should add new value just like `add()` method does',
         )
 
-        # Default behavior with conflicting record (on_conflict='fail').
+        # Default behavior with conflicting record (on_conflict='abort').
         with self.assertRaises(Exception):
             self.repository.add_or_resolve(3, 1, 2222)
 
@@ -612,8 +612,8 @@ class WeightRepositoryBaseTest(ABC):
         )
 
         # Ignore value of conflicting record (keeps 1111).
-        code = self.repository.add_or_resolve(3, 1, 2222, on_conflict='ignore')
-        self.assertEqual(code, 'ignored')
+        code = self.repository.add_or_resolve(3, 1, 2222, on_conflict='skip')
+        self.assertEqual(code, 'skipped')
         self.assertEqual(
             self.get_weights_helper(weight_group_id=3),
             [(7, 3, 1, 1111.0)],
@@ -621,17 +621,17 @@ class WeightRepositoryBaseTest(ABC):
         )
 
         # Replace value of conflicting record (replaces with 2222).
-        code = self.repository.add_or_resolve(3, 1, 2222, on_conflict='replace')
-        self.assertEqual(code, 'replaced')
+        code = self.repository.add_or_resolve(3, 1, 2222, on_conflict='overwrite')
+        self.assertEqual(code, 'overwritten')
         self.assertEqual(
             self.get_weights_helper(weight_group_id=3),
             [(7, 3, 1, 2222.0)],
-            msg='value should be replaced',
+            msg='value should be overwritten',
         )
 
         # Combine values of conflicting record (sums 2222 and 3333).
-        code = self.repository.add_or_resolve(3, 1, 3333, on_conflict='combine')
-        self.assertEqual(code, 'combined')
+        code = self.repository.add_or_resolve(3, 1, 3333, on_conflict='sum')
+        self.assertEqual(code, 'summed')
         self.assertEqual(
             self.get_weights_helper(weight_group_id=3),
             [(7, 3, 1, 5555.0)],
@@ -639,7 +639,7 @@ class WeightRepositoryBaseTest(ABC):
         )
 
         # Passes invalid `on_conflict` value.
-        regex = r"on_conflict must be 'fail', 'ignore', 'replace', or 'combine'; got 'bad_option'"
+        regex = r"on_conflict must be 'abort', 'skip', 'overwrite', or 'sum'; got 'bad_option'"
         with self.assertRaisesRegex(ValueError, regex):
             self.repository.add_or_resolve(3, 1, 3333, on_conflict='bad_option')
 

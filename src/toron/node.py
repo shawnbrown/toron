@@ -875,11 +875,11 @@ class TopoNode(object):
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
         value_column: Optional[str] = None,
-        on_conflict: Literal['fail', 'ignore', 'replace', 'combine'] = 'fail',
+        on_conflict: Literal['abort', 'skip', 'overwrite', 'sum'] = 'abort',
     ) -> None:
-        if on_conflict not in ('fail', 'ignore', 'replace', 'combine'):
-            msg = (f"on_conflict must be 'fail', 'ignore', 'replace', "
-                   f"or 'combine'; got {on_conflict!r}")
+        if on_conflict not in ('abort', 'skip', 'overwrite', 'sum'):
+            msg = (f"on_conflict must be 'abort', 'skip', 'overwrite', "
+                   f"or 'sum'; got {on_conflict!r}")
             raise ValueError(msg)
 
         data, columns = normalize_tabular(data, columns)
@@ -964,14 +964,14 @@ class TopoNode(object):
             f"{', weight group is complete' if group_is_complete else ''}"
         )
 
-        if counter['ignored']:
-            applogger.warning(f"ignored {counter['ignored']} rows that match existing records")
+        if counter['skipped']:
+            applogger.warning(f"skipped {counter['skipped']} rows that match existing records")
 
-        if counter['replaced']:
-            applogger.warning(f"replaced {counter['replaced']} existing records with new weights")
+        if counter['overwritten']:
+            applogger.warning(f"replaced {counter['overwritten']} existing records with new weights")
 
-        if counter['combined']:
-            applogger.warning(f"combined sum of {counter['combined']} new weights together with existing record")
+        if counter['summed']:
+            applogger.warning(f"combined sum of {counter['summed']} new weights together with existing records")
 
         if counter['not_realnum']:
             applogger.warning(f"skipped {counter['not_realnum']} rows without real number values")
