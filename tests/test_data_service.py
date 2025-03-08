@@ -375,12 +375,34 @@ class TestGetAndSetDefaultWeightGroup(unittest.TestCase):
         self.property_repo = dal.PropertyRepository(cur)
 
     def test_set_default_weight_group(self):
+        # Set default group when none previously exists.
         set_default_weight_group(
             weight_group=WeightGroup(3, 'name1', None, None),
             property_repo=self.property_repo,
         )
-        msg = 'property repository should save the id value'
-        self.assertEqual(self.property_repo.get('default_weight_group_id'), 3, msg=msg)
+        self.assertEqual(
+            self.property_repo.get('default_weight_group_id'),
+            3,
+            msg="expecting weight_group's `id` value (an int)",
+        )
+
+        # Update existing default group to new value.
+        set_default_weight_group(
+            weight_group=WeightGroup(6, 'name2', None, None),
+            property_repo=self.property_repo,
+        )
+        self.assertEqual(
+            self.property_repo.get('default_weight_group_id'),
+            6,
+            msg='expecting updated id value',
+        )
+
+        # Replace existing default group with None.
+        set_default_weight_group(
+            weight_group=None,
+            property_repo=self.property_repo,
+        )
+        self.assertIsNone(self.property_repo.get('default_weight_group_id'))
 
     def test_get_default_weight_group(self):
         self.weight_group_repo.add('foo')  # Adds weight_group_id 1

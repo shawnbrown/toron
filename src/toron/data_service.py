@@ -301,11 +301,14 @@ def make_get_crosswalk_id_func(
 
 
 def set_default_weight_group(
-    weight_group: WeightGroup,
+    weight_group: Union[WeightGroup, None],
     property_repo: BasePropertyRepository,
 ) -> None:
     """Sets the node's default weight group."""
-    property_repo.add('default_weight_group_id', weight_group.id)
+    property_repo.add_or_update(
+        key='default_weight_group_id',
+        value=weight_group.id if weight_group else None,
+    )
 
 
 @overload
