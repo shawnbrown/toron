@@ -1,13 +1,13 @@
 """TopoNode implementation for the Toron project."""
 
 import array
+import os
 from collections import Counter
 from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from itertools import chain, compress, groupby
 from logging import getLogger
 from math import isnan, isinf
-from os import PathLike
 
 from toron._typing import (
     Any,
@@ -149,6 +149,7 @@ class TopoNode(object):
     ) -> None:
         self._dal = data_access.get_data_access_layer(backend)
         self._connector = self._dal.DataConnector(**kwds)
+        self._path_hint = None
 
         with self._managed_cursor() as cursor:
             refresh_index_hash_property(
@@ -156,8 +157,31 @@ class TopoNode(object):
                 prop_repo=self._dal.PropertyRepository(cursor),
             )
 
+    @property
+    def path_hint(self) -> Optional[str]:
+        """The first known file path associated with this instance,
+        if any.
+
+        This property serves as a hint and is not guaranteed to be
+        a valid or current file path. It is not persisted when the
+        instance is saved to disk.
+
+        * If the instance was loaded from a file, this is the source
+          file path.
+        * If the instance was created in memory and later saved, this
+          is the first save path.
+        * If the instance was created in memory but has never been
+          saved, this will be ``None``.
+        * This value can be manually overwritten at any time.
+        """
+        return self._path_hint
+
+    @path_hint.setter
+    def path_hint(self, value: Union[str, bytes, os.PathLike]) -> None:
+        self._path_hint = os.fsdecode(value)
+
     @classmethod
-    def from_file(cls, path: Union[str, bytes, PathLike], **kwds) -> Self:
+    def from_file(cls, path: Union[str, bytes, os.PathLike], **kwds) -> Self:
         """Load a node from an existing file on drive."""
         backend = data_access.get_backend_from_path(path)
         if not backend:
@@ -166,13 +190,16 @@ class TopoNode(object):
         obj = cls.__new__(cls)
         obj._dal = data_access.get_data_access_layer(backend)
         obj._connector = obj._dal.DataConnector.from_file(path, **kwds)
+        obj._path_hint = os.fsdecode(path)
         return obj
 
     def to_file(
-        self, path: Union[str, bytes, PathLike], *, fsync: bool = True
+        self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
         """Write node data to a file."""
         self._connector.to_file(path=path, fsync=fsync)
+        if not self._path_hint:
+            self._path_hint = os.fsdecode(path)
 
     @contextmanager
     def _managed_connection(self) -> Generator[Any, None, None]:

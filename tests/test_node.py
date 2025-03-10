@@ -135,6 +135,42 @@ class TestFileHandling(unittest.TestCase):
         self.assertEqual(node.unique_id, original_unique_id,
                          msg='unique_id values should match')
 
+    def test_path_hint(self):
+        """Check `path_hint` property handling."""
+        node = TopoNode()
+        file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
+
+        # Should be `None` when created in memory but never saved.
+        self.assertIsNone(node.path_hint)
+
+        # Should be set when an instance is first saved to drive.
+        node.to_file(file_path)
+        self.assertEqual(node.path_hint, file_path)
+
+        # Should keep existing value if it's already set.
+        another_file_path = os.path.join(self.temp_dir.name, 'othernode.toron')
+        node.to_file(another_file_path)  # <- Save again to another path.
+        self.assertEqual(node.path_hint, file_path)
+
+        # Should be set when an instance is loaded from drive.
+        node = TopoNode.from_file(file_path)
+        self.assertEqual(node.path_hint, file_path)
+
+        # Check overwritten with relative path.
+        other_relative_path = os.path.normpath('some/other/path/mynode.toron')
+        node.path_hint = other_relative_path  # Overwrite existing value.
+        self.assertEqual(node.path_hint, other_relative_path)
+
+        # Check overwritten with absolute path.
+        other_absolute_path = os.path.normpath('/some/other/path/mynode.toron')
+        node.path_hint = other_absolute_path  # Overwrite existing value.
+        self.assertEqual(node.path_hint, other_absolute_path)
+
+        # Check that it remains `None` if `to_file()` fails.
+        node = TopoNode()  # <- Created in memory.
+        with suppress(TypeError):
+            node.to_file(object())  # <- Saving fails with TypeError.
+        self.assertIsNone(node.path_hint)
 
 class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
     def test_managed_connection_type(self):
