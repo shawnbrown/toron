@@ -204,7 +204,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
             ['a1', 'b2', 'c4'],  # <- index_id=4
         ])
         self.node.add_crosswalk(
-            other_node=mock_node,
+            node=mock_node,
             crosswalk_name='edge 1',
             description='Edge one description.',
             selectors=['[foo="bar"]'],
@@ -228,7 +228,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
             ],
         )
         self.node.add_crosswalk(
-            other_node=mock_node,
+            node=mock_node,
             crosswalk_name='edge 2',
             description='Edge two description.',
             selectors=['[foo]'],

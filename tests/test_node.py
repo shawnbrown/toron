@@ -2637,7 +2637,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         )
 
         node.add_crosswalk(  # <- Defining all properties.
-                other_node=mock_other_node,
+                node=mock_other_node,
                 crosswalk_name='name2',
                 description='The second crosswalk.',
                 selectors=['"[foo]"'],
