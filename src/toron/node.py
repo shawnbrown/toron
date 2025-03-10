@@ -1276,8 +1276,7 @@ class TopoNode(object):
 
     def add_crosswalk(
         self,
-        other_unique_id: str,
-        other_filename_hint: Union[str, None],
+        other_node: 'TopoNode',
         crosswalk_name: str,
         *,
         description: Optional[str] = None,
@@ -1287,6 +1286,8 @@ class TopoNode(object):
         other_index_hash: Optional[str] = None,
         is_locally_complete: bool = False,
     ) -> None:
+        other_unique_id = other_node.unique_id
+
         with self._managed_transaction() as cursor:
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
@@ -1312,7 +1313,7 @@ class TopoNode(object):
 
             crosswalk_repo.add(
                 other_unique_id=other_unique_id,
-                other_filename_hint=other_filename_hint,
+                other_filename_hint=other_node.path_hint,
                 name=crosswalk_name,
                 description=description,
                 selectors=selectors,

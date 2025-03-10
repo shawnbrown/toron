@@ -127,8 +127,7 @@ def load_mapping(
 
     if '->' in direction:
         right_node.add_crosswalk(
-            other_unique_id=left_node.unique_id,
-            other_filename_hint=None,
+            other_node=left_node,
             crosswalk_name=crosswalk_name,
             selectors=selectors,
             is_default=is_default,
@@ -142,8 +141,7 @@ def load_mapping(
 
     if '<-' in direction:
         left_node.add_crosswalk(
-            other_unique_id=right_node.unique_id,
-            other_filename_hint=None,
+            other_node=right_node,
             crosswalk_name=crosswalk_name,
             selectors=selectors,
             is_default=is_default,

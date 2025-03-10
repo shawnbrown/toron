@@ -2623,9 +2623,13 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         self.assertIsNone(result, msg='if specified node does not exist, should be None')
 
     def test_add_crosswalk(self):
+        mock_other_node = unittest.mock.Mock()
+        mock_other_node.unique_id = '111-111-1111'
+        mock_other_node.path_hint = None
+
         node = TopoNode()
 
-        node.add_crosswalk('111-111-1111', None, 'name1')  # <- Only required args (sets as default and logs warning).
+        node.add_crosswalk(mock_other_node, 'name1')  # <- Only required args (sets as default and logs warning).
 
         self.assertEqual(
             self.log_stream.getvalue(),
@@ -2633,8 +2637,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         )
 
         node.add_crosswalk(  # <- Defining all properties.
-                other_unique_id='111-111-1111',
-                other_filename_hint=None,
+                other_node=mock_other_node,
                 crosswalk_name='name2',
                 description='The second crosswalk.',
                 selectors=['"[foo]"'],

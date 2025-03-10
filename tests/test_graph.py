@@ -384,6 +384,10 @@ class TestLoadMapping(unittest.TestCase):
 
 class TestTranslate(unittest.TestCase):
     def setUp(self):
+        mock_node = unittest.mock.Mock()
+        mock_node.unique_id = '00000000-0000-0000-0000-000000000000'
+        mock_node.path_hint = 'other-file.toron'
+
         self.node = TopoNode()
         self.node.add_index_columns('A', 'B', 'C')
         self.node.add_discrete_categories({'A', 'B', 'C'})
@@ -395,8 +399,7 @@ class TestTranslate(unittest.TestCase):
             ['a1', 'b2', 'c4'],  # <- index_id=4
         ])
         self.node.add_crosswalk(
-            other_unique_id='00000000-0000-0000-0000-000000000000',
-            other_filename_hint='other-file.toron',
+            other_node=mock_node,
             crosswalk_name='edge 1',
             description='Edge one description.',
             selectors=['[foo="bar"]'],
@@ -420,8 +423,7 @@ class TestTranslate(unittest.TestCase):
             ],
         )
         self.node.add_crosswalk(
-            other_unique_id='00000000-0000-0000-0000-000000000000',
-            other_filename_hint='other-file.toron',
+            other_node=mock_node,
             crosswalk_name='edge 2',
             description='Edge two description.',
             selectors=['[foo]'],
