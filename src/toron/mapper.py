@@ -147,9 +147,18 @@ class Mapper(object):
         node_structures: Sequence['Structure'],
     ) -> List[Tuple[bytes, Optional[bytes]]]:
         """Return a list of level pairs--tuples containing two levels,
-        ``input_bytes`` and ``node_bytes``. Level pairs are sorted in
-        descending order of granularity (as defined in the node
-        structures). If an input level has no corresponding node level,
+        ``input_bytes`` and ``node_bytes``.
+
+        ``input_bytes``
+           The bytes derived from the given input data.
+
+        ``node_bytes``
+           The bytes that correspond to records in the TopoNode's
+           current structure.
+
+        Level pairs are sorted in descending order of granularity
+        (as defined in the node structures). If an input level has
+        no corresponding record in the TopoNode's current structure,
         then the ``node_bytes`` will be ``None``.
 
         .. code-block:: python
@@ -185,8 +194,8 @@ class Mapper(object):
             levels.append((input_bytes, node_bytes))
 
         # Sort levels from highest to lowest granularity.
-        sort_key = lambda x: granularity_dict.get(x[1], -1)
-        levels = sorted(levels, key=sort_key, reverse=True)
+        get_granularity = lambda x: granularity_dict.get(x[1], -1)
+        levels = sorted(levels, key=get_granularity, reverse=True)
 
         return levels
 
