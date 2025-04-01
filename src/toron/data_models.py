@@ -292,6 +292,14 @@ class BaseIndexRepository(ABC):
         values in ascending order.
         """
 
+    @abstractmethod
+    def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
+        """Find index_id values missing from the specified crosswalk.
+
+        It should raise an exception if the given *crosswalk_id* does
+        not exist.
+        """
+
     def get_cardinality(self, include_undefined: bool = True) -> int:
         """Return the number of records in the repository."""
         return sum(1 for _ in self.get_all(include_undefined))

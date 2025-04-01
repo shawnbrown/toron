@@ -96,6 +96,29 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return (row[0] for row in self._cursor)
 
+    def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
+        """Find index_id values missing from the specified crosswalk."""
+        sql = 'SELECT EXISTS (SELECT 1 FROM main.crosswalk WHERE crosswalk_id=?)'
+        self._cursor.execute(sql, (crosswalk_id,))
+        crosswalk_exists = self._cursor.fetchone()[0]
+        if not crosswalk_exists:
+            msg = f'crosswalk_id {crosswalk_id} does not exist'
+            raise Exception(msg)
+
+        sql = """
+            SELECT a.index_id
+            FROM main.node_index a
+            LEFT JOIN main.relation b ON (
+                a.index_id = b.index_id
+                AND b.crosswalk_id = ?
+            )
+            WHERE
+                b.index_id IS NULL
+                AND a.index_id != 0
+        """
+        self._cursor.execute(sql, (crosswalk_id,))
+        return (row[0] for row in self._cursor)
+
     def get_cardinality(self, include_undefined: bool = True) -> int:
         """Return the number of records in the repository."""
         sql = 'SELECT COUNT(*) FROM main.node_index'

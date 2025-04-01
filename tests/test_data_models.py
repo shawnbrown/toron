@@ -158,11 +158,11 @@ class IndexRepositoryBaseTest(ABC):
         connection = connector.acquire_connection()
         self.addCleanup(lambda: connector.release_connection(connection))
 
-        cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.cursor = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(self.cursor))
 
-        self.manager = self.dal.ColumnManager(cursor)
-        self.repository = self.dal.IndexRepository(cursor)
+        self.manager = self.dal.ColumnManager(self.cursor)
+        self.repository = self.dal.IndexRepository(self.cursor)
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
@@ -232,6 +232,41 @@ class IndexRepositoryBaseTest(ABC):
 
         results = self.repository.get_index_ids(ordered=True)
         self.assertEqual(list(results), [0, 1, 2, 3])
+
+    def test_find_unmatched_index_ids(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')
+        self.repository.add('bar', 'y')
+        self.repository.add('baz', 'z')
+
+        crosswalk_repo = self.dal.CrosswalkRepository(self.cursor)
+        relation_repo = self.dal.RelationRepository(self.cursor)
+
+        # Test some missing records.
+        crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
+        relation_repo.add(1, 1, 1, None,    131250, 1.0)
+        relation_repo.add(1, 2, 1, b'\x40',  40960, 0.625)
+        results = self.repository.find_unmatched_index_ids(crosswalk_id=1)
+        self.assertEqual(set(results), {2, 3})
+
+        # Test all missing records.
+        crosswalk_repo.add('111-11-1111', None, 'other2')  # Adds crosswalk_id 2.
+        results = self.repository.find_unmatched_index_ids(crosswalk_id=2)
+        self.assertEqual(set(results), {1, 2, 3})
+
+        # Test no missing records.
+        crosswalk_repo.add('111-11-1111', None, 'other3')  # Adds crosswalk_id 3.
+        relation_repo.add(3, 1, 1, None,    131250, 1.0)
+        relation_repo.add(3, 2, 1, b'\x40',  40960, 0.625)
+        relation_repo.add(3, 2, 2, b'\x40',  24576, 0.375)
+        relation_repo.add(3, 3, 3, None,    100000, 1.0)
+        results = self.repository.find_unmatched_index_ids(crosswalk_id=3)
+        self.assertEqual(set(results), set())
+
+        # Test no matching `crosswalk_id`.
+        regex = 'crosswalk_id 999 does not exist'
+        with self.assertRaisesRegex(Exception, regex):
+            results = self.repository.find_unmatched_index_ids(crosswalk_id=999)
 
     def test_get_distinct_labels(self):
         self.manager.add_columns('A', 'B', 'C')
