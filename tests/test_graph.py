@@ -104,7 +104,7 @@ class TestNormalizeMappingData(unittest.TestCase):
             list(data)  # Use list to consume iterator.
 
 
-class TestLoadMapping(unittest.TestCase):
+class TwoNodesBaseTestCase(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
@@ -183,6 +183,8 @@ class TestLoadMapping(unittest.TestCase):
         applogger.addHandler(handler)
         self.addCleanup(lambda: applogger.removeHandler(handler))
 
+
+class TestLoadMapping(TwoNodesBaseTestCase):
     def test_all_exact(self):
         mapping_data = [
             ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
