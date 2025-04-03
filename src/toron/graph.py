@@ -154,6 +154,69 @@ def load_mapping(
         )
 
 
+_MappingElementsTuple : TypeAlias = Union[
+    Tuple[int, int, Optional[bytes], float],
+    Tuple[None, int, None, None],
+    Tuple[int, None, None, None],
+]
+
+def _get_mapping_elements(
+    source_node: TopoNode,
+    target_node: TopoNode,
+    crosswalk_name: Optional[str] = None,
+) -> Generator[_MappingElementsTuple, None, None]:
+    """Get all mapped and disjoint elements involved in a mapping.
+
+    When mapping elements are grouped by match-status, they should be
+    given in the following order:
+
+    * Matched records should be given first.
+    * Unmatched right-side elements second.
+    * Unmatched left-side elements last.
+
+    This order is easier to work with in a spreadsheet program. It's
+    best to avoid giving right-side elements last because it's very
+    easy for users to overlook them when working on a mapping.
+    """
+    with target_node._managed_cursor() as trg_cursor:
+        trg_index_repo = target_node._dal.IndexRepository(trg_cursor)
+        trg_crosswalk_repo = target_node._dal.CrosswalkRepository(trg_cursor)
+        trg_relation_repo = target_node._dal.RelationRepository(trg_cursor)
+
+        crosswalk = target_node._get_crosswalk(
+            source_node,
+            crosswalk_name,
+            trg_crosswalk_repo,
+        )
+
+        if not crosswalk:
+            msg = f'no crosswalk named {crosswalk_name!r}'
+            raise Exception(msg)
+
+        # Yield matched records.
+        relations = trg_relation_repo.find_by_ids(crosswalk_id=crosswalk.id)
+        for rel in relations:
+            yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
+
+        # Yield unmatched right-side elements.
+        unmatched_index_ids = trg_index_repo.find_unmatched_index_ids(crosswalk.id)
+        for index_id in unmatched_index_ids:
+            yield (None, index_id, None, None)
+
+        # Yield unmatched left-side elements.
+        with source_node._managed_cursor() as src_cur:
+            src_index_repo = source_node._dal.IndexRepository(src_cur)
+
+            # Check each source index to see if it's mapped.
+            for other_index_id in src_index_repo.get_index_ids():
+                matches = trg_relation_repo.find_by_ids(
+                    crosswalk_id=crosswalk.id,
+                    other_index_id=other_index_id,
+                )
+                if next(matches, None) is None:  # Yield only if unmatched.
+                    yield (other_index_id, None, None, None)
+
+
 def _translate(
     quantity_iterator: QuantityIterator, node: TopoNode
 ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:

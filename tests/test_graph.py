@@ -18,6 +18,7 @@ from toron.data_models import (
 from toron.graph import (
     normalize_mapping_data,
     load_mapping,
+    _get_mapping_elements,
     _translate,
     translate,
     xadd_edge,
@@ -382,6 +383,164 @@ class TestLoadMapping(TwoNodesBaseTestCase):
                 (11, 1, 0, 0, None,      0.0, 1.0),
             ]
             self.assertEqual(results, expected)
+
+
+class TestGetMappingElements(TwoNodesBaseTestCase):
+    def test_fully_joined(self):
+        """Check fully mapped crosswalk."""
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (6, 6, b'\xe0', 100.0),
+                (7, 7, b'\xe0', 100.0),
+                (8, 8, b'\xe0', 100.0),
+                (9, 9, b'\xe0', 100.0),
+            ],
+            columns=['other_index_id', 'population', 'index_id', 'mapping_level'],
+        )
+
+        actual = _get_mapping_elements(self.node1, self.node2, 'population')
+        expected = [
+            (0, 0, None,      0.0),
+            (1, 1, b'\xe0',  25.0),
+            (1, 2, b'\xe0',  25.0),
+            (2, 3, b'\xe0',  50.0),
+            (3, 3, b'\xe0',  50.0),
+            (4, 4, b'\xe0',  55.0),
+            (5, 5, b'\xe0',  50.0),
+            (6, 6, b'\xe0', 100.0),
+            (7, 7, b'\xe0', 100.0),
+            (8, 8, b'\xe0', 100.0),
+            (9, 9, b'\xe0', 100.0),
+        ]
+        self.assertEqual(list(actual), expected)
+
+    def test_missing_left(self):
+        """Check unmapped left-side elemenets."""
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (5, 6, b'\xe0', 100.0),
+                (5, 7, b'\xe0', 100.0),
+                (5, 8, b'\xe0', 100.0),
+                (5, 9, b'\xe0', 100.0),
+            ],
+            columns=['other_index_id', 'population', 'index_id', 'mapping_level'],
+        )
+
+        actual = _get_mapping_elements(self.node1, self.node2, 'population')
+        expected = [
+            (0, 0, None,      0.0),
+            (1, 1, b'\xe0',  25.0),
+            (1, 2, b'\xe0',  25.0),
+            (2, 3, b'\xe0',  50.0),
+            (3, 3, b'\xe0',  50.0),
+            (4, 4, b'\xe0',  55.0),
+            (5, 5, b'\xe0',  50.0),
+            (5, 6, b'\xe0', 100.0),
+            (5, 7, b'\xe0', 100.0),
+            (5, 8, b'\xe0', 100.0),
+            (5, 9, b'\xe0', 100.0),
+            (6, None, None,     None),  # <- Unmapped left-side element.
+            (7, None, None,     None),  # <- Unmapped left-side element.
+            (8, None, None,     None),  # <- Unmapped left-side element.
+            (9, None, None,     None),  # <- Unmapped left-side element.
+        ]
+        self.assertEqual(list(actual), expected)
+
+    def test_missing_right(self):
+        """Check unmapped right-side elemenets."""
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (6, 5, b'\xe0', 100.0),
+                (7, 5, b'\xe0', 100.0),
+                (8, 5, b'\xe0', 100.0),
+                (9, 5, b'\xe0', 100.0),
+            ],
+            columns=['other_index_id', 'population', 'index_id', 'mapping_level'],
+        )
+
+        actual = _get_mapping_elements(self.node1, self.node2, 'population')
+        expected = [
+            (0,    0, None,      0.0),
+            (1,    1, b'\xe0',  25.0),
+            (1,    2, b'\xe0',  25.0),
+            (2,    3, b'\xe0',  50.0),
+            (3,    3, b'\xe0',  50.0),
+            (4,    4, b'\xe0',  55.0),
+            (5,    5, b'\xe0',  50.0),
+            (6,    5, b'\xe0', 100.0),
+            (7,    5, b'\xe0', 100.0),
+            (8,    5, b'\xe0', 100.0),
+            (9,    5, b'\xe0', 100.0),
+            (None, 6, None,     None),  # <- Unmapped right-side element.
+            (None, 7, None,     None),  # <- Unmapped right-side element.
+            (None, 8, None,     None),  # <- Unmapped right-side element.
+            (None, 9, None,     None),  # <- Unmapped right-side element.
+        ]
+        self.assertEqual(list(actual), expected)
+
+    def test_missing_left_and_right(self):
+        """Check unmapped left-side and right-side elemenets."""
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+            ],
+            columns=['other_index_id', 'population', 'index_id', 'mapping_level'],
+        )
+
+        actual = _get_mapping_elements(self.node1, self.node2, 'population')
+        expected = [
+            (0,    0, None,      0.0),
+            (1,    1, b'\xe0',  25.0),
+            (1,    2, b'\xe0',  25.0),
+            (2,    3, b'\xe0',  50.0),
+            (3,    3, b'\xe0',  50.0),
+            (4,    4, b'\xe0',  55.0),
+            (5,    5, b'\xe0',  50.0),
+            (None, 6, None,     None),  # <- Unmapped right-side element.
+            (None, 7, None,     None),  # <- Unmapped right-side element.
+            (None, 8, None,     None),  # <- Unmapped right-side element.
+            (None, 9, None,     None),  # <- Unmapped right-side element.
+            (6, None, None,     None),  # <- Unmapped left-side element.
+            (7, None, None,     None),  # <- Unmapped left-side element.
+            (8, None, None,     None),  # <- Unmapped left-side element.
+            (9, None, None,     None),  # <- Unmapped left-side element.
+        ]
+        self.assertEqual(list(actual), expected)
 
 
 class TestTranslate(unittest.TestCase):
