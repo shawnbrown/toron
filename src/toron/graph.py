@@ -205,16 +205,20 @@ def _get_mapping_elements(
 
         # Yield unmatched left-side elements.
         with source_node._managed_cursor() as src_cur:
-            src_index_repo = source_node._dal.IndexRepository(src_cur)
+            src_prop_repo = source_node._dal.PropertyRepository(src_cur)
 
-            # Check each source index to see if it's mapped.
-            for other_index_id in src_index_repo.get_index_ids():
-                matches = trg_relation_repo.find_by_ids(
-                    crosswalk_id=crosswalk.id,
-                    other_index_id=other_index_id,
-                )
-                if next(matches, None) is None:  # Yield only if unmatched.
-                    yield (other_index_id, None, None, None)
+            # Only check source indexes if the index hash is different.
+            if src_prop_repo.get('index_hash') != crosswalk.other_index_hash:
+                src_index_repo = source_node._dal.IndexRepository(src_cur)
+
+                # Check that each source index is matched to the target.
+                for other_index_id in src_index_repo.get_index_ids():
+                    matches = trg_relation_repo.find_by_ids(
+                        crosswalk_id=crosswalk.id,
+                        other_index_id=other_index_id,
+                    )
+                    if next(matches, None) is None:  # Yield only if unmatched.
+                        yield (other_index_id, None, None, None)
 
 
 def _translate(
