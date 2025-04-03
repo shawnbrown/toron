@@ -164,18 +164,6 @@ TabularData : TypeAlias = Union[
     Iterable[Mapping],
 ]
 
-TabularData.__doc__ = """
-A type alias for objects that can represent tabular data.
-
-Valid tabular data sources include:
-
-* an iterable of sequences (uses first item as a "header" row)
-* an iterable of dictionary rows (expects uniform dictionaries)
-
-This includes ``csv.reader(...)`` (an iterable of sequences)
-and ``csv.DictReader`` (an iterable of dictionary rows).
-"""
-
 
 _csv_reader_type = type(csv.reader([]))
 
