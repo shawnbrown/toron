@@ -155,9 +155,9 @@ def load_mapping(
 
 
 _MappingElementsTuple : TypeAlias = Union[
-    Tuple[int, int, Optional[bytes], float],
-    Tuple[None, int, None, None],
-    Tuple[int, None, None, None],
+    Tuple[int, int, Optional[bytes], float],  # <- Matched elements.
+    Tuple[None, int, None, None],  # <- Unmatched right-side elements.
+    Tuple[int, None, None, None],  # <- Unmatched left-side elements.
 ]
 
 def _get_mapping_elements(
