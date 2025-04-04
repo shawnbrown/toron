@@ -404,7 +404,7 @@ class TestGetMappingElements(TwoNodesBaseTestCase):
                 (8, 8, b'\xe0', 100.0),
                 (9, 9, b'\xe0', 100.0),
             ],
-            columns=['other_index_id', 'population', 'index_id', 'mapping_level'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
 
         actual = _get_mapping_elements(self.node1, self.node2, 'population')
@@ -441,7 +441,7 @@ class TestGetMappingElements(TwoNodesBaseTestCase):
                 (5, 8, b'\xe0', 100.0),
                 (5, 9, b'\xe0', 100.0),
             ],
-            columns=['other_index_id', 'population', 'index_id', 'mapping_level'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
 
         actual = _get_mapping_elements(self.node1, self.node2, 'population')
@@ -482,7 +482,7 @@ class TestGetMappingElements(TwoNodesBaseTestCase):
                 (8, 5, b'\xe0', 100.0),
                 (9, 5, b'\xe0', 100.0),
             ],
-            columns=['other_index_id', 'population', 'index_id', 'mapping_level'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
 
         actual = _get_mapping_elements(self.node1, self.node2, 'population')
@@ -519,7 +519,7 @@ class TestGetMappingElements(TwoNodesBaseTestCase):
                 (4, 4, b'\xe0',  55.0),
                 (5, 5, b'\xe0',  50.0),
             ],
-            columns=['other_index_id', 'population', 'index_id', 'mapping_level'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
 
         actual = _get_mapping_elements(self.node1, self.node2, 'population')

@@ -1456,6 +1456,7 @@ class TopoNode(object):
             defined, the existing methods should be revisited and
             finalized.
         """
+        # TODO: Fix `columns` not being used in the function.
         data, columns = normalize_tabular(data, columns)
 
         counter: Dict[str, int] = Counter()
