@@ -106,15 +106,9 @@ class IndexRepository(BaseIndexRepository):
             raise Exception(msg)
 
         sql = """
-            SELECT a.index_id
-            FROM main.node_index a
-            LEFT JOIN main.relation b ON (
-                a.index_id = b.index_id
-                AND b.crosswalk_id = ?
-            )
-            WHERE
-                b.index_id IS NULL
-                AND a.index_id != 0
+            SELECT index_id FROM main.node_index WHERE index_id != 0
+            EXCEPT
+            SELECT index_id FROM main.relation WHERE crosswalk_id = ?
         """
         self._cursor.execute(sql, (crosswalk_id,))
         return (row[0] for row in self._cursor)
