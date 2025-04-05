@@ -98,6 +98,8 @@ class IndexRepository(BaseIndexRepository):
 
     def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
         """Find index_id values missing from the specified crosswalk."""
+        # TODO: Decide if this method should be moved to RelationRepository.
+        #       Compare it to RelationRepository.crosswalk_is_complete().
         sql = 'SELECT EXISTS (SELECT 1 FROM main.crosswalk WHERE crosswalk_id=?)'
         self._cursor.execute(sql, (crosswalk_id,))
         crosswalk_exists = self._cursor.fetchone()[0]
@@ -1036,6 +1038,8 @@ class RelationRepository(BaseRelationRepository):
 
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
+        # TODO: See if this SQL can be optimized. Compare it against
+        #       the IndexRepository.find_unmatched_index_ids() method.
         self._cursor.execute(
             """
                 SELECT 1
