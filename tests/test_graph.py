@@ -710,6 +710,9 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
     def test_missing_left_and_right(self):
         """Check unmapped left-side and right-side elemenets."""
+        self.node1.set_domain({'dataset': 'AAA', 'group': 'XXX'})
+        self.node2.set_domain({'dataset': 'BBB'})
+
         self.node2.add_crosswalk(self.node1, 'population', is_default=True)
         self.node2.insert_relations2(
             node_or_ref=self.node1,
@@ -727,22 +730,22 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
         actual = get_mapping(self.node1, self.node2, 'population')
         expected = [
-            ('index_id', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
-            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', ''),
-            (1, 'A', 'z', 'a', 25.0, 1, 'A', 'z', 'a', ''),
-            (1, 'A', 'z', 'a', 25.0, 2, 'A', 'z', 'b', ''),
-            (2, 'B', 'x', 'b', 50.0, 3, 'B', 'x', 'c', ''),
-            (3, 'B', 'y', 'c', 50.0, 3, 'B', 'x', 'c', ''),
-            (4, 'C', 'x', 'd', 55.0, 4, 'C', 'x', 'd', ''),
-            (5, 'C', 'y', 'e', 50.0, 5, 'C', 'y', 'e', ''),
-            (None, '', '', '', None, 6, 'D', 'x', 'f', ''),
-            (None, '', '', '', None, 7, 'D', 'x', 'g', ''),
-            (None, '', '', '', None, 8, 'D', 'y', 'h', ''),
-            (None, '', '', '', None, 9, 'D', 'y', 'i', ''),
-            (6, 'D', 'x', 'f', None, None, '', '', '', ''),
-            (7, 'D', 'x', 'g', None, None, '', '', '', ''),
-            (8, 'D', 'y', 'h', None, None, '', '', '', ''),
-            (9, 'D', 'y', 'i', None, None, '', '', '', ''),
+            ('index_id', 'dataset', 'group', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'dataset', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
+            (0, 'AAA', 'XXX', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', ''),
+            (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 1, 'BBB', 'A', 'z', 'a', ''),
+            (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 2, 'BBB', 'A', 'z', 'b', ''),
+            (2, 'AAA', 'XXX', 'B', 'x', 'b', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
+            (3, 'AAA', 'XXX', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
+            (4, 'AAA', 'XXX', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', ''),
+            (5, 'AAA', 'XXX', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', ''),
+            (None, 'AAA', 'XXX', '', '', '', None, 6, 'BBB', 'D', 'x', 'f', ''),
+            (None, 'AAA', 'XXX', '', '', '', None, 7, 'BBB', 'D', 'x', 'g', ''),
+            (None, 'AAA', 'XXX', '', '', '', None, 8, 'BBB', 'D', 'y', 'h', ''),
+            (None, 'AAA', 'XXX', '', '', '', None, 9, 'BBB', 'D', 'y', 'i', ''),
+            (6, 'AAA', 'XXX', 'D', 'x', 'f', None, None, 'BBB', '', '', '', ''),
+            (7, 'AAA', 'XXX', 'D', 'x', 'g', None, None, 'BBB', '', '', '', ''),
+            (8, 'AAA', 'XXX', 'D', 'y', 'h', None, None, 'BBB', '', '', '', ''),
+            (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, 'BBB', '', '', '', ''),
         ]
         self.assertEqual(list(actual), expected)
 
