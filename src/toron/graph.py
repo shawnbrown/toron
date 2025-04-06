@@ -199,9 +199,11 @@ def _get_mapping_elements(
             yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
 
         # Yield unmatched right-side elements.
-        unmatched_index_ids = trg_index_repo.find_unmatched_index_ids(crosswalk.id)
-        for index_id in unmatched_index_ids:
-            yield (None, index_id, None, None)
+        if not crosswalk.is_locally_complete:
+            # Only search for elements when crosswalk is not locally complete.
+            unmatched_index_ids = trg_index_repo.find_unmatched_index_ids(crosswalk.id)
+            for index_id in unmatched_index_ids:
+                yield (None, index_id, None, None)
 
         # Yield unmatched left-side elements.
         with source_node._managed_cursor() as src_cur:
