@@ -225,7 +225,7 @@ def _get_mapping_elements(
 
 def _get_ambiguous_fields(
     mapping_level: Optional[bytes], column_names: Sequence[str]
-) -> str:
+) -> Optional[str]:
     """Return a formatted string of ambiguous field names.
 
     The mapping level ``b'\x80'`` represents (1, 0, 0). Given three
@@ -253,7 +253,7 @@ def _get_ambiguous_fields(
         ''
     """
     if mapping_level is None:
-        return ''
+        return None
     inverted_level = [(not bit) for bit in BitFlags(mapping_level)]
     ambiguous_fields = compress(column_names, inverted_level)
     return ', '.join(ambiguous_fields)

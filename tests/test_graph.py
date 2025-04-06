@@ -569,7 +569,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         actual = get_mapping(self.node1, self.node2, 'population')
         expected = [
             ('index_id', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
-            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', ''),
+            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', None),
             (1, 'A', 'z', 'a', 25.0, 1, 'A', 'z', 'a', 'idx2, idx3'),
             (1, 'A', 'z', 'a', 25.0, 2, 'A', 'z', 'b', 'idx2, idx3'),
             (2, 'B', 'x', 'b', 50.0, 3, 'B', 'x', 'c', 'idx3'),
@@ -610,7 +610,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         actual = get_mapping(self.node1, self.node2, 'population')
         expected = [
             ('index_id', 'dataset', 'group', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'dataset', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
-            (0, 'AAA', 'XXX', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', ''),
+            (0, 'AAA', 'XXX', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', None),
             (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 1, 'BBB', 'A', 'z', 'a', ''),
             (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 2, 'BBB', 'A', 'z', 'b', ''),
             (2, 'AAA', 'XXX', 'B', 'x', 'b', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
@@ -648,7 +648,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         actual = get_mapping(self.node1, self.node2, 'population')
         expected = [
             ('index_id', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
-            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', ''),
+            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', None),
             (1, 'A', 'z', 'a', 25.0, 1, 'A', 'z', 'a', ''),
             (1, 'A', 'z', 'a', 25.0, 2, 'A', 'z', 'b', ''),
             (2, 'B', 'x', 'b', 50.0, 3, 'B', 'x', 'c', ''),
@@ -659,10 +659,10 @@ class TestGetMapping(TwoNodesBaseTestCase):
             (5, 'C', 'y', 'e', 100.0, 7, 'D', 'x', 'g', ''),
             (5, 'C', 'y', 'e', 100.0, 8, 'D', 'y', 'h', ''),
             (5, 'C', 'y', 'e', 100.0, 9, 'D', 'y', 'i', ''),
-            (6, 'D', 'x', 'f', None, None, None, None, None, ''),
-            (7, 'D', 'x', 'g', None, None, None, None, None, ''),
-            (8, 'D', 'y', 'h', None, None, None, None, None, ''),
-            (9, 'D', 'y', 'i', None, None, None, None, None, ''),
+            (6, 'D', 'x', 'f', None, None, None, None, None, None),
+            (7, 'D', 'x', 'g', None, None, None, None, None, None),
+            (8, 'D', 'y', 'h', None, None, None, None, None, None),
+            (9, 'D', 'y', 'i', None, None, None, None, None, None),
         ]
         self.assertEqual(list(actual), expected)
 
@@ -690,7 +690,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         actual = get_mapping(self.node1, self.node2, 'population')
         expected = [
             ('index_id', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
-            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', ''),
+            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', None),
             (1, 'A', 'z', 'a', 25.0, 1, 'A', 'z', 'a', ''),
             (1, 'A', 'z', 'a', 25.0, 2, 'A', 'z', 'b', ''),
             (2, 'B', 'x', 'b', 50.0, 3, 'B', 'x', 'c', ''),
@@ -701,10 +701,10 @@ class TestGetMapping(TwoNodesBaseTestCase):
             (7, 'D', 'x', 'g', 100.0, 5, 'C', 'y', 'e', ''),
             (8, 'D', 'y', 'h', 100.0, 5, 'C', 'y', 'e', ''),
             (9, 'D', 'y', 'i', 100.0, 5, 'C', 'y', 'e', ''),
-            (None, None, None, None, None, 6, 'D', 'x', 'f', ''),
-            (None, None, None, None, None, 7, 'D', 'x', 'g', ''),
-            (None, None, None, None, None, 8, 'D', 'y', 'h', ''),
-            (None, None, None, None, None, 9, 'D', 'y', 'i', ''),
+            (None, None, None, None, None, 6, 'D', 'x', 'f', None),
+            (None, None, None, None, None, 7, 'D', 'x', 'g', None),
+            (None, None, None, None, None, 8, 'D', 'y', 'h', None),
+            (None, None, None, None, None, 9, 'D', 'y', 'i', None),
         ]
         self.assertEqual(list(actual), expected)
 
@@ -731,21 +731,21 @@ class TestGetMapping(TwoNodesBaseTestCase):
         actual = get_mapping(self.node1, self.node2, 'population')
         expected = [
             ('index_id', 'dataset', 'group', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'dataset', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
-            (0, 'AAA', 'XXX', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', ''),
+            (0, 'AAA', 'XXX', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', None),
             (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 1, 'BBB', 'A', 'z', 'a', ''),
             (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 2, 'BBB', 'A', 'z', 'b', ''),
             (2, 'AAA', 'XXX', 'B', 'x', 'b', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
             (3, 'AAA', 'XXX', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
             (4, 'AAA', 'XXX', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', ''),
             (5, 'AAA', 'XXX', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', ''),
-            (None, None, None, None, None, None, None, 6, 'BBB', 'D', 'x', 'f', ''),
-            (None, None, None, None, None, None, None, 7, 'BBB', 'D', 'x', 'g', ''),
-            (None, None, None, None, None, None, None, 8, 'BBB', 'D', 'y', 'h', ''),
-            (None, None, None, None, None, None, None, 9, 'BBB', 'D', 'y', 'i', ''),
-            (6, 'AAA', 'XXX', 'D', 'x', 'f', None, None, None, None, None, None, ''),
-            (7, 'AAA', 'XXX', 'D', 'x', 'g', None, None, None, None, None, None, ''),
-            (8, 'AAA', 'XXX', 'D', 'y', 'h', None, None, None, None, None, None, ''),
-            (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, None, None, None, None, ''),
+            (None, None, None, None, None, None, None, 6, 'BBB', 'D', 'x', 'f', None),
+            (None, None, None, None, None, None, None, 7, 'BBB', 'D', 'x', 'g', None),
+            (None, None, None, None, None, None, None, 8, 'BBB', 'D', 'y', 'h', None),
+            (None, None, None, None, None, None, None, 9, 'BBB', 'D', 'y', 'i', None),
+            (6, 'AAA', 'XXX', 'D', 'x', 'f', None, None, None, None, None, None, None),
+            (7, 'AAA', 'XXX', 'D', 'x', 'g', None, None, None, None, None, None, None),
+            (8, 'AAA', 'XXX', 'D', 'y', 'h', None, None, None, None, None, None, None),
+            (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, None, None, None, None, None),
         ]
         self.assertEqual(list(actual), expected)
 
