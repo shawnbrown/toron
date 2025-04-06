@@ -19,6 +19,7 @@ from toron.graph import (
     normalize_mapping_data,
     load_mapping,
     _get_mapping_elements,
+    get_mapping,
     _translate,
     translate,
     xadd_edge,
@@ -539,6 +540,209 @@ class TestGetMappingElements(TwoNodesBaseTestCase):
             (7, None, None,     None),  # <- Unmapped left-side element.
             (8, None, None,     None),  # <- Unmapped left-side element.
             (9, None, None,     None),  # <- Unmapped left-side element.
+        ]
+        self.assertEqual(list(actual), expected)
+
+
+class TestGetMapping(TwoNodesBaseTestCase):
+    def test_fully_joined_no_domain_some_ambiguous(self):
+        """Check fully mapped crosswalk."""
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\x80',  25.0),  # ambiguous: b'\x80' -> 1, 0, 0
+                (1, 2, b'\x80',  25.0),  # ambiguous: b'\x80' -> 1, 0, 0
+                (2, 3, b'\xc0',  50.0),  # ambiguous: b'\xc0' -> 1, 1, 0
+                (3, 3, b'\xc0',  50.0),  # ambiguous: b'\xc0' -> 1, 1, 0
+                (4, 4, b'\xe0',  55.0),  # b'\xe0' (1, 1, 1)
+                (5, 5, b'\xe0',  50.0),  # b'\xe0' (1, 1, 1)
+                (6, 6, b'\xe0', 100.0),  # b'\xe0' (1, 1, 1)
+                (7, 7, b'\xe0', 100.0),  # b'\xe0' (1, 1, 1)
+                (8, 8, b'\xe0', 100.0),  # b'\xe0' (1, 1, 1)
+                (9, 9, b'\xe0', 100.0),  # b'\xe0' (1, 1, 1)
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+
+        actual = get_mapping(self.node1, self.node2, 'population')
+        expected = [
+            ('index_id', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
+            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', ''),
+            (1, 'A', 'z', 'a', 25.0, 1, 'A', 'z', 'a', 'idx2, idx3'),
+            (1, 'A', 'z', 'a', 25.0, 2, 'A', 'z', 'b', 'idx2, idx3'),
+            (2, 'B', 'x', 'b', 50.0, 3, 'B', 'x', 'c', 'idx3'),
+            (3, 'B', 'y', 'c', 50.0, 3, 'B', 'x', 'c', 'idx3'),
+            (4, 'C', 'x', 'd', 55.0, 4, 'C', 'x', 'd', ''),
+            (5, 'C', 'y', 'e', 50.0, 5, 'C', 'y', 'e', ''),
+            (6, 'D', 'x', 'f', 100.0, 6, 'D', 'x', 'f', ''),
+            (7, 'D', 'x', 'g', 100.0, 7, 'D', 'x', 'g', ''),
+            (8, 'D', 'y', 'h', 100.0, 8, 'D', 'y', 'h', ''),
+            (9, 'D', 'y', 'i', 100.0, 9, 'D', 'y', 'i', ''),
+        ]
+        self.assertEqual(list(actual), expected)
+
+    def test_fully_joined_with_domain(self):
+        """Check fully mapped crosswalk."""
+        self.node1.set_domain({'dataset': 'AAA', 'group': 'XXX'})
+        self.node2.set_domain({'dataset': 'BBB'})
+
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (6, 6, b'\xe0', 100.0),
+                (7, 7, b'\xe0', 100.0),
+                (8, 8, b'\xe0', 100.0),
+                (9, 9, b'\xe0', 100.0),
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+
+        actual = get_mapping(self.node1, self.node2, 'population')
+        expected = [
+            ('index_id', 'dataset', 'group', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'dataset', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
+            (0, 'AAA', 'XXX', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', ''),
+            (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 1, 'BBB', 'A', 'z', 'a', ''),
+            (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 2, 'BBB', 'A', 'z', 'b', ''),
+            (2, 'AAA', 'XXX', 'B', 'x', 'b', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
+            (3, 'AAA', 'XXX', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
+            (4, 'AAA', 'XXX', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', ''),
+            (5, 'AAA', 'XXX', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', ''),
+            (6, 'AAA', 'XXX', 'D', 'x', 'f', 100.0, 6, 'BBB', 'D', 'x', 'f', ''),
+            (7, 'AAA', 'XXX', 'D', 'x', 'g', 100.0, 7, 'BBB', 'D', 'x', 'g', ''),
+            (8, 'AAA', 'XXX', 'D', 'y', 'h', 100.0, 8, 'BBB', 'D', 'y', 'h', ''),
+            (9, 'AAA', 'XXX', 'D', 'y', 'i', 100.0, 9, 'BBB', 'D', 'y', 'i', ''),
+        ]
+        self.assertEqual(list(actual), expected)
+
+    def test_missing_left(self):
+        """Check unmapped left-side elemenets."""
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (5, 6, b'\xe0', 100.0),
+                (5, 7, b'\xe0', 100.0),
+                (5, 8, b'\xe0', 100.0),
+                (5, 9, b'\xe0', 100.0),
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+
+        actual = get_mapping(self.node1, self.node2, 'population')
+        expected = [
+            ('index_id', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
+            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', ''),
+            (1, 'A', 'z', 'a', 25.0, 1, 'A', 'z', 'a', ''),
+            (1, 'A', 'z', 'a', 25.0, 2, 'A', 'z', 'b', ''),
+            (2, 'B', 'x', 'b', 50.0, 3, 'B', 'x', 'c', ''),
+            (3, 'B', 'y', 'c', 50.0, 3, 'B', 'x', 'c', ''),
+            (4, 'C', 'x', 'd', 55.0, 4, 'C', 'x', 'd', ''),
+            (5, 'C', 'y', 'e', 50.0, 5, 'C', 'y', 'e', ''),
+            (5, 'C', 'y', 'e', 100.0, 6, 'D', 'x', 'f', ''),
+            (5, 'C', 'y', 'e', 100.0, 7, 'D', 'x', 'g', ''),
+            (5, 'C', 'y', 'e', 100.0, 8, 'D', 'y', 'h', ''),
+            (5, 'C', 'y', 'e', 100.0, 9, 'D', 'y', 'i', ''),
+            (6, 'D', 'x', 'f', None, None, '', '', '', ''),
+            (7, 'D', 'x', 'g', None, None, '', '', '', ''),
+            (8, 'D', 'y', 'h', None, None, '', '', '', ''),
+            (9, 'D', 'y', 'i', None, None, '', '', '', ''),
+        ]
+        self.assertEqual(list(actual), expected)
+
+    def test_missing_right(self):
+        """Check unmapped right-side elemenets."""
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (6, 5, b'\xe0', 100.0),
+                (7, 5, b'\xe0', 100.0),
+                (8, 5, b'\xe0', 100.0),
+                (9, 5, b'\xe0', 100.0),
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+
+        actual = get_mapping(self.node1, self.node2, 'population')
+        expected = [
+            ('index_id', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
+            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', ''),
+            (1, 'A', 'z', 'a', 25.0, 1, 'A', 'z', 'a', ''),
+            (1, 'A', 'z', 'a', 25.0, 2, 'A', 'z', 'b', ''),
+            (2, 'B', 'x', 'b', 50.0, 3, 'B', 'x', 'c', ''),
+            (3, 'B', 'y', 'c', 50.0, 3, 'B', 'x', 'c', ''),
+            (4, 'C', 'x', 'd', 55.0, 4, 'C', 'x', 'd', ''),
+            (5, 'C', 'y', 'e', 50.0, 5, 'C', 'y', 'e', ''),
+            (6, 'D', 'x', 'f', 100.0, 5, 'C', 'y', 'e', ''),
+            (7, 'D', 'x', 'g', 100.0, 5, 'C', 'y', 'e', ''),
+            (8, 'D', 'y', 'h', 100.0, 5, 'C', 'y', 'e', ''),
+            (9, 'D', 'y', 'i', 100.0, 5, 'C', 'y', 'e', ''),
+            (None, '', '', '', None, 6, 'D', 'x', 'f', ''),
+            (None, '', '', '', None, 7, 'D', 'x', 'g', ''),
+            (None, '', '', '', None, 8, 'D', 'y', 'h', ''),
+            (None, '', '', '', None, 9, 'D', 'y', 'i', ''),
+        ]
+        self.assertEqual(list(actual), expected)
+
+    def test_missing_left_and_right(self):
+        """Check unmapped left-side and right-side elemenets."""
+        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
+        )
+
+        actual = get_mapping(self.node1, self.node2, 'population')
+        expected = [
+            ('index_id', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
+            (0, '-', '-', '-', 0.0, 0, '-', '-', '-', ''),
+            (1, 'A', 'z', 'a', 25.0, 1, 'A', 'z', 'a', ''),
+            (1, 'A', 'z', 'a', 25.0, 2, 'A', 'z', 'b', ''),
+            (2, 'B', 'x', 'b', 50.0, 3, 'B', 'x', 'c', ''),
+            (3, 'B', 'y', 'c', 50.0, 3, 'B', 'x', 'c', ''),
+            (4, 'C', 'x', 'd', 55.0, 4, 'C', 'x', 'd', ''),
+            (5, 'C', 'y', 'e', 50.0, 5, 'C', 'y', 'e', ''),
+            (None, '', '', '', None, 6, 'D', 'x', 'f', ''),
+            (None, '', '', '', None, 7, 'D', 'x', 'g', ''),
+            (None, '', '', '', None, 8, 'D', 'y', 'h', ''),
+            (None, '', '', '', None, 9, 'D', 'y', 'i', ''),
+            (6, 'D', 'x', 'f', None, None, '', '', '', ''),
+            (7, 'D', 'x', 'g', None, None, '', '', '', ''),
+            (8, 'D', 'y', 'h', None, None, '', '', '', ''),
+            (9, 'D', 'y', 'i', None, None, '', '', '', ''),
         ]
         self.assertEqual(list(actual), expected)
 

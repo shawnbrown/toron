@@ -223,6 +223,120 @@ def _get_mapping_elements(
                         yield (other_index_id, None, None, None)
 
 
+def _get_ambiguous_fields(
+    mapping_level: Optional[bytes], column_names: Sequence[str]
+) -> str:
+    """Return a formatted string of ambiguous field names.
+
+    The mapping level ``b'\x80'`` represents (1, 0, 0). Given three
+    fields, the second and third fields are marked as ambiguous::
+
+        >>> _get_ambiguous_fields(b'\xc0', ['foo', 'bar', 'baz'])
+        'bar, baz'
+
+    The mapping level ``b'\xc0'`` represents (1, 1, 0). Given three
+    fields, the last field is marked as ambiguous::
+
+        >>> _get_ambiguous_fields(b'\xc0', ['foo', 'bar', 'baz'])
+        'baz'
+
+    The mapping level ``b'\xe0'`` represents (1, 1, 1). Given three
+    columns, then they are all mapped and there are no ambiguous
+    fields::
+
+        >>> _get_ambiguous_fields(b'\xe0', ['foo', 'bar', 'baz'])
+        ''
+
+    When given ``None`` no fields are treated as ambiguous::
+
+        >>> _get_ambiguous_fields(None, ['foo', 'bar', 'baz'])
+        ''
+    """
+    if mapping_level is None:
+        return ''
+    inverted_level = [(not bit) for bit in BitFlags(mapping_level)]
+    ambiguous_fields = compress(column_names, inverted_level)
+    return ', '.join(ambiguous_fields)
+
+
+def get_mapping(
+    source_node: TopoNode,
+    target_node: TopoNode,
+    crosswalk_name: Optional[str] = None,
+    header: bool = True,
+) -> Iterator[Tuple]:
+    """Yield an index mapping from *source_node* to *target_node*
+    for a particular crosswalk.
+    """
+    src_index_cols = source_node.index_columns
+    trg_index_cols = target_node.index_columns
+
+    src_domain = source_node.domain
+    src_domain_keys = tuple(src_domain.keys())
+    src_domain_vals = tuple(src_domain.values())
+
+    trg_domain = target_node.domain
+    trg_domain_keys = tuple(trg_domain.keys())
+    trg_domain_vals = tuple(trg_domain.values())
+
+    mapping_elements = _get_mapping_elements(
+        source_node=source_node,
+        target_node=target_node,
+        crosswalk_name=crosswalk_name,
+    )
+
+    with source_node._managed_cursor() as src_cur, \
+            target_node._managed_cursor() as trg_cur:
+        src_index_repo = source_node._dal.IndexRepository(src_cur)
+        trg_index_repo = target_node._dal.IndexRepository(trg_cur)
+
+        if header:
+            yield (
+                ('index_id',)
+                + src_domain_keys
+                + src_index_cols
+                + (crosswalk_name,)
+                + ('index_id',)
+                + trg_domain_keys
+                + trg_index_cols
+                + ('ambiguous_fields',)
+            )
+
+        for element in mapping_elements:
+            src_index_id, trg_index_id, mapping_level, rel_value = element
+
+            # Get source node labels.
+            if src_index_id is not None:
+                src_index = src_index_repo.get(src_index_id)
+                if src_index:
+                    src_index_labels = src_index.labels
+                else:
+                    src_index_labels = ('',) * len(src_index_cols)
+            else:
+                src_index_labels = ('',) * len(src_index_cols)
+
+            # Get target node labels.
+            if trg_index_id is not None:
+                trg_index = trg_index_repo.get(trg_index_id)
+                if trg_index:
+                    trg_index_labels = trg_index.labels
+                else:
+                    trg_index_labels = ('',) * len(trg_index_cols)
+            else:
+                trg_index_labels = ('',) * len(trg_index_cols)
+
+            yield (
+                (src_index_id,)
+                + src_domain_vals
+                + src_index_labels
+                + (rel_value,)
+                + (trg_index_id,)
+                + trg_domain_vals
+                + trg_index_labels
+                + (_get_ambiguous_fields(mapping_level, trg_index_cols),)
+            )
+
+
 def _translate(
     quantity_iterator: QuantityIterator, node: TopoNode
 ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
