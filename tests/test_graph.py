@@ -659,10 +659,10 @@ class TestGetMapping(TwoNodesBaseTestCase):
             (5, 'C', 'y', 'e', 100.0, 7, 'D', 'x', 'g', ''),
             (5, 'C', 'y', 'e', 100.0, 8, 'D', 'y', 'h', ''),
             (5, 'C', 'y', 'e', 100.0, 9, 'D', 'y', 'i', ''),
-            (6, 'D', 'x', 'f', None, None, '', '', '', ''),
-            (7, 'D', 'x', 'g', None, None, '', '', '', ''),
-            (8, 'D', 'y', 'h', None, None, '', '', '', ''),
-            (9, 'D', 'y', 'i', None, None, '', '', '', ''),
+            (6, 'D', 'x', 'f', None, None, None, None, None, ''),
+            (7, 'D', 'x', 'g', None, None, None, None, None, ''),
+            (8, 'D', 'y', 'h', None, None, None, None, None, ''),
+            (9, 'D', 'y', 'i', None, None, None, None, None, ''),
         ]
         self.assertEqual(list(actual), expected)
 
@@ -701,10 +701,10 @@ class TestGetMapping(TwoNodesBaseTestCase):
             (7, 'D', 'x', 'g', 100.0, 5, 'C', 'y', 'e', ''),
             (8, 'D', 'y', 'h', 100.0, 5, 'C', 'y', 'e', ''),
             (9, 'D', 'y', 'i', 100.0, 5, 'C', 'y', 'e', ''),
-            (None, '', '', '', None, 6, 'D', 'x', 'f', ''),
-            (None, '', '', '', None, 7, 'D', 'x', 'g', ''),
-            (None, '', '', '', None, 8, 'D', 'y', 'h', ''),
-            (None, '', '', '', None, 9, 'D', 'y', 'i', ''),
+            (None, None, None, None, None, 6, 'D', 'x', 'f', ''),
+            (None, None, None, None, None, 7, 'D', 'x', 'g', ''),
+            (None, None, None, None, None, 8, 'D', 'y', 'h', ''),
+            (None, None, None, None, None, 9, 'D', 'y', 'i', ''),
         ]
         self.assertEqual(list(actual), expected)
 
@@ -738,14 +738,14 @@ class TestGetMapping(TwoNodesBaseTestCase):
             (3, 'AAA', 'XXX', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
             (4, 'AAA', 'XXX', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', ''),
             (5, 'AAA', 'XXX', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', ''),
-            (None, None, None, '', '', '', None, 6, 'BBB', 'D', 'x', 'f', ''),
-            (None, None, None, '', '', '', None, 7, 'BBB', 'D', 'x', 'g', ''),
-            (None, None, None, '', '', '', None, 8, 'BBB', 'D', 'y', 'h', ''),
-            (None, None, None, '', '', '', None, 9, 'BBB', 'D', 'y', 'i', ''),
-            (6, 'AAA', 'XXX', 'D', 'x', 'f', None, None, None, '', '', '', ''),
-            (7, 'AAA', 'XXX', 'D', 'x', 'g', None, None, None, '', '', '', ''),
-            (8, 'AAA', 'XXX', 'D', 'y', 'h', None, None, None, '', '', '', ''),
-            (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, None, '', '', '', ''),
+            (None, None, None, None, None, None, None, 6, 'BBB', 'D', 'x', 'f', ''),
+            (None, None, None, None, None, None, None, 7, 'BBB', 'D', 'x', 'g', ''),
+            (None, None, None, None, None, None, None, 8, 'BBB', 'D', 'y', 'h', ''),
+            (None, None, None, None, None, None, None, 9, 'BBB', 'D', 'y', 'i', ''),
+            (6, 'AAA', 'XXX', 'D', 'x', 'f', None, None, None, None, None, None, ''),
+            (7, 'AAA', 'XXX', 'D', 'x', 'g', None, None, None, None, None, None, ''),
+            (8, 'AAA', 'XXX', 'D', 'y', 'h', None, None, None, None, None, None, ''),
+            (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, None, None, None, None, ''),
         ]
         self.assertEqual(list(actual), expected)
 

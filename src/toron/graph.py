@@ -304,6 +304,8 @@ def get_mapping(
 
         src_domain_output: Tuple[Optional[str], ...]
         trg_domain_output: Tuple[Optional[str], ...]
+        src_index_labels: Tuple[Optional[str], ...]
+        trg_index_labels: Tuple[Optional[str], ...]
 
         for element in mapping_elements:
             src_index_id, trg_index_id, mapping_level, rel_value = element
@@ -315,10 +317,10 @@ def get_mapping(
                 if src_index:
                     src_index_labels = src_index.labels
                 else:
-                    src_index_labels = ('',) * len(src_index_cols)
+                    src_index_labels = (None,) * len(src_index_cols)
             else:
                 src_domain_output = (None,) * len(src_domain_vals)
-                src_index_labels = ('',) * len(src_index_cols)
+                src_index_labels = (None,) * len(src_index_cols)
 
             # Set domain output and get target node labels.
             if trg_index_id is not None:
@@ -327,10 +329,10 @@ def get_mapping(
                 if trg_index:
                     trg_index_labels = trg_index.labels
                 else:
-                    trg_index_labels = ('',) * len(trg_index_cols)
+                    trg_index_labels = (None,) * len(trg_index_cols)
             else:
                 trg_domain_output = (None,) * len(trg_domain_vals)
-                trg_index_labels = ('',) * len(trg_index_cols)
+                trg_index_labels = (None,) * len(trg_index_cols)
 
             yield (
                 (src_index_id,)
