@@ -738,14 +738,14 @@ class TestGetMapping(TwoNodesBaseTestCase):
             (3, 'AAA', 'XXX', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', ''),
             (4, 'AAA', 'XXX', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', ''),
             (5, 'AAA', 'XXX', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', ''),
-            (None, 'AAA', 'XXX', '', '', '', None, 6, 'BBB', 'D', 'x', 'f', ''),
-            (None, 'AAA', 'XXX', '', '', '', None, 7, 'BBB', 'D', 'x', 'g', ''),
-            (None, 'AAA', 'XXX', '', '', '', None, 8, 'BBB', 'D', 'y', 'h', ''),
-            (None, 'AAA', 'XXX', '', '', '', None, 9, 'BBB', 'D', 'y', 'i', ''),
-            (6, 'AAA', 'XXX', 'D', 'x', 'f', None, None, 'BBB', '', '', '', ''),
-            (7, 'AAA', 'XXX', 'D', 'x', 'g', None, None, 'BBB', '', '', '', ''),
-            (8, 'AAA', 'XXX', 'D', 'y', 'h', None, None, 'BBB', '', '', '', ''),
-            (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, 'BBB', '', '', '', ''),
+            (None, None, None, '', '', '', None, 6, 'BBB', 'D', 'x', 'f', ''),
+            (None, None, None, '', '', '', None, 7, 'BBB', 'D', 'x', 'g', ''),
+            (None, None, None, '', '', '', None, 8, 'BBB', 'D', 'y', 'h', ''),
+            (None, None, None, '', '', '', None, 9, 'BBB', 'D', 'y', 'i', ''),
+            (6, 'AAA', 'XXX', 'D', 'x', 'f', None, None, None, '', '', '', ''),
+            (7, 'AAA', 'XXX', 'D', 'x', 'g', None, None, None, '', '', '', ''),
+            (8, 'AAA', 'XXX', 'D', 'y', 'h', None, None, None, '', '', '', ''),
+            (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, None, '', '', '', ''),
         ]
         self.assertEqual(list(actual), expected)
 

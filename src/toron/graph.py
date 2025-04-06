@@ -302,36 +302,43 @@ def get_mapping(
                 + ('ambiguous_fields',)
             )
 
+        src_domain_output: Tuple[Optional[str], ...]
+        trg_domain_output: Tuple[Optional[str], ...]
+
         for element in mapping_elements:
             src_index_id, trg_index_id, mapping_level, rel_value = element
 
-            # Get source node labels.
+            # Set domain output and get source node labels.
             if src_index_id is not None:
+                src_domain_output = src_domain_vals
                 src_index = src_index_repo.get(src_index_id)
                 if src_index:
                     src_index_labels = src_index.labels
                 else:
                     src_index_labels = ('',) * len(src_index_cols)
             else:
+                src_domain_output = (None,) * len(src_domain_vals)
                 src_index_labels = ('',) * len(src_index_cols)
 
-            # Get target node labels.
+            # Set domain output and get target node labels.
             if trg_index_id is not None:
+                trg_domain_output = trg_domain_vals
                 trg_index = trg_index_repo.get(trg_index_id)
                 if trg_index:
                     trg_index_labels = trg_index.labels
                 else:
                     trg_index_labels = ('',) * len(trg_index_cols)
             else:
+                trg_domain_output = (None,) * len(trg_domain_vals)
                 trg_index_labels = ('',) * len(trg_index_cols)
 
             yield (
                 (src_index_id,)
-                + src_domain_vals
+                + src_domain_output
                 + src_index_labels
                 + (rel_value,)
                 + (trg_index_id,)
-                + trg_domain_vals
+                + trg_domain_output
                 + trg_index_labels
                 + (_get_ambiguous_fields(mapping_level, trg_index_cols),)
             )
