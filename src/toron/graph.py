@@ -256,7 +256,7 @@ def _get_ambiguous_fields(
         return None
     inverted_level = [(not bit) for bit in BitFlags(mapping_level)]
     ambiguous_fields = compress(column_names, inverted_level)
-    return ', '.join(ambiguous_fields)
+    return ', '.join(ambiguous_fields) or None
 
 
 def get_mapping(
