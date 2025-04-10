@@ -11,6 +11,7 @@ from math import isnan, isinf
 
 from toron._typing import (
     Any,
+    Collection,
     Dict,
     Generator,
     Iterable,
@@ -2177,6 +2178,7 @@ class TopoNode(object):
         *selectors: str,
         cache_to_drive: bool = False,
         quantize: bool = False,
+        attributes_to_omit: Optional[Union[Collection[str], str]] = None,
     ) -> NodeReader:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
@@ -2207,8 +2209,22 @@ class TopoNode(object):
             else:
                 attribute_id_filter = None
 
+        # Get disaggregated results generator.
+        data = self._disaggregate(attribute_id_filter, quantize=quantize)
+
+        # Omit certain attributes if specified.
+        if attributes_to_omit:
+            if isinstance(attributes_to_omit, str):
+                attributes_to_omit = [attributes_to_omit]
+
+            def func(attrs):
+                return {k: v for k, v in attrs.items() if k not in attributes_to_omit}
+
+            data = ((idx, func(attrs), quant) for idx, attrs, quant in data)
+
+        # Build and return a reader instance.
         node_reader = NodeReader(
-            data=self._disaggregate(attribute_id_filter, quantize=quantize),
+            data=data,
             node=self,
             cache_to_drive=cache_to_drive,
             quantize_default=quantize,

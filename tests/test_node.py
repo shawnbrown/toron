@@ -4299,6 +4299,23 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
              ('IN', 'LAPORTE',  'TOTAL', 'MALE',    55296.0)},
         )
 
+    def test_omit_attribute(self):
+        """Disaggregate to tabular format (uses NodeReader)."""
+        node_reader = self.node(attributes_to_omit=['sex'])  # <- Omit attribute 'sex'.
+
+        self.assertEqual(
+            node_reader.columns,
+            ['state', 'county', 'category', 'value'],
+        )
+
+        self.assertEqual(
+            set(node_reader),
+            {('OH', 'BUTLER',   'TOTAL', 374587.5),
+             ('OH', 'FRANKLIN', 'TOTAL', 1337812.5),
+             ('IN', 'KNOX',     'TOTAL', 36864.0),
+             ('IN', 'LAPORTE',  'TOTAL', 110592.0)},
+        )
+
     def test_attribute_selector(self):
         """Testing single selector."""
         quant_iter = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
