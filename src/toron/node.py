@@ -2189,7 +2189,6 @@ class TopoNode(object):
             label_names = col_manager.get_columns()
 
             attribute_repo = self._dal.AttributeGroupRepository(cursor)
-            attribute_keys = attribute_repo.get_all_attribute_names()
 
             if selectors:
                 try:
