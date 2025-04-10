@@ -439,8 +439,8 @@ class TestPivotReader(unittest.TestCase):
                 (2, {'attr1': 'foo', 'attr2': 'bar'}, 25.0),
                 (2, {'attr2': 'bar'},                 27.0),
                 (3, {'attr1': 'foo', 'attr2': 'bar'}, 35.0),
-                (3, {'attr1': 'foo'},                 22.0),
-                (3, {'attr1': 'foo'},                 22.0),
+                (3, {'attr1': 'foo', 'attr3': 'XXX'}, 22.0),
+                (3, {'attr1': 'foo', 'attr3': 'YYY'}, 22.0),
                 (3, {'attr3': 'qux'},                 60.0),
             ],
             node=node,
@@ -448,33 +448,33 @@ class TestPivotReader(unittest.TestCase):
         self.reader = reader
 
     def test_pivot(self):
-        """Check convertion to pivoted format."""
+        """Check pivoted format."""
         expected = [
             ['county',  'town',    'bar', 'foo', ('foo', 'bar')],
             ['ALAMEDA', 'HAYWARD', 17.0,  30.0,  15.0],
             ['BUTTE',   'PALERMO', 27.0,  None,  25.0],
-            ['COLUSA',  'GRIMES',  None,  44.0,  35.0],
+            ['COLUSA',  'GRIMES',  None,  44.0,  35.0],  # <- 'foo' summed to 44.0
         ]
 
-        result = pivot_reader(self.reader, ['attr1', 'attr2'])
+        result = pivot_reader(self.reader, ['attr1', 'attr2'])  # Omitting 'attr3'.
         self.assertEqual(list(result), expected)
 
     @unittest.skipUnless(pd, 'requires pandas')
     def test_pivot_to_pandas(self):
-        """Check conversion to pivoted format pandas DataFrame."""
+        """Check pivoted format as pandas DataFrame."""
         expected_df = pd.DataFrame({
             'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
             'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
             'bar': pd.Series([17.0, 27.0, None], dtype='float64'),
-            'foo': pd.Series([30.0, None, 44.0], dtype='float64'),
+            'foo': pd.Series([30.0, None, 44.0], dtype='float64'),  # <- Third value summed to 44.0
             ('foo', 'bar'): pd.Series([15.0, 25.0, 35.0], dtype='float64'),
         })
 
         # Test without explicit index.
-        df = pivot_reader_to_pandas(self.reader, ['attr1', 'attr2'])
+        df = pivot_reader_to_pandas(self.reader, ['attr1', 'attr2'])  # Omitting 'attr3'.
         pd.testing.assert_frame_equal(df, expected_df)
 
         # Test with `index=True`.
-        df2 = pivot_reader_to_pandas(self.reader, ['attr1', 'attr2'], index=True)
+        df2 = pivot_reader_to_pandas(self.reader, ['attr1', 'attr2'], index=True)  # Omitting 'attr3'.
         expected_df2 = expected_df.set_index(['county', 'town'])
         pd.testing.assert_frame_equal(df2, expected_df2)
