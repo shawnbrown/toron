@@ -448,7 +448,7 @@ class TestPivotReader(unittest.TestCase):
         self.reader = reader
 
     def test_pivot(self):
-        """Check pivoted format."""
+        """Check pivoted format (aggregation defaults to ``'sum'``)."""
         expected = [
             ['county',  'town',    'bar', 'foo', ('foo', 'bar')],
             ['ALAMEDA', 'HAYWARD', 17.0,  30.0,  15.0],
@@ -458,6 +458,25 @@ class TestPivotReader(unittest.TestCase):
 
         result = pivot_reader(self.reader, ['attr1', 'attr2'])  # Omitting 'attr3'.
         self.assertEqual(list(result), expected)
+
+    def test_pivot_mean(self):
+        """Check pivoted format using ``aggregate_function='mean'``."""
+        expected = [
+            ['county',  'town',    'bar', 'foo', ('foo', 'bar')],
+            ['ALAMEDA', 'HAYWARD', 17.0,  30.0,  15.0],
+            ['BUTTE',   'PALERMO', 27.0,  None,  25.0],
+            ['COLUSA',  'GRIMES',  None,  22.0,  35.0],  # <- 'foo' averaged to 22.0
+        ]
+
+        result = pivot_reader(self.reader, ['attr1', 'attr2'], aggregate_function='mean')
+        self.assertEqual(list(result), expected)
+
+    def test_pivot_invalid_aggregate_function(self):
+        """Check bad aggregate_function value."""
+        regex = r"invalid aggregate_function 'badval'; must be one of: 'sum', 'mean'."
+        with self.assertRaisesRegex(ValueError, regex):
+            result = pivot_reader(self.reader, ['attr1', 'attr2'], aggregate_function='badval')
+            list(result)  # Consume iterator.
 
     @unittest.skipUnless(pd, 'requires pandas')
     def test_pivot_to_pandas(self):

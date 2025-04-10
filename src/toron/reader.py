@@ -21,6 +21,7 @@ from toron._typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Self,
     Sequence,
@@ -380,9 +381,18 @@ def pivot_reader(
     reader: NodeReader,
     columns: Iterable[str],
     #max_width: Optional[int] = 256,
+    aggregate_function: Literal['sum', 'mean'] = 'sum',
 ) -> Generator[Sequence[Union[str, float, Tuple[Optional[str], ...]]], None, None]:
     """An experimental pivot implementation for ``NodeReader`` data."""
     # TODO: Fix type hinting for yield statements.
+
+    aggfuncs = {'sum': 'SUM', 'mean': 'AVG'}  # <- Values are SQLite functions.
+    if aggregate_function not in aggfuncs.keys():
+        msg = (
+            f"invalid aggregate_function {aggregate_function!r}; must "
+            f"be one of: {', '.join(repr(x) for x in aggfuncs.keys())}."
+        )
+        raise ValueError(msg)
 
     columns = list(columns)
 
@@ -423,8 +433,9 @@ def pivot_reader(
             yield header_row
 
             # Yield data rows.
-            cur1.execute("""
-                SELECT index_id, pivot_attrs, SUM(quant_value) AS quant_value
+            sql_aggfunc = aggfuncs[aggregate_function]
+            cur1.execute(f"""
+                SELECT index_id, pivot_attrs, {sql_aggfunc}(quant_value) AS quant_value
                 FROM main.quant_data
                 JOIN temp.pivot_temp USING (attr_data_id)
                 GROUP BY index_id, pivot_attrs
@@ -447,7 +458,8 @@ def pivot_reader_to_pandas(
     reader: NodeReader,
     columns: Iterable[str],
     #max_width: Optional[int] = 256,
-    index: bool = False
+    aggregate_function: Literal['sum', 'mean'] = 'sum',
+    index: bool = False,
     ) -> 'pd.DataFrame':
     """An experimental pivot-to-pandas implementation for ``NodeReader``."""
     try:
@@ -459,7 +471,7 @@ def pivot_reader_to_pandas(
         )
         raise ImportError(msg) from None
 
-    pivoted_data = pivot_reader(reader, columns)
+    pivoted_data = pivot_reader(reader, columns, aggregate_function)
     pivoted_columns = next(pivoted_data)
 
     df = pd.DataFrame(pivoted_data, columns=pivoted_columns)  # type: ignore [call-overload]
