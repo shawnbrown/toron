@@ -476,7 +476,6 @@ class TestPivotReader(unittest.TestCase):
         regex = r"invalid aggregate_function 'badval'; must be one of: 'sum', 'mean'."
         with self.assertRaisesRegex(ValueError, regex):
             result = pivot_reader(self.reader, ['attr1', 'attr2'], aggregate_function='badval')
-            list(result)  # Consume iterator.
 
     @unittest.skipUnless(pd, 'requires pandas')
     def test_pivot_to_pandas(self):

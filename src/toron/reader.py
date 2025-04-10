@@ -34,7 +34,11 @@ from toron._typing import (
 )
 from toron.data_models import Index
 from toron.data_service import make_get_crosswalk_id_func
-from toron._utils import check_type, quantize_values
+from toron._utils import (
+    check_type,
+    eagerly_initialize,
+    quantize_values,
+)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -377,6 +381,7 @@ def format_column(parts: List[str]) -> Union[Tuple[str, ...], str]:
     return tuple(parts)  # Return tuple of string if multiple items.
 
 
+@eagerly_initialize
 def pivot_reader(
     reader: NodeReader,
     columns: Iterable[str],
