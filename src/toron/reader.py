@@ -444,7 +444,12 @@ def pivot_reader(
             sql_aggfunc = aggfuncs[aggregate_function]
             cur1.execute(f"""
                 SELECT index_id, pivot_attrs, {sql_aggfunc}(quant_value) AS quant_value
-                FROM main.quant_data
+                FROM (
+                    /* 'quant_data' must be summed before pivot aggregation */
+                    SELECT index_id, attr_data_id, SUM(quant_value) AS quant_value
+                    FROM main.quant_data
+                    GROUP BY index_id, attr_data_id
+                )
                 JOIN temp.pivot_temp USING (attr_data_id)
                 GROUP BY index_id, pivot_attrs
                 ORDER BY index_id

@@ -440,7 +440,8 @@ class TestPivotReader(unittest.TestCase):
                 (2, {'attr2': 'bar'},                 27.0),
                 (3, {'attr1': 'foo', 'attr2': 'bar'}, 35.0),
                 (3, {'attr1': 'foo', 'attr3': 'XXX'}, 22.0),
-                (3, {'attr1': 'foo', 'attr3': 'YYY'}, 22.0),
+                (3, {'attr1': 'foo', 'attr3': 'YYY'}, 11.0),  # <- Should be summed together before pivot.
+                (3, {'attr1': 'foo', 'attr3': 'YYY'}, 11.0),  # <- Should be summed together before pivot.
                 (3, {'attr3': 'qux'},                 60.0),
             ],
             node=node,
