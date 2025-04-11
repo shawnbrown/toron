@@ -27,6 +27,7 @@ from toron._typing import (
     Sequence,
     Set,
     Tuple,
+    TypeAlias,
     Union,
     cast,
     overload,
@@ -381,16 +382,19 @@ def format_column(parts: List[str]) -> Union[Tuple[str, ...], str]:
     return tuple(parts)  # Return tuple of string if multiple items.
 
 
+PivotedRowType: TypeAlias = Union[
+    Sequence[Union[str, Tuple[Optional[str], ...]]],  # <- Header row.
+    Sequence[Union[str, float, None]],  # <- Data rows.
+]
+
 @eagerly_initialize
 def pivot_reader(
     reader: NodeReader,
     columns: Iterable[str],
     #max_width: Optional[int] = 256,
     aggregate_function: Literal['sum', 'mean'] = 'sum',
-) -> Generator[Sequence[Union[str, float, Tuple[Optional[str], ...]]], None, None]:
+) -> Generator[PivotedRowType, None, None]:
     """An experimental pivot implementation for ``NodeReader`` data."""
-    # TODO: Fix type hinting for yield statements.
-
     aggfuncs = {'sum': 'SUM', 'mean': 'AVG'}  # <- Values are SQLite functions.
     if aggregate_function not in aggfuncs.keys():
         msg = (
@@ -433,11 +437,10 @@ def pivot_reader(
             pivoted_columns = [x[0] for x in cur1]  # Unwrap single item results.
 
             # Format and yield header row.
-            formatted_columns = [format_column(loads(x)) for x in pivoted_columns]
-            header_row = list(reader._node.index_columns) + formatted_columns
-            yield header_row
+            str_or_tuple_cols = [format_column(loads(x)) for x in pivoted_columns]
+            yield list(reader._node.index_columns) + str_or_tuple_cols
 
-            # Yield data rows.
+            # Get aggregated values for pivot (must be sorted by `index_id`).
             sql_aggfunc = aggfuncs[aggregate_function]
             cur1.execute(f"""
                 SELECT index_id, pivot_attrs, {sql_aggfunc}(quant_value) AS quant_value
@@ -446,14 +449,15 @@ def pivot_reader(
                 GROUP BY index_id, pivot_attrs
                 ORDER BY index_id
             """)
+
+            # Yield pivoted data rows.
             with reader._node._managed_cursor() as node_cur:
                 index_repo = reader._node._dal.IndexRepository(node_cur)
                 for index_id, group in groupby(cur1, key=lambda row: row[0]):
                     label_vals = cast(Index, index_repo.get(index_id)).labels
                     row_dict = {row[1]: row[2] for row in group}
-                    data_vals: List[Optional[float]]
-                    data_vals = [row_dict.get(col) for col in pivoted_columns]
-                    yield list(label_vals) + data_vals  # type: ignore [operator]
+                    float_or_none_vals = [row_dict.get(col) for col in pivoted_columns]
+                    yield list(label_vals) + float_or_none_vals
 
         finally:
             cur1.execute('DROP TABLE temp.pivot_temp')
