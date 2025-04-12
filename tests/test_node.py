@@ -4316,9 +4316,9 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
              ('IN', 'LAPORTE',  'TOTAL', 110592.0)},
         )
 
-    def test_group_by_attribute(self):
-        """Test grouping by specified attributes."""
-        node_reader = self.node(group_by_attrs=['category'])  # <- Group by 'category'.
+    def test_sum_by_attribute(self):
+        """Test summing by specified attributes."""
+        node_reader = self.node(sum_by_attrs=['category'])  # <- Sum by 'category' attribute.
 
         self.assertEqual(
             node_reader.columns,

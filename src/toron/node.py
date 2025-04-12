@@ -2179,7 +2179,7 @@ class TopoNode(object):
         cache_to_drive: bool = False,
         quantize: bool = False,
         attributes_to_omit: Optional[Union[Collection[str], str]] = None,
-        group_by_attrs: Optional[Union[Collection[str], str]] = None,
+        sum_by_attrs: Optional[Union[Collection[str], str]] = None,
     ) -> NodeReader:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
@@ -2223,17 +2223,21 @@ class TopoNode(object):
 
             data = ((idx, func(attrs), quant) for idx, attrs, quant in data)
 
-        # Group disaggregated records by attributes if given.
-        if group_by_attrs:
-            if isinstance(group_by_attrs, str):
-                group_by_attrs = [group_by_attrs]
-            group_by_attrs = set(group_by_attrs)
-            group_by_attrs = group_by_attrs.union(domain)  # Domain always included.
+        # If *sum_by_attrs* is provided, only keep the specified attributes.
+        if sum_by_attrs:
+            if isinstance(sum_by_attrs, str):
+                sum_by_attrs = [sum_by_attrs]
+            sum_by_attrs = set(sum_by_attrs)
+            sum_by_attrs = sum_by_attrs.union(domain)  # Domain always included.
 
-            def func(attrs):
-                return {k: v for k, v in attrs.items() if k in group_by_attrs}
+            def filter_attrs(attrs):
+                return {k: v for k, v in attrs.items() if k in sum_by_attrs}
 
-            data = ((idx, func(attrs), quant) for idx, attrs, quant in data)
+            # Apply attribute filtering function to each item.
+            data = ((idx, filter_attrs(attrs), quant) for idx, attrs, quant in data)
+
+            # Note: Records are grouped and summed later--when iterating
+            # over the returned `NodeReader` instance.
 
         # Build and return a reader instance.
         node_reader = NodeReader(
