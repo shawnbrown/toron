@@ -4316,6 +4316,23 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
              ('IN', 'LAPORTE',  'TOTAL', 110592.0)},
         )
 
+    def test_group_by_attribute(self):
+        """Test grouping by specified attributes."""
+        node_reader = self.node(group_by_attrs=['category'])  # <- Group by 'category'.
+
+        self.assertEqual(
+            node_reader.columns,
+            ['state', 'county', 'category', 'value'],
+        )
+
+        self.assertEqual(
+            set(node_reader),
+            {('OH', 'BUTLER',   'TOTAL', 374587.5),
+             ('OH', 'FRANKLIN', 'TOTAL', 1337812.5),
+             ('IN', 'KNOX',     'TOTAL', 36864.0),
+             ('IN', 'LAPORTE',  'TOTAL', 110592.0)},
+        )
+
     def test_attribute_selector(self):
         """Testing single selector."""
         quant_iter = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.

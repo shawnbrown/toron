@@ -2179,6 +2179,7 @@ class TopoNode(object):
         cache_to_drive: bool = False,
         quantize: bool = False,
         attributes_to_omit: Optional[Union[Collection[str], str]] = None,
+        group_by_attrs: Optional[Union[Collection[str], str]] = None,
     ) -> NodeReader:
         """Return rows with disaggregated quantity values."""
         with self._managed_cursor() as cursor:
@@ -2219,6 +2220,18 @@ class TopoNode(object):
 
             def func(attrs):
                 return {k: v for k, v in attrs.items() if k not in attributes_to_omit}
+
+            data = ((idx, func(attrs), quant) for idx, attrs, quant in data)
+
+        # Group disaggregated records by attributes if given.
+        if group_by_attrs:
+            if isinstance(group_by_attrs, str):
+                group_by_attrs = [group_by_attrs]
+            group_by_attrs = set(group_by_attrs)
+            group_by_attrs = group_by_attrs.union(domain)  # Domain always included.
+
+            def func(attrs):
+                return {k: v for k, v in attrs.items() if k in group_by_attrs}
 
             data = ((idx, func(attrs), quant) for idx, attrs, quant in data)
 
