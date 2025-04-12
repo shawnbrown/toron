@@ -2178,7 +2178,6 @@ class TopoNode(object):
         *selectors: str,
         cache_to_drive: bool = False,
         quantize: bool = False,
-        attributes_to_omit: Optional[Union[Collection[str], str]] = None,
         sum_by_attrs: Optional[Union[Collection[str], str]] = None,
     ) -> NodeReader:
         """Return rows with disaggregated quantity values."""
@@ -2212,16 +2211,6 @@ class TopoNode(object):
 
         # Get disaggregated results generator.
         data = self._disaggregate(attribute_id_filter, quantize=quantize)
-
-        # Omit certain attributes if specified.
-        if attributes_to_omit:
-            if isinstance(attributes_to_omit, str):
-                attributes_to_omit = [attributes_to_omit]
-
-            def func(attrs):
-                return {k: v for k, v in attrs.items() if k not in attributes_to_omit}
-
-            data = ((idx, func(attrs), quant) for idx, attrs, quant in data)
 
         # If *sum_by_attrs* is provided, only keep the specified attributes.
         if sum_by_attrs:
