@@ -358,28 +358,27 @@ def format_column(parts: List[str]) -> Union[Tuple[str, ...], str]:
         >>> format_column(['foo', 'bar', 'baz'])
         ('foo', 'bar', 'baz')
 
-    Trailing empty strings are remove::
+    Trailing empty strings are removed::
 
         >>> format_column(['foo', 'bar', ''])
         ('foo', 'bar')
 
-    Arrays with only a single value are unwrapped::
+    Leading empty strings are preserved::
 
         >>> format_column(['', 'bar', ''])
-        'bar'
+        ('', 'bar')
 
-    Leading empty strings are not removed in multi-item lists::
+    Arrays with a single value in the first position are unwrapped::
 
-        >>> format_column(['', 'bar', 'baz'])
-        ('', 'bar', 'baz')
+        >>> format_column(['foo', '', ''])
+        'foo'
     """
     while parts and parts[-1] == '':
         parts.pop()  # Remove trailing empty strings.
-    non_empty = tuple(filter(None, parts))  # Get non-empty values.
 
-    if len(non_empty) == 1:
-        return non_empty[0]  # Return string if single item.
-    return tuple(parts)  # Return tuple of string if multiple items.
+    if len(parts) == 1:
+        return parts[0]  # <- Return unwrapped string, if single item.
+    return tuple(parts)
 
 
 PivotedRowType: TypeAlias = Union[

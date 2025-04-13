@@ -14,6 +14,7 @@ except ImportError:
 from toron.node import TopoNode
 from toron.reader import (
     NodeReader,
+    format_column,
     pivot_reader,
     pivot_reader_to_pandas,
 )
@@ -448,10 +449,36 @@ class TestPivotReader(unittest.TestCase):
         )
         self.reader = reader
 
+    def test_format_column(self):
+        """``format_column()`` is used for pivoted column names."""
+        self.assertEqual(
+            format_column(['foo', 'bar', 'baz']),
+            ('foo', 'bar', 'baz'),
+            msg='should return a sequence as a tuple',
+        )
+
+        self.assertEqual(
+            format_column(['foo', 'bar', '']),
+            ('foo', 'bar'),
+            msg='should remove trailing empty strings',
+        )
+
+        self.assertEqual(
+            format_column(['', 'bar', '']),
+            ('', 'bar'),
+            msg='should preserve leading empty strings',
+        )
+
+        self.assertEqual(
+            format_column(['foo', '', '']),
+            'foo',
+            msg='should unwrap single value in the first position',
+        )
+
     def test_pivot(self):
         """Check pivoted format (aggregation defaults to ``'sum'``)."""
         expected = [
-            ['county',  'town',    'bar', 'foo', ('foo', 'bar')],
+            ['county',  'town',    ('', 'bar'), 'foo', ('foo', 'bar')],
             ['ALAMEDA', 'HAYWARD', 17.0,  30.0,  15.0],
             ['BUTTE',   'PALERMO', 27.0,  None,  25.0],
             ['COLUSA',  'GRIMES',  None,  44.0,  35.0],  # <- 'foo' summed to 44.0
@@ -463,7 +490,7 @@ class TestPivotReader(unittest.TestCase):
     def test_pivot_mean(self):
         """Check pivoted format using ``aggregate_function='mean'``."""
         expected = [
-            ['county',  'town',    'bar', 'foo', ('foo', 'bar')],
+            ['county',  'town',    ('', 'bar'), 'foo', ('foo', 'bar')],
             ['ALAMEDA', 'HAYWARD', 17.0,  30.0,  15.0],
             ['BUTTE',   'PALERMO', 27.0,  None,  25.0],
             ['COLUSA',  'GRIMES',  None,  22.0,  35.0],  # <- 'foo' averaged to 22.0
