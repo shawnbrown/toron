@@ -456,12 +456,15 @@ def pivot_reader(
 
             # Yield pivoted data rows.
             with reader._node._managed_cursor() as node_cur:
-                index_repo = reader._node._dal.IndexRepository(node_cur)
+                # Assign `get` method to local var and define helper-lambda.
+                get_index = reader._node._dal.IndexRepository(node_cur).get
+                get_labels = lambda x: list(cast(Index, get_index(x)).labels)
+
+                # Group by pre-sorted `index_id` and make pivoted rows.
                 for index_id, group in groupby(cur1, key=lambda row: row[0]):
-                    label_vals = cast(Index, index_repo.get(index_id)).labels
                     row_dict = {row[1]: row[2] for row in group}
                     float_or_none_vals = [row_dict.get(col) for col in pivoted_columns]
-                    yield list(label_vals) + float_or_none_vals
+                    yield get_labels(index_id) + float_or_none_vals
 
         finally:
             cur1.execute('DROP TABLE temp.pivot_temp')
