@@ -487,7 +487,7 @@ def pivot_reader_to_pandas(
     pivoted_data = pivot_reader(reader, columns, aggregate_function)
     pivoted_columns = next(pivoted_data)
 
-    df = pd.DataFrame(pivoted_data, columns=pivoted_columns)  # type: ignore [call-overload]
+    df = pd.DataFrame(pivoted_data, columns=pivoted_columns)
     for col in reader.index_columns:  # Using loop for memory efficiency.
         df[col] = df[col].astype('string')
 
