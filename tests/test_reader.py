@@ -511,7 +511,7 @@ class TestPivotReader(unittest.TestCase):
         expected_df = pd.DataFrame({
             'county': pd.Series(['ALAMEDA', 'BUTTE', 'COLUSA'], dtype='string'),
             'town': pd.Series(['HAYWARD', 'PALERMO', 'GRIMES'], dtype='string'),
-            'bar': pd.Series([17.0, 27.0, None], dtype='float64'),
+            ('', 'bar'): pd.Series([17.0, 27.0, None], dtype='float64'),
             'foo': pd.Series([30.0, None, 44.0], dtype='float64'),  # <- Third value summed to 44.0
             ('foo', 'bar'): pd.Series([15.0, 25.0, 35.0], dtype='float64'),
         })
