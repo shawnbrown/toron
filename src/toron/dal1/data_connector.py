@@ -23,6 +23,17 @@ from . import schema
 from ..data_models import BaseDataConnector
 
 
+# Define permissions to use when saving to drive (`0o666` is octal
+# notation for read/write for owner, group, and others).
+save_permissions = 0o666
+
+# On non-Windows systems, apply "umask" to limit permissions.
+if os.name != 'nt':
+    _umask_value = os.umask(0)
+    os.umask(_umask_value)  # Restore umask.
+    save_permissions = save_permissions & ~_umask_value
+
+
 def make_sqlite_uri_filepath(
         path: str, mode: Literal['ro', 'rw', 'rwc', None]
     ) -> str:
@@ -419,6 +430,9 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                 if sqlite3.sqlite_version_info < (3, 40, 0):
                     best_effort_fsync(tmp_path)
 
+                # Change tempfile permissons to default permissions.
+                os.chmod(tmp_path, save_permissions)
+
                 # Move the file to its final location.
                 os.replace(tmp_path, dst_path)
 
@@ -443,6 +457,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                 finally:
                     self.release_connection(con)
 
+                os.chmod(tmp_path, save_permissions)  # Change to default permissions.
                 os.replace(tmp_path, dst_path)
 
         except Exception:

@@ -306,6 +306,34 @@ class TestDataConnector(unittest.TestCase):
             con.execute('SELECT 1')
 
 
+class TestToFile(unittest.TestCase):
+    def setUp(cls):
+        cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
+        cls.addCleanup(cls.temp_dir.cleanup)
+
+    def test_file_permissions(self):
+        """Check that `to_file()` saves with default permissions.
+
+        Internally, ``to_file()`` uses ``tempfile.NamedTemporaryFile``
+        which does not use the default permissions so we need to make
+        sure that this is being handled properly.
+        """
+        # Create sample file using process' default permissions.
+        sample_path = os.path.join(self.temp_dir.name, 'sample_file.txt')
+        with open(sample_path, 'w') as f:
+            f.write('Hello World')
+
+        # Create node file.
+        node_path = os.path.join(self.temp_dir.name, 'node_file.toron')
+        DataConnector().to_file(node_path)
+
+        self.assertEqual(
+            oct(os.stat(node_path).st_mode),
+            oct(os.stat(sample_path).st_mode),
+            msg='node file should have the same drive permissions as the sample',
+        )
+
+
 class TestFromLiveData(unittest.TestCase):
     def setUp(cls):
         cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
