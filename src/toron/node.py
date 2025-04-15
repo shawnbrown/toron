@@ -1312,9 +1312,15 @@ class TopoNode(object):
                     if crosswalk.is_default:
                         crosswalk_repo.update(replace(crosswalk, is_default=False))
 
+            # Get path hint and remove '.toron' extension. Use removesuffix()
+            # method (new in 3.9) when support for Python 3.8 is dropped.
+            other_filename_hint = node.path_hint
+            if other_filename_hint and other_filename_hint.endswith('.toron'):
+                other_filename_hint = other_filename_hint[:-6]
+
             crosswalk_repo.add(
                 other_unique_id=other_unique_id,
-                other_filename_hint=node.path_hint,
+                other_filename_hint=other_filename_hint,
                 name=crosswalk_name,
                 description=description,
                 selectors=selectors,
