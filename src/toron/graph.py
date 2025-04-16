@@ -164,10 +164,16 @@ def load_mapping(
     mapper.match_records(left_node, 'left', match_limit, allow_overlapping)
     mapper.match_records(right_node, 'right', match_limit, allow_overlapping)
 
+    left_filename_hint, right_filename_hint = normalize_filename_hints(
+        left_node.path_hint,
+        right_node.path_hint,
+    )
+
     if '->' in direction:
         right_node.add_crosswalk(
             node=left_node,
             crosswalk_name=crosswalk_name,
+            other_filename_hint=left_filename_hint,
             selectors=selectors,
             is_default=is_default,
         )
@@ -182,6 +188,7 @@ def load_mapping(
         left_node.add_crosswalk(
             node=right_node,
             crosswalk_name=crosswalk_name,
+            other_filename_hint=right_filename_hint,
             selectors=selectors,
             is_default=is_default,
         )

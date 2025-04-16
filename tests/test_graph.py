@@ -157,6 +157,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         self.maxDiff = None
 
         self.node1 = TopoNode()
+        self.node1.path_hint = 'file1.toron'
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
         self.node1.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
         self.node1.insert_index([
@@ -262,6 +263,9 @@ class TestLoadMapping(TwoNodesBaseTestCase):
         )
 
         with self.node2._managed_cursor() as cur:
+            results = cur.execute('SELECT other_filename_hint FROM crosswalk').fetchone()
+            self.assertEqual(results, ('file1',))
+
             results = cur.execute('SELECT * FROM relation').fetchall()
             expected = [
                 (1,  1, 1, 1, b'\xe0',  25.0, 0.5),
