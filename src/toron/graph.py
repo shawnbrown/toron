@@ -1,4 +1,5 @@
 """Graph implementation and functions for the Toron project."""
+import os
 import sqlite3
 from json import (
     dumps as _dumps,
@@ -97,6 +98,44 @@ def normalize_mapping_data(
     columns = [x for i, x in enumerate(columns) if i not in domain_indexes]
 
     return data, columns
+
+
+def normalize_filename_hints(
+    left_path_hint: Optional[str],
+    right_path_hint: Optional[str],
+) -> Tuple[Optional[str], Optional[str]]:
+    """Normalize filename hints (removes common directory prefix
+    and ``.toron`` file extension).
+    """
+    # Make sure both are strings.
+    left_filename_hint = left_path_hint or ''
+    right_filename_hint = right_path_hint or ''
+
+    # Normalize directory separators.
+    left_filename_hint = left_filename_hint.replace('\\', '/')
+    right_filename_hint = right_filename_hint.replace('\\', '/')
+
+    # Remove common directory prefix.
+    try:
+        common_prefix = os.path.commonpath([
+            left_filename_hint,
+            right_filename_hint,
+        ])
+        if common_prefix:
+            left_filename_hint = os.path.relpath(left_filename_hint, common_prefix)
+            right_filename_hint = os.path.relpath(right_filename_hint, common_prefix)
+    except ValueError:  # The commonpath() function fails when mixing abs and
+        pass            # rel paths, or when paths are on different drives.
+
+    # Remove `.toron` extension. Change to removesuffix() method (new in 3.9)
+    # when support for Python 3.8 is dropped.
+    if left_filename_hint.endswith('.toron'):
+        left_filename_hint = left_filename_hint[:-6]
+    if right_filename_hint.endswith('.toron'):
+        right_filename_hint = right_filename_hint[:-6]
+
+    # Return string or None values.
+    return (left_filename_hint or None, right_filename_hint or None)
 
 
 def load_mapping(

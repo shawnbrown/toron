@@ -17,6 +17,7 @@ from toron.data_models import (
 )
 from toron.graph import (
     normalize_mapping_data,
+    normalize_filename_hints,
     load_mapping,
     _get_mapping_elements,
     get_mapping,
@@ -104,6 +105,51 @@ class TestNormalizeMappingData(unittest.TestCase):
         regex = "error in right-side domain: 'dom2' should be 'qux', got 'corge'"
         with self.assertRaisesRegex(ValueError, regex):
             list(data)  # Use list to consume iterator.
+
+
+class TestNormalizeFilenameHints(unittest.TestCase):
+    def test_none_handling(self):
+        a, b = normalize_filename_hints(None, None)
+        self.assertIsNone(a)
+        self.assertIsNone(b)
+
+        a, b = normalize_filename_hints('foo', None)
+        self.assertEqual(a, 'foo')
+        self.assertIsNone(b)
+
+        a, b = normalize_filename_hints(None, 'bar')
+        self.assertIsNone(a)
+        self.assertEqual(b, 'bar')
+
+        a, b = normalize_filename_hints('', '')
+        self.assertIsNone(a)
+        self.assertIsNone(b)
+
+    def test_extension_removal(self):
+        a, b = normalize_filename_hints('foo.toron', 'bar.blerg')
+        self.assertEqual(a, 'foo', msg='toron extension should be removed')
+        self.assertEqual(b, 'bar.blerg', msg='other extensions should be unchanged')
+
+    def test_directory_prefix_handling(self):
+        # Basic prefix handling.
+        a, b = normalize_filename_hints('dir/foo.toron', 'dir/bar.toron')
+        self.assertEqual(a, 'foo')
+        self.assertEqual(b, 'bar')
+
+        # Should match whole directory prefixes (not character prefix).
+        a, b = normalize_filename_hints('dir-a/foo.toron', 'dir-b/bar.toron')
+        self.assertEqual(a, 'dir-a/foo')
+        self.assertEqual(b, 'dir-b/bar')
+
+    def test_directory_sep_normalization(self):
+        a, b = normalize_filename_hints('dir1/foo.toron', 'dir1\\dir2\\bar.toron')
+        self.assertEqual(a, 'foo')
+        self.assertEqual(b, 'dir2/bar')
+
+    def test_abs_and_rel_paths(self):
+        a, b = normalize_filename_hints('/dir/foo.toron', 'dir/bar.toron')
+        self.assertEqual(a, '/dir/foo')
+        self.assertEqual(b, 'dir/bar')
 
 
 class TwoNodesBaseTestCase(unittest.TestCase):
