@@ -230,13 +230,14 @@ def find_crosswalks_by_ref(
     if matches:
         return matches
 
-    # Try to match by exact 'other_filename_hint'.
-    matches = list(crosswalk_repo.find_by_other_filename_hint(ref))
-    if matches:
-        return matches
-
-    # Try to match by stem of 'other_filename_hint' (name without '.toron' extension).
-    matches = list(crosswalk_repo.find_by_other_filename_hint(f'{ref}.toron'))
+    # Try to match by filename hints.
+    matches = []
+    matches.extend(crosswalk_repo.find_by_other_filename_hint(ref))  # Exact match.
+    if isinstance(ref, str) and ref.endswith('.toron'):  # Without '.toron' extension.
+        ref_truncated = ref[:-6]
+        matches.extend(crosswalk_repo.find_by_other_filename_hint(ref_truncated))
+    else:  # With '.toron' extension.
+        matches.extend(crosswalk_repo.find_by_other_filename_hint(f'{ref}.toron'))
     if matches:
         return matches
 

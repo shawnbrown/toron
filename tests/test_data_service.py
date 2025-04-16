@@ -317,7 +317,7 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
         index_repo.add('bar', 'y')
         index_repo.add('bar', 'z')
         crosswalk_repo.add('111-111-1111', 'file1.toron', 'crosswalk1')  # Add crosswalk_id 1.
-        crosswalk_repo.add('111-111-1111', 'file1.toron', 'crosswalk2')  # Add crosswalk_id 2.
+        crosswalk_repo.add('111-111-1111', 'file1', 'crosswalk2')  # Add crosswalk_id 2 (no toron extension).
         crosswalk_repo.add('222-222-2222', 'file2.toron', 'crosswalk2')  # Add crosswalk_id 3.
 
         self.crosswalk_repo = crosswalk_repo
@@ -325,7 +325,7 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
     def test_other_unique_id(self):
         """Should return exact match on 'other_unique_id' value."""
         crosswalks = find_crosswalks_by_ref('111-111-1111', self.crosswalk_repo)
-        self.assertEqual([x.id for x in crosswalks], [1, 2])
+        self.assertEqual(set([x.id for x in crosswalks]), {1, 2})
 
         crosswalks = find_crosswalks_by_ref('222-222-2222', self.crosswalk_repo)
         self.assertEqual([x.id for x in crosswalks], [3])
@@ -333,21 +333,21 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
     def test_other_filename_hint(self):
         """Should return exact match on 'other_filename_hint' value."""
         crosswalks = find_crosswalks_by_ref('file1.toron', self.crosswalk_repo)
-        self.assertEqual([x.id for x in crosswalks], [1, 2])
+        self.assertEqual(set([x.id for x in crosswalks]), {1, 2})
 
     def test_other_filename_hint_stem_only(self):
         """Should return match on filename stem of 'other_filename_hint'
         value (matches name without ".toron" extension).
         """
         crosswalks = find_crosswalks_by_ref('file1', self.crosswalk_repo)  # <- Stem 'file1'.
-        self.assertEqual([x.id for x in crosswalks], [1, 2])
+        self.assertEqual(set([x.id for x in crosswalks]), {1, 2})
 
     def test_other_unique_id_shortcode(self):
         """If node reference is 7 characters or more, try to match the
         start of 'other_unique_id' values.
         """
         crosswalks = find_crosswalks_by_ref('111-111', self.crosswalk_repo)  # <- Short code.
-        self.assertEqual([x.id for x in crosswalks], [1, 2])
+        self.assertEqual(set([x.id for x in crosswalks]), {1, 2})
 
     def test_no_match(self):
         crosswalks = find_crosswalks_by_ref('unknown-reference', self.crosswalk_repo)
