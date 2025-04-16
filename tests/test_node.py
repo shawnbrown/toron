@@ -2625,7 +2625,6 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
     def test_add_crosswalk(self):
         mock_other_node = unittest.mock.Mock()
         mock_other_node.unique_id = '111-111-1111'
-        mock_other_node.path_hint = 'mocked_file.toron'
 
         node = TopoNode()
 
@@ -2639,6 +2638,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         node.add_crosswalk(  # <- Defining all properties.
                 node=mock_other_node,
                 crosswalk_name='name2',
+                other_filename_hint='mocked_file',
                 description='The second crosswalk.',
                 selectors=['"[foo]"'],
                 is_default=True,  # <- Becomes new default, replacing 'name1'
@@ -2651,7 +2651,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
             self.get_crosswalk_helper(node),
             [Crosswalk(id=1,
                        other_unique_id='111-111-1111',
-                       other_filename_hint='mocked_file',  #  Omits '.toron' suffix.
+                       other_filename_hint=None,
                        name='name1',
                        description=None,
                        selectors=None,
@@ -2661,7 +2661,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
                        is_locally_complete=False),
              Crosswalk(id=2,
                        other_unique_id='111-111-1111',
-                       other_filename_hint='mocked_file',  #  Omits '.toron' suffix.
+                       other_filename_hint='mocked_file',
                        name='name2',
                        description='The second crosswalk.',
                        selectors=['"[foo]"'],

@@ -754,7 +754,6 @@ class TestTranslate(unittest.TestCase):
     def setUp(self):
         mock_node = unittest.mock.Mock()
         mock_node.unique_id = '00000000-0000-0000-0000-000000000000'
-        mock_node.path_hint = 'other-file.toron'
 
         self.node = TopoNode()
         self.node.add_index_columns('A', 'B', 'C')
@@ -769,6 +768,7 @@ class TestTranslate(unittest.TestCase):
         self.node.add_crosswalk(
             node=mock_node,
             crosswalk_name='edge 1',
+            other_filename_hint='other-file',
             description='Edge one description.',
             selectors=['[foo="bar"]'],
             is_default=True,
@@ -793,6 +793,7 @@ class TestTranslate(unittest.TestCase):
         self.node.add_crosswalk(
             node=mock_node,
             crosswalk_name='edge 2',
+            other_filename_hint='other-file',
             description='Edge two description.',
             selectors=['[foo]'],
         )
