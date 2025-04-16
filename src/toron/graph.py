@@ -111,7 +111,7 @@ def normalize_filename_hints(
     left_filename_hint = left_path_hint or ''
     right_filename_hint = right_path_hint or ''
 
-    # Normalize directory separators.
+    # Normalize directory separators to POSIX-style slash.
     left_filename_hint = left_filename_hint.replace('\\', '/')
     right_filename_hint = right_filename_hint.replace('\\', '/')
 
@@ -124,6 +124,10 @@ def normalize_filename_hints(
         if common_prefix:
             left_filename_hint = os.path.relpath(left_filename_hint, common_prefix)
             right_filename_hint = os.path.relpath(right_filename_hint, common_prefix)
+            if os.name == 'nt':  # Re-normalize separators on Windows.
+                left_filename_hint = left_filename_hint.replace('\\', '/')
+                right_filename_hint = right_filename_hint.replace('\\', '/')
+
     except ValueError:  # The commonpath() function fails when mixing abs and
         pass            # rel paths, or when paths are on different drives.
 
