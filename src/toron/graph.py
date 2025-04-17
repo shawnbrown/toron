@@ -117,22 +117,22 @@ def normalize_filename_hints(
 
     # Remove common directory prefix.
     try:
-        common_prefix = os.path.commonpath([
-            left_filename_hint,
-            right_filename_hint,
+        common_prefix = os.path.commonpath([  # Raises ValueError if mixing
+            left_filename_hint,               # absolute and relative paths
+            right_filename_hint,              # or paths from different drives.
         ])
         if common_prefix:
             left_filename_hint = os.path.relpath(left_filename_hint, common_prefix)
             right_filename_hint = os.path.relpath(right_filename_hint, common_prefix)
-            if os.name == 'nt':  # Re-normalize separators on Windows.
+            # Need to re-normalize separators if using Windows.
+            if os.name == 'nt':
                 left_filename_hint = left_filename_hint.replace('\\', '/')
                 right_filename_hint = right_filename_hint.replace('\\', '/')
+    except ValueError:
+        pass  # If prefix removal fails, use paths as-is.
 
-    except ValueError:  # The commonpath() function fails when mixing abs and
-        pass            # rel paths, or when paths are on different drives.
-
-    # Remove `.toron` extension. Change to removesuffix() method (new in 3.9)
-    # when support for Python 3.8 is dropped.
+    # Remove `.toron` extension (change to removesuffix() method, new in 3.9,
+    # when support for Python 3.8 is dropped).
     if left_filename_hint.endswith('.toron'):
         left_filename_hint = left_filename_hint[:-6]
     if right_filename_hint.endswith('.toron'):
