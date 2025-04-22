@@ -900,7 +900,9 @@ class BitFlags(Sequence[Literal[0, 1]]):
         based on their truth values (falsy elements as 0s and truthy
         elements as 1s).
         """
-        normalized = ((1 if x else 0) for x in stream)  # Must be exhaustible.
+        # Normalize to 1s and 0s, then make 8 references to the same iterator,
+        # and unpack them into `zip_longest()` to yield 8-element tuples.
+        normalized = ((1 if x else 0) for x in stream)
         eight_bit_words = zip_longest(*([normalized] * 8), fillvalue=0)
 
         byte_list = []
