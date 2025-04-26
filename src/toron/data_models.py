@@ -300,8 +300,19 @@ class BaseIndexRepository(ABC):
         not exist.
         """
 
+    @abstractmethod
     def get_cardinality(self, include_undefined: bool = True) -> int:
-        """Return the number of records in the repository."""
+        """Return the number of records in the repository.
+
+        A concrete DAL should implement an optimized version of this
+        method. But as a stop-gap, this unoptimized base implementation
+        can be called with ``super()``:
+
+        .. code-block::
+
+            def get_cardinality(self, include_undefined: bool = True) -> int:
+                return super().get_cardinality(include_undefined)
+        """
         return sum(1 for _ in self.get_all(include_undefined))
 
     @abstractmethod
