@@ -1398,6 +1398,15 @@ class RelationRepositoryBaseTest(ABC):
             msg='when no ids given, return empty iterator',
         )
 
+    def test_get_index_id_cardinality(self):
+        self.repository.add(1, 0, 0, None, 0, 0.0)  # Add undefined-to-undefined relation.
+
+        result = self.repository.get_index_id_cardinality(1)
+        self.assertEqual(result, 4)
+
+        result = self.repository.get_index_id_cardinality(1, include_undefined=False)
+        self.assertEqual(result, 3)
+
     def test_refresh_proportions(self):
         # Delete some relations to introduce inconsistent proportions.
         self.repository.delete(2)

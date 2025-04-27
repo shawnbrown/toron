@@ -988,6 +988,12 @@ class BaseRelationRepository(ABC):
         """Find all records with matching combination of id values."""
 
     @abstractmethod
+    def get_index_id_cardinality(
+        self, crosswalk_id: int, include_undefined: bool = True
+    ) -> int:
+        """Return the number of unique index_id values in the crosswalk."""
+
+    @abstractmethod
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
 

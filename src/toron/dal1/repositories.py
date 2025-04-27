@@ -1036,6 +1036,21 @@ class RelationRepository(BaseRelationRepository):
             for record in self._cursor:
                 yield Relation(*record)
 
+    def get_index_id_cardinality(
+        self, crosswalk_id: int, include_undefined: bool = True
+    ) -> int:
+        """Return the count of unique index_id values in the crosswalk."""
+        sql = (
+            'SELECT COUNT(DISTINCT index_id)\n'
+            'FROM main.relation\n'
+            'WHERE crosswalk_id=?'
+        )
+        if not include_undefined:
+            sql += ' AND index_id != 0'
+
+        self._cursor.execute(sql, (crosswalk_id,))
+        return self._cursor.fetchone()[0]
+
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
         # TODO: See if this SQL can be optimized. Compare it against
