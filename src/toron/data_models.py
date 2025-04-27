@@ -302,7 +302,7 @@ class BaseIndexRepository(ABC):
 
     @abstractmethod
     def get_cardinality(self, include_undefined: bool = True) -> int:
-        """Return the number of records in the repository.
+        """Return the number of unique records in the repository.
 
         A concrete DAL should implement an optimized version of this
         method. But as a stop-gap, this unoptimized base implementation
