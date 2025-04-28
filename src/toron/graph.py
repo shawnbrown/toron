@@ -38,6 +38,7 @@ from .data_models import (
     Index,
     AttributesDict,
     QuantityIterator,
+    Crosswalk,
 )
 from .data_service import (
     find_crosswalks_by_ref,
@@ -140,6 +141,78 @@ def normalize_filename_hints(
 
     # Return string or None values.
     return (left_filename_hint or None, right_filename_hint or None)
+
+
+def _get_mapping_stats(
+    source_node: TopoNode,
+    target_node: TopoNode,
+    crosswalk: Crosswalk,
+) -> Dict[str, int]:
+    """Return a summary of mapping statistics for a given crosswalk.
+
+    .. code-block::
+
+        >>> _get_mapping_stats(node1, node2, crosswalk)
+        {'src_cardinality': 10,
+         'src_index_matched': 10,
+         'src_index_missing': 0,
+         'src_index_stale': 0,
+         'trg_cardinality': 10,
+         'trg_index_matched': 10,
+         'trg_index_missing': 0}
+    """
+    with source_node._managed_cursor() as src_cur, \
+            target_node._managed_cursor() as trg_cur:
+        src_index_repo = source_node._dal.IndexRepository(src_cur)
+        src_prop_repo = source_node._dal.PropertyRepository(src_cur)
+
+        trg_index_repo = target_node._dal.IndexRepository(trg_cur)
+        trg_rel_repo = target_node._dal.RelationRepository(trg_cur)
+
+        if crosswalk.other_unique_id != src_prop_repo.get('unique_id'):
+            msg = 'crosswalk does not match source node'
+            raise Exception(msg)
+
+        # Get source-side counts. If the hashes match, we know that all
+        # records are matched and these matches are good. If the hashes
+        # don't match, we need to verify each 'other_index_id' to
+        # determine if it's good or stale.
+        src_cardinality = src_index_repo.get_cardinality()
+        src_index_matched = 0
+        src_index_missing = 0
+        src_index_stale = 0
+
+        if crosswalk.other_index_hash == src_prop_repo.get('index_hash'):
+            src_index_matched = src_cardinality
+        else:
+            other_index_ids = trg_rel_repo.get_distinct_other_index_ids(
+                crosswalk.id,
+            )
+            for other_index_id in other_index_ids:
+                if src_index_repo.get(other_index_id):
+                    src_index_matched += 1
+                else:
+                    src_index_stale += 1
+            src_index_missing = src_cardinality - src_index_matched
+
+        # Get target-side counts. Note: There is no 'trg_index_stale'
+        # because target index references should never go stale. They
+        # are managed locally--the target node holds data for incoming
+        # crosswalks so if an index is deleted from the target node,
+        # it should also be deleted from crosswalks in that node.
+        trg_cardinality = trg_index_repo.get_cardinality()
+        trg_index_matched = trg_rel_repo.get_index_id_cardinality(crosswalk.id)
+        trg_index_missing = trg_cardinality - trg_index_matched
+
+        return {
+            'src_cardinality': src_cardinality,
+            'src_index_matched': src_index_matched,
+            'src_index_missing': src_index_missing,
+            'src_index_stale': src_index_stale,
+            'trg_cardinality': trg_cardinality,
+            'trg_index_matched': trg_index_matched,
+            'trg_index_missing': trg_index_missing,
+        }
 
 
 def load_mapping(

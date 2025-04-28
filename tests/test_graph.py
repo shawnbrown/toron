@@ -18,6 +18,7 @@ from toron.data_models import (
 from toron.graph import (
     normalize_mapping_data,
     normalize_filename_hints,
+    _get_mapping_stats,
     load_mapping,
     _get_mapping_elements,
     get_mapping,
@@ -231,6 +232,144 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
         applogger.addHandler(handler)
         self.addCleanup(lambda: applogger.removeHandler(handler))
+
+
+class TestdGetMappingStats(TwoNodesBaseTestCase):
+    def test_all_matched(self):
+        self.node2.add_crosswalk(self.node1, 'population', other_filename_hint='file1')
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (6, 6, b'\xe0', 100.0),
+                (7, 7, b'\xe0', 100.0),
+                (8, 8, b'\xe0', 100.0),
+                (9, 9, b'\xe0', 100.0),
+                (0, 0,    None,   0.0),
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
+        )
+        crosswalk = self.node2.get_crosswalk(self.node1, 'population')
+
+        stats = _get_mapping_stats(self.node1, self.node2, crosswalk)
+        expected = {
+            'src_cardinality': 10,
+            'src_index_matched': 10,
+            'src_index_missing': 0,
+            'src_index_stale': 0,
+            'trg_cardinality': 10,
+            'trg_index_matched': 10,
+            'trg_index_missing': 0,
+        }
+        self.assertEqual(stats, expected)
+
+    def test_source_missing(self):
+        self.node2.add_crosswalk(self.node1, 'population', other_filename_hint='file1')
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (1, 1, b'\xe0',  25.0),
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                # Source element 3 is omitted.
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (6, 6, b'\xe0', 100.0),
+                (7, 7, b'\xe0', 100.0),
+                (8, 8, b'\xe0', 100.0),
+                (9, 9, b'\xe0', 100.0),
+                (0, 0,    None,   0.0),
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
+        )
+        crosswalk = self.node2.get_crosswalk(self.node1, 'population')
+
+        stats = _get_mapping_stats(self.node1, self.node2, crosswalk)
+        expected = {
+            'src_cardinality': 10,
+            'src_index_matched': 9,
+            'src_index_missing': 1,  # <- Missing 1 source side element.
+            'src_index_stale': 0,
+            'trg_cardinality': 10,
+            'trg_index_matched': 10,
+            'trg_index_missing': 0,
+        }
+        self.assertEqual(stats, expected)
+
+    def test_target_missing(self):
+        self.node2.add_crosswalk(self.node1, 'population', other_filename_hint='file1')
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                # Target element 1 is omitted.
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (6, 6, b'\xe0', 100.0),
+                (7, 7, b'\xe0', 100.0),
+                (8, 8, b'\xe0', 100.0),
+                (9, 9, b'\xe0', 100.0),
+                (0, 0,    None,   0.0),
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
+        )
+        crosswalk = self.node2.get_crosswalk(self.node1, 'population')
+
+        stats = _get_mapping_stats(self.node1, self.node2, crosswalk)
+        expected = {
+            'src_cardinality': 10,
+            'src_index_matched': 10,
+            'src_index_missing': 0,
+            'src_index_stale': 0,
+            'trg_cardinality': 10,
+            'trg_index_matched': 9,
+            'trg_index_missing': 1,  # <- Missing 1 target side element.
+        }
+        self.assertEqual(stats, expected)
+
+    def test_source_stale(self):
+        self.node2.add_crosswalk(self.node1, 'population', other_filename_hint='file1')
+        self.node2.insert_relations2(
+            node_or_ref=self.node1,
+            crosswalk_name='population',
+            data=[
+                (99, 1, b'\xe0', 25.0),  # <- Element 99 is stale (not in current source).
+                (1, 2, b'\xe0',  25.0),
+                (2, 3, b'\xe0',  50.0),
+                (3, 3, b'\xe0',  50.0),
+                (4, 4, b'\xe0',  55.0),
+                (5, 5, b'\xe0',  50.0),
+                (6, 6, b'\xe0', 100.0),
+                (7, 7, b'\xe0', 100.0),
+                (8, 8, b'\xe0', 100.0),
+                (9, 9, b'\xe0', 100.0),
+                (0, 0,    None,   0.0),
+            ],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
+        )
+        crosswalk = self.node2.get_crosswalk(self.node1, 'population')
+
+        stats = _get_mapping_stats(self.node1, self.node2, crosswalk)
+        expected = {
+            'src_cardinality': 10,
+            'src_index_matched': 10,
+            'src_index_missing': 0,
+            'src_index_stale': 1,  # <- Contains 1 stale element.
+            'trg_cardinality': 10,
+            'trg_index_matched': 10,
+            'trg_index_missing': 0,
+        }
+        self.assertEqual(stats, expected)
 
 
 class TestLoadMapping(TwoNodesBaseTestCase):
