@@ -397,8 +397,10 @@ class TestLoadMapping(TwoNodesBaseTestCase):
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("WARNING: setting default crosswalk: 'population'\n"
-             "INFO: loaded 10 relations\n")
+            ("INFO: loading mapping from left to right\n"
+             "WARNING: setting default crosswalk: 'population'\n"
+             "INFO: loaded 10 relations\n"
+             "INFO: mapping verified, cleanly matches both sides\n")
         )
 
         with self.node2._managed_cursor() as cur:
@@ -445,7 +447,9 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             self.log_stream.getvalue(),
             ('WARNING: omitted 1 ambiguous matches that overlap with records that were already matched at a finer level of granularity\n'
              'WARNING: omitted 1 ambiguous matches that overlap with records that were already matched at a finer level of granularity\n'
-             'INFO: loaded 18 relations\n'),
+             'INFO: loading mapping from left to right\n'
+             'INFO: loaded 18 relations\n'
+             'INFO: mapping verified, cleanly matches both sides\n'),
         )
 
         with self.node2._managed_cursor() as cur:
@@ -494,8 +498,14 @@ class TestLoadMapping(TwoNodesBaseTestCase):
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            ('INFO: loaded 6 relations\n'
-             'INFO: loaded 6 relations\n'),
+            ('INFO: loading mapping from left to right\n'
+             'INFO: loaded 6 relations\n'
+             'WARNING: missing 4 indexes on left-side\n'
+             'WARNING: missing 4 indexes on right-side\n'
+             'INFO: loading mapping from right to left\n'
+             'INFO: loaded 6 relations\n'
+             'WARNING: missing 4 indexes on right-side\n'
+             'WARNING: missing 4 indexes on left-side\n'),
         )
 
         # Check left-to-right relations (node2 -> node1).
@@ -553,8 +563,10 @@ class TestLoadMapping(TwoNodesBaseTestCase):
 
         self.assertEqual(
             self.log_stream.getvalue(),
-            ("WARNING: setting default crosswalk: 'population'\n"
-             "INFO: loaded 10 relations\n")
+            ("INFO: loading mapping from left to right\n"
+             "WARNING: setting default crosswalk: 'population'\n"
+             "INFO: loaded 10 relations\n"
+             "INFO: mapping verified, cleanly matches both sides\n")
         )
 
         with self.node2._managed_cursor() as cur:

@@ -1,4 +1,5 @@
 """Graph implementation and functions for the Toron project."""
+import logging
 import os
 import sqlite3
 from json import (
@@ -23,6 +24,7 @@ from ._typing import (
     Tuple,
     TypeAlias,
     Union,
+    cast,
 )
 
 from ._utils import (
@@ -54,6 +56,9 @@ from .selectors import (
 )
 from ._xmapper import xMapper
 from .xnode import xNode
+
+
+applogger = logging.getLogger(f'app-{__name__}')
 
 
 NoValueType: TypeAlias = NOVALUE.__class__
@@ -215,6 +220,56 @@ def _get_mapping_stats(
         }
 
 
+def _log_load_mapping_stats(
+    logger: logging.Logger,
+    left_node : TopoNode,
+    direction: Literal['<-', '->'],
+    right_node : TopoNode,
+    crosswalk_name: str,
+) -> None:
+    """Log mapping stats using given *logger* for specified crosswalk."""
+    if direction == '<-':
+        source_node = right_node
+        target_node = left_node
+        source_side = 'right-side'
+        target_side = 'left-side'
+    elif direction == '->':
+        source_node = left_node
+        target_node = right_node
+        source_side = 'left-side'
+        target_side = 'right-side'
+    else:
+        msg = f"direction must be '<-' or '->', got {direction!r}"
+        raise ValueError(msg)
+
+    crosswalk = target_node.get_crosswalk(source_node, crosswalk_name)
+    mapping_stats = _get_mapping_stats(
+        source_node, target_node, cast(Crosswalk, crosswalk)
+    )
+    if not any([mapping_stats['src_index_missing'],
+                mapping_stats['src_index_stale'],
+                mapping_stats['trg_index_missing']]):
+        logger.info('mapping verified, cleanly matches both sides')
+    else:
+        if mapping_stats['src_index_missing']:
+            logger.warning(
+                f"missing {mapping_stats['src_index_missing']} indexes "
+                f"on {source_side}"
+            )
+
+        if mapping_stats['src_index_stale']:
+            logger.error(
+                f"found {mapping_stats['src_index_stale']} indexes on "
+                f"{source_side} that no longer exist"
+            )
+
+        if mapping_stats['trg_index_missing']:
+            logger.warning(
+                f"missing {mapping_stats['trg_index_missing']} indexes "
+                f"on {target_side}"
+            )
+
+
 def load_mapping(
     left_node : TopoNode,
     direction : Direction,
@@ -247,6 +302,8 @@ def load_mapping(
     )
 
     if '->' in direction:
+        applogger.info('loading mapping from left to right')
+
         right_node.add_crosswalk(
             node=left_node,
             crosswalk_name=crosswalk_name,
@@ -261,7 +318,17 @@ def load_mapping(
             columns=['other_index_id', crosswalk_name, 'index_id', 'mapping_level'],
         )
 
+        _log_load_mapping_stats(
+            logger=applogger,
+            left_node=left_node,
+            direction='->',
+            right_node=right_node,
+            crosswalk_name=crosswalk_name,
+        )
+
     if '<-' in direction:
+        applogger.info('loading mapping from right to left')
+
         left_node.add_crosswalk(
             node=right_node,
             crosswalk_name=crosswalk_name,
@@ -274,6 +341,14 @@ def load_mapping(
             crosswalk_name=crosswalk_name,
             data=mapper.get_relations('<-'),
             columns=['other_index_id', crosswalk_name, 'index_id', 'mapping_level'],
+        )
+
+        _log_load_mapping_stats(
+            logger=applogger,
+            left_node=left_node,
+            direction='<-',
+            right_node=right_node,
+            crosswalk_name=crosswalk_name,
         )
 
 
