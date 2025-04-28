@@ -191,6 +191,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         )
 
         self.node2 = TopoNode()
+        self.node2.path_hint = 'file2.toron'
         self.node2.add_index_columns('idx1', 'idx2', 'idx3')
         self.node2.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
         self.node2.insert_index([
