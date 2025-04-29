@@ -544,6 +544,60 @@ def get_mapping(
             )
 
 
+def get_mapping_info_str(
+    source_node: TopoNode,
+    target_node: TopoNode,
+    crosswalk_name: Optional[str] = None,
+) -> str:
+    """Return a text description of information about a mapping."""
+    with target_node._managed_cursor() as trg_cursor:
+        trg_crosswalk_repo = target_node._dal.CrosswalkRepository(trg_cursor)
+        crosswalk = target_node._get_crosswalk(
+            source_node,
+            crosswalk_name,
+            trg_crosswalk_repo,
+        )
+
+    if not crosswalk_name:
+        crosswalk_name = crosswalk.name
+
+    stats = _get_mapping_stats(
+        source_node=source_node,
+        target_node=target_node,
+        crosswalk=crosswalk,
+    )
+
+    source_short_hint = source_node.path_hint
+    if source_short_hint and source_short_hint.endswith('.toron'):
+        source_short_hint = source_short_hint[:-6]
+    else:
+        source_short_hint = f'[{source_node.unique_id[:7]}]'
+
+    target_short_hint = target_node.path_hint
+    if target_short_hint and target_short_hint.endswith('.toron'):
+        target_short_hint = target_short_hint[:-6]
+    else:
+        target_short_hint = f'[{target_node.unique_id[:7]}]'
+
+    info = [
+        f'{crosswalk_name}: {source_short_hint} -> {target_short_hint}',
+        f'',
+        f'  {source_short_hint}: matched {stats["src_index_matched"]} ' \
+            f'of {stats["src_cardinality"]} indexes',
+        f'  {target_short_hint}: matched {stats["trg_index_matched"]} ' \
+            f'of {stats["trg_cardinality"]} indexes',
+    ]
+
+    if stats['src_index_stale']:
+        info.extend([
+            f'',
+            f'  Mapping contains {stats["src_index_stale"]} indexes that ' \
+                f'no longer exist in {source_node.path_hint}',
+        ])
+
+    return '\n'.join(info)
+
+
 def _translate(
     quantity_iterator: QuantityIterator, node: TopoNode
 ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
