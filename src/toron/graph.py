@@ -550,13 +550,14 @@ def get_mapping_info_str(
     crosswalk_name: Optional[str] = None,
 ) -> str:
     """Return a text description of information about a mapping."""
-    with target_node._managed_cursor() as trg_cursor:
-        trg_crosswalk_repo = target_node._dal.CrosswalkRepository(trg_cursor)
-        crosswalk = target_node._get_crosswalk(
-            source_node,
-            crosswalk_name,
-            trg_crosswalk_repo,
-        )
+    crosswalk = target_node.get_crosswalk(
+        node_or_ref=source_node,
+        crosswalk_name=crosswalk_name,
+    )
+
+    if crosswalk is None:
+        msg = f'no crosswalk named {crosswalk_name!r}'
+        raise Exception(msg)
 
     if not crosswalk_name:
         crosswalk_name = crosswalk.name
