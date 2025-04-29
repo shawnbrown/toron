@@ -26,12 +26,11 @@ from ..data_models import BaseDataConnector
 # Define permissions to use when saving to drive (`0o666` is octal
 # notation for read/write for owner, group, and others).
 save_permissions = 0o666
-
-# On non-Windows systems, apply "umask" to limit permissions.
-if os.name != 'nt':
-    _umask_value = os.umask(0)
-    os.umask(_umask_value)  # Restore umask.
-    save_permissions = save_permissions & ~_umask_value
+if os.name != 'nt':  # If not Windows.
+    _umask_value = os.umask(0)  # Set umask and return previous.
+    os.umask(_umask_value)  # Restore umask value.
+    #os.umask(_umask_value := os.umask(0))  # <- Use when 3.7 support is dropped.
+    save_permissions = save_permissions & ~_umask_value  # Apply umask.
 
 
 def make_sqlite_uri_filepath(
