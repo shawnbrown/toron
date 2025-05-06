@@ -984,6 +984,19 @@ class TestGetWeights(unittest.TestCase):
             # Reset logging to default.
             applogger.removeHandler(null_handler)
 
+    def test_unspecified_weights(self):
+        """Should return all weights in alphabetical order."""
+        actual = get_weights(self.node)
+        expected = [
+            ['index_id', 'idx1', 'idx2', 'idx3', 'wght1', 'wght2'],
+            [0, '-', '-', '-',  0.0,   0.0],
+            [1, 'A', 'x', 'a', 72.0, 702.0],
+            [2, 'B', 'y', 'b', 37.5, 400.0],
+            [3, 'C', 'z', 'c', 75.0, 801.0],
+            [4, 'D', 'z', 'd', 25.0, 232.0],
+        ]
+        self.assertEqual(list(actual), expected)
+
     def test_multiple_specified_weights(self):
         """Multiple weights should be given in same order as args."""
         actual = get_weights(self.node, ['wght2', 'wght1'])

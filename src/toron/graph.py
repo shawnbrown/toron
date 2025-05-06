@@ -603,33 +603,35 @@ def get_mapping_info_str(
 @eagerly_initialize
 def get_weights(
     node: TopoNode,
-    weights: Union[str, Iterable[str]],
+    weights: Optional[Union[str, Iterable[str]]] = None,
     header: bool = True,
 ) -> Generator[List, None, None]:
     """Yield weight records from the given *node*."""
-    if isinstance(weights, str):
-        weights = [weights]
-    else:
-        weights = list(weights)
-
     with node._managed_cursor(n=2) as (cur1, cur2):
         group_repo = node._dal.WeightGroupRepository(cur1)
         weight_repo = node._dal.WeightRepository(cur2)
         index_repo = node._dal.IndexRepository(cur1)
 
-        groups = []
-        for name in weights:
-            group = group_repo.get_by_name(name)
-            if group:
-                groups.append(group)
-            else:
-                all_groups = ', '.join(repr(x.name) for x in group_repo.get_all())
-                msg = f'weight {name!r} not found, available weights: {all_groups}'
-                raise ValueError(msg)
+        if weights is None:
+            groups = group_repo.get_all()
+        else:
+            if isinstance(weights, str):
+                weights = [weights]
+
+            groups = []
+            for name in weights:
+                group = group_repo.get_by_name(name)
+                if group:
+                    groups.append(group)
+                else:
+                    all_groups = ', '.join(repr(x.name) for x in group_repo.get_all())
+                    msg = f'weight {name!r} not found, available weights: {all_groups}'
+                    raise ValueError(msg)
 
         if header:
             label_columns = node._dal.ColumnManager(cur1).get_columns()
-            yield ['index_id'] + list(label_columns) + weights  # Yield header row.
+            group_names = [grp.name for grp in groups]
+            yield ['index_id'] + list(label_columns) + group_names  # Yield header row.
 
         for index in index_repo.get_all():
             weight_vals: List[Optional[float]] = []
