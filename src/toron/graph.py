@@ -45,6 +45,7 @@ from .data_models import (
 )
 from .data_service import (
     find_crosswalks_by_ref,
+    get_domain,
 )
 from .node import TopoNode
 from .mapper import (
@@ -609,8 +610,13 @@ def get_weights(
     """Yield weight records from the given *node*."""
     with node._managed_cursor(n=2) as (cur1, cur2):
         group_repo = node._dal.WeightGroupRepository(cur1)
-        weight_repo = node._dal.WeightRepository(cur2)
         index_repo = node._dal.IndexRepository(cur1)
+        prop_repo = node._dal.PropertyRepository(cur1)
+        weight_repo = node._dal.WeightRepository(cur2)
+
+        domain = get_domain(prop_repo)
+        domain_keys = list(domain.keys())
+        domain_vals = list(domain.values())
 
         if weights is None:
             groups = group_repo.get_all()
@@ -629,10 +635,12 @@ def get_weights(
                     raise ValueError(msg)
 
         if header:
+            # Make and yield header row.
             label_columns = node._dal.ColumnManager(cur1).get_columns()
             group_names = [grp.name for grp in groups]
-            yield ['index_id'] + list(label_columns) + group_names  # Yield header row.
+            yield ['index_id'] + domain_keys + list(label_columns) + group_names
 
+        # Make and yield record rows.
         for index in index_repo.get_all():
             weight_vals: List[Optional[float]] = []
             for group in groups:
@@ -644,7 +652,7 @@ def get_weights(
                     weight_vals.append(weight.value)
                 else:
                     weight_vals.append(None)
-            yield [index.id] + list(index.labels) + weight_vals
+            yield [index.id] + domain_vals + list(index.labels) + weight_vals
 
 
 def _translate(
