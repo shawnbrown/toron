@@ -22,6 +22,7 @@ from toron.graph import (
     load_mapping,
     _get_mapping_elements,
     get_mapping,
+    get_weights,
     _translate,
     translate,
     xadd_edge,
@@ -950,6 +951,73 @@ class TestGetMapping(TwoNodesBaseTestCase):
             (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, None, None, None, None, None),
         ]
         self.assertEqual(list(actual), expected)
+
+
+class TestGetWeights(unittest.TestCase):
+    maxDiff = None
+
+    def setUp(self):
+        # Turn-off logging for set-up.
+        applogger = logging.getLogger('app-toron')
+        null_handler = logging.NullHandler()
+        applogger.addHandler(null_handler)
+        try:
+            # Create node with two weights.
+            data = [
+                ['idx1', 'idx2', 'idx3', 'wght1', 'wght2'],
+                ['A',    'x',    'a',         72,     702],
+                ['B',    'y',    'b',       37.5,     400],
+                ['C',    'z',    'c',         75,     801],
+                ['D',    'z',    'd',         25,     232],
+            ]
+            self.node = TopoNode()
+
+            self.node.add_index_columns('idx1', 'idx2', 'idx3')
+            self.node.insert_index(data)
+
+            self.node.add_weight_group('wght1', make_default=True)
+            self.node.insert_weights('wght1', data=data)
+
+            self.node.add_weight_group('wght2')
+            self.node.insert_weights('wght2', data=data)
+        finally:
+            # Reset logging to default.
+            applogger.removeHandler(null_handler)
+
+    def test_multiple_specified_weights(self):
+        """Multiple weights should be given in same order as args."""
+        actual = get_weights(self.node, ['wght2', 'wght1'])
+        expected = [
+            ['index_id', 'idx1', 'idx2', 'idx3', 'wght2', 'wght1'],
+            [0, '-', '-', '-',   0.0,  0.0],
+            [1, 'A', 'x', 'a', 702.0, 72.0],
+            [2, 'B', 'y', 'b', 400.0, 37.5],
+            [3, 'C', 'z', 'c', 801.0, 75.0],
+            [4, 'D', 'z', 'd', 232.0, 25.0],
+        ]
+        self.assertEqual(list(actual), expected)
+
+    def test_one_specified_weight(self):
+        expected = [
+            ['index_id', 'idx1', 'idx2', 'idx3', 'wght1'],
+            [0, '-', '-', '-',  0.0],
+            [1, 'A', 'x', 'a', 72.0],
+            [2, 'B', 'y', 'b', 37.5],
+            [3, 'C', 'z', 'c', 75.0],
+            [4, 'D', 'z', 'd', 25.0],
+        ]
+
+        actual = get_weights(self.node, ['wght1'])  # <- List argument.
+        self.assertEqual(list(actual), expected)
+
+        actual = get_weights(self.node, 'wght1')  # <- String argument.
+        self.assertEqual(list(actual), expected)
+
+    def test_missing_specified_weight(self):
+        """Multiple weights should be given in same order as args."""
+        regex = "weight 'wght3' not found, available weights: 'wght1', 'wght2'"
+        with self.assertRaisesRegex(ValueError, regex):
+            actual = get_weights(self.node, ['wght2', 'wght3'])
 
 
 class TestTranslate(unittest.TestCase):
