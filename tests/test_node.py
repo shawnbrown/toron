@@ -4221,6 +4221,37 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+    def test_missing_location_finest_granularity(self):
+        """Check error message for location without a matching index."""
+        with self.node._managed_cursor() as cursor:
+            location_repo = self.node._dal.LocationRepository(cursor)
+            quantity_repo = self.node._dal.QuantityRepository(cursor)
+
+            location_repo.add('OH', 'DELAWARE')  # location_id 5
+            quantity_repo.add(location_id=5, attribute_group_id=1, value=119000)
+            quantity_repo.add(location_id=5, attribute_group_id=2, value=118500)
+
+        # Order of items may be different, so regex include both options.
+        regex = "no index matching: (?:state='OH', county='DELAWARE|county='DELAWARE, state='OH')'"
+        with self.assertRaisesRegex(RuntimeError, regex):
+            results = self.node._disaggregate()
+            list(results)  # Consume iterator.
+
+    def test_missing_location_coarser_granularity(self):
+        """Check error message for location without a matching index."""
+        with self.node._managed_cursor() as cursor:
+            location_repo = self.node._dal.LocationRepository(cursor)
+            quantity_repo = self.node._dal.QuantityRepository(cursor)
+
+            location_repo.add('AZ', '')  # location_id 5
+            quantity_repo.add(location_id=5, attribute_group_id=1, value=119000)
+            quantity_repo.add(location_id=5, attribute_group_id=2, value=118500)
+
+        regex = "no index matching: state='AZ'"
+        with self.assertRaisesRegex(RuntimeError, regex):
+            results = self.node._disaggregate()
+            list(results)  # Consume iterator.
+
 
 class TestTopoNodeDisaggregate(unittest.TestCase):
     def setUp(self):

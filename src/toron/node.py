@@ -2114,7 +2114,12 @@ class TopoNode(object):
 
                         # Since we're at the finest granularity, there can
                         # only be one matching index record.
-                        index_id = next(index_repo.find_index_ids_by_label(criteria))
+                        try:
+                            index_id = next(index_repo.find_index_ids_by_label(criteria))
+                        except StopIteration:
+                            items = (f'{k}={v!r}' for k, v in criteria.items())
+                            msg = f"no index matching: {', '.join(items)}"
+                            raise RuntimeError(msg) from None
 
                         # Yield whole quantity values (cannot be disaggregated
                         # further).
@@ -2138,6 +2143,10 @@ class TopoNode(object):
                         index_ids = array.array(
                             'i', index_repo.find_index_ids_by_label(criteria)
                         )
+                        if not index_ids:
+                            items = (f'{k}={v!r}' for k, v in criteria.items())
+                            msg = f"no index matching: {', '.join(items)}"
+                            raise RuntimeError(msg) from None
 
                         for quantity in group:
                             attribute_group = cast(
