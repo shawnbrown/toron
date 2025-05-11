@@ -569,9 +569,9 @@ class TopoNode(object):
                         continue  # <- Skip to next item.
 
                     raise ValueError(
-                        f'cannot update index_id {updated_dict["index_id"]}, '
-                        f'it was merged with another record on a previous '
-                        f'row'
+                        f"cannot update index_id {updated_dict['index_id']}, "
+                        f"it was merged with another record on a previous "
+                        f"row"
                     )
 
                 # Make a dictionary of existing labels and apply new labels.
@@ -1229,7 +1229,7 @@ class TopoNode(object):
 
         if len({x.other_unique_id for x in matches}) > 1:
             node_info = {x.other_unique_id: x.other_filename_hint for x in matches}
-            func = lambda a, b: f'{a} ({b or "<no filename>"})'
+            func = lambda a, b: f"{a} ({b or '<no filename>'})"
             formatted = '\n  '.join(func(k, v) for k, v in node_info.items())
             msg = f'node reference matches more than one node:\n  {formatted}'
             raise ValueError(msg)
@@ -2045,15 +2045,15 @@ class TopoNode(object):
                 counter['inserted'] += 1
 
         if counter['inserted']:
-            applogger.info(f'loaded {counter["inserted"]} quantities')
+            applogger.info(f"loaded {counter['inserted']} quantities")
         else:
             applogger.warning('no quantities loaded')
 
         if counter['bad_domain']:
             items = [f'{k} must be {v!r}' for k, v in domain_dict.items()]
             applogger.warning(
-                f'skipped {counter["bad_domain"]} quantities with '
-                f'bad domain values: {", ".join(items)}'
+                f"skipped {counter['bad_domain']} quantities with "
+                f"bad domain values: {', '.join(items)}"
             )
 
     def _disaggregate(
