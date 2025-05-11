@@ -382,6 +382,10 @@ class BaseLocationRepository(ABC):
         """Return a tuple of label column names."""
 
     @abstractmethod
+    def find_all(self) -> Iterator[Location]:
+        """Find all location records."""
+
+    @abstractmethod
     def find_by_label(
         self,
         criteria: Optional[Dict[str, str]],

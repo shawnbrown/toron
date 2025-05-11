@@ -219,6 +219,11 @@ class LocationRepository(BaseLocationRepository):
         columns = tuple(row[1] for row in self._cursor.fetchall())
         return columns[1:]  # Return columns (slicing-off _location_id).
 
+    def find_all(self) -> Iterator[Location]:
+        """Find all location records."""
+        self._cursor.execute(f'SELECT * FROM main.location')
+        return (Location(*record) for record in self._cursor)
+
     def find_by_label(
         self,
         criteria: Optional[Dict[str, str]],

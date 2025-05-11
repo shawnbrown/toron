@@ -383,6 +383,15 @@ class LocationRepositoryBaseTest(ABC):
         result = self.repository.get_label_columns()
         self.assertEqual(result, ('A', 'B', 'C'))
 
+    def test_find_all(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')
+        self.repository.add('foo', '')
+
+        results = self.repository.find_all()
+        expected = [Location(1, 'foo', 'x'), Location(2, 'foo', '')]
+        self.assertEqual(list(results), expected)
+
     def test_find_by_label(self):
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'x')
