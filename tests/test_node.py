@@ -4092,6 +4092,61 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
         )
 
 
+class TestTopoNodeSelectQuantities(unittest.TestCase):
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns(*columns)
+
+    @staticmethod
+    def add_index_helper(node, data):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            for row in data:
+                repository.add(*row)
+
+    def setUp(self):
+        self.node = TopoNode()
+        self.add_cols_helper(self.node, 'state', 'county')
+        self.add_index_helper(
+            self.node,
+            [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')],
+        )
+
+        # Set up stream object to capture log messages.
+        self.log_stream = StringIO()
+        self.addCleanup(self.log_stream.close)
+
+        # Add handler to 'app-toron' logger.
+        applogger = logging.getLogger('app-toron')
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        applogger.addHandler(handler)
+        self.addCleanup(lambda: applogger.removeHandler(handler))
+
+    def test_select_quantities(self):
+        self.node.set_domain({'group': 'A', 'year': '2025'})
+        data = [
+            ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+            ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+            ['A', '2025', 'IN', '', 'TOTAL', None, 6924275],
+            ['A', '2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
+        ]
+        self.node.insert_quantities(
+            value='quantity',
+            attributes=['category', 'sex'],
+            data=data,
+        )
+
+        self.assertEqual(
+            list(self.node.select_quantities()),  # <- Method under test.
+            data,
+            msg='should match original data input',
+        )
+
+
 class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
