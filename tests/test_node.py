@@ -34,6 +34,7 @@ from toron.data_models import (
     Structure,
     WeightGroup,
     AttributeGroup,
+    Quantity,
     QuantityIterator,
 )
 from toron.node import TopoNode
@@ -3861,10 +3862,14 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
     @staticmethod
     def get_quantities_helper(node):  # <- Helper function.
-        # TODO: Update this helper when proper interface is available.
-        with node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM quantity')
-            return cursor.fetchall()
+        with node._managed_cursor(n=2) as (cur1, cur2):
+            location_repo = node._dal.LocationRepository(cur1)
+            quantity_repo = node._dal.QuantityRepository(cur2)
+            quantities = []
+            for location in location_repo.find_all():
+                quantity = quantity_repo.find_by_location_id(location.id)
+                quantities.extend(quantity)
+            return sorted(quantities, key=lambda x: x.id)
 
     def setUp(self):
         self.node = TopoNode()
@@ -3911,10 +3916,10 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_quantities_helper(self.node),
-            [(1, 1, 1, 180140),
-             (2, 1, 2, 187990),
-             (3, 2, 1, 566499),
-             (4, 2, 2, 596915)],
+            [Quantity(1, 1, 1, 180140),
+             Quantity(2, 1, 2, 187990),
+             Quantity(3, 2, 1, 566499),
+             Quantity(4, 2, 2, 596915)],
         )
 
     def test_insert_quantities_some_attr_empty(self):
@@ -3949,10 +3954,10 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_quantities_helper(self.node),
-            [(1, 1, 1, 180140),
-             (2, 1, 2, 187990),
-             (3, 2, 3, 566499),
-             (4, 2, 4, 596915)],
+            [Quantity(1, 1, 1, 180140),
+             Quantity(2, 1, 2, 187990),
+             Quantity(3, 2, 3, 566499),
+             Quantity(4, 2, 4, 596915)],
         )
 
     def test_insert_quantities_all_attr_empty(self):
@@ -3986,8 +3991,8 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_quantities_helper(self.node),
-            [(1, 1, 1, 180140),
-             (2, 1, 2, 187990)],
+            [Quantity(1, 1, 1, 180140),
+             Quantity(2, 1, 2, 187990)],
         )
 
     def test_insert_quantities_domain_included(self):
@@ -4007,10 +4012,10 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_quantities_helper(self.node),
-            [(1, 1, 1, 180140),
-             (2, 1, 2, 187990),
-             (3, 2, 1, 566499),
-             (4, 2, 2, 596915)],
+            [Quantity(1, 1, 1, 180140),
+             Quantity(2, 1, 2, 187990),
+             Quantity(3, 2, 1, 566499),
+             Quantity(4, 2, 2, 596915)],
         )
 
     def test_insert_quantities_domain_missing(self):
@@ -4053,10 +4058,10 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_quantities_helper(self.node),
-            [(1, 1, 1, 180140),
-             (2, 1, 2, 187990),
-             (3, 2, 1, 566499),
-             (4, 2, 2, 596915)],
+            [Quantity(1, 1, 1, 180140),
+             Quantity(2, 1, 2, 187990),
+             Quantity(3, 2, 1, 566499),
+             Quantity(4, 2, 2, 596915)],
         )
 
     def test_insert_quantities_domain_bad_values(self):
@@ -4083,8 +4088,8 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_quantities_helper(self.node),
-            [(1, 1, 1, 180140),
-             (2, 1, 2, 187990)],
+            [Quantity(1, 1, 1, 180140),
+             Quantity(2, 1, 2, 187990)],
         )
 
 
