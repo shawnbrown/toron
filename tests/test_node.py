@@ -31,6 +31,7 @@ from toron.data_models import (
     Crosswalk,
     Relation,
     Index,
+    Location,
     Structure,
     WeightGroup,
     AttributeGroup,
@@ -3848,10 +3849,9 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
     @staticmethod
     def get_location_helper(node):  # <- Helper function.
-        # TODO: Update this helper when proper interface is available.
         with node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM location')
-            return cursor.fetchall()
+            repository = node._dal.LocationRepository(cursor)
+            return sorted(repository.find_all(), key=lambda x: x.id)
 
     @staticmethod
     def get_attributes_helper(node):  # <- Helper function.
@@ -3903,8 +3903,8 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_location_helper(self.node),
-            [(1, 'OH', 'BUTLER'),
-             (2, 'OH', 'FRANKLIN')],
+            [Location(1, 'OH', 'BUTLER'),
+             Location(2, 'OH', 'FRANKLIN')],
         )
 
         self.assertEqual(
@@ -3939,8 +3939,8 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_location_helper(self.node),
-            [(1, 'OH', 'BUTLER'),
-             (2, 'OH', 'FRANKLIN')],
+            [Location(1, 'OH', 'BUTLER'),
+             Location(2, 'OH', 'FRANKLIN')],
         )
 
         self.assertEqual(
@@ -3979,7 +3979,7 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_location_helper(self.node),
-            [(1, 'OH', 'BUTLER')],
+            [Location(1, 'OH', 'BUTLER')],
         )
 
         self.assertEqual(
