@@ -3855,10 +3855,9 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
     @staticmethod
     def get_attributes_helper(node):  # <- Helper function.
-        # TODO: Update this helper when proper interface is available.
         with node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM attribute_group')
-            return cursor.fetchall()
+            repository = node._dal.AttributeGroupRepository(cursor)
+            return sorted(repository.find_all(), key=lambda x: x.id)
 
     @staticmethod
     def get_quantities_helper(node):  # <- Helper function.
@@ -3910,8 +3909,8 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_attributes_helper(self.node),
-            [(1, {'category': 'TOTAL', 'sex': 'MALE'}),
-             (2, {'category': 'TOTAL', 'sex': 'FEMALE'})],
+            [AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+             AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'})],
         )
 
         self.assertEqual(
@@ -3946,10 +3945,10 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_attributes_helper(self.node),
-            [(1, {'category': 'TOTAL', 'sex': 'MALE'}),
-             (2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
-             (3, {'sex': 'MALE'}),  # <- should not have 'category'
-             (4, {'sex': 'FEMALE'})],  # <- should not have 'category'
+            [AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+             AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+             AttributeGroup(3, {'sex': 'MALE'}),  # <- should not have 'category'
+             AttributeGroup(4, {'sex': 'FEMALE'})],  # <- should not have 'category'
         )
 
         self.assertEqual(
@@ -3985,8 +3984,8 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             self.get_attributes_helper(self.node),
-            [(1, {'category': 'TOTAL', 'sex': 'MALE'}),
-             (2, {'category': 'TOTAL', 'sex': 'FEMALE'})],
+            [AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+             AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'})],
         )
 
         self.assertEqual(
