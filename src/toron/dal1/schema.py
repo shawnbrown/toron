@@ -398,7 +398,7 @@ def get_unique_id(cur: sqlite3.Cursor) -> str:
 #######################################################################
 
 
-if sys.version_info >= (3, 8):
+if sys.version_info >= (3, 8):  # For Python 3.8 and newer.
     def create_sql_function(
         connection: sqlite3.Connection,
         name: str,
@@ -409,9 +409,6 @@ if sys.version_info >= (3, 8):
     ) -> None:
         """Create a user-defined SQL function."""
         connection.create_function(name, narg, func, deterministic=deterministic)
-        # Note: Versions older than SQLite 3.8.3 will raise a NotSupportedError
-        # if the `deterministic` argument is used but Toron does not currently
-        # support versions older than SQLite 3.21.0.
 else:
     def create_sql_function(
         connection: sqlite3.Connection,
