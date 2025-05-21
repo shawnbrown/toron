@@ -458,8 +458,7 @@ def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
     The trigger will raise an error when the value is:
       * not wellformed JSON
       * not an "array" type
-      * an "array" type that contains one or more "integer", "real",
-        "true", "false", "null", "object" or "array" elements
+      * an "array" type that contains one or more non-"text" elements
     """
     if SQLITE_ENABLE_JSON1:
         selectors_are_invalid = """
