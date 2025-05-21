@@ -477,9 +477,9 @@ class SequenceHash(object):
     This class can be used to generate hashes for a node's 'index_id'
     values::
 
-        >>> index_ids = [0, 1, 2, 5, 6, ...]
-        >>>
         >>> index_hash = SequenceHash()
+        >>>
+        >>> index_ids = [0, 1, 2, 5, 6, ...]
         >>> for index_id in index_ids:
         ...     index_hash.add_value(index_id)
         >>>
@@ -488,7 +488,10 @@ class SequenceHash(object):
 
     Optionally, SequenceHash can be initialized with an iterable::
 
-        >>> index_hash = SequenceHash([0, 1, 2, 5, 6, ...])
+        >>> index_ids = [0, 1, 2, 5, 6, ...]
+        >>>
+        >>> index_hash = SequenceHash(index_ids)
+        >>>
         >>> index_hash.get_hexdigest()
         'efaaa8ba342b5791c9a5fc25ec1fbc3bb77c6a110364840ce1cca88c14a93872'
     """
