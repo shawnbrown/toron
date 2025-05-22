@@ -1,5 +1,6 @@
 [build-system]
 requires = ["setuptools >= 61.0.0"]
+#requires = ["setuptools >= 77.0.0"]  # <- Use after dropping support for 3.7 and 3.8.
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -16,9 +17,10 @@ authors = [
 ]
 description = "Data structures to refine granularity and translate crosswalks."
 readme = "README.md"
-license = "Apache-2.0"
-#license = { text = "Apache-2.0" }  # <- Use when setuptools adds support.
-license-files = ["LICENSE"]
+license = { file = "LICENSE" }
+# Use following license keys after dropping support for Python 3.7 and 3.8.
+#license = "Apache-2.0"
+#license-files = ["LICENSE", "NOTICE"]
 classifiers = [
   "Development Status :: 1 - Planning",
   "Programming Language :: Python :: 3",
