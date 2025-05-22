@@ -16,7 +16,9 @@ authors = [
 ]
 description = "Data structures to refine granularity and translate crosswalks."
 readme = "README.md"
-license = { file="LICENSE" }
+license = "Apache-2.0"
+#license = { text = "Apache-2.0" }  # <- Use when setuptools adds support.
+license-files = ["LICENSE"]
 classifiers = [
   "Development Status :: 1 - Planning",
   "Programming Language :: Python :: 3",
