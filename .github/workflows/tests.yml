@@ -44,6 +44,8 @@ jobs:
     - name: Set up Python versions
       uses: actions/setup-python@v5
       with:
+        # For a list of supported versions, see 'versions-manifest.json'
+        # in the https://github.com/actions/python-versions/ repository.
         python-version: |
             3.8
             3.9
