@@ -57,8 +57,8 @@ legacy_tox_ini = """
     py3{7,8,9,10,11,12,13}: pandas
   commands_pre =
     python --version
-    python -m pip freeze --local --exclude toron
     python -c 'import sqlite3; print(f"SQLite {sqlite3.sqlite_version}")'
+    python -m pip freeze --local --exclude toron
   commands =
     python -O -W default -m unittest
 
