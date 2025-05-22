@@ -53,10 +53,11 @@ legacy_tox_ini = """
   package = editable
   deps =
     py3{7,8,9,10,11,12,13}: pandas
-  commands =
+  commands_pre =
     python --version
     python -m pip freeze --local --exclude toron
     python -c 'import sqlite3; print(f"SQLite {sqlite3.sqlite_version}")'
+  commands =
     python -O -W default -m unittest
 
   [testenv:check_types]
@@ -66,16 +67,18 @@ legacy_tox_ini = """
     pandas
     pandas-stubs
     types-colorama >= 0.4.15; platform_system == 'Windows'
-  commands =
+  commands_pre =
     python --version
+  commands =
     mypy src/toron
 
   [testenv:check_deps]
   # Install toron by itself and verify minimum dependencies.
   skip_install = false
   deps =
-  commands =
+  commands_pre =
     python --version
+  commands =
     python tests/check_dependencies.py
 
   [testenv:build_dist]
@@ -87,5 +90,6 @@ legacy_tox_ini = """
     twine
   commands =
     python -m build --no-isolation
+  commands_post =
     python -m twine check --strict dist/*
 """
