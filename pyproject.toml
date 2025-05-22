@@ -43,7 +43,7 @@ Homepage = "https://github.com/shawnbrown/toron"
 legacy_tox_ini = """
   [tox]
   minversion = 4.0.0
-  envlist = mypy, check_deps, py3{7,8,9,10,11,12,13,14}, pypy3{9,10}
+  envlist = check_types, check_deps, py3{7,8,9,10,11,12,13,14}, pypy3{9,10}
   skip_missing_interpreters = true
   isolated_build = true
 
@@ -57,7 +57,8 @@ legacy_tox_ini = """
     python -c 'import sqlite3; print(f"SQLite {sqlite3.sqlite_version}")'
     python -O -W default -m unittest
 
-  [testenv:mypy]
+  [testenv:check_types]
+  # Run type checker to verify type hints.
   deps =
     mypy >= 0.990
     pandas
