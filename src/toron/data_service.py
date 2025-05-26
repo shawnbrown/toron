@@ -29,6 +29,7 @@ from .data_models import (
     BaseAttributeGroupRepository,
     BaseColumnManager,
     BaseIndexRepository,
+    BaseLocationRepository,
     BaseWeightGroupRepository,
     BaseWeightRepository,
     BaseQuantityRepository,
@@ -37,6 +38,7 @@ from .data_models import (
     BasePropertyRepository,
     BaseStructureRepository,
     Index,
+    Location,
     Weight,
     WeightGroup,
     Crosswalk,
@@ -150,6 +152,23 @@ def delete_index_record(
 
     # Remove existing Index record.
     index_repo.delete(index_id)
+
+
+def find_locations_without_index(
+    location_repo: BaseLocationRepository,
+    aux_index_repo: BaseIndexRepository,
+) -> Iterator[Location]:
+    """Find locations with no matching index records.
+
+    The *location_repo* and *aux_index_repo* should use independent
+    cursor instances.
+    """
+    label_columns = location_repo.get_label_columns()
+    for location in location_repo.find_all():
+        zipped = zip(label_columns, location.labels)
+        criteria = {k: v for k, v in zipped if v != ''}
+        if not next(aux_index_repo.find_index_ids_by_label(criteria), None):
+            yield location
 
 
 def get_quantity_value_sum(

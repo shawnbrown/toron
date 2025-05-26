@@ -6,6 +6,7 @@ from .common import normalize_structures
 
 from toron.data_models import (
     Index,
+    Location,
     WeightGroup,
     Structure,
     Crosswalk,
@@ -14,6 +15,7 @@ from toron import data_access
 from toron._utils import ToronWarning
 from toron.data_service import (
     validate_new_index_columns,
+    find_locations_without_index,
     get_quantity_value_sum,
     disaggregate_value,
     find_crosswalks_by_ref,
@@ -101,6 +103,51 @@ class TestValidateNewIndexColumns(unittest.TestCase):
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
             )
+
+
+class TestFindLocationsWithoutIndex(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
+
+        cursor1 = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor1))
+
+        cursor2 = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor2))
+
+        self.manager = dal.ColumnManager(cursor1)
+        self.location_repo = dal.LocationRepository(cursor1)
+        self.index_repo = dal.IndexRepository(cursor2)
+
+    def test_missing_indexes(self):
+        self.manager.add_columns('A', 'B')
+        self.index_repo.add('foo', 'qux')
+        self.index_repo.add('bar', 'quux')
+        self.location_repo.add('foo', 'qux')
+        self.location_repo.add('bar', 'quux')
+        self.location_repo.add('BAZ', 'CORGE')  # <- No matching index.
+
+        locations = find_locations_without_index(self.location_repo, self.index_repo)
+
+        self.assertEqual(
+            list(locations),
+            [Location(id=3, labels=('BAZ', 'CORGE'))],
+        )
+
+    def test_all_locations_have_indexes(self):
+        self.manager.add_columns('A', 'B')
+        self.index_repo.add('foo', 'qux')
+        self.index_repo.add('bar', 'quux')
+        self.location_repo.add('foo', 'qux')
+        self.location_repo.add('bar', 'quux')
+
+        locations = find_locations_without_index(self.location_repo, self.index_repo)
+
+        self.assertEqual(list(locations), [])
 
 
 class TestGetQuantityValueSum(unittest.TestCase):
