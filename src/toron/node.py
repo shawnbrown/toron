@@ -2056,7 +2056,7 @@ class TopoNode(object):
                 f"bad domain values: {', '.join(items)}"
             )
 
-    def select_quantities(self, header: bool = True):
+    def select_quantities(self, header: bool = True) -> Iterator[Sequence]:
         with self._managed_cursor(n=3) as (cur1, cur2, cur3):
             location_repo = self._dal.LocationRepository(cur1)
             property_repo = self._dal.PropertyRepository(cur1)
