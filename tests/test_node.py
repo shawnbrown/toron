@@ -4092,7 +4092,7 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
         )
 
 
-class TestTopoNodeSelectQuantities(unittest.TestCase):
+class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -4143,6 +4143,29 @@ class TestTopoNodeSelectQuantities(unittest.TestCase):
         results = self.node.select_quantities()  # <- Method under test.
 
         self.assertEqual(list(results), data, msg='should match original data')
+
+    def test_select_quantities_without_index(self):
+        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.insert_quantities(
+            value='quantity',
+            attributes=['category', 'sex'],
+            data=[
+                ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+                ['A', '2025', 'RI', '', 'TOTAL', None, 1112308],  # <- No matching index.
+                ['A', '2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
+            ],
+        )
+
+        results = self.node.select_quantities_without_index()  # <- Method under test.
+
+        expected = [
+            ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['A', '2025', 'RI', '', 'TOTAL', None, 1112308],
+            ['A', '2025', 'AL', '', 'TOTAL', None, 5024279],
+        ]
+        self.assertEqual(list(results), expected)
 
 
 class TestTopoNodeDisaggregateGenerator(unittest.TestCase):

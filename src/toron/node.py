@@ -48,6 +48,7 @@ from .data_service import (
     validate_new_index_columns,
     refresh_index_hash_property,
     delete_index_record,
+    find_locations_without_index,
     get_quantity_value_sum,
     disaggregate_value,
     find_crosswalks_by_ref,
@@ -2074,6 +2075,43 @@ class TopoNode(object):
                 yield domain_cols + label_cols + attr_cols + ['quantity']
 
             for location in location_repo.find_all():
+                quantities = quantity_repo.find_by_location_id(location.id)
+                for quantity in quantities:
+                    attr_group = attribute_repo.get(quantity.attribute_group_id)
+                    attr_group = cast(AttributeGroup, attr_group)
+                    attr_dict = attr_group.attributes
+
+                    labels = list(location.labels)
+                    attributes = [attr_dict.get(col) for col in attr_cols]
+                    yield domain_vals + labels + attributes + [quantity.value]
+
+    def select_quantities_without_index(
+        self, header: bool = True
+    ) -> Iterator[Sequence]:
+        """."""
+        with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4):
+            location_repo = self._dal.LocationRepository(cur1)
+            property_repo = self._dal.PropertyRepository(cur1)
+            attribute_repo = self._dal.AttributeGroupRepository(cur2)
+            quantity_repo = self._dal.QuantityRepository(cur3)
+            aux_index_repo = self._dal.IndexRepository(cur4)
+
+            domain = get_domain(property_repo)
+            domain_cols = list(domain.keys())
+            domain_vals = list(domain.values())
+
+            label_cols: List = list(location_repo.get_label_columns())
+            attr_cols: List = attribute_repo.get_all_attribute_names()
+
+            if header:
+                yield domain_cols + label_cols + attr_cols + ['quantity']
+
+            locations = find_locations_without_index(
+                location_repo=location_repo,
+                aux_index_repo=aux_index_repo,
+            )
+
+            for location in locations:
                 quantities = quantity_repo.find_by_location_id(location.id)
                 for quantity in quantities:
                     attr_group = attribute_repo.get(quantity.attribute_group_id)
