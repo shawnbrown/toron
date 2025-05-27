@@ -2204,10 +2204,9 @@ class TopoNode(object):
                         zipped = zip(label_columns, location.labels)
                         criteria = {k: v for k, v in zipped if v != ''}
 
-                        # Get all index records associated with the location
-                        # (using `array` for smallest memory footprint).
+                        # Get all index records associated with the location.
                         index_ids = array.array(
-                            'i', index_repo.find_index_ids_by_label(criteria)
+                            'q', index_repo.find_index_ids_by_label(criteria)
                         )
                         if not index_ids:
                             items = (f'{k}={v!r}' for k, v in criteria.items())

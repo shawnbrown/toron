@@ -270,7 +270,7 @@ class TestDisaggregateValue(unittest.TestCase):
         """Should work with `array` type input, too."""
         results = disaggregate_value(
             quantity_value=10000,
-            index_ids=array.array('i', [3, 4]),
+            index_ids=array.array('q', [3, 4]),
             weight_group_id=1,
             weight_repo=self.weight_repo,
         )
