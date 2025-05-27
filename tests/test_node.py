@@ -4140,11 +4140,9 @@ class TestTopoNodeSelectQuantities(unittest.TestCase):
             data=data,
         )
 
-        self.assertEqual(
-            list(self.node.select_quantities()),  # <- Method under test.
-            data,
-            msg='should match original data input',
-        )
+        results = self.node.select_quantities()  # <- Method under test.
+
+        self.assertEqual(list(results), data, msg='should match original data')
 
 
 class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
