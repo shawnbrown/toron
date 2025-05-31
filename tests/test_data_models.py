@@ -184,6 +184,15 @@ class IndexRepositoryBaseTest(ABC):
         self.repository.delete(2)
         self.assertIsNone(self.repository.get(2))
 
+    def test_get_label_names(self):
+        """Test get_label_names() method."""
+        result = self.repository.get_label_names()
+        self.assertEqual(result, [], msg='should be empty list when no labels defined')
+
+        self.manager.add_columns('A', 'B', 'C')
+        result = self.repository.get_label_names()
+        self.assertEqual(result, ['A', 'B', 'C'])
+
     def test_add_duplicate_labels(self):
         """Attempting to add duplicate labels should raise ValueError."""
         self.manager.add_columns('A', 'B')

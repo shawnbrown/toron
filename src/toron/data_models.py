@@ -283,6 +283,10 @@ class BaseIndexRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
+    def get_label_names(self) -> List[str]:
+        """Return a list of label column names."""
+
+    @abstractmethod
     def get_all(self, include_undefined: bool = True) -> Iterator[Index]:
         """Get all records in the repository."""
 

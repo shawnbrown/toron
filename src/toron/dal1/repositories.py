@@ -77,6 +77,12 @@ class IndexRepository(BaseIndexRepository):
             'DELETE FROM main.node_index WHERE index_id=?', (id,)
         )
 
+    def get_label_names(self) -> List[str]:
+        """Return a list of label column names."""
+        self._cursor.execute(f"PRAGMA main.table_info('node_index')")
+        column_names = list(row[1] for row in self._cursor)
+        return column_names[1:]  # Return label names (slices-off 'index_id').
+
     def get_all(self, include_undefined: bool = True) -> Iterator[Index]:
         """Get all records in the repository."""
         sql = 'SELECT * FROM main.node_index'
