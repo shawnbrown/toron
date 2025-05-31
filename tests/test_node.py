@@ -4167,6 +4167,30 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+    def test_delete_quantities_without_index(self):
+        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.insert_quantities(
+            value='quantity',
+            attributes=['category', 'sex'],
+            data=[
+                ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+                ['A', '2025', 'RI', '', 'TOTAL', None, 1112308],  # <- No matching index.
+                ['A', '2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
+            ],
+        )
+
+        self.node.delete_quantities_without_index()  # <- Method under test.
+
+        results = self.node.select_quantities()
+        expected = [
+            ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+            ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+        ]
+        self.assertEqual(list(results), expected)
+
 
 class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):

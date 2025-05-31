@@ -2122,6 +2122,26 @@ class TopoNode(object):
                     attributes = [attr_dict.get(col) for col in attr_cols]
                     yield domain_vals + labels + attributes + [quantity.value]
 
+    def delete_quantities_without_index(self) -> None:
+        with self._managed_cursor(n=3) as (cur1, cur2, cur3):
+            with self._managed_transaction(cur3):
+                location_repo = self._dal.LocationRepository(cur1)
+                index_repo = self._dal.IndexRepository(cur2)
+                quantity_repo = self._dal.QuantityRepository(cur3)
+
+                locations = find_locations_without_index(
+                    location_repo=location_repo,
+                    aux_index_repo=index_repo,
+                )
+
+                for location in locations:
+                    quantities = quantity_repo.find_by_location_id(location.id)
+                    quantity_ids = array.array(
+                        'q', (quantity.id for quantity in quantities)
+                    )
+                    for quantity_id in quantity_ids:
+                        quantity_repo.delete(quantity_id)
+
     def _disaggregate(
         self,
         attribute_id_filter: Optional[List[int]] = None,
