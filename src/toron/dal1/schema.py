@@ -355,7 +355,7 @@ def create_node_schema(cur: sqlite3.Cursor) -> None:
 
 
 def verify_node_schema(cur: sqlite3.Cursor) -> None:
-    """Raise RuntimeError if connected db does no have node tables.
+    """Raise RuntimeError if connected db does not have node tables.
 
     This function performs a quick check--it does not verify columns
     or database integrity. If you already know that a connected database
