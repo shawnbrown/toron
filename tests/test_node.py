@@ -4106,6 +4106,13 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
             for row in data:
                 repository.add(*row)
 
+    @staticmethod
+    def get_attribute_groups(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.AttributeGroupRepository(cursor)
+            for attr_group in repository.find_all():
+                yield attr_group
+
     def setUp(self):
         self.node = TopoNode()
         self.add_cols_helper(self.node, 'state', 'county')
@@ -4191,6 +4198,13 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+        # Orphan attribute group `{'category': 'TOTAL'}` should have been removed.
+        results = self.get_attribute_groups(self.node)
+        expected = [
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ]
+        self.assertEqual(list(results), expected)
 
 class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):

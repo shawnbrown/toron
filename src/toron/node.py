@@ -49,6 +49,7 @@ from .data_service import (
     refresh_index_hash_property,
     delete_index_record,
     find_locations_without_index,
+    find_attribute_groups_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
     find_crosswalks_by_ref,
@@ -2126,14 +2127,15 @@ class TopoNode(object):
         with self._managed_cursor(n=3) as (cur1, cur2, cur3):
             with self._managed_transaction(cur3):
                 location_repo = self._dal.LocationRepository(cur1)
+                attribute_repo = self._dal.AttributeGroupRepository(cur1)
                 index_repo = self._dal.IndexRepository(cur2)
                 quantity_repo = self._dal.QuantityRepository(cur3)
 
+                # Find and remove quantities that have no matching index.
                 locations = find_locations_without_index(
                     location_repo=location_repo,
                     aux_index_repo=index_repo,
                 )
-
                 for location in locations:
                     quantities = quantity_repo.find_by_location_id(location.id)
                     quantity_ids = array.array(
@@ -2141,6 +2143,17 @@ class TopoNode(object):
                     )
                     for quantity_id in quantity_ids:
                         quantity_repo.delete(quantity_id)
+
+                # Find and remove orphan attribute group records.
+                attr_groups = find_attribute_groups_without_quantity(
+                    attrib_repo=attribute_repo,
+                    alt_quantity_repo=quantity_repo,
+                )
+                attr_group_ids = array.array(
+                    'q', (attr_group.id for attr_group in attr_groups)
+                )
+                for attr_group_id in attr_group_ids:
+                    attribute_repo.delete(attr_group_id)
 
     def _disaggregate(
         self,
