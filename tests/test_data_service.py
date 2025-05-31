@@ -10,12 +10,14 @@ from toron.data_models import (
     WeightGroup,
     Structure,
     Crosswalk,
+    AttributeGroup,
 )
 from toron import data_access
 from toron._utils import ToronWarning
 from toron.data_service import (
     validate_new_index_columns,
     find_locations_without_index,
+    find_attribute_groups_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
     find_crosswalks_by_ref,
@@ -148,6 +150,45 @@ class TestFindLocationsWithoutIndex(unittest.TestCase):
         locations = find_locations_without_index(self.location_repo, self.index_repo)
 
         self.assertEqual(list(locations), [])
+
+
+class TestFindAttributeGroupsWithoutQuantity(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(connection))
+
+        cursor1 = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor1))
+
+        cursor2 = connector.acquire_cursor(connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor2))
+
+        self.manager = dal.ColumnManager(cursor1)
+        self.location_repo = dal.LocationRepository(cursor1)
+        self.attribute_repo = dal.AttributeGroupRepository(cursor1)
+        self.quantity_repo = dal.QuantityRepository(cursor2)
+
+    def test_find_attr_groups(self):
+        self.manager.add_columns('A', 'B')
+        self.location_repo.add('foo', 'qux')   # location id 1
+        self.location_repo.add('bar', 'quux')  # location id 2
+        self.attribute_repo.add({'type': 'X'})  # attribute_group id 1
+        self.attribute_repo.add({'type': 'Y'})  # attribute_group id 2
+        self.attribute_repo.add({'type': 'Z'})  # attribute_group id 3
+        self.quantity_repo.add(location_id=1, attribute_group_id=1, value=25.0)
+        self.quantity_repo.add(location_id=2, attribute_group_id=2, value=75.0)
+
+        attrs = find_attribute_groups_without_quantity(
+            attrib_repo=self.attribute_repo,
+            alt_quantity_repo=self.quantity_repo,
+        )
+        self.assertEqual(
+            list(attrs),
+            [AttributeGroup(id=3, attributes={'type': 'Z'})],
+        )
 
 
 class TestGetQuantityValueSum(unittest.TestCase):

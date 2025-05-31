@@ -39,6 +39,7 @@ from .data_models import (
     BaseStructureRepository,
     Index,
     Location,
+    AttributeGroup,
     Weight,
     WeightGroup,
     Crosswalk,
@@ -169,6 +170,17 @@ def find_locations_without_index(
         criteria = {k: v for k, v in zipped if v != ''}
         if not next(aux_index_repo.find_index_ids_by_label(criteria), None):
             yield location
+
+
+def find_attribute_groups_without_quantity(
+    attrib_repo: BaseAttributeGroupRepository,
+    alt_quantity_repo: BaseQuantityRepository,
+) -> Iterator[AttributeGroup]:
+    """Find AttributeGroup records that have no matching Quantity."""
+    for attr_group in attrib_repo.find_all():
+        quantities = alt_quantity_repo.find_by_ids(attribute_group_id=attr_group.id)
+        if not next(quantities, None):
+            yield attr_group
 
 
 def get_quantity_value_sum(
