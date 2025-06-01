@@ -2214,7 +2214,7 @@ class TopoNode(object):
                         # Since we're at the finest granularity, there can
                         # only be one matching index record.
                         try:
-                            index_id = next(index_repo.find_index_ids_by_label(criteria))
+                            index_id = next(index_repo.filter_index_ids_by_label(criteria))
                         except StopIteration:
                             items = (f'{k}={v!r}' for k, v in criteria.items())
                             msg = f"no index matching: {', '.join(items)}"
@@ -2239,7 +2239,7 @@ class TopoNode(object):
 
                         # Get all index records associated with the location.
                         index_ids = array.array(
-                            'q', index_repo.find_index_ids_by_label(criteria)
+                            'q', index_repo.filter_index_ids_by_label(criteria)
                         )
                         if not index_ids:
                             items = (f'{k}={v!r}' for k, v in criteria.items())

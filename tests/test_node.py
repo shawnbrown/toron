@@ -4206,6 +4206,7 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+
 class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
@@ -4336,6 +4337,49 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
             (4, {'category': 'TOTAL', 'sex': 'MALE'},   36864.0),  # <- Disaggreated by group 2
             (3, {'category': 'TOTAL', 'sex': 'FEMALE'}, 36864.0),  # <- Disaggreated by group 3
             (4, {'category': 'TOTAL', 'sex': 'FEMALE'}, 36864.0),  # <- Disaggreated by group 3
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_whole_domain_location(self):
+        """Values with no location labels are applied to the entire domain."""
+        with self.node._managed_transaction() as cursor:
+            structure_repo = self.node._dal.StructureRepository(cursor)
+            structure_repo.add(None, 0, 0)
+
+            location_repo = self.node._dal.LocationRepository(cursor)
+            location_repo.add('', '')  # location_id 5
+
+            attribute_repo = self.node._dal.AttributeGroupRepository(cursor)
+            attribute_repo.add(value={'category': 'OTHER'})  # attribute_group_id 3
+
+            quantity_repo = self.node._dal.QuantityRepository(cursor)
+            quantity_repo.add(location_id=5, attribute_group_id=3, value=232232)
+
+        results = self.node._disaggregate(attribute_id_filter=[3])
+        expected = [
+            (0, {'category': 'OTHER'}, 0.0),
+            (1, {'category': 'OTHER'}, 46768.75),
+            (2, {'category': 'OTHER'}, 167031.25),
+            (3, {'category': 'OTHER'}, 4608.0),
+            (4, {'category': 'OTHER'}, 13824.0)
+        ]
+        self.assertEqual(list(results), expected)
+
+    def test_undefined_location(self):
+        """It's possible for a quantity to explicitly match the undefined index."""
+        with self.node._managed_transaction() as cursor:
+            location_repo = self.node._dal.LocationRepository(cursor)
+            location_repo.add('-', '-')  # location_id 5, matches undefined index
+
+            attribute_repo = self.node._dal.AttributeGroupRepository(cursor)
+            attribute_repo.add(value={'category': 'OTHER'})  # attribute_group_id 3
+
+            quantity_repo = self.node._dal.QuantityRepository(cursor)
+            quantity_repo.add(location_id=5, attribute_group_id=3, value=232232)
+
+        results = self.node._disaggregate(attribute_id_filter=[3])
+        expected = [
+            (0, {'category': 'OTHER'}, 232232),  # <- index_id 0 is for undefined record
         ]
         self.assertEqual(list(results), expected)
 
