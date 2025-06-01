@@ -296,6 +296,22 @@ class BaseIndexRepository(ABC):
         values in ascending order.
         """
 
+    def filter_by_label(
+        self,
+        criteria: Dict[str, str],
+        include_undefined: bool = True,
+    ) -> Iterator[Index]:
+        """Filter to Index objects whose labels match *criteria* items.
+
+        If *criteria* is an empty dict, no filtering is applied and all
+        Index objects are returned.
+        """
+        criteria_items = criteria.items()
+        label_names = self.get_label_names()
+        for record in self.get_all(include_undefined):
+            if criteria_items <= set(zip(label_names, record.labels)):
+                yield record
+
     @abstractmethod
     def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
         """Find index_id values missing from the specified crosswalk.

@@ -242,6 +242,47 @@ class IndexRepositoryBaseTest(ABC):
         results = self.repository.get_index_ids(ordered=True)
         self.assertEqual(list(results), [0, 1, 2, 3])
 
+    def test_filter_by_label(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')
+        self.repository.add('foo', 'y')
+        self.repository.add('bar', 'x')
+        self.repository.add('bar', '-')
+
+        # Match on first column.
+        results = self.repository.filter_by_label({'A': 'foo'})
+        expected = [Index(1, 'foo', 'x'), Index(2, 'foo', 'y')]
+        self.assertEqual(list(results), expected)
+
+        # Match on second column.
+        results = self.repository.filter_by_label({'B': 'x'})
+        expected = [Index(1, 'foo', 'x'), Index(3, 'bar', 'x')]
+        self.assertEqual(list(results), expected)
+
+        # Match on first and second columns.
+        results = self.repository.filter_by_label({'A': 'bar', 'B': 'x'})
+        expected = [Index(3, 'bar', 'x')]
+        self.assertEqual(list(results), expected)
+
+        # When criteria is an empty dict, nothing is filtered, returns all items.
+        results = self.repository.filter_by_label({})  # <- Empty dict.
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'foo', 'y'),
+            Index(3, 'bar', 'x'),
+            Index(4, 'bar', '-'),
+        ]
+        self.assertEqual(list(results), expected)
+
+        # Explicit `include_undefined=True` (this is the default).
+        results = self.repository.filter_by_label({'B': '-'}, include_undefined=True)
+        self.assertEqual(list(results), [Index(0, '-', '-'), Index(4, 'bar', '-')])
+
+        # Check `include_undefined=False`.
+        results = self.repository.filter_by_label({'B': '-'}, include_undefined=False)
+        self.assertEqual(list(results), [Index(4, 'bar', '-')])
+
     def test_find_unmatched_index_ids(self):
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'x')
