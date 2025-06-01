@@ -352,10 +352,10 @@ class BaseIndexRepository(ABC):
         return sum(1 for _ in self.find_all(include_undefined))
 
     @abstractmethod
-    def get_distinct_labels(
+    def find_distinct_labels(
         self, column: str, *columns: str, include_undefined: bool = True
     ) -> Iterator[Tuple[str, ...]]:
-        """Get distinct label values for given column names."""
+        """Find distinct label values for given column names."""
 
 
 class Location(Index):

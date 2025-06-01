@@ -438,7 +438,7 @@ def calculate_granularity(
     if not total_cardinality:
         return None  # <- EXIT!
 
-    distinct_labels = index_repo.get_distinct_labels(
+    distinct_labels = index_repo.find_distinct_labels(
         *columns, include_undefined=False
     )
 

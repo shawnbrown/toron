@@ -349,26 +349,26 @@ class IndexRepositoryBaseTest(ABC):
         with self.assertRaisesRegex(Exception, regex):
             results = self.repository.find_unmatched_index_ids(crosswalk_id=999)
 
-    def test_get_distinct_labels(self):
+    def test_find_distinct_labels(self):
         self.manager.add_columns('A', 'B', 'C')
         self.repository.add('foo', 'x', 'aaa')
         self.repository.add('foo', 'y', 'bbb')
         self.repository.add('bar', 'x', 'bbb')
         self.repository.add('bar', 'x', 'ccc')
 
-        results = self.repository.get_distinct_labels('A')
+        results = self.repository.find_distinct_labels('A')
         expected = {('-',), ('foo',), ('bar',)}
         self.assertEqual(set(results), expected)
 
-        results = self.repository.get_distinct_labels('A', include_undefined=False)
+        results = self.repository.find_distinct_labels('A', include_undefined=False)
         expected = {('foo',), ('bar',)}
         self.assertEqual(set(results), expected)
 
-        results = self.repository.get_distinct_labels('A', 'B')
+        results = self.repository.find_distinct_labels('A', 'B')
         expected = {('-', '-'), ('foo', 'x'), ('foo', 'y'), ('bar', 'x')}
         self.assertEqual(set(results), expected)
 
-        results = self.repository.get_distinct_labels('A', 'B', include_undefined=False)
+        results = self.repository.find_distinct_labels('A', 'B', include_undefined=False)
         expected = {('foo', 'x'), ('foo', 'y'), ('bar', 'x')}
         self.assertEqual(set(results), expected)
 

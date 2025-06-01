@@ -173,10 +173,10 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return self._cursor.fetchone()[0]
 
-    def get_distinct_labels(
+    def find_distinct_labels(
         self, column: str, *columns: str, include_undefined: bool = True
     ) -> Iterator[Tuple[str, ...]]:
-        """Get distinct label values for given column names."""
+        """Find distinct label values for given column names."""
         columns = (column,) + columns
         formatted_cols = ', '.join(format_identifier(x) for x in columns)
         sql = f'SELECT DISTINCT {formatted_cols} FROM main.node_index'
