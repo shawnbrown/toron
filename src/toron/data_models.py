@@ -296,6 +296,7 @@ class BaseIndexRepository(ABC):
         values in ascending order.
         """
 
+    @abstractmethod
     def filter_by_label(
         self,
         criteria: Dict[str, str],
