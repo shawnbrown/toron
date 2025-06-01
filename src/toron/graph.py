@@ -414,7 +414,7 @@ def _get_mapping_elements(
                 src_index_repo = source_node._dal.IndexRepository(src_cur)
 
                 # Check that each source index is matched to the target.
-                for other_index_id in src_index_repo.get_index_ids():
+                for other_index_id in src_index_repo.find_all_index_ids():
                     matches = trg_relation_repo.find_by_ids(
                         crosswalk_id=crosswalk.id,
                         other_index_id=other_index_id,

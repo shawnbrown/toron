@@ -291,9 +291,9 @@ class BaseIndexRepository(ABC):
         """Find all records in the repository."""
 
     @abstractmethod
-    def get_index_ids(self, ordered: bool = False) -> Iterator[int]:
-        """Get index_id values. When *ordered* is True, must return
-        values in ascending order.
+    def find_all_index_ids(self, ordered: bool = False) -> Iterator[int]:
+        """Find all index_id values. When *ordered* is True, must
+        return values in ascending order.
         """
 
     @abstractmethod

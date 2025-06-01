@@ -101,7 +101,7 @@ def refresh_index_hash_property(
 ) -> None:
     """Update 'index_hash' property to reflect current index_id values."""
     sequence_hash = SequenceHash()
-    for index_id in index_repo.get_index_ids(ordered=True):
+    for index_id in index_repo.find_all_index_ids(ordered=True):
         sequence_hash.add_value(index_id)
 
     index_hash = sequence_hash.get_hexdigest()

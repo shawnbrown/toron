@@ -92,9 +92,9 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return (Index(*record) for record in self._cursor)
 
-    def get_index_ids(self, ordered: bool = False) -> Iterator[int]:
-        """Get index_id values. When *ordered* is True, must return
-        values in ascending order.
+    def find_all_index_ids(self, ordered: bool = False) -> Iterator[int]:
+        """Find all index_id values. When *ordered* is True, must
+        return values in ascending order.
         """
         sql = 'SELECT index_id FROM main.node_index'
         if ordered:
