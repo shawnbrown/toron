@@ -283,6 +283,37 @@ class IndexRepositoryBaseTest(ABC):
         results = self.repository.filter_by_label({'B': '-'}, include_undefined=False)
         self.assertEqual(list(results), [Index(4, 'bar', '-')])
 
+    def test_filter_index_ids_by_label(self):
+        self.manager.add_columns('A', 'B')
+        self.repository.add('foo', 'x')  # index_id 1
+        self.repository.add('foo', 'y')  # index_id 2
+        self.repository.add('bar', 'x')  # index_id 3
+        self.repository.add('bar', '-')  # index_id 4
+
+        # Match on first column.
+        results = self.repository.filter_index_ids_by_label({'A': 'foo'})
+        self.assertEqual(list(results), [1, 2])
+
+        # Match on second column.
+        results = self.repository.filter_index_ids_by_label({'B': 'x'})
+        self.assertEqual(list(results), [1, 3])
+
+        # Match on first and second columns.
+        results = self.repository.filter_index_ids_by_label({'A': 'bar', 'B': 'x'})
+        self.assertEqual(list(results), [3])
+
+        # When criteria is an empty dict, nothing is filtered, returns all items.
+        results = self.repository.filter_index_ids_by_label({})  # <- Empty dict.
+        self.assertEqual(list(results), [0, 1, 2, 3, 4])
+
+        # Explicit `include_undefined=True` (this is the default).
+        results = self.repository.filter_index_ids_by_label({'B': '-'}, include_undefined=True)
+        self.assertEqual(list(results), [0, 4])
+
+        # Check `include_undefined=False`.
+        results = self.repository.filter_index_ids_by_label({'B': '-'}, include_undefined=False)
+        self.assertEqual(list(results), [4])
+
     def test_find_unmatched_index_ids(self):
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'x')

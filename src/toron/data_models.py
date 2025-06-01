@@ -313,6 +313,20 @@ class BaseIndexRepository(ABC):
             if criteria_items <= set(zip(label_names, record.labels)):
                 yield record
 
+    def filter_index_ids_by_label(
+        self,
+        criteria: Dict[str, str],
+        include_undefined: bool = True,
+    ) -> Iterator[int]:
+        """Filter to 'index_id' integers whose labels match *criteria*
+        items.
+
+        If *criteria* is an empty dict, no filtering is applied and all
+        'index_id' integers are returned.
+        """
+        for index in self.filter_by_label(criteria, include_undefined):
+            yield index.id
+
     @abstractmethod
     def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
         """Find index_id values missing from the specified crosswalk.
