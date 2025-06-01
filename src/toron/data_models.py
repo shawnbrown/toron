@@ -313,6 +313,7 @@ class BaseIndexRepository(ABC):
             if criteria_items <= set(zip(label_names, record.labels)):
                 yield record
 
+    @abstractmethod
     def filter_index_ids_by_label(
         self,
         criteria: Dict[str, str],

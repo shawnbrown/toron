@@ -123,6 +123,19 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql, tuple(criteria.values()))
         return (Index(*record) for record in self._cursor)
 
+    def filter_index_ids_by_label(
+        self,
+        criteria: Dict[str, str],
+        include_undefined: bool = True,
+    ) -> Iterator[int]:
+        """Filter to 'index_id' integers whose labels match *criteria*
+        items.
+
+        If *criteria* is an empty dict, no filtering is applied and all
+        'index_id' integers are returned.
+        """
+        return super().filter_index_ids_by_label(criteria, include_undefined)
+
     def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
         """Find index_id values missing from the specified crosswalk."""
         # TODO: Decide if this method should be moved to RelationRepository.
