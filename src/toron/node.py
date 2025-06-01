@@ -523,10 +523,7 @@ class TopoNode(object):
                 yield ('index_id',) + label_columns  # Yield header row.
 
             index_repo = self._dal.IndexRepository(cursor)
-            if criteria:
-                index_records = index_repo.find_by_label(criteria)
-            else:
-                index_records = index_repo.get_all()
+            index_records = index_repo.filter_by_label(criteria)
 
             results = ((x.id,) + x.labels for x in index_records)
             for row in results:
@@ -582,7 +579,7 @@ class TopoNode(object):
                     label_dict[key] = updated_dict[key]
 
                 # Check for matching record, raise error or merge if exists.
-                matching = next(index_repo.find_by_label(label_dict), None)
+                matching = next(index_repo.filter_by_label(label_dict), None)
                 if matching:
                     if not merge_on_conflict:
                         raise ValueError(
@@ -696,7 +693,7 @@ class TopoNode(object):
                     counter['deleted'] += 1
 
             elif criteria:
-                for index_record in aux_index_repo.find_by_label(criteria):
+                for index_record in aux_index_repo.filter_by_label(criteria):
                     delete_index_record(
                         index_record.id,
                         index_repo,
@@ -858,10 +855,7 @@ class TopoNode(object):
                 applogger.warning(f'no weight group named {weight_group_name!r}')
                 return  # <- EXIT! (stops iteration)
 
-            if criteria:
-                index_records = index_repo.find_by_label(criteria, include_undefined=False)
-            else:
-                index_records = index_repo.get_all(include_undefined=False)
+            index_records = index_repo.filter_by_label(criteria, include_undefined=False)
 
             weight_group_id = weight_group.id
             for index in index_records:
@@ -960,7 +954,7 @@ class TopoNode(object):
                         counter['mismatch'] += 1
                         continue  # <- Skip to next item.
                 else:
-                    index_records = index_repo.find_by_label(
+                    index_records = index_repo.filter_by_label(
                         {k: v for k, v in row_dict.items() if k in label_columns}
                     )
                     index_record = next(index_records, None)
@@ -1185,7 +1179,7 @@ class TopoNode(object):
                 with self._managed_cursor(connection) as aux_cursor:
                     aux_index_repo = self._dal.IndexRepository(aux_cursor)
 
-                    for index_record in aux_index_repo.find_by_label(criteria):
+                    for index_record in aux_index_repo.filter_by_label(criteria):
                         weight_record = weight_repo.get_by_weight_group_id_and_index_id(
                             weight_group_id, index_record.id,
                         )
@@ -1398,14 +1392,9 @@ class TopoNode(object):
                               + ('ambiguous_fields',))
                 yield header_row
 
-            if criteria:
-                index_records = index_repo.find_by_label(criteria, include_undefined=True)
-            else:
-                index_records = index_repo.get_all(include_undefined=True)
-
             relation_repo = self._dal.RelationRepository(aux_cursor)
             crosswalk_id = crosswalk.id
-            for index in index_records:
+            for index in index_repo.filter_by_label(criteria):
                 index_id = index.id
                 relations = list(relation_repo.find_by_ids(
                     crosswalk_id=crosswalk_id, index_id=index_id
@@ -1865,8 +1854,7 @@ class TopoNode(object):
                 criteria_keys = set(criteria.keys())
                 criteria_level = BitFlags(x in criteria_keys for x in label_columns)
 
-                index_records = index_repo.find_by_label(criteria, include_undefined=True)
-                for index in index_records:
+                for index in index_repo.filter_by_label(criteria):
                     relations = list(aux_relation_repo.find_by_ids(
                         crosswalk_id=crosswalk_id,
                         index_id=index.id,
@@ -1953,7 +1941,7 @@ class TopoNode(object):
                 criteria_keys = set(criteria.keys())
                 criteria_level = BitFlags(x in criteria_keys for x in label_columns)
 
-                index_records = index_repo.find_by_label(criteria, include_undefined=True)
+                index_records = index_repo.filter_by_label(criteria)
 
                 relation_repo = self._dal.RelationRepository(aux_cursor)
                 crosswalk_id = crosswalk.id

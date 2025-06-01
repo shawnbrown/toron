@@ -185,42 +185,6 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return (row for row in self._cursor)
 
-    def find_by_label(
-        self,
-        criteria: Optional[Dict[str, str]],
-        include_undefined: bool = True,
-    ) -> Iterator[Index]:
-        """Find all records in the repository that match criteria."""
-        if not criteria:
-            msg = 'find_by_label requires at least 1 criteria value, got 0'
-            raise ValueError(msg)
-
-        qmarks = (f'{format_identifier(k)}=?' for k in criteria.keys())
-        sql = f'SELECT * FROM main.node_index WHERE {" AND ".join(qmarks)}'
-        if not include_undefined:
-            sql += ' AND index_id != 0'
-
-        self._cursor.execute(sql, tuple(criteria.values()))
-        return (Index(*record) for record in self._cursor)
-
-    def find_index_ids_by_label(
-        self,
-        criteria: Optional[Dict[str, str]],
-        include_undefined: bool = True,
-    ) -> Iterator[int]:
-        """Find all index_id values where labels match criteria."""
-        if not criteria:
-            msg = 'find_by_label requires at least 1 criteria value, got 0'
-            raise ValueError(msg)
-
-        qmarks = (f'{format_identifier(k)}=?' for k in criteria.keys())
-        sql = f"SELECT index_id FROM main.node_index WHERE {' AND '.join(qmarks)}"
-        if not include_undefined:
-            sql += ' AND index_id != 0'
-
-        self._cursor.execute(sql, tuple(criteria.values()))
-        return (row[0] for row in self._cursor)
-
 
 class LocationRepository(BaseLocationRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:

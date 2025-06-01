@@ -372,37 +372,6 @@ class IndexRepositoryBaseTest(ABC):
         expected = {('foo', 'x'), ('foo', 'y'), ('bar', 'x')}
         self.assertEqual(set(results), expected)
 
-    def test_find_by_label(self):
-        self.manager.add_columns('A', 'B')
-        self.repository.add('foo', 'x')
-        self.repository.add('foo', 'y')
-        self.repository.add('bar', 'x')
-        self.repository.add('bar', '-')
-
-        results = self.repository.find_by_label({'A': 'foo'})
-        expected = [Index(1, 'foo', 'x'), Index(2, 'foo', 'y')]
-        self.assertEqual(list(results), expected)
-
-        results = self.repository.find_by_label({'B': 'x'})
-        expected = [Index(1, 'foo', 'x'), Index(3, 'bar', 'x')]
-        self.assertEqual(list(results), expected)
-
-        results = self.repository.find_by_label({'A': 'bar', 'B': 'x'})
-        expected = [Index(3, 'bar', 'x')]
-        self.assertEqual(list(results), expected)
-
-        regex = 'find_by_label requires at least 1 criteria value, got 0'
-        with self.assertRaisesRegex(ValueError, regex):
-            results = self.repository.find_by_label(dict())  # <- Empty dict.
-
-        # Explicit `include_undefined=True` (this is the default).
-        results = self.repository.find_by_label({'B': '-'}, include_undefined=True)
-        self.assertEqual(list(results), [Index(0, '-', '-'), Index(4, 'bar', '-')])
-
-        # Check `include_undefined=False`.
-        results = self.repository.find_by_label({'B': '-'}, include_undefined=False)
-        self.assertEqual(list(results), [Index(4, 'bar', '-')])
-
 
 class LocationRepositoryBaseTest(ABC):
     @property

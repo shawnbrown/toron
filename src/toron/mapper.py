@@ -316,7 +316,7 @@ class Mapper(object):
                     criteria = {k: v for k, v in zipped if v != ''}
 
                     # Loop over index records that match current mapping row.
-                    all_matches = index_repo.find_by_label(criteria)
+                    all_matches = index_repo.filter_by_label(criteria)
                     matches = list(islice(all_matches, match_limit + 1))
                     len_matches = len(matches)
                     if len_matches > match_limit:

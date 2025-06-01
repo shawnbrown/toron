@@ -168,7 +168,7 @@ def find_locations_without_index(
     for location in location_repo.find_all():
         zipped = zip(label_columns, location.labels)
         criteria = {k: v for k, v in zipped if v != ''}
-        if not next(aux_index_repo.find_index_ids_by_label(criteria), None):
+        if not next(aux_index_repo.filter_index_ids_by_label(criteria), None):
             yield location
 
 
@@ -445,7 +445,7 @@ def calculate_granularity(
     total_uncertainty = 0.0
     for labels in distinct_labels:
         criteria = dict(zip(columns, labels))
-        records = aux_index_repo.find_by_label(criteria, include_undefined=False)
+        records = aux_index_repo.filter_index_ids_by_label(criteria, include_undefined=False)
         cardniality = sum(1 for x in records)
         total_uncertainty += (cardniality / total_cardinality) * log2(cardniality)
 
