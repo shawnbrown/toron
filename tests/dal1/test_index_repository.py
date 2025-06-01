@@ -63,7 +63,8 @@ class TestIndexRepository(unittest.TestCase):
         self.assertEqual(repository.get(0), Index(0, '-', '-'))
         self.assertEqual(repository.get(1), Index(1, 'foo', 'bar'))
         self.assertEqual(repository.get(2), Index(2, 'foo', 'baz'))
-        self.assertIsNone(repository.get(3), msg='should be None if no matching id')
+        with self.assertRaisesRegex(KeyError, 'no index with id of 3'):
+            repository.get(3)
 
     def test_update(self):
         repository = IndexRepository(self.cursor)

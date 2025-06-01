@@ -49,15 +49,18 @@ class IndexRepository(BaseIndexRepository):
         except sqlite3.IntegrityError as err:
             raise ValueError(str(err))
 
-    def get(self, id: int) -> Optional[Index]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Index:
+        """Get a record from the repository.
+
+        If no index matches the given *id*, a ``KeyError`` is raised.
+        """
         self._cursor.execute(
             'SELECT * FROM main.node_index WHERE index_id=?', (id,)
         )
         record = self._cursor.fetchone()
-        if record:
-            return Index(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no index with id of {id}')
+        return Index(*record)
 
     def update(self, record: Index) -> None:
         """Update a record in the repository."""

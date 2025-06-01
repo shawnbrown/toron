@@ -560,9 +560,9 @@ class TopoNode(object):
 
                 # Make a dictionary of updated labels and get existing record.
                 updated_dict = dict(zip(columns, updated_values))
-                index_record = index_repo.get(updated_dict['index_id'])
-
-                if not index_record:
+                try:
+                    index_record = index_repo.get(updated_dict['index_id'])
+                except KeyError:
                     if updated_dict['index_id'] not in previously_merged:
                         counter['no_index'] += 1
                         continue  # <- Skip to next item.
@@ -669,10 +669,9 @@ class TopoNode(object):
 
                 for row in data:
                     row_dict = dict(zip(columns, row))
-                    existing_record = index_repo.get(row_dict['index_id'])
-
-                    # Check that matching index_id exists.
-                    if not existing_record:
+                    try:
+                        existing_record = index_repo.get(row_dict['index_id'])
+                    except KeyError:
                         counter['no_index'] += 1
                         continue  # <- Skip to next item.
 
@@ -944,8 +943,9 @@ class TopoNode(object):
                     continue  # <- Skip to next item.
 
                 if 'index_id' in row_dict:
-                    index_record = index_repo.get(row_dict['index_id'])
-                    if not index_record:
+                    try:
+                        index_record = index_repo.get(row_dict['index_id'])
+                    except KeyError:
                         counter['no_index'] += 1
                         continue  # <- Skip to next item.
 
@@ -957,8 +957,9 @@ class TopoNode(object):
                     index_records = index_repo.filter_by_label(
                         {k: v for k, v in row_dict.items() if k in label_columns}
                     )
-                    index_record = next(index_records, None)
-                    if not index_record:
+                    try:
+                        index_record = next(index_records)
+                    except StopIteration:
                         counter['no_match'] += 1
                         continue  # <- Skip to next item.
 
@@ -1047,8 +1048,9 @@ class TopoNode(object):
                 row_dict = dict(zip(columns, row))
                 index_id = row_dict['index_id']
 
-                index_record = index_repo.get(index_id)
-                if not index_record:
+                try:
+                    index_record = index_repo.get(index_id)
+                except KeyError:
                     counter['no_index'] += 1
                     continue  # <- Skip to next item.
 
@@ -1151,9 +1153,9 @@ class TopoNode(object):
 
                 for row in data:
                     row_dict = dict(zip(columns, row))
-
-                    index_record = index_repo.get(row_dict['index_id'])
-                    if not index_record:
+                    try:
+                        index_record = index_repo.get(row_dict['index_id'])
+                    except KeyError:
                         counter['no_index'] += 1
                         continue  # <- Skip to next item.
 
@@ -1577,9 +1579,10 @@ class TopoNode(object):
                 other_index_id, value, index_id = row[:3]
                 row_dict = dict(zip(columns[3:], row[3:]))
 
-                # Check for matching index_id.
-                index_record = index_repo.get(index_id)
-                if not index_record:
+                # Get index record or skip to next.
+                try:
+                    index_record = index_repo.get(index_id)
+                except KeyError:
                     counter['no_index'] += 1
                     continue  # <- Skip to next item.
 
@@ -1671,9 +1674,10 @@ class TopoNode(object):
                 other_index_id, value, index_id = row[:3]
                 row_dict = dict(zip(columns[3:], row[3:]))
 
-                # Check for matching index_id.
-                index_record = index_repo.get(index_id)
-                if not index_record:
+                # Get index record or skip to next.
+                try:
+                    index_record = index_repo.get(index_id)
+                except KeyError:
                     counter['no_index'] += 1
                     continue  # <- Skip to next item.
 
@@ -1813,9 +1817,10 @@ class TopoNode(object):
                     other_index_id, value, index_id = row[:3]
                     row_dict = dict(zip(columns[3:], row[3:]))
 
-                    # Check for matching index_id.
-                    index_record = index_repo.get(index_id)
-                    if not index_record:
+                    # Get index record or skip to next.
+                    try:
+                        index_record = index_repo.get(index_id)
+                    except KeyError:
                         counter['no_index'] += 1
                         continue  # <- Skip to next item.
 

@@ -182,7 +182,8 @@ class IndexRepositoryBaseTest(ABC):
         self.assertEqual(self.repository.get(2), Index(2, 'bar', 'z'))
 
         self.repository.delete(2)
-        self.assertIsNone(self.repository.get(2))
+        with self.assertRaisesRegex(KeyError, 'no index with id of 2'):
+            self.repository.get(2)
 
     def test_get_label_names(self):
         """Test get_label_names() method."""

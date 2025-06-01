@@ -259,7 +259,7 @@ class NodeReader(object):
                     GROUP BY index_id, attributes
                 """)
                 for index_id, attributes, quant_value in cur:
-                    labels = cast(Index, index_repo.get(index_id)).labels
+                    labels = index_repo.get(index_id).labels
                     get_attr_value = loads(attributes).get  # Assign get() method directly.
                     attr_vals = tuple(get_attr_value(x) for x in attr_keys)
                     yield labels + attr_vals + (quant_value,)

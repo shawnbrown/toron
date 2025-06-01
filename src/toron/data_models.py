@@ -271,8 +271,11 @@ class BaseIndexRepository(ABC):
         """
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Index]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Index:
+        """Get a record from the repository.
+
+        If no index matches the given *id*, a ``KeyError`` is raised.
+        """
 
     @abstractmethod
     def update(self, record: Index) -> None:

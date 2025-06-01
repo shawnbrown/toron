@@ -196,10 +196,12 @@ def _get_mapping_stats(
                 crosswalk.id,
             )
             for other_index_id in other_index_ids:
-                if src_index_repo.get(other_index_id):
+                try:
+                    src_index_repo.get(other_index_id)
                     src_index_matched += 1
-                else:
+                except KeyError:
                     src_index_stale += 1
+
             src_index_missing = src_cardinality - src_index_matched
 
         # Get target-side counts. Note: There is no 'trg_index_stale'
@@ -513,10 +515,10 @@ def get_mapping(
             # Set domain output and get source node labels.
             if src_index_id is not None:
                 src_domain_output = src_domain_vals
-                src_index = src_index_repo.get(src_index_id)
-                if src_index:
+                try:
+                    src_index = src_index_repo.get(src_index_id)
                     src_index_labels = src_index.labels
-                else:
+                except KeyError:
                     src_index_labels = (None,) * len(src_index_cols)
             else:
                 src_domain_output = (None,) * len(src_domain_vals)
@@ -525,10 +527,10 @@ def get_mapping(
             # Set domain output and get target node labels.
             if trg_index_id is not None:
                 trg_domain_output = trg_domain_vals
-                trg_index = trg_index_repo.get(trg_index_id)
-                if trg_index:
+                try:
+                    trg_index = trg_index_repo.get(trg_index_id)
                     trg_index_labels = trg_index.labels
-                else:
+                except KeyError:
                     trg_index_labels = (None,) * len(trg_index_cols)
             else:
                 trg_domain_output = (None,) * len(trg_domain_vals)
@@ -712,7 +714,7 @@ def _translate(
             # Yield translated results for each relation.
             for relation in relations:
                 new_proportion = check_type(relation.proportion, float)
-                new_index = check_type(index_repo.get(relation.index_id), Index)
+                new_index = index_repo.get(relation.index_id)
                 new_quantity_value = quantity_value * new_proportion
                 yield (new_index, attributes, new_quantity_value)
 
