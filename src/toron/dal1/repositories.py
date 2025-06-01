@@ -102,6 +102,37 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return (row[0] for row in self._cursor)
 
+    def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
+        """Find index_id values missing from the specified crosswalk."""
+        # TODO: Decide if this method should be moved to RelationRepository.
+        #       Compare it to RelationRepository.crosswalk_is_complete().
+        sql = 'SELECT EXISTS (SELECT 1 FROM main.crosswalk WHERE crosswalk_id=?)'
+        self._cursor.execute(sql, (crosswalk_id,))
+        crosswalk_exists = self._cursor.fetchone()[0]
+        if not crosswalk_exists:
+            msg = f'crosswalk_id {crosswalk_id} does not exist'
+            raise Exception(msg)
+
+        sql = """
+            SELECT index_id FROM main.node_index WHERE index_id != 0
+            EXCEPT
+            SELECT index_id FROM main.relation WHERE crosswalk_id = ?
+        """
+        self._cursor.execute(sql, (crosswalk_id,))
+        return (row[0] for row in self._cursor)
+
+    def find_distinct_labels(
+        self, column: str, *columns: str, include_undefined: bool = True
+    ) -> Iterator[Tuple[str, ...]]:
+        """Find distinct label values for given column names."""
+        columns = (column,) + columns
+        formatted_cols = ', '.join(format_identifier(x) for x in columns)
+        sql = f'SELECT DISTINCT {formatted_cols} FROM main.node_index'
+        if not include_undefined:
+            sql += ' WHERE index_id != 0'
+        self._cursor.execute(sql)
+        return (row for row in self._cursor)
+
     def filter_by_label(
         self,
         criteria: Dict[str, str],
@@ -145,25 +176,6 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql, tuple(criteria.values()))
         return (record[0] for record in self._cursor)
 
-    def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
-        """Find index_id values missing from the specified crosswalk."""
-        # TODO: Decide if this method should be moved to RelationRepository.
-        #       Compare it to RelationRepository.crosswalk_is_complete().
-        sql = 'SELECT EXISTS (SELECT 1 FROM main.crosswalk WHERE crosswalk_id=?)'
-        self._cursor.execute(sql, (crosswalk_id,))
-        crosswalk_exists = self._cursor.fetchone()[0]
-        if not crosswalk_exists:
-            msg = f'crosswalk_id {crosswalk_id} does not exist'
-            raise Exception(msg)
-
-        sql = """
-            SELECT index_id FROM main.node_index WHERE index_id != 0
-            EXCEPT
-            SELECT index_id FROM main.relation WHERE crosswalk_id = ?
-        """
-        self._cursor.execute(sql, (crosswalk_id,))
-        return (row[0] for row in self._cursor)
-
     def get_cardinality(self, include_undefined: bool = True) -> int:
         """Return the number of records in the repository."""
         sql = 'SELECT COUNT(*) FROM main.node_index'
@@ -172,18 +184,6 @@ class IndexRepository(BaseIndexRepository):
 
         self._cursor.execute(sql)
         return self._cursor.fetchone()[0]
-
-    def find_distinct_labels(
-        self, column: str, *columns: str, include_undefined: bool = True
-    ) -> Iterator[Tuple[str, ...]]:
-        """Find distinct label values for given column names."""
-        columns = (column,) + columns
-        formatted_cols = ', '.join(format_identifier(x) for x in columns)
-        sql = f'SELECT DISTINCT {formatted_cols} FROM main.node_index'
-        if not include_undefined:
-            sql += ' WHERE index_id != 0'
-        self._cursor.execute(sql)
-        return (row for row in self._cursor)
 
 
 class LocationRepository(BaseLocationRepository):

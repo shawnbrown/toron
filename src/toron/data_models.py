@@ -297,6 +297,20 @@ class BaseIndexRepository(ABC):
         """
 
     @abstractmethod
+    def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
+        """Find index_id values missing from the specified crosswalk.
+
+        It should raise an exception if the given *crosswalk_id* does
+        not exist.
+        """
+
+    @abstractmethod
+    def find_distinct_labels(
+        self, column: str, *columns: str, include_undefined: bool = True
+    ) -> Iterator[Tuple[str, ...]]:
+        """Find distinct label values for given column names."""
+
+    @abstractmethod
     def filter_by_label(
         self,
         criteria: Dict[str, str],
@@ -329,14 +343,6 @@ class BaseIndexRepository(ABC):
             yield index.id
 
     @abstractmethod
-    def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
-        """Find index_id values missing from the specified crosswalk.
-
-        It should raise an exception if the given *crosswalk_id* does
-        not exist.
-        """
-
-    @abstractmethod
     def get_cardinality(self, include_undefined: bool = True) -> int:
         """Return the number of unique records in the repository.
 
@@ -350,12 +356,6 @@ class BaseIndexRepository(ABC):
                 return super().get_cardinality(include_undefined)
         """
         return sum(1 for _ in self.find_all(include_undefined))
-
-    @abstractmethod
-    def find_distinct_labels(
-        self, column: str, *columns: str, include_undefined: bool = True
-    ) -> Iterator[Tuple[str, ...]]:
-        """Find distinct label values for given column names."""
 
 
 class Location(Index):
