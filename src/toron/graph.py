@@ -641,7 +641,7 @@ def get_weights(
             yield ['index_id'] + domain_keys + list(label_columns) + group_names
 
         # Make and yield record rows.
-        for index in index_repo.get_all():
+        for index in index_repo.find_all():
             weight_vals: List[Optional[float]] = []
             for group in groups:
                 weight = weight_repo.get_by_weight_group_id_and_index_id(

@@ -210,12 +210,12 @@ class IndexRepositoryBaseTest(ABC):
         with self.assertRaises(ValueError, msg=msg):
             self.repository.add('foo', '')
 
-    def test_get_all(self):
+    def test_find_all(self):
         self.manager.add_columns('A', 'B')
         self.repository.add('foo', 'x')
         self.repository.add('bar', 'y')
 
-        results = self.repository.get_all()
+        results = self.repository.find_all()
         expected = [
             Index(0, '-', '-'),
             Index(1, 'foo', 'x'),
@@ -223,7 +223,7 @@ class IndexRepositoryBaseTest(ABC):
         ]
         self.assertEqual(list(results), expected)
 
-        results = self.repository.get_all(include_undefined=False)
+        results = self.repository.find_all(include_undefined=False)
         expected = [
             Index(1, 'foo', 'x'),
             Index(2, 'bar', 'y'),

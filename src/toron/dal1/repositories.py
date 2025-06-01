@@ -83,8 +83,8 @@ class IndexRepository(BaseIndexRepository):
         column_names = list(row[1] for row in self._cursor)
         return column_names[1:]  # Return label names (slices-off 'index_id').
 
-    def get_all(self, include_undefined: bool = True) -> Iterator[Index]:
-        """Get all records in the repository."""
+    def find_all(self, include_undefined: bool = True) -> Iterator[Index]:
+        """Find all records in the repository."""
         sql = 'SELECT * FROM main.node_index'
         if not include_undefined:
             sql += ' WHERE index_id != 0'

@@ -287,8 +287,8 @@ class BaseIndexRepository(ABC):
         """Return a list of label column names."""
 
     @abstractmethod
-    def get_all(self, include_undefined: bool = True) -> Iterator[Index]:
-        """Get all records in the repository."""
+    def find_all(self, include_undefined: bool = True) -> Iterator[Index]:
+        """Find all records in the repository."""
 
     @abstractmethod
     def get_index_ids(self, ordered: bool = False) -> Iterator[int]:
@@ -309,7 +309,7 @@ class BaseIndexRepository(ABC):
         """
         criteria_items = criteria.items()
         label_names = self.get_label_names()
-        for record in self.get_all(include_undefined):
+        for record in self.find_all(include_undefined):
             if criteria_items <= set(zip(label_names, record.labels)):
                 yield record
 
@@ -349,7 +349,7 @@ class BaseIndexRepository(ABC):
             def get_cardinality(self, include_undefined: bool = True) -> int:
                 return super().get_cardinality(include_undefined)
         """
-        return sum(1 for _ in self.get_all(include_undefined))
+        return sum(1 for _ in self.find_all(include_undefined))
 
     @abstractmethod
     def get_distinct_labels(

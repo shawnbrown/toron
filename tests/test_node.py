@@ -832,7 +832,7 @@ class TestIndexMethods(unittest.TestCase):
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             repository = node._dal.IndexRepository(cursor)
-            return list(repository.get_all())
+            return list(repository.find_all())
 
     @staticmethod
     def add_structure_helper(node, data):  # <- Helper function.
@@ -1107,7 +1107,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             repository = node._dal.IndexRepository(cursor)
-            return list(repository.get_all())
+            return list(repository.find_all())
 
     @staticmethod
     def get_weight_helper(node):  # <- Helper function.
@@ -1417,7 +1417,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             repository = node._dal.IndexRepository(cursor)
-            return list(repository.get_all())
+            return list(repository.find_all())
 
     def setUp(self):
         node = TopoNode()
