@@ -134,7 +134,16 @@ class IndexRepository(BaseIndexRepository):
         If *criteria* is an empty dict, no filtering is applied and all
         'index_id' integers are returned.
         """
-        return super().filter_index_ids_by_label(criteria, include_undefined)
+        where_predicates = [f'{format_identifier(k)}=?' for k in criteria.keys()]
+        if not include_undefined:
+            where_predicates.append('index_id != 0')
+
+        sql = 'SELECT index_id FROM main.node_index'
+        if where_predicates:
+            sql = f"{sql} WHERE {' AND '.join(where_predicates)}"
+
+        self._cursor.execute(sql, tuple(criteria.values()))
+        return (record[0] for record in self._cursor)
 
     def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
         """Find index_id values missing from the specified crosswalk."""
