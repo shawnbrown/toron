@@ -279,6 +279,7 @@ class Mapper(object):
                 weight_group_repo=node._dal.WeightGroupRepository(node_cur),
                 required=True,
             )
+            weight_group_id = weight_group.id
 
             # Get level pairs in order of decreasing granularity.
             ordered_level_pairs = self._get_level_pairs(
@@ -315,8 +316,8 @@ class Mapper(object):
                     zipped = zip(match_columns, loads(location_labels))
                     criteria = {k: v for k, v in zipped if v != ''}
 
-                    # Loop over index records that match current mapping row.
-                    all_matches = index_repo.filter_by_label(criteria)
+                    # Loop over index_id values that match current mapping row.
+                    all_matches = index_repo.filter_index_ids_by_label(criteria)
                     matches = list(islice(all_matches, match_limit + 1))
                     len_matches = len(matches)
                     if len_matches > match_limit:
@@ -337,7 +338,7 @@ class Mapper(object):
                                 WHERE index_id = ? AND mapping_level != ?
                             )
                         """
-                        is_overlap = lambda x: cur2.execute(sql, (x.id, node_bytes)).fetchone()[0]
+                        is_overlap = lambda x: cur2.execute(sql, (x, node_bytes)).fetchone()[0]
 
                         if allow_overlapping:
                             counter['overlaps_included'] += \
@@ -349,12 +350,12 @@ class Mapper(object):
 
                     # Build tuple of `(index_id, weight_value)` for all matches.
                     index_id_and_weight_value = []
-                    for index in matches:
+                    for index_id in matches:
                         weight = weight_repo.get_by_weight_group_id_and_index_id(
-                            weight_group.id, index.id
+                            weight_group_id, index_id
                         )
                         index_id_and_weight_value.append(
-                            (index.id, getattr(weight, 'value', None))
+                            (index_id, getattr(weight, 'value', None))
                         )
 
                     # If match is ambiguous and any weight is missing, skip it.
