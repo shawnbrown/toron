@@ -396,9 +396,9 @@ def is_supported_schema(cur: sqlite3.Cursor) -> bool:
     """
     try:
         cur.execute('PRAGMA main.application_id')
-        application_id = cur.fetchone()[0].to_bytes(4)
+        application_id = cur.fetchone()[0].to_bytes(length=4, byteorder='big')
         cur.execute('PRAGMA main.user_version')
-        user_version = cur.fetchone()[0].to_bytes(4)
+        user_version = cur.fetchone()[0].to_bytes(length=4, byteorder='big')
     except (AttributeError, sqlite3.DatabaseError):
         return False
     return application_id == TORON_MAGIC_NUMBER and user_version == b'DAL1'
