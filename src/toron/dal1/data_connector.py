@@ -556,6 +556,9 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
             with closing(con.cursor()) as cur:
                 if path_exists:
                     schema.verify_node_schema(cur)
+                    #if not schema.is_supported_schema(cur):
+                    #    msg = 'unknown or unsupported file format'
+                    #    raise RuntimeError(msg)
                 else:
                     schema.create_node_schema(cur)
                 unique_id = schema.get_unique_id(cur)

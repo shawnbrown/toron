@@ -354,6 +354,10 @@ def create_node_schema(cur: sqlite3.Cursor) -> None:
     create_schema_constraints(cur)
 
 
+# TODO: Revisit use of `verify_node_schema()` and `is_supported_schema()`.
+# The `data_access` module already does some of this itself. Perhaps the
+# schema code itself doesn't need to do this sort of checking.
+
 def verify_node_schema(cur: sqlite3.Cursor) -> None:
     """Raise RuntimeError if connected db does not have node tables.
 
