@@ -388,7 +388,7 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
         raise RuntimeError(msg)
 
 
-def is_supported_schema(cur: sqlite3.Cursor) -> None:
+def is_supported_schema(cur: sqlite3.Cursor) -> bool:
     """Return true if connection contains a supported SQLite schema.
 
     This function performs a quick check for the expected version
