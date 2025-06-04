@@ -384,6 +384,22 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
         raise RuntimeError(msg)
 
 
+def is_supported_schema(cur: sqlite3.Cursor) -> None:
+    """Return true if connection contains a supported SQLite schema.
+
+    This function performs a quick check for the expected version
+    flags--it does not verify the schema or the database integrity.
+    """
+    try:
+        cur.execute('PRAGMA main.application_id')
+        application_id = cur.fetchone()[0].to_bytes(4)
+        cur.execute('PRAGMA main.user_version')
+        user_version = cur.fetchone()[0].to_bytes(4)
+    except (AttributeError, sqlite3.DatabaseError):
+        return False
+    return application_id == TORON_MAGIC_NUMBER and user_version == b'DAL1'
+
+
 def get_unique_id(cur: sqlite3.Cursor) -> str:
     """Get 'unique_id' from the database cursor."""
     cur.execute("SELECT value FROM main.property WHERE key='unique_id'")

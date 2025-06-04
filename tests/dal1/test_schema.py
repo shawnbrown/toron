@@ -11,6 +11,7 @@ from toron.dal1.schema import (
     create_node_schema,
     format_identifier,
     verify_node_schema,
+    is_supported_schema,
     get_unique_id,
     create_sql_function,
     create_toron_check_property_value,
@@ -137,6 +138,28 @@ class TestVerifyNodeSchema(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             verify_node_schema(some_random_object)
+
+
+class TestIsSupportedSchema(unittest.TestCase):
+    def setUp(self):
+        self.con = sqlite3.connect(':memory:')
+        self.addCleanup(self.con.close)
+
+        self.cur = self.con.cursor()
+        self.addCleanup(self.cur.close)
+
+    def test_passing(self):
+        """Database with node schema should pass without error."""
+        create_node_schema(self.cur)
+        self.assertTrue(is_supported_schema(self.cur))
+
+    def test_empty_connection(self):
+        """Database with node schema should pass without error."""
+        self.assertFalse(is_supported_schema(self.cur))
+
+    def test_not_a_connection(self):
+        some_random_object = object()
+        self.assertFalse(is_supported_schema(some_random_object))
 
 
 class TestFormatIdentifier(unittest.TestCase):
