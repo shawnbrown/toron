@@ -2200,7 +2200,7 @@ class TopoNode(object):
                 if structure.granularity == finest_granularity:
                     for location_id, group in grouped:
                         # Use location labels to make index search criteria.
-                        location = cast(Location, location_repo.get(location_id))
+                        location = location_repo.get(location_id)
                         zipped = zip(label_columns, location.labels)
                         criteria = {k: v for k, v in zipped if v != ''}
 
@@ -2226,7 +2226,7 @@ class TopoNode(object):
                 else:
                     for location_id, group in grouped:
                         # Use location labels to make index search criteria.
-                        location = cast(Location, location_repo.get(location_id))
+                        location = location_repo.get(location_id)
                         zipped = zip(label_columns, location.labels)
                         criteria = {k: v for k, v in zipped if v != ''}
 

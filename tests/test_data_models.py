@@ -409,7 +409,8 @@ class LocationRepositoryBaseTest(ABC):
         self.assertEqual(self.repository.get(2), Location(2, 'bar', 'z'))
 
         self.repository.delete(2)
-        self.assertIsNone(self.repository.get(2))
+        with self.assertRaises(KeyError):
+            self.repository.get(2)
 
     def test_add_duplicate_labels(self):
         """Attempting to add duplicate labels should raise ValueError."""

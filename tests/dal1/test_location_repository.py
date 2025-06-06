@@ -60,8 +60,10 @@ class TestLocationRepository(unittest.TestCase):
         self.assertEqual(repository.get(1), Location(1, 'foo', 'bar'))
         self.assertEqual(repository.get(2), Location(2, 'foo', 'baz'))
         self.assertEqual(repository.get(3), Location(3, 'foo', ''))
-        self.assertIsNone(repository.get(37), msg='should be None if no matching id')
-        self.assertIsNone(repository.get(0), msg='should be None if no matching id')
+        with self.assertRaises(KeyError, msg='should fail if no matching id'):
+            repository.get(37)
+        with self.assertRaises(KeyError, msg='should fail if no matching id'):
+            repository.get(0)
 
     def test_update(self):
         repository = LocationRepository(self.cursor)

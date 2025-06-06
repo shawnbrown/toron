@@ -378,8 +378,11 @@ class BaseLocationRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Location]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Location:
+        """Get a record from the repository.
+
+        If no location matches the given *id*, a ``KeyError`` is raised.
+        """
 
     @abstractmethod
     def update(self, record: Location) -> None:

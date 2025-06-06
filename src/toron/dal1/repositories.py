@@ -201,15 +201,18 @@ class LocationRepository(BaseLocationRepository):
         sql = f'INSERT INTO main.location VALUES (NULL, {qmarks})'
         self._cursor.execute(sql, labels)
 
-    def get(self, id: int) -> Optional[Location]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Location:
+        """Get a record from the repository.
+
+        If no location matches the given *id*, a ``KeyError`` is raised.
+        """
         self._cursor.execute(
             'SELECT * FROM main.location WHERE _location_id=?', (id,)
         )
         record = self._cursor.fetchone()
-        if record:
-            return Location(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no location with id of {id}')
+        return Location(*record)
 
     def update(self, record: Location) -> None:
         """Update a record in the repository."""
