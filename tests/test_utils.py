@@ -330,6 +330,23 @@ class TestWideToLong(unittest.TestCase):
              ('OH',    'FRANKLIN', 'TOT_ALL',  1163414)],
         )
 
+    def test_mixed_type_tuple_columns(self):
+        result = wide_to_long(
+            data=[('state', 'county',   ('TOT', 1), ('TOT', 2)),
+                  ('OH',    'BUTLER',   180140,     187990),
+                  ('OH',    'FRANKLIN', 566499,     596915)],
+            cols_to_stack=[('TOT', 1), ('TOT', 2)],
+        )
+
+        self.assertEqual(
+            list(result),
+            [('state', 'county',   'variable', 'value'),
+             ('OH',    'BUTLER',   ('TOT', 1), 180140),
+             ('OH',    'BUTLER',   ('TOT', 2), 187990),
+             ('OH',    'FRANKLIN', ('TOT', 1), 566499),
+             ('OH',    'FRANKLIN', ('TOT', 2), 596915)],
+        )
+
     def test_explicit_var_name(self):
         result = wide_to_long(
             data=[('state', 'county',   'TOT_MALE', 'TOT_FEMALE'),
