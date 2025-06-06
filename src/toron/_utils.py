@@ -838,13 +838,8 @@ class BitFlags(Sequence[Literal[0, 1]]):
         >>> BitFlags(b'\xd0')
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
-    Convert a BitFlags object into bytes::
-
-        >>> bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
-        >>> bytes(bits)
-        b'\xd0'
-
-    Other values are converted to 0 and 1 based on their truth value::
+    All inputs are interpreted as bits. Non-zero values are treated
+    as 1, zero or falsy values are treated as 0::
 
         >>> BitFlags('x', 'x', '', 'x', '', '', '', '')
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
@@ -861,6 +856,12 @@ class BitFlags(Sequence[Literal[0, 1]]):
         >>> BitFlags(1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
 
+    A BitFlags object can be converted directly into bytes::
+
+        >>> bits = BitFlags(1, 1, 0, 1, 0, 0, 0, 0)
+        >>> bytes(bits)
+        b'\xd0'
+
     Register the BitFlags type with SQLite::
 
         >>> import sqlite3
@@ -870,11 +871,21 @@ class BitFlags(Sequence[Literal[0, 1]]):
     __slots__ = ('_bytes',)
     _bytes: bytes
 
-    def __init__(self, *args: Any) -> None:
+    @overload
+    def __init__(self, byte_string: bytes) -> None:
+       ...
+    @overload
+    def __init__(self, iterable: Iterable[Any]) -> None:
+       ...
+    @overload
+    def __init__(self, *bits: Any) -> None:
+       ...
+    def __init__(self, *args):
         """
-        BitFlags(byte_string) -> None
-        BitFlags(iterable) -> None
-        BitFlags(bit1[, bit2[, ...]]) -> None
+        BitFlags(byte_string) -> from bytes
+        BitFlags(iterable) -> from iterable of bits
+        BitFlags(bit1, bit2, ...) -> from bit values
+        BitFlags() -> empty BitFlags instance
 
         Initialize a new BitFlags instance.
         """
