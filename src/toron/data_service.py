@@ -229,15 +229,29 @@ def disaggregate_value(
     # Get sum of weight values associated with index_ids.
     group_weight = 0.0
     for index_id in index_ids:
-        weight = get_weight(weight_group_id, index_id)
-        group_weight += weight.value
+        try:
+            weight = get_weight(weight_group_id, index_id)
+            group_weight += weight.value
+        except KeyError:
+            if index_id != 0:  # Re-raise if it's not the undefined record
+                raise          # or continue to the next record if it is.
 
     # Yield disaggregated values for associated index records.
     if group_weight:
         for index_id in index_ids:
-            weight = get_weight(weight_group_id, index_id)
-            proportion = weight.value / group_weight
-            yield (index_id, quantity_value * proportion)
+            try:
+                weight = get_weight(weight_group_id, index_id)
+                proportion = weight.value / group_weight
+                yield (index_id, quantity_value * proportion)
+            except KeyError:
+                # Records with missing weights--except for the undefined
+                # record--would have already raised an error during the
+                # `group_weight` loop above. So we know this KeyError
+                # can only be triggered by the undefined record itself.
+                # And we also know that there are weights for other
+                # records in this group, so we can yield this item with
+                # a weight of zero.
+                yield (index_id, 0.0)
     else:
         # When group_weight is 0, distribute quantity evenly.
         proportion = 1 / len(index_ids)

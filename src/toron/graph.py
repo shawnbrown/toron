@@ -652,7 +652,11 @@ def get_weights(
                 try:
                     weight_value = get_weight(group.id, index.id).value
                 except KeyError:
-                    weight_value = None
+                    if index.id == 0:
+                        weight_value = 0.0
+                    else:
+                        weight_value = None
+
                 weight_vals.append(weight_value)
 
             yield [index.id] + domain_vals + list(index.labels) + weight_vals

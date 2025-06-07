@@ -687,10 +687,11 @@ class WeightRepositoryBaseTest(ABC):
         with self.assertRaises(KeyError):
             self.repository.get_by_weight_group_id_and_index_id(2, 99)
 
-        # The index_id 0 is the undefined record, should return dummy weight.
-        result = self.repository.get_by_weight_group_id_and_index_id(2, 0)
-        dummy_weight = Weight(id=-1, weight_group_id=2, index_id=0, value=0.0)
-        self.assertEqual(result, dummy_weight)
+        # There should not be a weight for the undefined record (index_id 0)
+        # either. Previously, the undefined record was given a "dummy weight"
+        # but this has been changed and this case should be checked explicitly.
+        with self.assertRaises(KeyError):
+            self.repository.get_by_weight_group_id_and_index_id(2, 0)
 
     def test_add_or_resolve(self):
         self.weight_group_repo.add('alt_weight')  # Adds weight_group_id 3.
