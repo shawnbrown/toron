@@ -27,6 +27,7 @@ from toron._typing import (
     TypeAlias,
     TypeVar,
     Union,
+    cast,
     overload,
     TYPE_CHECKING,  # <- Temporary.
 )
@@ -674,41 +675,45 @@ class BaseWeightRepository(ABC):
         * ``'overwritten'``
         * ``'summed'``
         """
-        weight = self.get_by_weight_group_id_and_index_id(
-            weight_group_id,
-            index_id,
-        )
-
-        if weight is None:
+        try:
             self.add(weight_group_id, index_id, value)
             return 'inserted'  # <- EXIT!
+        except ValueError:
+            if index_id == 0 or value < 0.0:
+                raise  # Reraise error if undefined record or negative value.
 
-        if on_conflict == 'skip':
-            return 'skipped'  # <- EXIT!
+            if on_conflict == 'skip':
+                return 'skipped'  # <- EXIT!
 
-        if on_conflict == 'overwrite':
-            weight.value = value  # Replace value.
-            self.update(weight)
-            return 'overwritten'  # <- EXIT!
-
-        if on_conflict == 'sum':
-            weight.value += value  # Sum values.
-            self.update(weight)
-            return 'summed'  # <- EXIT!
-
-        if on_conflict == 'abort':
-            msg = (
-                f"a weight record already exists for weight_group_id "
-                f"{weight_group_id} and index_id {index_id}; change load "
-                f"behavior by setting on_conflict to 'skip', 'overwrite', "
-                f"or 'sum'"
+            weight = self.get_by_weight_group_id_and_index_id(
+                weight_group_id,
+                index_id,
             )
-            raise Exception(msg)
+            weight = cast(Weight, weight)
 
-        raise ValueError(
-            f"on_conflict must be 'abort', 'skip', 'overwrite', or 'sum'; "
-            f"got {on_conflict!r}"
-        )
+            if on_conflict == 'overwrite':
+                weight.value = value  # Replace value.
+                self.update(weight)
+                return 'overwritten'  # <- EXIT!
+
+            if on_conflict == 'sum':
+                weight.value += value  # Sum values.
+                self.update(weight)
+                return 'summed'  # <- EXIT!
+
+            if on_conflict == 'abort':
+                msg = (
+                    f"a weight record already exists for weight_group_id "
+                    f"{weight_group_id} and index_id {index_id}; change load "
+                    f"behavior by setting on_conflict to 'skip', 'overwrite', "
+                    f"or 'sum'"
+                )
+                raise Exception(msg)
+
+            raise ValueError(
+                f"on_conflict must be 'abort', 'skip', 'overwrite', or 'sum'; "
+                f"got {on_conflict!r}"
+            )
 
     def merge_by_index_id(
         self, index_ids: Union[Iterable[int], int], target: int
