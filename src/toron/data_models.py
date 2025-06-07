@@ -578,11 +578,13 @@ class BaseWeightRepository(ABC):
     def add(self, weight_group_id: int, index_id: int, value: float) -> None:
         """Add a record to the repository.
 
-        If this method is called to add a weight for the undefined
-        record (``index_id=0``), it must raise an exception.
+        This method must raise a ValueError if any of the following
+        conditions are true:
 
-        If this method is called to add a weight with a negative value,
-        it must raise an exception.
+        * The given *index_id* is ``0``, the "undefined record".
+        * The given *value* is a negative number.
+        * The repository already contains a Weight with the given
+          *weight_group_id* and *index_id*.
         """
 
     @abstractmethod

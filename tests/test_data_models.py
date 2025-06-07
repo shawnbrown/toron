@@ -652,15 +652,15 @@ class WeightRepositoryBaseTest(ABC):
         results = self.repository.find_by_index_id(99)  # No index_id 99
         self.assertEqual(list(results), [], msg='should return empty iterator')
 
-    def test_add_undefined(self):
+    def test_fail_on_undefined_record(self):
         """WeightRepository.add()` should raise an exception if given `index_id=0`."""
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             self.repository.add(weight_group_id=1, index_id=0, value=0.0)
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             self.repository.add(weight_group_id=1, index_id=0, value=7.0)
 
-    def test_negative_value_handling(self):
+    def test_fail_on_negative_value(self):
         """Raise exception if `add()` or `update()` gets negative value."""
         regex = '.*negative.*'  # Message should mention "negative" values aren't alowed.
 
@@ -670,6 +670,13 @@ class WeightRepositoryBaseTest(ABC):
         self.repository.delete(1)
         with self.assertRaisesRegex(ValueError, regex):
             self.repository.add(weight_group_id=1, index_id=1, value=-9000.0)
+
+    def test_fail_on_duplicate_ids(self):
+        """Should fail if record with same weight_group_id and index_id
+        already exists.
+        """
+        with self.assertRaises(ValueError):
+            self.repository.add(weight_group_id=1, index_id=1, value=1000.0)
 
     def test_get_by_weight_group_id_and_index_id(self):
         result = self.repository.get_by_weight_group_id_and_index_id(2, 1)
