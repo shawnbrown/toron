@@ -363,9 +363,8 @@ class TestDisaggregateValue(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
-    def test_no_matching_weight(self):
-        regex = 'no weight value matching weight_group_id 9 and index_id 3'
-        with self.assertRaisesRegex(RuntimeError, regex):
+    def test_no_matching_weight_group(self):
+        with self.assertRaises(KeyError):
             results = disaggregate_value(
                 quantity_value=10000,
                 index_ids=[3],
@@ -375,8 +374,7 @@ class TestDisaggregateValue(unittest.TestCase):
             list(results)  # Consume iterator.
 
     def test_no_matching_index(self):
-        regex = 'no weight value matching weight_group_id 1 and index_id 999'
-        with self.assertRaisesRegex(RuntimeError, regex):
+        with self.assertRaises(KeyError):
             results = disaggregate_value(
                 quantity_value=10000,
                 index_ids=[999],  # <- No index matching 999!

@@ -613,8 +613,8 @@ class BaseWeightRepository(ABC):
         self,
         weight_group_id: int,
         index_id: int,
-    ) -> Optional[Weight]:
-        """Get record with matching weight_group_id and index_id.
+    ) -> Weight:
+        """Get record with matching *weight_group_id* and *index_id*.
 
         .. code-block::
 
@@ -630,6 +630,9 @@ class BaseWeightRepository(ABC):
             ...     weight_group_id=4, index_id=0
             ... )
             Weight(id=-1, weight_group_id=4, index_id=0, value=0.0)
+
+        If no weight matches the given id values, a ``KeyError`` is
+        raised.
         """
 
     @abstractmethod

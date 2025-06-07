@@ -642,18 +642,19 @@ def get_weights(
             group_names = [grp.name for grp in groups]
             yield ['index_id'] + domain_keys + list(label_columns) + group_names
 
+        # Assign shorter func name (also reduces dot lookups).
+        get_weight = weight_repo.get_by_weight_group_id_and_index_id
+
         # Make and yield record rows.
         for index in index_repo.find_all():
             weight_vals: List[Optional[float]] = []
             for group in groups:
-                weight = weight_repo.get_by_weight_group_id_and_index_id(
-                    weight_group_id=group.id,
-                    index_id=index.id,
-                )
-                if weight:
-                    weight_vals.append(weight.value)
-                else:
-                    weight_vals.append(None)
+                try:
+                    weight_value = get_weight(group.id, index.id).value
+                except KeyError:
+                    weight_value = None
+                weight_vals.append(weight_value)
+
             yield [index.id] + domain_vals + list(index.labels) + weight_vals
 
 

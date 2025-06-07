@@ -348,15 +348,18 @@ class Mapper(object):
                             matches = [x for x in matches if is_overlap(x) == 0]
                             counter['overlaps_excluded'] += len_matches - len(matches)
 
+                    # Assign shorter func name (also reduces dot lookups).
+                    get_weight = weight_repo.get_by_weight_group_id_and_index_id
+
                     # Build tuple of `(index_id, weight_value)` for all matches.
                     index_id_and_weight_value = []
                     for index_id in matches:
-                        weight = weight_repo.get_by_weight_group_id_and_index_id(
-                            weight_group_id, index_id
-                        )
-                        index_id_and_weight_value.append(
-                            (index_id, getattr(weight, 'value', None))
-                        )
+                        try:
+                            weight_value = get_weight(weight_group_id, index_id).value
+                        except KeyError:
+                            weight_value = None
+
+                        index_id_and_weight_value.append((index_id, weight_value))
 
                     # If match is ambiguous and any weight is missing, skip it.
                     if len(index_id_and_weight_value) > 1 and \

@@ -856,17 +856,16 @@ class TopoNode(object):
 
             index_records = index_repo.filter_by_label(criteria, include_undefined=False)
 
+            # Assign shorter func name (also reduces dot lookups).
+            get_weight = weight_repo.get_by_weight_group_id_and_index_id
+
             weight_group_id = weight_group.id
             for index in index_records:
-                attributes_dict = {'weight': weight_group_name}
-
-                weight = weight_repo.get_by_weight_group_id_and_index_id(
-                    weight_group_id,
-                    index.id,
-                )
-                weight_value = weight.value if weight else None
-
-                yield (index, attributes_dict, weight_value)
+                try:
+                    value = get_weight(weight_group_id, index.id).value
+                except KeyError:
+                    value = None
+                yield (index, {'weight': weight_group_name}, value)
 
     def select_weights(
         self,
@@ -1059,15 +1058,15 @@ class TopoNode(object):
                     counter['mismatch'] += 1
                     continue  # <- Skip to next item.
 
-                weight_record = weight_repo.get_by_weight_group_id_and_index_id(
-                    weight_group_id, index_id,
-                )
-                if weight_record:
-                    # Update the weight if it exists.
+                try:
+                    # Update weight record if it exists.
+                    weight_record = weight_repo.get_by_weight_group_id_and_index_id(
+                        weight_group_id, index_id
+                    )
                     weight_record.value = row_dict[value_column]
                     weight_repo.update(weight_record)
                     counter['updated'] += 1
-                else:
+                except KeyError:
                     # Add new weight if it does not exist.
                     weight_repo.add(
                         weight_group_id=weight_group_id,
@@ -1166,13 +1165,13 @@ class TopoNode(object):
                         counter['mismatch'] += 1
                         continue  # <- Skip to next item.
 
-                    weight_record = weight_repo.get_by_weight_group_id_and_index_id(
-                        weight_group_id, index_id,
-                    )
-                    if weight_record:
+                    try:
+                        weight_record = weight_repo.get_by_weight_group_id_and_index_id(
+                            weight_group_id, index_id,
+                        )
                         weight_repo.delete(weight_record.id)
                         counter['deleted'] += 1
-                    else:
+                    except KeyError:
                         counter['no_weight'] += 1
 
             elif criteria:
@@ -1182,13 +1181,13 @@ class TopoNode(object):
                     aux_index_repo = self._dal.IndexRepository(aux_cursor)
 
                     for index_record in aux_index_repo.filter_by_label(criteria):
-                        weight_record = weight_repo.get_by_weight_group_id_and_index_id(
-                            weight_group_id, index_record.id,
-                        )
-                        if weight_record:
+                        try:
+                            weight_record = weight_repo.get_by_weight_group_id_and_index_id(
+                                weight_group_id, index_record.id,
+                            )
                             weight_repo.delete(weight_record.id)
                             counter['deleted'] += 1
-                        else:
+                        except KeyError:
                             counter['no_weight'] += 1
 
             else:

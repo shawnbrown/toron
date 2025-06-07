@@ -684,8 +684,8 @@ class WeightRepositoryBaseTest(ABC):
         self.assertEqual(result, expected)
 
         # No index_id ``99``, should return None.
-        result = self.repository.get_by_weight_group_id_and_index_id(2, 99)
-        self.assertIsNone(result)
+        with self.assertRaises(KeyError):
+            self.repository.get_by_weight_group_id_and_index_id(2, 99)
 
         # The index_id 0 is the undefined record, should return dummy weight.
         result = self.repository.get_by_weight_group_id_and_index_id(2, 0)

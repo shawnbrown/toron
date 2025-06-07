@@ -218,37 +218,32 @@ def disaggregate_value(
           be nonsensical.
         * The weight group should exist and an associated weight should
           exist for every index record. If there is no matching weight,
-          a RuntimeError is raised.
+          a KeyError will be raised.
 
         These conditions should be assured by the parent operation
         before calling this function.
     """
-    # Assign shorter func name and reduce dot-lookups.
+    # Assign shorter func name (also reduces dot lookups).
     get_weight = weight_repo.get_by_weight_group_id_and_index_id
 
     # Get sum of weight values associated with index_ids.
     group_weight = 0.0
     for index_id in index_ids:
         weight = get_weight(weight_group_id, index_id)
-        if weight:
-            group_weight += weight.value
-        else:
-            raise RuntimeError(f'no weight value matching weight_group_id '
-                               f'{weight_group_id} and index_id {index_id}')
-
-    group_count = len(index_ids)  # Get count for zero-division handling.
+        group_weight += weight.value
 
     # Yield disaggregated values for associated index records.
-    for index_id in index_ids:
-        # OK to cast() since `group_weight` loop would have already errored.
-        weight = cast(Weight, get_weight(weight_group_id, index_id))
-
-        try:
+    if group_weight:
+        for index_id in index_ids:
+            weight = get_weight(weight_group_id, index_id)
             proportion = weight.value / group_weight
-        except ZeroDivisionError:
-            proportion = 1 / group_count
-
-        yield (index_id, quantity_value * proportion)
+            yield (index_id, quantity_value * proportion)
+    else:
+        # When group_weight is 0, distribute quantity evenly.
+        proportion = 1 / len(index_ids)
+        disaggregated_value = quantity_value * proportion
+        for index_id in index_ids:
+            yield (index_id, disaggregated_value)
 
 
 def find_crosswalks_by_ref(
