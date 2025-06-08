@@ -275,10 +275,17 @@ def disaggregate_value(
                         yield (index_id, 0.0)
                     else:
                         yield (index_id, disaggregated_value)
-        else:
+        elif index_ids_len == 1:
             # When there's only one item, there's nothing to disaggregate
             # so yield the quantity as-is, even for the undefined record.
             yield (next(iter(index_ids)), quantity_value)
+        else:
+            raise RuntimeError(
+                f'unexpected condition when attempting to disaggregate quantity:\n'
+                f'  quantity_value={quantity_value!r}\n'
+                f'  index_ids={index_ids!r}\n'
+                f'  weight_group_id={weight_group_id!r}'
+            )
 
 
 def find_crosswalks_by_ref(

@@ -321,6 +321,17 @@ class TestDisaggregateValue(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+    def test_empty_index_ids_container(self):
+        regex = '^unexpected condition when attempting to disaggregate quantity'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            results = disaggregate_value(
+                quantity_value=5000,
+                index_ids=[],  # <- Empty container.
+                weight_group_id=1,
+                weight_repo=self.weight_repo,
+            )
+            list(results)  # Consume iterator.
+
     def test_zero_weight_single_result(self):
         """When weight sum is 0, should still keep whole quantity when
         only matching index.
