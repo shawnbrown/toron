@@ -350,6 +350,35 @@ class TestDisaggregateValue(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+    def test_zero_weight_including_undefined(self):
+        """Test empty weight handling when the undefined record is included."""
+        results = disaggregate_value(
+            quantity_value=10000,
+            index_ids=[0],  # <- Single item, the undefined record.
+            weight_group_id=2,  # <- Weight group 2 has weights of 0.
+            weight_repo=self.weight_repo,
+        )
+        expected = [
+            (0, 10000.0),  # The undefined record ('-', '-').
+        ]
+        msg = "when there's a single item, the quantity is yielded as-is"
+        self.assertEqual(list(results), expected, msg=msg)
+
+        results = disaggregate_value(
+            quantity_value=10000,
+            index_ids=[0, 3, 4],  # <- Includes the undefined record.
+            weight_group_id=2,  # <- Weight group 2 has weights of 0.
+            weight_repo=self.weight_repo,
+        )
+        expected = [
+            (0, 0.0),     # <- Undefined record should not receive any of the quantity.
+            (3, 5000.0),  # <- Divided evenly among indexes ('IN', 'KNOX')
+            (4, 5000.0),  # <- Divided evenly among indexes ('IN', 'LAPORTE').
+        ]
+        msg = ('when there are multiple items, the undefined record should '
+               'receive no portion of the quantity at all')
+        self.assertEqual(list(results), expected, msg=msg)
+
     def test_matching_undefined_record(self):
         """When matching undefined record, should return value as-is."""
         results = disaggregate_value(

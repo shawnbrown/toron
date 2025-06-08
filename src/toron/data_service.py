@@ -253,11 +253,32 @@ def disaggregate_value(
                 # a weight of zero.
                 yield (index_id, 0.0)
     else:
-        # When group_weight is 0, distribute quantity evenly.
-        proportion = 1 / len(index_ids)
-        disaggregated_value = quantity_value * proportion
-        for index_id in index_ids:
-            yield (index_id, disaggregated_value)
+        # When `group_weight` is 0.0, distribute quantity evenly--but
+        # only to appropriate index records.
+        index_ids_len = len(index_ids)
+        if index_ids_len > 1:
+            if 0 not in index_ids:
+                # When the undefined record (index_id 0) is not in *index_ids*,
+                # then we distribute the quantity evenly across all records.
+                proportion = 1 / index_ids_len
+                disaggregated_value = quantity_value * proportion
+                for index_id in index_ids:
+                    yield (index_id, disaggregated_value)
+            else:
+                # When there are multiple items and one of them is the
+                # undefined record, the quantity is distributed evenly
+                # among all of the items *except* the undefined record.
+                proportion = 1 / (index_ids_len - 1)  # <- Subtract 1 for undefined record.
+                disaggregated_value = quantity_value * proportion
+                for index_id in index_ids:
+                    if index_id == 0:
+                        yield (index_id, 0.0)
+                    else:
+                        yield (index_id, disaggregated_value)
+        else:
+            # When there's only one item, there's nothing to disaggregate
+            # so yield the quantity as-is, even for the undefined record.
+            yield (next(iter(index_ids)), quantity_value)
 
 
 def find_crosswalks_by_ref(
