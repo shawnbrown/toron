@@ -422,11 +422,20 @@ class WeightRepository(BaseWeightRepository):
                 VALUES (?, ?, ?)
             """
             self._cursor.execute(sql, (weight_group_id, index_id, value))
-        except sqlite3.IntegrityError:
-            raise ValueError(
-                f'a weight already exists with weight_group_id '
-                f'{weight_group_id} and index_id {index_id}'
-            )
+        except sqlite3.IntegrityError as e:
+            msg = str(e).upper()
+            if 'UNIQUE' in msg:
+                raise ValueError(
+                    f'a weight already exists with weight_group_id '
+                    f'{weight_group_id} and index_id {index_id}'
+                )
+            elif 'FOREIGN KEY' in msg:
+                raise ValueError(
+                    f'no group or index matching weight_group_id '
+                    f'{weight_group_id} or index_id {index_id}'
+                )
+            else:      # If not one of the known conditions above,
+                raise  # re-raise the original error as-is.
 
     def get(self, id: int) -> Optional[Weight]:
         """Get a record from the repository."""

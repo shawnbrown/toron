@@ -56,6 +56,17 @@ class TestWeightRepository(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             repository.add(weight_group_id=1, index_id=2, value=12.0)
 
+        # Check foreign key violations.
+        self.cursor.execute('PRAGMA foreign_keys=ON')
+
+        regex = 'no group or index matching weight_group_id 1 or index_id 99'
+        with self.assertRaisesRegex(ValueError, regex):
+            repository.add(weight_group_id=1, index_id=99, value=25.0)
+
+        regex = 'no group or index matching weight_group_id 99 or index_id 1'
+        with self.assertRaisesRegex(ValueError, regex):
+            repository.add(weight_group_id=99, index_id=1, value=25.0)
+
     def test_get(self):
         self.cursor.executescript("""
             INSERT INTO weight VALUES (1, 1, 1, 3.0);
