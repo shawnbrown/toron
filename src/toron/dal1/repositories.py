@@ -437,15 +437,18 @@ class WeightRepository(BaseWeightRepository):
             else:      # If not one of the known conditions above,
                 raise  # re-raise the original error as-is.
 
-    def get(self, id: int) -> Optional[Weight]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Weight:
+        """Get a record from the repository.
+
+        If no weight matches the given *id*, a ``KeyError`` is raised.
+        """
         self._cursor.execute(
             'SELECT * FROM main.weight WHERE weight_id=?', (id,)
         )
         record = self._cursor.fetchone()
-        if record:
-            return Weight(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no weight with id of {id}')
+        return Weight(*record)
 
     def update(self, record: Weight) -> None:
         """Update a record in the repository."""

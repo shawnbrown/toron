@@ -76,7 +76,8 @@ class TestWeightRepository(unittest.TestCase):
 
         self.assertEqual(repository.get(1), Weight(1, 1, 1, 3.0))
         self.assertEqual(repository.get(2), Weight(2, 1, 2, 7.0))
-        self.assertIsNone(repository.get(3))
+        with self.assertRaises(KeyError):
+            self.assertIsNone(repository.get(3))
 
     def test_update(self):
         self.cursor.executescript("""

@@ -589,8 +589,11 @@ class BaseWeightRepository(ABC):
         """
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Weight]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Weight:
+        """Get a record from the repository.
+
+        If no weight matches the given *id*, a ``KeyError`` is raised.
+        """
 
     @abstractmethod
     def update(self, record: Weight) -> None:
