@@ -641,6 +641,30 @@ class WeightRepositoryBaseTest(ABC):
         """Must inherit from appropriate abstract base class."""
         self.assertTrue(issubclass(self.dal.WeightRepository, BaseWeightRepository))
 
+    def test_integration(self):
+        """Test interoperation of add, get, update, and delete."""
+        repository = self.repository
+        self.weight_group_repo.add('test_group')  # Adds weight_group_id 3.
+
+        self.repository.add(3, 1, 500.0)  # weight_id 7
+        self.assertEqual(repository.get(7), Weight(7, 3, 1, 500.0))
+
+        repository.update(Weight(7, 3, 1, 250.0))
+        self.assertEqual(repository.get(7), Weight(7, 3, 1, 250.0))
+
+        msg = ('should fail if a weight already exists with the given '
+               'weight_group_id and index_id')
+        with self.assertRaises(ValueError, msg=msg):
+            self.repository.add(3, 1, 500.0)
+
+        msg = 'should fail if weight_group does not exist'
+        with self.assertRaises(ValueError, msg=msg):
+            self.repository.add(4, 2, 600.0)
+
+        repository.delete(7)
+        with self.assertRaises(KeyError):
+            repository.get(7)
+
     def test_find_by_index_id(self):
         results = self.repository.find_by_index_id(1)
         expected = [
