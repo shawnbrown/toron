@@ -282,15 +282,15 @@ class StructureRepository(BaseStructureRepository):
         sql = f'INSERT INTO main.structure VALUES (NULL, ?, {qmarks})'
         self._cursor.execute(sql, (granularity,) + bits)
 
-    def get(self, id: int) -> Optional[Structure]:
+    def get(self, id: int) -> Structure:
         """Get a record from the repository."""
         self._cursor.execute(
             'SELECT * FROM main.structure WHERE _structure_id=?', (id,)
         )
         record = self._cursor.fetchone()
-        if record:
-            return Structure(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no structure with id of {id}')
+        return Structure(*record)
 
     def get_all(self) -> List[Structure]:
         """Get all records sorted from most to least granular."""

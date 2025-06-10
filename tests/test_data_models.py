@@ -574,7 +574,8 @@ class StructureRepositoryBaseTest(ABC):
         self.assertEqual(self.repository.get(2), Structure(2, 1.5, 1, 1, 0))
 
         self.repository.delete(2)
-        self.assertIsNone(self.repository.get(2))
+        with self.assertRaises(KeyError):
+            self.repository.get(2)
 
     def test_get_by_bits(self):
         self.manager.add_columns('A', 'B', 'C')

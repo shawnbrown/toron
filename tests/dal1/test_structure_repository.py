@@ -62,8 +62,14 @@ class TestStructureRepository(unittest.TestCase):
         self.assertEqual(repository.get(1), Structure(1, None, 0, 0, 0))
         self.assertEqual(repository.get(2), Structure(2, None, 1, 1, 0))
         self.assertEqual(repository.get(3), Structure(3, None, 1, 1, 1))
-        self.assertIsNone(repository.get(37), msg='should be None if no matching id')
-        self.assertIsNone(repository.get(0), msg='should be None if no matching id')
+
+        regex = 'no structure with id of 37'
+        with self.assertRaisesRegex(KeyError, regex):
+            repository.get(37)
+
+        regex = 'no structure with id of 0'
+        with self.assertRaisesRegex(KeyError, regex):
+            repository.get(0)
 
     def test_get_all(self):
         repository = StructureRepository(self.cursor)

@@ -489,7 +489,7 @@ class BaseStructureRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Structure]:
+    def get(self, id: int) -> Structure:
         """Get a record from the repository."""
 
     @abstractmethod
