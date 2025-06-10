@@ -637,8 +637,11 @@ def get_node_info_text(
 
     # Get structure for highest granularity (whole space).
     bits = (1,) * len(index_columns)  # Bit pattern is all ones.
-    structure = structure_repo.get_by_bits(cast(Tuple[Literal[0, 1]], bits))
-    granularity_str = str(structure.granularity) if structure else 'None'
+    try:
+        structure = structure_repo.get_by_bits(cast(Tuple[Literal[0, 1]], bits))
+        granularity_str = str(structure.granularity)
+    except KeyError:
+        granularity_str = 'None'
 
     # Get list of weight group names.
     weight_groups = sorted(weight_group_repo.get_all(), key=lambda x: x.name)

@@ -586,10 +586,11 @@ class StructureRepositoryBaseTest(ABC):
             self.repository.get_by_bits([1, 1, 1]),
             Structure(2, 2.75, 1, 1, 1),
         )
-        self.assertIsNone(
-            self.repository.get_by_bits([0, 0, 1]),
-            msg='should return None if no match is found'
-        )
+
+        regex = 'no structure matching bits: 0, 0, 1'
+        with self.assertRaisesRegex(KeyError, regex):
+            self.repository.get_by_bits([0, 0, 1])
+
 
 class WeightRepositoryBaseTest(ABC):
     @property
