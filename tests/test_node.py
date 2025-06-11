@@ -26,7 +26,7 @@ else:
 
 from .common import normalize_structures
 
-from toron._utils import ToronWarning
+from toron._utils import ToronWarning, BitFlags
 from toron.data_models import (
     Crosswalk,
     Relation,
@@ -3758,14 +3758,22 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
                 is_locally_complete=True
             )
 
-            relation_repo.add(1, 0, 0, None,     0.0, 1.00)  # relation_id 1 (-, -)
-            relation_repo.add(1, 1, 1, b'\x40', 10.0, 1.00)  # relation_id 2 (foo, x)
-            relation_repo.add(1, 1, 2, b'\x40', 10.0, 1.00)  # relation_id 3 (bar, y)
-            relation_repo.add(1, 2, 2, None,    20.0, 1.00)  # relation_id 4 (bar, y)
-            relation_repo.add(1, 2, 3, None,    20.0, 1.00)  # relation_id 5 (bar, z)
-            relation_repo.add(1, 3, 1, b'\x80', 15.0, 1.00)  # relation_id 6 (foo, x)
-            relation_repo.add(1, 3, 2, b'\x80', 15.0, 1.00)  # relation_id 7 (bar, y)
-            relation_repo.add(1, 3, 3, b'\x80', 15.0, 1.00)  # relation_id 8 (bar, z)
+            # Mapping levels and corresponding byte strings:
+            #
+            # | bit flags      | byte string |
+            # | -------------- | ----------- |
+            # | BitFlags(1, 1) | b'\xc0'     |
+            # | BitFlags(1, 0) | b'\x80'     |
+            # | BitFlags(0, 1) | b'\x40'     |
+
+            relation_repo.add(1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.00)  # relation_id 1 (-, -)
+            relation_repo.add(1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.00)  # relation_id 2 (foo, x)
+            relation_repo.add(1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.00)  # relation_id 3 (bar, y)
+            relation_repo.add(1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.00)  # relation_id 4 (bar, y)
+            relation_repo.add(1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.00)  # relation_id 5 (bar, z)
+            relation_repo.add(1, 3, 1, bytes(BitFlags(1, 0)), 15.0, 1.00)  # relation_id 6 (foo, x)
+            relation_repo.add(1, 3, 2, bytes(BitFlags(1, 0)), 15.0, 1.00)  # relation_id 7 (bar, y)
+            relation_repo.add(1, 3, 3, bytes(BitFlags(1, 0)), 15.0, 1.00)  # relation_id 8 (bar, z)
 
         self.node = node
 
@@ -3798,14 +3806,14 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         self.node.reify_relations('myfile', 'rel1', A='bar', B='y')
 
         expected = [
-            Relation(1, 1, 0, 0, None,     0.0, 1.0),
-            Relation(2, 1, 1, 1, None,    10.0, 1.0),  # <- mapping_level removed (foo, x)
-            Relation(3, 1, 1, 2, None,    10.0, 1.0),  # <- mapping_level removed (bar, y)
-            Relation(4, 1, 2, 2, None,    20.0, 1.0),
-            Relation(5, 1, 2, 3, None,    20.0, 1.0),
-            Relation(6, 1, 3, 1, None,    15.0, 1.0),  # <- mapping_level removed (foo, x)
-            Relation(7, 1, 3, 2, None,    15.0, 1.0),  # <- mapping_level removed (bar, y)
-            Relation(8, 1, 3, 3, b'\x80', 15.0, 1.0),
+            Relation(1, 1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.0),
+            Relation(2, 1, 1, 1, None,                  10.0, 1.0),  # <- mapping_level removed (foo, x)
+            Relation(3, 1, 1, 2, None,                  10.0, 1.0),  # <- mapping_level removed (bar, y)
+            Relation(4, 1, 2, 2, None,                  20.0, 1.0),  # <- removed, will be hanged after refactoring
+            Relation(5, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            Relation(6, 1, 3, 1, None,                  15.0, 1.0),  # <- mapping_level removed (foo, x)
+            Relation(7, 1, 3, 2, None,                  15.0, 1.0),  # <- mapping_level removed (bar, y)
+            Relation(8, 1, 3, 3, bytes(BitFlags(1, 0)), 15.0, 1.0),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -3817,18 +3825,18 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         # Check the warning's message.
         self.assertEqual(
             str(cm.warning),
-            'skipped 1 rows with mismatched mapping levels, reified 2 records',
+            'skipped 3 rows with mismatched mapping levels, reified 2 records',
         )
 
         expected = [
-            Relation(1, 1, 0, 0, None,     0.0, 1.0),
-            Relation(2, 1, 1, 1, b'\x40', 10.0, 1.0),
-            Relation(3, 1, 1, 2, b'\x40', 10.0, 1.0),  # <- not removed, 'A' is (1, 0) but mapping level is (0, 1).
-            Relation(4, 1, 2, 2, None,    20.0, 1.0),
-            Relation(5, 1, 2, 3, None,    20.0, 1.0),
-            Relation(6, 1, 3, 1, b'\x80', 15.0, 1.0),
-            Relation(7, 1, 3, 2, None,    15.0, 1.0),  # <- mapping_level removed
-            Relation(8, 1, 3, 3, None,    15.0, 1.0),  # <- mapping_level removed
+            Relation(1, 1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.0),
+            Relation(2, 1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.0),
+            Relation(3, 1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.0),  # <- not changed, 'A' is in position 1 but this record was mapped by the value in the second position (level (0, 1)).
+            Relation(4, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            Relation(5, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            Relation(6, 1, 3, 1, bytes(BitFlags(1, 0)), 15.0, 1.0),
+            Relation(7, 1, 3, 2, None,                  15.0, 1.0),  # <- mapping_level removed
+            Relation(8, 1, 3, 3, None,                  15.0, 1.0),  # <- mapping_level removed
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
