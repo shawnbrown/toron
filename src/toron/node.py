@@ -1928,7 +1928,6 @@ class TopoNode(object):
         """
         counter: Counter = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
-            col_manager = self._dal.ColumnManager(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
@@ -1941,9 +1940,9 @@ class TopoNode(object):
 
             if criteria:
                 # Reify selected relations in crosswalk.
-                label_columns = col_manager.get_columns()
+                label_names = index_repo.get_label_names()
                 criteria_keys = set(criteria.keys())
-                criteria_level = BitFlags(x in criteria_keys for x in label_columns)
+                criteria_level = BitFlags(x in criteria_keys for x in label_names)
 
                 index_records = index_repo.filter_by_label(criteria)
 
