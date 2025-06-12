@@ -2777,22 +2777,22 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
     def test_insert(self):
         data = [
             ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
-            (0, 0, None,  0.0),
-            (1, 1, None, 10.0),
-            (2, 2, None, 20.0),
-            (3, 2, None,  5.0),
-            (3, 3, None, 15.0),
+            (0, 0, None,     0.0),
+            (1, 1, b'\xc0', 10.0),
+            (2, 2, b'\xc0', 20.0),
+            (3, 2, b'\xc0',  5.0),
+            (3, 3, b'\xc0', 15.0),
         ]
         self.node.insert_relations2('myfile', 'rel1', data)
 
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(1, 1, 0, 0, mapping_level=None, value=0.0,  proportion=1.00),
-                Relation(2, 1, 1, 1, mapping_level=None, value=10.0, proportion=1.00),
-                Relation(3, 1, 2, 2, mapping_level=None, value=20.0, proportion=1.00),
-                Relation(4, 1, 3, 2, mapping_level=None, value=5.0,  proportion=0.25),
-                Relation(5, 1, 3, 3, mapping_level=None, value=15.0, proportion=0.75),
+                Relation(1, 1, 0, 0, mapping_level=None,    value=0.0,  proportion=1.00),
+                Relation(2, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
+                Relation(3, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
+                Relation(4, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
+                Relation(5, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
             ],
         )
 
@@ -2813,22 +2813,22 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         """
         data = [
             ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
-            ('0', '0', None,  '0.0'),
-            ('1', '1', None, '10.0'),
-            ('2', '2', None, '20.0'),
-            ('3', '2', None,  '5.0'),
-            ('3', '3', None, '15.0'),
+            ('0', '0', None,     '0.0'),
+            ('1', '1', b'\xc0', '10.0'),
+            ('2', '2', b'\xc0', '20.0'),
+            ('3', '2', b'\xc0',  '5.0'),
+            ('3', '3', b'\xc0', '15.0'),
         ]
         self.node.insert_relations2('myfile', 'rel1', data)
 
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(1, 1, 0, 0, mapping_level=None, value=0.0,  proportion=1.00),
-                Relation(2, 1, 1, 1, mapping_level=None, value=10.0, proportion=1.00),
-                Relation(3, 1, 2, 2, mapping_level=None, value=20.0, proportion=1.00),
-                Relation(4, 1, 3, 2, mapping_level=None, value=5.0,  proportion=0.25),
-                Relation(5, 1, 3, 3, mapping_level=None, value=15.0, proportion=0.75),
+                Relation(1, 1, 0, 0, mapping_level=None,    value=0.0,  proportion=1.00),
+                Relation(2, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
+                Relation(3, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
+                Relation(4, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
+                Relation(5, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
             ],
         )
 
@@ -2838,21 +2838,21 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         """
         data = [
             ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
-            (1, 1, None, 10.0),
-            (2, 2, None, 20.0),
-            (3, 2, None,  5.0),
-            (3, 3, None, 15.0),
+            (1, 1, b'\xc0', 10.0),
+            (2, 2, b'\xc0', 20.0),
+            (3, 2, b'\xc0',  5.0),
+            (3, 3, b'\xc0', 15.0),
         ]
         self.node.insert_relations2('myfile', 'rel1', data)
 
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(5, 1, 0, 0, mapping_level=None, value=0.0,  proportion=1.00),  # <- Auto-added.
-                Relation(1, 1, 1, 1, mapping_level=None, value=10.0, proportion=1.00),
-                Relation(2, 1, 2, 2, mapping_level=None, value=20.0, proportion=1.00),
-                Relation(3, 1, 3, 2, mapping_level=None, value=5.0,  proportion=0.25),
-                Relation(4, 1, 3, 3, mapping_level=None, value=15.0, proportion=0.75),
+                Relation(5, 1, 0, 0, mapping_level=None,    value=0.0,  proportion=1.00),  # <- Auto-added.
+                Relation(1, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
+                Relation(2, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
+                Relation(3, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
+                Relation(4, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
             ],
         )
 
@@ -2865,17 +2865,17 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         """
         data = [
             ('other_index_id', 'index_id', 'mapping_level', 'rel1', 'proportion'),
-            (3, 2, None,  5.0, 0.375),
-            (3, 3, None, 15.0, 0.625),
+            (3, 2, b'\xc0',  5.0, 0.375),
+            (3, 3, b'\xc0', 15.0, 0.625),
         ]
         self.node.insert_relations2('myfile', 'rel1', data)
 
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(3, 1, 0, 0, mapping_level=None, value=0.0,  proportion=1.00),  # <- Auto-added.
-                Relation(1, 1, 3, 2, mapping_level=None, value=5.0,  proportion=0.25),
-                Relation(2, 1, 3, 3, mapping_level=None, value=15.0, proportion=0.75),
+                Relation(3, 1, 0, 0, mapping_level=None,    value=0.0,  proportion=1.00),  # <- Auto-added.
+                Relation(1, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
+                Relation(2, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
             ],
             msg='should ignore proportion from data and calculate it using values'
         )
