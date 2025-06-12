@@ -3758,7 +3758,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
                 is_locally_complete=True
             )
 
-            # Mapping levels and corresponding byte strings:
+            # Bit flags and corresponding byte strings:
             #
             # | bit flags      | byte string |
             # | -------------- | ----------- |
@@ -3790,14 +3790,14 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
     def test_reify_all_records(self):
         self.node.reify_relations('myfile', 'rel1')
         expected = [
-            Relation(1, 1, 0, 0, None,  0.0, 1.0),
-            Relation(2, 1, 1, 1, None, 10.0, 1.0),
-            Relation(3, 1, 1, 2, None, 10.0, 1.0),
-            Relation(4, 1, 2, 2, None, 20.0, 1.0),
-            Relation(5, 1, 2, 3, None, 20.0, 1.0),
-            Relation(6, 1, 3, 1, None, 15.0, 1.0),
-            Relation(7, 1, 3, 2, None, 15.0, 1.0),
-            Relation(8, 1, 3, 3, None, 15.0, 1.0),
+            Relation(1, 1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.0),
+            Relation(2, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),
+            Relation(3, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),
+            Relation(4, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            Relation(5, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            Relation(6, 1, 3, 1, bytes(BitFlags(1, 1)), 15.0, 1.0),
+            Relation(7, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),
+            Relation(8, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -3807,12 +3807,12 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
 
         expected = [
             Relation(1, 1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.0),
-            Relation(2, 1, 1, 1, None,                  10.0, 1.0),  # <- mapping_level removed (foo, x)
-            Relation(3, 1, 1, 2, None,                  10.0, 1.0),  # <- mapping_level removed (bar, y)
-            Relation(4, 1, 2, 2, None,                  20.0, 1.0),  # <- removed, will be hanged after refactoring
+            Relation(2, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (foo, x)
+            Relation(3, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (bar, y)
+            Relation(4, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
             Relation(5, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
-            Relation(6, 1, 3, 1, None,                  15.0, 1.0),  # <- mapping_level removed (foo, x)
-            Relation(7, 1, 3, 2, None,                  15.0, 1.0),  # <- mapping_level removed (bar, y)
+            Relation(6, 1, 3, 1, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed (foo, x)
+            Relation(7, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed (bar, y)
             Relation(8, 1, 3, 3, bytes(BitFlags(1, 0)), 15.0, 1.0),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
@@ -3825,20 +3825,30 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         # Check the warning's message.
         self.assertEqual(
             str(cm.warning),
-            'skipped 3 rows with mismatched mapping levels, reified 2 records',
+            'skipped 1 rows with mismatched mapping levels, reified 2 records',
         )
 
         expected = [
             Relation(1, 1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.0),
             Relation(2, 1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.0),
-            Relation(3, 1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.0),  # <- not changed, 'A' is in position 1 but this record was mapped by the value in the second position (level (0, 1)).
+            Relation(3, 1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.0),  # <- not changed* (see note below)
             Relation(4, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
             Relation(5, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
             Relation(6, 1, 3, 1, bytes(BitFlags(1, 0)), 15.0, 1.0),
-            Relation(7, 1, 3, 2, None,                  15.0, 1.0),  # <- mapping_level removed
-            Relation(8, 1, 3, 3, None,                  15.0, 1.0),  # <- mapping_level removed
+            Relation(7, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
+            Relation(8, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
         ]
         self.assertEqual(self.get_relations_helper(), expected)
+        # * Note regarding relation 3: This relation maps a portion of
+        #   other_index_id 1 to index_id 2. The labels associated with
+        #   index_id 2 are `bar, y`. And even though `reify_relations()`
+        #   is selecting records using A='bar' (which matches the first
+        #   item associated with index_id 2), it is not altered because
+        #   this relation has a mapping_level that corresponds to
+        #   `(0, 1)`. This means that it was only matched by the `y`
+        #   portion of its labels. This record's association with the
+        #   label `bar` is probabilistic and selections should only
+        #   match based on definitive associations.
 
 
 class TestTopoNodeInsertQuantities(unittest.TestCase):

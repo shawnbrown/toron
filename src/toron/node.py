@@ -1906,14 +1906,22 @@ class TopoNode(object):
         crosswalk_name: str,
         **criteria: str,
     ) -> None:
-        """Remove 'mapping_level' from approximate relations associated
-        with the specified crosswalk (*node_or_ref* and *crosswalk_name*).
+        """Change a crosswalk's ambiguous relations into precise ones.
 
-        A 'mapping_level' records the level of granularity at which an
-        approximate relation (or partial relation) was established. By
-        removing it, we indicate that the probabilistically assigned
-        value associated with an approximate relation should now be
-        considered as the actual value.
+        This function updates a crosswalk by reclassifying its
+        ambiguous relations so that they are treated as exact
+        relations. The associated labels and weights remain
+        unchanged--only the "mapping level" values are altered.
+
+        After reification, relations that were originally inferred
+        with uncertainty are now treated as definitive, and the
+        crosswalk is interpreted as a direct and unambiguous
+        correspondence between nodes.
+
+        Use this when a previously tentative or heuristic mapping
+        has been verified or accepted as authoritative--or when a
+        one-to-one mapping was loaded without some of its labels
+        but is known to be precise.
 
         Parameters
         ----------
@@ -1938,11 +1946,13 @@ class TopoNode(object):
                     f'and name {crosswalk_name!r}'
                 )
 
+            label_names = index_repo.get_label_names()
+            fully_specified_level = bytes(BitFlags([1] * len(label_names)))
+
             if criteria:
-                # Reify selected relations in crosswalk.
-                label_names = index_repo.get_label_names()
+                # Reify selected ambiguous relations in crosswalk.
                 criteria_keys = set(criteria.keys())
-                criteria_level = BitFlags(x in criteria_keys for x in label_names)
+                criteria_flags = BitFlags(x in criteria_keys for x in label_names)
 
                 index_records = index_repo.filter_by_label(criteria)
 
@@ -1953,22 +1963,22 @@ class TopoNode(object):
                         crosswalk_id=crosswalk_id, index_id=index.id
                     ))
                     for rel in relations:
-                        if rel.mapping_level:
-                            bitwise_or = criteria_level | BitFlags(rel.mapping_level)
-                            if criteria_level == bitwise_or:
-                                relation_repo.update(replace(rel, mapping_level=None))
+                        if rel.mapping_level != fully_specified_level:
+                            bitwise_or = criteria_flags | BitFlags(rel.mapping_level)
+                            if bitwise_or == criteria_flags:
+                                relation_repo.update(replace(rel, mapping_level=fully_specified_level))
                                 counter['reified'] += 1
                             else:
                                 counter['mapping_level_mismatch'] += 1
 
             else:
-                # Reify ALL relations in crosswalk.
+                # Reify ALL ambiguous relations in crosswalk.
                 relation_repo = self._dal.RelationRepository(cursor)
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
 
                 for rel in relation_repo.find_by_ids(crosswalk_id=crosswalk.id):
-                    if rel.mapping_level:
-                        aux_relation_repo.update(replace(rel, mapping_level=None))
+                    if rel.mapping_level != fully_specified_level:
+                        aux_relation_repo.update(replace(rel, mapping_level=fully_specified_level))
                         counter['reified'] += 1
 
         warn_if_issues(counter, expected='reified')
