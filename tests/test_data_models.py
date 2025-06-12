@@ -1613,7 +1613,8 @@ class PropertyRepositoryBaseTest(ABC):
         self.assertEqual(repository.get('foo'), value)
 
         repository.delete('foo')
-        self.assertIsNone(repository.get('foo'))
+        with self.assertRaises(KeyError):
+            repository.get('foo')
 
     def test_keys_are_unique(self):
         """Attempting to add an existing key should raise an error."""

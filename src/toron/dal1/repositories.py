@@ -1134,15 +1134,18 @@ class PropertyRepository(BasePropertyRepository):
         )
 
     def get(self, key: str) -> JsonTypes:
-        """Retrieve an item from the repository."""
+        """Retrieve an item from the repository.
+
+        If no property matches the given *key*, a ``KeyError`` is
+        raised.
+        """
         self._cursor.execute(
-            'SELECT value FROM main.property WHERE key=?',
-            (key,),
+            'SELECT value FROM main.property WHERE key=?', (key,)
         )
-        result = self._cursor.fetchone()
-        if result:
-            return result[0]
-        return None
+        record = self._cursor.fetchone()
+        if record is None:
+            raise KeyError(f'no record with key of {key!r}')
+        return record[0]
 
     def update(self, key: str, value: JsonTypes) -> None:
         """Update an item in the repository."""

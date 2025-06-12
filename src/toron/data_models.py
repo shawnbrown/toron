@@ -1098,7 +1098,11 @@ class BasePropertyRepository(ABC):
 
     @abstractmethod
     def get(self, key: str) -> JsonTypes:
-        """Retrieve an item from the repository."""
+        """Retrieve an item from the repository.
+
+        If no property matches the given *key*, a ``KeyError`` is
+        raised.
+        """
 
     @abstractmethod
     def update(self, key: str, value: JsonTypes) -> None:

@@ -396,30 +396,27 @@ def get_default_weight_group(
     ...
 def get_default_weight_group(property_repo, weight_group_repo, required=False):
     """Return the node's default weight group (if any)."""
-    weight_group_id = property_repo.get('default_weight_group_id')
-    if isinstance(weight_group_id, int):
-        weight_group = weight_group_repo.get(weight_group_id)
-        if weight_group:
-            return weight_group
-
-    if required:
-        raise RuntimeError('no default weight group is defined')
-    return None
+    try:
+        weight_group_id = property_repo.get('default_weight_group_id')
+        return weight_group_repo.get(weight_group_id)
+    except:
+        if required:
+            raise RuntimeError('no default weight group is defined')
+        return None
 
 
 def get_all_discrete_categories(
     column_manager: BaseColumnManager,
     property_repo: BasePropertyRepository,
 ) -> List[Set[str]]:
-    values = cast(Optional[List[List[str]]], property_repo.get('discrete_categories'))
-    if values:
+    try:
+        values = cast(List[List[str]], property_repo.get('discrete_categories'))
         return [set(x) for x in values]
-
-    columns = column_manager.get_columns()
-    if columns:
-        return [set(columns)]  # Default to whole space.
-
-    return []  # Empty when no columns defined.
+    except KeyError:
+        columns = column_manager.get_columns()
+        if columns:
+            return [set(columns)]  # Default to whole space.
+        return []  # Empty when no columns defined.
 
 
 def rename_discrete_categories(
@@ -608,8 +605,11 @@ def set_domain(
 
 def get_domain(property_repo: BasePropertyRepository) -> Dict[str, str]:
     """Return the node's domain."""
-    domain = property_repo.get('domain') or {}
-    return check_type(domain, dict)
+    try:
+        domain = property_repo.get('domain')
+        return check_type(domain, dict)
+    except KeyError:
+        return {}
 
 
 def get_node_info_text(

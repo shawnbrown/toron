@@ -463,7 +463,12 @@ class TopoNode(object):
                     prop_repo=prop_repo,
                 )
 
-                if prop_repo.get('discrete_categories'):
+                try:
+                    has_discrete_categories = bool(prop_repo.get('discrete_categories'))
+                except KeyError:
+                    has_discrete_categories = False
+
+                if has_discrete_categories:
                     # If categories already exist, then refresh granularity.
                     refresh_structure_granularity(
                         column_manager=col_manager,
