@@ -1865,9 +1865,10 @@ class TopoNode(object):
                 criteria_level = BitFlags(x in criteria_keys for x in label_columns)
 
                 for index in index_repo.filter_by_label(criteria):
+                    # Eagerly fetch relations, using `list()`, so the cursor
+                    # is free to `delete()` items in the following loop.
                     relations = list(aux_relation_repo.find_by_ids(
-                        crosswalk_id=crosswalk_id,
-                        index_id=index.id,
+                        crosswalk_id=crosswalk_id, index_id=index.id
                     ))
                     for rel in relations:
                         bitwise_or = criteria_level | BitFlags(rel.mapping_level)
@@ -1965,6 +1966,8 @@ class TopoNode(object):
                 relation_repo = self._dal.RelationRepository(aux_cursor)
                 crosswalk_id = crosswalk.id
                 for index in index_records:
+                    # Eagerly fetch relations, using `list()`, so the cursor
+                    # is free to `update()` items in the following loop.
                     relations = list(relation_repo.find_by_ids(
                         crosswalk_id=crosswalk_id, index_id=index.id
                     ))
