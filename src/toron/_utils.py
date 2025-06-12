@@ -633,11 +633,10 @@ def eagerly_initialize(func_or_iter):
     object is iterated over somewhere else in the code.
     """
     def do_initialize(generator: Iterator) -> Iterator:  # <-  Helper function.
-        sentinel_value = object()
-        first_item = next(generator, sentinel_value)
-        if first_item is sentinel_value:
+        try:
+            return chain([next(generator)], generator)
+        except StopIteration:
             return chain()  # <- Empty chain() for consistent return type.
-        return chain([first_item], generator)
 
     # Decorate generator function.
     if isinstance(func_or_iter, Callable):
