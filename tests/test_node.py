@@ -2984,12 +2984,13 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
 
     def test_select(self):
         with self.node._managed_cursor() as cursor:
+            # mapping_level b'\xc0' corresponds to BitFlags(1, 1).
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, other_index_id=0, index_id=0, mapping_level=None, value=0.0)
-            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=None, value=10.0)
-            relation_repo.add(1, other_index_id=2, index_id=2, mapping_level=None, value=20.0)
-            relation_repo.add(1, other_index_id=3, index_id=2, mapping_level=None, value=5.0)
-            relation_repo.add(1, other_index_id=3, index_id=3, mapping_level=None, value=15.0)
+            relation_repo.add(1, other_index_id=0, index_id=0, mapping_level=None,    value=0.0)
+            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
+            relation_repo.add(1, other_index_id=2, index_id=2, mapping_level=b'\xc0', value=20.0)
+            relation_repo.add(1, other_index_id=3, index_id=2, mapping_level=b'\xc0', value=5.0)
+            relation_repo.add(1, other_index_id=3, index_id=3, mapping_level=b'\xc0', value=15.0)
 
         relations = self.node.select_relations('myfile', 'rel1', header=True)
         expected = [
@@ -3027,19 +3028,22 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             col_manager = self.node._dal.ColumnManager(cursor)
             relation_repo = self.node._dal.RelationRepository(cursor)
 
-            col_manager.add_columns('C')  # Add another column.
             relation_repo.add(1, other_index_id=0, index_id=0, mapping_level=None,    value=0.0)
-            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=None,    value=10.0)
-            relation_repo.add(1, other_index_id=2, index_id=2, mapping_level=None,    value=20.0)
+            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
+            relation_repo.add(1, other_index_id=2, index_id=2, mapping_level=b'\xc0', value=20.0)
             relation_repo.add(1, other_index_id=3, index_id=2, mapping_level=b'\x80', value=5.0)
             relation_repo.add(1, other_index_id=3, index_id=3, mapping_level=b'\x80', value=15.0)
+
+            # Adding another column makes existing relations ambiguous
+            # because they were mapped without knowledge of the new column.
+            col_manager.add_columns('C')
 
         relations = self.node.select_relations('myfile', 'rel1', header=True)
         expected = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'C', 'ambiguous_fields'),
             (0,  0.0, 0, '-',   '-', '-', None),
-            (1, 10.0, 1, 'foo', 'x', '-', None),
-            (2, 20.0, 2, 'bar', 'y', '-', None),
+            (1, 10.0, 1, 'foo', 'x', '-', 'C'),
+            (2, 20.0, 2, 'bar', 'y', '-', 'C'),
             (3,  5.0, 2, 'bar', 'y', '-', 'B, C'),
             (3, 15.0, 3, 'bar', 'z', '-', 'B, C'),
         ]
@@ -3051,14 +3055,14 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
         # Add relations for index_id values 0 and 1, but not for 2 or 3.
         with self.node._managed_cursor() as cursor:
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, other_index_id=0, index_id=0, mapping_level=None, value=0.0)
-            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=None, value=10.0)
+            relation_repo.add(1, other_index_id=0, index_id=0, mapping_level=None,    value=0.0)
+            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
 
         relations = self.node.select_relations('myfile', 'rel1', header=True)
         expected = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'ambiguous_fields'),
-            (0, 0.0, 0, '-', '-', None),
-            (1, 10.0, 1, 'foo', 'x', None),
+            (0,     0.0, 0, '-',   '-', None),
+            (1,    10.0, 1, 'foo', 'x', None),
             (None, None, 2, 'bar', 'y', None),  # <- Left-side not mapped.
             (None, None, 3, 'bar', 'z', None),  # <- Left-side not mapped.
         ]
