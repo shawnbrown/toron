@@ -1398,17 +1398,17 @@ class TopoNode(object):
                               + ('ambiguous_fields',))
                 yield header_row
 
-            relation_repo = self._dal.RelationRepository(aux_cursor)
-            crosswalk_id = crosswalk.id
             for index in index_repo.filter_by_label(criteria):
                 index_id = index.id
-                relations = list(relation_repo.find_by_ids(
-                    crosswalk_id=crosswalk_id, index_id=index_id
-                ))
-                if relations:
-                    for rel in relations:
+                relations = self._dal.RelationRepository(aux_cursor).find_by_ids(
+                    crosswalk_id=crosswalk.id,
+                    index_id=index_id,
+                )
+                try:
+                    # Loop over relations (or raise StopIteration if empty).
+                    for rel in chain([next(relations)], relations):
                         if rel.mapping_level:
-                            # Build a description of the columns that were
+                            # Build a description of any columns that were
                             # left unspecified in the original mapping.
                             bit_flags = BitFlags(rel.mapping_level)
                             inverted_bits = [(not bit) for bit in bit_flags]
@@ -1421,7 +1421,8 @@ class TopoNode(object):
                                      + index.labels
                                      + (ambiguous_desc,))
                         yield row_tuple
-                else:
+                except StopIteration:
+                    # Yield disjoint record (no incoming relation for this index).
                     yield (None, None, index_id) + index.labels + (None,)
 
     def insert_relations2(
