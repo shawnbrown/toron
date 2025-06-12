@@ -1608,8 +1608,8 @@ class TopoNode(object):
                     crosswalk_id=crosswalk_id,
                     other_index_id=other_index_id,
                     index_id=index_id,
-                    value=value,
                     mapping_level=mapping_level,
+                    value=value,
                 )
                 counter['inserted'] += 1
 
@@ -1718,8 +1718,8 @@ class TopoNode(object):
                         crosswalk_id=crosswalk_id,
                         other_index_id=other_index_id,
                         index_id=index_id,
-                        value=value,
                         mapping_level=mapping_level,
+                        value=value,
                     )
                     counter['inserted'] += 1
 
