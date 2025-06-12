@@ -3045,6 +3045,25 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
         ]
         self.assertEqual(list(relations), expected)
 
+    def test_select_with_missing_relations(self):
+        """Should return unmapped records with ``None`` vals for origin."""
+
+        # Add relations for index_id values 0 and 1, but not for 2 or 3.
+        with self.node._managed_cursor() as cursor:
+            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo.add(1, other_index_id=0, index_id=0, mapping_level=None, value=0.0)
+            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=None, value=10.0)
+
+        relations = self.node.select_relations('myfile', 'rel1', header=True)
+        expected = [
+            ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'ambiguous_fields'),
+            (0, 0.0, 0, '-', '-', None),
+            (1, 10.0, 1, 'foo', 'x', None),
+            (None, None, 2, 'bar', 'y', None),  # <- Left-side not mapped.
+            (None, None, 3, 'bar', 'z', None),  # <- Left-side not mapped.
+        ]
+        self.assertEqual(list(relations), expected)
+
     def test_insert(self):
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
