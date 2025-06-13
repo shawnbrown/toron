@@ -1972,6 +1972,9 @@ class TopoNode(object):
                         crosswalk_id=crosswalk_id, index_id=index.id
                     ))
                     for rel in relations:
+                        if rel.other_index_id == 0 and rel.index_id == 0:
+                            continue  # The undefined-to-undefined level should stay `None`.
+
                         if rel.mapping_level != fully_specified_level:
                             bitwise_or = criteria_flags | BitFlags(rel.mapping_level)
                             if bitwise_or == criteria_flags:
@@ -1986,6 +1989,9 @@ class TopoNode(object):
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
 
                 for rel in relation_repo.find_by_ids(crosswalk_id=crosswalk.id):
+                    if rel.other_index_id == 0 and rel.index_id == 0:
+                        continue  # The undefined-to-undefined level should stay `None`.
+
                     if rel.mapping_level != fully_specified_level:
                         aux_relation_repo.update(replace(rel, mapping_level=fully_specified_level))
                         counter['reified'] += 1

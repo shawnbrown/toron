@@ -3789,7 +3789,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             # | BitFlags(1, 0) | b'\x80'     |
             # | BitFlags(0, 1) | b'\x40'     |
 
-            relation_repo.add(1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.00)  # relation_id 1 (-, -)
+            relation_repo.add(1, 0, 0, None,                   0.0, 1.00)  # relation_id 1 (-, -)
             relation_repo.add(1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.00)  # relation_id 2 (foo, x)
             relation_repo.add(1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.00)  # relation_id 3 (bar, y)
             relation_repo.add(1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.00)  # relation_id 4 (bar, y)
@@ -3813,7 +3813,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
     def test_reify_all_records(self):
         self.node.reify_relations('myfile', 'rel1')
         expected = [
-            Relation(1, 1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.0),
+            Relation(1, 1, 0, 0, None,                   0.0, 1.0),
             Relation(2, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),
             Relation(3, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),
             Relation(4, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
@@ -3829,7 +3829,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         self.node.reify_relations('myfile', 'rel1', A='bar', B='y')
 
         expected = [
-            Relation(1, 1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.0),
+            Relation(1, 1, 0, 0, None,                   0.0, 1.0),
             Relation(2, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (foo, x)
             Relation(3, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (bar, y)
             Relation(4, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
@@ -3852,7 +3852,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         )
 
         expected = [
-            Relation(1, 1, 0, 0, bytes(BitFlags(1, 1)),  0.0, 1.0),
+            Relation(1, 1, 0, 0, None,                   0.0, 1.0),
             Relation(2, 1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.0),
             Relation(3, 1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.0),  # <- not changed* (see note below)
             Relation(4, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
