@@ -193,10 +193,10 @@ def get_quantity_value_sum(
         location_id=location_id,
         attribute_group_id=attribute_group_id,
     )
-    quantity = next(quantities, None)
-    if quantity is None:
+    try:
+        return sum(x.value for x in chain([next(quantities)], quantities))
+    except StopIteration:
         return None
-    return quantity.value + sum(x.value for x in quantities)
 
 
 def disaggregate_value(
