@@ -53,6 +53,7 @@ from ._utils import (
     check_type,
     SequenceHash,
     ToronWarning,
+    BitFlags,
 )
 
 
@@ -126,21 +127,21 @@ def delete_index_record(
 
     # Remove associated relation records.
     relations = relation_repo.find_by_ids(index_id=index_id)
+    fully_specified_level = bytes(BitFlags([1] * len(index_repo.get_label_names())))
     other_index_ids = set()
     for relation in list(relations):
-        if relation.mapping_level:
+        if relation.mapping_level != fully_specified_level:
             # For now, prevent index deletion when there
             # are ambiguous relations. In the future, this
             # restriction should be removed by re-mapping
             # these relations using matching labels.
             raise ValueError(
-                f'cannot delete index_id {index_id}, '
-                f'some associated crosswalk relations are '
-                f'ambiguous\n'
+                f'cannot delete index_id {index_id}, some associated '
+                f'crosswalk relations are ambiguous\n'
                 f'\n'
-                f'Crosswalks with ambiguous relations must '
-                f'be removed before deleting index records. '
-                f'Afterwards, these crosswalks can be re-added.'
+                f'Crosswalks with ambiguous relations must be removed '
+                f'before deleting index records. Afterwards, these '
+                f'crosswalks can be re-added.'
             )
 
         other_index_ids.add(relation.other_index_id)

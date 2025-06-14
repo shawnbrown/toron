@@ -13,9 +13,10 @@ from toron.data_models import (
     AttributeGroup,
 )
 from toron import data_access
-from toron._utils import ToronWarning
+from toron._utils import ToronWarning, BitFlags
 from toron.data_service import (
     validate_new_index_columns,
+    delete_index_record,
     find_locations_without_index,
     find_attribute_groups_without_quantity,
     get_quantity_value_sum,
@@ -105,6 +106,65 @@ class TestValidateNewIndexColumns(unittest.TestCase):
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
             )
+
+
+class TestDeleteIndexRecord(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        dal.ColumnManager(cur).add_columns('A', 'B')
+        self.index_repo = dal.IndexRepository(cur)
+        self.index_repo.add('foo', 'qux')
+        self.index_repo.add('bar', 'quux')
+
+        dal.WeightGroupRepository(cur).add('population', is_complete=True)  # weight_group_id 1
+        self.weight_repo = dal.WeightRepository(cur)
+        self.weight_repo.add(weight_group_id=1, index_id=1, value=1000)
+        self.weight_repo.add(weight_group_id=1, index_id=2, value=2000)
+
+        self.crosswalk_repo = dal.CrosswalkRepository(cur)
+        self.crosswalk_repo.add('111-11-1111', None, 'other1')  # crosswalk_id 1
+        self.relation_repo = dal.RelationRepository(cur)
+        # Individual relations added in test cases.
+
+    def test_successful_delete(self):
+        self.relation_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 131250, 1.0)  # <- Fully specified.
+        self.relation_repo.add(1, 2, 1, bytes(BitFlags(1, 1)),  40960, 1.0)  # <- Fully specified.
+
+        delete_index_record(
+            index_id=1,
+            index_repo=self.index_repo,
+            weight_repo=self.weight_repo,
+            crosswalk_repo=self.crosswalk_repo,
+            relation_repo=self.relation_repo,
+        )
+
+        with self.assertRaises(KeyError, msg='index should no longer exist'):
+            self.index_repo.get(1)
+
+    def test_failed_delete(self):
+        self.relation_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 131250, 1.0)  # <- Fully specified.
+        self.relation_repo.add(1, 2, 1, bytes(BitFlags(1, 0)),  40960, 1.0)  # <- Ambiguous.
+
+        msg = 'index should no longer exist'
+        regex = 'cannot delete index_id 1, some associated crosswalk relations are ambiguous'
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            delete_index_record(
+                index_id=1,
+                index_repo=self.index_repo,
+                weight_repo=self.weight_repo,
+                crosswalk_repo=self.crosswalk_repo,
+                relation_repo=self.relation_repo,
+            )
+
+        msg = 'index should still exist'
+        self.assertEqual(self.index_repo.get(1), Index(1, 'foo', 'qux'), msg=msg)
 
 
 class TestFindLocationsWithoutIndex(unittest.TestCase):

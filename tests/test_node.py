@@ -1502,13 +1502,15 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
 
     def test_delete_with_relations(self):
         """Should delete relation records associated with index_id."""
+        fully_specified_level = bytes(BitFlags(1, 1))
+
         with self.node._managed_cursor() as cursor:
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 1, None, 16350, 0.75)
-            relation_repo.add(1, 1, 2, None, 5450,  0.25)
-            relation_repo.add(1, 2, 2, None, 13050, 1.00)
+            relation_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
+            relation_repo.add(1, 1, 2, fully_specified_level, 5450,  0.25)
+            relation_repo.add(1, 2, 2, fully_specified_level, 13050, 1.00)
 
         data = [
             ('index_id', 'A', 'B'),
@@ -1519,7 +1521,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         expected = [Index(0, '-', '-'), Index(1, 'foo', 'x')]
         self.assertEqual(self.get_index_helper(self.node), expected)
 
-        expected = [(1, 1, 1, 1, None, 16350.0, 1.0)]  # <- Proportion is updated, too (was 0.75).
+        expected = [(1, 1, 1, 1, fully_specified_level, 16350.0, 1.0)]  # <- Proportion is updated, too (was 0.75).
         self.assertEqual(self.get_relation_helper(self.node), expected)
 
     def test_delete_with_ambiguous_relations(self):
@@ -1532,9 +1534,9 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 1, b'\x80', 16350, 0.75)  # <- Ambiguous relations.
-            relation_repo.add(1, 1, 2, b'\x80', 5450,  0.25)  # <- Ambiguous relations.
-            relation_repo.add(1, 2, 2, None,    13050, 1.00)
+            relation_repo.add(1, 1, 1, bytes(BitFlags(1, 0)), 16350, 0.75)  # <- Ambiguous relations.
+            relation_repo.add(1, 1, 2, bytes(BitFlags(1, 0)), 5450,  0.25)  # <- Ambiguous relations.
+            relation_repo.add(1, 2, 2, bytes(BitFlags(1, 1)), 13050, 1.00)  # <- Fully specified.
 
         data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
 
@@ -1547,8 +1549,8 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1', is_locally_complete=False)  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 1, None, 16350, 0.75)
-            relation_repo.add(1, 2, 1, None, 5450,  0.25)
+            relation_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 16350, 0.75)
+            relation_repo.add(1, 2, 1, bytes(BitFlags(1, 1)), 5450,  0.25)
 
             data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
             self.node.delete_index(data)  # Deletes index without a relation (index_id 2).
@@ -1558,23 +1560,25 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             self.assertTrue(crosswalk.is_locally_complete)
 
     def test_delete_and_other_index_hash_updates(self):
+        fully_specified_level = bytes(BitFlags(1, 1))
+
         with self.node._managed_cursor() as cursor:
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1',
                                other_index_hash='8c7654ecfd7b0b623b803e2f4e02ad1cc84278efdfcd7c4c9208edd81f17e115',
                                is_locally_complete=True)  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(1, 1, 1, None, 16350, 0.75)
-            relation_repo.add(1, 1, 2, None,  5450, 0.25)
-            relation_repo.add(1, 2, 2, None,  7500, 1.00)
+            relation_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
+            relation_repo.add(1, 1, 2, fully_specified_level,  5450, 0.25)
+            relation_repo.add(1, 2, 2, fully_specified_level,  7500, 1.00)
 
             crosswalk_repo.add('222-22-2222', None, 'other2',
                                other_index_hash='65b5281bf090304aa0255d2af391f164cb81d587a4c7b5b27db04faacb9388df',
                                is_locally_complete=False)  # Adds crosswalk_id 2.
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.add(2, 7, 1, None, 6000, 1.00)
-            relation_repo.add(2, 8, 1, None, 9000, 0.5625)
-            relation_repo.add(2, 8, 2, None, 7000, 0.4375)
+            relation_repo.add(2, 7, 1, fully_specified_level, 6000, 1.00)
+            relation_repo.add(2, 8, 1, fully_specified_level, 9000, 0.5625)
+            relation_repo.add(2, 8, 2, fully_specified_level, 7000, 0.4375)
 
             data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
             self.node.delete_index(data)  # Deletes index_id 2.
