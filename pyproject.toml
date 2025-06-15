@@ -76,6 +76,7 @@ legacy_tox_ini = """
 
   [testenv:check_deps]
   # Install toron by itself and verify minimum dependencies.
+  isolated_build = true
   skip_install = false
   deps =
   commands_pre =

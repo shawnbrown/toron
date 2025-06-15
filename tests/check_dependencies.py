@@ -1,86 +1,101 @@
 """Verify package dependencies.
 
 To prevent the addition of transitive dependencies from going unnoticed,
-we check the packages that get installed when testing via `tox`.
+this script checks packages that get installed when testing via `tox`.
 """
 
 import os
-import subprocess
 import sys
+from platform import python_implementation
+try:
+    from importlib.metadata import distributions  # New in Python 3.8
+except ModuleNotFoundError:
+    sys.stderr.write('Cancelled: Requires Python 3.8 or newer.\n')
+    exit(1)  #  <- EXIT with error code!
 
 
-EXITCODE_OK = 0
-EXITCODE_ERR = 1
+# Define the package name as a string.
+PACKAGE_NAME = 'toron'
+
+# Define a list of expected dependency names.
+DEPENDENCY_NAMES = ['lark']
+if sys.version_info < (3, 11):
+    DEPENDENCY_NAMES.append('typing_extensions')
+if sys.platform == 'win32':
+    DEPENDENCY_NAMES.append('colorama')
+
+# Define list of names to ignore.
+NAMES_TO_IGNORE = ['pip']
+if sys.version_info < (3, 12):
+    NAMES_TO_IGNORE.append('setuptools')  # Ignore extra packages installed
+    NAMES_TO_IGNORE.append('wheel')       # before CPython supported PEP 517.
+if python_implementation() == 'PyPy':
+    NAMES_TO_IGNORE.append('cffi')        # Ignore packages that are tightly
+    NAMES_TO_IGNORE.append('greenlet')    # integrated with PyPy and are
+    NAMES_TO_IGNORE.append('hpy')         # always installed with it.
 
 
-def main(package_dependencies):
+def main():
     if not os.getenv('TOX_ENV_NAME'):
         sys.stderr.write(
-            'This script should be run inside a tox environment.\n'
+            'Cancelled: This script should be run inside a tox environment.\n'
         )
-        return EXITCODE_ERR  # <- EXIT!
+        return 1  # EXIT with error code.
 
-    if not sys.executable:
-        sys.stderr.write(
-            'Cannot determine executable binary for current '
-            'Python interpreter, `sys.executable` is empty.\n'
-        )
-        return EXITCODE_ERR  # <- EXIT!
+    installed_set = set(dist.metadata['Name'] for dist in distributions())
+    installed_set = installed_set - set(NAMES_TO_IGNORE)
 
-    result = subprocess.run(
-        args=[
-            sys.executable,        # Execute current Python interpreter.
-            '-m', 'pip',           # Run pip using module-as-script interface.
-            'freeze',              # List installed packages.
-            '--local',             # Omit globally-installed packages.
-            '--exclude', 'toron',  # Exclude Toron itself.
-        ],
-        stdout=subprocess.PIPE,
-        text=True,
-    )
-    result_text = result.stdout.strip()
-    result_list = result_text.split('\n')
-    installed_packages = {x.partition('==')[0] for x in result_list}
+    try:
+        installed_set.remove(PACKAGE_NAME)
+    except KeyError:
+        sys.stderr.write(f'Cancelled: The package {PACKAGE_NAME!r} not found.')
+        return 1  # EXIT with error code.
 
-    if installed_packages == package_dependencies:
-        package_text = '\n'.join(f'* {x}' for x in sorted(installed_packages))
-        sys.stdout.write(
-            f'Dependency check passed!\n'
-            f'Installed dependencies include:\n'
-            f'{package_text}\n'
-        )
-        return EXITCODE_OK  # <- EXIT!
+    required_set = set(DEPENDENCY_NAMES)
 
-    sys.stderr.write('Dependency check failed.\n')
+    if installed_set == required_set:
+        result_message = 'Dependency check passed!'
+        output_stream = sys.stdout
+        return_code = 0
+    else:
+        result_message = 'Dependency check failed.'
+        output_stream = sys.stderr
+        return_code = 1
 
-    missing = package_dependencies - installed_packages
-    extra = installed_packages - package_dependencies
-    if missing:
-        missing_text = '\n'.join(f'* {x}' for x in sorted(missing))
-        sys.stderr.write(
-            f'\nMissing expected packages:\n'
-            f'{missing_text}\n'
-        )
-    if extra:
-        extra_text = '\n'.join(f'* {x}' for x in sorted(extra))
-        sys.stderr.write(
-            f"\nFound extra unexpected packages:\n"
-            f'{extra_text}\n'
-        )
+    # Build dependency group lists.
+    expected_deps = sorted(installed_set & required_set)
+    missing_deps = sorted(required_set - installed_set)
+    unexpected_deps = sorted(installed_set - required_set)
 
-    sys.stderr.write('\n')
-    return EXITCODE_ERR
+    # Get output symbols and assure encoding compatibility.
+    symbols = ('\u2714', '\u26A0', '\u2718')  # ✔, ⚠, and ✘
+    try:
+        for x in symbols:
+            x.encode(output_stream.encoding)
+    except UnicodeEncodeError:
+        symbols = ('OK', '!!', 'XX')
+    good, warn, bad = symbols
+
+    # Write script output to stream.
+    output_stream.write(f'{result_message}\n')
+    if expected_deps:
+        output_stream.write('\n  Satisfied dependencies:\n')
+        for dep in expected_deps:
+            output_stream.write(f'  {good} {dep}\n')
+
+    if missing_deps:
+        output_stream.write('\n  Missing dependencies:\n')
+        for dep in missing_deps:
+            output_stream.write(f'  {warn} {dep}\n')
+
+    if unexpected_deps:
+        output_stream.write('\n  Unexpected packages:\n')
+        for dep in unexpected_deps:
+            output_stream.write(f'  {bad} {dep}\n')
+
+    output_stream.write('\n')
+    return return_code
 
 
 if __name__ == '__main__':
-    package_dependencies = {
-        'lark',
-    }
-    if sys.version_info < (3, 11):
-        package_dependencies.add('typing_extensions')
-
-    if sys.platform == 'win32':
-        package_dependencies.add('colorama')
-
-    exitcode = main(package_dependencies)
-    sys.exit(exitcode)
+    sys.exit(main())
