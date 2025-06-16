@@ -51,11 +51,11 @@ def main():
     required_set = set(DEPENDENCY_NAMES)
 
     if installed_set == required_set:
-        result_message = 'Dependency check passed!'
+        messages = ['Dependency check passed!']
         output_stream = sys.stdout
         return_code = 0
     else:
-        result_message = 'Dependency check failed.'
+        messages = ['Dependency check failed.']
         output_stream = sys.stderr
         return_code = 1
 
@@ -65,32 +65,30 @@ def main():
     unexpected_deps = sorted(installed_set - required_set)
 
     # Get output symbols and assure encoding compatibility.
-    symbols = ('\u2714', '\u26A0', '\u2718')  # ✔, ⚠, and ✘
+    good, warn, bad = ('\u2714', '\u26A0', '\u2718')  # ✔, ⚠, and ✘
     try:
-        for x in symbols:
-            x.encode(output_stream.encoding)
+        f'{good}{warn}{bad}'.encode(output_stream.encoding, errors='strict')
     except UnicodeEncodeError:
-        symbols = ('OK', '!!', 'XX')
-    good, warn, bad = symbols
+        good, warn, bad = ('OK', '!!', 'XX')
 
-    # Write script output to stream.
-    output_stream.write(f'{result_message}\n')
+    # Add messages for dependency groups.
     if expected_deps:
-        output_stream.write('\n  Satisfied dependencies:\n')
-        for dep in expected_deps:
-            output_stream.write(f'  {good} {dep}\n')
+        messages.append('\n  Satisfied dependencies:')
+        messages.extend(f'  {good} {dep}' for dep in expected_deps)
 
     if missing_deps:
-        output_stream.write('\n  Missing dependencies:\n')
-        for dep in missing_deps:
-            output_stream.write(f'  {warn} {dep}\n')
+        messages.append('\n  Missing dependencies:')
+        messages.extend(f'  {warn} {dep}' for dep in missing_deps)
 
     if unexpected_deps:
-        output_stream.write('\n  Unexpected packages:\n')
-        for dep in unexpected_deps:
-            output_stream.write(f'  {bad} {dep}\n')
+        messages.append('\n  Unexpected packages:')
+        messages.extend(f'  {bad} {dep}' for dep in unexpected_deps)
 
+    # Write messages to output stream.
+    for msg in messages:
+        output_stream.write(f'{msg}\n')
     output_stream.write('\n')
+
     return return_code
 
 
