@@ -14,25 +14,22 @@ except ModuleNotFoundError:
     exit(1)  #  <- EXIT with error code!
 
 
-# Define the package name as a string.
+# Package name.
 PACKAGE_NAME = 'toron'
 
-# Define a list of expected dependency names.
+# List of package dependencies.
 DEPENDENCY_NAMES = ['lark']
 if sys.version_info < (3, 11):
-    DEPENDENCY_NAMES.append('typing_extensions')
+    DEPENDENCY_NAMES.extend(['typing_extensions'])
 if sys.platform == 'win32':
-    DEPENDENCY_NAMES.append('colorama')
+    DEPENDENCY_NAMES.extend(['colorama'])
 
-# Define list of names to ignore.
+# List of names to ignore (packages included with test environment).
 NAMES_TO_IGNORE = ['pip']
 if sys.version_info < (3, 12):
-    NAMES_TO_IGNORE.append('setuptools')  # Ignore extra packages installed
-    NAMES_TO_IGNORE.append('wheel')       # before CPython supported PEP 517.
+    NAMES_TO_IGNORE.extend(['setuptools', 'wheel'])
 if python_implementation() == 'PyPy':
-    NAMES_TO_IGNORE.append('cffi')        # Ignore packages that are tightly
-    NAMES_TO_IGNORE.append('greenlet')    # integrated with PyPy and are
-    NAMES_TO_IGNORE.append('hpy')         # always installed with it.
+    NAMES_TO_IGNORE.extend(['cffi', 'greenlet', 'hpy'])
 
 
 def main():
