@@ -1,7 +1,50 @@
-"""Verify package dependencies.
+#!/usr/bin/env python3
+"""Verify Package Dependencies
 
-To prevent the addition of transitive dependencies from going unnoticed,
-this script checks packages that get installed when testing via `tox`.
+This script helps prevent the addition of transitive dependencies from
+going unnoticed. It is intended to be run via 'tox' inside an isolated
+build environment with no additional dependencies.
+
+1. Configure Script Variables
+
+   Update the `PACKAGE_NAME`, `DEPENDENCY_NAMES`, and `NAMES_TO_IGNORE`
+   variables in this script to match your project:
+
+     PACKAGE_NAME = 'mypackage'
+
+     DEPENDENCY_NAMES = ['dependency1', 'dependency2']
+     if sys.platform == 'win32':
+         DEPENDENCY_NAMES.extend(['dependency3'])
+
+     NAMES_TO_IGNORE = ['pip']
+     if sys.version_info < (3, 12):
+         NAMES_TO_IGNORE.extend(['setuptools', 'wheel'])
+
+   Note: Complete environment isolation is not always practical.
+   Some packages may come pre-installed with a Python build or in
+   virtual environments. You can add these to NAMES_TO_IGNORE to
+   exclude them from the check.
+
+2. Define a Tox Environment
+
+   Add a "check_deps" environment to your tox configuration:
+
+     [testenv:check_deps]
+     description = Check for transitive dependencies.
+     isolated_build = true
+     commands = python tests/check_dependencies.py
+
+   Important: Do not specify a `deps = ...` setting. This environment
+   should only install the dependencies declared by your package.
+
+3. Add to Tox Environment List
+
+   Include the new environment in your `env_list` to ensure it runs
+   with other checks:
+
+    [tox]
+    env_list = check_deps, lint, 3.1{3,2,1}
+    ...
 """
 
 import os
@@ -11,7 +54,7 @@ try:
     from importlib.metadata import distributions  # New in Python 3.8
 except ModuleNotFoundError:
     sys.stderr.write('Cancelled: Requires Python 3.8 or newer.\n')
-    exit(1)  #  <- EXIT with error code!
+    sys.exit(1)  # QUIT with failure status!
 
 
 # Package name.
@@ -32,41 +75,41 @@ if python_implementation() == 'PyPy':
     NAMES_TO_IGNORE.extend(['cffi', 'greenlet', 'hpy'])
 
 
-def main():
-    if not os.getenv('TOX_ENV_NAME'):
+def main(package_name, dependency_names, names_to_ignore, require_tox=True):
+    if require_tox and not os.getenv('TOX_ENV_NAME'):
         sys.stderr.write(
             'Cancelled: This script should be run inside a tox environment.\n'
         )
-        return 1  # EXIT with error code.
+        return 1  # EXIT with failure status.
 
     installed_set = set(dist.metadata['Name'] for dist in distributions())
-    installed_set = installed_set - set(NAMES_TO_IGNORE)
+    installed_set = installed_set - set(names_to_ignore)
 
     try:
-        installed_set.remove(PACKAGE_NAME)
+        installed_set.remove(package_name)
     except KeyError:
-        sys.stderr.write(f'Cancelled: The package {PACKAGE_NAME!r} not found.')
-        return 1  # EXIT with error code.
+        sys.stderr.write(f'Cancelled: The package {package_name!r} not found.\n')
+        return 1  # EXIT with failure status.
 
-    required_set = set(DEPENDENCY_NAMES)
+    required_set = set(dependency_names)
 
     if installed_set == required_set:
         messages = ['Dependency check passed!']
         output_stream = sys.stdout
-        return_code = 0
+        exit_status = 0  # Success status.
     else:
         messages = ['Dependency check failed.']
         output_stream = sys.stderr
-        return_code = 1
+        exit_status = 1  # Failure status.
 
     # Build dependency group lists.
     expected_deps = sorted(installed_set & required_set)
     missing_deps = sorted(required_set - installed_set)
     unexpected_deps = sorted(installed_set - required_set)
 
-    # Get output symbols and assure encoding compatibility.
-    good, warn, bad = ('\u2714', '\u26A0', '\u2718')  # ✔, ⚠, and ✘
+    # Define output symbols and assure encoding compatibility.
     try:
+        good, warn, bad = ('\u2714', '\u26A0', '\u2718')  # ✔, ⚠, and ✘
         f'{good}{warn}{bad}'.encode(output_stream.encoding, errors='strict')
     except UnicodeEncodeError:
         good, warn, bad = ('OK', '!!', 'XX')
@@ -89,8 +132,8 @@ def main():
         output_stream.write(f'{msg}\n')
     output_stream.write('\n')
 
-    return return_code
+    return exit_status
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(PACKAGE_NAME, DEPENDENCY_NAMES, NAMES_TO_IGNORE))
