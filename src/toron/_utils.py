@@ -557,28 +557,50 @@ def quantize_values(
     items: Iterator[Tuple[int, float]],
     sum_total: float,
 ) -> Generator[Tuple[int, float], None, None]:
-    """Quantizes item values using the Largest Remainder Method (LRM),
-    ensuring that the sum of quantized values remains equal to the
-    original total, unlike conventional rounding methods.
+    """Quantizes item values using the Largest Remainder Method (LRM).
 
-    Fractional remainder ties are resolved through a repeatable,
-    pseudo-random shuffle, ensuring reproducibility and minimizing
-    positional bias.
+    Unlike standard rounding, LRM ensures the sum total is preserved,
+    making it suitable for scenarios where accuracy is critical and
+    values are best expressed as whole numbers--such as counts of
+    indivisible units like people or households.
 
-    .. code-block::
+    Fractional remainder ties--where items have fractional parts
+    of equal value--are resolved using a repeatable, pseudo-random
+    shuffle based on the item's index. This ensures reproducibility
+    and minimizes positional bias when allocating of remainders.
 
-        >>> input_items = [(1, 3.4375), (2, 4.3750), (3, 1.1875)]
-        >>> list(quantize_values(input_items, sum_total=9.0))
-        [(1, 4.0), (2, 4.0), (3, 1.0)]
+    Example::
 
-    .. note::
+        >>> input_items = [(1, 10.6875), (2, 20.5625), (3, 30.75)]
+        >>> sorted(quantize_values(input_items, sum_total=62.0))
+        [(1, 11.0), (2, 20.0), (3, 31.0)]
 
-        The *sum_total* parameter is required as an argument because
-        this function is designed for use in contexts where the value
-        is already known, such as during disaggregation and translation.
-        While it's trivial to compute this value from the provided
-        *items*, doing so would be redundant and could introduce
-        unnecessary floating-point rounding errors.
+    This function distributes the *sum_total* remainder (the
+    difference between *sum_total* and the sum of floored values)
+    by adding ``1.0`` the floored value of items with the largest
+    fractional parts until the remainder is exhausted. In the
+    example, with *sum_total* ``62.0`` and floored sum ``60.0``,
+    the ``2.0`` remainder is given to items 1 (``0.6875`` fractional)
+    and 3 (``0.75`` fractional).
+
+    +-------+----------+-----------+
+    | Index | Original | Quantized |
+    +=======+==========+===========+
+    |   1   | 10.6875  |   11.0    |
+    +-------+----------+-----------+
+    |   2   | 20.5625  |   20.0    |
+    +-------+----------+-----------+
+    |   3   | 30.75    |   31.0    |
+    +-------+----------+-----------+
+
+    .. important::
+
+        The *sum_total* parameter is a required argument. This design
+        choice was made because the function is intended for contexts
+        where the sum total is already pre-calculated or explicitly
+        provided, such as disaggregation or translation. Calculating
+        *sum_total* within the function would be redundant and could
+        introduce floating-point precision errors.
     """
     # Accumulate sum of whole parts and format items as 3-tuples.
     sum_of_whole_parts = 0.0
