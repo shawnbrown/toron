@@ -7,44 +7,51 @@ build environment with no additional dependencies.
 
 1. Configure Script Variables
 
-   Update the `PACKAGE_NAME`, `DEPENDENCY_NAMES`, and `NAMES_TO_IGNORE`
-   variables in this script to match your project:
+    Update the PACKAGE_NAME, DEPENDENCY_NAMES, and NAMES_TO_IGNORE
+    variables in this script to match your project:
 
-     PACKAGE_NAME = 'mypackage'
+    ```
+    PACKAGE_NAME = 'mypackage'
 
-     DEPENDENCY_NAMES = ['dependency1', 'dependency2']
-     if sys.platform == 'win32':
-         DEPENDENCY_NAMES.extend(['dependency3'])
+    DEPENDENCY_NAMES = ['dependency1', 'dependency2']
+    if sys.platform == 'win32':
+        DEPENDENCY_NAMES.extend(['dependency3'])
 
-     NAMES_TO_IGNORE = ['pip']
-     if sys.version_info < (3, 12):
-         NAMES_TO_IGNORE.extend(['setuptools', 'wheel'])
+    NAMES_TO_IGNORE = ['pip']
+    if sys.version_info < (3, 12):
+        NAMES_TO_IGNORE.extend(['setuptools', 'wheel'])
+    ```
 
-   Note: Complete environment isolation is not always practical.
-   Some packages may come pre-installed with a Python build or in
-   virtual environments. You can add these to NAMES_TO_IGNORE to
-   exclude them from the check.
+    Note: Complete environment isolation is not always practical.
+    Some packages may come pre-installed with a Python build or in
+    virtual environments. You can add these to NAMES_TO_IGNORE to
+    exclude them from the check.
 
 2. Define a Tox Environment
 
-   Add a "check_deps" environment to your tox configuration:
+    Add a "check_deps" environment to your tox configuration:
 
-     [testenv:check_deps]
-     description = Check for transitive dependencies.
-     isolated_build = true
-     commands = python tests/check_dependencies.py
+    ```
+    [testenv:check_deps]
+    description = Check for transitive dependencies.
+    isolated_build = true
+    commands = python tests/check_dependencies.py
+    ```
 
-   Important: Do not specify a `deps = ...` setting. This environment
-   should only install the dependencies declared by your package.
+    Important: Do not specify a `deps = ...` setting. This environment
+    should only install the dependencies declared by your package.
 
 3. Add to Tox Environment List
 
-   Include the new environment in your `env_list` to ensure it runs
-   with other checks:
+    Include the new "check_deps" environment to your `env_list` to
+    ensure it runs with other checks:
 
+    ```
     [tox]
     env_list = check_deps, lint, 3.1{3,2,1}
     ...
+
+    ```
 """
 
 import os
