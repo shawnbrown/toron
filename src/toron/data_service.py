@@ -17,7 +17,6 @@ from toron._typing import (
     Tuple,
     Union,
     cast,
-    overload,
 )
 
 from .categories import (
@@ -381,29 +380,21 @@ def set_default_weight_group(
     )
 
 
-@overload
 def get_default_weight_group(
     property_repo: BasePropertyRepository,
     weight_group_repo: BaseWeightGroupRepository,
-    required: Literal[False] = False,
-) -> Optional[WeightGroup]:
-    ...
-@overload
-def get_default_weight_group(
-    property_repo: BasePropertyRepository,
-    weight_group_repo: BaseWeightGroupRepository,
-    required: Literal[True],
 ) -> WeightGroup:
-    ...
-def get_default_weight_group(property_repo, weight_group_repo, required=False):
-    """Return the node's default weight group (if any)."""
+    """Return the node's default weight group."""
     try:
         weight_group_id = property_repo.get('default_weight_group_id')
+        if not isinstance(weight_group_id, int):
+            raise TypeError(
+                f"'default_weight_group_id' property must be int, got "
+                f"{weight_group_id.__class__.__qualname__}: {weight_group_id!r}"
+            )
         return weight_group_repo.get(weight_group_id)
-    except:
-        if required:
-            raise RuntimeError('no default weight group is defined')
-        return None
+    except KeyError:
+        raise RuntimeError('no default weight group is defined')
 
 
 def get_all_discrete_categories(
@@ -647,12 +638,17 @@ def get_node_info_text(
     # Get list of weight group names.
     weight_groups = sorted(weight_group_repo.get_all(), key=lambda x: x.name)
     if weight_groups:
-        default_group = get_default_weight_group(property_repo, weight_group_repo)
-        default_group_id = getattr(default_group, 'id', None)
+        try:
+            default_group = get_default_weight_group(property_repo, weight_group_repo)
+            default_group_id = default_group.id
+        except RuntimeError:
+            default_group_id = None
+
         def make_note(group):
             if group.id == default_group_id:
                 return ' (default)' if group.is_complete else ' (default, incomplete)'
             return '' if group.is_complete else ' (incomplete)'
+
         weights_list = [f'{x.name}{make_note(x)}' for x in weight_groups]
     else:
         weights_list = ['None']

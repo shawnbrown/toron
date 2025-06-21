@@ -778,10 +778,13 @@ class TopoNode(object):
 
     def get_default_weight_group(self) -> Optional[WeightGroup]:
         with self._managed_transaction() as cursor:
-            return get_default_weight_group(
-                property_repo=self._dal.PropertyRepository(cursor),
-                weight_group_repo=self._dal.WeightGroupRepository(cursor),
-            )
+            try:
+                return get_default_weight_group(
+                    property_repo=self._dal.PropertyRepository(cursor),
+                    weight_group_repo=self._dal.WeightGroupRepository(cursor),
+                )
+            except RuntimeError:
+                return None
 
     def add_weight_group(
         self,
@@ -2194,7 +2197,7 @@ class TopoNode(object):
 
             # Get the default weight group and make sure it's complete.
             default_weight_group = get_default_weight_group(
-                property_repo, weight_group_repo, required=True
+                property_repo, weight_group_repo
             )
             if not default_weight_group.is_complete:
                 msg = f'default weight group {default_weight_group.name!r} is not complete'

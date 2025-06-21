@@ -603,19 +603,11 @@ class TestGetAndSetDefaultWeightGroup(unittest.TestCase):
         self.assertEqual(weight_group, expected)
 
     def test_get_default_weight_group_missing(self):
-        weight_group = get_default_weight_group(
-            property_repo=self.property_repo,
-            weight_group_repo=self.weight_group_repo,
-            required=False,  # <- When not required, missing default returns None.
-        )
-        self.assertIsNone(weight_group)
-
         regex = 'no default weight group is defined'
         with self.assertRaisesRegex(RuntimeError, regex):
             weight_group = get_default_weight_group(
                 property_repo=self.property_repo,
                 weight_group_repo=self.weight_group_repo,
-                required=True,  # <- When required, missing default raises error.
             )
 
 

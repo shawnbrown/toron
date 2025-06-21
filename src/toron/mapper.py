@@ -277,7 +277,6 @@ class Mapper(object):
             weight_group = get_default_weight_group(
                 property_repo=node._dal.PropertyRepository(node_cur),
                 weight_group_repo=node._dal.WeightGroupRepository(node_cur),
-                required=True,
             )
             weight_group_id = weight_group.id
 
