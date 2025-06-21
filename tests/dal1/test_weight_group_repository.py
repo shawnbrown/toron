@@ -57,7 +57,8 @@ class TestWeightGroupRepository(unittest.TestCase):
 
         self.assertEqual(repository.get(1), WeightGroup(1, 'name1', None, None, 1))
         self.assertEqual(repository.get(2), WeightGroup(2, 'name2', None, ['[foo]', '[bar]'], 0))
-        self.assertIsNone(repository.get(3))
+        with self.assertRaisesRegex(KeyError, 'no weight group with id of 3'):
+            repository.get(3)
 
     def test_update(self):
         self.cursor.executescript("""

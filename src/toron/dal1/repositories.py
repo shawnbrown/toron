@@ -349,15 +349,15 @@ class WeightGroupRepository(BaseWeightGroupRepository):
         """
         self._cursor.execute(sql, (name, description, selectors, is_complete))
 
-    def get(self, id: int) -> Optional[WeightGroup]:
+    def get(self, id: int) -> WeightGroup:
         """Get a record from the repository."""
         self._cursor.execute(
             'SELECT * FROM main.weight_group WHERE weight_group_id=?', (id,)
         )
         record = self._cursor.fetchone()
-        if record:
-            return WeightGroup(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no weight group with id of {id}')
+        return WeightGroup(*record)
 
     def get_by_name(self, name: str) -> Optional[WeightGroup]:
         """Get record from the repository with matching name."""

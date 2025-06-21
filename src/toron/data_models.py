@@ -543,7 +543,7 @@ class BaseWeightGroupRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[WeightGroup]:
+    def get(self, id: int) -> WeightGroup:
         """Get a record from the repository."""
 
     @abstractmethod
