@@ -1,12 +1,12 @@
-"""Database schema functions and information for Toron node files.
+"""Database schema functions and information for a Toron node file.
 
-Toron nodes are stored as individual files. The file format is managed,
-internally, as a relational database. The schema for this database is
-shown below as a simplified ERD (entity relationship diagram). SQL
-foreign key relationships are represented with hyphen and pipe
-characters (``---`` and ``|``). Other, more complex relationships are
-represented with bullet points (``•••``) and these are enforced at the
-application layer:
+The DAL1 backend stores a Toron node as an individual file. The file
+format is managed, internally, as a relational database. The schema for
+this database is shown below as a simplified ERD (entity relationship
+diagram). SQL foreign key relationships are represented with hyphen and
+pipe characters (``---`` and ``|``). Other, more complex relationships
+are represented with bullet points (``•••``) and these are enforced at
+the application layer:
 
 .. code-block:: text
 
@@ -19,7 +19,7 @@ application layer:
     | crosswalk_id         |------->| crosswalk_id   |     •  +--------------------+  |
     | other_unique_id      |  ••••••| other_index_id |<•••••                          |
     | other_filename_hint  |  •  •••| index_id       |<-+     +--------------------+  |
-    | name                 |  •  •  | mapping_level  |  |     | quantity           |  |
+    | name                 |  •  •  | mapping_level* |  |     | quantity           |  |
     | description          |  •  •  | relation_value |  |     +--------------------+  |
     | selectors            |  •  •  | proportion*    |  |     | quantity_id        |  |
     | is_default           |  •  •  +----------------+  |  +->| _location_id       |  |
