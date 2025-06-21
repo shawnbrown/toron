@@ -347,9 +347,9 @@ class TopoNode(object):
             )
 
     @property
-    def index_columns(self) -> Tuple[str, ...]:
+    def index_columns(self) -> List[str]:
         with self._managed_cursor() as cursor:
-            return self._dal.ColumnManager(cursor).get_columns()
+            return self._dal.IndexRepository(cursor).get_label_names()
 
     def add_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:

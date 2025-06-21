@@ -51,8 +51,8 @@ class NodeReader(object):
     _data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
     _current_working_path: Optional[str]
     _in_memory_connection: Optional[sqlite3.Connection]
-    _index_columns: Tuple[str, ...]
-    _attr_keys: Tuple[str, ...]
+    _index_columns: List[str]
+    _attr_keys: List[str]
     close: weakref.finalize
 
     def __init__(
@@ -135,7 +135,7 @@ class NodeReader(object):
         self._data = None  # <- Assigned only when iteration begins.
         self._node = node
         self._index_columns = node.index_columns
-        self._attr_keys = tuple(sorted(attr_keys))
+        self._attr_keys = sorted(attr_keys)
 
         # Assign `close()` method (gets a callable finalizer object).
         self.close = weakref.finalize(self, self._finalizer)
@@ -177,7 +177,7 @@ class NodeReader(object):
     @property
     def columns(self) -> List[str]:
         """All column labels of the NodeReader."""
-        return list(self._index_columns + self._attr_keys + ('value',))
+        return self._index_columns + self._attr_keys + ['value']
 
     def to_pandas(self, index: bool = False) -> 'pd.DataFrame':
         """Return data as a pandas DataFrame object."""

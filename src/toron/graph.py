@@ -470,8 +470,8 @@ def get_mapping(
     """Yield an index mapping from *source_node* to *target_node*
     for a particular crosswalk.
     """
-    src_index_cols = source_node.index_columns
-    trg_index_cols = target_node.index_columns
+    src_index_cols = tuple(source_node.index_columns)
+    trg_index_cols = tuple(target_node.index_columns)
 
     src_domain = source_node.domain
     src_domain_keys = tuple(src_domain.keys())

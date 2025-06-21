@@ -698,7 +698,7 @@ class TestIndexColumnMethods(unittest.TestCase):
 
         columns = node.index_columns  # Accessed as property attribute.
 
-        self.assertEqual(columns, ('A', 'B'))
+        self.assertEqual(columns, ['A', 'B'])
 
     def test_rename_index_columns(self):
         node = TopoNode()
