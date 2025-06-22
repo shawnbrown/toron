@@ -64,7 +64,8 @@ class TestAttributeGroupRepository(unittest.TestCase):
 
         self.assertEqual(repository.get(1), AttributeGroup(1, {'aaa': 'A', 'bbb': 'B'}))
         self.assertEqual(repository.get(2), AttributeGroup(2, {'aaa': 'A', 'ccc': 'C'}))
-        self.assertIsNone(repository.get(3))
+        with self.assertRaisesRegex(KeyError, 'no attribute group with id of 3'):
+            repository.get(3)
 
     def test_update(self):
         self.cursor.executescript("""

@@ -2097,7 +2097,6 @@ class TopoNode(object):
                 quantities = quantity_repo.find_by_location_id(location.id)
                 for quantity in quantities:
                     attr_group = attribute_repo.get(quantity.attribute_group_id)
-                    attr_group = cast(AttributeGroup, attr_group)
                     attr_dict = attr_group.attributes
 
                     labels = list(location.labels)
@@ -2134,7 +2133,6 @@ class TopoNode(object):
                 quantities = quantity_repo.find_by_location_id(location.id)
                 for quantity in quantities:
                     attr_group = attribute_repo.get(quantity.attribute_group_id)
-                    attr_group = cast(AttributeGroup, attr_group)
                     attr_dict = attr_group.attributes
 
                     labels = list(location.labels)
@@ -2241,10 +2239,7 @@ class TopoNode(object):
                         # Yield whole quantity values (cannot be disaggregated
                         # further).
                         for quantity in group:
-                            attribute_group = cast(
-                                AttributeGroup,
-                                attribute_repo.get(quantity.attribute_group_id),
-                            )
+                            attribute_group = attribute_repo.get(quantity.attribute_group_id)
                             attributes = attribute_group.attributes
                             attributes.update(domain)  # Add domain to attributes.
                             yield (index_id, attributes, quantity.value)
@@ -2265,10 +2260,7 @@ class TopoNode(object):
                             raise RuntimeError(msg) from None
 
                         for quantity in group:
-                            attribute_group = cast(
-                                AttributeGroup,
-                                attribute_repo.get(quantity.attribute_group_id),
-                            )
+                            attribute_group = attribute_repo.get(quantity.attribute_group_id)
                             attributes = attribute_group.attributes
                             attributes.update(domain)  # Add domain to attributes.
 

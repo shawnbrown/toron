@@ -550,15 +550,19 @@ class AttributeGroupRepository(BaseAttributeGroupRepository):
         sql = 'INSERT INTO main.attribute_group (attributes) VALUES (?)'
         self._cursor.execute(sql, (json_dumps(value, sort_keys=True),))
 
-    def get(self, id: int) -> Optional[AttributeGroup]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> AttributeGroup:
+        """Get a record from the repository.
+
+        If no attribute group matches the given *id*, a ``KeyError`` is
+        raised.
+        """
         self._cursor.execute(
             'SELECT * FROM main.attribute_group WHERE attribute_group_id=?', (id,)
         )
         record = self._cursor.fetchone()
-        if record:
-            return AttributeGroup(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no attribute group with id of {id}')
+        return AttributeGroup(*record)
 
     def update(self, record: AttributeGroup) -> None:
         """Update a record in the repository."""

@@ -853,7 +853,8 @@ class AttributeGroupRepositoryBaseTest(ABC):
         self.assertEqual(repository.get(1), AttributeGroup(1, {'foo': 'B'}))
 
         repository.delete(1)
-        self.assertIsNone(repository.get(1))
+        with self.assertRaises(KeyError):
+            repository.get(1)
 
     def test_add_empty_string_error(self):
         """If keys or values are empty string, should raise ValueError."""

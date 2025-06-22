@@ -770,8 +770,12 @@ class BaseAttributeGroupRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[AttributeGroup]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> AttributeGroup:
+        """Get a record from the repository.
+
+        If no attribute group matches the given *id*, a ``KeyError`` is
+        raised.
+        """
 
     @abstractmethod
     def update(self, record: AttributeGroup) -> None:
