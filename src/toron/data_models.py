@@ -27,7 +27,6 @@ from toron._typing import (
     TypeAlias,
     TypeVar,
     Union,
-    cast,
     overload,
     TYPE_CHECKING,  # <- Temporary.
 )
@@ -697,7 +696,6 @@ class BaseWeightRepository(ABC):
                 weight_group_id,
                 index_id,
             )
-            weight = cast(Weight, weight)
 
             if on_conflict == 'overwrite':
                 weight.value = value  # Replace value.

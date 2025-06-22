@@ -458,7 +458,7 @@ def pivot_reader(
             with reader._node._managed_cursor() as node_cur:
                 # Assign `get` method to local var and define helper-lambda.
                 get_index = reader._node._dal.IndexRepository(node_cur).get
-                get_labels = lambda x: list(cast(Index, get_index(x)).labels)
+                get_labels = lambda x: list(get_index(x).labels)
 
                 # Group by pre-sorted `index_id` and make pivoted rows.
                 for index_id, group in groupby(cur1, key=lambda row: row[0]):

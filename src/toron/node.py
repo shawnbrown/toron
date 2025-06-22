@@ -24,7 +24,6 @@ from toron._typing import (
     Set,
     Tuple,
     Union,
-    cast,
     overload,
 )
 
