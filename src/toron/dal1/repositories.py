@@ -583,16 +583,16 @@ class AttributeGroupRepository(BaseAttributeGroupRepository):
             'DELETE FROM main.attribute_group WHERE attribute_group_id=?', (id,)
         )
 
-    def get_by_value(self, value: Dict[str, str]) -> Optional[AttributeGroup]:
+    def get_by_value(self, value: Dict[str, str]) -> AttributeGroup:
         """Get the record matching the given value."""
         self._cursor.execute(
             'SELECT * FROM main.attribute_group WHERE attributes=?',
             (json_dumps(value, sort_keys=True),)
         )
         record = self._cursor.fetchone()
-        if record:
-            return AttributeGroup(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no attribute group matching {value!r}')
+        return AttributeGroup(*record)
 
     def find_all(self) -> Iterable[AttributeGroup]:
         """Get all records in the repository."""

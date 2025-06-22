@@ -786,8 +786,12 @@ class BaseAttributeGroupRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
-    def get_by_value(self, value: Dict[str, str]) -> Optional[AttributeGroup]:
-        """Get the record matching the given value."""
+    def get_by_value(self, value: Dict[str, str]) -> AttributeGroup:
+        """Get the record matching the given value.
+
+        If no attribute group matches the given *value*, a ``KeyError``
+        is raised.
+        """
 
     @abstractmethod
     def find_all(self) -> Iterable[AttributeGroup]:
@@ -805,16 +809,11 @@ class BaseAttributeGroupRepository(ABC):
         is no matching attribute-group, a new record is added and then
         returned.
         """
-        attribute_group = self.get_by_value(value)
-        if attribute_group:
-            return attribute_group
-
-        self.add(value)
-        attribute_group = self.get_by_value(value)
-        if attribute_group:
-            return attribute_group
-
-        raise RuntimeError('expected attribute-group was not created')
+        try:
+            return self.get_by_value(value)
+        except KeyError:
+            self.add(value)
+            return self.get_by_value(value)
 
     def get_all_attribute_names(self) -> List[str]:
         """Return a sorted list of distinct attribute names."""
