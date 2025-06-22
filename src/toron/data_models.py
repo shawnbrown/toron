@@ -1013,10 +1013,10 @@ class BaseRelationRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
-    def get_distinct_other_index_ids(
+    def find_distinct_other_index_ids(
         self, crosswalk_id: int, ordered: bool = False
     ) -> Iterator[int]:
-        """Get distinct other_index_id values for the given crosswalk.
+        """Find distinct other_index_id values for the given crosswalk.
         When *ordered* is True, must return values in ascending order.
         """
 

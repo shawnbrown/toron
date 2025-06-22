@@ -1434,11 +1434,11 @@ class RelationRepositoryBaseTest(ABC):
         }
         self.assertEqual(results, expected)
 
-    def test_get_distinct_other_index_ids(self):
-        results = self.repository.get_distinct_other_index_ids(1)
+    def test_find_distinct_other_index_ids(self):
+        results = self.repository.find_distinct_other_index_ids(1)
         self.assertEqual(set(results), {1, 2, 3})
 
-        results = self.repository.get_distinct_other_index_ids(1, ordered=True)
+        results = self.repository.find_distinct_other_index_ids(1, ordered=True)
         self.assertEqual(list(results), [1, 2, 3])
 
     def test_find_by_ids(self):

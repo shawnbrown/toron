@@ -192,7 +192,7 @@ def _get_mapping_stats(
         if crosswalk.other_index_hash == src_prop_repo.get('index_hash'):
             src_index_matched = src_cardinality
         else:
-            other_index_ids = trg_rel_repo.get_distinct_other_index_ids(
+            other_index_ids = trg_rel_repo.find_distinct_other_index_ids(
                 crosswalk.id,
             )
             for other_index_id in other_index_ids:

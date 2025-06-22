@@ -737,7 +737,7 @@ class TopoNode(object):
                     # 'other_index_id' are associated with 'index_id' values
                     # that are deleted, this hash will change.
                     other_index_hash = SequenceHash(
-                        aux_relation_repo.get_distinct_other_index_ids(
+                        aux_relation_repo.find_distinct_other_index_ids(
                             crosswalk.id,
                             ordered=True,
                         )
@@ -1517,7 +1517,7 @@ class TopoNode(object):
 
                 # Get ordered sequence of other_index_id values.
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
-                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
+                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
                     crosswalk_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
@@ -1618,7 +1618,7 @@ class TopoNode(object):
             if counter['inserted'] and crosswalk:
                 # Get ordered sequence of other_index_id values.
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
-                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
+                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
                     crosswalk_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
@@ -1728,7 +1728,7 @@ class TopoNode(object):
             aux_relation_repo = self._dal.RelationRepository(aux_cursor)
             if counter['inserted']:
                 # Get ordered sequence of other_index_id values.
-                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
+                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
                     crosswalk_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
@@ -1748,7 +1748,7 @@ class TopoNode(object):
 
             elif counter['updated']:
                 # Get iterator of other_index_id values.
-                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(crosswalk_id)
+                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(crosswalk_id)
 
                 # Refresh proportion values.
                 for other_index_id in other_index_ids:
@@ -1889,7 +1889,7 @@ class TopoNode(object):
 
             if counter['deleted']:
                 # Get ordered sequence of other_index_id values.
-                other_index_ids = aux_relation_repo.get_distinct_other_index_ids(
+                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
                     crosswalk_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
