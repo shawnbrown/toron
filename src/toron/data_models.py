@@ -842,8 +842,11 @@ class BaseQuantityRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Quantity]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Quantity:
+        """Get a record from the repository.
+
+        If no quantity matches the given *id*, a ``KeyError`` is raised.
+        """
 
     @abstractmethod
     def update(self, record: Quantity) -> None:

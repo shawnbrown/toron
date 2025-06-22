@@ -57,7 +57,8 @@ class TestQuantityRepository(unittest.TestCase):
 
         self.assertEqual(repository.get(1), Quantity(1, 1, 1, 131.0))
         self.assertEqual(repository.get(2), Quantity(2, 1, 2, 109.0))
-        self.assertIsNone(repository.get(3))
+        with self.assertRaisesRegex(KeyError, 'no quantity with id of 3'):
+            repository.get(3)
 
     def test_update(self):
         self.cursor.executescript("""

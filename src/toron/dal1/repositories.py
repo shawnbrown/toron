@@ -647,16 +647,16 @@ class QuantityRepository(BaseQuantityRepository):
         """
         self._cursor.execute(sql, (location_id, attribute_group_id, value))
 
-    def get(self, id: int) -> Optional[Quantity]:
+    def get(self, id: int) -> Quantity:
         """Get a record from the repository."""
         self._cursor.execute(
             'SELECT * FROM main.quantity WHERE quantity_id=?', (id,)
         )
         quantity = self._cursor.fetchone()
-        if quantity:
-            quantity_id, loc_id, attr_id, val = quantity
-            return Quantity(quantity_id, loc_id, attr_id, float(val))
-        return None
+        if quantity is None:
+            raise KeyError(f'no quantity with id of {id}')
+        quantity_id, loc_id, attr_id, val = quantity
+        return Quantity(quantity_id, loc_id, attr_id, float(val))
 
     def update(self, record: Quantity) -> None:
         """Update a record in the repository."""
