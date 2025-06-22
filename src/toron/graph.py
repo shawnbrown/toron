@@ -628,10 +628,9 @@ def get_weights(
 
             groups = []
             for name in weights:
-                group = group_repo.get_by_name(name)
-                if group:
-                    groups.append(group)
-                else:
+                try:
+                    groups.append(group_repo.get_by_name(name))
+                except KeyError:
                     all_groups = ', '.join(repr(x.name) for x in group_repo.get_all())
                     msg = f'weight {name!r} not found, available weights: {all_groups}'
                     raise ValueError(msg)

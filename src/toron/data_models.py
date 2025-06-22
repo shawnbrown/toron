@@ -551,8 +551,12 @@ class BaseWeightGroupRepository(ABC):
         """
 
     @abstractmethod
-    def get_by_name(self, name: str) -> Optional[WeightGroup]:
-        """Get record from the repository with matching name."""
+    def get_by_name(self, name: str) -> WeightGroup:
+        """Get record from the repository with matching name.
+
+        If no weight group matches the given *name*, a ``KeyError`` is
+        raised.
+        """
 
     @abstractmethod
     def get_all(self) -> List[WeightGroup]:

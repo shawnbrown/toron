@@ -363,15 +363,19 @@ class WeightGroupRepository(BaseWeightGroupRepository):
             raise KeyError(f'no weight group with id of {id}')
         return WeightGroup(*record)
 
-    def get_by_name(self, name: str) -> Optional[WeightGroup]:
-        """Get record from the repository with matching name."""
+    def get_by_name(self, name: str) -> WeightGroup:
+        """Get record from the repository with matching name.
+
+        If no weight group matches the given *name*, a ``KeyError`` is
+        raised.
+        """
         self._cursor.execute(
             'SELECT * FROM main.weight_group WHERE name=?', (name,)
         )
         record = self._cursor.fetchone()
-        if record:
-            return WeightGroup(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no weight group named {name!r}')
+        return WeightGroup(*record)
 
     def get_all(self) -> List[WeightGroup]:
         """Get all weight_group records sorted by name."""

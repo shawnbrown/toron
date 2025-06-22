@@ -767,7 +767,10 @@ class TopoNode(object):
 
     def get_weight_group(self, name: str) -> Optional[WeightGroup]:
         with self._managed_cursor() as cursor:
-            return self._dal.WeightGroupRepository(cursor).get_by_name(name)
+            try:
+                return self._dal.WeightGroupRepository(cursor).get_by_name(name)
+            except KeyError:
+                return None
 
     def set_default_weight_group(self, weight_group: WeightGroup) -> None:
         with self._managed_transaction() as cursor:
@@ -812,17 +815,17 @@ class TopoNode(object):
             )
 
             if make_default:
-                weight_group = weight_group_repo.get_by_name(name)
                 set_default_weight_group(
-                    check_type(weight_group, WeightGroup),
-                    self._dal.PropertyRepository(cursor)
+                    weight_group=weight_group_repo.get_by_name(name),
+                    property_repo=self._dal.PropertyRepository(cursor),
                 )
 
     def edit_weight_group(self, existing_name: str, **changes: Any) -> None:
         with self._managed_transaction() as cursor:
             group_repo = self._dal.WeightGroupRepository(cursor)
-            group = group_repo.get_by_name(existing_name)
-            if not group:
+            try:
+                group = group_repo.get_by_name(existing_name)
+            except KeyError:
                 applogger.warning(f'no weight group named {existing_name!r}')
                 return  # <- EXIT!
 
@@ -834,8 +837,9 @@ class TopoNode(object):
             group_repo = self._dal.WeightGroupRepository(cursor)
             property_repo = self._dal.PropertyRepository(cursor)
 
-            group = group_repo.get_by_name(existing_name)
-            if not group:
+            try:
+                group = group_repo.get_by_name(existing_name)
+            except KeyError:
                 applogger.warning(f'no weight group named {existing_name!r}')
                 return  # <- EXIT!
 
@@ -857,8 +861,9 @@ class TopoNode(object):
             group_repo = self._dal.WeightGroupRepository(cursor)
             weight_repo = self._dal.WeightRepository(aux_cursor)
 
-            weight_group = group_repo.get_by_name(weight_group_name)
-            if not weight_group:
+            try:
+                weight_group = group_repo.get_by_name(weight_group_name)
+            except KeyError:
                 applogger.warning(f'no weight group named {weight_group_name!r}')
                 return  # <- EXIT! (stops iteration)
 
@@ -924,13 +929,13 @@ class TopoNode(object):
             label_columns = col_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            group = group_repo.get_by_name(weight_group_name)
-            if group:
+            try:
+                group = group_repo.get_by_name(weight_group_name)
                 weight_group_id = group.id
-            else:
+            except KeyError:
                 applogger.info(f'creating new weight group: {weight_group_name!r}')
                 group_repo.add(weight_group_name)
-                group = cast(WeightGroup, group_repo.get_by_name(weight_group_name))
+                group = group_repo.get_by_name(weight_group_name)
                 weight_group_id = group.id
 
             value_column = value_column or weight_group_name
@@ -1046,9 +1051,6 @@ class TopoNode(object):
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             group = group_repo.get_by_name(weight_group_name)
-            if not group:
-                msg = f'no weight group named {weight_group_name!r}'
-                raise ValueError(msg)
             weight_group_id = group.id
 
             for row in data:
@@ -1145,9 +1147,6 @@ class TopoNode(object):
             weight_repo = self._dal.WeightRepository(cursor)
 
             group = group_repo.get_by_name(weight_group_name)
-            if not group:
-                msg = f'no weight group named {weight_group_name!r}'
-                raise ValueError(msg)
             weight_group_id = group.id
 
             if data:
