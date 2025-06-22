@@ -72,7 +72,8 @@ class TestRelationRepository(unittest.TestCase):
         self.assertEqual(repository.get(1), Relation(1, 9, 1, 1, None,    5.0))
         self.assertEqual(repository.get(2), Relation(2, 9, 2, 3, None,    3.0, 1.0))
         self.assertEqual(repository.get(3), Relation(3, 9, 3, 5, b'\x10', 7.0))
-        self.assertIsNone(repository.get(4))
+        with self.assertRaisesRegex(KeyError, 'no relation with id of 4'):
+            repository.get(4)
 
     def test_update(self):
         self.cursor.executescript("""

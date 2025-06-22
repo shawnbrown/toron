@@ -988,15 +988,18 @@ class RelationRepository(BaseRelationRepository):
             )
             self._cursor.execute(sql, parameters)
 
-    def get(self, id: int) -> Optional[Relation]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Relation:
+        """Get a record from the repository.
+
+        If no relation matches the given *id*, a ``KeyError`` is raised.
+        """
         self._cursor.execute(
             'SELECT * FROM main.relation WHERE relation_id=?', (id,)
         )
         record = self._cursor.fetchone()
-        if record:
-            return Relation(*record)
-        return None
+        if record is None:
+            raise KeyError(f'no relation with id of {id}')
+        return Relation(*record)
 
     if sqlite3.sqlite_version_info >= (3, 32, 0):
         def update(self, record: Relation) -> None:

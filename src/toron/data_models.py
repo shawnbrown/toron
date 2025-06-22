@@ -998,8 +998,11 @@ class BaseRelationRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Optional[Relation]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Relation:
+        """Get a record from the repository.
+
+        If no relation matches the given *id*, a ``KeyError`` is raised.
+        """
 
     @abstractmethod
     def update(self, record: Relation) -> None:
