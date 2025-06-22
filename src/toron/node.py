@@ -2028,11 +2028,11 @@ class TopoNode(object):
                 applogger.warning('removing domain columns from attributes')
                 attributes = [x for x in attributes if x not in domain_dict.keys()]
 
-            label_columns = location_repo.get_label_columns()
+            label_names = location_repo.get_label_names()
 
             verify_columns_set(
                 columns=columns,
-                required_columns=chain(label_columns, domain_dict.keys(), attributes, [value]),
+                required_columns=chain(label_names, domain_dict.keys(), attributes, [value]),
                 allow_extras=True,
             )
 
@@ -2045,7 +2045,7 @@ class TopoNode(object):
                     continue
 
                 # Parse row into separate label and attribute dictionaries.
-                labels_dict = {k: row_dict[k] for k in label_columns}
+                labels_dict = {k: row_dict[k] for k in label_names}
                 attr_dict = {k: row_dict[k] for k in attributes if row_dict[k]}
 
                 # Skip record if it has no attribute values.
@@ -2087,8 +2087,8 @@ class TopoNode(object):
             domain_cols = list(domain.keys())
             domain_vals = list(domain.values())
 
-            label_cols: List = list(location_repo.get_label_columns())
-            attr_cols: List = attribute_repo.get_all_attribute_names()
+            label_cols = location_repo.get_label_names()
+            attr_cols = attribute_repo.get_all_attribute_names()
 
             if header:
                 yield domain_cols + label_cols + attr_cols + ['quantity']
@@ -2119,8 +2119,8 @@ class TopoNode(object):
             domain_cols = list(domain.keys())
             domain_vals = list(domain.values())
 
-            label_cols: List = list(location_repo.get_label_columns())
-            attr_cols: List = attribute_repo.get_all_attribute_names()
+            label_cols = location_repo.get_label_names()
+            attr_cols = attribute_repo.get_all_attribute_names()
 
             if header:
                 yield domain_cols + label_cols + attr_cols + ['quantity']
@@ -2213,7 +2213,7 @@ class TopoNode(object):
             finest_granularity = structures[0].granularity
 
             # Get label column names (in table definition order).
-            label_columns = location_repo.get_label_columns()
+            label_names = location_repo.get_label_names()
 
             for structure in structures:
                 quantities = quantity_repo.find_by_multiple(
@@ -2226,7 +2226,7 @@ class TopoNode(object):
                     for location_id, group in grouped:
                         # Use location labels to make index search criteria.
                         location = location_repo.get(location_id)
-                        zipped = zip(label_columns, location.labels)
+                        zipped = zip(label_names, location.labels)
                         criteria = {k: v for k, v in zipped if v != ''}
 
                         # Since we're at the finest granularity, there can
@@ -2252,7 +2252,7 @@ class TopoNode(object):
                     for location_id, group in grouped:
                         # Use location labels to make index search criteria.
                         location = location_repo.get(location_id)
-                        zipped = zip(label_columns, location.labels)
+                        zipped = zip(label_names, location.labels)
                         criteria = {k: v for k, v in zipped if v != ''}
 
                         # Get all index records associated with the location.

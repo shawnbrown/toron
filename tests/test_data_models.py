@@ -430,10 +430,10 @@ class LocationRepositoryBaseTest(ABC):
         except Exception:
             self.fail("should ('foo', ''), empty strings must be allowed")
 
-    def test_get_label_columns(self):
+    def test_get_label_names(self):
         self.manager.add_columns('A', 'B', 'C')
-        result = self.repository.get_label_columns()
-        self.assertEqual(result, ('A', 'B', 'C'))
+        result = self.repository.get_label_names()
+        self.assertEqual(result, ['A', 'B', 'C'])
 
     def test_find_all(self):
         self.manager.add_columns('A', 'B')

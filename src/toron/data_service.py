@@ -164,9 +164,9 @@ def find_locations_without_index(
     The *location_repo* and *aux_index_repo* should use independent
     cursor instances.
     """
-    label_columns = location_repo.get_label_columns()
+    label_names = location_repo.get_label_names()
     for location in location_repo.find_all():
-        zipped = zip(label_columns, location.labels)
+        zipped = zip(label_names, location.labels)
         criteria = {k: v for k, v in zipped if v != ''}
         if not next(aux_index_repo.filter_index_ids_by_label(criteria), None):
             yield location

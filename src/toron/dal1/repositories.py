@@ -232,10 +232,10 @@ class LocationRepository(BaseLocationRepository):
             'DELETE FROM main.location WHERE _location_id=?', (id,)
         )
 
-    def get_label_columns(self) -> Tuple[str, ...]:
-        """Get a tuple of label column names."""
+    def get_label_names(self) -> List[str]:
+        """Get a list of label column names."""
         self._cursor.execute(f"PRAGMA main.table_info('location')")
-        columns = tuple(row[1] for row in self._cursor.fetchall())
+        columns = [row[1] for row in self._cursor.fetchall()]
         return columns[1:]  # Return columns (slicing-off _location_id).
 
     def find_all(self) -> Iterator[Location]:
@@ -259,9 +259,9 @@ class LocationRepository(BaseLocationRepository):
 
     def find_by_structure(self, structure: Structure) -> Iterable[Location]:
         """Find records that match the given structure's bit pattern."""
-        columns = self.get_label_columns()
+        label_names = self.get_label_names()
         func = lambda a, b: f"{format_identifier(a)} {'!=' if b else '='} ''"
-        conditions = list(func(a, b) for a, b in zip(columns, structure.bits))
+        conditions = (func(a, b) for a, b in zip(label_names, structure.bits))
         self._cursor.execute(
             f'SELECT * FROM main.location WHERE {" AND ".join(conditions)}'
         )

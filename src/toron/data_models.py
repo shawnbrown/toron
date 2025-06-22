@@ -394,8 +394,8 @@ class BaseLocationRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
-    def get_label_columns(self) -> Tuple[str, ...]:
-        """Return a tuple of label column names."""
+    def get_label_names(self) -> List[str]:
+        """Return a list of label column names."""
 
     @abstractmethod
     def find_all(self) -> Iterator[Location]:
@@ -423,11 +423,11 @@ class BaseLocationRepository(ABC):
         The given *labels* dictionary must include items for all label
         columns.
         """
-        columns = self.get_label_columns()
+        label_names = self.get_label_names()
 
-        if set(labels.keys()) != set(columns):
+        if set(labels.keys()) != set(label_names):
             given_cols = ', '.join(str(x) for x in labels.keys())
-            required_cols = ', '.join(str(x) for x in columns)
+            required_cols = ', '.join(str(x) for x in label_names)
             raise ValueError(
                 f'requires all label columns, got: {given_cols or "nothing"} '
                 f'(needs {required_cols})'
@@ -436,7 +436,7 @@ class BaseLocationRepository(ABC):
         location_record = next(self.find_by_label(labels), None)
 
         if not location_record:
-            self.add(*(labels[k] for k in columns))
+            self.add(*(labels[k] for k in label_names))
             location_record = next(self.find_by_label(labels))
 
         return location_record
