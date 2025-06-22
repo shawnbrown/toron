@@ -127,7 +127,8 @@ class TestCrosswalkRepository(unittest.TestCase):
             ),
         )
 
-        self.assertIsNone(repository.get(4))  # <- No crosswalk_id=4.
+        with self.assertRaisesRegex(KeyError, 'no crosswalk with id of 4'):
+            repository.get(4)
 
     def test_get_all(self):
         self.cursor.executescript("""

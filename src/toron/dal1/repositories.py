@@ -832,8 +832,12 @@ class CrosswalkRepository(BaseCrosswalkRepository):
             is_locally_complete=bool(j),
         )
 
-    def get(self, id: int) -> Optional[Crosswalk]:
-        """Get a record from the repository."""
+    def get(self, id: int) -> Crosswalk:
+        """Get a record from the repository.
+
+        If no crosswalk matches the given *id*, a ``KeyError`` is
+        raised.
+        """
         sql = """
             SELECT
                 crosswalk_id,
@@ -851,7 +855,9 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         """
         self._cursor.execute(sql, (id,))
         record = self._cursor.fetchone()
-        return self._make_crosswalk(record) if record else None
+        if record is None:
+            raise KeyError(f'no crosswalk with id of {id}')
+        return self._make_crosswalk(record)
 
     def get_all(self) -> List[Crosswalk]:
         """Get all records from the repository."""
