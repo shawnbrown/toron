@@ -871,7 +871,7 @@ class BaseQuantityRepository(ABC):
     def find_by_structure(
         self,
         structure: Structure,
-        attribute_id_filter: Optional[List[int]] = None,
+        attribute_id_filter: Optional[Sequence[int]] = None,
     ) -> Iterator[Quantity]:
         """Find all quantities matching given *structure* and optionally
         filter to a sequence of `attribute_id` values.

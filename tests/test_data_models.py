@@ -1171,6 +1171,26 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
             msg='should match attribute_group_id 1 and 3 where column B is defined',
         )
 
+    def test_attribute_id_generic_sequence(self):
+        """Any sequence should work for *attribute_id_filter*."""
+
+        # Helper class to test *attribute_id_filter* handling.
+        class GenericSequence(object):
+            def __init__(self, items): self._items = list(items)
+            def __getitem__(self, index): return self._items[index]
+            def __len__(self): return len(self._items)
+
+        result = self.repository.find_by_structure(
+            structure=Structure(1, None, bits=(0, 1)),  # <- Column B only.
+            attribute_id_filter=GenericSequence([1, 3]),  # <- Using generic sequence class.
+        )
+        self.assertEqual(
+            list(result),
+            [Quantity(id=4, location_id=4, attribute_group_id=1, value=2.0),
+             Quantity(id=9, location_id=4, attribute_group_id=3, value=7.0)],
+            msg='should work with any sequence and match where column B is defined',
+        )
+
     def test_no_matching_attribute_ids(self):
         result = self.repository.find_by_structure(
             structure=Structure(1, None, bits=(1, 1)),
