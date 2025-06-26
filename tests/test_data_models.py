@@ -1106,7 +1106,7 @@ class QuantityRepositoryBaseTest(ABC):
         )
 
 
-class QuantityRepositoryFindByMultipleBaseTest(ABC):
+class QuantityRepositoryFindByStructureBaseTest(ABC):
     @property
     @abstractmethod
     def dal(self):
@@ -1148,7 +1148,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
         self.repository.add(location_id=4, attribute_group_id=3, value=7.0)   # Add quantity_id 9
 
     def test_attribute_id_single(self):
-        result = self.repository.find_by_multiple(
+        result = self.repository.find_by_structure(
             structure=Structure(1, None, bits=(1, 1)),
             attribute_id_filter=[1],
         )
@@ -1160,7 +1160,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
         )
 
     def test_attribute_id_multiple(self):
-        result = self.repository.find_by_multiple(
+        result = self.repository.find_by_structure(
             structure=Structure(1, None, bits=(0, 1)),  # <- Column B only.
             attribute_id_filter=[1, 3],
         )
@@ -1172,7 +1172,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
         )
 
     def test_no_matching_attribute_ids(self):
-        result = self.repository.find_by_multiple(
+        result = self.repository.find_by_structure(
             structure=Structure(1, None, bits=(1, 1)),
             attribute_id_filter=[999],
         )
@@ -1183,7 +1183,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
         )
 
     def test_empty_attribute_id_filter(self):
-        result = self.repository.find_by_multiple(
+        result = self.repository.find_by_structure(
             structure=Structure(1, None, bits=(1, 1)),
             attribute_id_filter=[],  # <- Empty container.
         )
@@ -1194,7 +1194,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
         )
 
     def test_structure_only(self):
-        result = self.repository.find_by_multiple(
+        result = self.repository.find_by_structure(
             structure=Structure(1, None, bits=(1, 1)),  # <- A and B values.
             attribute_id_filter=None,
         )
@@ -1208,7 +1208,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
             msg='should match records that have "A" and "B" location values',
         )
 
-        result = self.repository.find_by_multiple(
+        result = self.repository.find_by_structure(
             structure=Structure(1, None, bits=(1, 0)),  # <- A values only.
             attribute_id_filter=None,
         )
@@ -1219,7 +1219,7 @@ class QuantityRepositoryFindByMultipleBaseTest(ABC):
             msg='should match records that have only "A" location values',
         )
 
-        result = self.repository.find_by_multiple(
+        result = self.repository.find_by_structure(
             structure=Structure(1, None, bits=(0, 1)),  # <- B values only.
             attribute_id_filter=None,
         )
@@ -1807,7 +1807,7 @@ class AttributeGroupRepositoryDAL1(AttributeGroupRepositoryBaseTest, unittest.Te
 class QuantityRepositoryDAL1(QuantityRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
-class QuantityRepositoryFindByMultipleBaseTestDAL1(QuantityRepositoryFindByMultipleBaseTest, unittest.TestCase):
+class QuantityRepositoryFindByStructureBaseTest(QuantityRepositoryFindByStructureBaseTest, unittest.TestCase):
     dal = dal1
 
 class RelationRepositoryDAL1(RelationRepositoryBaseTest, unittest.TestCase):

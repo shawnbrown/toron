@@ -868,18 +868,18 @@ class BaseQuantityRepository(ABC):
         """Find records with matching location and attribute-group ids."""
 
     @abstractmethod
-    def find_by_multiple(
+    def find_by_structure(
         self,
         structure: Structure,
         attribute_id_filter: Optional[List[int]] = None,
     ) -> Iterator[Quantity]:
-        """Find all quantities matching given structure and ids and
-        return records ordered by `location_id`.
+        """Find all quantities matching given *structure* and optionally
+        filter to a sequence of `attribute_id` values.
 
         If *attribute_id_filter* is given, only those records with
         matching attribute id values will be returned. If it's `None`,
-        no records wil lbe filtered. But if an empty list is provided,
-        then no records will be returned at all.
+        no records will be filtered. But if an empty sequence is
+        provided, then no records will be returned at all.
 
         .. note::
             If it's possible to do so efficiently, the returned

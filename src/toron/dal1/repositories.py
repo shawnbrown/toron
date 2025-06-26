@@ -711,18 +711,19 @@ class QuantityRepository(BaseQuantityRepository):
                 quantity_id, loc_id, attr_id, val = quantity
                 yield Quantity(quantity_id, loc_id, attr_id, float(val))
 
-    def find_by_multiple(
+    def find_by_structure(
         self,
         structure: Structure,
         attribute_id_filter: Optional[List[int]] = None,
     ) -> Iterator[Quantity]:
-        """Find all quantities matching given structure and ids and
-        return records ordered by `location_id`.
+        """Find all quantities matching given *structure* and optionally
+        filter to a sequence of `attribute_id` values. Quantity records
+        are returned in order of their `location_id` attributes.
 
         If *attribute_id_filter* is given, only those records with
         matching attribute id values will be returned. If it's `None`,
-        no records wil lbe filtered. But if an empty list is provided,
-        then no records will be returned at all.
+        no records will be filtered. But if an empty sequence is
+        provided, then no records will be returned at all.
         """
         # No results if filter container is given but empty.
         if attribute_id_filter == []:

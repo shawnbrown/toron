@@ -2213,7 +2213,7 @@ class TopoNode(object):
             label_names = location_repo.get_label_names()
 
             for structure in structures:
-                quantities = quantity_repo.find_by_multiple(
+                quantities = quantity_repo.find_by_structure(
                     structure=structure,
                     attribute_id_filter=attribute_id_filter,
                 )
