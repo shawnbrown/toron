@@ -855,13 +855,17 @@ class BaseQuantityRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
-    def find_by_ids(
+    def find(
         self,
         *,
         location_id: Optional[int] = None,
         attribute_group_id: Optional[int] = None,
     ) -> Iterator[Quantity]:
-        """Find records with matching location and attribute-group ids."""
+        """Find records matching given id values.
+
+        If no id values are given, the returned iterator should contain
+        no items.
+        """
 
     @abstractmethod
     def find_by_structure(

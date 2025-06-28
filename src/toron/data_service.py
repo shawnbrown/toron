@@ -178,7 +178,7 @@ def find_attribute_groups_without_quantity(
 ) -> Iterator[AttributeGroup]:
     """Find AttributeGroup records that have no matching Quantity."""
     for attr_group in attrib_repo.find_all():
-        quantities = alt_quantity_repo.find_by_ids(attribute_group_id=attr_group.id)
+        quantities = alt_quantity_repo.find(attribute_group_id=attr_group.id)
         if not next(quantities, None):
             yield attr_group
 
@@ -189,7 +189,7 @@ def get_quantity_value_sum(
     quantity_repo: BaseQuantityRepository,
 ) -> Optional[float]:
     """Return sum of quantities matching location_id and attribute_group_id."""
-    quantities = quantity_repo.find_by_ids(
+    quantities = quantity_repo.find(
         location_id=location_id,
         attribute_group_id=attribute_group_id,
     )

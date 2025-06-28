@@ -677,13 +677,17 @@ class QuantityRepository(BaseQuantityRepository):
             'DELETE FROM main.quantity WHERE quantity_id=?', (id,)
         )
 
-    def find_by_ids(
+    def find(
         self,
         *,
         location_id: Optional[int] = None,
         attribute_group_id: Optional[int] = None,
     ) -> Iterator[Quantity]:
-        """Find records with matching location and attribute-group ids."""
+        """Find records matching given id values.
+
+        If no id values are given, the returned iterator should contain
+        no items.
+        """
         criteria = []
         if location_id is not None:
             criteria.append('_location_id=:location_id')

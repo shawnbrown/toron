@@ -3911,7 +3911,7 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
             quantity_repo = node._dal.QuantityRepository(cur2)
             quantities = []
             for location in location_repo.find_all():
-                quantity = quantity_repo.find_by_ids(location_id=location.id)
+                quantity = quantity_repo.find(location_id=location.id)
                 quantities.extend(quantity)
             return sorted(quantities, key=lambda x: x.id)
 
