@@ -2093,7 +2093,7 @@ class TopoNode(object):
                 yield domain_cols + label_cols + attr_cols + ['quantity']
 
             for location in location_repo.find_all():
-                quantities = quantity_repo.find_by_location_id(location.id)
+                quantities = quantity_repo.find_by_ids(location_id=location.id)
                 for quantity in quantities:
                     attr_group = attribute_repo.get(quantity.attribute_group_id)
                     attr_dict = attr_group.attributes
@@ -2129,7 +2129,7 @@ class TopoNode(object):
             )
 
             for location in locations:
-                quantities = quantity_repo.find_by_location_id(location.id)
+                quantities = quantity_repo.find_by_ids(location_id=location.id)
                 for quantity in quantities:
                     attr_group = attribute_repo.get(quantity.attribute_group_id)
                     attr_dict = attr_group.attributes
@@ -2152,7 +2152,7 @@ class TopoNode(object):
                     aux_index_repo=index_repo,
                 )
                 for location in locations:
-                    quantities = quantity_repo.find_by_location_id(location.id)
+                    quantities = quantity_repo.find_by_ids(location_id=location.id)
                     quantity_ids = array.array(
                         'q', (quantity.id for quantity in quantities)
                     )
