@@ -1316,33 +1316,6 @@ class RelationRepositoryBaseTest(ABC):
         with self.assertRaises(Exception):
             self.repository.add(1, 4, 1, None, 4242, 'foo')
 
-    def test_find_by_index_id(self):
-        results = self.repository.find_by_ids(index_id=3)
-        expected = [
-            Relation(
-                id=4,
-                crosswalk_id=1,
-                other_index_id=3,
-                index_id=3,
-                mapping_level=None,
-                value=100000.0,
-                proportion=1.0,
-            ),
-            Relation(
-                id=9,
-                crosswalk_id=2,
-                other_index_id=3,
-                index_id=3,
-                mapping_level=None,
-                value=576.0,
-                proportion=0.5625,
-            )
-        ]
-        self.assertEqual(list(results), expected)
-
-        results = self.repository.find_by_ids(index_id=93)  # No index_id 93
-        self.assertEqual(list(results), [], msg='should return empty iterator')
-
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
         results = self.get_relations_helper()
@@ -1439,9 +1412,9 @@ class RelationRepositoryBaseTest(ABC):
         results = self.repository.find_distinct_other_index_ids(1, ordered=True)
         self.assertEqual(list(results), [1, 2, 3])
 
-    def test_find_by_ids(self):
+    def test_find(self):
         self.assertEqual(
-            list(self.repository.find_by_ids(crosswalk_id=1)),
+            list(self.repository.find(crosswalk_id=1)),
             [Relation(1, 1, 1, 1, None,   131250.0, 1.0),
              Relation(2, 1, 2, 1, b'\x40', 40960.0, 0.625),
              Relation(3, 1, 2, 2, b'\x40', 24576.0, 0.375),
@@ -1450,7 +1423,7 @@ class RelationRepositoryBaseTest(ABC):
         )
 
         self.assertEqual(
-            list(self.repository.find_by_ids(other_index_id=2)),
+            list(self.repository.find(other_index_id=2)),
             [Relation(2, 1, 2, 1, b'\x40', 40960.00, 0.625),
              Relation(3, 1, 2, 2, b'\x40', 24576.00, 0.375),
              Relation(6, 2, 2, 2, None,      416.25, 1.0)],
@@ -1458,7 +1431,7 @@ class RelationRepositoryBaseTest(ABC):
         )
 
         self.assertEqual(
-            list(self.repository.find_by_ids(index_id=1)),
+            list(self.repository.find(index_id=1)),
             [Relation(1, 1, 1, 1, None,   131250.00, 1.0),
              Relation(2, 1, 2, 1, b'\x40', 40960.00, 0.625),
              Relation(5, 2, 1, 1, None,      583.75, 1.0),
@@ -1467,27 +1440,33 @@ class RelationRepositoryBaseTest(ABC):
         )
 
         self.assertEqual(
-            list(self.repository.find_by_ids(other_index_id=1, index_id=1)),
+            list(self.repository.find(other_index_id=1, index_id=1)),
             [Relation(1, 1, 1, 1, None, 131250.00, 1.0),
              Relation(5, 2, 1, 1, None,    583.75, 1.0)],
             msg='matches other_index_id 1 and index_id 1 (includes records from crosswalks 1 and 2)',
         )
 
         self.assertEqual(
-            list(self.repository.find_by_ids(crosswalk_id=1, other_index_id=2)),
+            list(self.repository.find(crosswalk_id=1, other_index_id=2)),
             [Relation(2, 1, 2, 1, b'\x40', 40960.0, 0.625),
              Relation(3, 1, 2, 2, b'\x40', 24576.0, 0.375)],
             msg='matches crosswalk_id 1 and other_index_id 2',
         )
 
         self.assertEqual(
-            list(self.repository.find_by_ids(crosswalk_id=2, other_index_id=2, index_id=2)),
+            list(self.repository.find(crosswalk_id=2, other_index_id=2, index_id=2)),
             [Relation(6, 2, 2, 2, None, 416.25, 1.0)],
             msg='matches crosswalk_id 2 and other_index_id 2 and index_id 2',
         )
 
         self.assertEqual(
-            list(self.repository.find_by_ids()),
+            list(self.repository.find(other_index_id=1, index_id=3)),
+            [],
+            msg='no record has other_index_id=1 and index_id=3, iterator should be empty',
+        )
+
+        self.assertEqual(
+            list(self.repository.find()),
             [],
             msg='when no ids given, return empty iterator',
         )
@@ -1551,7 +1530,7 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.refresh_proportions(crosswalk_id=3, other_index_id=3)
 
         self.assertEqual(
-            list(self.repository.find_by_ids(crosswalk_id=3)),
+            list(self.repository.find(crosswalk_id=3)),
             [Relation(10, 3, 0, 0, None, 100.0, 1.0),  # <- 0 to 0 (100%, undefined to undefined)
              Relation(11, 3, 0, 1, None, 100.0, 0.0),  # <- 0 to 1 (0%)
              Relation(19, 3, 0, 3, None, 100.0, 0.0),  # <- 0 to 3 (0%)

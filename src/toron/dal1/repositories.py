@@ -1075,14 +1075,18 @@ class RelationRepository(BaseRelationRepository):
         for row in self._cursor:
             yield row[0]
 
-    def find_by_ids(
+    def find(
         self,
         *,
         crosswalk_id: Optional[int] = None,
         other_index_id: Optional[int] = None,
         index_id: Optional[int] = None,
     ) -> Iterator[Relation]:
-        """Find all records with matching combination of id values."""
+        """Find records matching given id values.
+
+        If no id values are given, the returned iterator should contain
+        no items.
+        """
         criteria = []
         if crosswalk_id is not None:
             criteria.append('crosswalk_id=:crosswalk_id')

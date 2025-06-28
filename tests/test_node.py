@@ -2774,7 +2774,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             relation_repo = self.node._dal.RelationRepository(cursor)
 
-            func = lambda x: relation_repo.find_by_ids(crosswalk_id=x)
+            func = lambda x: relation_repo.find(crosswalk_id=x)
             relation_iters = (func(x.id) for x in crosswalk_repo.get_all())
             return list(chain.from_iterable(relation_iters))
 
@@ -3810,7 +3810,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
             relation_repo = self.node._dal.RelationRepository(cursor)
             crosswalks = crosswalk_repo.get_all()
-            get_rels = lambda id: relation_repo.find_by_ids(crosswalk_id=id)
+            get_rels = lambda id: relation_repo.find(crosswalk_id=id)
             rels = (get_rels(crosswalk.id) for crosswalk in crosswalks)
             return list(chain.from_iterable(rels))
 

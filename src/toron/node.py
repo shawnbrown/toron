@@ -1401,7 +1401,7 @@ class TopoNode(object):
 
             for index in index_repo.filter_by_label(criteria):
                 index_id = index.id
-                relations = self._dal.RelationRepository(aux_cursor).find_by_ids(
+                relations = self._dal.RelationRepository(aux_cursor).find(
                     crosswalk_id=crosswalk.id,
                     index_id=index_id,
                 )
@@ -1500,9 +1500,9 @@ class TopoNode(object):
                 counter['inserted'] += 1
 
             # If missing, add the "undefined" relation (0 -> 0).
-            if next(relation_repo.find_by_ids(crosswalk_id=crosswalk_id,
-                                              other_index_id=0,
-                                              index_id=0), None) is None:
+            if next(relation_repo.find(crosswalk_id=crosswalk_id,
+                                       other_index_id=0,
+                                       index_id=0), None) is None:
                 relation_repo.add(
                     crosswalk_id=crosswalk_id,
                     other_index_id=0,  # <- Undefined record.
@@ -1700,7 +1700,7 @@ class TopoNode(object):
                     continue  # <- Skip to next item.
 
                 # Find matching relation record (can only match one record).
-                relation_match = relation_repo.find_by_ids(
+                relation_match = relation_repo.find(
                     crosswalk_id=crosswalk_id,
                     other_index_id=other_index_id,
                     index_id=index_id,
@@ -1837,7 +1837,7 @@ class TopoNode(object):
                         continue  # <- Skip to next item.
 
                     # Find matching relation record (can only match one record).
-                    relation_match = relation_repo.find_by_ids(
+                    relation_match = relation_repo.find(
                         crosswalk_id=crosswalk_id,
                         other_index_id=other_index_id,
                         index_id=index_id,
@@ -1867,8 +1867,8 @@ class TopoNode(object):
 
                 for index in index_repo.filter_by_label(criteria):
                     # Eagerly fetch relations, using `list()`, so the cursor
-                    # is free to `delete()` items in the following loop.
-                    relations = list(aux_relation_repo.find_by_ids(
+                    # is free to `delete()` items in the nested loop.
+                    relations = list(aux_relation_repo.find(
                         crosswalk_id=crosswalk_id, index_id=index.id
                     ))
                     for rel in relations:
@@ -1968,8 +1968,8 @@ class TopoNode(object):
                 crosswalk_id = crosswalk.id
                 for index in index_records:
                     # Eagerly fetch relations, using `list()`, so the cursor
-                    # is free to `update()` items in the following loop.
-                    relations = list(relation_repo.find_by_ids(
+                    # is free to `update()` items in the nested loop.
+                    relations = list(relation_repo.find(
                         crosswalk_id=crosswalk_id, index_id=index.id
                     ))
                     for rel in relations:
@@ -1989,7 +1989,7 @@ class TopoNode(object):
                 relation_repo = self._dal.RelationRepository(cursor)
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
 
-                for rel in relation_repo.find_by_ids(crosswalk_id=crosswalk.id):
+                for rel in relation_repo.find(crosswalk_id=crosswalk.id):
                     if rel.other_index_id == 0 and rel.index_id == 0:
                         continue  # The undefined-to-undefined level should stay `None`.
 

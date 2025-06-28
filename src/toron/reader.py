@@ -321,7 +321,7 @@ class NodeReader(object):
                     JOIN main.attr_data USING (attr_data_id)
                 """)
                 for index_id, attr_data_id, quant_value, crosswalk_id in cur1:
-                        rels = relation_repo.find_by_ids(
+                        rels = relation_repo.find(
                             crosswalk_id=crosswalk_id,
                             other_index_id=index_id,
                         )

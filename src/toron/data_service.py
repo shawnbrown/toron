@@ -125,7 +125,7 @@ def delete_index_record(
         weight_repo.delete(weight.id)
 
     # Remove associated relation records.
-    relations = relation_repo.find_by_ids(index_id=index_id)
+    relations = relation_repo.find(index_id=index_id)
     fully_specified_level = bytes(BitFlags([1] * len(index_repo.get_label_names())))
     other_index_ids = set()
     for relation in list(relations):

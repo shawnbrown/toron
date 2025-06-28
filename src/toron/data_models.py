@@ -1023,14 +1023,18 @@ class BaseRelationRepository(ABC):
         """
 
     @abstractmethod
-    def find_by_ids(
+    def find(
         self,
         *,
         crosswalk_id: Optional[int] = None,
         other_index_id: Optional[int] = None,
         index_id: Optional[int] = None,
     ) -> Iterator[Relation]:
-        """Find all records with matching combination of id values."""
+        """Find records matching given id values.
+
+        If no id values are given, the returned iterator should contain
+        no items.
+        """
 
     @abstractmethod
     def get_index_id_cardinality(
@@ -1053,7 +1057,7 @@ class BaseRelationRepository(ABC):
         relation_ids = set()
         relation_sums: defaultdict = defaultdict(lambda: (0.0, 0.0))
         for index_id in index_ids:
-            for rel in self.find_by_ids(index_id=index_id):
+            for rel in self.find(index_id=index_id):
                 relation_ids.add(rel.id)
                 key = (rel.crosswalk_id, rel.other_index_id, rel.mapping_level)
                 v, p = relation_sums[key]  # Unpack value and proportion.
@@ -1083,7 +1087,7 @@ class BaseRelationRepository(ABC):
         """Refresh proportions for records with matching crosswalk_id
         and other_index_id.
         """
-        relations = list(self.find_by_ids(
+        relations = list(self.find(
             crosswalk_id=crosswalk_id, other_index_id=other_index_id
         ))
 

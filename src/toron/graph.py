@@ -396,7 +396,7 @@ def _get_mapping_elements(
             raise Exception(msg)
 
         # Yield matched records.
-        relations = trg_relation_repo.find_by_ids(crosswalk_id=crosswalk.id)
+        relations = trg_relation_repo.find(crosswalk_id=crosswalk.id)
         for rel in relations:
             yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
 
@@ -417,7 +417,7 @@ def _get_mapping_elements(
 
                 # Check that each source index is matched to the target.
                 for other_index_id in src_index_repo.find_all_index_ids():
-                    matches = trg_relation_repo.find_by_ids(
+                    matches = trg_relation_repo.find(
                         crosswalk_id=crosswalk.id,
                         other_index_id=other_index_id,
                     )
@@ -710,7 +710,7 @@ def _translate(
             # Get relations for matching crosswalk and other_index_id
             # (assign as a tuple to consume the iterator and free-up
             # the underlying cursor obj for the following yield-loop).
-            relations = tuple(relation_repo.find_by_ids(
+            relations = tuple(relation_repo.find(
                 crosswalk_id=crosswalk_id,
                 other_index_id=index.id,
             ))
