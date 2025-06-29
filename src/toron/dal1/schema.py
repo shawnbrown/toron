@@ -220,8 +220,8 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     """)
 
     # Set magic number to indicate data uses Toron DAL1.
-    cur.execute(f'PRAGMA main.application_id = {int.from_bytes(TORON_MAGIC_NUMBER, "big")}')
-    cur.execute(f'PRAGMA main.user_version = {int.from_bytes(b"DAL1", "big")}')
+    cur.execute(f"PRAGMA main.application_id = {int.from_bytes(TORON_MAGIC_NUMBER, 'big')}")
+    cur.execute(f"PRAGMA main.user_version = {int.from_bytes(b'DAL1', 'big')}")
 
     cur.execute(
         'INSERT INTO main.property (key, value) VALUES (?, ?)',
@@ -264,7 +264,7 @@ def column_def_location(column: str) -> str:
 def column_def_structure(column: str) -> str:
     """Get SQL column definition for 'structure' label column."""
     column = format_identifier(column)
-    return f"{column} INTEGER NOT NULL CHECK ({column} IN (0, 1)) DEFAULT 0"
+    return f'{column} INTEGER NOT NULL CHECK ({column} IN (0, 1)) DEFAULT 0'
 
 
 def create_schema_constraints(cur: sqlite3.Cursor) -> None:
