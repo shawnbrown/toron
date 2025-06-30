@@ -166,8 +166,7 @@ def find_locations_without_index(
     """
     label_names = location_repo.get_label_names()
     for location in location_repo.find_all():
-        zipped = zip(label_names, location.labels)
-        criteria = {k: v for k, v in zipped if v != ''}
+        criteria = {k: v for k, v in zip(label_names, location.labels) if v}
         if not next(aux_index_repo.filter_index_ids_by_label(criteria), None):
             yield location
 
