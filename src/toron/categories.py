@@ -31,7 +31,9 @@ def make_structure(discrete_categories: List[Set[str]]) -> List[Set[str]]:
         [set(), {'A', 'B'}, {'B', 'C'}, {'A', 'B', 'C'}]
 
     The result above is not a topology because it's missing the set
-    {'B'}--the intersection of {'A', 'B'} and {'B', 'C'}.
+    {'B'}--the intersection of {'A', 'B'} and {'B', 'C'}. If {'B'}
+    does represent a discrete category, it should be provided in the
+    list of input sets.
 
     .. admonition:: Why Not Use Topological Spaces?
 
