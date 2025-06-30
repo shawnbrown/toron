@@ -13,8 +13,7 @@ from .colorconfig import stderr_styles
 
 
 if sys.version_info < (3, 8):
-    # Prior to Python 3.8, logging.Formatter did not support the *validate* or
-    # *defaults* arguments.
+    # Prior to 3.8, `Formatter` did not support *validate* or *defaults* args.
     class _Formatter(logging.Formatter):
         def __init__(
             self,
@@ -26,11 +25,9 @@ if sys.version_info < (3, 8):
             defaults: Optional[Dict[str, Any]] = None,
         ) -> None:
             """Initialize, discarding *validate* and *defaults* arguments."""
-            super().__init__(fmt, datefmt, style)
-
+            super().__init__(fmt, datefmt, style)  # <- no validate, no defaults
 elif sys.version_info < (3, 10):
-    # Prior to Python 3.10, logging.Formatter did not support the *defaults*
-    # argument.
+    # Prior to 3.10, `Formatter` did not support *defaults* argument.
     class _Formatter(logging.Formatter):
         def __init__(
             self,
@@ -42,11 +39,10 @@ elif sys.version_info < (3, 10):
             defaults: Optional[Dict[str, Any]] = None,
         ) -> None:
             """Initialize, discarding *defaults* argument."""
-            super().__init__(fmt, datefmt, style, validate)
-
+            super().__init__(fmt, datefmt, style, validate)  # <- no defaults
 else:
     # For Python 3.10 and newer.
-    _Formatter = logging.Formatter
+    _Formatter = logging.Formatter  # <- accepts validate and defaults
 
 
 class ColorFormatter(_Formatter):
