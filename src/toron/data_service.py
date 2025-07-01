@@ -205,6 +205,42 @@ def find_nonmatching_locations(
                 yield location
 
 
+def count_nonmatching_locations(
+    location_repo: BaseLocationRepository,
+    structure_repo: BaseStructureRepository,
+    aux_index_repo: BaseIndexRepository,
+) -> Dict[str, int]:
+    """Count the number of locations without a structure or index match.
+
+    Returns a dictionary of counts::
+
+        >>> count_nonmatching_locations(loc_repo, struct_repo, idx_repo)
+        {'structure_and_index': 4, 'structure': 0, 'index': 3}
+
+    The *location_repo* and *structure_repo* can use the same cursor
+    but *aux_index_repo* should use an independent cursor instance.
+    """
+    all_structure_bits = {BitFlags(x.bits) for x in structure_repo.get_all()}
+    label_names = location_repo.get_label_names()
+
+    counter: Counter = Counter(structure_and_index=0, structure=0, index=0)
+
+    for location in location_repo.find_all():
+        nonmatching_structure = BitFlags(location.labels) not in all_structure_bits
+
+        criteria = {k: v for k, v in zip(label_names, location.labels) if v}
+        nonmatching_index = not next(aux_index_repo.filter_index_ids_by_label(criteria), None)
+
+        if nonmatching_structure and nonmatching_index:
+            counter['structure_and_index'] += 1
+        elif nonmatching_structure:
+            counter['structure'] += 1
+        elif nonmatching_index:
+            counter['index'] += 1
+
+    return dict(counter)
+
+
 def find_attribute_groups_without_quantity(
     attrib_repo: BaseAttributeGroupRepository,
     alt_quantity_repo: BaseQuantityRepository,

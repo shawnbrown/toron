@@ -20,6 +20,7 @@ from toron.data_service import (
     find_locations_without_index,
     find_locations_without_structure,
     find_nonmatching_locations,
+    count_nonmatching_locations,
     find_attribute_groups_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
@@ -232,7 +233,7 @@ class TestFindLocationFunctions(unittest.TestCase):
             msg='should return all locations without a matching structure',
         )
 
-    def test_find_nonmatching_locations(self):
+    def test_find_and_count_nonmatching_locations(self):
         self.manager.add_columns('A', 'B')
         self.index_repo.add('foo', 'qux')
         self.index_repo.add('bar', 'quux')
@@ -248,6 +249,9 @@ class TestFindLocationFunctions(unittest.TestCase):
             msg='when all structures and indexes match, iterator should be empty'
         )
 
+        counts = count_nonmatching_locations(self.location_repo, self.structure_repo, self.index_repo)
+        self.assertEqual(counts, {'structure_and_index': 0, 'structure': 0, 'index': 0})
+
         self.location_repo.add('', 'baz')     # <- No structure or index match.
         self.location_repo.add('', 'qux')     # <- No structure match.
         self.location_repo.add('bar', 'baz')  # <- No index match.
@@ -259,6 +263,9 @@ class TestFindLocationFunctions(unittest.TestCase):
              Location(id=6, labels=('bar', 'baz'))],
             msg='should return all locations without matching structure or index',
         )
+
+        counts = count_nonmatching_locations(self.location_repo, self.structure_repo, self.index_repo)
+        self.assertEqual(counts, {'structure_and_index': 1, 'structure': 1, 'index': 1})
 
 
 class TestFindAttributeGroupsWithoutQuantity(unittest.TestCase):
