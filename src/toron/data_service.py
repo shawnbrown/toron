@@ -333,7 +333,7 @@ def make_get_crosswalk_id_func(
     other_index_hash: str,
 ) -> Callable[[Dict[str, str]], int]:
     """Build a ``get_crosswalk_id()`` function that returns
-    ``crosswalk_id``values matched by the selector with the
+    'crosswalk_id' values matched by the selector with the
     greatest unique specificity. When no match is found or
     when no unique match is found, the function will return
     the default ``crosswalk_id``.
