@@ -18,6 +18,7 @@ from toron.data_service import (
     validate_new_index_columns,
     delete_index_record,
     find_locations_without_index,
+    find_locations_without_structure,
     find_attribute_groups_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
@@ -183,6 +184,7 @@ class TestFindLocationFunctions(unittest.TestCase):
 
         self.manager = dal.ColumnManager(cursor1)
         self.location_repo = dal.LocationRepository(cursor1)
+        self.structure_repo = dal.StructureRepository(cursor1)
         self.index_repo = dal.IndexRepository(cursor2)
 
     def test_find_locations_without_index(self):
@@ -205,6 +207,28 @@ class TestFindLocationFunctions(unittest.TestCase):
             list(locations),
             [Location(id=4, labels=('BAZ', 'CORGE'))],
             msg='should return all locations without a matching index',
+        )
+
+    def test_find_locations_without_structure(self):
+        self.manager.add_columns('A', 'B')
+        self.location_repo.add('foo', 'qux')
+        self.location_repo.add('bar', '')
+        self.location_repo.add('bar', 'quux')
+        self.structure_repo.add(None, 1, 1)
+        self.structure_repo.add(None, 1, 0)
+
+        locations = find_locations_without_structure(self.location_repo, self.structure_repo)
+        self.assertIsNone(
+            next(locations, None),
+            msg='when all structures match, iterator should be empty'
+        )
+
+        self.location_repo.add('', 'qux')  # <- Add location without structure match.
+        locations = find_locations_without_structure(self.location_repo, self.structure_repo)
+        self.assertEqual(
+            list(locations),
+            [Location(id=4, labels=('', 'qux'))],
+            msg='should return all locations without a matching structure',
         )
 
 

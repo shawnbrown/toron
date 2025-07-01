@@ -171,6 +171,17 @@ def find_locations_without_index(
             yield location
 
 
+def find_locations_without_structure(
+    location_repo: BaseLocationRepository,
+    structure_repo: BaseStructureRepository,
+) -> Iterator[Location]:
+    """Find locations with no matching structure records."""
+    all_structure_bits = {BitFlags(x.bits) for x in structure_repo.get_all()}
+    for location in location_repo.find_all():
+        if BitFlags(location.labels) not in all_structure_bits:
+            yield location
+
+
 def find_attribute_groups_without_quantity(
     attrib_repo: BaseAttributeGroupRepository,
     alt_quantity_repo: BaseQuantityRepository,
