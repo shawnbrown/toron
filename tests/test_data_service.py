@@ -171,6 +171,7 @@ class TestDeleteIndexRecord(unittest.TestCase):
 
 
 class TestFindLocationFunctions(unittest.TestCase):
+    """Tests for functions to find nonmatching location objects."""
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -234,6 +235,9 @@ class TestFindLocationFunctions(unittest.TestCase):
         )
 
     def test_find_and_count_nonmatching_locations(self):
+        """Check behavior of ``find_nonmatching_locations()`` and
+        ``count_nonmatching_locations()`` functions.
+        """
         self.manager.add_columns('A', 'B')
         self.index_repo.add('foo', 'qux')
         self.index_repo.add('bar', 'quux')
