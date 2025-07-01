@@ -167,7 +167,7 @@ class TestDeleteIndexRecord(unittest.TestCase):
         self.assertEqual(self.index_repo.get(1), Index(1, 'foo', 'qux'), msg=msg)
 
 
-class TestFindLocationsWithoutIndex(unittest.TestCase):
+class TestFindLocationFunctions(unittest.TestCase):
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -185,31 +185,27 @@ class TestFindLocationsWithoutIndex(unittest.TestCase):
         self.location_repo = dal.LocationRepository(cursor1)
         self.index_repo = dal.IndexRepository(cursor2)
 
-    def test_missing_indexes(self):
+    def test_find_locations_without_index(self):
         self.manager.add_columns('A', 'B')
         self.index_repo.add('foo', 'qux')
         self.index_repo.add('bar', 'quux')
         self.location_repo.add('foo', 'qux')
+        self.location_repo.add('bar', '')
         self.location_repo.add('bar', 'quux')
-        self.location_repo.add('BAZ', 'CORGE')  # <- No matching index.
 
         locations = find_locations_without_index(self.location_repo, self.index_repo)
-
-        self.assertEqual(
-            list(locations),
-            [Location(id=3, labels=('BAZ', 'CORGE'))],
+        self.assertIsNone(
+            next(locations, None),
+            msg='when all indexes match, iterator should be empty'
         )
 
-    def test_all_locations_have_indexes(self):
-        self.manager.add_columns('A', 'B')
-        self.index_repo.add('foo', 'qux')
-        self.index_repo.add('bar', 'quux')
-        self.location_repo.add('foo', 'qux')
-        self.location_repo.add('bar', 'quux')
-
+        self.location_repo.add('BAZ', 'CORGE')  # <- Add location without index match.
         locations = find_locations_without_index(self.location_repo, self.index_repo)
-
-        self.assertEqual(list(locations), [])
+        self.assertEqual(
+            list(locations),
+            [Location(id=4, labels=('BAZ', 'CORGE'))],
+            msg='should return all locations without a matching index',
+        )
 
 
 class TestFindAttributeGroupsWithoutQuantity(unittest.TestCase):
