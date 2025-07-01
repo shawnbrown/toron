@@ -19,6 +19,7 @@ from toron.data_service import (
     delete_index_record,
     find_locations_without_index,
     find_locations_without_structure,
+    find_nonmatching_locations,
     find_attribute_groups_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
@@ -229,6 +230,34 @@ class TestFindLocationFunctions(unittest.TestCase):
             list(locations),
             [Location(id=4, labels=('', 'qux'))],
             msg='should return all locations without a matching structure',
+        )
+
+    def test_find_nonmatching_locations(self):
+        self.manager.add_columns('A', 'B')
+        self.index_repo.add('foo', 'qux')
+        self.index_repo.add('bar', 'quux')
+        self.structure_repo.add(None, 1, 1)
+        self.structure_repo.add(None, 1, 0)
+        self.location_repo.add('foo', 'qux')
+        self.location_repo.add('bar', '')
+        self.location_repo.add('bar', 'quux')
+
+        locations = find_nonmatching_locations(self.location_repo, self.structure_repo, self.index_repo)
+        self.assertIsNone(
+            next(locations, None),
+            msg='when all structures and indexes match, iterator should be empty'
+        )
+
+        self.location_repo.add('', 'baz')     # <- No structure or index match.
+        self.location_repo.add('', 'qux')     # <- No structure match.
+        self.location_repo.add('bar', 'baz')  # <- No index match.
+        locations = find_nonmatching_locations(self.location_repo, self.structure_repo, self.index_repo)
+        self.assertEqual(
+            list(locations),
+            [Location(id=4, labels=('', 'baz')),
+             Location(id=5, labels=('', 'qux')),
+             Location(id=6, labels=('bar', 'baz'))],
+            msg='should return all locations without matching structure or index',
         )
 
 

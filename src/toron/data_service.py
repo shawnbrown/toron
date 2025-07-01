@@ -1,5 +1,6 @@
 """Application logic functions that interact with repository objects."""
 
+from collections import Counter
 from itertools import chain, compress, groupby
 from math import log2
 
@@ -180,6 +181,28 @@ def find_locations_without_structure(
     for location in location_repo.find_all():
         if BitFlags(location.labels) not in all_structure_bits:
             yield location
+
+
+def find_nonmatching_locations(
+    location_repo: BaseLocationRepository,
+    structure_repo: BaseStructureRepository,
+    aux_index_repo: BaseIndexRepository,
+) -> Iterator[Location]:
+    """Find locations with no matching structure or index records.
+
+    The *location_repo* and *aux_index_repo* should use independent
+    cursor instances.
+    """
+    all_structure_bits = {BitFlags(x.bits) for x in structure_repo.get_all()}
+    label_names = location_repo.get_label_names()
+
+    for location in location_repo.find_all():
+        if BitFlags(location.labels) not in all_structure_bits:
+            yield location
+        else:
+            criteria = {k: v for k, v in zip(label_names, location.labels) if v}
+            if not next(aux_index_repo.filter_index_ids_by_label(criteria), None):
+                yield location
 
 
 def find_attribute_groups_without_quantity(
