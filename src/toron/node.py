@@ -1914,22 +1914,21 @@ class TopoNode(object):
         crosswalk_name: str,
         **criteria: str,
     ) -> None:
-        """Change a crosswalk's ambiguous relations into precise ones.
+        """Reclassify a crosswalk's ambiguous relations as precise.
 
-        This function updates a crosswalk by reclassifying its
-        ambiguous relations so that they are treated as exact
-        relations. The associated labels and weights remain
-        unchanged--only the "mapping level" values are altered.
+        This method updates a crosswalk by reclassifying its ambiguous
+        relations so that they are treated as exact relations. The
+        associated labels and weights remain unchanged--only the
+        "mapping level" values are altered.
 
-        After reification, relations that were originally inferred
-        with uncertainty are now treated as definitive, and the
-        crosswalk is interpreted as a direct and unambiguous
-        correspondence between nodes.
+        After reification, relations that were originally inferred with
+        uncertainty are now treated as definitive, and the crosswalk is
+        interpreted as a direct and unambiguous correspondence between
+        nodes.
 
-        Use this when a previously tentative or heuristic mapping
-        has been verified or accepted as authoritative--or when a
-        one-to-one mapping was loaded without some of its labels
-        but is known to be precise.
+        Use this when a mapping was loaded without certain labels but
+        is known to be accurate, or when ambiguous relations have been
+        reviewed and deemed authoritative.
 
         Parameters
         ----------
