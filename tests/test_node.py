@@ -4251,6 +4251,32 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+    def test_select_unmatched_quantities(self):
+        """Check quantities without matching index or structure."""
+        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.add_discrete_categories({'state'})
+        self.node.insert_quantities(
+            value='quantity',
+            attributes=['category', 'sex'],
+            data=[
+                ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+                ['A', '2025', 'OH', '', 'TOTAL', None, 1112308],
+                ['A', '2025', '',   'BUTLER', 'TOTAL', None, 52967],  # <- structure mismatch
+                ['A', '2025', 'AL', '', 'TOTAL', None, 233687],  # <- index mismatch
+            ],
+        )
+
+        results = self.node.select_unmatched_quantities()  # <- Method under test.
+
+        expected = [
+            ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['A', '2025', '', 'BUTLER', 'TOTAL', None, 52967.0],
+            ['A', '2025', 'AL', '', 'TOTAL', None, 233687.0],
+        ]
+        self.assertEqual(list(results), expected)
+
 
 class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):

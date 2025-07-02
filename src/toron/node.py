@@ -48,6 +48,7 @@ from .data_service import (
     refresh_index_hash_property,
     delete_index_record,
     find_locations_without_index,
+    find_nonmatching_locations,
     find_attribute_groups_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
@@ -2168,6 +2169,46 @@ class TopoNode(object):
                 )
                 for attr_group_id in attr_group_ids:
                     attribute_repo.delete(attr_group_id)
+
+    def select_unmatched_quantities(
+        self, header: bool = True
+    ) -> Iterator[Sequence]:
+        """Select quantities without matching index or structure."""
+        with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4):
+            # These repositories can share a single cursor.
+            property_repo = self._dal.PropertyRepository(cur1)
+            location_repo = self._dal.LocationRepository(cur1)
+            structure_repo = self._dal.StructureRepository(cur1)
+
+            # These repositories must have their own cursors.
+            index_repo = self._dal.IndexRepository(cur2)
+            quantity_repo = self._dal.QuantityRepository(cur3)
+            attribute_repo = self._dal.AttributeGroupRepository(cur4)
+
+            domain = get_domain(property_repo)
+            domain_cols = list(domain.keys())
+            domain_vals = list(domain.values())
+
+            label_cols = location_repo.get_label_names()
+            attr_cols = attribute_repo.get_all_attribute_names()
+
+            if header:
+                yield domain_cols + label_cols + attr_cols + ['quantity']
+
+            locations = find_nonmatching_locations(
+                location_repo=location_repo,
+                structure_repo=structure_repo,
+                aux_index_repo=index_repo,
+            )
+
+            for location in locations:
+                labels = list(location.labels)
+                quantities = quantity_repo.find(location_id=location.id)
+                for quantity in quantities:
+                    attr_group = attribute_repo.get(quantity.attribute_group_id)
+                    attr_dict = attr_group.attributes
+                    attributes = [attr_dict.get(col) for col in attr_cols]
+                    yield domain_vals + labels + attributes + [quantity.value]
 
     def _disaggregate(
         self,
