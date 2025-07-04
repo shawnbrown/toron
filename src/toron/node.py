@@ -2153,9 +2153,7 @@ class TopoNode(object):
                 )
                 for location in locations:
                     quantities = quantity_repo.find(location_id=location.id)
-                    quantity_ids = array.array(
-                        'q', (quantity.id for quantity in quantities)
-                    )
+                    quantity_ids = array.array('q', (x.id for x in quantities))
                     for quantity_id in quantity_ids:
                         quantity_repo.delete(quantity_id)
 
@@ -2164,9 +2162,7 @@ class TopoNode(object):
                     attrib_repo=attribute_repo,
                     alt_quantity_repo=quantity_repo,
                 )
-                attr_group_ids = array.array(
-                    'q', (attr_group.id for attr_group in attr_groups)
-                )
+                attr_group_ids = array.array('q', (x.id for x in attr_groups))
                 for attr_group_id in attr_group_ids:
                     attribute_repo.delete(attr_group_id)
 
