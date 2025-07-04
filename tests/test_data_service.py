@@ -22,6 +22,7 @@ from toron.data_service import (
     find_nonmatching_locations,
     count_nonmatching_locations,
     find_attribute_groups_without_quantity,
+    find_locations_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
     find_crosswalks_by_ref,
@@ -272,7 +273,13 @@ class TestFindLocationFunctions(unittest.TestCase):
         self.assertEqual(counts, {'structure_and_index': 1, 'structure': 1, 'index': 1})
 
 
-class TestFindAttributeGroupsWithoutQuantity(unittest.TestCase):
+class TestFind_X_WithoutQuantity(unittest.TestCase):
+    """Test for finding AttributeGroup or Location objects without an
+    associated quantity. Checks for the following functions:
+
+    * find_attribute_groups_without_quantity()
+    * find_locations_without_quantity()
+    """
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -291,7 +298,7 @@ class TestFindAttributeGroupsWithoutQuantity(unittest.TestCase):
         self.attribute_repo = dal.AttributeGroupRepository(cursor1)
         self.quantity_repo = dal.QuantityRepository(cursor2)
 
-    def test_find_attr_groups(self):
+    def test_find_attribute_groups_without_quantity(self):
         self.manager.add_columns('A', 'B')
         self.location_repo.add('foo', 'qux')   # location id 1
         self.location_repo.add('bar', 'quux')  # location id 2
@@ -308,6 +315,22 @@ class TestFindAttributeGroupsWithoutQuantity(unittest.TestCase):
         self.assertEqual(
             list(attrs),
             [AttributeGroup(id=3, attributes={'type': 'Z'})],
+        )
+
+    def test_find_locations_without_quantity(self):
+        self.manager.add_columns('A', 'B')
+        self.location_repo.add('foo', 'qux')   # location id 1
+        self.location_repo.add('bar', 'quux')  # location id 2
+        self.attribute_repo.add({'type': 'X'})  # attribute_group id 1
+        self.quantity_repo.add(location_id=1, attribute_group_id=1, value=25.0)
+
+        locations = find_locations_without_quantity(
+            location_repo=self.location_repo,
+            alt_quantity_repo=self.quantity_repo,
+        )
+        self.assertEqual(
+            list(locations),
+            [Location(id=2, labels=('bar', 'quux'))],
         )
 
 

@@ -252,6 +252,17 @@ def find_attribute_groups_without_quantity(
             yield attr_group
 
 
+def find_locations_without_quantity(
+    location_repo: BaseLocationRepository,
+    alt_quantity_repo: BaseQuantityRepository,
+) -> Iterator[Location]:
+    """Find Location records that have no matching Quantity."""
+    for location in location_repo.find_all():
+        quantities = alt_quantity_repo.find(location_id=location.id)
+        if not next(quantities, None):
+            yield location
+
+
 def get_quantity_value_sum(
     location_id: int,
     attribute_group_id: int,
