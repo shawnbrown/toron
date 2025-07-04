@@ -4158,6 +4158,13 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
             for attr_group in repository.find_all():
                 yield attr_group
 
+    @staticmethod
+    def get_locations(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.LocationRepository(cursor)
+            for attr_group in repository.find_all():
+                yield attr_group
+
     def setUp(self):
         self.node = TopoNode()
         self.add_cols_helper(self.node, 'state', 'county')
@@ -4249,6 +4256,11 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
             AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
             AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
         ]
+        self.assertEqual(list(results), expected)
+
+        # Orphan locations should have been removed.
+        results = self.get_locations(self.node)
+        expected = [Location(id=1, labels=('OH', 'BUTLER'))]
         self.assertEqual(list(results), expected)
 
     def test_select_unmatched_quantities(self):

@@ -48,6 +48,7 @@ from .data_service import (
     refresh_index_hash_property,
     delete_index_record,
     find_locations_without_index,
+    find_locations_without_quantity,
     find_nonmatching_locations,
     find_attribute_groups_without_quantity,
     get_quantity_value_sum,
@@ -2156,6 +2157,15 @@ class TopoNode(object):
                     quantity_ids = array.array('q', (x.id for x in quantities))
                     for quantity_id in quantity_ids:
                         quantity_repo.delete(quantity_id)
+
+                # Find and remove orphan location records.
+                locations = find_locations_without_quantity(
+                    location_repo=self._dal.LocationRepository(cur2),
+                    alt_quantity_repo=quantity_repo,
+                )
+                location_ids = array.array('q', (x.id for x in locations))
+                for location_id in location_ids:
+                    location_repo.delete(location_id)
 
                 # Find and remove orphan attribute group records.
                 attr_groups = find_attribute_groups_without_quantity(
