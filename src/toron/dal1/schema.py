@@ -169,7 +169,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             _location_id INTEGER,
             attribute_group_id INTEGER,
             quantity_value NUMERIC NOT NULL,
-            FOREIGN KEY(_location_id) REFERENCES location(_location_id),
+            FOREIGN KEY(_location_id) REFERENCES location(_location_id) ON DELETE CASCADE,
             FOREIGN KEY(attribute_group_id) REFERENCES attribute_group(attribute_group_id) ON DELETE CASCADE
         );
 

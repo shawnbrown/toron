@@ -1651,6 +1651,28 @@ class CrossRepositoryRelationsBaseTest(ABC):
         except Exception:
             self.fail('should be able to delete AttributeGroup first and Quantity second')
 
+    def test_location_id(self):
+        """The '_location_id' field is used by Location and Quantity."""
+        self.manager.add_columns('A', 'B')
+        self.attrgroup_repo.add({'myattr': 'someval'})  # <- attribute_group_id 1
+        self.location_repo.add('foo', 'bar')  # <- location_id 1
+        self.location_repo.add('baz', 'qux')  # <- location_id 2
+        self.quantity_repo.add(location_id=1, attribute_group_id=1, value=10.5)  # <- quantity_id 1
+        self.quantity_repo.add(location_id=2, attribute_group_id=1, value=12.0)  # <- quantity_id 2
+
+        try:
+            self.quantity_repo.delete(1)
+            self.location_repo.delete(1)
+        except Exception:
+            self.fail('should be able to delete Quantity first and Location second')
+
+        try:
+            self.location_repo.delete(2)
+            self.quantity_repo.delete(2)  # <- Should not error even if quantity was
+                                          #    auto-deleted when location was removed.
+        except Exception:
+            self.fail('should be able to delete Location first and Quantity second')
+
 
 #######################################################################
 # Test Cases for Concrete Data Model Classes
