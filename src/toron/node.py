@@ -2216,6 +2216,47 @@ class TopoNode(object):
                     attributes = [attr_dict.get(col) for col in attr_cols]
                     yield domain_vals + labels + attributes + [quantity.value]
 
+    def delete_unmatched_quantities(self) -> None:
+        """Delete quantities without matching index or structure."""
+        with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4):
+            # These repositories can share a single cursor.
+            location_repo = self._dal.LocationRepository(cur1)
+            structure_repo = self._dal.StructureRepository(cur1)
+
+            # These repositories must have their own cursors.
+            index_repo = self._dal.IndexRepository(cur2)
+            quantity_repo = self._dal.QuantityRepository(cur3)
+            attribute_repo = self._dal.AttributeGroupRepository(cur4)
+
+            locations = find_nonmatching_locations(
+                location_repo=location_repo,
+                structure_repo=structure_repo,
+                aux_index_repo=index_repo,
+            )
+            for location in locations:
+                quantities = quantity_repo.find(location_id=location.id)
+                quantity_ids = array.array('q', (x.id for x in quantities))
+                for quantity_id in quantity_ids:
+                    quantity_repo.delete(quantity_id)
+
+            # Find and remove orphan location records.
+            locations = find_locations_without_quantity(
+                location_repo=self._dal.LocationRepository(cur2),
+                alt_quantity_repo=quantity_repo,
+            )
+            location_ids = array.array('q', (x.id for x in locations))
+            for location_id in location_ids:
+                location_repo.delete(location_id)
+
+            # Find and remove orphan attribute group records.
+            attr_groups = find_attribute_groups_without_quantity(
+                attrib_repo=attribute_repo,
+                alt_quantity_repo=quantity_repo,
+            )
+            attr_group_ids = array.array('q', (x.id for x in attr_groups))
+            for attr_group_id in attr_group_ids:
+                attribute_repo.delete(attr_group_id)
+
     def _disaggregate(
         self,
         attribute_id_filter: Optional[List[int]] = None,

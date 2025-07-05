@@ -4289,6 +4289,49 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
         ]
         self.assertEqual(list(results), expected)
 
+    def test_delete_unmatched_quantities(self):
+        """Check quantities without matching index or structure."""
+        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.add_discrete_categories({'state'})
+        self.node.insert_quantities(
+            value='quantity',
+            attributes=['category', 'sex'],
+            data=[
+                ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+                ['A', '2025', 'OH', '', 'TOTAL', None, 1112308],
+                ['A', '2025', '',   'BUTLER', 'SUBTOTAL', None, 52967],  # <- structure mismatch
+                ['A', '2025', 'AL', '', 'SUBTOTAL', None, 233687],  # <- index mismatch
+            ],
+        )
+
+        self.node.delete_unmatched_quantities()  # <- Method under test.
+
+        self.assertEqual(
+            list(self.node.select_quantities()),
+            [['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
+             ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140.0],
+             ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990.0],
+             ['A', '2025', 'OH', '', 'TOTAL', None, 1112308.0]],
+            msg='quantities associated with mismatched structures or indexes should be removed',
+        )
+
+        self.assertEqual(
+            list(self.get_locations(self.node)),
+            [Location(id=1, labels=('OH', 'BUTLER')),
+             Location(id=2, labels=('OH', ''))],
+            msg="should have removed orphan locations ('', 'BUTLER') and ('AL', '')"
+        )
+
+        self.assertEqual(
+            list(self.get_attribute_groups(self.node)),
+            [AttributeGroup(id=1, attributes={'category': 'TOTAL', 'sex': 'MALE'}),
+             AttributeGroup(id=2, attributes={'category': 'TOTAL', 'sex': 'FEMALE'}),
+             AttributeGroup(id=3, attributes={'category': 'TOTAL'})],
+            msg="orphan attribute group {'category': 'SUBTOTAL'} should have been removed",
+        )
+
 
 class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
     def setUp(self):
