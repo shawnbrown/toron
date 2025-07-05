@@ -1609,6 +1609,49 @@ class PropertyRepositoryBaseTest(ABC):
         self.assertEqual(self.repository.get('mykey'), 'some other value')
 
 
+class CrossRepositoryRelationsBaseTest(ABC):
+    """Check that foreign key relations don't cause unexpected behavior."""
+    @property
+    @abstractmethod
+    def dal(self):
+        ...
+
+    def setUp(self):
+        connector = self.dal.DataConnector()
+        self.connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(self.connection))
+
+        cursor = connector.acquire_cursor(self.connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        self.manager = self.dal.ColumnManager(cursor)
+        self.location_repo = self.dal.LocationRepository(cursor)
+        self.attrgroup_repo = self.dal.AttributeGroupRepository(cursor)
+        self.quantity_repo = self.dal.QuantityRepository(cursor)
+
+    def test_attribute_group_id(self):
+        """The 'attribute_group_id' field is used by AttributeGroup and Quantity."""
+        self.manager.add_columns('A', 'B')
+        self.attrgroup_repo.add({'myattr': 'someval1'})  # <- attribute_group_id 1
+        self.attrgroup_repo.add({'myattr': 'someval2'})  # <- attribute_group_id 2
+        self.location_repo.add('foo', 'bar')  # <- location_id 1
+        self.quantity_repo.add(location_id=1, attribute_group_id=1, value=10.5)  # <- quantity_id 1
+        self.quantity_repo.add(location_id=1, attribute_group_id=2, value=12.0)  # <- quantity_id 2
+
+        try:
+            self.quantity_repo.delete(1)
+            self.attrgroup_repo.delete(1)
+        except Exception:
+            self.fail('should be able to delete Quantity first and AttributeGroup second')
+
+        try:
+            self.attrgroup_repo.delete(2)
+            self.quantity_repo.delete(2)  # <- Should not error even if quantity was
+                                          #    auto-deleted when attribute was removed.
+        except Exception:
+            self.fail('should be able to delete AttributeGroup first and Quantity second')
+
+
 #######################################################################
 # Test Cases for Concrete Data Model Classes
 #######################################################################
@@ -1791,4 +1834,7 @@ class RelationRepositoryDAL1(RelationRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class PropertyRepositoryDAL1(PropertyRepositoryBaseTest, unittest.TestCase):
+    dal = dal1
+
+class CrossRepositoryRelationsDAL1(CrossRepositoryRelationsBaseTest, unittest.TestCase):
     dal = dal1
