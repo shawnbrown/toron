@@ -780,8 +780,8 @@ class BaseAttributeGroupRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int) -> None:
-        """Delete a record from the repository."""
+    def delete_and_cascade(self, id: int) -> None:
+        """Delete an AttributeGroup and any associated Quantity records."""
 
     @abstractmethod
     def get_by_value(self, value: Dict[str, str]) -> AttributeGroup:

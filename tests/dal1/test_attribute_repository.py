@@ -89,18 +89,18 @@ class TestAttributeGroupRepository(unittest.TestCase):
             msg='should be unchanged, there is no attribute_group_id=3',
         )
 
-    def test_delete(self):
+    def test_delete_and_cascade(self):
         self.cursor.executescript("""
             INSERT INTO attribute_group VALUES (1, '{"aaa": "A", "bbb": "B"}');
             INSERT INTO attribute_group VALUES (2, '{"aaa": "A", "ccc": "C"}');
         """)
         repository = AttributeGroupRepository(self.cursor)
 
-        repository.delete(1)
+        repository.delete_and_cascade(1)
         self.assertRecords([(2, {'aaa': 'A', 'ccc': 'C'})])
 
-        repository.delete(2)
+        repository.delete_and_cascade(2)
         self.assertRecords([])
 
-        repository.delete(3)  # No attribute_group_id=3, should pass without error.
+        repository.delete_and_cascade(3)  # No attribute_group_id=3, should pass without error.
         self.assertRecords([])

@@ -2174,7 +2174,7 @@ class TopoNode(object):
                 )
                 attr_group_ids = array.array('q', (x.id for x in attr_groups))
                 for attr_group_id in attr_group_ids:
-                    attribute_repo.delete(attr_group_id)
+                    attribute_repo.delete_and_cascade(attr_group_id)
 
     def select_unmatched_quantities(
         self, header: bool = True
@@ -2255,7 +2255,7 @@ class TopoNode(object):
             )
             attr_group_ids = array.array('q', (x.id for x in attr_groups))
             for attr_group_id in attr_group_ids:
-                attribute_repo.delete(attr_group_id)
+                attribute_repo.delete_and_cascade(attr_group_id)
 
     def _disaggregate(
         self,

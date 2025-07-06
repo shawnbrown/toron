@@ -578,8 +578,8 @@ class AttributeGroupRepository(BaseAttributeGroupRepository):
             (json_dumps(attributes, sort_keys=True), record.id),
         )
 
-    def delete(self, id: int) -> None:
-        """Delete a record from the repository."""
+    def delete_and_cascade(self, id: int) -> None:
+        """Delete an AttributeGroup and any associated Quantity records."""
         self._cursor.execute(
             'DELETE FROM main.attribute_group WHERE attribute_group_id=?', (id,)
         )

@@ -852,7 +852,7 @@ class AttributeGroupRepositoryBaseTest(ABC):
         repository.update(AttributeGroup(1, {'foo': 'B'}))
         self.assertEqual(repository.get(1), AttributeGroup(1, {'foo': 'B'}))
 
-        repository.delete(1)
+        repository.delete_and_cascade(1)
         with self.assertRaises(KeyError):
             repository.get(1)
 
@@ -1610,7 +1610,7 @@ class PropertyRepositoryBaseTest(ABC):
 
 
 class CrossRepositoryRelationsBaseTest(ABC):
-    """Check that foreign key relations don't cause unexpected behavior."""
+    """Check that relations across repositories match expected behavior."""
     @property
     @abstractmethod
     def dal(self):
@@ -1640,16 +1640,20 @@ class CrossRepositoryRelationsBaseTest(ABC):
 
         try:
             self.quantity_repo.delete(1)
-            self.attrgroup_repo.delete(1)
+            self.attrgroup_repo.delete_and_cascade(1)
         except Exception:
             self.fail('should be able to delete Quantity first and AttributeGroup second')
 
         try:
-            self.attrgroup_repo.delete(2)
-            self.quantity_repo.delete(2)  # <- Should not error even if quantity was
-                                          #    auto-deleted when attribute was removed.
+            self.attrgroup_repo.delete_and_cascade(2)
         except Exception:
-            self.fail('should be able to delete AttributeGroup first and Quantity second')
+            self.fail('should be able to delete AttributeGroup even when '
+                      'associated Quantity records exist')
+        finally:
+            msg = ('Deleting an `AttributeGroup` should also delete any '
+                   'associated `Quantity` records.')
+            with self.assertRaises(KeyError, msg=msg):
+                self.quantity_repo.get(2)
 
     def test_location_id(self):
         """The '_location_id' field is used by Location and Quantity."""
