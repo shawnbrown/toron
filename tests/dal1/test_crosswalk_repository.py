@@ -235,21 +235,21 @@ class TestCrosswalkRepository(unittest.TestCase):
         except Exception as err:
             self.fail(f'updating non-existant records should not raise error, got {err!r}')
 
-    def test_delete(self):
+    def test_delete_and_cascade(self):
         self.cursor.executescript("""
             INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
         """)
         repository = CrosswalkRepository(self.cursor)
 
-        repository.delete(1)
+        repository.delete_and_cascade(1)
         self.assertRecords([(2, '111-unique-id-1111', None, 'name2', None, None, None, None, None, 0)])
 
-        repository.delete(2)
+        repository.delete_and_cascade(2)
         self.assertRecords([])
 
         try:
-            repository.delete(3)  # No weight_group_id=3, should pass without error.
+            repository.delete_and_cascade(3)  # No weight_group_id=3, should pass without error.
         except Exception as err:
             self.fail(f'should not raise error, got {err!r}')
         self.assertRecords([])

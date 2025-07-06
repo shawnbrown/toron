@@ -954,8 +954,8 @@ class BaseCrosswalkRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int) -> None:
-        """Delete a record from the repository."""
+    def delete_and_cascade(self, id: int) -> None:
+        """Delete a Crosswalk and any associated Relation records."""
 
     @abstractmethod
     def find_by_other_unique_id(

@@ -1372,7 +1372,7 @@ class TopoNode(object):
                 )
                 return  # <- EXIT!
 
-            crosswalk_repo.delete(crosswalk.id)
+            crosswalk_repo.delete_and_cascade(crosswalk.id)
 
     def select_relations(
         self,

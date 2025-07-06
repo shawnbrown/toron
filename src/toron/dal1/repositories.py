@@ -890,8 +890,8 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         ]
         self._cursor.execute(sql, parameters)
 
-    def delete(self, id: int) -> None:
-        """Delete a record from the repository."""
+    def delete_and_cascade(self, id: int) -> None:
+        """Delete a Crosswalk and any associated Relation records."""
         self._cursor.execute(
             'DELETE FROM main.crosswalk WHERE crosswalk_id=?', (id,)
         )
