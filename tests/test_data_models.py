@@ -396,7 +396,7 @@ class LocationRepositoryBaseTest(ABC):
         self.assertTrue(issubclass(self.dal.LocationRepository, BaseLocationRepository))
 
     def test_integration(self):
-        """Test add(), get(), update() and delete() interaction."""
+        """Test add(), get(), update() and delete_and_cascade() interaction."""
         self.manager.add_columns('A', 'B')
 
         self.repository.add('foo', 'x')
@@ -408,7 +408,7 @@ class LocationRepositoryBaseTest(ABC):
         self.repository.update(Index(2, 'bar', 'z'))
         self.assertEqual(self.repository.get(2), Location(2, 'bar', 'z'))
 
-        self.repository.delete(2)
+        self.repository.delete_and_cascade(2)
         with self.assertRaises(KeyError):
             self.repository.get(2)
 
@@ -1666,16 +1666,20 @@ class CrossRepositoryRelationsBaseTest(ABC):
 
         try:
             self.quantity_repo.delete(1)
-            self.location_repo.delete(1)
+            self.location_repo.delete_and_cascade(1)
         except Exception:
             self.fail('should be able to delete Quantity first and Location second')
 
         try:
-            self.location_repo.delete(2)
-            self.quantity_repo.delete(2)  # <- Should not error even if quantity was
-                                          #    auto-deleted when location was removed.
+            self.location_repo.delete_and_cascade(2)
         except Exception:
-            self.fail('should be able to delete Location first and Quantity second')
+            self.fail('should be able to delete Location even when associated '
+                      'Quantity records exist')
+        finally:
+            msg = ('Deleting a `Location` should also delete any associated '
+                   '`Quantity` records.')
+            with self.assertRaises(KeyError, msg=msg):
+                self.quantity_repo.get(2)
 
 
 #######################################################################

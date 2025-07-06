@@ -86,20 +86,20 @@ class TestLocationRepository(unittest.TestCase):
         msg = 'there is no _location_id 3, records should be unchanged'
         self.assertEqual(records, [(1, 'qux', 'quux'), (2, 'foo', 'baz')], msg=msg)
 
-    def test_delete(self):
+    def test_delete_and_cascade(self):
         repository = LocationRepository(self.cursor)
         self.cursor.executescript("""
             INSERT INTO location VALUES (1, 'foo', 'bar');
             INSERT INTO location VALUES (2, 'foo', 'baz');
         """)
 
-        repository.delete(2)
+        repository.delete_and_cascade(2)
         self.assertRecords([(1, 'foo', 'bar')])
 
-        repository.delete(1)
+        repository.delete_and_cascade(1)
         self.assertRecords([])
 
         try:
-            repository.delete(42)
+            repository.delete_and_cascade(42)
         except Exception as err:
             self.fail(f'deleting non-existant ids should not raise errors, got {err!r}')

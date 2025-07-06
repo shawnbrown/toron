@@ -389,8 +389,8 @@ class BaseLocationRepository(ABC):
         """Update a record in the repository."""
 
     @abstractmethod
-    def delete(self, id: int) -> None:
-        """Delete a record from the repository."""
+    def delete_and_cascade(self, id: int) -> None:
+        """Delete a Location and any associated Quantity records."""
 
     @abstractmethod
     def get_label_names(self) -> List[str]:

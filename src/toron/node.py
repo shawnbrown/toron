@@ -2165,7 +2165,7 @@ class TopoNode(object):
                 )
                 location_ids = array.array('q', (x.id for x in locations))
                 for location_id in location_ids:
-                    location_repo.delete(location_id)
+                    location_repo.delete_and_cascade(location_id)
 
                 # Find and remove orphan attribute group records.
                 attr_groups = find_attribute_groups_without_quantity(
@@ -2246,7 +2246,7 @@ class TopoNode(object):
             )
             location_ids = array.array('q', (x.id for x in locations))
             for location_id in location_ids:
-                location_repo.delete(location_id)
+                location_repo.delete_and_cascade(location_id)
 
             # Find and remove orphan attribute group records.
             attr_groups = find_attribute_groups_without_quantity(

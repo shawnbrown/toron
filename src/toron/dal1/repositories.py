@@ -227,8 +227,8 @@ class LocationRepository(BaseLocationRepository):
         """
         self._cursor.execute(sql, record.labels + (record.id,))
 
-    def delete(self, id: int) -> None:
-        """Delete a record from the repository."""
+    def delete_and_cascade(self, id: int) -> None:
+        """Delete a Location and any associated Quantity records."""
         self._cursor.execute(
             'DELETE FROM main.location WHERE _location_id=?', (id,)
         )
