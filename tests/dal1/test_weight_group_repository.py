@@ -86,18 +86,18 @@ class TestWeightGroupRepository(unittest.TestCase):
             msg='No weight_group_id=3, should remain unchanged',
         )
 
-    def test_delete(self):
+    def test_delete_and_cascade(self):
         self.cursor.executescript("""
             INSERT INTO weight_group VALUES (1, 'name1', 'Name One', '["[foo]"]', 1);
             INSERT INTO weight_group VALUES (2, 'name2', NULL, '["[bar]"]', 0);
         """)
         repository = WeightGroupRepository(self.cursor)
 
-        repository.delete(1)
+        repository.delete_and_cascade(1)
         self.assertRecords([(2, 'name2', None, ['[bar]'], 0)])
 
-        repository.delete(2)
+        repository.delete_and_cascade(2)
         self.assertRecords([])
 
-        repository.delete(3)  # No weight_group_id=3, should pass without error.
+        repository.delete_and_cascade(3)  # No weight_group_id=3, should pass without error.
         self.assertRecords([])

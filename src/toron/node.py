@@ -844,7 +844,7 @@ class TopoNode(object):
                 applogger.warning(f'no weight group named {existing_name!r}')
                 return  # <- EXIT!
 
-            group_repo.delete(group.id)
+            group_repo.delete_and_cascade(group.id)
             applogger.info(f'removed weight group {existing_name!r}')
 
             if group.id == property_repo.get('default_weight_group_id'):

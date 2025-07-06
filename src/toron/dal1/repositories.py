@@ -403,8 +403,8 @@ class WeightGroupRepository(BaseWeightGroupRepository):
         ]
         self._cursor.execute(sql, parameters)
 
-    def delete(self, id: int) -> None:
-        """Delete a record from the repository."""
+    def delete_and_cascade(self, id: int) -> None:
+        """Delete a WeightGroup and any associated Weight records."""
         self._cursor.execute(
             'DELETE FROM main.weight_group WHERE weight_group_id=?', (id,)
         )
