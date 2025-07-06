@@ -2228,27 +2228,17 @@ class TopoNode(object):
             quantity_repo = self._dal.QuantityRepository(cur3)
             attribute_repo = self._dal.AttributeGroupRepository(cur4)
 
-            locations = find_nonmatching_locations(
-                location_repo=location_repo,
-                structure_repo=structure_repo,
+            # Find and remove nonmatching locations and associated quantities.
+            locations = find_nonmatching_locations(  # <- Find Locations with
+                location_repo=location_repo,         #    no matching index or
+                structure_repo=structure_repo,       #    structure.
                 aux_index_repo=index_repo,
             )
-            for location in locations:
-                quantities = quantity_repo.find(location_id=location.id)
-                quantity_ids = array.array('q', (x.id for x in quantities))
-                for quantity_id in quantity_ids:
-                    quantity_repo.delete(quantity_id)
-
-            # Find and remove orphan location records.
-            locations = find_locations_without_quantity(
-                location_repo=self._dal.LocationRepository(cur2),
-                alt_quantity_repo=quantity_repo,
-            )
-            location_ids = array.array('q', (x.id for x in locations))
-            for location_id in location_ids:
+            nonmatching_ids = array.array('q', (x.id for x in locations))
+            for location_id in nonmatching_ids:
                 location_repo.delete_and_cascade(location_id)
 
-            # Find and remove orphan attribute group records.
+            # Find and remove orphan attribute groups.
             attr_groups = find_attribute_groups_without_quantity(
                 attrib_repo=attribute_repo,
                 alt_quantity_repo=quantity_repo,
