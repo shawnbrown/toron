@@ -2108,27 +2108,28 @@ class TopoNode(object):
     ) -> Iterator[Sequence]:
         """."""
         with self._managed_cursor(n=4) as (cur1, cur2, cur3, cur4):
-            location_repo = self._dal.LocationRepository(cur1)
+            # These repositories can share a single cursor.
             property_repo = self._dal.PropertyRepository(cur1)
+            location_repo = self._dal.LocationRepository(cur1)
+
+            # These repositories must have their own cursors.
             attribute_repo = self._dal.AttributeGroupRepository(cur2)
-            quantity_repo = self._dal.QuantityRepository(cur3)
-            aux_index_repo = self._dal.IndexRepository(cur4)
+            aux_index_repo = self._dal.IndexRepository(cur3)
+            quantity_repo = self._dal.QuantityRepository(cur4)
 
             domain = get_domain(property_repo)
-            domain_cols = list(domain.keys())
-            domain_vals = list(domain.values())
-
-            label_cols = location_repo.get_label_names()
-            attr_cols = attribute_repo.get_all_attribute_names()
 
             if header:
+                domain_cols = list(domain.keys())
+                label_cols = location_repo.get_label_names()
+                attr_cols = attribute_repo.get_all_attribute_names()
                 yield domain_cols + label_cols + attr_cols + ['quantity']
 
+            domain_vals = list(domain.values())
             locations = find_locations_without_index(
                 location_repo=location_repo,
                 aux_index_repo=aux_index_repo,
             )
-
             for location in locations:
                 quantities = quantity_repo.find(location_id=location.id)
                 for quantity in quantities:
