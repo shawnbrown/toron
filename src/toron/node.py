@@ -2188,26 +2188,24 @@ class TopoNode(object):
             structure_repo = self._dal.StructureRepository(cur1)
 
             # These repositories must have their own cursors.
-            index_repo = self._dal.IndexRepository(cur2)
-            quantity_repo = self._dal.QuantityRepository(cur3)
-            attribute_repo = self._dal.AttributeGroupRepository(cur4)
+            attribute_repo = self._dal.AttributeGroupRepository(cur2)
+            index_repo = self._dal.IndexRepository(cur3)
+            quantity_repo = self._dal.QuantityRepository(cur4)
 
             domain = get_domain(property_repo)
-            domain_cols = list(domain.keys())
-            domain_vals = list(domain.values())
-
-            label_cols = location_repo.get_label_names()
-            attr_cols = attribute_repo.get_all_attribute_names()
 
             if header:
+                domain_cols = list(domain.keys())
+                label_cols = location_repo.get_label_names()
+                attr_cols = attribute_repo.get_all_attribute_names()
                 yield domain_cols + label_cols + attr_cols + ['quantity']
 
+            domain_vals = list(domain.values())
             locations = find_nonmatching_locations(
                 location_repo=location_repo,
                 structure_repo=structure_repo,
                 aux_index_repo=index_repo,
             )
-
             for location in locations:
                 labels = list(location.labels)
                 quantities = quantity_repo.find(location_id=location.id)
