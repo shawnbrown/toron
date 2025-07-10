@@ -162,6 +162,35 @@ class TestIdiomaticUsage(unittest.TestCase):
              ('B', 'Charleston', 'foo', 100.0)},
         )
 
+    def test_disagg_trans_negative_quantities(self):
+        """Test disaggregation including negative quantities."""
+        self.node1.insert_quantities(
+            data=[
+                ['idx1', 'idx2', 'idx3', 'variable', 'value'],
+                ['A', 'z', 'a', 'qux', -8.0],
+                ['B', 'x', 'b', 'qux', +3.0],
+                ['B', 'y', 'c', 'qux', -8.0],
+            ],
+            value='value',
+            attributes='variable',
+        )
+
+        result_iter = self.node1('[variable="foo"]', '[variable="qux"]') >> self.node2
+
+        self.assertEqual(
+            result_iter.columns,
+            ['idx1', 'idx2', 'variable', 'value'],
+        )
+        self.assertEqual(
+            set(result_iter),
+            {('A', 'Athens',     'foo',  50.0),
+             ('A', 'Boston',     'foo',  50.0),
+             ('B', 'Charleston', 'foo', 100.0),
+             ('A', 'Athens',     'qux',  -4.0),   # <- Half of source (-8.0).
+             ('A', 'Boston',     'qux',  -4.0),   # <- Half of source (-8.0).
+             ('B', 'Charleston', 'qux',  -5.0)},  # <- Combined sources (-8.0 and +3.0).
+        )
+
     @unittest.skipUnless(pd, 'requires pandas')
     def test_disagg_trans_pandas(self):
         # Disaggregate, translate, and convert to DataFrame.
