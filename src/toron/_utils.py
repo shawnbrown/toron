@@ -566,8 +566,8 @@ def quantize_values(
 
     Fractional remainder ties--where items have fractional parts
     of equal value--are resolved using a repeatable, pseudo-random
-    shuffle based on the item's index. This ensures reproducibility
-    and minimizes positional bias when allocating of remainders.
+    shuffle based on the item's index id. This ensures reproducibility
+    and minimizes positional bias when allocating remainders.
 
     Example::
 
@@ -575,23 +575,23 @@ def quantize_values(
         >>> sorted(quantize_values(input_items, sum_total=62.0))
         [(1, 11.0), (2, 20.0), (3, 31.0)]
 
-    This function distributes the *sum_total* remainder (the
-    difference between *sum_total* and the sum of floored values)
-    by adding ``1.0`` the floored value of items with the largest
-    fractional parts until the remainder is exhausted. In the
-    example, with *sum_total* ``62.0`` and floored sum ``60.0``,
-    the ``2.0`` remainder is given to items 1 (``0.6875`` fractional)
-    and 3 (``0.75`` fractional).
+    This function distributes the *sum_total* remainder (the difference
+    between *sum_total* and the sum of floored values) by adding ``1.0``
+    to the floored value of items with the largest fractional parts
+    until the remainder is exhausted. In the example, with *sum_total*
+    ``62.0`` and floored sum ``60.0``, the remainder (``2.0``) is
+    assigned to items 1 (``0.6875`` fractional) and 3 (``0.75``
+    fractional).
 
-    +-------+----------+-----------+
-    | Index | Original | Quantized |
-    +=======+==========+===========+
-    |   1   | 10.6875  |   11.0    |
-    +-------+----------+-----------+
-    |   2   | 20.5625  |   20.0    |
-    +-------+----------+-----------+
-    |   3   | 30.75    |   31.0    |
-    +-------+----------+-----------+
+        +----------+----------+-----------+
+        | Index ID | Original | Quantized |
+        +==========+==========+===========+
+        |    1     | 10.6875  |   11.0    |
+        +----------+----------+-----------+
+        |    2     | 20.5625  |   20.0    |
+        +----------+----------+-----------+
+        |    3     | 30.75    |   31.0    |
+        +----------+----------+-----------+
 
     .. important::
 
@@ -612,7 +612,7 @@ def quantize_values(
 
     # Sort items by largest to smallest magnitude of their fractional
     # parts. When fractional parts are equal, order items based on the
-    # SplitMix64 hash of their index_id values.
+    # SplitMix64 hash of their `index_id` values.
     sort_key = lambda x: (-abs(x[1]), splitmix64(x[0]))
     idx_frac_whole = sorted(idx_frac_whole, key=sort_key)
 
