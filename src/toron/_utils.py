@@ -15,7 +15,7 @@ import hashlib
 import re
 import sqlite3
 from functools import wraps
-from itertools import chain, islice, zip_longest
+from itertools import chain, islice, repeat, zip_longest
 from json import (
     dumps as _dumps,
     loads as _loads,
@@ -935,10 +935,11 @@ class BitFlags(Sequence[Literal[0, 1]]):
         based on their truth values (falsy elements as 0s and truthy
         elements as 1s).
         """
-        # Normalize to 1s and 0s, then make 8 references to the same iterator,
-        # and unpack them into `zip_longest()` to yield 8-element tuples.
+        # Normalize to 1s and 0s, then unpack eight references to the same
+        # generator into `zip_longest()`, to yield eight-element tuples.
+        # Similar to `grouper()` recipe in the stdlib's `itertools` docs.
         normalized = ((1 if x else 0) for x in stream)
-        eight_bit_words = zip_longest(*([normalized] * 8), fillvalue=0)
+        eight_bit_words = zip_longest(*repeat(normalized, 8), fillvalue=0)
 
         byte_list = []
         for binary_word in eight_bit_words:
