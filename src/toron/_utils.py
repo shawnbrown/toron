@@ -510,6 +510,7 @@ class SequenceHash(object):
                 'illegal value - values must be a strictly increasing '
                 'sequence starting at 0 or greater'
             )
+
         try:
             self.hash_obj.update(value.to_bytes(length=8, byteorder='big'))
         except OverflowError as e:  # <- Int too big (more than 8 bytes).
