@@ -15,7 +15,7 @@ import hashlib
 import re
 import sqlite3
 from functools import wraps
-from itertools import chain, zip_longest
+from itertools import chain, islice, zip_longest
 from json import (
     dumps as _dumps,
     loads as _loads,
@@ -624,9 +624,8 @@ def quantize_values(
 
     # Yield items with the highest fractional parts (incrementing whole
     # values by one) for a number of items equal to the whole remainder.
-    increment = copysign(1, sum_total)  # Increment by 1 or -1.
-    for _ in range(int(abs(remainder_whole))):
-        index_id, _, whole_part = next(iterator)
+    increment = copysign(1.0, sum_total)  # Get increment of 1.0 or -1.0.
+    for index_id, _, whole_part in islice(iterator, abs(int(remainder_whole))):
         yield (index_id, whole_part + increment)
 
     # If there's a fractional remainder, distribute it to the next item.
