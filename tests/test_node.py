@@ -4519,8 +4519,8 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
             quantity_repo.add(location_id=5, attribute_group_id=1, value=119000)
             quantity_repo.add(location_id=5, attribute_group_id=2, value=118500)
 
-        # Order of items may be different, so regex include both options.
-        regex = "no index matching: (?:state='OH', county='DELAWARE|county='DELAWARE, state='OH')'"
+        regex = (r"no index matching: state='OH', county='DELAWARE'\n"
+                 r"  Location\(id=5, labels=\('OH', 'DELAWARE'\)\)")
         with self.assertRaisesRegex(RuntimeError, regex):
             results = self.node._disaggregate()
             list(results)  # Consume iterator.
@@ -4535,7 +4535,8 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
             quantity_repo.add(location_id=5, attribute_group_id=1, value=119000)
             quantity_repo.add(location_id=5, attribute_group_id=2, value=118500)
 
-        regex = "no index matching: state='AZ'"
+        regex = (r"no index matching: state='AZ'\n"
+                 r"  Location\(id=5, labels=\('AZ', ''\)\)")
         with self.assertRaisesRegex(RuntimeError, regex):
             results = self.node._disaggregate()
             list(results)  # Consume iterator.

@@ -2308,8 +2308,8 @@ class TopoNode(object):
                             index_id = next(index_repo.filter_index_ids_by_label(criteria))
                         except StopIteration:
                             items = (f'{k}={v!r}' for k, v in criteria.items())
-                            msg = f"no index matching: {', '.join(items)}"
-                            raise RuntimeError(msg) from None
+                            msg = f"no index matching: {', '.join(items)}\n  {location}"
+                            raise RuntimeError(msg)
 
                         # Yield whole quantity values (cannot be disaggregated
                         # further).
@@ -2331,8 +2331,8 @@ class TopoNode(object):
                         )
                         if not index_ids:
                             items = (f'{k}={v!r}' for k, v in criteria.items())
-                            msg = f"no index matching: {', '.join(items)}"
-                            raise RuntimeError(msg) from None
+                            msg = f"no index matching: {', '.join(items)}\n  {location}"
+                            raise RuntimeError(msg)
 
                         for quantity in group:
                             attribute_group = attribute_repo.get(quantity.attribute_group_id)
