@@ -528,12 +528,13 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         return instance
 
     @classmethod
-    def from_live_data(
+    def attach_to_file(
         cls,
         path: Union[str, bytes, os.PathLike],
         required_permissions: Literal['ro', 'rw', None] = 'ro',
     ) -> Self:
-        """Open a node directly from drive (does not load into memory).
+        """Attach to a DataConnector directly from a file on drive
+        (does not load into memory).
 
         Parameters
         ----------

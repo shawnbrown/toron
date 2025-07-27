@@ -354,7 +354,7 @@ class TestFromLiveData(unittest.TestCase):
         new_path = os.path.join(self.temp_dir.name, 'new_node.toron')
         self.assertFalse(os.path.isfile(new_path))
 
-        connector = DataConnector.from_live_data(new_path, 'rw')
+        connector = DataConnector.attach_to_file(new_path, 'rw')
         del connector
         gc.collect()  # Explicitly trigger full garbage collection.
 
@@ -367,21 +367,21 @@ class TestFromLiveData(unittest.TestCase):
         self.assertFalse(os.path.isfile(new_path))
 
         with self.assertRaises(FileNotFoundError):
-            connector = DataConnector.from_live_data(new_path, 'ro')
+            connector = DataConnector.attach_to_file(new_path, 'ro')
 
     def test_existing_readwrite(self):
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
         DataConnector().to_file(file_path)  # Create a new node and save to drive.
 
         try:
-            connector = DataConnector.from_live_data(file_path, 'rw')
+            connector = DataConnector.attach_to_file(file_path, 'rw')
         except Exception:
             self.fail("read-write file should open with 'rw' permissions")
 
         os.chmod(file_path, stat.S_IRUSR)  # Set to read-only.
         regex = 'should be read-write but has read-only permissions'
         with self.assertRaisesRegex(PermissionError, regex):
-            connector = DataConnector.from_live_data(file_path, 'rw')
+            connector = DataConnector.attach_to_file(file_path, 'rw')
 
     def test_existing_readonly(self):
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
@@ -389,11 +389,11 @@ class TestFromLiveData(unittest.TestCase):
 
         regex = 'should be read-only but has read-write permissions'
         with self.assertRaisesRegex(PermissionError, regex):
-            connector = DataConnector.from_live_data(file_path, 'ro')
+            connector = DataConnector.attach_to_file(file_path, 'ro')
 
         os.chmod(file_path, stat.S_IRUSR)  # Set to read-only.
         try:
-            connector = DataConnector.from_live_data(file_path, 'ro')
+            connector = DataConnector.attach_to_file(file_path, 'ro')
         except Exception:
             self.fail("read-only file should open with 'ro' permissions")
 
@@ -408,7 +408,7 @@ class TestFromLiveData(unittest.TestCase):
         os.chmod(file_path, stat.S_IRUSR)
 
         # Create a connector requiring read-only permissions.
-        connector = DataConnector.from_live_data(file_path, required_permissions='ro')
+        connector = DataConnector.attach_to_file(file_path, required_permissions='ro')
 
         # Change on-drive permissions to read-write.
         os.chmod(file_path, stat.S_IRUSR | stat.S_IWUSR)
