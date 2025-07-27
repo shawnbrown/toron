@@ -38,7 +38,7 @@ from toron.data_models import (
     Quantity,
     QuantityIterator,
 )
-from toron.node import TopoNode
+from toron.node import TopoNode, read_file
 from toron.reader import NodeReader
 
 
@@ -86,7 +86,7 @@ class TestInstantiation(unittest.TestCase):
 
 
 class TestFileHandling(unittest.TestCase):
-    """Test ``TopoNode.to_file()`` and ``TopoNode.from_file()`` methods."""
+    """Test ``TopoNode.to_file()`` method and ``read_file()`` function."""
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
         self.addCleanup(self.temp_dir.cleanup)
@@ -113,7 +113,7 @@ class TestFileHandling(unittest.TestCase):
         self.assertTrue(os.path.isfile(file_path))
 
         try:
-            node = TopoNode.from_file(file_path)  # <- Load node from file.
+            node = read_file(file_path)  # <- Load node from file.
         except Exception as e:
             self.fail(f'could not load file: {e}')
         self.assertEqual(node.unique_id, original_unique_id,
@@ -131,7 +131,7 @@ class TestFileHandling(unittest.TestCase):
         self.assertTrue(os.path.isfile(file_path))
 
         try:
-            node = TopoNode.from_file(file_path, cache_to_drive=True)  # <- Uses DAL1-specific `cache_to_drive` argument.
+            node = read_file(file_path, cache_to_drive=True)  # <- Uses DAL1-specific `cache_to_drive` argument.
         except Exception as e:
             self.fail(f'could not load file: {e}')
         self.assertEqual(node.unique_id, original_unique_id,
@@ -155,7 +155,7 @@ class TestFileHandling(unittest.TestCase):
         self.assertEqual(node.path_hint, file_path)
 
         # Should be set when an instance is loaded from drive.
-        node = TopoNode.from_file(file_path)
+        node = read_file(file_path)
         self.assertEqual(node.path_hint, file_path)
 
         # Check overwritten with relative path.

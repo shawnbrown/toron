@@ -11,6 +11,7 @@ __all__ = [
     'xNode',
 
     # FUNCTIONS
+    'read_file',
     'wide_to_narrow',
     'wide_to_long',
 ]
@@ -21,7 +22,7 @@ def __dir__():  # Customize module attribute list (PEP 562).
     special_attrs = [x for x in globals().keys() if x.startswith('__')]
     return __all__ + special_attrs
 
-from .node import TopoNode
+from .node import TopoNode, read_file
 from .xnode import xNode
 from ._utils import (
     ToronError,

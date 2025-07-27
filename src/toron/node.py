@@ -184,19 +184,6 @@ class TopoNode(object):
     def path_hint(self, value: Union[str, bytes, os.PathLike]) -> None:
         self._path_hint = os.fsdecode(value)
 
-    @classmethod
-    def from_file(cls, path: Union[str, bytes, os.PathLike], **kwds) -> Self:
-        """Load a node from an existing file on drive."""
-        backend = data_access.get_backend_from_path(path)
-        if not backend:
-            raise RuntimeError(f'invalid file format, cannot open {path!r}')
-
-        obj = cls.__new__(cls)
-        obj._dal = data_access.get_data_access_layer(backend)
-        obj._connector = obj._dal.DataConnector.read_from_file(path, **kwds)
-        obj._path_hint = os.fsdecode(path)
-        return obj
-
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
@@ -2460,3 +2447,16 @@ class TopoNode(object):
             f"incoming crosswalks:\n"
             f"  {crosswalks_str}"
         )
+
+
+def read_file(filepath: Union[str, bytes, os.PathLike], **kwds) -> TopoNode:
+    """Read a ``.toron`` file into a TopoNode."""
+    backend = data_access.get_backend_from_path(filepath)
+    if not backend:
+        raise RuntimeError(f'invalid file format, cannot open {filepath!r}')
+
+    obj = TopoNode.__new__(TopoNode)
+    obj._dal = data_access.get_data_access_layer(backend)
+    obj._connector = obj._dal.DataConnector.read_from_file(filepath, **kwds)
+    obj._path_hint = os.fsdecode(filepath)
+    return obj
