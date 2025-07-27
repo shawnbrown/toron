@@ -193,7 +193,7 @@ class TopoNode(object):
 
         obj = cls.__new__(cls)
         obj._dal = data_access.get_data_access_layer(backend)
-        obj._connector = obj._dal.DataConnector.from_file(path, **kwds)
+        obj._connector = obj._dal.DataConnector.read_from_file(path, **kwds)
         obj._path_hint = os.fsdecode(path)
         return obj
 

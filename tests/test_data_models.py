@@ -79,24 +79,24 @@ class DataConnectorBaseTest(ABC):
             file_size = os.path.getsize(file_path)
             self.assertGreater(file_size, 0, msg='file should not be empty')
 
-    def test_from_file(self):
+    def test_read_from_file(self):
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             file_path = os.path.join(tmpdir, 'mynode.toron')
             original = self.dal.DataConnector()
             original.to_file(file_path)
 
-            loadedfromfile = self.dal.DataConnector.from_file(file_path)
+            loadedfromfile = self.dal.DataConnector.read_from_file(file_path)
             self.assertEqual(original.unique_id, loadedfromfile.unique_id)
 
-    def test_from_file_missing(self):
+    def test_read_from_file_missing(self):
         """Should raise FileNotFoundError if file doesn't exist."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             file_path = os.path.join(tmpdir, 'does_not_exist.toron')
 
             with self.assertRaises(FileNotFoundError):
-                self.dal.DataConnector.from_file(file_path)
+                self.dal.DataConnector.read_from_file(file_path)
 
-    def test_from_file_unknown_format(self):
+    def test_read_from_file_unknown_format(self):
         """Should raise RuntimeError if file uses unknown format."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             file_path = os.path.join(tmpdir, 'unknown_format.xyz')
@@ -104,7 +104,7 @@ class DataConnectorBaseTest(ABC):
                 f.write('Hello World\n')
 
             with self.assertRaises(Exception):
-                self.dal.DataConnector.from_file(file_path)
+                self.dal.DataConnector.read_from_file(file_path)
 
     def test_transaction_is_active(self):
         connector = self.dal.DataConnector()

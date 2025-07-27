@@ -172,7 +172,7 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
 
     @classmethod
     @abstractmethod
-    def from_file(
+    def read_from_file(
         cls, path: Union[str, bytes, os.PathLike], *args: Any, **kwds: Any
     ) -> Self:
         """Read a node file into a new data connector object.

@@ -464,7 +464,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
             raise  # Re-raise error.
 
     @classmethod
-    def from_file(
+    def read_from_file(
         cls,
         path: Union[str, bytes, os.PathLike],
         *,
