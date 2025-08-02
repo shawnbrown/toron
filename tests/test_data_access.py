@@ -63,16 +63,22 @@ class TestGetBackendFromPath(unittest.TestCase):
                 INSERT INTO mytable VALUES (1, 1), (2, 2);
             """)
 
-        self.assertIsNone(get_backend_from_path(self.fname))
+        regex = 'does not appear to be a Toron file'
+        with self.assertRaisesRegex(ValueError, regex):
+            get_backend_from_path(self.fname)
 
     def test_other_file(self):
         with open(self.fname, 'wb') as f:
             f.write(b'\xff' * 64)  # Write 64 bytes of 1s.
 
-        self.assertIsNone(get_backend_from_path(self.fname))
+        regex = 'does not appear to be a Toron file'
+        with self.assertRaisesRegex(ValueError, regex):
+            get_backend_from_path(self.fname)
 
     def test_empty_file(self):
-        self.assertIsNone(get_backend_from_path(self.fname))
+        regex = 'does not appear to be a Toron file'
+        with self.assertRaisesRegex(ValueError, regex):
+            get_backend_from_path(self.fname)
 
     def test_file_not_found(self):
         with self.assertRaises(FileNotFoundError):

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from ._typing import (
     Callable,
     Dict,
-    Optional,
     Set,
     Type,
     Union,
@@ -102,9 +101,7 @@ def get_data_access_layer(backend: str = 'DAL1') -> DataAccessLayer:
     raise RuntimeError(msg)
 
 
-def get_backend_from_path(
-    path: Union[str, bytes, os.PathLike]
-) -> Optional[str]:
+def get_backend_from_path(path: Union[str, bytes, os.PathLike]) -> str:
     """Inspect file and return appropriate backend string.
     If the file type is not supported, returns ``None``.
 
@@ -130,4 +127,5 @@ def get_backend_from_path(
     #if header.startswith(hdf5_magic_number):
     #    return 'DAL#'
 
-    return None
+    msg = f'{path!r} does not appear to be a Toron file'
+    raise ValueError(msg)
