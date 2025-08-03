@@ -26,9 +26,9 @@ class TestGetDataAccessLayer(unittest.TestCase):
             dal = get_data_access_layer(backend='xyz')
 
     def test_missing_backend(self):
-        regex = 'could not find data backend None'
+        regex = "could not find data backend 'XYZ'"
         with self.assertRaisesRegex(RuntimeError, regex):
-            dal = get_data_access_layer(backend=None)
+            dal = get_data_access_layer(backend='XYZ')
 
 
 class TestDataAccessLayer(unittest.TestCase):

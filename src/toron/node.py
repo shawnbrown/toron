@@ -148,7 +148,7 @@ class TopoNode(object):
     def __init__(
         self,
         *,
-        backend: str = 'DAL1',
+        backend: Optional[str] = None,
         **kwds: Any,
     ) -> None:
         self._dal = data_access.get_data_access_layer(backend)
@@ -2504,7 +2504,7 @@ def bind_node(
                 f"cannot bind to {filepath!r} in 'rwc' mode, process "
                 f"does not have write permissions"
             )
-        backend = 'DAL1'
+        backend = None
     else:
         msg = f'path does not exist: {filepath!r}'
         raise FileNotFoundError(msg)

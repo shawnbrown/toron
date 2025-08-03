@@ -65,9 +65,6 @@ class TestInstantiation(unittest.TestCase):
     def test_backend_unknown(self):
         """Invalid ``backend`` values should raise an error."""
         with self.assertRaises(RuntimeError):
-            node = TopoNode(backend=None)
-
-        with self.assertRaises(RuntimeError):
             node = TopoNode(backend='DAL#')
 
     def test_kwds(self):

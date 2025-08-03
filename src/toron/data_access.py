@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from ._typing import (
     Callable,
     Dict,
+    Optional,
     Set,
     Type,
     Union,
@@ -57,12 +58,15 @@ class DataAccessLayer(object):
 _loaded_backends: Dict[str, DataAccessLayer] = {}
 
 
-def get_data_access_layer(backend: str = 'DAL1') -> DataAccessLayer:
+def get_data_access_layer(backend: Optional[str] = None) -> DataAccessLayer:
     """Load and return a DataAccessLayer instance for a given backend.
 
     DAL1 is the only available backend and there is no current plan
     to add another (although the structure exists to do so).
     """
+    if not backend:
+        backend = 'DAL1'  # If omitted, use 'DAL1' (the default backend).
+
     if backend in _loaded_backends:
         return _loaded_backends[backend]  # <- EXIT!
 
