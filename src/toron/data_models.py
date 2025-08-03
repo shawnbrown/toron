@@ -194,6 +194,7 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         path: Union[str, bytes, os.PathLike],
         *,
         mode: Literal['ro', 'rw', 'rwc'],
+        **kwds: Any,
     ) -> Self:
         """Bind a DataConnector directly to a file on drive (does not
         load into memory).

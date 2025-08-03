@@ -533,6 +533,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         path: Union[str, bytes, os.PathLike],
         *,
         mode: Literal['ro', 'rw', 'rwc'],
+        **kwds,
     ) -> Self:
         """Bind a DataConnector directly to a file on drive (does not
         load into memory).
@@ -554,6 +555,14 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
             changes are applied **immediately** to the file on drive
             and cannot be undone.
         """
+        if kwds:
+            # Accepts no additional keyword args (included in signature
+            # to satisfy type checking).
+            raise TypeError(
+                f'{cls.__name__}.bind_file() got an unexpected keyword '
+                f'argument {next(iter(kwds))!r}'
+            )
+
         database_path = os.path.abspath(os.fsdecode(path))
         is_new_file = not os.path.exists(database_path)
 

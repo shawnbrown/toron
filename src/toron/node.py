@@ -2444,7 +2444,11 @@ class TopoNode(object):
 
 
 def read_file(filepath: Union[str, bytes, os.PathLike], **kwds) -> TopoNode:
-    """Read a ``.toron`` file into a TopoNode."""
+    """Read a ``.toron`` file into a TopoNode.
+
+    Any additional keyword arguments (``**kwds``) are passed along to
+    the lower-level file interface.
+    """
     backend = data_access.get_backend_from_path(filepath)
     if not backend:
         raise RuntimeError(f'invalid file format, cannot open {filepath!r}')
@@ -2469,6 +2473,9 @@ def bind_node(
     * ``'ro'``: read-only
     * ``'rw'``: read and write
     * ``'rwc'``: read, write, and create (if file doesn't already exist)
+
+    Any additional keyword arguments (``**kwds``) are passed along to
+    the lower-level file interface.
 
     .. code-block:: python
 
@@ -2505,6 +2512,6 @@ def bind_node(
 
     obj = TopoNode.__new__(TopoNode)
     obj._dal = data_access.get_data_access_layer(backend)
-    obj._connector = obj._dal.DataConnector.bind_file(filepath, mode=mode)
+    obj._connector = obj._dal.DataConnector.bind_file(filepath, mode=mode, **kwds)
     obj._path_hint = os.fsdecode(filepath)
     return obj
