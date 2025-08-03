@@ -1166,7 +1166,7 @@ class PropertyRepository(BasePropertyRepository):
         )
         record = self._cursor.fetchone()
         if record is None:
-            raise KeyError(f'no record with key of {key!r}')
+            raise KeyError(f'no property with key of {key!r}')
         return record[0]
 
     def update(self, key: str, value: JsonTypes) -> None:
