@@ -2460,3 +2460,57 @@ def read_file(filepath: Union[str, bytes, os.PathLike], **kwds) -> TopoNode:
     obj._connector = obj._dal.DataConnector.read_from_file(filepath, **kwds)
     obj._path_hint = os.fsdecode(filepath)
     return obj
+
+
+def bind_node(
+    filepath: Union[str, bytes, os.PathLike],
+    *,
+    mode: Literal['ro', 'rw', 'rwc'],
+    **kwds: Any,
+) -> TopoNode:
+    """Bind a TopoNode directly to its ``.toron`` file on drive.
+
+    The *mode* must be one of the following:
+
+    * ``'ro'``: read-only
+    * ``'rw'``: read and write
+    * ``'rwc'``: read, write, and create (if file doesn't already exist)
+
+    .. code-block:: python
+
+        >>> node = toron.attach_node('mynode.toron', mode='rw')
+
+    .. warning::
+
+        Operations on a node bound directly to its file on drive
+        are **live and irreversible**. Any modifications are written
+        immediately and permanently to the associated file.
+    """
+    if mode not in {'ro', 'rw', 'rwc'}:
+        msg = f"invalid mode {mode!r}; expected one of: 'ro', 'rw', 'rwc'"
+        raise ValueError(msg)
+
+    if os.path.exists(filepath):
+        if mode in {'rw', 'rwc'} and not os.access(filepath, os.W_OK):
+            raise PermissionError(
+                f"cannot bind to {filepath!r} in {mode!r} mode, process "
+                f"does not have write permissions"
+            )
+        backend = data_access.get_backend_from_path(filepath)
+    elif mode == 'rwc':
+        dir_path = os.path.dirname(filepath)
+        if not os.access(dir_path, os.W_OK):
+            raise PermissionError(
+                f"cannot bind to {filepath!r} in 'rwc' mode, process "
+                f"does not have write permissions"
+            )
+        backend = 'DAL1'
+    else:
+        msg = f'path does not exist: {filepath!r}'
+        raise FileNotFoundError(msg)
+
+    obj = TopoNode.__new__(TopoNode)
+    obj._dal = data_access.get_data_access_layer(backend)
+    obj._connector = obj._dal.DataConnector.bind_file(filepath, mode=mode)
+    obj._path_hint = os.fsdecode(filepath)
+    return obj

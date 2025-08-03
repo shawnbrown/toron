@@ -12,6 +12,7 @@ __all__ = [
 
     # FUNCTIONS
     'read_file',
+    'bind_node',
     'wide_to_narrow',
     'wide_to_long',
 ]
@@ -25,6 +26,7 @@ def __dir__():  # Customize module attribute list (PEP 562).
 from .node import (
     TopoNode,
     read_file,
+    bind_node,
 )
 from .xnode import xNode
 from ._utils import (

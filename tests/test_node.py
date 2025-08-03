@@ -38,7 +38,11 @@ from toron.data_models import (
     Quantity,
     QuantityIterator,
 )
-from toron.node import TopoNode, read_file
+from toron.node import (
+    TopoNode,
+    read_file,
+    bind_node,
+)
 from toron.reader import NodeReader
 
 
@@ -173,6 +177,75 @@ class TestFileHandling(unittest.TestCase):
         with suppress(TypeError):
             node.to_file(object())  # <- Saving fails with TypeError.
         self.assertIsNone(node.path_hint)
+
+
+class TestBindNode(unittest.TestCase):
+    def setUp(cls):
+        cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
+        cls.addCleanup(cls.temp_dir.cleanup)
+
+        if sys.version_info < (3, 7, 17):
+            # Fix for old bug https://github.com/python/cpython/issues/70847
+            def make_files_readwrite():
+                root_dir = cls.temp_dir.name
+                for f in os.listdir(root_dir):
+                    f_path = os.path.join(root_dir, f)
+                    os.chmod(f_path, stat.S_IRUSR | stat.S_IWUSR)
+
+            cls.addCleanup(make_files_readwrite)
+
+    def test_new_file_read_write_create(self):
+        """In 'rwc' mode, nodes can be created directly on drive."""
+        new_path = os.path.join(self.temp_dir.name, 'new_node.toron')
+        self.assertFalse(os.path.isfile(new_path))
+
+        node = bind_node(new_path, mode='rwc')
+        del node
+        gc.collect()  # Explicitly trigger full garbage collection.
+
+        self.assertTrue(os.path.isfile(new_path), msg='file must persist on drive')
+
+    def test_new_file_read_only(self):
+        """In read-only mode, nodes must already exist--cannot be created."""
+        new_path = os.path.join(self.temp_dir.name, 'new_node.toron')
+        self.assertFalse(os.path.isfile(new_path))
+
+        with self.assertRaises(FileNotFoundError):
+            node = bind_node(new_path, mode='ro')
+
+    def test_existing_read_write(self):
+        file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
+        TopoNode().to_file(file_path)  # Create a new node and save to drive.
+
+        try:
+            node = bind_node(file_path, mode='rw')
+        except Exception:
+            self.fail("read-write file should open with 'rw' permissions")
+
+        os.chmod(file_path, stat.S_IRUSR)  # Set to read-only.
+        regex = "cannot bind to .+ in 'rw' mode, process does not have write permissions"
+        with self.assertRaisesRegex(PermissionError, regex):
+            connector = bind_node(file_path, mode='rw')
+
+    def test_existing_read_only(self):
+        file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
+        TopoNode().to_file(file_path)  # Create a new node and save to drive.
+
+        try:
+            node = bind_node(file_path, mode='ro')
+        except Exception:
+            self.fail("file with read and write permissions should open in 'ro' mode")
+
+        msg = 'should fail when trying to change a file bound in read-only mode'
+        with self.assertRaises(Exception, msg=msg):
+            node.set_domain({'foo': 'bar'})
+
+        os.chmod(file_path, stat.S_IRUSR)  # Set to read-only.
+        try:
+            node = bind_node(file_path, mode='ro')
+        except Exception:
+            self.fail("file with read-only permissions should open in 'ro' mode")
+
 
 class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
     def test_managed_connection_type(self):
