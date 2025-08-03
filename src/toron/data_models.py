@@ -153,7 +153,7 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         """
 
     @abstractmethod
-    def to_file(
+    def save_to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
         """Write node data to a file.

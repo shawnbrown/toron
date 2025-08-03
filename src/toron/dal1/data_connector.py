@@ -358,7 +358,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         """Commit the transaction."""
         cursor.execute('COMMIT TRANSACTION')
 
-    def to_file(
+    def save_to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
         """Write node data to a file.

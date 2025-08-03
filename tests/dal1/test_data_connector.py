@@ -325,7 +325,7 @@ class TestToFile(unittest.TestCase):
 
         # Create node file.
         node_path = os.path.join(self.temp_dir.name, 'node_file.toron')
-        DataConnector().to_file(node_path)
+        DataConnector().save_to_file(node_path)
 
         self.assertEqual(
             oct(os.stat(node_path).st_mode),

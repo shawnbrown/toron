@@ -188,7 +188,7 @@ class TopoNode(object):
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
         """Write node data to a file."""
-        self._connector.to_file(path=path, fsync=fsync)
+        self._connector.save_to_file(path=path, fsync=fsync)
         if not self._path_hint:
             self._path_hint = os.fsdecode(path)
 

@@ -67,13 +67,13 @@ class DataConnectorBaseTest(ABC):
         except Exception:
             self.fail('acquired connection should be releasable')
 
-    def test_to_file(self):
+    def test_save_to_file(self):
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             file_path = os.path.join(tmpdir, 'mynode.toron')
             self.assertFalse(os.path.exists(file_path))
 
             connector = self.dal.DataConnector()
-            connector.to_file(file_path, fsync=True)
+            connector.save_to_file(file_path, fsync=True)
             self.assertTrue(os.path.exists(file_path))
 
             file_size = os.path.getsize(file_path)
@@ -83,7 +83,7 @@ class DataConnectorBaseTest(ABC):
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             file_path = os.path.join(tmpdir, 'mynode.toron')
             original = self.dal.DataConnector()
-            original.to_file(file_path)
+            original.save_to_file(file_path)
 
             loadedfromfile = self.dal.DataConnector.read_from_file(file_path)
             self.assertEqual(original.unique_id, loadedfromfile.unique_id)
@@ -110,7 +110,7 @@ class DataConnectorBaseTest(ABC):
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             file_path = os.path.join(tmpdir, 'mynode.toron')
             original = self.dal.DataConnector()
-            original.to_file(file_path)
+            original.save_to_file(file_path)
 
             with self.assertRaises(TypeError, msg='`mode` should be a keyword-only argument'):
                 self.dal.DataConnector.bind_file(file_path, 'rw')
