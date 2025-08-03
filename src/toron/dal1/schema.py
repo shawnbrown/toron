@@ -223,9 +223,10 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     cur.execute(f"PRAGMA main.application_id = {int.from_bytes(TORON_MAGIC_NUMBER, 'big')}")
     cur.execute(f"PRAGMA main.user_version = {int.from_bytes(b'DAL1', 'big')}")
 
+    # Set unique_id for node (using uuid4() for most random value).
     cur.execute(
         'INSERT INTO main.property (key, value) VALUES (?, ?)',
-        ('unique_id', json_dumps(str(uuid4()))),  # uuid4() for most random value.
+        ('unique_id', json_dumps(str(uuid4()))),
     )
 
 
