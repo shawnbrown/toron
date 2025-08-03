@@ -106,6 +106,44 @@ class DataConnectorBaseTest(ABC):
             with self.assertRaises(Exception):
                 self.dal.DataConnector.read_from_file(file_path)
 
+    def test_bind_file(self):
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            file_path = os.path.join(tmpdir, 'mynode.toron')
+            original = self.dal.DataConnector()
+            original.to_file(file_path)
+
+            with self.assertRaises(TypeError, msg='`mode` should be a keyword-only argument'):
+                self.dal.DataConnector.bind_file(file_path, 'rw')
+
+            bound_from_file = self.dal.DataConnector.bind_file(file_path, mode='rw')
+            self.assertEqual(original.unique_id, bound_from_file.unique_id)
+
+    def test_bind_file_missing(self):
+        """Should fail if file is missing (unless using mode='rwc')."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            file_path = os.path.join(tmpdir, 'does_not_exist.toron')
+
+            self.assertFalse(os.path.isfile(file_path), msg='file should no already exist')
+
+            msg = "should fail if opened in 'rw' mode and file does not already exist"
+            with self.assertRaises(Exception, msg=msg):
+                self.dal.DataConnector.bind_file(file_path, mode='rw')
+
+            # Bind to find using 'rwc' mode.
+            self.dal.DataConnector.bind_file(file_path, mode='rwc')
+            msg = "should create new node file if opened in 'rwc' mode and file does not already exist"
+            self.assertTrue(os.path.isfile(file_path), msg=msg)
+
+    def test_bind_file_unknown_format(self):
+        """Should raise error if file uses unknown format."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            file_path = os.path.join(tmpdir, 'unknown_format.xyz')
+            with closing(open(file_path, 'w')) as f:
+                f.write('Hello World\n')
+
+            with self.assertRaises(Exception):
+                self.dal.DataConnector.bind_file(file_path, mode='rw')
+
     def test_transaction_is_active(self):
         connector = self.dal.DataConnector()
         connection = connector.acquire_connection()

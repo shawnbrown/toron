@@ -187,6 +187,35 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
             be defined as keyword-only arguments.
         """
 
+    @classmethod
+    @abstractmethod
+    def bind_file(
+        cls,
+        path: Union[str, bytes, os.PathLike],
+        *,
+        mode: Literal['ro', 'rw', 'rwc'],
+    ) -> Self:
+        """Bind a DataConnector directly to a file on drive (does not
+        load into memory).
+
+        +-------+-----------------------------+
+        | mode  | definition                  |
+        +=======+=============================+
+        | 'ro'  | read-only                   |
+        +-------+-----------------------------+
+        | 'rw'  | read and write              |
+        +-------+-----------------------------+
+        | 'rwc' | read, write, and create (if |
+        |       | file doesn't already exist) |
+        +-------+-----------------------------+
+
+        .. warning::
+
+            When operating on a bound node in 'rw' or 'rwc' mode,
+            changes are applied **immediately** to the file on drive
+            and cannot be undone.
+        """
+
 
 class BaseColumnManager(ABC):
     """Manage node's label columns (add, get, update, and delete)."""

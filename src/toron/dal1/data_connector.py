@@ -266,7 +266,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
     def __init__(self, cache_to_drive: bool = False) -> None:
         """Initialize a new node instance."""
         self._unique_id: str
-        self._access_mode: Literal['ro', 'rw', None]
+        self._access_mode: Literal['ro', 'rw', 'rwc', None]
         self._current_working_path: Optional[str]
         self._in_memory_connection: Optional[ToronSqlite3Connection]
 
@@ -571,3 +571,47 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         instance._in_memory_connection = None
 
         return instance
+
+    @classmethod
+    def bind_file(
+        cls,
+        path: Union[str, bytes, os.PathLike],
+        *,
+        mode: Literal['ro', 'rw', 'rwc'],
+    ) -> Self:
+        """Bind a DataConnector directly to a file on drive (does not
+        load into memory).
+
+        +-------+-----------------------------+
+        | mode  | definition                  |
+        +=======+=============================+
+        | 'ro'  | read-only                   |
+        +-------+-----------------------------+
+        | 'rw'  | read and write              |
+        +-------+-----------------------------+
+        | 'rwc' | read, write, and create (if |
+        |       | file doesn't already exist) |
+        +-------+-----------------------------+
+
+        .. warning::
+
+            When operating on a bound node in 'rw' or 'rwc' mode,
+            changes are applied **immediately** to the file on drive
+            and cannot be undone.
+        """
+        database_path = os.path.abspath(os.fsdecode(path))
+        is_new_file = not os.path.exists(database_path)
+
+        with closing(get_sqlite_connection(database_path, access_mode=mode)) as con:
+            with closing(con.cursor()) as cur:
+                if is_new_file:
+                    schema.create_node_schema(cur)
+                unique_id = schema.get_unique_id(cur)
+
+        obj = cls.__new__(cls)
+        obj._unique_id = unique_id
+        obj._access_mode = mode
+        obj._current_working_path = database_path
+        obj._in_memory_connection = None
+
+        return obj
