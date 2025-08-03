@@ -155,12 +155,6 @@ class TopoNode(object):
         self._connector = self._dal.DataConnector(**kwds)
         self._path_hint = None
 
-        with self._managed_cursor() as cursor:
-            refresh_index_hash_property(
-                index_repo=self._dal.IndexRepository(cursor),
-                prop_repo=self._dal.PropertyRepository(cursor),
-            )
-
     @property
     def path_hint(self) -> Optional[str]:
         """The first known file path associated with this instance,

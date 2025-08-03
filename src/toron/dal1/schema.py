@@ -70,7 +70,7 @@ from toron._typing import (
     Optional,
     Set,
 )
-from toron._utils import BitFlags
+from toron._utils import BitFlags, SequenceHash
 from ..data_models import TORON_MAGIC_NUMBER  # Used as 'application_id'.
 
 
@@ -227,6 +227,12 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     cur.execute(
         'INSERT INTO main.property (key, value) VALUES (?, ?)',
         ('unique_id', json_dumps(str(uuid4()))),
+    )
+
+    # Set initial index_hash value (hash of the "undefined" record alone).
+    cur.execute(
+        'INSERT INTO main.property (key, value) VALUES (?, ?)',
+        ('index_hash', json_dumps(SequenceHash([0]).get_hexdigest())),
     )
 
 
