@@ -528,51 +528,6 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
         return instance
 
     @classmethod
-    def attach_to_file(
-        cls,
-        path: Union[str, bytes, os.PathLike],
-        required_permissions: Literal['ro', 'rw', None] = 'ro',
-    ) -> Self:
-        """Attach to a DataConnector directly from a file on drive
-        (does not load into memory).
-
-        Parameters
-        ----------
-        path : :py:term:`path-like-object`
-            File path containing the node data.
-        required_permissions : 'ro' | 'rw' | None, default 'ro'
-            Required file permissions on drive.
-
-        .. warning::
-
-            Use caution when changing a node that has been opened
-            directly in read-write mode. Changes are applied
-            **immediately** to the file on drive and cannot be undone.
-        """
-        database_path = os.path.abspath(os.fsdecode(path))
-        verify_permissions(database_path, required_permissions)
-
-        path_exists = os.path.exists(database_path)
-        with closing(get_sqlite_connection(database_path)) as con:
-            with closing(con.cursor()) as cur:
-                if path_exists:
-                    schema.verify_node_schema(cur)
-                    #if not schema.is_supported_schema(cur):
-                    #    msg = 'unknown or unsupported file format'
-                    #    raise RuntimeError(msg)
-                else:
-                    schema.create_node_schema(cur)
-                unique_id = schema.get_unique_id(cur)
-
-        instance = cls.__new__(cls)
-        instance._unique_id = unique_id
-        instance._access_mode = required_permissions
-        instance._current_working_path = database_path
-        instance._in_memory_connection = None
-
-        return instance
-
-    @classmethod
     def bind_file(
         cls,
         path: Union[str, bytes, os.PathLike],
