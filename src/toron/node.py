@@ -153,7 +153,7 @@ class TopoNode(object):
     ) -> None:
         self._dal = data_access.get_data_access_layer(backend)
         self._connector = self._dal.DataConnector(**kwds)
-        self._path_hint = None
+        self._path_hint: Optional[str] = None
 
     @property
     def path_hint(self) -> Optional[str]:
