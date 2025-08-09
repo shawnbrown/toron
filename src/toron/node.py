@@ -2498,7 +2498,10 @@ def bind_node(
                 f"does not have write permissions"
             )
         backend = data_access.get_backend_from_path(filepath)
-    elif mode == 'rwc':
+    else:
+        if mode != 'rwc':
+            raise FileNotFoundError(f'path does not exist: {filepath!r}')
+
         dir_path = os.path.dirname(filepath)
         if not os.access(dir_path, os.W_OK):
             raise PermissionError(
@@ -2506,9 +2509,6 @@ def bind_node(
                 f"does not have write permissions"
             )
         backend = None
-    else:
-        msg = f'path does not exist: {filepath!r}'
-        raise FileNotFoundError(msg)
 
     obj = TopoNode.__new__(TopoNode)
     obj._dal = data_access.get_data_access_layer(backend)
