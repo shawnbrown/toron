@@ -584,24 +584,25 @@ def quantize_values(
     assigned to items 1 (``0.6875`` fractional) and 3 (``0.75``
     fractional).
 
-        +----------+----------+-----------+
-        | Index ID | Original | Quantized |
-        +==========+==========+===========+
-        |    1     | 10.6875  |   11.0    |
-        +----------+----------+-----------+
-        |    2     | 20.5625  |   20.0    |
-        +----------+----------+-----------+
-        |    3     | 30.75    |   31.0    |
-        +----------+----------+-----------+
+        +----------+----------+----------+----------+------------+
+        | Index ID | Original | Floored  | Assigned | Quantized  |
+        +==========+==========+==========+==========+============+
+        |    1     | 10.6875  |   10.0   |   +1.0   |    11.0    |
+        +----------+----------+----------+----------+------------+
+        |    2     | 20.5625  |   20.0   |   None   |    20.0    |
+        +----------+----------+----------+----------+------------+
+        |    3     | 30.75    |   30.0   |   +1.0   |    31.0    |
+        +----------+----------+----------+----------+------------+
 
     .. important::
 
         The *sum_total* parameter is a required argument. This design
         choice was made because the function is intended for contexts
-        where the sum total is already pre-calculated or explicitly
-        provided, such as disaggregation or translation. Calculating
-        *sum_total* within the function would be redundant and could
-        introduce floating-point precision errors.
+        where the sum total is *already* pre-calculated or explicitly
+        provided (e.g., when *disaggregating* or *translating*). It
+        would be redundant for this function to calculate *sum_total*
+        itself and doing so could introduce floating-point precision
+        errors.
     """
     # Accumulate sum of whole parts and format items as 3-tuples.
     sum_of_whole_parts = 0.0
