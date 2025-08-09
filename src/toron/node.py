@@ -2508,7 +2508,7 @@ def bind_node(
                 f"cannot bind to {filepath!r} in 'rwc' mode, process "
                 f"does not have write permissions"
             )
-        backend = None
+        backend = None  # Use `None` for default backend.
 
     obj = TopoNode.__new__(TopoNode)
     obj._dal = data_access.get_data_access_layer(backend)
