@@ -107,7 +107,8 @@ def get_data_access_layer(backend: Optional[str] = None) -> DataAccessLayer:
 
 def get_backend_from_path(path: Union[str, bytes, os.PathLike]) -> str:
     """Inspect file and return appropriate backend string.
-    If the file type is not supported, returns ``None``.
+
+    If the file type is not supported, a ValueError is raised.
 
     .. note::
         When inspecting files, this function should make a best
