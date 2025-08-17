@@ -467,14 +467,16 @@ def get_default_weight_group(
     """Return the node's default weight group."""
     try:
         weight_group_id = property_repo.get('default_weight_group_id')
-        if not isinstance(weight_group_id, int):
-            raise TypeError(
-                f"'default_weight_group_id' property must be int, got "
-                f"{weight_group_id.__class__.__qualname__}: {weight_group_id!r}"
-            )
-        return weight_group_repo.get(weight_group_id)
     except KeyError:
         raise RuntimeError('no default weight group is defined')
+
+    if not isinstance(weight_group_id, int):
+        raise TypeError(
+            f"'default_weight_group_id' property must be int, got "
+            f"{weight_group_id.__class__.__qualname__}: {weight_group_id!r}"
+        )
+
+    return weight_group_repo.get(weight_group_id)
 
 
 def get_all_discrete_categories(
