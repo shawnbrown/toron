@@ -479,6 +479,46 @@ def get_default_weight_group(
     return weight_group_repo.get(weight_group_id)
 
 
+def find_matching_weight_groups(
+    attribute_repo: BaseAttributeGroupRepository,
+    weight_group_repo: BaseWeightGroupRepository,
+    property_repo: BasePropertyRepository,
+    attribute_ids: Optional[Iterable[int]] = None,
+) -> Iterable[Tuple[AttributeGroup, WeightGroup]]:
+    """Get selectors for *attribute_ids*. If *attribute_ids* is None,
+    then this function will get selectors for all attribute groups.
+    """
+    # Build dicts of weight group id (keys) to weight group (values).
+    all_weight_groups = {wg.id: wg for wg in weight_group_repo.get_all()}
+    match_weight_groups = \
+        {id: wg for id, wg in all_weight_groups.items() if (wg.is_complete and wg.selectors)}
+
+    default_weight_group = get_default_weight_group(
+        property_repo=property_repo,
+        weight_group_repo=weight_group_repo,
+    )
+
+    # Build dict of weight group id (keys) to list of selectors (values).
+    func = lambda selectors: [parse_selector(s) for s in selectors]
+    selector_dict = {k: func(v.selectors) for k, v in match_weight_groups.items()}
+
+    # Get attribute groups to match.
+    attribute_groups: Iterable[AttributeGroup]
+    if attribute_ids:
+        attribute_groups = (attribute_repo.get(x) for x in attribute_ids)
+    else:
+        attribute_groups = attribute_repo.find_all()
+
+    # Yield attribute group and matching weight group.
+    for attribute_group in attribute_groups:
+        weight_group_id = get_greatest_unique_specificity(
+            row_dict=attribute_group.attributes,
+            selector_dict=selector_dict,
+            default=default_weight_group.id,
+        )
+        yield (attribute_group, all_weight_groups[weight_group_id])
+
+
 def get_all_discrete_categories(
     column_manager: BaseColumnManager,
     property_repo: BasePropertyRepository,

@@ -28,6 +28,7 @@ from toron.data_service import (
     find_crosswalks_by_ref,
     set_default_weight_group,
     get_default_weight_group,
+    find_matching_weight_groups,
     rename_discrete_categories,
     rebuild_structure_table,
     add_discrete_categories,
@@ -692,6 +693,99 @@ class TestGetAndSetDefaultWeightGroup(unittest.TestCase):
                 property_repo=self.property_repo,
                 weight_group_repo=self.weight_group_repo,
             )
+
+
+class TestFindMatchingWeightGroups(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        column_manager = dal.ColumnManager(cur)
+        index_repo = dal.IndexRepository(cur)
+
+        self.attribute_repo = dal.AttributeGroupRepository(cur)
+        self.weight_group_repo = dal.WeightGroupRepository(cur)
+        self.property_repo = dal.PropertyRepository(cur)
+
+        self.weight_group_repo.add('a', selectors='[foo]', is_complete=True)  # weight_group_id 1
+        self.weight_group_repo.add('b', selectors='[bar]', is_complete=True)  # weight_group_id 2
+        self.property_repo.add_or_update(key='default_weight_group_id', value=1)
+        self.attribute_repo.add({'foo': '111'})  # attribute_group_id 1
+        self.attribute_repo.add({'bar': '222'})  # attribute_group_id 2
+
+    def test_all_attribute_groups(self):
+        result = find_matching_weight_groups(
+            attribute_repo=self.attribute_repo,
+            weight_group_repo=self.weight_group_repo,
+            property_repo=self.property_repo,
+        )
+        expected = [
+            (AttributeGroup(1, {'foo': '111'}), WeightGroup(1, 'a', None, ['[foo]'], 1)),
+            (AttributeGroup(2, {'bar': '222'}), WeightGroup(2, 'b', None, ['[bar]'], 1)),
+        ]
+        self.assertEqual(list(result), expected)
+
+    def test_filtered_by_attribute_ids(self):
+        result = find_matching_weight_groups(
+            attribute_repo=self.attribute_repo,
+            weight_group_repo=self.weight_group_repo,
+            property_repo=self.property_repo,
+            attribute_ids=[2],
+        )
+        expected = [
+            (AttributeGroup(2, {'bar': '222'}), WeightGroup(2, 'b', None, ['[bar]'], 1)),
+        ]
+        self.assertEqual(list(result), expected)
+
+    def test_default_weight_group_behavior(self):
+        """Default should be returned for attributes with no match or
+        for attributes without a "greatest unique specificity".
+        """
+        # Add an attributegroup that isn't matched by any selector.
+        self.attribute_repo.add({'baz': '333'})  # attribute_group_id 3
+
+        # Add an attribute group that matches to weight groups 1 and 2 with
+        # the same level of specificity.
+        self.attribute_repo.add({'foo': '111', 'bar': '222'})  # attribute_group_id 4
+
+        result = find_matching_weight_groups(
+            attribute_repo=self.attribute_repo,
+            weight_group_repo=self.weight_group_repo,
+            property_repo=self.property_repo,
+        )
+        expected = [
+            (AttributeGroup(1, {'foo': '111'}), WeightGroup(1, 'a', None, ['[foo]'], 1)),
+            (AttributeGroup(2, {'bar': '222'}), WeightGroup(2, 'b', None, ['[bar]'], 1)),
+            (AttributeGroup(3, {'baz': '333'}), WeightGroup(1, 'a', None, ['[foo]'], 1)),  # <- No match at all.
+            (AttributeGroup(4, {'foo': '111', 'bar': '222'}), WeightGroup(1, 'a', None, ['[foo]'], 1)),  # <- No unique specificity.
+        ]
+        self.assertEqual(list(result), expected)
+
+    def test_default_with_no_selector(self):
+        """Default assignment should work even if it has no selector."""
+        # Add a new weight group without a selector and make it the new default.
+        self.weight_group_repo.add('c', selectors=None, is_complete=True)  # weight_group_id 3
+        self.property_repo.add_or_update(key='default_weight_group_id', value=3)
+
+        # Add an attributegroup that isn't matched by any selector.
+        self.attribute_repo.add({'baz': '333'})  # attribute_group_id 3
+
+        result = find_matching_weight_groups(
+            attribute_repo=self.attribute_repo,
+            weight_group_repo=self.weight_group_repo,
+            property_repo=self.property_repo,
+        )
+        expected = [
+            (AttributeGroup(1, {'foo': '111'}), WeightGroup(1, 'a', None, ['[foo]'], 1)),
+            (AttributeGroup(2, {'bar': '222'}), WeightGroup(2, 'b', None, ['[bar]'], 1)),
+            (AttributeGroup(3, {'baz': '333'}), WeightGroup(3, 'c', None, None, 1)),  # <- No match at all.
+        ]
+        self.assertEqual(list(result), expected)
 
 
 class TestRenameDiscreteCategories(unittest.TestCase):
