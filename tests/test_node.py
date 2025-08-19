@@ -4780,6 +4780,18 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, regex):
             quant_iter = self.node('[sex="MALE"][category="TOTAL"]', False)
 
+    def test_logging_messages(self):
+        """Should log weight names and matched attribute groups."""
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            quant_iter = self.node()  # <- Disaggregate (should log info).
+
+        self.assertEqual(
+            cm.output,
+            [("INFO:app-toron.node:weight matches:\n"
+              "{'totpop': [{'category': 'TOTAL', 'sex': 'MALE'},\n"
+              "            {'category': 'TOTAL', 'sex': 'FEMALE'}]}")]
+        )
+
 
 class TestTopoNodeRepr(unittest.TestCase):
     @staticmethod

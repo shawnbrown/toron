@@ -2,12 +2,13 @@
 
 import array
 import os
-from collections import Counter
+from collections import Counter, defaultdict
 from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from itertools import chain, compress, groupby
 from logging import getLogger
 from math import isnan, isinf
+from pprint import pformat
 
 from toron._typing import (
     Any,
@@ -56,6 +57,7 @@ from .data_service import (
     find_crosswalks_by_ref,
     set_default_weight_group,
     get_default_weight_group,
+    find_matching_weight_groups,
     get_all_discrete_categories,
     rename_discrete_categories,
     rebuild_structure_table,
@@ -2382,6 +2384,28 @@ class TopoNode(object):
                             break
             else:
                 attribute_id_filter = None
+
+            # Find attribute-weight matches as `(attr_group, wt_group)` tuples.
+            matches = find_matching_weight_groups(
+                attribute_repo=attribute_repo,
+                weight_group_repo=self._dal.WeightGroupRepository(cursor),
+                property_repo=property_repo,
+                attribute_ids=attribute_id_filter,
+            )
+
+            # Build `matches_dict` to use for logging matches.
+            matches_dict: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+            for attribute_group, weight_group in matches:
+                attrs = attribute_group.attributes
+                if attrs not in matches_dict[weight_group.name]:
+                    matches_dict[weight_group.name].append(attrs)
+
+            applogger.info(f'weight matches:\n{pformat(dict(matches_dict))}')
+
+            # TODO: Once adaptive disaggregation has been reimplemented,
+            # investigate the idea of using `matches` to build a dict
+            # of attribute group id (key) to weight group id (value) that
+            # is used to reduce selector matching during disaggregation.
 
         # Get disaggregated results generator.
         data = self._disaggregate(attribute_id_filter, quantize=quantize)
