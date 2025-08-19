@@ -1,7 +1,6 @@
 """Tests for toron/node.py module."""
 
 import gc
-import logging
 import os
 import re
 import sqlite3
@@ -873,18 +872,6 @@ class TestIndexColumnMethods(unittest.TestCase):
 
 
 class TestIndexMethods(unittest.TestCase):
-    def setUp(self):
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
-
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -999,17 +986,19 @@ class TestIndexMethods(unittest.TestCase):
     def test_insert_extra_columns(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
-        node.insert_index([
-            ('C',   'B', 'D', 'A'),  # <- Extra columns (C and D).
-            ('111', 'x', '1', 'foo'),
-            ('222', 'y', '2', 'bar'),
-        ])
+
+        with self.assertLogs('app-toron') as cm:
+            node.insert_index([
+                ('C',   'B', 'D', 'A'),  # <- Extra columns (C and D).
+                ('111', 'x', '1', 'foo'),
+                ('222', 'y', '2', 'bar'),
+            ])
 
         # Check the logged messages.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 2 index records\n"
-             "WARNING: ignored extra columns: 'C', 'D'\n"),
+            cm.output,
+            ["INFO:app-toron.node:loaded 2 index records",
+             "WARNING:app-toron.node:ignored extra columns: 'C', 'D'"],
         )
 
         expected = [
@@ -1023,21 +1012,22 @@ class TestIndexMethods(unittest.TestCase):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
-        node.insert_index([
-            ('A', 'B'),
-            ('foo', 'x'),
-            ('foo', 'x'),  # <- Duplicate of previous record.
-            ('bar', ''),   # <- Contains empty string.
-            ('bar', 'y'),
-            ('baz', 'z'),
-        ])
+        with self.assertLogs('app-toron') as cm:
+            node.insert_index([
+                ('A', 'B'),
+                ('foo', 'x'),
+                ('foo', 'x'),  # <- Duplicate of previous record.
+                ('bar', ''),   # <- Contains empty string.
+                ('bar', 'y'),
+                ('baz', 'z'),
+            ])
 
         # Check the logged messages.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ('INFO: loaded 3 index records\n'
-             'WARNING: skipped 1 duplicate records\n'
-             'WARNING: skipped 1 records having some empty string labels\n'),
+            cm.output,
+            ['INFO:app-toron.node:loaded 3 index records',
+             'WARNING:app-toron.node:skipped 1 duplicate records',
+             'WARNING:app-toron.node:skipped 1 records having some empty string labels'],
         )
 
         # Check the loaded data.
@@ -1728,18 +1718,6 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
 
 
 class TestTopoNodeWeightGroupMethods(unittest.TestCase):
-    def setUp(self):
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
-
     @staticmethod
     def get_weight_group_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -1809,19 +1787,22 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
         self.assertIsNone(node.get_weight_group('name_zzz'))
 
     def test_add_weight_group(self):
-        # Test `add_weight_group()` behavior.
+        """Test `add_weight_group()` behavior."""
         node = TopoNode()
-        node.add_weight_group('name_a')  # <- Only `name` is required (should log a warning and set as default).
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            node.add_weight_group('name_a')  # <- Only `name` is required (should log a warning and set as default).
+
+        self.assertEqual(
+            cm.output,
+            ["WARNING:app-toron.node:setting default weight group: 'name_a'"],
+        )
+
         node.add_weight_group(  # <- Defining all properties.
             name='name_b',
             description='Group B',
             selectors=['"[foo]"'],
             is_complete=True
-        )
-
-        self.assertEqual(
-            self.log_stream.getvalue(),
-            "WARNING: setting default weight group: 'name_a'\n",
         )
 
         self.assertEqual(
@@ -1867,12 +1848,12 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_weight_group_helper(node), expected)
 
-        node.edit_weight_group('name_x', description='Description of X.')
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            node.edit_weight_group('name_x', description='Description of X.')
 
-        # Check warning message.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            "WARNING: no weight group named 'name_x'\n",
+            cm.output,
+            ["WARNING:app-toron.node:no weight group named 'name_x'"],
         )
 
     def test_drop_weight_group(self):
@@ -1899,27 +1880,25 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
             # Make weight group the default.
             property_repo.add('default_weight_group_id', 1)
 
-        node.drop_weight_group('name_a')  # <- Method under test.
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            node.drop_weight_group('name_a')  # <- Method under test.
 
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: removed weight group 'name_a'\n"
-             "WARNING: default weight group was removed\n"),
+            cm.output,
+            ["INFO:app-toron.node:removed weight group 'name_a'",
+             "WARNING:app-toron.node:default weight group was removed"],
         )
 
         msg = 'weight group and associated weights should be deleted'
         self.assertEqual(self.get_weight_group_helper(node), [], msg=msg)
         self.assertEqual(self.get_weight_helper(node), [], msg=msg)
 
-        # Clear `log_stream` buffer (for next assertion).
-        self.log_stream.seek(0)
-        self.log_stream.truncate()
-
-        node.drop_weight_group('name_x')  # <- Method under test.
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            node.drop_weight_group('name_x')  # <- Method under test.
 
         self.assertEqual(
-            self.log_stream.getvalue(),
-            "WARNING: no weight group named 'name_x'\n",
+            cm.output,
+            ["WARNING:app-toron.node:no weight group named 'name_x'"],
         )
 
 
@@ -2035,17 +2014,6 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             weight_group_repo.add('group1')
 
         self.node = node
-
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
 
     def get_weights_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
@@ -2181,14 +2149,15 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             (3, 'bar', 'z', 15.0),    # <- OK (gets inserted)
         ]
 
-        self.node.insert_weights('group1', data)
+        with self.assertLogs('app-toron') as cm:
+            self.node.insert_weights('group1', data)
 
         # Check the logged messages.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 1 new records into 'group1'\n"
-             "WARNING: skipped 1 rows with no matching index_id\n"
-             "WARNING: skipped 1 rows whose labels do not match the given index_id\n"),
+            cm.output,
+            ["INFO:app-toron.node:loaded 1 new records into 'group1'",
+             "WARNING:app-toron.node:skipped 1 rows with no matching index_id",
+             "WARNING:app-toron.node:skipped 1 rows whose labels do not match the given index_id"],
         )
 
         # Check inserted records (only one).
@@ -2202,13 +2171,14 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('bar', 'z', 15.0),    # <- OK (gets inserted)
         ]
 
-        self.node.insert_weights('group1', data)
+        with self.assertLogs('app-toron') as cm:
+            self.node.insert_weights('group1', data)
 
         # Check the logged messages.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 1 new records into 'group1'\n"
-             "WARNING: skipped 2 rows whose labels do not match any existing index\n"),
+            cm.output,
+            ["INFO:app-toron.node:loaded 1 new records into 'group1'",
+             "WARNING:app-toron.node:skipped 2 rows whose labels do not match any existing index"],
         )
 
         # Check inserted records (only one).
@@ -2224,13 +2194,15 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('bar', 'z', 'c', 15.0),
             ('-',   '-', '-',  7.0),  # <- Undefined record.
         ]
-        self.node.insert_weights('group1', data)
+
+        with self.assertLogs('app-toron') as cm:
+            self.node.insert_weights('group1', data)
 
         # Check the logged messages.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
-             "WARNING: skipped 2 rows matching the undefined record\n"),
+            cm.output,
+            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.node:skipped 2 rows matching the undefined record"],
         )
 
         # Check that the other weights were loaded as normal.
@@ -2265,17 +2237,18 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('foo', 'x', float('inf')),  # <- Infinity.
             ('bar', 'z', 15.0),
         ]
-        self.node.insert_weights('group1', data)
+
+        with self.assertLogs('app-toron') as cm:
+            self.node.insert_weights('group1', data)
+
+        self.assertEqual(
+            cm.output,
+            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.node:skipped 3 rows without real number values"],
+        )
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
         self.assertEqual(self.get_weights_helper(), expected)
-
-        # Check the logged messages.
-        self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
-             "WARNING: skipped 3 rows without real number values\n"),
-        )
 
     def test_insert_on_conflict_fail(self):
         data = [
@@ -2285,20 +2258,16 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('bar', 'z', 15.0),
             ('bar', 'z', 84.0),  # <- Conflicts with previous record.
         ]
-        regex = r'weight record already exists'
-        with self.assertRaisesRegex(Exception, regex):
-            self.node.insert_weights('group1', data)
+
+        with self.assertNoLogs('app-toron'):
+            regex = r'weight record already exists'
+            with self.assertRaisesRegex(Exception, regex):
+                self.node.insert_weights('group1', data)
 
         self.assertEqual(
             self.get_weights_helper(),
             [],
             msg='no records should be loaded',
-        )
-
-        self.assertEqual(
-            self.log_stream.getvalue(),
-            '',
-            msg='should not log any messages',
         )
 
     def test_insert_on_conflict_ignore(self):
@@ -2309,17 +2278,19 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('bar', 'z', 15.0),
             ('bar', 'z', 84.0),  # <- Conflicts with previous record.
         ]
-        self.node.insert_weights('group1', data, on_conflict='skip')
+
+        with self.assertLogs('app-toron') as cm:
+            self.node.insert_weights('group1', data, on_conflict='skip')
+
+        self.assertEqual(
+            cm.output,
+            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.node:skipped 1 rows that match existing records"],
+        )
 
         self.assertEqual(
             self.get_weights_helper(),
             [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)],
-        )
-
-        self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
-             "WARNING: skipped 1 rows that match existing records\n"),
         )
 
     def test_insert_on_conflict_replace(self):
@@ -2330,17 +2301,19 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('bar', 'z', 15.0),
             ('bar', 'z', 84.0),  # <- Conflicts with previous record.
         ]
-        self.node.insert_weights('group1', data, on_conflict='overwrite')
+
+        with self.assertLogs('app-toron') as cm:
+            self.node.insert_weights('group1', data, on_conflict='overwrite')
+
+        self.assertEqual(
+            cm.output,
+            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.node:replaced 1 existing records with new weights"],
+        )
 
         self.assertEqual(
             self.get_weights_helper(),
             [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 84.0)],
-        )
-
-        self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
-             "WARNING: replaced 1 existing records with new weights\n"),
         )
 
     def test_insert_on_conflict_sum(self):
@@ -2351,17 +2324,19 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('bar', 'z', 15.0),
             ('bar', 'z', 84.0),  # <- Conflicts with previous record.
         ]
-        self.node.insert_weights('group1', data, on_conflict='sum')
+
+        with self.assertLogs('app-toron') as cm:
+            self.node.insert_weights('group1', data, on_conflict='sum')
+
+        self.assertEqual(
+            cm.output,
+            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.node:combined sum of 1 new weights together with existing records"],
+        )
 
         self.assertEqual(
             self.get_weights_helper(),
             [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 99.0)],
-        )
-
-        self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 3 new records into 'group1', weight group is complete\n"
-             "WARNING: combined sum of 1 new weights together with existing records\n"),
         )
 
     def test_update(self):
@@ -2414,13 +2389,14 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             ('z', 3, 'bar', 333.0),  # <- Does not previously exist.
         ]
 
-        self.node.update_weights('group1', data)
+        with self.assertLogs('app-toron') as cm:
+            self.node.update_weights('group1', data)
 
         # Check the logged messages.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: updated 2 existing records in 'group1'\n"
-             "WARNING: loaded 1 new records, weight group is complete\n"),
+            cm.output,
+            ["INFO:app-toron.node:updated 2 existing records in 'group1'",
+             "WARNING:app-toron.node:loaded 1 new records, weight group is complete"],
         )
 
         # Check updated values.
@@ -2482,15 +2458,15 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             (9, 'bar', 'z', 555.0),    # <- No index_id 9.
         ]
 
-        self.node.update_weights('group1', data)
+        with self.assertLogs('app-toron') as cm:
+            self.node.update_weights('group1', data)
 
         # Check the logged messages.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: updated 0 existing records in 'group1'\n"
-             "WARNING: skipped 1 rows with no matching index_id\n"
-             "WARNING: skipped 1 rows whose labels do not match the "
-               "given index_id\n"),
+            cm.output,
+            ["INFO:app-toron.node:updated 0 existing records in 'group1'",
+             "WARNING:app-toron.node:skipped 1 rows with no matching index_id",
+             "WARNING:app-toron.node:skipped 1 rows whose labels do not match the given index_id"],
         )
 
         # Check that values are unchanged.
@@ -2543,15 +2519,15 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
             (3, 'bar', 'z'),    # <- No matching weight.
         ]
 
-        self.node.delete_weights('group1', data)
+        with self.assertLogs('app-toron') as cm:
+            self.node.delete_weights('group1', data)
 
-        # Check the applogger messages.
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: deleted 0 weights from 'group1'\n"
-             "WARNING: skipped 1 rows with mismatched labels\n"
-             "WARNING: skipped 1 rows with no matching index_id\n"
-             "WARNING: skipped 1 rows with no matching weight record\n"),
+            cm.output,
+            ["INFO:app-toron.node:deleted 0 weights from 'group1'",
+             'WARNING:app-toron.node:skipped 1 rows with mismatched labels',
+             'WARNING:app-toron.node:skipped 1 rows with no matching index_id',
+             'WARNING:app-toron.node:skipped 1 rows with no matching weight record'],
         )
 
         # Check weights (unchanged--only two weights were added).
@@ -2577,17 +2553,6 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
 
 class TestTopoNodeCrosswalkMethods(unittest.TestCase):
     def setUp(self):
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
-
         node = TopoNode()
         with node._managed_cursor() as cursor:
             col_manager = node._dal.ColumnManager(cursor)
@@ -2600,10 +2565,6 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
             index_repo.add('bar', 'z')
 
         self.node = node
-
-    def clear_log_stream_helper(self):  # <- Helper function.
-        self.log_stream.seek(0)
-        self.log_stream.truncate()
 
     @staticmethod
     def get_crosswalk_helper(node):  # <- Helper function.
@@ -2668,13 +2629,13 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex, msg=msg):
             result = self.node.get_crosswalk('111-111')  # <- Ambiguous shortcode.
 
-        result = self.node.get_crosswalk('111-111-2222')
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            result = self.node.get_crosswalk('111-111-2222')
+
         self.assertEqual(
-            self.log_stream.getvalue(),
-            "WARNING: found multiple crosswalks, using default: 'name1'\n",
-            msg='should warn if there are multiple matches',
+            cm.output,
+            ["WARNING:app-toron.node:found multiple crosswalks, using default: 'name1'"],
         )
-        self.assertEqual(result.id, 2, msg='should return default crosswalk')
 
         regex = "found multiple crosswalks, must specify name: 'name1', 'name2'"
         msg = 'should raise error if there are multiples but no default'
@@ -2687,12 +2648,14 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         result = self.node.get_crosswalk('333-333-3333', 'name1')
         self.assertEqual(result.id, 4, msg='specified name should match non-default crosswalk')
 
-        self.clear_log_stream_helper()  # Clear log before calling get_crosswalk().
-        result = self.node.get_crosswalk('333-333-3333', 'unknown_name')
-        self.assertIsNone(result, msg='if specified name does not exist, should be None')
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            result = self.node.get_crosswalk('333-333-3333', 'unknown_name')
+            self.assertIsNone(result, msg='if specified name does not exist, should be None')
+
         self.assertEqual(
-            self.log_stream.getvalue(),
-            "WARNING: crosswalk 'unknown_name' not found, can be: 'name1', 'name2'\n",
+            cm.output,
+            [("WARNING:app-toron.node:crosswalk 'unknown_name' not found, "
+              "can be: 'name1', 'name2'")],
         )
 
         result = self.node.get_crosswalk('000-unknown-0000')
@@ -2704,11 +2667,12 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
 
         node = TopoNode()
 
-        node.add_crosswalk(mock_other_node, 'name1')  # <- Only required args (sets as default and logs warning).
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            node.add_crosswalk(mock_other_node, 'name1')  # <- Only required args (sets as default and logs warning).
 
         self.assertEqual(
-            self.log_stream.getvalue(),
-            "WARNING: setting default crosswalk: 'name1'\n",
+            cm.output,
+            ["WARNING:app-toron.node:setting default crosswalk: 'name1'"],
         )
 
         node.add_crosswalk(  # <- Defining all properties.
@@ -2809,17 +2773,6 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
 
 class TestTopoNodeInsertRelations2(unittest.TestCase):
     def setUp(self):
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
-
         # Build TopoNode fixture to use in test cases.
         node = TopoNode()
         with node._managed_cursor() as cursor:
@@ -2977,12 +2930,14 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
             (3, 2, b'\x80',  5.0),
             (3, 3, b'\x80', 15.0),
         ]
-        self.node.insert_relations2('myfile', 'rel1', data)
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_relations2('myfile', 'rel1', data)
 
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ('INFO: loaded 3 relations\n'
-             'WARNING: skipped 2 relations with invalid mapping levels\n'),
+            cm.output,
+            ['INFO:app-toron.node:loaded 3 relations',
+             'WARNING:app-toron.node:skipped 2 relations with invalid mapping levels'],
         )
 
         self.assertEqual(
@@ -3990,17 +3945,6 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
         self.add_cols_helper(self.node, 'state', 'county')
         self.add_index_helper(self.node, [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')])
 
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
-
     def test_insert_quantities(self):
         data = [
             ('state', 'county', 'category', 'sex', 'counts'),
@@ -4152,22 +4096,23 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
     def test_insert_quantities_domain_listed_in_attributes(self):
         self.node.set_domain({'countryiso': 'US'})
 
-        self.node.insert_quantities(
-            value='counts',
-            attributes=['category', 'sex', 'countryiso'],
-            data=[
-                ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
-                ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
-                ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
-                ('US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
-                ('US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
-            ],
-        )
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities(
+                value='counts',
+                attributes=['category', 'sex', 'countryiso'],
+                data=[
+                    ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
+                    ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                    ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                    ('US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+                    ('US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+                ],
+            )
 
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ('WARNING: removing domain columns from attributes\n'
-             'INFO: loaded 4 quantities\n'),
+            cm.output,
+            ['WARNING:app-toron.node:removing domain columns from attributes',
+             'INFO:app-toron.node:loaded 4 quantities'],
         )
 
         self.assertEqual(
@@ -4181,23 +4126,24 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
     def test_insert_quantities_domain_bad_values(self):
         self.node.set_domain({'countryiso': 'US'})
 
-        self.node.insert_quantities(
-            value='counts',
-            attributes=['category', 'sex'],
-            data=[
-                ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
-                ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
-                ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
-                ('', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
-                ('', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
-            ],
-        )
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities(
+                value='counts',
+                attributes=['category', 'sex'],
+                data=[
+                    ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
+                    ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                    ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                    ('', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+                    ('', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+                ],
+            )
 
         self.assertEqual(
-            self.log_stream.getvalue(),
-            ("INFO: loaded 2 quantities\n"
-             "WARNING: skipped 2 quantities with bad domain values: "
-             "countryiso must be 'US'\n"),
+            cm.output,
+            ['INFO:app-toron.node:loaded 2 quantities',
+             ("WARNING:app-toron.node:skipped 2 quantities with bad "
+              "domain values: countryiso must be 'US'")],
         )
 
         self.assertEqual(
@@ -4242,17 +4188,6 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
             self.node,
             [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')],
         )
-
-        # Set up stream object to capture log messages.
-        self.log_stream = StringIO()
-        self.addCleanup(self.log_stream.close)
-
-        # Add handler to 'app-toron' logger.
-        applogger = logging.getLogger('app-toron')
-        handler = logging.StreamHandler(self.log_stream)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-        applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
 
     def test_select_quantities(self):
         self.node.set_domain({'group': 'A', 'year': '2025'})
