@@ -7,7 +7,7 @@ import sqlite3
 import stat
 import sys
 import tempfile
-import unittest
+from . import _unittest as unittest
 from contextlib import suppress
 from decimal import Decimal
 from io import StringIO
@@ -22,6 +22,7 @@ if sys.version_info >= (3, 8):
     from typing import get_args
 else:
     from typing_extensions import get_args
+
 
 from .common import normalize_structures
 
