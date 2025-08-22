@@ -4718,12 +4718,13 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
 
     def test_logging_messages(self):
         """Should log weight names and matched attribute groups."""
-        with self.assertLogs('app-toron', level='INFO') as cm:
+        with self.assertLogs('app-toron', level='DEBUG') as cm:
             quant_iter = self.node()  # <- Disaggregate (should log info).
 
         self.assertEqual(
             cm.output,
-            [("INFO:app-toron.node:weight matches:\n"
+            ["INFO:app-toron.node:using weights: 'totpop'",
+             ("DEBUG:app-toron.node:attribute matches:\n"
               "{'totpop': [{'category': 'TOTAL', 'sex': 'MALE'},\n"
               "            {'category': 'TOTAL', 'sex': 'FEMALE'}]}")]
         )

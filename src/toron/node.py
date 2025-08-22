@@ -2400,7 +2400,8 @@ class TopoNode(object):
                 if attrs not in matches_dict[weight_group.name]:
                     matches_dict[weight_group.name].append(attrs)
 
-            applogger.info(f'weight matches:\n{pformat(dict(matches_dict))}')
+            applogger.info(f"using weights: {', '.join(repr(x) for x in matches_dict)}")
+            applogger.debug(f'attribute matches:\n{pformat(dict(matches_dict))}')
 
             # TODO: Once adaptive disaggregation has been reimplemented,
             # investigate the idea of using `matches` to build a dict
