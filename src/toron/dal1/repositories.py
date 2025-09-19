@@ -1124,23 +1124,25 @@ class RelationRepository(BaseRelationRepository):
 
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
-        # TODO: See if this SQL can be optimized. Compare it against
-        #       the IndexRepository.find_unmatched_index_ids() method.
         self._cursor.execute(
             """
-                SELECT 1
-                FROM main.node_index a
-                WHERE NOT EXISTS (
+                -- Determine if index_id set is complete (no records missing).
+                SELECT NOT EXISTS(
+                    -- Determine if one or more records are missing.
                     SELECT 1
-                    FROM main.relation b
-                    WHERE b.crosswalk_id=? AND a.index_id=b.index_id
-                ) AND a.index_id != 0
-                LIMIT 1
+                    FROM main.node_index
+                    WHERE index_id != 0
+                    AND index_id NOT IN (
+                        SELECT index_id
+                        FROM main.relation
+                        WHERE crosswalk_id = ? AND index_id IS NOT NULL
+                    )
+                )
             """,
             (crosswalk_id,),
         )
-        is_partial = bool(self._cursor.fetchall())
-        return not is_partial
+        is_complete = self._cursor.fetchone()[0]
+        return bool(is_complete)
 
 
 class PropertyRepository(BasePropertyRepository):
