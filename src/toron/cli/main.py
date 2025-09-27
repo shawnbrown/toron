@@ -17,11 +17,15 @@ from .colorconfig import stdout_styles
 from .loggerconfig import configure_applogger
 
 
-parser = argparse.ArgumentParser(
-    prog='toron',
-    epilog=f'Version: Toron {__version__}',
-)
-parser.add_argument('path', help='path to file')
+def get_parser() -> argparse.ArgumentParser:
+    """Get argument parser for Toron command line interface."""
+    parser = argparse.ArgumentParser(
+        prog='toron',
+        description='Show and edit Toron node file properties.',
+        epilog=f'Version: Toron {__version__}',
+    )
+    parser.add_argument('path', help='path to file', metavar='PATH')
+    return parser
 
 
 applogger = logging.getLogger('app-toron')
@@ -33,6 +37,7 @@ EXITCODE_ERR: Final[int] = 1
 
 
 def main() -> int:
+    parser = get_parser()
     args = parser.parse_args()
 
     if Path(args.path).is_file():
