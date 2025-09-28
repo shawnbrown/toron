@@ -270,15 +270,21 @@ class TestDataConnector(unittest.TestCase):
         connector = DataConnector(cache_to_drive=True)
         con = connector.acquire_connection()  # <- Method under test.
         try:
-            cur = con.execute('PRAGMA database_list')
-            _, _, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
+            cur = con.cursor()
+            try:
+                cur.execute('PRAGMA database_list')
+                _, _, file = cur.fetchone()  # Row contains `seq`, `name`, and `file`.
 
-            self.assertEqual(
-                os.path.realpath(file),
-                os.path.realpath(connector._current_working_path),
-                msg='should be the same file',
-            )
-            self.assertIsNone(connector._in_memory_connection)
+                self.assertEqual(
+                    os.path.realpath(file),
+                    os.path.realpath(connector._current_working_path),
+                    msg='should be the same file',
+                )
+                self.assertIsNone(connector._in_memory_connection)
+            finally:
+                # Explicitly close Cursor object to prevent `weakref` clean-up
+                # errors on Windows using Python versions 3.11, 3.12, and 3.13.
+                cur.close()
         finally:
             super(ToronSqlite3Connection, con).close()
 
