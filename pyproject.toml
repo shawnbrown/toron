@@ -54,7 +54,9 @@ legacy_tox_ini = """
   [testenv]
   package = editable
   deps =
-    py3{7,8,9,10,11,12,13}: pandas
+    py3{7,8,10,11,12,13}: pandas
+    py39: pandas; sys_platform == "linux" or sys_platform == "win32"
+    py39: pandas<2; sys_platform == "darwin"
   commands_pre =
     python --version
     python -c 'import sqlite3; print(f"SQLite {sqlite3.sqlite_version}")'
