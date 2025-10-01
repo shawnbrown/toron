@@ -10,7 +10,9 @@ from .._typing import (
     Any,
     Dict,
     Literal,
+    Mapping,
     Optional,
+    TextIO,
 )
 
 
@@ -22,11 +24,6 @@ class ExitCode(IntEnum):
 # =====================================================================
 # Terminal Colors
 # =====================================================================
-
-if sys.platform == 'win32':
-    from colorama import just_fix_windows_console
-    just_fix_windows_console()
-
 
 @dataclass(frozen=True)
 class TerminalStyle:
@@ -58,15 +55,70 @@ NO_COLOR_STYLES = TerminalStyle(
     bright='',
 )
 
+# Global (module-level) variables--set by `configure_terminalstyles()`.
+_stdout_styles: Optional[TerminalStyle] = None
+_stderr_styles: Optional[TerminalStyle] = None
 
-if os.environ.get('NO_COLOR') or os.environ.get('TERM') == 'dumb':
-    # Disable color and styles.
-    stdout_styles = NO_COLOR_STYLES
-    stderr_styles = NO_COLOR_STYLES
-else:
+
+def configure_terminalstyles(
+    *,
+    environ: Optional[Mapping] = None,
+    stdout: Optional[TextIO] = None,
+    stderr: Optional[TextIO] = None,
+) -> None:
+    """Configure terminal styles for stdout and stderr streams.
+
+    Call without arguments for normal operation::
+
+        >>> configure_terminalstyles()
+
+    For testing, provide keyword arguments `environ`, `stdout`, and
+    `stderr` as needed::
+
+        >>> class FakeTTY(io.StringIO):
+        ...     def isatty(self):
+        ...         return True
+        ...
+        >>> fake_tty = FakeTTY()
+        >>> configure_terminalstyles(environ={'TERM': 'dumb'}, stderr=fake_tty)
+    """
+    global _stdout_styles
+    global _stderr_styles
+
+    if not environ:
+        environ = os.environ
+
+    # If user has disabled colors or terminal is 'dumb', set styles and exit.
+    if environ.get('NO_COLOR') or environ.get('TERM') == 'dumb':
+        _stdout_styles = NO_COLOR_STYLES
+        _stderr_styles = NO_COLOR_STYLES
+        return  # <- EXIT!
+
+    if not stdout:
+        stdout = sys.stdout
+    if not stderr:
+        stderr = sys.stderr
+
     # Set color and styles if stream uses interactive terminal (a TTY).
-    stdout_styles = COLOR_STYLES if sys.stdout.isatty() else NO_COLOR_STYLES
-    stderr_styles = COLOR_STYLES if sys.stderr.isatty() else NO_COLOR_STYLES
+    _stdout_styles = COLOR_STYLES if stdout.isatty() else NO_COLOR_STYLES
+    _stderr_styles = COLOR_STYLES if stderr.isatty() else NO_COLOR_STYLES
+
+    # If using color on Windows, enable ANSI color support.
+    if sys.platform == 'win32' and (
+        (_stdout_styles is COLOR_STYLES) or (_stderr_styles is COLOR_STYLES)
+    ):
+        import colorama
+        colorama.just_fix_windows_console()
+
+
+def get_stdout_styles() -> TerminalStyle:
+    """Return configured styles for stdout, or no-color as fallback."""
+    return _stdout_styles or NO_COLOR_STYLES
+
+
+def get_stderr_styles() -> TerminalStyle:
+    """Return configured styles for stderr, or no-color as fallback."""
+    return _stderr_styles or NO_COLOR_STYLES
 
 
 # =====================================================================
@@ -123,7 +175,7 @@ class ColorFormatter(_Formatter):
         super().__init__(fmt, *common_args, defaults=defaults)
 
         # Define short alias for styles dataclass (used in f-strings).
-        s = stderr_styles
+        s = get_stderr_styles()
 
         # Instantiate color formatters.
         self.color_formatters = {

@@ -13,7 +13,7 @@ from .. import (
     __version__,
     bind_node,
 )
-from .common import configure_applogger, stdout_styles, ExitCode
+from .common import configure_applogger, configure_terminalstyles, get_stdout_styles, ExitCode
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -28,6 +28,7 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 applogger = logging.getLogger('app-toron')
+configure_terminalstyles()
 configure_applogger(applogger)
 
 
@@ -66,6 +67,7 @@ def main() -> ExitCode:
         )
 
     # Define short alias for style values (used in f-string).
+    stdout_styles = get_stdout_styles()
     bright = stdout_styles.bright
     reset = stdout_styles.reset
 
