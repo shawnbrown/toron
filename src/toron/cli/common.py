@@ -105,7 +105,7 @@ def configure_terminalstyles(
 
     # If using color on Windows, enable ANSI color support.
     if sys.platform == 'win32' and (
-        (_stdout_styles is COLOR_STYLES) or (_stderr_styles is COLOR_STYLES)
+        (_stderr_styles is COLOR_STYLES) or (_stdout_styles is COLOR_STYLES)
     ):
         import colorama
         colorama.just_fix_windows_console()
