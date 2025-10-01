@@ -19,6 +19,10 @@ class ExitCode(IntEnum):
     ERR = 1
 
 
+# =====================================================================
+# Terminal Colors
+# =====================================================================
+
 if sys.platform == 'win32':
     from colorama import just_fix_windows_console
     just_fix_windows_console()
@@ -64,6 +68,10 @@ else:
     stdout_styles = COLOR_STYLES if sys.stdout.isatty() else NO_COLOR_STYLES
     stderr_styles = COLOR_STYLES if sys.stderr.isatty() else NO_COLOR_STYLES
 
+
+# =====================================================================
+# Logging
+# =====================================================================
 
 if sys.version_info < (3, 8):
     # Prior to 3.8, `Formatter` did not support *validate* or *defaults* args.
