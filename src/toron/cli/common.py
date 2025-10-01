@@ -1,4 +1,4 @@
-"""Resources to configure CLI application logger."""
+"""Common resources for Toron CLI application."""
 
 import logging
 import logging.config
