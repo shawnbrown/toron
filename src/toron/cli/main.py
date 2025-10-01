@@ -14,7 +14,7 @@ from .. import (
     bind_node,
 )
 from .colorconfig import stdout_styles
-from .loggerconfig import configure_applogger
+from .common import configure_applogger
 
 
 def get_parser() -> argparse.ArgumentParser:
