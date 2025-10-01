@@ -13,7 +13,7 @@ from .. import (
     __version__,
     bind_node,
 )
-from .common import configure_applogger, stdout_styles
+from .common import configure_applogger, stdout_styles, ExitCode
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -31,11 +31,7 @@ applogger = logging.getLogger('app-toron')
 configure_applogger(applogger)
 
 
-EXITCODE_OK: Final[int] = 0
-EXITCODE_ERR: Final[int] = 1
-
-
-def main() -> int:
+def main() -> ExitCode:
     parser = get_parser()
     args = parser.parse_args()
 
@@ -45,7 +41,7 @@ def main() -> int:
         path = f'{args.path}.toron'
     else:
         applogger.error(f'file not found {args.path!r}')
-        return EXITCODE_ERR  # <- EXIT!
+        return ExitCode.ERR  # <- EXIT!
 
     filename = Path(path).name  # File only, no parent directory text.
 
@@ -53,7 +49,7 @@ def main() -> int:
         node = bind_node(path, mode='ro')
     except Exception as err:
         applogger.error(str(err))
-        return EXITCODE_ERR  # <- EXIT!
+        return ExitCode.ERR  # <- EXIT!
 
     # Define horizontal rule `hr` made from "Box Drawings" character.
     hr = '─' * min(len(filename), (get_terminal_size()[0] - 1))
@@ -91,4 +87,4 @@ def main() -> int:
         f"{bright}incoming crosswalks:{reset}\n"
         f"  {crosswalks_str}\n"
     )
-    return EXITCODE_OK
+    return ExitCode.OK

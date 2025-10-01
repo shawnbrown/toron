@@ -5,12 +5,18 @@ import logging.config
 import os
 import sys
 from dataclasses import dataclass
+from enum import IntEnum
 from .._typing import (
     Any,
     Dict,
     Literal,
     Optional,
 )
+
+
+class ExitCode(IntEnum):
+    OK = 0
+    ERR = 1
 
 
 if sys.platform == 'win32':
