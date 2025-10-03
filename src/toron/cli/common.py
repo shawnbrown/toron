@@ -29,12 +29,12 @@ class ExitCode(IntEnum):
 @dataclass(frozen=True)
 class TerminalStyle:
     """ANSI escape codes for terminal styles."""
-    info: str
-    warning: str
-    error: str
-    critical: str
-    reset: str
-    bright: str
+    info: str = ''
+    warning: str = ''
+    error: str = ''
+    critical: str = ''
+    reset: str = ''
+    bright: str = ''
 
 
 COLOR_STYLES = TerminalStyle(
