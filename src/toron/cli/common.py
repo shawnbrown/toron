@@ -37,24 +37,16 @@ class TerminalStyle:
     bright: str = ''
 
 
-COLOR_STYLES = TerminalStyle(
-    info='\33[38;5;33m',                   # blue
-    warning='\33[38;5;214m',               # yellow
-    error='\33[38;5;196m',                 # red
-    critical='\33[48;5;196m\33[38;5;16m',  # red background
-    reset='\33[0m',                        # reset styles
-    bright='\33[1m',                       # bright text
-)
+# Color and style codes.
+ansi_codes = {
+    'info': '\33[38;5;33m',                   # blue
+    'warning': '\33[38;5;214m',               # yellow
+    'error': '\33[38;5;196m',                 # red
+    'critical': '\33[48;5;196m\33[38;5;16m',  # red background
+    'reset': '\33[0m',                        # reset styles
+    'bright': '\33[1m',                       # bright text
+}
 
-
-NO_COLOR_STYLES = TerminalStyle(
-    info='',
-    warning='',
-    error='',
-    critical='',
-    reset='',
-    bright='',
-)
 
 # Global (module-level) variables--set by `configure_terminalstyles()`.
 _stdout_styles: Optional[TerminalStyle] = None
@@ -91,8 +83,9 @@ def configure_terminalstyles(
 
     # If user has disabled colors or terminal is 'dumb', set styles and exit.
     if environ.get('NO_COLOR') or environ.get('TERM') == 'dumb':
-        _stdout_styles = NO_COLOR_STYLES
-        _stderr_styles = NO_COLOR_STYLES
+        no_styles = TerminalStyle()
+        _stdout_styles = no_styles
+        _stderr_styles = no_styles
         return  # <- EXIT!
 
     if not stdout:
@@ -101,12 +94,14 @@ def configure_terminalstyles(
         stderr = sys.stderr
 
     # Set color and styles if stream uses interactive terminal (a TTY).
-    _stdout_styles = COLOR_STYLES if stdout.isatty() else NO_COLOR_STYLES
-    _stderr_styles = COLOR_STYLES if stderr.isatty() else NO_COLOR_STYLES
+    color_styles = TerminalStyle(**ansi_codes)
+    no_styles = TerminalStyle()
+    _stdout_styles = color_styles if stdout.isatty() else no_styles
+    _stderr_styles = color_styles if stderr.isatty() else no_styles
 
     # If using color on Windows, enable ANSI color support.
     if sys.platform == 'win32' and (
-        (_stderr_styles is COLOR_STYLES) or (_stdout_styles is COLOR_STYLES)
+        (_stderr_styles is color_styles) or (_stdout_styles is color_styles)
     ):
         import colorama
         colorama.just_fix_windows_console()
@@ -114,12 +109,12 @@ def configure_terminalstyles(
 
 def get_stdout_styles() -> TerminalStyle:
     """Return configured styles for stdout, or no-color as fallback."""
-    return _stdout_styles or NO_COLOR_STYLES
+    return _stdout_styles or TerminalStyle()
 
 
 def get_stderr_styles() -> TerminalStyle:
     """Return configured styles for stderr, or no-color as fallback."""
-    return _stderr_styles or NO_COLOR_STYLES
+    return _stderr_styles or TerminalStyle()
 
 
 # =====================================================================
