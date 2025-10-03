@@ -17,6 +17,7 @@ from .._typing import (
 
 
 class ExitCode(IntEnum):
+    """Status code (errorlevel) to return when program exits."""
     OK = 0
     ERR = 1
 
