@@ -48,12 +48,12 @@ ansi_codes = {
 }
 
 
-# Global (module-level) variables--set by `configure_terminalstyles()`.
+# Global (module-level) variables--set by `configure_styles()`.
 _stdout_styles: Optional[TerminalStyle] = None
 _stderr_styles: Optional[TerminalStyle] = None
 
 
-def configure_terminalstyles(
+def configure_styles(
     *,
     environ: Optional[Mapping] = None,
     stdout: Optional[TextIO] = None,
@@ -63,7 +63,7 @@ def configure_terminalstyles(
 
     Call without arguments for normal operation::
 
-        >>> configure_terminalstyles()
+        >>> configure_styles()
 
     For testing, provide keyword arguments `environ`, `stdout`, and
     `stderr` as needed::
@@ -73,7 +73,7 @@ def configure_terminalstyles(
         ...         return True
         ...
         >>> fake_tty = FakeTTY()
-        >>> configure_terminalstyles(environ={'TERM': 'dumb'}, stderr=fake_tty)
+        >>> configure_styles(environ={'TERM': 'dumb'}, stderr=fake_tty)
     """
     global _stdout_styles
     global _stderr_styles

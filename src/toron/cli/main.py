@@ -4,7 +4,7 @@ import logging
 from .. import __version__
 from .common import (
     ExitCode,
-    configure_terminalstyles,
+    configure_styles,
     configure_applogger,
 )
 
@@ -21,7 +21,7 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 applogger = logging.getLogger('app-toron')
-configure_terminalstyles()
+configure_styles()
 configure_applogger(applogger)
 
 
