@@ -59,14 +59,18 @@ def configure_styles(
     stdout: Optional[TextIO] = None,
     stderr: Optional[TextIO] = None,
 ) -> None:
-    """Configure terminal styles for stdout and stderr streams.
+    """Configure terminal styles for ``stdout`` and ``stderr`` streams.
+
+    When a stream is connected to a terminal device, ANSI style codes
+    are used. If color has been disabled or if a stream is redirected
+    elsewhere, then no styles are set.
 
     Call without arguments for normal operation::
 
         >>> configure_styles()
 
-    For testing, provide keyword arguments `environ`, `stdout`, and
-    `stderr` as needed::
+    For testing, provide keyword arguments ``environ``, ``stdout``, and
+    ``stderr`` as needed::
 
         >>> class FakeTTY(io.StringIO):
         ...     def isatty(self):
@@ -93,7 +97,7 @@ def configure_styles(
     if not stderr:
         stderr = sys.stderr
 
-    # Set color and styles if stream uses interactive terminal (a TTY).
+    # Set color styles if a stream is connected to a terminal (a TTY).
     color_styles = TerminalStyle(**ansi_codes)
     no_styles = TerminalStyle()
     _stdout_styles = color_styles if stdout.isatty() else no_styles
