@@ -46,28 +46,29 @@ jobs:
       with:
         # For a list of supported versions, see 'versions-manifest.json'
         # in the https://github.com/actions/python-versions/ repository.
+        # The last specified version will be used as the default Python.
         python-version: |
             3.8
             3.9
             3.10
             3.11
             3.12
-            3.13
             3.14-dev
             pypy3.10
             pypy3.11
+            3.13
         cache: pip
     - name: Configure tox cache
       uses: actions/cache@v4
       with:
         path: .tox
         key: tox-directory-${{ matrix.os }}-${{ hashFiles('.github/workflows/test.yml', 'pyproject.toml', 'requirements-dev.txt') }}
-    - name: Print tox interpreter Python version
-      run: python3.13 --version
+    - name: Print base Python version
+      run: python --version
     - name: Upgrade pip
-      run: python3.13 -m pip install --upgrade pip
+      run: python -m pip install --upgrade pip
     - name: Install tox
-      run: python3.13 -m pip install "tox>=4.0.0"
+      run: python -m pip install "tox>=4.0.0"
     - name: Run tests on all tox environments
       #run: python -m tox run-parallel --parallel-no-spinner
-      run: python3.13 -m tox -e check_types,check_deps,py38,py39,py310,py311,py312,py313,py314,pypy310,pypy311
+      run: python -m tox -e check_types,check_deps,py38,py39,py310,py311,py312,py313,py314,pypy310,pypy311
