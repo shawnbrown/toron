@@ -12,11 +12,11 @@ from toron.data_models import Structure
 from . import _unittest as unittest
 
 
-if sys.platform == 'darwin' and sqlite3.sqlite_version_info == (3, 35, 5):
-    # On macOS with SQLite version 3.35.5, tests reveal floating point
-    # precision differences (getting 2.9999999999999996 when expecting
-    # 3.0). This is only an issue when testing behavior that uses the
-    # DAL1 optimized version of `calculate_granularity()`.
+if sys.platform == 'darwin' and sqlite3.sqlite_version_info in {(3, 35, 5), (3, 37, 2)}:
+    # On macOS with certain versions of SQLite, tests reveal floating point
+    # precision differences (e.g., getting 2.9999999999999996 when expecting
+    # 3.0). This is only an issue when testing behavior that uses the DAL1
+    # optimized version of `calculate_granularity()`.
     sys.stderr.write('[macOS: using approximate values for `calculate_granularity()` tests]\n')
 
     def normalize_structures(structures: Iterable[Structure]) -> List[Structure]:
