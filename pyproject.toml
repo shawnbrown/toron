@@ -96,14 +96,4 @@ legacy_tox_ini = """
     python -m build --no-isolation
   commands_post =
     python -m twine check --strict dist/*
-
-  # Define explicit basepython overrides to prevent tox (when running
-  # via GitHub Actions) from resolving "py311" to PyPy 3.11 instead
-  # of CPython 3.11 if both runtimes are present. Setting basepython
-  # ensures consistent behavior across local and CI runs.
-  [testenv:py311]
-  basepython = python3.11
-
-  [testenv:pypy311]
-  basepython = pypy3.11
 """
