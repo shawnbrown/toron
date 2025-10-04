@@ -39,14 +39,15 @@ jobs:
       contents: read
     timeout-minutes: ${{ inputs.timeout && fromJSON(inputs.timeout) || 25 }}
     steps:
-    - name: Checkout
+    - name: Checkout last commit
       uses: actions/checkout@v4
-    - name: Set up Python versions
+    - name: Set up multiple Python versions
       uses: actions/setup-python@v5
       with:
         # For a list of supported versions, see 'versions-manifest.json'
         # in the https://github.com/actions/python-versions/ repository.
-        # The last specified version will be used as the default Python.
+        # IMPORTANT: The last version in the list becomes the active
+        # default python used in later steps.
         python-version: |
             3.8
             3.9
@@ -69,6 +70,6 @@ jobs:
       run: python -m pip install --upgrade pip
     - name: Install tox
       run: python -m pip install "tox>=4.0.0"
-    - name: Run tests on all tox environments
+    - name: Run tox tests for multiple Python versions
       #run: python -m tox run-parallel --parallel-no-spinner
       run: python -m tox -e check_types,check_deps,py38,py39,py310,py311,py312,py313,py314,pypy310,pypy311
