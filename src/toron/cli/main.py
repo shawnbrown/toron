@@ -32,7 +32,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='show file info',
         description='Show file information.',
     )
-    parser_info.add_argument('path', help='Toron node file', metavar='PATH')
+    parser_info.add_argument('file', help='Toron node file', metavar='FILE')
 
     return parser
 

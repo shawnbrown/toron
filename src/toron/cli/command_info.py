@@ -12,14 +12,14 @@ from .common import ExitCode, get_stdout_styles
 
 def command(args: argparse.Namespace) -> ExitCode:
     """Show information for Toron node file."""
-    if Path(args.path).is_file():
-        path = args.path
-    elif Path(f'{args.path}.toron').is_file():
-        path = f'{args.path}.toron'
+    if Path(args.file).is_file():
+        path = args.file
+    elif Path(f'{args.file}.toron').is_file():
+        path = f'{args.file}.toron'
     else:
         import logging
         applogger = logging.getLogger('app-toron')
-        applogger.error(f'file not found {args.path!r}')
+        applogger.error(f'file not found {args.file!r}')
         return ExitCode.ERR  # <- EXIT!
 
     filename = Path(path).name  # File only, no parent directory text.
