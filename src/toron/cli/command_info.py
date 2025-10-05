@@ -22,8 +22,6 @@ def command(args: argparse.Namespace) -> ExitCode:
         applogger.error(f'file not found {args.file!r}')
         return ExitCode.ERR  # <- EXIT!
 
-    filename = Path(path).name  # File only, no parent directory text.
-
     try:
         node = bind_node(path, mode='ro')
     except Exception as err:
@@ -31,9 +29,6 @@ def command(args: argparse.Namespace) -> ExitCode:
         applogger = logging.getLogger('app-toron')
         applogger.error(str(err))
         return ExitCode.ERR  # <- EXIT!
-
-    # Define horizontal rule `hr` made from "Box Drawings" character.
-    hr = '─' * min(len(filename), (get_terminal_size()[0] - 1))
 
     # Get dictionary of node info values.
     with node._managed_cursor() as cursor:
@@ -50,6 +45,12 @@ def command(args: argparse.Namespace) -> ExitCode:
     stdout_styles = get_stdout_styles()
     bright = stdout_styles.bright
     reset = stdout_styles.reset
+
+    # Get file name only, no parent directory text.
+    filename = Path(path).name
+
+    # Define horizontal rule `hr` made from "Box Drawings" character.
+    hr = '─' * min(len(filename), (get_terminal_size()[0] - 1))
 
     # Prepare and write output.
     domain_str = '\n  '.join(info_dict['domain_list'])
