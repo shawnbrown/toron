@@ -47,6 +47,15 @@ def get_parser() -> argparse.ArgumentParser:
         prog='toron',
     )
 
+    # Index command.
+    parser_index = subparsers.add_parser(
+        name='index',
+        help='select index records',
+        description='Select index records in CSV format.',
+    )
+    parser_index.add_argument('file', type=existing_file,
+                              help='Toron node file', metavar='FILE')
+
     # Info command.
     parser_info = subparsers.add_parser(
         'info',
@@ -70,6 +79,10 @@ def main() -> ExitCode:
 
     if args.command == 'info':
         from .command_info import command
+        return command(args)
+
+    if args.command == 'index':
+        from .command_index import command
         return command(args)
 
     parser.error('unable to process command')  # Exits with error code 2.
