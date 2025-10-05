@@ -23,9 +23,9 @@ class ExitCode(IntEnum):
     USAGE = 2  # Incorrect usage (invalid options or missing args).
 
 
-# =====================================================================
-# Terminal Colors
-# =====================================================================
+# ============================
+# Terminal Color Configuration
+# ============================
 
 @dataclass(frozen=True)
 class TerminalStyle:
@@ -122,9 +122,9 @@ def get_stderr_styles() -> TerminalStyle:
     return _stderr_styles or TerminalStyle()
 
 
-# =====================================================================
-# Logging
-# =====================================================================
+# ====================
+# Logger Configuration
+# ====================
 
 if sys.version_info < (3, 8):
     # Prior to 3.8, `Formatter` did not support *validate* or *defaults* args.
