@@ -20,6 +20,7 @@ class ExitCode(IntEnum):
     """Status code (errorlevel) to return when program exits."""
     OK = 0     # Success.
     ERR = 1    # General error.
+    USAGE = 2  # Incorrect usage (invalid options or missing args).
 
 
 # =====================================================================
