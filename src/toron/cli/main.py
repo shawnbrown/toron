@@ -1,12 +1,33 @@
 """Main command line application function."""
 import argparse
 import logging
+from os.path import isfile
 from .. import __version__
 from .common import (
     ExitCode,
     configure_styles,
     configure_applogger,
 )
+
+
+def existing_file(path):
+    """Checks if path (or path plus ".toron") exists and returns it
+    or raises an ``ArgumentTypeError``.
+
+    This function is used when adding arguments to an ArgumentParser
+    instance::
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument('file', type=existing_file)
+    """
+    if isfile(path):
+        return path
+
+    path_and_extension = f'{path}.toron'
+    if isfile(path_and_extension):
+        return path_and_extension
+
+    raise argparse.ArgumentTypeError(f'no such file: {path}')
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -32,7 +53,8 @@ def get_parser() -> argparse.ArgumentParser:
         help='show file info',
         description='Show file information.',
     )
-    parser_info.add_argument('file', help='Toron node file', metavar='FILE')
+    parser_info.add_argument('file', type=existing_file,
+                             help='Toron node file', metavar='FILE')
 
     return parser
 
