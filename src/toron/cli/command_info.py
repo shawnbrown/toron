@@ -3,7 +3,6 @@ import argparse
 import sys
 from pathlib import Path
 from shutil import get_terminal_size
-from .._typing import Mapping
 
 from .. import bind_node
 from ..data_service import get_node_info_text

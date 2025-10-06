@@ -1,8 +1,6 @@
 """Implementation for "index" command."""
 import argparse
-import csv
 import logging
-import sys
 
 from .common import ExitCode, csv_stdout_writer
 from .. import bind_node
