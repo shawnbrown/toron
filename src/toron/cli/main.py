@@ -13,26 +13,6 @@ from .common import (
 )
 
 
-def existing_file(path):
-    """Checks if path (or path plus ".toron") exists and returns it
-    or raises an ``ArgumentTypeError``.
-
-    This function is used when adding arguments to an ArgumentParser
-    instance::
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument('file', type=existing_file)
-    """
-    if isfile(path):
-        return path
-
-    path_and_extension = f'{path}.toron'
-    if isfile(path_and_extension):
-        return path_and_extension
-
-    raise argparse.ArgumentTypeError(f'no such file: {path}')
-
-
 class TopoNodeType(object):
     """Factory for creating TopoNode object types.
 
@@ -94,7 +74,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='select index records',
         description='Select index records in CSV format.',
     )
-    parser_index.add_argument('file', type=existing_file,
+    parser_index.add_argument('file', type=TopoNodeType(),
                               help='Toron node file', metavar='FILE')
 
     # Info command.
@@ -103,7 +83,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='show file info',
         description='Show file information.',
     )
-    parser_info.add_argument('file', type=existing_file,
+    parser_info.add_argument('file', type=TopoNodeType(),
                              help='Toron node file', metavar='FILE')
 
     return parser

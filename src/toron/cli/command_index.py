@@ -12,14 +12,7 @@ applogger = logging.getLogger('app-toron')
 
 def command(args: argparse.Namespace) -> ExitCode:
     """Stream node index in CSV format."""
-    path = args.file
-    try:
-        node = bind_node(path, mode='ro')
-    except Exception as err:
-        applogger.error(str(err))
-        return ExitCode.ERR  # <- EXIT!
-
-    weights = get_weights(node=node, weights=None, header=True)
+    weights = get_weights(node=args.file, weights=None, header=True)
 
     row_count = 0
     with csv_stdout_writer() as writer:

@@ -11,14 +11,7 @@ from .common import ExitCode, get_stdout_styles
 
 def command(args: argparse.Namespace) -> ExitCode:
     """Show information for Toron node file."""
-    path = args.file
-    try:
-        node = bind_node(path, mode='ro')
-    except Exception as err:
-        import logging
-        applogger = logging.getLogger('app-toron')
-        applogger.error(str(err))
-        return ExitCode.ERR  # <- EXIT!
+    node = args.file
 
     # Get dictionary of node info values.
     with node._managed_cursor() as cursor:
@@ -37,7 +30,7 @@ def command(args: argparse.Namespace) -> ExitCode:
     reset = stdout_styles.reset
 
     # Get file name only, no parent directory text.
-    filename = Path(path).name
+    filename = Path(node.path_hint).name
 
     # Define horizontal rule `hr` made from "Box Drawings" character.
     hr = '─' * min(len(filename), (get_terminal_size()[0] - 1))
