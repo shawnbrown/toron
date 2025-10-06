@@ -3,6 +3,10 @@ import sys
 from typing import *
 
 
+if sys.version_info >= (3, 7):
+    from typing import TextIO  # Not included in `__all__`.
+
+
 if sys.version_info >= (3, 8):
     from typing import Literal
 else:
