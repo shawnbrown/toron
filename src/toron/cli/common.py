@@ -94,7 +94,10 @@ def configure_styles(
     For testing, provide keyword arguments ``environ``, ``stdout``, and
     ``stderr`` as needed::
 
-        >>> class FakeTTY(io.StringIO):
+        >>> class FakeTTY(io.TextIOWrapper):
+        ...     def __init__(self):
+        ...         super().__init__(io.BytesIO(), encoding='utf-8',
+        ...                          newline='', line_buffering=True)
         ...     def isatty(self):
         ...         return True
         ...
