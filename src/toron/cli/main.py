@@ -2,8 +2,10 @@
 import argparse
 import logging
 import os
+import sys
 from os.path import isfile
-from .. import __version__
+from .._typing import Literal, Optional
+from .. import __version__, bind_node, TopoNode
 from .common import (
     ExitCode,
     configure_styles,
@@ -29,6 +31,44 @@ def existing_file(path):
         return path_and_extension
 
     raise argparse.ArgumentTypeError(f'no such file: {path}')
+
+
+class TopoNodeType(object):
+    """Factory for creating TopoNode object types.
+
+    This class is used when adding arguments to an ArgumentParser
+    instance::
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument('file', type=TopoNodeType())
+    """
+    def __init__(
+        self, mode: Optional[Literal['ro', 'rw', 'rwc']] = None
+    ) -> None:
+        self._mode = mode
+
+    def __call__(self, string: str) -> TopoNode:
+        try:
+            if self._mode:
+                # If mode was explicitly provided, use it as-is.
+                node = bind_node(string, mode=self._mode)
+            elif sys.stdin.isatty():
+                # If input is a terminal device (a TTY), use read-only mode.
+                node = bind_node(string, mode='ro')
+            else:
+                raise NotImplementedError('stream input untested')
+                if not sys.stdout.isatty():
+                    msg = 'cannot insert and select records at the same time'
+                    raise argparse.ArgumentTypeError(msg)
+
+                # If input is redirected from a file or pipe, use read-write mode.
+                node = bind_node(string, mode='rw')
+
+        except Exception as e:
+            msg = f"can't open {string!r}: {e}"
+            raise argparse.ArgumentTypeError(msg)
+
+        return node
 
 
 def get_parser() -> argparse.ArgumentParser:
