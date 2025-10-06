@@ -16,10 +16,13 @@ def command(args: argparse.Namespace) -> ExitCode:
 
     row_count = 0
     with csv_stdout_writer() as writer:
+        header = next(weights)
+        writer.writerow(header)
+
         for row in weights:
             writer.writerow(row)
             row_count += 1
 
-    applogger.info(f"written {row_count} row{'s' if row_count != 1 else ''}")
+    applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
 
     return ExitCode.OK
