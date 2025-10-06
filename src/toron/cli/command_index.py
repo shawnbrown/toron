@@ -3,7 +3,7 @@ import argparse
 import csv
 import sys
 
-from .common import ExitCode
+from .common import ExitCode, csv_stdout_writer
 from .. import bind_node
 from ..graph import get_weights
 
@@ -19,13 +19,10 @@ def command(args: argparse.Namespace) -> ExitCode:
         applogger.error(str(err))
         return ExitCode.ERR  # <- EXIT!
 
-    writer = csv.writer(sys.stdout, lineterminator='\n')
-
     weights = get_weights(node=node, weights=None, header=True)
-    try:
+
+    with csv_stdout_writer() as writer:
         for row in weights:
             writer.writerow(row)
-    except BrokenPipeError:
-        pass  # Downstream process closed pipe early--no action needed.
 
     return ExitCode.OK

@@ -1,9 +1,11 @@
 """Common resources for Toron CLI application."""
-
+import csv
+import io
 import logging
 import logging.config
 import os
 import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import IntEnum
 from .._typing import (
@@ -21,6 +23,25 @@ class ExitCode(IntEnum):
     OK = 0     # Success.
     ERR = 1    # General error.
     USAGE = 2  # Incorrect usage (invalid options or missing args).
+
+
+@contextmanager
+def csv_stdout_writer(stdout: Optional[TextIO] = None):
+    """Context manager to yield a ``csv.writer()`` to stdout."""
+    if not stdout:
+        stdout = sys.stdout
+
+    stdout_wrapper = io.TextIOWrapper(
+        stdout.buffer,
+        encoding='utf-8',
+        newline='', # Disable universal newline translation.
+        line_buffering=True, # Flush stream after every newline character.
+    )
+    writer = csv.writer(stdout_wrapper, lineterminator='\n')
+    try:
+        yield writer
+    finally:
+        stdout_wrapper.flush()  # Ensure all output is written.
 
 
 # ============================

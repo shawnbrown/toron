@@ -1,6 +1,7 @@
 """Main command line application function."""
 import argparse
 import logging
+import os
 from os.path import isfile
 from .. import __version__
 from .common import (
@@ -83,6 +84,9 @@ def main() -> ExitCode:
 
     if args.command == 'index':
         from .command_index import command
-        return command(args)
+        try:
+            return command(args)
+        except BrokenPipeError:
+            os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
 
     parser.error('unable to process command')  # Exits with error code 2.
