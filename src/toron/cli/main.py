@@ -83,7 +83,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='show file info',
         description='Show file information.',
     )
-    parser_info.add_argument('file', type=TopoNodeType(),
+    parser_info.add_argument('file', type=TopoNodeType(mode='ro'),
                              help='Toron node file', metavar='FILE')
 
     return parser
