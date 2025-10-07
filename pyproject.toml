@@ -38,7 +38,7 @@ classifiers = [
 ]
 
 [project.scripts]
-toron = "toron.cli:main"
+toron = "toron.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/shawnbrown/toron"
