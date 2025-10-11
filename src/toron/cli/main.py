@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from os.path import isfile
-from .._typing import Literal, Optional
+from .._typing import Literal, Optional, Set
 from .. import __version__, bind_node, TopoNode
 from .common import (
     ExitCode,
@@ -53,10 +53,29 @@ class TopoNodeType(object):
 
 def get_parser() -> argparse.ArgumentParser:
     """Get argument parser for Toron command line interface."""
+
+    # Local variable to hold subparser choices (once parser is defined).
+    valid_choices: Set[str] = set()  # Closed-over by parser instance.
+
+    # Define nested class to close over `valid_choices`.
+    class ToronArgumentParser(argparse.ArgumentParser):
+        def parse_args(self, args=None, namespace=None):
+            if args is None:
+                args = sys.argv[1:]  # Default to system args.
+
+            if args and args[0] not in valid_choices:
+                if '-h' in args or '--help' in args:
+                    args = ['-h']  # Invoke main "help" for unknown commands.
+                elif isfile(args[0]):
+                    args = ['info'] + args  # If arg is not a command but matches
+                                            # an existing filename, invoke "info".
+            return super().parse_args(args, namespace)
+
     # Define main parser.
-    parser = argparse.ArgumentParser(
+    parser = ToronArgumentParser(
         prog='toron',
         description='Show and edit Toron node file properties.',
+        usage='%(prog)s (COMMAND ... | filename) [-h]',
         epilog=f'Version: Toron {__version__}',
     )
 
@@ -80,11 +99,14 @@ def get_parser() -> argparse.ArgumentParser:
     # Info command.
     parser_info = subparsers.add_parser(
         'info',
-        help='show file info',
+        help='show file info (default if filename given)',
         description='Show file information.',
     )
     parser_info.add_argument('file', type=TopoNodeType(mode='ro'),
                              help='Toron node file', metavar='FILE')
+
+    # Add subparser choices to local variable.
+    valid_choices.update(subparsers.choices)
 
     return parser
 
