@@ -2,6 +2,7 @@
 __unittest = True
 
 import glob
+import io
 import os
 import shutil
 import sqlite3
@@ -108,3 +109,18 @@ class StreamTestMixin(object):
             raise e
 
         self.assertEqual(stream_value, expected, msg)
+
+
+class DummyStream(io.TextIOWrapper):
+    """TextIOWrapper that mimics an interactive stream (a TTY)."""
+    def __init__(self):
+        super().__init__(io.BytesIO())
+
+    def isatty(self):
+        return True
+
+
+class DummyRedirectedStream(io.TextIOWrapper):
+    """TextIOWrapper to mimic a stream being redirected or piped."""
+    def __init__(self):
+        super().__init__(io.BytesIO())

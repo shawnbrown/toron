@@ -16,6 +16,7 @@ from .._typing import (
     Mapping,
     Optional,
     TextIO,
+    Tuple,
     TYPE_CHECKING,
 )
 
@@ -76,6 +77,46 @@ ansi_codes = {
     'reset': '\33[0m',                        # reset styles
     'bright': '\33[1m',                       # bright text
 }
+
+
+def get_stream_styles(
+    *,
+    environ: Optional[Mapping] = None,
+    stdout: Optional[TextIO] = None,
+    stderr: Optional[TextIO] = None,
+) -> Tuple[TerminalStyle, TerminalStyle]:
+    """Get terminal styles for ``stdout`` and ``stderr`` streams.
+
+    .. code-block:: python
+
+        >>> stdout_style, stderr_style = get_stream_styles()
+    """
+    if environ is None:
+        environ = os.environ
+
+    if environ.get('NO_COLOR') or environ.get('TERM') == 'dumb':
+        no_styles = TerminalStyle()
+        return (no_styles, no_styles)
+
+    if stdout is None:
+        stdout = sys.stdout
+    if stderr is None:
+        stderr = sys.stderr
+
+    # Set ANSI styles if a stream is connected to a terminal (a TTY).
+    ansi_styles = TerminalStyle(**ansi_codes)
+    no_styles = TerminalStyle()
+    stdout_styles = ansi_styles if stdout.isatty() else no_styles
+    stderr_styles = ansi_styles if stderr.isatty() else no_styles
+
+    # If using ANSI styles on Windows, enable ANSI color support.
+    if sys.platform == 'win32' and (
+        (stderr_styles is ansi_styles) or (stdout_styles is ansi_styles)
+    ):
+        import colorama
+        colorama.just_fix_windows_console()
+
+    return (stdout_styles, stderr_styles)
 
 
 # Global (module-level) variables--set by `configure_styles()`.
