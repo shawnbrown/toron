@@ -11,11 +11,17 @@ from enum import IntEnum
 from .._typing import (
     Any,
     Dict,
+    Generator,
     Literal,
     Mapping,
     Optional,
     TextIO,
+    TYPE_CHECKING,
 )
+
+
+if TYPE_CHECKING:
+    from _csv import _writer as WriterType
 
 
 class ExitCode(IntEnum):
@@ -26,7 +32,9 @@ class ExitCode(IntEnum):
 
 
 @contextmanager
-def csv_stdout_writer(stdout: Optional[TextIO] = None):
+def csv_stdout_writer(
+    stdout: Optional[TextIO] = None
+) -> Generator['WriterType', None, None]:
     """Context manager to yield a ``csv.writer()`` to stdout."""
     if not stdout:
         stdout = sys.stdout
