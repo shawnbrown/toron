@@ -1,4 +1,6 @@
 """Common functions and classes for test cases."""
+__unittest = True
+
 import glob
 import os
 import shutil
