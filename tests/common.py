@@ -80,3 +80,29 @@ class TempDirTestCase(unittest.TestCase):
             else:
                 os.remove(path)
 
+
+class StreamTestMixin(object):
+    """Mixin class for testing streams like stdout."""
+
+    def assertStream(self, stream, expected):
+        """Fail if ``stream`` value does not equal ``expected`` value.
+        Value is decoded using UTF-8.
+        """
+        try:
+            stream.flush()
+            stream_value = stream.buffer.getvalue().decode('utf-8')
+
+        except Exception as e:
+            note = 'The argument `stream` should be a TextIOWrapper'
+
+            if hasattr(e, 'add_note'):
+                if isinstance(e, (NameError, AttributeError)):
+                    e.name = None  # Disable name suggestion in message.
+                e.add_note(note)
+            else:
+                msg = f'{e}\n{note}'
+                e = Exception(msg)
+
+            raise e
+
+        self.assertEqual(stream_value, expected)
