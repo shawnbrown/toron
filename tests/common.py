@@ -86,13 +86,13 @@ class TempDirTestCase(unittest.TestCase):
 class StreamTestMixin(object):
     """Mixin class for testing streams like stdout."""
 
-    def assertStream(self, stream, expected):
+    def assertStream(self, stream, expected, *, encoding='utf-8', msg=None):
         """Fail if ``stream`` value does not equal ``expected`` value.
         Value is decoded using UTF-8.
         """
         try:
             stream.flush()
-            stream_value = stream.buffer.getvalue().decode('utf-8')
+            stream_value = stream.buffer.getvalue().decode(encoding)
 
         except Exception as e:
             note = 'The argument `stream` should be a TextIOWrapper'
@@ -107,4 +107,4 @@ class StreamTestMixin(object):
 
             raise e
 
-        self.assertEqual(stream_value, expected)
+        self.assertEqual(stream_value, expected, msg)
