@@ -111,12 +111,11 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-applogger = logging.getLogger('app-toron')
-configure_styles()
-configure_applogger(applogger)
-
-
 def main() -> ExitCode:
+    applogger = logging.getLogger('app-toron')
+    configure_styles()
+    configure_applogger(applogger)
+
     parser = get_parser()
     args = parser.parse_args()
 
