@@ -54,6 +54,31 @@ class TestGetParser(unittest.TestCase):
         self.assertFalse(self.stdout_capture.getvalue(), msg='should not write to stdout')
         self.assertEqual(self.stderr_capture.getvalue(), parser.format_help())
 
+    def test_help_with_invalid_choice(self):
+        """Using '-h' with unknown command should give "invalid choice" error."""
+        parser = get_parser()
+
+        with self.assertRaises(SystemExit) as cm:
+            parser.parse_args(['foo', '-h'])  # <- Unknown command "foo".
+
+        self.assertEqual(cm.exception.code, ExitCode.USAGE)
+        self.assertFalse(self.stdout_capture.getvalue())
+        self.assertIn("invalid choice: 'foo'", self.stderr_capture.getvalue())
+
+    def test_help_with_filename(self):
+        """Using '-h' with a filename should give the main help message."""
+        file_path = self.get_tempfile_path()
+        TopoNode().to_file(file_path)
+
+        parser = get_parser()
+
+        with self.assertRaises(SystemExit) as cm:
+            parser.parse_args([file_path, '-h'])
+
+        self.assertEqual(cm.exception.code, ExitCode.OK)
+        self.assertEqual(self.stdout_capture.getvalue(), parser.format_help())
+        self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
+
     def test_info_explicit(self):
         """Check explicit "info" command."""
         file_path = self.get_tempfile_path()
