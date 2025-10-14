@@ -6,7 +6,7 @@ import logging.config
 import os
 import sys
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import astuple, dataclass
 from enum import IntEnum
 from .._typing import (
     Any,
@@ -17,6 +17,7 @@ from .._typing import (
     Optional,
     TextIO,
     Tuple,
+    Type,
     TYPE_CHECKING,
 )
 
@@ -272,6 +273,56 @@ class ColorFormatter(_Formatter):
         if formatter:
             return formatter.format(record)
         return super().format(record)  # <- Use un-colored fall-back.
+
+
+def get_formatter_class(
+    stderr_styles: TerminalStyle
+) -> Type[logging.Formatter]:
+    """Return a logging `Formatter` class that optionally uses ANSI styles."""
+    # If no styles are defined, return built-in `logging.Formatter`.
+    if not any(astuple(stderr_styles)):
+        return logging.Formatter  # <- EXIT!
+
+    # Define short alias to use in f-strings.
+    s = stderr_styles  # <- This gets closed-over by AnsiStyleFormatter.
+
+    class AnsiStyleFormatter(logging.Formatter):
+        """Formatter to convert LogRecord into ANSI styled text."""
+        def __init__(self, *args, **kwds) -> None:
+            # Initialize self as un-styled formatter (for fall-back).
+            super().__init__(*args, **kwds)
+
+            # Get `fmt` argument.
+            if 'fmt' in kwds:
+                fmt = kwds.pop('fmt')
+            elif args:
+                fmt, args = args[0], args[1:]
+            else:
+                fmt = '%(message)s'
+
+            # Instantiate ANSI style formatters.
+            self.color_formatters = {
+                logging.INFO: logging.Formatter(
+                    f'{s.info}{fmt}{s.reset}', *args, **kwds
+                ),
+                logging.WARNING: logging.Formatter(
+                    f'{s.warning}{fmt}{s.reset}', *args, **kwds
+                ),
+                logging.ERROR: logging.Formatter(
+                    f'{s.error}{fmt}{s.reset}', *args, **kwds
+                ),
+                logging.CRITICAL: logging.Formatter(
+                    f'{s.critical}{fmt}{s.reset}', *args, **kwds
+                ),
+            }
+
+        def format(self, record: logging.LogRecord) -> str:
+            formatter = self.color_formatters.get(record.levelno)
+            if formatter:
+                return formatter.format(record)
+            return super().format(record)  # <- Use un-styled fall-back.
+
+    return AnsiStyleFormatter
 
 
 def configure_applogger(applogger: logging.Logger) -> None:

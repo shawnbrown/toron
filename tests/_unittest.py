@@ -1,4 +1,6 @@
 """compatibility layer for `unittest` (Python standard library)"""
+__unittest = True
+
 import sys
 from unittest import *
 from unittest import mock
@@ -7,7 +9,7 @@ from unittest import mock
 try:
     TestCase.assertNoLogs  # New in 3.10
 except AttributeError:
-    # The following code was adapted from the Python 3.10 Standard Library.
+    # The following code is adapted from the Python 3.10 Standard Library.
     import collections
     import logging
     from unittest.case import _BaseTestCaseContext
@@ -85,5 +87,27 @@ except AttributeError:
     class _TestCase(TestCase):
         def assertNoLogs(self, logger=None, level=None):
             return _AssertLogsContext(self, logger, level, no_logs=True)
+
+    TestCase = _TestCase
+
+
+try:
+    TestCase.assertIsSubclass  # New in 3.14
+except AttributeError:
+    # The following code is adapted from the Python 3.14 Standard Library.
+    class _TestCase(TestCase):
+        def assertIsSubclass(self, cls, superclass, msg=None):
+            try:
+                if issubclass(cls, superclass):
+                    return
+            except TypeError:
+                if not isinstance(cls, type):
+                    self.fail(self._formatMessage(msg, f'{cls!r} is not a class'))
+                raise
+            if isinstance(superclass, tuple):
+                standardMsg = f'{cls!r} is not a subclass of any of {superclass!r}'
+            else:
+                standardMsg = f'{cls!r} is not a subclass of {superclass!r}'
+            self.fail(self._formatMessage(msg, standardMsg))
 
     TestCase = _TestCase

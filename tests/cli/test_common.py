@@ -1,4 +1,5 @@
 """Tests for toron/cli/common.py module."""
+import logging
 from io import BytesIO, TextIOWrapper
 from .. import _unittest as unittest
 from ..common import (  # <- tests/common.py (not cli/common.py)
@@ -12,6 +13,7 @@ from toron.cli.common import (
     ansi_codes,
     TerminalStyle,
     get_stream_styles,
+    get_formatter_class,
 )
 
 
@@ -95,3 +97,50 @@ class TestGetStreamStyles(unittest.TestCase):
         stdout_style, stderr_style = get_stream_styles()  # <- No args given.
         self.assertIsInstance(stdout_style, TerminalStyle)
         self.assertIsInstance(stderr_style, TerminalStyle)
+
+
+class TestGetFormatterClass(unittest.TestCase):
+    def test_no_styles_class(self):
+        """When no styles are set, should return built-in Formatter."""
+        no_styles = TerminalStyle()
+        formatter_class = get_formatter_class(no_styles)
+        self.assertIs(formatter_class, logging.Formatter)
+
+    def test_ansi_styles_class(self):
+        """When styles are set, should return subclassed Formatter."""
+        ansi_styles = TerminalStyle(**ansi_codes)
+        formatter_class = get_formatter_class(ansi_styles)
+        self.assertIsNot(formatter_class, logging.Formatter)
+        self.assertIsSubclass(formatter_class, logging.Formatter)
+
+    def test_format_method(self):
+        """Test custom formatter's ``format()`` method."""
+        formatter_class = get_formatter_class(TerminalStyle(
+            info='[START]',
+            reset='[STOP]',
+        ))
+        formatter = formatter_class()
+
+        # Check `format()` method's styled output.
+        value = formatter.format(logging.LogRecord(
+            name='dummy_logger',
+            level=logging.INFO,
+            pathname='/path/to/file.py',
+            lineno=42,
+            msg='hello world',
+            args=(),
+            exc_info=None,
+        ))
+        self.assertEqual(value, '[START]hello world[STOP]')
+
+        # Check `format()` handling of unknown level number.
+        value = formatter.format(logging.LogRecord(
+            name='dummy_logger',
+            level=999,  # <- Level not not match a styled formatter.
+            pathname='/path/to/file.py',
+            lineno=42,
+            msg='hello world',
+            args=(),
+            exc_info=None,
+        ))
+        self.assertEqual(value, 'hello world', msg='output should be unstyled')
