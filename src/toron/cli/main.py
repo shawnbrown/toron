@@ -8,8 +8,8 @@ from .._typing import Literal, Optional, Set
 from .. import __version__, bind_node, TopoNode
 from .common import (
     ExitCode,
-    configure_styles,
     configure_applogger,
+    get_stream_styles,
 )
 
 
@@ -113,8 +113,8 @@ def get_parser() -> argparse.ArgumentParser:
 
 def main() -> ExitCode:
     applogger = logging.getLogger('app-toron')
-    configure_styles()
-    configure_applogger(applogger)
+    stdout_style, stderr_style = get_stream_styles()
+    configure_applogger(applogger, stderr_style)
 
     parser = get_parser()
     args = parser.parse_args()

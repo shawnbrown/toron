@@ -325,14 +325,16 @@ def get_formatter_class(
     return AnsiStyleFormatter
 
 
-def configure_applogger(applogger: logging.Logger) -> None:
+def configure_applogger(
+    applogger: logging.Logger, stderr_styles: TerminalStyle
+) -> None:
     """Configure handler and formatter for given *applogger*."""
     logging.config.dictConfig({
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
             'cli_formatter': {
-                '()': ColorFormatter,
+                '()': get_formatter_class(stderr_styles),
                 'fmt': '%(levelname)s: %(message)s',
             },
         },
