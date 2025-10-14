@@ -6,10 +6,12 @@ from shutil import get_terminal_size
 
 from .. import bind_node
 from ..data_service import get_node_info_text
-from .common import ExitCode, get_stdout_styles
+from .common import ExitCode, TerminalStyle
 
 
-def command(args: argparse.Namespace) -> ExitCode:
+def print_info(
+    args: argparse.Namespace, stdout_style: TerminalStyle
+) -> ExitCode:
     """Show information for Toron node file."""
     node = args.file
 
@@ -25,9 +27,8 @@ def command(args: argparse.Namespace) -> ExitCode:
         )
 
     # Define short alias for style values (used in f-string).
-    stdout_styles = get_stdout_styles()
-    bright = stdout_styles.bright
-    reset = stdout_styles.reset
+    bright = stdout_style.bright
+    reset = stdout_style.reset
 
     # Get file name only, no parent directory text.
     filename = Path(node.path_hint).name

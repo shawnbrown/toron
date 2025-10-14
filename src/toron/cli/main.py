@@ -120,8 +120,8 @@ def main() -> ExitCode:
     args = parser.parse_args()
 
     if args.command == 'info':
-        from .command_info import command
-        return command(args)
+        from .command_info import print_info
+        return print_info(args, stdout_style)
 
     if args.command == 'index':
         from .command_index import command
