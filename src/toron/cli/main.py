@@ -63,7 +63,11 @@ def get_parser() -> argparse.ArgumentParser:
             if args is None:
                 args = sys.argv[1:]  # Default to system args.
 
-            if args and args[0] not in valid_choices:
+            if not args:
+                self.print_help(sys.stderr)
+                self.exit(ExitCode.USAGE)  # <- EXIT!
+
+            if args[0] not in valid_choices:
                 if '-h' in args or '--help' in args:
                     args = ['-h']  # Invoke main "help" for unknown commands.
                 elif isfile(args[0]):

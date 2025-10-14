@@ -33,7 +33,7 @@ class TestGetParser(unittest.TestCase):
         return tmp.name
 
     def test_main_help_explicit(self):
-        """Check calling with "-h" argument."""
+        """Check calling with "-h" argument should print help to stdout."""
         parser = get_parser()
 
         with self.assertRaises(SystemExit) as cm:
@@ -44,7 +44,7 @@ class TestGetParser(unittest.TestCase):
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
     def test_main_no_args(self):
-        """Check when calling with no arguments."""
+        """Calling without args should give usage error and print help to stderr."""
         parser = get_parser()
 
         with self.assertRaises(SystemExit) as cm:
@@ -52,7 +52,7 @@ class TestGetParser(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, ExitCode.USAGE)
         self.assertFalse(self.stdout_capture.getvalue(), msg='should not write to stdout')
-        self.assertTrue(self.stderr_capture.getvalue(), msg='should write to stderr')
+        self.assertEqual(self.stderr_capture.getvalue(), parser.format_help())
 
     def test_info_explicit(self):
         """Check explicit "info" command."""
