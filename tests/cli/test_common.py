@@ -35,7 +35,7 @@ class TestCsvStdoutWriter(unittest.TestCase, StreamTestMixin):
         self.assertStream(dummy_stdout, 'ƒóó,ɓàŕ,Ƅɑž\n')
 
 
-class TestGetStreamStyles(unittest.TestCase, StreamTestMixin):
+class TestGetStreamStyles(unittest.TestCase):
     def setUp(self):
         self.ansi_styles = TerminalStyle(**ansi_codes)
         self.no_styles = TerminalStyle()
