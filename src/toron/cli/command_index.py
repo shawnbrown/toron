@@ -10,8 +10,8 @@ from ..graph import get_weights
 applogger = logging.getLogger('app-toron')
 
 
-def command(args: argparse.Namespace) -> ExitCode:
-    """Stream node index in CSV format."""
+def print_index(args: argparse.Namespace) -> ExitCode:
+    """Print node index in CSV format to stdout stream."""
     weights = get_weights(node=args.file, weights=None, header=True)
 
     row_count = 0

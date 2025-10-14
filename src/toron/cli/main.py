@@ -128,9 +128,9 @@ def main() -> ExitCode:
         return print_info(args, stdout_style)
 
     if args.command == 'index':
-        from .command_index import command
+        from .command_index import print_index
         try:
-            return command(args)
+            return print_index(args)
         except BrokenPipeError:
             os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
 
