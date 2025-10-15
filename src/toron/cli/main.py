@@ -79,9 +79,10 @@ def get_parser() -> argparse.ArgumentParser:
     parser = ToronArgumentParser(
         prog='toron',
         description='Show and edit Toron node file properties.',
-        usage='%(prog)s (COMMAND ... | filename) [-h]',
-        epilog=f'Version: Toron {__version__}',
+        usage='%(prog)s (COMMAND ... | filename) [-h] [--version]',
     )
+    parser.add_argument('--version', action='version',
+                        version=f'%(prog)s {__version__}')
 
     # Define subparsers for COMMAND.
     subparsers = parser.add_subparsers(
