@@ -116,13 +116,13 @@ class TestGetFormatterClass(unittest.TestCase):
     def test_format_method(self):
         """Test custom formatter's ``format()`` method."""
         formatter_class = get_formatter_class(TerminalStyle(
-            info='[START]',
-            reset='[STOP]',
+            info='[START CODE]',   # <- Formatting for INFO level (in practice
+            reset='[RESET CODE]',  #    ANSI color and style codes are used).
         ))
         formatter = formatter_class()
 
-        # Check `format()` method's styled output.
-        value = formatter.format(logging.LogRecord(
+        # Log record to test formatting.
+        log_record = logging.LogRecord(
             name='dummy_logger',
             level=logging.INFO,
             pathname='/path/to/file.py',
@@ -130,17 +130,13 @@ class TestGetFormatterClass(unittest.TestCase):
             msg='hello world',
             args=(),
             exc_info=None,
-        ))
-        self.assertEqual(value, '[START]hello world[STOP]')
+        )
+
+        # Check `format()` method's styled output.
+        value = formatter.format(log_record)
+        self.assertEqual(value, '[START CODE]hello world[RESET CODE]')
 
         # Check `format()` handling of unknown level number.
-        value = formatter.format(logging.LogRecord(
-            name='dummy_logger',
-            level=999,  # <- Level not not match a styled formatter.
-            pathname='/path/to/file.py',
-            lineno=42,
-            msg='hello world',
-            args=(),
-            exc_info=None,
-        ))
+        log_record.levelno = 999  # <- Level does not match a styled formatter.
+        value = formatter.format(log_record)
         self.assertEqual(value, 'hello world', msg='output should be unstyled')
