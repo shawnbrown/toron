@@ -59,8 +59,13 @@ def csv_stdout_writer(
 # ============================
 
 @dataclass(frozen=True)
-class TerminalStyle:
-    """ANSI escape codes for terminal styles."""
+class StyleCodes:
+    """Style codes to use for application output.
+
+    The given codes are used in-line with text output to implement a
+    procedural markup scheme. ANSI-style terminal control codes can
+    be provided to provide colors and styles for stream output.
+    """
     info: str = ''
     warning: str = ''
     error: str = ''
@@ -69,7 +74,7 @@ class TerminalStyle:
     bright: str = ''
 
 
-# Color and style codes.
+# ANSI terminal control codes.
 ansi_codes = {
     'info': '\33[38;5;33m',                   # blue
     'warning': '\33[38;5;214m',               # yellow
@@ -85,7 +90,7 @@ def get_stream_styles(
     environ: Optional[Mapping] = None,
     stdout: Optional[TextIO] = None,
     stderr: Optional[TextIO] = None,
-) -> Tuple[TerminalStyle, TerminalStyle]:
+) -> Tuple[StyleCodes, StyleCodes]:
     """Get terminal styles for ``stdout`` and ``stderr`` streams.
 
     .. code-block:: python
@@ -96,8 +101,8 @@ def get_stream_styles(
         environ = os.environ
 
     if environ.get('NO_COLOR') or environ.get('TERM') == 'dumb':
-        no_styles = TerminalStyle()
-        return (no_styles, no_styles)
+        no_style = StyleCodes()
+        return (no_style, no_style)
 
     if stdout is None:
         stdout = sys.stdout
@@ -105,35 +110,33 @@ def get_stream_styles(
         stderr = sys.stderr
 
     # Set ANSI styles if a stream is connected to a terminal (a TTY).
-    ansi_styles = TerminalStyle(**ansi_codes)
-    no_styles = TerminalStyle()
-    stdout_styles = ansi_styles if stdout.isatty() else no_styles
-    stderr_styles = ansi_styles if stderr.isatty() else no_styles
+    ansi_style = StyleCodes(**ansi_codes)
+    no_style = StyleCodes()
+    stdout_style = ansi_style if stdout.isatty() else no_style
+    stderr_style = ansi_style if stderr.isatty() else no_style
 
     # If using ANSI styles on Windows, enable ANSI color support.
     if sys.platform == 'win32' and (
-        (stderr_styles is ansi_styles) or (stdout_styles is ansi_styles)
+        (stderr_style is ansi_style) or (stdout_style is ansi_style)
     ):
         import colorama
         colorama.just_fix_windows_console()
 
-    return (stdout_styles, stderr_styles)
+    return (stdout_style, stderr_style)
 
 
 # ====================
 # Logger Configuration
 # ====================
 
-def get_formatter_class(
-    stderr_styles: TerminalStyle
-) -> Type[logging.Formatter]:
-    """Return a logging `Formatter` class that optionally uses ANSI styles."""
+def get_formatter_class(style_codes: StyleCodes) -> Type[logging.Formatter]:
+    """Return a logging `Formatter` class that optionally uses styled text."""
     # If no styles are defined, return built-in `logging.Formatter`.
-    if not any(astuple(stderr_styles)):
+    if not any(astuple(style_codes)):
         return logging.Formatter  # <- EXIT!
 
     # Define short alias to use in f-strings.
-    s = stderr_styles  # <- This gets closed-over by AnsiStyleFormatter.
+    s = style_codes  # <- This gets closed-over by AnsiStyleFormatter.
 
     class AnsiStyleFormatter(logging.Formatter):
         """Formatter to convert LogRecord into ANSI styled text."""
@@ -175,7 +178,7 @@ def get_formatter_class(
 
 
 def configure_applogger(
-    applogger: logging.Logger, stderr_styles: TerminalStyle
+    applogger: logging.Logger, style_codes: StyleCodes
 ) -> None:
     """Configure handler and formatter for given *applogger*."""
     logging.config.dictConfig({
@@ -183,7 +186,7 @@ def configure_applogger(
         'disable_existing_loggers': False,
         'formatters': {
             'cli_formatter': {
-                '()': get_formatter_class(stderr_styles),
+                '()': get_formatter_class(style_codes),
                 'fmt': '%(levelname)s: %(message)s',
             },
         },

@@ -6,11 +6,11 @@ from shutil import get_terminal_size
 
 from .. import bind_node
 from ..data_service import get_node_info_text
-from .common import ExitCode, TerminalStyle
+from .common import ExitCode, StyleCodes
 
 
 def print_info(
-    args: argparse.Namespace, stdout_style: TerminalStyle
+    args: argparse.Namespace, stdout_style: StyleCodes
 ) -> ExitCode:
     """Show information for Toron node file."""
     node = args.file

@@ -11,7 +11,7 @@ from ..common import (  # <- tests/common.py (not cli/common.py)
 from toron.cli.common import (
     csv_stdout_writer,
     ansi_codes,
-    TerminalStyle,
+    StyleCodes,
     get_stream_styles,
     get_formatter_class,
 )
@@ -39,18 +39,18 @@ class TestCsvStdoutWriter(unittest.TestCase, StreamTestMixin):
 
 class TestGetStreamStyles(unittest.TestCase):
     def setUp(self):
-        self.ansi_styles = TerminalStyle(**ansi_codes)
-        self.no_styles = TerminalStyle()
+        self.ansi_style = StyleCodes(**ansi_codes)
+        self.no_style = StyleCodes()
 
-    def test_ansi_styles(self):
+    def test_ansi_style(self):
         """Interactive streams should get styled output."""
         stdout_style, stderr_style = get_stream_styles(
             environ={},
             stdout=DummyStream(),
             stderr=DummyStream(),
         )
-        self.assertEqual(stdout_style, self.ansi_styles)
-        self.assertEqual(stderr_style, self.ansi_styles)
+        self.assertEqual(stdout_style, self.ansi_style)
+        self.assertEqual(stderr_style, self.ansi_style)
 
     def test_environ_no_color(self):
         """Should disable color if "NO_COLOR" is set in environment."""
@@ -59,8 +59,8 @@ class TestGetStreamStyles(unittest.TestCase):
             stdout=DummyStream(),
             stderr=DummyStream(),
         )
-        self.assertEqual(stdout_style, self.no_styles)
-        self.assertEqual(stderr_style, self.no_styles)
+        self.assertEqual(stdout_style, self.no_style)
+        self.assertEqual(stderr_style, self.no_style)
 
     def test_environ_dumb_terminal(self):
         """Should disable color if "TERM=dumb" is set in environment."""
@@ -69,8 +69,8 @@ class TestGetStreamStyles(unittest.TestCase):
             stdout=DummyStream(),
             stderr=DummyStream(),
         )
-        self.assertEqual(stdout_style, self.no_styles)
-        self.assertEqual(stderr_style, self.no_styles)
+        self.assertEqual(stdout_style, self.no_style)
+        self.assertEqual(stderr_style, self.no_style)
 
     def test_stream_redirection(self):
         """Should disable color for streams that are redirected."""
@@ -80,8 +80,8 @@ class TestGetStreamStyles(unittest.TestCase):
             stdout=DummyRedirectedStream(),
             stderr=DummyStream(),
         )
-        self.assertEqual(stdout_style, self.no_styles)
-        self.assertEqual(stderr_style, self.ansi_styles)
+        self.assertEqual(stdout_style, self.no_style)
+        self.assertEqual(stderr_style, self.ansi_style)
 
         # Redirected stderr.
         stdout_style, stderr_style = get_stream_styles(
@@ -89,33 +89,33 @@ class TestGetStreamStyles(unittest.TestCase):
             stdout=DummyStream(),
             stderr=DummyRedirectedStream(),
         )
-        self.assertEqual(stdout_style, self.ansi_styles)
-        self.assertEqual(stderr_style, self.no_styles)
+        self.assertEqual(stdout_style, self.ansi_style)
+        self.assertEqual(stderr_style, self.no_style)
 
     def test_default_behavior(self):
         """Without arguments, should use system environ and streams."""
         stdout_style, stderr_style = get_stream_styles()  # <- No args given.
-        self.assertIsInstance(stdout_style, TerminalStyle)
-        self.assertIsInstance(stderr_style, TerminalStyle)
+        self.assertIsInstance(stdout_style, StyleCodes)
+        self.assertIsInstance(stderr_style, StyleCodes)
 
 
 class TestGetFormatterClass(unittest.TestCase):
-    def test_no_styles_class(self):
+    def test_no_style_class(self):
         """When styles are not given, should return built-in Formatter."""
-        no_styles = TerminalStyle()
-        formatter_class = get_formatter_class(no_styles)
+        no_style = StyleCodes()
+        formatter_class = get_formatter_class(no_style)
         self.assertIs(formatter_class, logging.Formatter)
 
-    def test_ansi_styles_class(self):
+    def test_ansi_style_class(self):
         """When styles are given, should return subclassed Formatter."""
-        ansi_styles = TerminalStyle(**ansi_codes)
-        formatter_class = get_formatter_class(ansi_styles)
+        ansi_style = StyleCodes(**ansi_codes)
+        formatter_class = get_formatter_class(ansi_style)
         self.assertIsNot(formatter_class, logging.Formatter)
         self.assertIsSubclass(formatter_class, logging.Formatter)
 
     def test_format_method(self):
         """Test AnsiStyleFormatter's ``format()`` method."""
-        formatter_class = get_formatter_class(TerminalStyle(
+        formatter_class = get_formatter_class(StyleCodes(
             info='[START CODE]',   # <- Formatting for INFO level (in practice
             reset='[RESET CODE]',  #    ANSI color and style codes are used).
         ))
