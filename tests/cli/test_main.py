@@ -33,7 +33,7 @@ class TestGetParser(unittest.TestCase):
         return tmp.name
 
     def test_main_help_explicit(self):
-        """Check calling with "-h" argument should print help to stdout."""
+        """Calling with '-h', should print help to stdout and exit with OK."""
         parser = get_parser()
 
         with self.assertRaises(SystemExit) as cm:
@@ -44,7 +44,7 @@ class TestGetParser(unittest.TestCase):
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
     def test_main_no_args(self):
-        """Calling without args should give usage error and print help to stderr."""
+        """Calling without args should print help to stderr and exit with USAGE error."""
         parser = get_parser()
 
         with self.assertRaises(SystemExit) as cm:
@@ -80,7 +80,7 @@ class TestGetParser(unittest.TestCase):
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
     def test_info_explicit(self):
-        """Check explicit "info" command."""
+        """Check explicit use of the "info" command."""
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
@@ -92,7 +92,7 @@ class TestGetParser(unittest.TestCase):
         self.assertEqual(args.file.path_hint, file_path)
 
     def test_info_implicit(self):
-        """When a filename is given, "info" should be invoked."""
+        """When a filename is given, "info" should be invoked by default."""
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 

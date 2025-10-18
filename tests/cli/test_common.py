@@ -19,7 +19,7 @@ from toron.cli.common import (
 
 class TestCsvStdoutWriter(unittest.TestCase, StreamTestMixin):
     def test_line_endings(self):
-        """Should use consistent for newlines regardless of system."""
+        """Should use consistent newlines regardless of system."""
         dummy_stdout = TextIOWrapper(BytesIO(), newline='\r\n')
 
         with csv_stdout_writer(dummy_stdout) as writer:
@@ -101,20 +101,20 @@ class TestGetStreamStyles(unittest.TestCase):
 
 class TestGetFormatterClass(unittest.TestCase):
     def test_no_styles_class(self):
-        """When no styles are set, should return built-in Formatter."""
+        """When styles are not given, should return built-in Formatter."""
         no_styles = TerminalStyle()
         formatter_class = get_formatter_class(no_styles)
         self.assertIs(formatter_class, logging.Formatter)
 
     def test_ansi_styles_class(self):
-        """When styles are set, should return subclassed Formatter."""
+        """When styles are given, should return subclassed Formatter."""
         ansi_styles = TerminalStyle(**ansi_codes)
         formatter_class = get_formatter_class(ansi_styles)
         self.assertIsNot(formatter_class, logging.Formatter)
         self.assertIsSubclass(formatter_class, logging.Formatter)
 
     def test_format_method(self):
-        """Test custom formatter's ``format()`` method."""
+        """Test AnsiStyleFormatter's ``format()`` method."""
         formatter_class = get_formatter_class(TerminalStyle(
             info='[START CODE]',   # <- Formatting for INFO level (in practice
             reset='[RESET CODE]',  #    ANSI color and style codes are used).
