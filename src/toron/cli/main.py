@@ -30,18 +30,13 @@ class TopoNodeType(object):
     def __call__(self, string: str) -> TopoNode:
         try:
             if self._mode:
-                # If mode was explicitly provided, use it as-is.
+                # Mode is given explicitly, use it as-is regardless of input.
                 node = bind_node(string, mode=self._mode)
             elif sys.stdin.isatty():
-                # If input is a terminal device (a TTY), use read-only mode.
+                # Input is a terminal device (a TTY), use read-only mode.
                 node = bind_node(string, mode='ro')
             else:
-                raise NotImplementedError('stream input untested')
-                if not sys.stdout.isatty():
-                    msg = 'cannot insert and select records at the same time'
-                    raise argparse.ArgumentTypeError(msg)
-
-                # If input is redirected from a file or pipe, use read-write mode.
+                # Input is redirected from a file or pipe, use read-write mode.
                 node = bind_node(string, mode='rw')
 
         except Exception as e:
