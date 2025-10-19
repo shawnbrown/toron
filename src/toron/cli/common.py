@@ -38,7 +38,7 @@ def csv_stdout_writer(
     stdout: Optional[TextIO] = None
 ) -> Generator['WriterType', None, None]:
     """Context manager to yield a ``csv.writer()`` to stdout."""
-    if not stdout:
+    if stdout is None:
         stdout = sys.stdout
 
     stdout_wrapper = io.TextIOWrapper(
@@ -47,9 +47,8 @@ def csv_stdout_writer(
         newline='', # Disable universal newline translation.
         line_buffering=True, # Flush stream after every newline character.
     )
-    writer = csv.writer(stdout_wrapper, lineterminator='\n')
     try:
-        yield writer
+        yield csv.writer(stdout_wrapper, lineterminator='\n')
     finally:
         stdout_wrapper.flush()  # Ensure all output is written.
 
