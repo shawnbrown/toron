@@ -608,11 +608,11 @@ def rebuild_structure_table(
     aux_index_repo: BaseIndexRepository,
     optimizations: Optional[Dict[str, Callable]] = None
 ) -> None:
-    make_granularity = (
-        optimizations.get('calculate_granularity', calculate_granularity)
-        if optimizations
-        else calculate_granularity
-    )
+    # Get granularity function (use optimized version when available).
+    if optimizations and hasattr(optimizations, 'calculate_granularity'):
+        granularity_func = optimizations.calculate_granularity
+    else:
+        granularity_func = calculate_granularity
 
     # Remove existing structure.
     for structure in structure_repo.get_all():
@@ -622,7 +622,7 @@ def rebuild_structure_table(
     categories = get_all_discrete_categories(column_manager, property_repo)
     columns = column_manager.get_columns()
     for cat in make_structure(categories):
-        granularity = make_granularity(list(cat), index_repo, aux_index_repo)
+        granularity = granularity_func(list(cat), index_repo, aux_index_repo)
         bits = [(x in cat) for x in columns]
         structure_repo.add(granularity, *bits)
 
@@ -672,16 +672,17 @@ def refresh_structure_granularity(
     aux_index_repo: BaseIndexRepository,
     optimizations: Optional[Dict[str, Callable]] = None
 ) -> None:
-    make_granularity = (
-        optimizations.get('calculate_granularity', calculate_granularity)
-        if optimizations
-        else calculate_granularity
-    )
+    # Get granularity function (use optimized version when available).
+    if optimizations and hasattr(optimizations, 'calculate_granularity'):
+        granularity_func = optimizations.calculate_granularity
+    else:
+        granularity_func = calculate_granularity
 
+    # Recalculate granularity and update structure records.
     label_columns = column_manager.get_columns()
     for structure in structure_repo.get_all():
         category = list(compress(label_columns, structure.bits))
-        granularity = make_granularity(category, index_repo, aux_index_repo)
+        granularity = granularity_func(category, index_repo, aux_index_repo)
         structure.granularity = granularity
         structure_repo.update(structure)
 
