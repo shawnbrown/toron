@@ -33,12 +33,12 @@ class TopoNodeType(object):
                 # Mode is given, use it as-is regardless of input.
                 node = bind_node(string, mode=self._mode)
             else:
-                if sys.stdin.isatty():
-                    # Input is a terminal device (a TTY), use read-only mode.
-                    node = bind_node(string, mode='ro')
-                else:
+                if not sys.stdin.isatty():
                     # Input is redirected from a file or pipe, use read-write mode.
                     node = bind_node(string, mode='rw')
+                else:
+                    # Input is a terminal device (a TTY), use read-only mode.
+                    node = bind_node(string, mode='ro')
 
         except Exception as e:
             msg = f"can't open {string!r}: {e}"
