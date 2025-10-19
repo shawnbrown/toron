@@ -1,13 +1,8 @@
 """Tests for toron/cli/main.py module."""
 import io
 import os
-from contextlib import (
-    closing,
-    redirect_stdout,
-    redirect_stderr,
-)
-from tempfile import NamedTemporaryFile
 from .. import _unittest as unittest
+from ..common import StreamWrapperTestCase
 from toron import TopoNode
 
 from toron.cli.common import ExitCode
@@ -16,22 +11,7 @@ from toron.cli.main import (
 )
 
 
-class TestGetParser(unittest.TestCase):
-    def setUp(self):
-        stdout_cm = redirect_stdout(io.StringIO())
-        self.stdout_capture = stdout_cm.__enter__()
-        self.addCleanup(lambda: stdout_cm.__exit__(None, None, None))
-
-        stderr_cm = redirect_stderr(io.StringIO())
-        self.stderr_capture = stderr_cm.__enter__()
-        self.addCleanup(lambda: stderr_cm.__exit__(None, None, None))
-
-    def get_tempfile_path(self):
-        """Helper function to get a path to a temporary file."""
-        with closing(NamedTemporaryFile(delete=False)) as tmp:
-            self.addCleanup(lambda: os.remove(tmp.name))
-        return tmp.name
-
+class TestGetParser(StreamWrapperTestCase):
     def test_main_help_explicit(self):
         """Calling with '-h', should print help to stdout and exit with OK."""
         parser = get_parser()
