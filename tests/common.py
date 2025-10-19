@@ -88,8 +88,21 @@ class TempDirTestCase(unittest.TestCase):
                 os.remove(path)
 
 
-class StreamTestMixin(object):
-    """Mixin class for testing streams like stdout."""
+class StreamWrapperTestCase(unittest.TestCase):
+    def setUp(self):
+        stdout_cm = redirect_stdout(io.StringIO())
+        self.stdout_capture = stdout_cm.__enter__()
+        self.addCleanup(lambda: stdout_cm.__exit__(None, None, None))
+
+        stderr_cm = redirect_stderr(io.StringIO())
+        self.stderr_capture = stderr_cm.__enter__()
+        self.addCleanup(lambda: stderr_cm.__exit__(None, None, None))
+
+    def get_tempfile_path(self):
+        """Helper function to get a path to a temporary file."""
+        with closing(tempfile.NamedTemporaryFile(delete=False)) as tmp:
+            self.addCleanup(lambda: os.remove(tmp.name))
+        return tmp.name
 
     def assertStream(self, stream, expected, *, encoding='utf-8', msg=None):
         """Fail if ``stream`` value does not equal ``expected`` value.
@@ -113,23 +126,6 @@ class StreamTestMixin(object):
             raise e
 
         self.assertEqual(stream_value, expected, msg)
-
-
-class StreamWrapperTestCase(unittest.TestCase, StreamTestMixin):
-    def setUp(self):
-        stdout_cm = redirect_stdout(io.StringIO())
-        self.stdout_capture = stdout_cm.__enter__()
-        self.addCleanup(lambda: stdout_cm.__exit__(None, None, None))
-
-        stderr_cm = redirect_stderr(io.StringIO())
-        self.stderr_capture = stderr_cm.__enter__()
-        self.addCleanup(lambda: stderr_cm.__exit__(None, None, None))
-
-    def get_tempfile_path(self):
-        """Helper function to get a path to a temporary file."""
-        with closing(tempfile.NamedTemporaryFile(delete=False)) as tmp:
-            self.addCleanup(lambda: os.remove(tmp.name))
-        return tmp.name
 
 
 class DummyStream(io.TextIOWrapper):
