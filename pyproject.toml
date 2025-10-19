@@ -66,12 +66,13 @@ legacy_tox_ini = """
   [testenv:check_types]
   # Run type checker to verify type hints.
   deps =
-    mypy >= 0.990
+    mypy >= 1.7.0
     pandas
     pandas-stubs
     types-colorama >= 0.4.15; platform_system == 'Windows'
   commands_pre =
     python --version
+    mypy --version
   commands =
     mypy src/toron
 
