@@ -1,6 +1,8 @@
 """Implementation for "index" command."""
 import argparse
+import csv
 import logging
+import sys
 
 from .common import ExitCode, csv_stdout_writer
 from .. import bind_node
@@ -24,5 +26,13 @@ def print_index(args: argparse.Namespace) -> ExitCode:
             row_count += 1
 
     applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
+
+    return ExitCode.OK
+
+
+def read_index_from_stdin(args: argparse.Namespace) -> ExitCode:
+    """Insert index records read from stdin stream."""
+    reader = csv.reader(sys.stdin)
+    args.file.insert_index(reader)
 
     return ExitCode.OK

@@ -10,6 +10,7 @@ import sys
 import tempfile
 from contextlib import (
     closing,
+    contextmanager,
     redirect_stdout,
     redirect_stderr,
 )
@@ -97,6 +98,19 @@ class StreamWrapperTestCase(unittest.TestCase):
         stderr_cm = redirect_stderr(io.StringIO())
         self.stderr_capture = stderr_cm.__enter__()
         self.addCleanup(lambda: stderr_cm.__exit__(None, None, None))
+
+    @contextmanager
+    def patched_stdin(self, input_str):
+        """Context manager to patch stdin with ``input_str``."""
+        try:
+            stdin_cm = unittest.mock.patch(target='sys.stdin',
+                                           new_callable=io.StringIO)
+            mock_stdin = stdin_cm.__enter__()
+            mock_stdin.write(input_str)
+            mock_stdin.seek(0)
+            yield mock_stdin
+        finally:
+            stdin_cm.__exit__(None, None, None)
 
     def get_tempfile_path(self):
         """Helper function to get a path to a temporary file."""
