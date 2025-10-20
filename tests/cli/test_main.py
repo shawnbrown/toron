@@ -97,6 +97,12 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         self.assertFalse(self.stdout_capture.getvalue())
         self.assertFalse(self.stderr_capture.getvalue())
 
+        dir_name, base_name = os.path.split(file_path)
+        backup_file = os.path.join(dir_name, f'backup-{base_name}')
+        if os.path.isfile(backup_file):
+            self.addCleanup(lambda: os.remove(backup_file))
+            self.fail('backup file was created unintentionally')
+
     def test_read_from_stdin(self):
         """Check call to command_index.read_from_stdin()."""
         file_path = self.get_tempfile_path()
@@ -114,3 +120,32 @@ class TestMainIndexCommand(StreamWrapperTestCase):
 
         self.assertFalse(self.stdout_capture.getvalue())
         self.assertFalse(self.stderr_capture.getvalue())
+
+        dir_name, base_name = os.path.split(file_path)
+        backup_file = os.path.join(dir_name, f'backup-{base_name}')
+        self.assertTrue(os.path.isfile(backup_file))
+        self.addCleanup(lambda: os.remove(backup_file))
+
+    def test_read_from_stdin_no_backup(self):
+        """Should not write a '.bak' file when passing `--no-backup`."""
+        file_path = self.get_tempfile_path()
+        TopoNode().to_file(file_path)
+
+        with self.patched_stdin('A,B\nfoo,bar\n'):     # Dummy input not ingested,
+            main(['index', file_path, '--no-backup'])  # only used for redirection.
+
+        self.mock.read_from_stdin.assert_called()
+
+        args, kwds = self.mock.read_from_stdin.call_args
+        self.assertIsInstance(args[0], argparse.Namespace)
+        self.assertEqual(args[0].command, 'index')
+        self.assertIsInstance(args[0].node, TopoNode)
+
+        self.assertFalse(self.stdout_capture.getvalue())
+        self.assertFalse(self.stderr_capture.getvalue())
+
+        dir_name, base_name = os.path.split(file_path)
+        backup_file = os.path.join(dir_name, f'backup-{base_name}')
+        if os.path.isfile(backup_file):
+            self.addCleanup(lambda: os.remove(backup_file))
+            self.fail('backup file was created unintentionally')

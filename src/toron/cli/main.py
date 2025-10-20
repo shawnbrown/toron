@@ -96,6 +96,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_index.add_argument('node', type=TopoNodeType(),
                               help='Toron node file', metavar='FILE')
+    parser_index.add_argument('--no-backup', action='store_false',
+                              dest='backup',
+                              help='do not write a backup (.bak) file')
 
     # Info command.
     parser_info = subparsers.add_parser(
@@ -131,6 +134,10 @@ def main(argv: Optional[List[str]] = None) -> ExitCode:
     if args.command == 'index':
         from . import command_index
         if input_streamed:
+            if args.backup:
+                dir_name, base_name = os.path.split(args.node.path_hint)
+                backup_path = os.path.join(dir_name, f'backup-{base_name}')
+                args.node.to_file(backup_path)
             return command_index.read_from_stdin(args)
         else:
             try:
