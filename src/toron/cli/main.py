@@ -117,6 +117,8 @@ def main(argv: Optional[List[str]] = None) -> ExitCode:
     stdout_style, stderr_style = get_stream_styles()
     configure_applogger(applogger, stderr_style)
 
+    input_streamed = not sys.stdin.isatty()  # stdin is piped or redirected.
+
     parser = get_parser()
     if argv is None:
         argv = sys.argv[1:]  # Default to command line arguments.
@@ -127,10 +129,13 @@ def main(argv: Optional[List[str]] = None) -> ExitCode:
         return print_info(args, stdout_style)
 
     if args.command == 'index':
-        from .command_index import print_index
-        try:
-            return print_index(args)
-        except BrokenPipeError:
-            os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
+        from . import command_index
+        if input_streamed:
+            return command_index.read_index_from_stdin(args)
+        else:
+            try:
+                return command_index.print_index(args)  # Write to stdout.
+            except BrokenPipeError:
+                os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
 
     parser.error('unable to process command')  # Exits with error code 2.

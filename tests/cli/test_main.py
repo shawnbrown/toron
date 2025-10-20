@@ -96,3 +96,21 @@ class TestMainIndexCommand(StreamWrapperTestCase):
 
         self.assertFalse(self.stdout_capture.getvalue())
         self.assertFalse(self.stderr_capture.getvalue())
+
+    def test_read_from_stdin(self):
+        """Check "index" command reading from stdin."""
+        file_path = self.get_tempfile_path()
+        TopoNode().to_file(file_path)
+
+        with self.patched_stdin('A,B\nfoo,bar\n'):  # Dummy input not ingested,
+            main(['index', file_path])              # only used for redirection.
+
+        self.mock.read_index_from_stdin.assert_called()
+
+        args, kwds = self.mock.read_index_from_stdin.call_args
+        self.assertIsInstance(args[0], argparse.Namespace)
+        self.assertEqual(args[0].command, 'index')
+        self.assertIsInstance(args[0].file, TopoNode)
+
+        self.assertFalse(self.stdout_capture.getvalue())
+        self.assertFalse(self.stderr_capture.getvalue())
