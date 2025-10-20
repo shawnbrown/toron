@@ -59,29 +59,17 @@ class TestMainParser(StreamWrapperTestCase):
         self.assertEqual(self.stdout_capture.getvalue(), parser.format_help())
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
-    def test_filename(self):
-        """Using a filename should invoke the "info" command by default."""
+    def test_default_command(self):
+        """When a filename is given, should invoke "info" by default."""
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
         parser = get_parser()
-        args = parser.parse_args([file_path])  # <- Filename is only arg.
 
-        self.assertEqual(list(vars(args)), ['command', 'file'])
-        self.assertEqual(args.command, 'info', msg=('when filename is given, '
-                                                    'should default to "info"'))
-        self.assertEqual(args.file.path_hint, file_path)
+        args1 = parser.parse_args([file_path])  # <- Filename is only arg.
+        args2 = parser.parse_args(['info', file_path])
 
-
-class TestInfoParser(StreamWrapperTestCase):
-    def test_basic_use(self):
-        """Check basic use of the "info" command."""
-        file_path = self.get_tempfile_path()
-        TopoNode().to_file(file_path)
-
-        parser = get_parser()
-        args = parser.parse_args(['info', file_path])
-
-        self.assertEqual(list(vars(args)), ['command', 'file'])
-        self.assertEqual(args.command, 'info')
-        self.assertEqual(args.file.path_hint, file_path)
+        # Contents of `args1` and `args2` should be the same.
+        self.assertEqual(list(vars(args1)), list(vars(args2)))
+        self.assertEqual(args1.command, args2.command)
+        self.assertEqual(args1.file.path_hint, args2.file.path_hint)
