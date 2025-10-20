@@ -11,35 +11,33 @@ from toron.cli.main import (
 )
 
 
-class TestMainParser(StreamWrapperTestCase):
+class TestToronArgumentParser(StreamWrapperTestCase):
+    def setUp(self):
+        self.parser = get_parser()  # Get ToronArgumentParser instance.
+        super().setUp()
+
     def test_help_flag(self):
         """Using '-h', should print help to stdout and exit with OK."""
-        parser = get_parser()
-
         with self.assertRaises(SystemExit) as cm:
-            parser.parse_args(['-h'])
+            self.parser.parse_args(['-h'])
 
         self.assertEqual(cm.exception.code, ExitCode.OK)
-        self.assertEqual(self.stdout_capture.getvalue(), parser.format_help())
+        self.assertEqual(self.stdout_capture.getvalue(), self.parser.format_help())
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
     def test_no_args(self):
         """Using no args should print help to stderr and exit with USAGE error."""
-        parser = get_parser()
-
         with self.assertRaises(SystemExit) as cm:
-            parser.parse_args([])
+            self.parser.parse_args([])
 
         self.assertEqual(cm.exception.code, ExitCode.USAGE)
         self.assertFalse(self.stdout_capture.getvalue(), msg='should not write to stdout')
-        self.assertEqual(self.stderr_capture.getvalue(), parser.format_help())
+        self.assertEqual(self.stderr_capture.getvalue(), self.parser.format_help())
 
     def test_help_with_invalid_choice(self):
         """Using '-h' with unknown command should give "invalid choice" error."""
-        parser = get_parser()
-
         with self.assertRaises(SystemExit) as cm:
-            parser.parse_args(['foo', '-h'])  # <- Unknown command "foo".
+            self.parser.parse_args(['foo', '-h'])  # <- Unknown command "foo".
 
         self.assertEqual(cm.exception.code, ExitCode.USAGE)
         self.assertFalse(self.stdout_capture.getvalue())
@@ -50,13 +48,11 @@ class TestMainParser(StreamWrapperTestCase):
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
-        parser = get_parser()
-
         with self.assertRaises(SystemExit) as cm:
-            parser.parse_args([file_path, '-h'])
+            self.parser.parse_args([file_path, '-h'])
 
         self.assertEqual(cm.exception.code, ExitCode.OK)
-        self.assertEqual(self.stdout_capture.getvalue(), parser.format_help())
+        self.assertEqual(self.stdout_capture.getvalue(), self.parser.format_help())
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
     def test_default_command(self):
@@ -64,10 +60,8 @@ class TestMainParser(StreamWrapperTestCase):
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
-        parser = get_parser()
-
-        args1 = parser.parse_args([file_path])  # <- Filename is only arg.
-        args2 = parser.parse_args(['info', file_path])
+        args1 = self.parser.parse_args([file_path])  # <- Filename is only arg.
+        args2 = self.parser.parse_args(['info', file_path])
 
         # Contents of `args1` and `args2` should be the same.
         self.assertEqual(list(vars(args1)), list(vars(args2)))
