@@ -13,7 +13,7 @@ def write_to_stdout(
     args: argparse.Namespace, stdout_style: StyleCodes
 ) -> ExitCode:
     """Show information for Toron node file."""
-    node = args.file
+    node = args.node
 
     # Get dictionary of node info values.
     with node._managed_cursor() as cursor:

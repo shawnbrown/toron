@@ -94,7 +94,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='select index records',
         description='Select index records in CSV format.',
     )
-    parser_index.add_argument('file', type=TopoNodeType(),
+    parser_index.add_argument('node', type=TopoNodeType(),
                               help='Toron node file', metavar='FILE')
 
     # Info command.
@@ -103,7 +103,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='show file info (default if filename given)',
         description='Show file information.',
     )
-    parser_info.add_argument('file', type=TopoNodeType(mode='ro'),
+    parser_info.add_argument('node', type=TopoNodeType(mode='ro'),
                              help='Toron node file', metavar='FILE')
 
     # Add subparser choices to local variable.

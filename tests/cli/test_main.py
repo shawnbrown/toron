@@ -68,7 +68,7 @@ class TestToronArgumentParser(StreamWrapperTestCase):
         # Contents of `args1` and `args2` should be the same.
         self.assertEqual(list(vars(args1)), list(vars(args2)))
         self.assertEqual(args1.command, args2.command)
-        self.assertEqual(args1.file.path_hint, args2.file.path_hint)
+        self.assertEqual(args1.node.path_hint, args2.node.path_hint)
 
 
 class TestMainIndexCommand(StreamWrapperTestCase):
@@ -92,7 +92,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         args, kwds = self.mock.write_to_stdout.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
-        self.assertIsInstance(args[0].file, TopoNode)
+        self.assertIsInstance(args[0].node, TopoNode)
 
         self.assertFalse(self.stdout_capture.getvalue())
         self.assertFalse(self.stderr_capture.getvalue())
@@ -110,7 +110,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         args, kwds = self.mock.read_from_stdin.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
-        self.assertIsInstance(args[0].file, TopoNode)
+        self.assertIsInstance(args[0].node, TopoNode)
 
         self.assertFalse(self.stdout_capture.getvalue())
         self.assertFalse(self.stderr_capture.getvalue())

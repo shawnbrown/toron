@@ -14,7 +14,7 @@ applogger = logging.getLogger('app-toron')
 
 def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     """Print node index in CSV format to stdout stream."""
-    weights = get_weights(node=args.file, weights=None, header=True)
+    weights = get_weights(node=args.node, weights=None, header=True)
 
     row_count = 0
     with csv_stdout_writer() as writer:
@@ -33,6 +33,6 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     """Insert index records read from stdin stream."""
     reader = csv.reader(sys.stdin)
-    args.file.insert_index(reader)
+    args.node.insert_index(reader)
 
     return ExitCode.OK
