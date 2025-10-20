@@ -1,4 +1,5 @@
 """Tests for toron/cli/main.py module."""
+import argparse
 import io
 import os
 from .. import _unittest as unittest
@@ -8,6 +9,7 @@ from toron import TopoNode
 from toron.cli.common import ExitCode
 from toron.cli.main import (
     get_parser,
+    main,
 )
 
 
@@ -67,3 +69,30 @@ class TestToronArgumentParser(StreamWrapperTestCase):
         self.assertEqual(list(vars(args1)), list(vars(args2)))
         self.assertEqual(args1.command, args2.command)
         self.assertEqual(args1.file.path_hint, args2.file.path_hint)
+
+
+class TestMainIndexCommand(StreamWrapperTestCase):
+    def setUp(self):
+        super().setUp()
+
+        # Patch the `command_index` module with a mock object.
+        mock_cm = unittest.mock.patch(target='toron.cli.command_index')
+        self.mock = mock_cm.__enter__()
+        self.addCleanup(lambda: mock_cm.__exit__(None, None, None))
+
+    def test_index_write_to_stdout(self):
+        """Check "index" call to write to stdout."""
+        file_path = self.get_tempfile_path()
+        TopoNode().to_file(file_path)
+
+        main(['index', file_path])  # Function under test.
+
+        self.mock.print_index.assert_called()
+
+        args, kwds = self.mock.print_index.call_args
+        self.assertIsInstance(args[0], argparse.Namespace)
+        self.assertEqual(args[0].command, 'index')
+        self.assertIsInstance(args[0].file, TopoNode)
+
+        self.assertFalse(self.stdout_capture.getvalue())
+        self.assertFalse(self.stderr_capture.getvalue())
