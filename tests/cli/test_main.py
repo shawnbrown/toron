@@ -11,9 +11,9 @@ from toron.cli.main import (
 )
 
 
-class TestGetParser(StreamWrapperTestCase):
-    def test_main_help_explicit(self):
-        """Calling with '-h', should print help to stdout and exit with OK."""
+class TestMainParser(StreamWrapperTestCase):
+    def test_help_flag(self):
+        """Using '-h', should print help to stdout and exit with OK."""
         parser = get_parser()
 
         with self.assertRaises(SystemExit) as cm:
@@ -23,8 +23,8 @@ class TestGetParser(StreamWrapperTestCase):
         self.assertEqual(self.stdout_capture.getvalue(), parser.format_help())
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
-    def test_main_no_args(self):
-        """Calling without args should print help to stderr and exit with USAGE error."""
+    def test_no_args(self):
+        """Using no args should print help to stderr and exit with USAGE error."""
         parser = get_parser()
 
         with self.assertRaises(SystemExit) as cm:
@@ -59,25 +59,28 @@ class TestGetParser(StreamWrapperTestCase):
         self.assertEqual(self.stdout_capture.getvalue(), parser.format_help())
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
-    def test_info_explicit(self):
-        """Check explicit use of the "info" command."""
-        file_path = self.get_tempfile_path()
-        TopoNode().to_file(file_path)
-
-        parser = get_parser()
-        args = parser.parse_args(['info', file_path])
-
-        self.assertEqual(list(vars(args)), ['command', 'file'])
-        self.assertEqual(args.command, 'info')
-        self.assertEqual(args.file.path_hint, file_path)
-
-    def test_info_implicit(self):
-        """When a filename is given, "info" should be invoked by default."""
+    def test_filename(self):
+        """Using a filename should invoke the "info" command by default."""
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
         parser = get_parser()
         args = parser.parse_args([file_path])  # <- Filename is only arg.
+
+        self.assertEqual(list(vars(args)), ['command', 'file'])
+        self.assertEqual(args.command, 'info', msg=('when filename is given, '
+                                                    'should default to "info"'))
+        self.assertEqual(args.file.path_hint, file_path)
+
+
+class TestInfoParser(StreamWrapperTestCase):
+    def test_basic_use(self):
+        """Check basic use of the "info" command."""
+        file_path = self.get_tempfile_path()
+        TopoNode().to_file(file_path)
+
+        parser = get_parser()
+        args = parser.parse_args(['info', file_path])
 
         self.assertEqual(list(vars(args)), ['command', 'file'])
         self.assertEqual(args.command, 'info')
