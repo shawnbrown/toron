@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from os.path import isfile
-from .._typing import Literal, Optional, Set
+from .._typing import List, Literal, Optional, Set
 from .. import __version__, bind_node, TopoNode
 from .common import (
     ExitCode,
@@ -112,13 +112,15 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> ExitCode:
+def main(argv: Optional[List[str]] = None) -> ExitCode:
     applogger = logging.getLogger('app-toron')
     stdout_style, stderr_style = get_stream_styles()
     configure_applogger(applogger, stderr_style)
 
     parser = get_parser()
-    args = parser.parse_args()
+    if argv is None:
+        argv = sys.argv[1:]  # Default to command line arguments.
+    args = parser.parse_args(argv)
 
     if args.command == 'info':
         from .command_info import print_info
