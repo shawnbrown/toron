@@ -9,7 +9,7 @@ from ..data_service import get_node_info_text
 from .common import ExitCode, StyleCodes
 
 
-def print_info(
+def write_to_stdout(
     args: argparse.Namespace, stdout_style: StyleCodes
 ) -> ExitCode:
     """Show information for Toron node file."""

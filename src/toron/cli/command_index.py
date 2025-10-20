@@ -12,7 +12,7 @@ from ..graph import get_weights
 applogger = logging.getLogger('app-toron')
 
 
-def print_index(args: argparse.Namespace) -> ExitCode:
+def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     """Print node index in CSV format to stdout stream."""
     weights = get_weights(node=args.file, weights=None, header=True)
 
@@ -30,7 +30,7 @@ def print_index(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
-def read_index_from_stdin(args: argparse.Namespace) -> ExitCode:
+def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     """Insert index records read from stdin stream."""
     reader = csv.reader(sys.stdin)
     args.file.insert_index(reader)

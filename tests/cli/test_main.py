@@ -80,16 +80,16 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         self.mock = mock_cm.__enter__()
         self.addCleanup(lambda: mock_cm.__exit__(None, None, None))
 
-    def test_index_write_to_stdout(self):
-        """Check "index" call to write to stdout."""
+    def test_write_to_stdout(self):
+        """Check call to command_index.write_to_stdout()."""
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
         main(['index', file_path])  # Function under test.
 
-        self.mock.print_index.assert_called()
+        self.mock.write_to_stdout.assert_called()
 
-        args, kwds = self.mock.print_index.call_args
+        args, kwds = self.mock.write_to_stdout.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
         self.assertIsInstance(args[0].file, TopoNode)
@@ -98,16 +98,16 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         self.assertFalse(self.stderr_capture.getvalue())
 
     def test_read_from_stdin(self):
-        """Check "index" command reading from stdin."""
+        """Check call to command_index.read_from_stdin()."""
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
         with self.patched_stdin('A,B\nfoo,bar\n'):  # Dummy input not ingested,
             main(['index', file_path])              # only used for redirection.
 
-        self.mock.read_index_from_stdin.assert_called()
+        self.mock.read_from_stdin.assert_called()
 
-        args, kwds = self.mock.read_index_from_stdin.call_args
+        args, kwds = self.mock.read_from_stdin.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
         self.assertIsInstance(args[0].file, TopoNode)

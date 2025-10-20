@@ -7,11 +7,11 @@ import toron
 from toron.cli.main import get_parser
 
 from toron.cli.command_index import (
-    read_index_from_stdin,
+    read_from_stdin,
 )
 
 
-class TestReadIndexFromStdin(StreamWrapperTestCase):
+class TestIndexReadFromStdin(StreamWrapperTestCase):
     def test_input_labels(self):
         file_path = self.get_tempfile_path()
         node = TopoNode()
@@ -27,7 +27,7 @@ class TestReadIndexFromStdin(StreamWrapperTestCase):
             parser = get_parser()
             args = parser.parse_args(['index', file_path])
 
-            read_index_from_stdin(args)  # <- Function under test.
+            read_from_stdin(args)  # <- Function under test.
 
             node = toron.read_file(file_path)
             index_values = list(node.select_index(header=True))

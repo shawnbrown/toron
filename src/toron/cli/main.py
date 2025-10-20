@@ -125,16 +125,16 @@ def main(argv: Optional[List[str]] = None) -> ExitCode:
     args = parser.parse_args(argv)
 
     if args.command == 'info':
-        from .command_info import print_info
-        return print_info(args, stdout_style)
+        from . import command_info
+        return command_info.write_to_stdout(args, stdout_style)
 
     if args.command == 'index':
         from . import command_index
         if input_streamed:
-            return command_index.read_index_from_stdin(args)
+            return command_index.read_from_stdin(args)
         else:
             try:
-                return command_index.print_index(args)  # Write to stdout.
+                return command_index.write_to_stdout(args)
             except BrokenPipeError:
                 os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
 
