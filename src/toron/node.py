@@ -159,12 +159,7 @@ class TopoNode(object):
 
     @property
     def path_hint(self) -> Optional[str]:
-        """The first known file path associated with this instance,
-        if any.
-
-        This property serves as a hint and is not guaranteed to be
-        a valid or current file path. It is not persisted when the
-        instance is saved to disk.
+        """The first known file path associated with the node.
 
         * If the instance was loaded from a file, this is the source
           file path.
@@ -173,6 +168,9 @@ class TopoNode(object):
         * If the instance was created in memory but has never been
           saved, this will be ``None``.
         * This value can be manually overwritten at any time.
+
+        This property serves as a hint and is not guaranteed to be a
+        valid or current file path.
         """
         return self._path_hint
 
