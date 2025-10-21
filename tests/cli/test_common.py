@@ -4,8 +4,8 @@ from io import BytesIO, TextIOWrapper
 from .. import _unittest as unittest
 from ..common import (  # <- tests/common.py (not cli/common.py)
     StreamWrapperTestCase,
-    DummyStream,
-    DummyRedirectedStream,
+    DummyTTY,
+    DummyRedirection,
 )
 
 from toron.cli.common import (
@@ -46,8 +46,8 @@ class TestGetStreamStyles(unittest.TestCase):
         """Interactive streams should get styled output."""
         stdout_style, stderr_style = get_stream_styles(
             environ={},
-            stdout=DummyStream(),
-            stderr=DummyStream(),
+            stdout=DummyTTY(),
+            stderr=DummyTTY(),
         )
         self.assertEqual(stdout_style, self.ansi_style)
         self.assertEqual(stderr_style, self.ansi_style)
@@ -56,8 +56,8 @@ class TestGetStreamStyles(unittest.TestCase):
         """Should disable color if "NO_COLOR" is set in environment."""
         stdout_style, stderr_style = get_stream_styles(
             environ={'NO_COLOR': 1},
-            stdout=DummyStream(),
-            stderr=DummyStream(),
+            stdout=DummyTTY(),
+            stderr=DummyTTY(),
         )
         self.assertEqual(stdout_style, self.no_style)
         self.assertEqual(stderr_style, self.no_style)
@@ -66,8 +66,8 @@ class TestGetStreamStyles(unittest.TestCase):
         """Should disable color if "TERM=dumb" is set in environment."""
         stdout_style, stderr_style = get_stream_styles(
             environ={'TERM': 'dumb'},
-            stdout=DummyStream(),
-            stderr=DummyStream(),
+            stdout=DummyTTY(),
+            stderr=DummyTTY(),
         )
         self.assertEqual(stdout_style, self.no_style)
         self.assertEqual(stderr_style, self.no_style)
@@ -77,8 +77,8 @@ class TestGetStreamStyles(unittest.TestCase):
         # Redirected stdout.
         stdout_style, stderr_style = get_stream_styles(
             environ={},
-            stdout=DummyRedirectedStream(),
-            stderr=DummyStream(),
+            stdout=DummyRedirection(),
+            stderr=DummyTTY(),
         )
         self.assertEqual(stdout_style, self.no_style)
         self.assertEqual(stderr_style, self.ansi_style)
@@ -86,8 +86,8 @@ class TestGetStreamStyles(unittest.TestCase):
         # Redirected stderr.
         stdout_style, stderr_style = get_stream_styles(
             environ={},
-            stdout=DummyStream(),
-            stderr=DummyRedirectedStream(),
+            stdout=DummyTTY(),
+            stderr=DummyRedirection(),
         )
         self.assertEqual(stdout_style, self.ansi_style)
         self.assertEqual(stderr_style, self.no_style)

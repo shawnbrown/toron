@@ -142,7 +142,7 @@ class StreamWrapperTestCase(unittest.TestCase):
         self.assertEqual(stream_value, expected, msg)
 
 
-class DummyStream(io.TextIOWrapper):
+class DummyTTY(io.TextIOWrapper):
     """TextIOWrapper that mimics an interactive stream (a TTY)."""
     def __init__(self):
         super().__init__(io.BytesIO())
@@ -151,7 +151,7 @@ class DummyStream(io.TextIOWrapper):
         return True
 
 
-class DummyRedirectedStream(io.TextIOWrapper):
+class DummyRedirection(io.TextIOWrapper):
     """TextIOWrapper to mimic a stream being redirected or piped."""
     def __init__(self):
         super().__init__(io.BytesIO())
