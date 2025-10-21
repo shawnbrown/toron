@@ -135,7 +135,7 @@ def main(
 
     if stdin is None:
         stdin = sys.stdin
-    input_streamed = not stdin.isatty()  # stdin is piped or redirected.
+    input_streamed = not stdin.isatty()  # True if redirected or piped.
 
     parser = get_parser()
     if argv is None:
