@@ -153,5 +153,5 @@ class DummyTTY(io.TextIOWrapper):
 
 class DummyRedirection(io.TextIOWrapper):
     """TextIOWrapper to mimic a stream being redirected or piped."""
-    def __init__(self):
-        super().__init__(io.BytesIO())
+    def __init__(self, initial_value=''):
+        super().__init__(io.BytesIO(initial_value.encode('utf-8')))
