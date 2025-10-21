@@ -3,6 +3,7 @@ import argparse
 import csv
 import logging
 import sys
+from .._typing import Optional, TextIO
 
 from .common import ExitCode, csv_stdout_writer
 from .. import bind_node
@@ -30,9 +31,15 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
-def read_from_stdin(args: argparse.Namespace) -> ExitCode:
+def read_from_stdin(
+    args: argparse.Namespace,
+    *,
+    stdin: Optional[TextIO] = None,
+) -> ExitCode:
     """Insert index records read from stdin stream."""
-    reader = csv.reader(sys.stdin)
+    if stdin is None:
+        stdin = sys.stdin
+    reader = csv.reader(stdin)
     args.node.insert_index(reader)
 
     return ExitCode.OK

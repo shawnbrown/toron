@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from os.path import isfile
-from .._typing import List, Literal, Optional, Set
+from .._typing import List, Literal, Optional, Set, TextIO
 from .. import __version__, bind_node, TopoNode
 from .common import (
     ExitCode,
@@ -115,12 +115,18 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Optional[List[str]] = None) -> ExitCode:
+def main(
+    argv: Optional[List[str]] = None,
+    *,
+    stdin: Optional[TextIO] = None,
+) -> ExitCode:
     applogger = logging.getLogger('app-toron')
     stdout_style, stderr_style = get_stream_styles()
     configure_applogger(applogger, stderr_style)
 
-    input_streamed = not sys.stdin.isatty()  # stdin is piped or redirected.
+    if stdin is None:
+        stdin = sys.stdin
+    input_streamed = not stdin.isatty()  # stdin is piped or redirected.
 
     parser = get_parser()
     if argv is None:
@@ -138,7 +144,7 @@ def main(argv: Optional[List[str]] = None) -> ExitCode:
                 dir_name, base_name = os.path.split(args.node.path_hint)
                 backup_path = os.path.join(dir_name, f'backup-{base_name}')
                 args.node.to_file(backup_path)
-            return command_index.read_from_stdin(args)
+            return command_index.read_from_stdin(args, stdin=stdin)
         else:
             try:
                 return command_index.write_to_stdout(args)

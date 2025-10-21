@@ -3,7 +3,7 @@ import argparse
 import io
 import os
 from .. import _unittest as unittest
-from ..common import StreamWrapperTestCase
+from ..common import StreamWrapperTestCase, DummyTTY
 from toron import TopoNode
 
 from toron.cli.common import ExitCode
@@ -85,7 +85,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
-        main(['index', file_path])  # Function under test.
+        main(['index', file_path], stdin=DummyTTY())  # Function under test.
 
         self.mock.write_to_stdout.assert_called()
 
