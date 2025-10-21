@@ -98,7 +98,7 @@ def get_parser() -> argparse.ArgumentParser:
                               help='Toron node file', metavar='FILE')
     parser_index.add_argument('--no-backup', action='store_false',
                               dest='backup',
-                              help='do not write a backup (.bak) file')
+                              help='do not make a backup file')
 
     # Info command.
     parser_info = subparsers.add_parser(
@@ -113,6 +113,15 @@ def get_parser() -> argparse.ArgumentParser:
     valid_choices.update(subparsers.choices)
 
     return parser
+
+
+def save_backup(node: TopoNode) -> None:
+    """Save a copy of `node` with a 'backup-' prefix added to the name."""
+    if node.path_hint is None:
+        raise FileNotFoundError('node is not associated with a file path')
+    dir_name, base_name = os.path.split(node.path_hint)
+    backup_path = os.path.join(dir_name, f'backup-{base_name}')
+    node.to_file(backup_path)
 
 
 def main(
@@ -141,9 +150,7 @@ def main(
         from . import command_index
         if input_streamed:
             if args.backup:
-                dir_name, base_name = os.path.split(args.node.path_hint)
-                backup_path = os.path.join(dir_name, f'backup-{base_name}')
-                args.node.to_file(backup_path)
+                save_backup(args.node)
             return command_index.read_from_stdin(args, stdin=stdin)
         else:
             try:
