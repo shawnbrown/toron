@@ -46,7 +46,8 @@ class TestIndexReadFromStdin(unittest.TestCase):
             'Michigan,Cass\n'
         )
 
-        command_index.read_from_stdin(args, stdin=dummy_stdin)  # <- Function under test.
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index.read_from_stdin(args, stdin=dummy_stdin)  # <- Function under test.
 
         index_values = list(node.select_index(header=True))
         expected_values = [
@@ -57,3 +58,4 @@ class TestIndexReadFromStdin(unittest.TestCase):
             (3, 'Michigan', 'Cass'),
         ]
         self.assertEqual(index_values, expected_values)
+        self.assertEqual(logs_cm.output, ['INFO:app-toron.node:loaded 3 index records'])
