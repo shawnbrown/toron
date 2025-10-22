@@ -105,7 +105,7 @@ def get_stream_styles(
 
     if environ.get('NO_COLOR') or environ.get('TERM') == 'dumb':
         no_style = StyleCodes()
-        return (no_style, no_style)
+        return (no_style, no_style)  # <- EXIT!
 
     if stdout is None:
         stdout = sys.stdout
@@ -153,7 +153,7 @@ def get_formatter_class(style_codes: StyleCodes) -> Type[logging.Formatter]:
             elif args:
                 fmt, args = args[0], args[1:]
             else:
-                fmt = '%(message)s'
+                fmt = '%(message)s'  # Same default as `logging.Formatter`.
 
             # Instantiate ANSI style formatters.
             self.color_formatters = {
