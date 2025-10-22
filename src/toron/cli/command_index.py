@@ -13,12 +13,19 @@ from ..graph import get_weights
 applogger = logging.getLogger('app-toron')
 
 
-def write_to_stdout(args: argparse.Namespace) -> ExitCode:
+def write_to_stdout(
+    args: argparse.Namespace,
+    *,
+    stdout: Optional[TextIO] = None,
+) -> ExitCode:
     """Print node index in CSV format to stdout stream."""
+    if stdout is None:
+        stdout = sys.stdout
+
     weights = get_weights(node=args.node, weights=None, header=True)
 
     row_count = 0
-    with csv_stdout_writer() as writer:
+    with csv_stdout_writer(stdout) as writer:
         header = next(weights)
         writer.writerow(header)
 

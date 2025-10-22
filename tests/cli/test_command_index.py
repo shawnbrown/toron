@@ -4,25 +4,49 @@ from .. import _unittest as unittest
 from ..common import DummyRedirection
 from toron import TopoNode
 
-from toron.cli.command_index import (
-    read_from_stdin,
-)
+from toron.cli import command_index
+
+
+class TestIndexWriteToStdout(unittest.TestCase):
+    def test_basic_behavior(self):
+        node = TopoNode()
+        node.add_index_columns('state', 'county')
+        node.insert_index([
+            ['state', 'county'],
+            ['Illinois', 'Cook'],
+            ['Indiana', 'Porter'],
+            ['Michigan', 'Cass'],
+        ])
+        args = argparse.Namespace(command='index', node=node)
+        dummy_stdout = DummyRedirection()
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index.write_to_stdout(args, stdout=dummy_stdout)  # <- Function under test.
+
+        expected_values = (
+            'index_id,state,county\n'
+            '0,-,-\n'
+            '1,Illinois,Cook\n'
+            '2,Indiana,Porter\n'
+            '3,Michigan,Cass\n'
+        )
+        self.assertEqual(dummy_stdout.getvalue(), expected_values)
+        self.assertEqual(logs_cm.output, ['INFO:app-toron:written 4 records'])
 
 
 class TestIndexReadFromStdin(unittest.TestCase):
     def test_input_labels(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
-
         args = argparse.Namespace(command='index', node=node)
-        stdin = DummyRedirection(
+        dummy_stdin = DummyRedirection(
             'state,county\n'
             'Illinois,Cook\n'
             'Indiana,Porter\n'
             'Michigan,Cass\n'
         )
 
-        read_from_stdin(args, stdin=stdin)  # <- Function under test.
+        command_index.read_from_stdin(args, stdin=dummy_stdin)  # <- Function under test.
 
         index_values = list(node.select_index(header=True))
         expected_values = [

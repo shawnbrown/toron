@@ -155,3 +155,7 @@ class DummyRedirection(io.TextIOWrapper):
     """TextIOWrapper to mimic a stream being redirected or piped."""
     def __init__(self, initial_value=''):
         super().__init__(io.BytesIO(initial_value.encode('utf-8')))
+
+    def getvalue(self):
+        self.buffer.seek(0)
+        return self.buffer.read().decode('utf-8')

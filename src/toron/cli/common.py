@@ -51,6 +51,10 @@ def csv_stdout_writer(
         yield csv.writer(stdout_wrapper, lineterminator='\n')
     finally:
         stdout_wrapper.flush()  # Ensure all output is written.
+        try:
+            stdout_wrapper.detach()  # Keep `stdout.buffer` open.
+        except Exception:
+            pass
 
 
 # ============================
