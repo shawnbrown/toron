@@ -144,9 +144,6 @@ def get_formatter_class(style_codes: StyleCodes) -> Type[logging.Formatter]:
     class AnsiStyleFormatter(logging.Formatter):
         """Formatter to convert LogRecord into ANSI styled text."""
         def __init__(self, *args, **kwds) -> None:
-            # Initialize self as un-styled formatter (for fall-back).
-            super().__init__(*args, **kwds)
-
             # Get `fmt` argument.
             if 'fmt' in kwds:
                 fmt = kwds.pop('fmt')
@@ -154,6 +151,9 @@ def get_formatter_class(style_codes: StyleCodes) -> Type[logging.Formatter]:
                 fmt, args = args[0], args[1:]
             else:
                 fmt = '%(message)s'  # Same default as `logging.Formatter`.
+
+            # Initialize self as un-styled formatter (for fall-back).
+            super().__init__(fmt, *args, **kwds)
 
             # Instantiate ANSI style formatters.
             self.color_formatters = {
