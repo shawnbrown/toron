@@ -1124,19 +1124,16 @@ class RelationRepository(BaseRelationRepository):
 
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
+        # In the following SQL, the `EXISTS` operator stops the nested query
+        # early (confirmed by Richard Hipp on a mailing list 2016-03-05).
         self._cursor.execute(
             """
-                -- Determine if index_id set is complete (no records missing).
-                SELECT NOT EXISTS(
-                    -- Determine if one or more records are missing.
-                    SELECT 1
-                    FROM main.node_index
-                    WHERE index_id != 0
-                    AND index_id NOT IN (
-                        SELECT index_id
-                        FROM main.relation
-                        WHERE crosswalk_id = ? AND index_id IS NOT NULL
-                    )
+                -- Determine if index_id set is complete (no missing records).
+                SELECT NOT EXISTS (
+                    -- Select index_id values not in crosswalk's relations.
+                    SELECT index_id FROM main.node_index WHERE index_id != 0
+                    EXCEPT
+                    SELECT index_id FROM main.relation WHERE crosswalk_id = ?
                 )
             """,
             (crosswalk_id,),
