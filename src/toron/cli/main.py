@@ -4,7 +4,13 @@ import logging
 import os
 import sys
 from os.path import isfile
-from .._typing import List, Literal, Optional, Set, TextIO
+from .._typing import (
+    List,
+    Literal,
+    Optional,
+    Set,
+    TextIO,
+)
 from .. import __version__, bind_node, TopoNode
 from .common import (
     ExitCode,
