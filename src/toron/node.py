@@ -161,8 +161,8 @@ class TopoNode(object):
     def path_hint(self) -> Optional[str]:
         """The first known file path associated with the node.
 
-        * If the instance was loaded from a file, this is the source
-          file path.
+        * If the instance was loaded from a file or bound directly to
+          a file, this is the source file path.
         * If the instance was created in memory and later saved, this
           is the first save path.
         * If the instance was created in memory but has never been
