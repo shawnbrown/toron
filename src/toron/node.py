@@ -2369,7 +2369,7 @@ class TopoNode(object):
             if selectors:
                 try:
                     selector_objs = [parse_selector(s) for s in selectors]
-                except TypeError as e:
+                except (TypeError, AttributeError) as e:
                     msg = f'{e}. Did you mean to use a keyword-only argument?'
                     raise TypeError(msg)
                 attribute_id_filter = []
