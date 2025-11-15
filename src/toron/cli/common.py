@@ -184,12 +184,16 @@ def configure_applogger(
     applogger: logging.Logger, style_codes: StyleCodes
 ) -> None:
     """Configure handler and formatter for given *applogger*."""
+    # Get `AnsiStyleFormatter` or `logging.Formatter`.
+    formatter_class = get_formatter_class(style_codes)
+
+    # Configure `applogger` to write formatted output to stderr.
     logging.config.dictConfig({
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
             'cli_formatter': {
-                '()': get_formatter_class(style_codes),
+                '()': formatter_class,  # Special key '()' to call Formatter factory.
                 'fmt': '%(levelname)s: %(message)s',
             },
         },
