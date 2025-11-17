@@ -71,6 +71,29 @@ class TestToronArgumentParser(StreamWrapperTestCase):
         self.assertEqual(args1.node.path_hint, args2.node.path_hint)
 
 
+class TestMainNewCommand(StreamWrapperTestCase):
+    def setUp(self):
+        super().setUp()
+
+        # Patch the `command_new` module with a mock object.
+        mock_cm = unittest.mock.patch(target='toron.cli.command_new')
+        self.mock = mock_cm.__enter__()
+        self.addCleanup(lambda: mock_cm.__exit__(None, None, None))
+
+    def test_create_file(self):
+        """Check call to command_new.create_file()."""
+        file_path = self.get_tempfile_path()
+
+        main(['new', file_path])  # Function under test.
+
+        self.mock.create_file.assert_called()
+
+        args, kwds = self.mock.create_file.call_args
+        self.assertIsInstance(args[0], argparse.Namespace)
+        self.assertEqual(args[0].command, 'new')
+        self.assertEqual(args[0].node_path, file_path)
+
+
 class TestMainIndexCommand(StreamWrapperTestCase):
     def setUp(self):
         super().setUp()

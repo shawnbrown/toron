@@ -94,6 +94,15 @@ def get_parser() -> argparse.ArgumentParser:
         prog='toron',
     )
 
+    # New command.
+    parser_new = subparsers.add_parser(
+        'new',
+        help='create a new node file',
+        description='Create a new node file.',
+    )
+    parser_new.add_argument('node_path', type=str,
+                            help='name of file to create', metavar='FILE')
+
     # Index command.
     parser_index = subparsers.add_parser(
         name='index',
@@ -163,5 +172,9 @@ def main(
                 return command_index.write_to_stdout(args)
             except BrokenPipeError:
                 os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
+
+    if args.command == 'new':
+        from . import command_new
+        return command_new.create_file(args)
 
     parser.error('unable to process command')  # Exits with error code 2.
