@@ -12,6 +12,9 @@ from .._typing import (
     TextIO,
 )
 from .. import __version__, bind_node, TopoNode
+from . import (
+    command_info,
+)
 from .common import (
     ExitCode,
     configure_applogger,
@@ -123,6 +126,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_info.add_argument('node', type=TopoNodeType(mode='ro'),
                              help='Toron node file', metavar='FILE')
+    parser_info.set_defaults(func=command_info.write_to_stdout)
 
     # Add subparser choices to local variable.
     valid_choices.update(subparsers.choices)
@@ -157,9 +161,11 @@ def main(
         argv = sys.argv[1:]  # Default to command line arguments.
     args = parser.parse_args(argv)
 
+    args.stdout_style = stdout_style
+    args.stderr_style = stderr_style
+
     if args.command == 'info':
-        from . import command_info
-        return command_info.write_to_stdout(args, stdout_style)
+        return args.func(args)
 
     if args.command == 'index':
         from . import command_index

@@ -9,9 +9,7 @@ from ..data_service import get_node_info_text
 from .common import ExitCode, StyleCodes
 
 
-def write_to_stdout(
-    args: argparse.Namespace, stdout_style: StyleCodes
-) -> ExitCode:
+def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     """Show information for Toron node file."""
     node = args.node
 
@@ -27,8 +25,8 @@ def write_to_stdout(
         )
 
     # Define short alias for style values (used in f-string).
-    bright = stdout_style.bright
-    reset = stdout_style.reset
+    bright = args.stdout_style.bright
+    reset = args.stdout_style.reset
 
     # Get file name only, no parent directory text.
     filename = Path(node.path_hint).name
