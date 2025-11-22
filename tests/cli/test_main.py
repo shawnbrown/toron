@@ -76,7 +76,7 @@ class TestMainNewCommand(StreamWrapperTestCase):
         super().setUp()
 
         # Patch the `command_new` module with a mock object.
-        mock_cm = unittest.mock.patch(target='toron.cli.command_new')
+        mock_cm = unittest.mock.patch(target='toron.cli.main.command_new')
         self.mock = mock_cm.__enter__()
         self.addCleanup(lambda: mock_cm.__exit__(None, None, None))
 

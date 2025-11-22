@@ -14,6 +14,7 @@ from .._typing import (
 from .. import __version__, bind_node, TopoNode
 from . import (
     command_info,
+    command_new,
 )
 from .common import (
     ExitCode,
@@ -105,6 +106,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_new.add_argument('node_path', type=str,
                             help='name of file to create', metavar='FILE')
+    parser_new.set_defaults(func=command_new.create_file)
 
     # Index command.
     parser_index = subparsers.add_parser(
@@ -164,7 +166,7 @@ def main(
     args.stdout_style = stdout_style
     args.stderr_style = stderr_style
 
-    if args.command == 'info':
+    if args.command in {'info', 'new'}:
         return args.func(args)
 
     if args.command == 'index':
@@ -178,9 +180,5 @@ def main(
                 return command_index.write_to_stdout(args)
             except BrokenPipeError:
                 os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
-
-    if args.command == 'new':
-        from . import command_new
-        return command_new.create_file(args)
 
     parser.error('unable to process command')  # Exits with error code 2.
