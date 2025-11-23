@@ -166,9 +166,6 @@ def main(
     args.stdout_style = stdout_style
     args.stderr_style = stderr_style
 
-    if args.command in {'info', 'new'}:
-        return args.func(args)
-
     if args.command == 'index':
         from . import command_index
         if input_streamed:
@@ -181,4 +178,9 @@ def main(
             except BrokenPipeError:
                 os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
 
-    parser.error('unable to process command')  # Exits with error code 2.
+    try:
+        return args.func(args)
+    except Exception as e:
+        # TODO: Investigate using `ToronError` here (instead of `Exception`).
+        applogger.error(str(e))
+        return ExitCode.ERR
