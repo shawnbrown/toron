@@ -200,9 +200,15 @@ def get_formatter_class(style_codes: StyleCodes) -> Type[logging.Formatter]:
 
 
 def configure_applogger(
-    applogger: logging.Logger, style_codes: StyleCodes
+    applogger: logging.Logger,
+    style_codes: StyleCodes,
+    *,
+    stream: Optional[TextIO] = None,
 ) -> None:
-    """Configure handler and formatter for given *applogger*."""
+    """Configure handler and formatter for given *applogger*.
+
+    If *stream* is not given, ``sys.stderr`` is used by default.
+    """
     # Get `AnsiStyleFormatter` or `logging.Formatter`.
     formatter_class = get_formatter_class(style_codes)
 
@@ -218,9 +224,9 @@ def configure_applogger(
         },
         'handlers': {
             'cli_handler': {
-                'class': 'logging.StreamHandler',
+                'class': 'logging.StreamHandler',  # Needs string value in 3.11 and earlier.
                 'formatter': 'cli_formatter',
-                'stream': 'ext://sys.stderr',
+                'stream': stream or sys.stderr,
             },
         },
         'loggers': {
