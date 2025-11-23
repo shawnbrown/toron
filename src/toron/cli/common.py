@@ -1,4 +1,5 @@
 """Common resources for Toron CLI application."""
+import argparse
 import csv
 import io
 import logging
@@ -55,6 +56,24 @@ def csv_stdout_writer(
             stdout_wrapper.detach()  # Keep `stdout.buffer` open.
         except Exception:
             pass
+
+
+def process_backup_option(args: argparse.Namespace) -> None:
+    """Make a backup copy of `args.node` if `args.backup` is True.
+
+    The backup file name is the same as `args.node.path_hint` but
+    with the prefix 'backup-'. When a backup file of the same name
+    already exists, it is overwritten. If the path hint is None, a
+    FileNotFoundError is raised.
+    """
+    if not getattr(args, 'backup', False):
+        return  # Exit without making a backup if `args.backup` is not True.
+
+    if args.node.path_hint is None:
+        raise FileNotFoundError('node is not associated with a file path')
+    dir_name, base_name = os.path.split(args.node.path_hint)
+    backup_path = os.path.join(dir_name, f'backup-{base_name}')
+    args.node.to_file(backup_path)
 
 
 # ============================
