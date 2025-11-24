@@ -77,6 +77,7 @@ from .selectors import (
 from ._utils import (
     check_type,
     BitFlags,
+    ToronError,
     ToronWarning,
     normalize_tabular,
     verify_columns_set,
@@ -355,8 +356,8 @@ class TopoNode(object):
                 self._dal.reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
             for col in mapping.keys():
                 if col in all_reserved_identifiers:
-                    msg = f'cannot alter columns, {col!r} is a reserved identifier'
-                    raise ValueError(msg)
+                    msg = f'{col!r} is a reserved name'
+                    raise ToronError(msg)
 
             # Check new column names.
             validate_new_index_columns(

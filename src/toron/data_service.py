@@ -52,6 +52,7 @@ from .selectors import (
 from ._utils import (
     check_type,
     SequenceHash,
+    ToronError,
     ToronWarning,
     BitFlags,
 )
@@ -64,7 +65,7 @@ def validate_new_index_columns(
     property_repo: BasePropertyRepository,
     attribute_repo: BaseAttributeGroupRepository,
 ) -> None:
-    """Raise a ValueError if a new column conflicts with an existing
+    """Raise a ToronError if a new column conflicts with an existing
     index column, the domain, or an attribute name.
     """
     all_reserved_identifiers = \
@@ -75,24 +76,23 @@ def validate_new_index_columns(
 
     for col in new_column_names:
         if col in all_reserved_identifiers:
-            raise ValueError(
-                f'cannot alter columns, {col!r} is a reserved identifier'
+            raise ToronError(
+                f'{col!r} is a reserved name'
             )
 
         if col in existing_columns:
-            raise ValueError(
-                f'cannot alter columns, {col!r} is already an index column'
+            raise ToronError(
+                f'index label column {col!r} already exists'
             )
 
         if col in domain_keys:
-            raise ValueError(
-                f'cannot alter columns, {col!r} is used in the domain'
+            raise ToronError(
+                f'{col!r} is used in the domain'
             )
 
         if col in attribute_names:
-            raise ValueError(
-                f'cannot alter columns, {col!r} is used as an attribute '
-                f'name'
+            raise ToronError(
+                f'{col!r} is used as an attribute name'
             )
 
 

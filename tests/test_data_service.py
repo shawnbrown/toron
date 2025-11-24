@@ -12,7 +12,7 @@ from toron.data_models import (
     Crosswalk,
     AttributeGroup,
 )
-from toron import data_access
+from toron import data_access, ToronError
 from toron._utils import ToronWarning, BitFlags
 from toron.data_service import (
     validate_new_index_columns,
@@ -63,8 +63,8 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         )
 
     def test_reserved_identifier_collision(self):
-        regex = "cannot alter columns, 'value' is a reserved identifier"
-        with self.assertRaisesRegex(ValueError, regex):
+        regex = "'value' is a reserved name"
+        with self.assertRaisesRegex(ToronError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['value']),
                 reserved_identifiers=self.reserved_identifiers,
@@ -76,8 +76,8 @@ class TestValidateNewIndexColumns(unittest.TestCase):
     def test_column_collision(self):
         self.column_manager.add_columns('foo', 'bar', 'baz')
 
-        regex = "cannot alter columns, 'baz' is already an index column"
-        with self.assertRaisesRegex(ValueError, regex):
+        regex = "index label column 'baz' already exists"
+        with self.assertRaisesRegex(ToronError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['baz', 'qux']),
                 reserved_identifiers=self.reserved_identifiers,
@@ -89,8 +89,8 @@ class TestValidateNewIndexColumns(unittest.TestCase):
     def test_domain_collision(self):
         self.property_repo.add('domain', {'qux': '444'})
 
-        regex = "cannot alter columns, 'qux' is used in the domain"
-        with self.assertRaisesRegex(ValueError, regex):
+        regex = "'qux' is used in the domain"
+        with self.assertRaisesRegex(ToronError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['baz', 'qux']),
                 reserved_identifiers=self.reserved_identifiers,
@@ -102,8 +102,8 @@ class TestValidateNewIndexColumns(unittest.TestCase):
     def test_attribute_collision(self):
         self.attribute_repo.add({'corge': '555'})
 
-        regex = "cannot alter columns, 'corge' is used as an attribute name"
-        with self.assertRaisesRegex(ValueError, regex):
+        regex = "'corge' is used as an attribute name"
+        with self.assertRaisesRegex(ToronError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['qux', 'corge']),
                 reserved_identifiers=self.reserved_identifiers,
