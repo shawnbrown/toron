@@ -98,10 +98,15 @@ class TestMainIndexCommand(StreamWrapperTestCase):
     def setUp(self):
         super().setUp()
 
-        # Patch the `command_index` module with a mock object.
-        mock_cm = unittest.mock.patch(target='toron.cli.command_index')
-        self.mock = mock_cm.__enter__()
-        self.addCleanup(lambda: mock_cm.__exit__(None, None, None))
+        # Patch `command_index.read_from_stdin()` function with mock object.
+        mock_read_from_stdin_cm = unittest.mock.patch(target='toron.cli.main.command_index.read_from_stdin')
+        self.mock_read_from_stdin = mock_read_from_stdin_cm.__enter__()
+        self.addCleanup(lambda: mock_read_from_stdin_cm.__exit__(None, None, None))
+
+        # Patch `command_index.write_to_stdout()` function with mock object.
+        mock_write_to_stdout_cm = unittest.mock.patch(target='toron.cli.main.command_index.write_to_stdout')
+        self.mock_write_to_stdout = mock_write_to_stdout_cm.__enter__()
+        self.addCleanup(lambda: mock_write_to_stdout_cm.__exit__(None, None, None))
 
     def test_write_to_stdout(self):
         """Check call to command_index.write_to_stdout()."""
@@ -110,9 +115,9 @@ class TestMainIndexCommand(StreamWrapperTestCase):
 
         main(['index', file_path], stdin=DummyTTY())  # Function under test.
 
-        self.mock.write_to_stdout.assert_called()
+        self.mock_write_to_stdout.assert_called()
 
-        args, kwds = self.mock.write_to_stdout.call_args
+        args, kwds = self.mock_write_to_stdout.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
         self.assertIsInstance(args[0].node, TopoNode)
@@ -134,9 +139,9 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         with self.patched_stdin('A,B\nfoo,bar\n'):  # Dummy input not ingested,
             main(['index', file_path])              # only used for redirection.
 
-        self.mock.read_from_stdin.assert_called()
+        self.mock_read_from_stdin.assert_called()
 
-        args, kwds = self.mock.read_from_stdin.call_args
+        args, kwds = self.mock_read_from_stdin.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
         self.assertIsInstance(args[0].node, TopoNode)
@@ -157,9 +162,9 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         with self.patched_stdin('A,B\nfoo,bar\n'):     # Dummy input not ingested,
             main(['index', file_path, '--no-backup'])  # only used for redirection.
 
-        self.mock.read_from_stdin.assert_called()
+        self.mock_read_from_stdin.assert_called()
 
-        args, kwds = self.mock.read_from_stdin.call_args
+        args, kwds = self.mock_read_from_stdin.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
         self.assertIsInstance(args[0].node, TopoNode)

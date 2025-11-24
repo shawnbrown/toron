@@ -17,11 +17,11 @@ class TestIndexWriteToStdout(unittest.TestCase):
             ['Indiana', 'Porter'],
             ['Michigan', 'Cass'],
         ])
-        args = argparse.Namespace(command='index', node=node)
         dummy_stdout = DummyRedirection()
+        args = argparse.Namespace(command='index', node=node, stdout=dummy_stdout)
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.write_to_stdout(args, stdout=dummy_stdout)  # <- Function under test.
+            command_index.write_to_stdout(args)  # <- Function under test.
 
         expected_values = (
             'index_id,state,county\n'
@@ -38,16 +38,16 @@ class TestIndexReadFromStdin(unittest.TestCase):
     def test_input_labels(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
-        args = argparse.Namespace(command='index', node=node)
         dummy_stdin = DummyRedirection(
             'state,county\n'
             'Illinois,Cook\n'
             'Indiana,Porter\n'
             'Michigan,Cass\n'
         )
+        args = argparse.Namespace(command='index', node=node, stdin=dummy_stdin)
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.read_from_stdin(args, stdin=dummy_stdin)  # <- Function under test.
+            command_index.read_from_stdin(args)  # <- Function under test.
 
         index_values = list(node.select_index(header=True))
         expected_values = [

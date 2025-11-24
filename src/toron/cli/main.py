@@ -1,7 +1,6 @@
 """Main command line application function."""
 import argparse
 import logging
-import os
 import sys
 from os.path import isfile
 from .._typing import (
@@ -14,6 +13,7 @@ from .._typing import (
 from .. import __version__, bind_node, TopoNode
 from . import (
     command_info,
+    command_index,
     command_new,
 )
 from .common import (
@@ -120,6 +120,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_index.add_argument('--no-backup', action='store_false',
                               dest='backup',
                               help='do not make a backup file')
+    parser_index.set_defaults(func=command_index.process_index_action)
 
     # Info command.
     parser_info = subparsers.add_parser(
@@ -141,33 +142,23 @@ def main(
     argv: Optional[List[str]] = None,
     *,
     stdin: Optional[TextIO] = None,
+    stdout: Optional[TextIO] = None,
+    stderr: Optional[TextIO] = None,
 ) -> ExitCode:
     applogger = logging.getLogger('app-toron')
-    stdout_style, stderr_style = get_stream_styles()
-    configure_applogger(applogger, stderr_style)
-
-    if stdin is None:
-        stdin = sys.stdin
-    input_streamed = not stdin.isatty()  # True if redirected or piped.
+    stdout_style, stderr_style = get_stream_styles(stdout=stdout, stderr=stderr)
+    configure_applogger(applogger, stderr_style, stream=stderr)
 
     parser = get_parser()
     if argv is None:
         argv = sys.argv[1:]  # Default to command line arguments.
     args = parser.parse_args(argv)
 
-    args.stdout_style = stdout_style
-    args.stderr_style = stderr_style
+    args.stdin = stdin or sys.stdin
+    args.stdin_is_streamed = not args.stdin.isatty()  # True if redirected or piped.
 
-    if args.command == 'index':
-        from . import command_index
-        if input_streamed:
-            process_backup_option(args)
-            return command_index.read_from_stdin(args, stdin=stdin)
-        else:
-            try:
-                return command_index.write_to_stdout(args)
-            except BrokenPipeError:
-                os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
+    args.stdout = stdout or sys.stdout
+    args.stdout_style = stdout_style
 
     try:
         return args.func(args)
