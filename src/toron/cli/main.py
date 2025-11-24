@@ -10,7 +10,12 @@ from .._typing import (
     Set,
     TextIO,
 )
-from .. import __version__, bind_node, TopoNode
+from .. import (
+    __version__,
+    bind_node,
+    TopoNode,
+    ToronError,
+)
 from . import (
     command_info,
     command_index,
@@ -162,7 +167,6 @@ def main(
 
     try:
         return args.func(args)
-    except Exception as e:
-        # TODO: Investigate using `ToronError` here (instead of `Exception`).
+    except ToronError as e:
         applogger.error(str(e))
         return ExitCode.ERR
