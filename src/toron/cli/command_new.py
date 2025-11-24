@@ -12,12 +12,12 @@ applogger = logging.getLogger('app-toron')
 
 def create_file(args: argparse.Namespace) -> ExitCode:
     """Create a new TopoNode and save it to the given 'node_path'."""
+    if not os.path.basename(args.node_path).strip():       # Must first check for
+        applogger.error(f'filename cannot be whitespace')  # whitespace for proper
+        return ExitCode.ERR                                # behavior on Windows.
+
     if os.path.exists(args.node_path):
         applogger.error(f'cancelled: {args.node_path!r} already exists')
-        return ExitCode.ERR
-
-    if not os.path.basename(args.node_path).strip():
-        applogger.error(f'filename cannot be whitespace')
         return ExitCode.ERR
 
     node = TopoNode()

@@ -1,6 +1,7 @@
 """Tests for toron/cli/command_new.py module."""
 import argparse
 import os
+import sys
 import tempfile
 from .. import _unittest as unittest
 
@@ -38,8 +39,13 @@ class TestNew(unittest.TestCase):
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
                 command_new.create_file(args)  # <- Function under test.
 
-            self.assertFalse(os.path.exists(node_path))
             self.assertRegex(logs_cm.output[0], r'filename cannot be whitespace')
+
+            if sys.platform != 'win32':
+                self.assertFalse(os.path.exists(node_path), f'path: {node_path!r}')
+            else:
+                # On win32, `exists()` ignores whitepsace and matches the directory.
+                self.assertFalse(os.path.isfile(node_path), f'path: {node_path!r}')
 
     def test_file_already_exists(self):
         """Should give "cancelled" error if file already exists."""
