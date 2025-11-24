@@ -17,6 +17,7 @@ from .. import (
     ToronError,
 )
 from . import (
+    command_add,
     command_info,
     command_index,
     command_new,
@@ -113,6 +114,35 @@ def get_parser() -> argparse.ArgumentParser:
     parser_new.add_argument('node_path', type=str,
                             help='name of file to create', metavar='FILE')
     parser_new.set_defaults(func=command_new.create_file)
+
+    # Add command.
+    parser_add = subparsers.add_parser(
+        'add',
+        help='add properties to node file',
+        description='Add properties to an existing node file.',
+    )
+    parser_add_subparsers = parser_add.add_subparsers(
+        dest='element',
+        required=True,
+        metavar='ELEMENT',
+        prog='toron add',
+    )
+
+    # Add label command.
+    parser_add_label = parser_add_subparsers.add_parser(
+        'label',
+        aliases=['labels'],
+        help='add index labels to node file',
+        description='Add index labels to an existing node file.',
+    )
+    parser_add_label.add_argument('node', type=TopoNodeType(mode='rw'),
+                                  help='name of file to modify', metavar='FILE')
+    parser_add_label.add_argument('labels', nargs='+',
+                                  help='index label to add', metavar='LABEL')
+    parser_add_label.add_argument('--no-backup', action='store_false',
+                                  dest='backup',
+                                  help='do not make a backup file')
+    parser_add_label.set_defaults(func=command_add.add_label)
 
     # Index command.
     parser_index = subparsers.add_parser(
