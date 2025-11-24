@@ -7,7 +7,6 @@ import unittest
 from collections.abc import Iterator
 
 from toron._utils import (
-    ToronError,
     normalize_tabular,
     verify_columns_set,
     make_readerlike,
@@ -584,7 +583,7 @@ class TestWideToNarrow(unittest.TestCase):
             r"wide_to_narrow column not found: "
             r"'BAD_VAR' not in \['state', 'county', 'TOT_MALE', 'TOT_FEMALE'\]"
         )
-        with self.assertRaisesRegex(ToronError, regex):
+        with self.assertRaisesRegex(KeyError, regex):
             generator = wide_to_narrow(data, ['TOT_MALE', 'TOT_FEMALE', 'BAD_VAR'])
             list(generator)  # <- Must consume generator (it's not primed).
 

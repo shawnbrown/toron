@@ -346,7 +346,7 @@ def wide_to_narrow(
             except KeyError:
                 msg = f'wide_to_narrow column not found: {var!r} not in ' \
                       f'{list(input_row.keys())!r}'
-                generator_error = ToronError(msg)
+                generator_error = KeyError(msg)
                 generator_error.__cause__ = None
                 raise generator_error
 
