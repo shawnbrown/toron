@@ -411,6 +411,21 @@ class IndexRepositoryBaseTest(ABC):
         expected = {('foo', 'x'), ('foo', 'y'), ('bar', 'x')}
         self.assertEqual(set(results), expected)
 
+    def test_get_max_index_id(self):
+        # The "undefined" record should already exist in newly created nodes.
+        self.assertEqual(self.repository.get_max_index_id(), 0)
+
+        self.manager.add_columns('A')
+
+        # Add some records and check max index_id value.
+        self.repository.add('x')
+        self.repository.add('y')
+        self.assertEqual(self.repository.get_max_index_id(), 2)
+
+        # Add another record and check that max index_id has changed.
+        self.repository.add('z')
+        self.assertEqual(self.repository.get_max_index_id(), 3)
+
 
 class LocationRepositoryBaseTest(ABC):
     @property

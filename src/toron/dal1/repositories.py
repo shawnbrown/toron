@@ -189,6 +189,12 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return self._cursor.fetchone()[0]
 
+    def get_max_index_id(self) -> int:
+        """Return the largest current ``index_id`` value."""
+        sql = 'SELECT MAX(index_id) FROM main.node_index'
+        self._cursor.execute(sql)
+        return self._cursor.fetchone()[0]
+
 
 class LocationRepository(BaseLocationRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:

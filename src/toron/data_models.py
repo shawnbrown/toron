@@ -390,6 +390,16 @@ class BaseIndexRepository(ABC):
         """
         return sum(1 for _ in self.find_all(include_undefined))
 
+    @abstractmethod
+    def get_max_index_id(self) -> int:
+        """Return the largest current ``index_id`` value.
+
+        A concrete DAL should implement an optimized version of this
+        method. But as a stop-gap, this unoptimized base implementation
+        can be called with ``super().get_max_index_id()``.
+        """
+        return max(self.find_all_index_ids())
+
 
 class Location(Index):
     """
