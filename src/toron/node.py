@@ -790,6 +790,16 @@ class TopoNode(object):
                 applogger.warning(f'setting default weight group: {name!r}')
                 make_default = True
 
+            # Check for *name* before adding (LBYL approach) because error
+            # message from just calling `add()` could change in the future
+            # (via updates or a different backend) making it difficult to
+            # detect if it's a UNIQUENESS violation or some other error.
+            try:
+                weight_group_repo.get_by_name(name)
+                raise ToronError(f"index weight group {name!r} already exists")
+            except KeyError:
+                pass  # If KeyError, group does not already exist.
+
             weight_group_repo.add(
                 name=name,
                 description=description,
