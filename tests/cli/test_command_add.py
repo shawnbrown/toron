@@ -2,6 +2,7 @@
 import argparse
 from .. import _unittest as unittest
 from toron import TopoNode, ToronError
+from toron.data_models import WeightGroup
 
 from toron.cli import command_add
 
@@ -30,3 +31,46 @@ class TestAddLabel(unittest.TestCase):
             command_add.add_label(argparse.Namespace(
                 command='add', element='label', node=node, labels=['B']
             ))
+
+
+class TestAddWeight(unittest.TestCase):
+    def test_add_weight(self):
+        node = TopoNode()
+
+        args = argparse.Namespace(
+            command='add',
+            element='weight',
+            node=node,
+            weight='population',
+            description='Population count.',
+            selectors=['[foo]', '[bar="baz"]'],
+            make_default=True,
+        )
+        command_add.add_weight(args)  # Function under test.
+
+        actual = node.get_weight_group('population')
+        expected = WeightGroup(
+            id=1,
+            name='population',
+            description='Population count.',
+            selectors=['[foo]', '[bar="baz"]'],
+            is_complete=0,
+        )
+        self.assertEqual(actual, expected)
+
+    def test_weight_already_exists(self):
+        node = TopoNode()
+        args = argparse.Namespace(
+            command='add',
+            element='weight',
+            node=node,
+            weight='population',
+            description=None,
+            selectors=None,
+            make_default=True,
+        )
+        command_add.add_weight(args)
+
+        regex = r"index weight group 'population' already exists"
+        with self.assertRaisesRegex(ToronError, regex):
+            command_add.add_weight(args)
