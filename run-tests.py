@@ -10,6 +10,7 @@ args = [
     '-B',                        # Don't write .pyc files on import.
     '-O',                        # Remove assert and __debug__-dependent statements.
     '-W', 'default',             # Enable default handling for all warnings.
+    #'-W', 'error',               # Convert all warnings to errors.
     '-m', 'unittest',            # Run the unittest module as a script.
 ]
 
