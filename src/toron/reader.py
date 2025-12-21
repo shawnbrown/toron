@@ -476,7 +476,7 @@ def pivot_reader_to_pandas(
     #max_width: Optional[int] = 256,
     aggregate_function: Literal['sum', 'mean'] = 'sum',
     index: bool = False,
-    ) -> 'pd.DataFrame':
+) -> 'pd.DataFrame':
     """An experimental pivot-to-pandas implementation for ``NodeReader``."""
     try:
         import pandas as pd
