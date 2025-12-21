@@ -890,6 +890,9 @@ class BitFlags(Sequence[Literal[0, 1]]):
         >>> sqlite3.register_adapter(BitFlags, bytes)
         >>> sqlite3.register_converter('BLOB_BITFLAGS', BitFlags)
     """
+    # TODO: Consider changing bytes to use a right-aligned internal
+    #       representation. Currently, bytes are left-aligned which
+    #       is probably unnecessary and definitely atypical.
     __slots__ = ('_bytes',)
     _bytes: bytes
 
@@ -911,8 +914,10 @@ class BitFlags(Sequence[Literal[0, 1]]):
 
         Initialize a new BitFlags instance.
         """
+        # In practice, BitFlags are most often created from byte strings. So
+        # instantiating from `bytes` should be optimized over other methods.
         if len(args) == 1:
-            if isinstance(args[0], bytes):
+            if isinstance(args[0], bytes):  # <- Check for `bytes` first.
                 self._bytes = args[0].rstrip(b'\x00')
             elif isinstance(args[0], Iterable):
                 self._bytes = self._bitstream_to_bytes(args[0])
