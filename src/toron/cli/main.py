@@ -151,21 +151,21 @@ def get_parser() -> argparse.ArgumentParser:
         description='Add index weight groups to an existing node file.',
     )
     parser_add_weight.add_argument('node', type=TopoNodeType(mode='rw'),
-                                  help='name of file to modify',
-                                  metavar='FILE')
+                                   help='name of file to modify',
+                                   metavar='FILE')
     parser_add_weight.add_argument('weight',
-                                  help='name of index weight to add',
-                                  metavar='WEIGHT')
+                                   help='name of index weight to add',
+                                   metavar='WEIGHT')
     parser_add_weight.add_argument('--description',
-                                  help='description of weight group')
+                                   help='description of weight group')
     parser_add_weight.add_argument('--selectors', nargs='+',
-                                  help='attribute selectors')
+                                   help='attribute selectors')
     parser_add_weight.add_argument('--default', action='store_true',
-                                  dest='make_default',
-                                  help='set as the default weight group')
+                                   dest='make_default',
+                                   help='set as the default weight group')
     parser_add_weight.add_argument('--no-backup', action='store_false',
-                                  dest='backup',
-                                  help='do not make a backup file')
+                                   dest='backup',
+                                   help='do not make a backup file')
     parser_add_weight.set_defaults(func=command_add.add_weight)
 
     # Index command.
