@@ -457,6 +457,9 @@ class TopoNode(object):
 
             # Insert records.
             for row in data:
+                if not row:  # If empty, skip to next.
+                    continue
+
                 # Get label values by internal column order.
                 labels = [row[pos] for pos in label_position_list]
 
