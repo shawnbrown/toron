@@ -455,6 +455,11 @@ class TopoNode(object):
                 x.id: columns.index(x.name) for x in weight_groups if x.name in columns
             }
 
+            # Get extra columns.
+            extra_columns = [x for x in columns if (x not in label_columns
+                                                    and x != 'index_id'
+                                                    and x != 'domain')]
+
             # Insert records.
             for row in data:
                 if not row:  # If empty, skip to next.
@@ -499,6 +504,10 @@ class TopoNode(object):
                 for group in weight_group_repo.get_all():
                     is_complete = weight_repo.weight_group_is_complete(group.id)
                     weight_group_repo.update(replace(group, is_complete=is_complete))
+
+        if extra_columns:
+            extra_fmt = ', '.join(repr(x) for x in extra_columns)
+            applogger.info(f'ignored extra columns: {extra_fmt}')
 
     def insert_index(
         self,

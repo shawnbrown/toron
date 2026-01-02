@@ -1358,6 +1358,30 @@ class TestInsertIndex3(unittest.TestCase):
                 ('A', 'B', 'E'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0'),
             ])
 
+    def test_extra_columns(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+
+        with self.assertLogs('app-toron') as cm:
+            node.insert_index3([
+                ('A',   'B', 'D',   'E'),  # <- Extra columns (D and E).
+                ('foo', 'x', 'ddd', 'eee'),
+                ('bar', 'y', 'ddd', 'eee'),
+            ])
+
+        # Check the logged messages.
+        self.assertIn(
+            "INFO:app-toron.node:ignored extra columns: 'D', 'E'",
+            cm.output,
+        )
+
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
+        ]
+        self.assertEqual(self.get_index_helper(node), expected)
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod
