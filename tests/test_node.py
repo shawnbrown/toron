@@ -34,6 +34,7 @@ from toron.data_models import (
     Location,
     Structure,
     WeightGroup,
+    Weight,
     AttributeGroup,
     Quantity,
     QuantityIterator,
@@ -1161,6 +1162,170 @@ class TestIndexMethods(unittest.TestCase):
              (3, 'bar', 'x'),
              (4, 'bar', 'y')],
         )
+
+
+class TestInsertIndex3(unittest.TestCase):
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns(*columns)
+
+    @staticmethod
+    def add_weight_group_helper(node, name, description=None, selectors=None):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.WeightGroupRepository(cursor)
+            repository.add(
+                name=name,
+                description=description,
+                selectors=selectors,
+            )
+
+    @staticmethod
+    def add_index_helper(node, data):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            for row in data:
+                repository.add(*row)
+
+    @staticmethod
+    def get_index_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            return list(repository.find_all())
+
+    @staticmethod
+    def get_weight_groups_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.WeightGroupRepository(cursor)
+            return repository.get_all()
+
+    @staticmethod
+    def get_weights_helper(node):  # <- Helper function.
+        with node._managed_cursor(n=2) as (cursor1, cursor2):
+            weight_repo = node._dal.WeightRepository(cursor1)
+            index_repo = node._dal.IndexRepository(cursor2)
+            all_weights = []
+            for index_id in index_repo.find_all_index_ids():
+                for weight in weight_repo.find_by_index_id(index_id):
+                    all_weights.append(weight)
+            return all_weights
+
+    @staticmethod
+    def add_structure_helper(node, data):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.StructureRepository(cursor)
+            for granularity, *bits in data:
+                repository.add(granularity, *bits)
+
+    @staticmethod
+    def get_structure_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.StructureRepository(cursor)
+            structures = sorted(repository.get_all(), key=lambda x: x.id)
+        return normalize_structures(structures)
+
+    def test_missing_label_column(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+
+        regex = r"missing required columns: 'B'"
+        with self.assertRaisesRegex(ValueError, regex):
+            data = [('A', 'C'), ('foo', '5.0'), ('bar', '4.0')]
+            node.insert_index3(data)
+
+    def test_weight_not_in_input_data(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+
+        regex = r"weights not in input data: 'D', 'E'"
+        with self.assertRaisesRegex(KeyError, regex):
+            data = [('A', 'B', 'C'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0')]
+            node.insert_index3(data, weights=['C', 'D', 'E'])
+
+    def test_weight_not_in_node(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+
+        regex = r"no weight group named 'C'"
+        with self.assertRaisesRegex(KeyError, regex):
+            data = [('A', 'B', 'C'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0')]
+            node.insert_index3(data, weights='C')
+
+    def test_insert_records(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+        self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
+
+        with node._managed_cursor() as cursor:
+            index_hash = node._dal.PropertyRepository(cursor).get('index_hash')
+
+        data = [('A', 'B', 'C'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0')]
+        node.insert_index3(data)
+
+        # Check index records.
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
+        ]
+        self.assertEqual(self.get_index_helper(node), expected)
+
+        # Check weight records.
+        expected = [
+            Weight(1, 1, 1, 5.0),
+            Weight(2, 1, 2, 4.0),
+        ]
+        self.assertEqual(self.get_weights_helper(node), expected)
+
+        # Check granularity.
+        expected = [
+            Structure(id=1, granularity=None, bits=(0, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 1)),
+        ]
+        self.assertEqual(self.get_structure_helper(node), expected)
+
+        # Check `index_hash` value.
+        with node._managed_cursor() as cursor:
+            new_index_hash = node._dal.PropertyRepository(cursor).get('index_hash')
+        self.assertNotEqual(new_index_hash, index_hash)
+
+        # Check weight group property `is_complete=1`.
+        expected = [
+            WeightGroup(id=1, name='C', description=None, selectors=None, is_complete=1)
+        ]
+        self.assertEqual(self.get_weight_groups_helper(node), expected)
+
+    def test_no_index_label_columns(self):
+        node = TopoNode()  # Empty node, no index label columns.
+
+        regex = r'no label columns defined'
+        with self.assertRaisesRegex(Exception, regex):
+            node.insert_index3(data=[('A', 'B'), ('foo', 5.0), ('bar', 4.0)])
+
+    def test_insert_different_column_order(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+        self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
+
+        # Define `data` with columns in different order than node.
+        data = [('C', 'B', 'A'), ('5.0', 'x', 'foo'), ('4.0', 'y', 'bar')]
+        node.insert_index3(data)
+
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'bar', 'y'),
+        ]
+        self.assertEqual(self.get_index_helper(node), expected)
+
+        expected = [
+            Weight(1, 1, 1, 5.0),
+            Weight(2, 1, 2, 4.0),
+        ]
+        self.assertEqual(self.get_weights_helper(node), expected)
 
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):

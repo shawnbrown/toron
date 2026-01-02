@@ -398,6 +398,105 @@ class TopoNode(object):
 
             col_manager.drop_columns(column, *columns)
 
+    def insert_index3(
+        self,
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+        *,
+        weights: Optional[Union[str, Iterable[str]]] = None,
+        on_conflict: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
+    ) -> None:
+        """Insert index label and weight records."""
+        data, columns = normalize_tabular(data, columns)
+
+        if weights is not None:
+            if isinstance(weights, str):
+                weights = [weights]
+
+            if set(weights).difference(columns):
+                missing = ', '.join(repr(x) for x in weights if x not in columns)
+                msg = f'weights not in input data: {missing}'
+                raise KeyError(msg)
+
+        counter: Counter = Counter()
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
+
+            index_repo = self._dal.IndexRepository(cursor)
+            weight_group_repo = self._dal.WeightGroupRepository(cursor)
+            weight_repo = self._dal.WeightRepository(cursor)
+
+            # Get index_id position (if provided).
+            if 'index_id' in columns:
+                index_position = columns.index('index_id')
+            else:
+                index_position = None
+
+            # Get label columns.
+            label_columns = index_repo.get_label_names()
+            if not label_columns:
+                msg = 'cannot insert records, no label columns defined'
+                raise Exception(msg)
+            verify_columns_set(columns, label_columns, allow_extras=True)
+            label_position_list = [
+                columns.index(x) for x in label_columns if x in columns
+            ]
+
+            # Get list of weight groups.
+            if weights is None:
+                weight_groups = weight_group_repo.get_all()
+            else:
+                weight_groups = []
+                for weight in weights:
+                    weight_group = weight_group_repo.get_by_name(weight)
+                    weight_groups.append(weight_group)
+
+            weight_position_dict = {
+                x.id: columns.index(x.name) for x in weight_groups if x.name in columns
+            }
+
+            # Insert records.
+            for row in data:
+                # Get label values by internal column order.
+                labels = [row[pos] for pos in label_position_list]
+
+                # Insert index record.
+                index_repo.add(*labels)
+                counter['inserted'] += 1
+                index_record = next(index_repo.filter_by_label(dict(zip(label_columns, labels))))
+                index_id = index_record.id
+
+                # Insert weight values.
+                for group_id, value_pos in weight_position_dict.items():
+                    weight_value = row[value_pos]
+                    if weight_value is None or weight_value == '':
+                        continue
+                    weight_repo.add_or_resolve(
+                        weight_group_id=group_id,
+                        index_id=index_id,
+                        value=float(weight_value),
+                        on_conflict='overwrite',
+                    )
+
+            if counter['inserted']:
+                refresh_index_hash_property(
+                    index_repo=index_repo,
+                    prop_repo=self._dal.PropertyRepository(cursor),
+                )
+
+                refresh_structure_granularity(
+                    column_manager=self._dal.ColumnManager(cursor),
+                    structure_repo=self._dal.StructureRepository(cursor),
+                    index_repo=index_repo,
+                    aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                    optimizations=self._dal.optimizations,
+                )
+
+                # Update `is_complete` status for all weight groups.
+                for group in weight_group_repo.get_all():
+                    is_complete = weight_repo.weight_group_is_complete(group.id)
+                    weight_group_repo.update(replace(group, is_complete=is_complete))
+
     def insert_index(
         self,
         data: Union[Iterable[Sequence], Iterable[Dict]],
