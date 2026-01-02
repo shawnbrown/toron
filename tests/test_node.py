@@ -9,6 +9,7 @@ import sys
 import tempfile
 from . import _unittest as unittest
 from contextlib import suppress
+from dataclasses import replace
 from decimal import Decimal
 from io import StringIO
 from itertools import chain
@@ -2666,8 +2667,7 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
 
             group_repo = self.node._dal.WeightGroupRepository(cursor)
             group = group_repo.get_by_name('group1')
-            group.is_complete = True
-            group_repo.update(group)
+            group_repo.update(replace(group, is_complete=True))
 
         data = [
             ('index_id', 'A', 'B'),
