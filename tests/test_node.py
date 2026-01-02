@@ -1346,6 +1346,18 @@ class TestInsertIndex3(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
+    def test_missing_columns(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+        self.add_weight_group_helper(node, name='E')
+        self.add_structure_helper(node, [(None, 0, 0, 0, 0), (None, 1, 1, 1, 1)])
+
+        regex = r"missing required columns: 'C', 'D'"
+        with self.assertRaisesRegex(ValueError, regex):
+            node.insert_index3([
+                ('A', 'B', 'E'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0'),
+            ])
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod
