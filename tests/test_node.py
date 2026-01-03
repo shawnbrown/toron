@@ -1382,6 +1382,27 @@ class TestInsertIndex3(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
+    def test_modifies_index_hash(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+
+            node.insert_index3([('A', 'B'), ('foo', 'a'), ('bar', 'b')])
+            self.assertEqual(
+                prop_repo.get('index_hash'),
+                '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
+                msg='hash for index_ids 0, 1, and 2',
+            )
+
+            node.insert_index3([('A', 'B'), ('baz', 'z')])
+            self.assertEqual(
+                prop_repo.get('index_hash'),
+                'c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
+                msg='hash for index_ids 0, 1, 2, and 3',
+            )
+
     def test_no_existing_structure(self):
         """Should auto-add categories and structure if not defined."""
         node = TopoNode()
