@@ -1425,6 +1425,37 @@ class TestInsertIndex3(unittest.TestCase):
         #node.insert_index3([('A', 'B', 'D'), ('bar', 'y', '8.0')])
         #self.assertEqual(self.get_weight_groups_helper(node), expected)
 
+    def test_crosswalk_is_complete(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        data = [('foo', 'x'), ('bar', 'y')]
+        self.add_index_helper(node, data)
+
+        with node._managed_cursor() as cursor:
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            relation_repo = node._dal.RelationRepository(cursor)
+
+            # Add crosswalk_id 1 and weight records.
+            crosswalk_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=True)
+            relation_repo.add(1, 1, 1, None, 6000)
+            relation_repo.add(1, 2, 2, None, 4000)
+
+            # Add crosswalk_id 2 and weight records.
+            crosswalk_repo.add('222-222-2222', 'anothernode.toron', 'edge2', is_locally_complete=False)
+            relation_repo.add(2, 1, 1, None, 4000)
+            relation_repo.add(2, 2, 1, None, 2000)  # <- Maps to local index_id 1 (no relation goes to index_id 2)
+
+            # Insert new index record!
+            node.insert_index3([('A', 'B'), ('baz', 'z')])
+
+            # Check that edge1's is_locally_complete is changed to False.
+            crosswalk = crosswalk_repo.get(1)
+            self.assertFalse(crosswalk.is_locally_complete)
+
+            # Check that edge2's is_locally_complete remains False (unchanged).
+            crosswalk = crosswalk_repo.get(2)
+            self.assertFalse(crosswalk.is_locally_complete)
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod

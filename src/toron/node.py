@@ -507,6 +507,12 @@ class TopoNode(object):
                     is_complete = weight_repo.weight_group_is_complete(group.id)
                     weight_group_repo.update(replace(group, is_complete=is_complete))
 
+                # Existing crosswalks will not include newly inserted indexes.
+                crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+                for crosswalk in crosswalk_repo.get_all():
+                    if crosswalk.is_locally_complete:
+                        crosswalk_repo.update(replace(crosswalk, is_locally_complete=False))
+
         if extra_columns:
             extra_fmt = ', '.join(repr(x) for x in extra_columns)
             applogger.info(f'ignored extra columns: {extra_fmt}')
