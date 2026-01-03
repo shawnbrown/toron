@@ -559,36 +559,14 @@ class TopoNode(object):
                     prop_repo=prop_repo,
                 )
 
-                try:
-                    has_discrete_categories = bool(prop_repo.get('discrete_categories'))
-                except KeyError:
-                    has_discrete_categories = False
-
-                if has_discrete_categories:
-                    # If categories already exist, then refresh granularity.
-                    refresh_structure_granularity(
-                        column_manager=col_manager,
-                        structure_repo=self._dal.StructureRepository(cursor),
-                        index_repo=index_repo,
-                        aux_index_repo=self._dal.IndexRepository(aux_cursor),
-                        optimizations=self._dal.optimizations,
-                    )
-                else:
-                    # If no categories yet, add "whole space" and build structure.
-                    whole_space = set(index_columns)
-                    add_discrete_categories(
-                        categories=[whole_space],
-                        column_manager=col_manager,
-                        property_repo=prop_repo,
-                    )
-                    rebuild_structure_table(
-                        column_manager=col_manager,
-                        property_repo=prop_repo,
-                        structure_repo=self._dal.StructureRepository(cursor),
-                        index_repo=index_repo,
-                        aux_index_repo=self._dal.IndexRepository(aux_cursor),
-                        optimizations=self._dal.optimizations,
-                    )
+                refresh_or_rebuild_structure_granularity(
+                    column_manager=col_manager,
+                    property_repo=prop_repo,
+                    structure_repo=self._dal.StructureRepository(cursor),
+                    index_repo=index_repo,
+                    aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                    optimizations=self._dal.optimizations,
+                )
 
                 # Existing groups will not include newly inserted indexes.
                 group_repo = self._dal.WeightGroupRepository(cursor)
