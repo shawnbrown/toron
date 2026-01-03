@@ -1382,6 +1382,21 @@ class TestInsertIndex3(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
+    def test_insert_no_existing_structure(self):
+        """Should auto-add categories and structure if not defined."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+
+        data = [('A', 'B', 'C'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0')]
+        node.insert_index3(data)
+
+        expected = [
+            Structure(id=1, granularity=None, bits=(0, 0)),
+            Structure(id=2, granularity=1.0,  bits=(1, 1)),
+        ]
+        self.assertEqual(self.get_structure_helper(node), expected)
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod

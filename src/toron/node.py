@@ -61,6 +61,7 @@ from .data_service import (
     get_all_discrete_categories,
     rename_discrete_categories,
     rebuild_structure_table,
+    refresh_or_rebuild_structure_granularity,
     add_discrete_categories,
     refresh_structure_granularity,
     set_domain,
@@ -492,8 +493,9 @@ class TopoNode(object):
                     prop_repo=self._dal.PropertyRepository(cursor),
                 )
 
-                refresh_structure_granularity(
+                refresh_or_rebuild_structure_granularity(
                     column_manager=self._dal.ColumnManager(cursor),
+                    property_repo=self._dal.PropertyRepository(cursor),
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
                     aux_index_repo=self._dal.IndexRepository(aux_cursor),

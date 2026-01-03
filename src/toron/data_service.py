@@ -687,6 +687,46 @@ def refresh_structure_granularity(
         structure_repo.update(structure)
 
 
+def refresh_or_rebuild_structure_granularity(
+    column_manager: BaseColumnManager,
+    property_repo: BasePropertyRepository,
+    structure_repo: BaseStructureRepository,
+    index_repo: BaseIndexRepository,
+    aux_index_repo: BaseIndexRepository,
+    optimizations: Optional[Dict[str, Callable]] = None
+) -> None:
+    try:
+        has_discrete_categories = bool(property_repo.get('discrete_categories'))
+    except KeyError:
+        has_discrete_categories = False
+
+    if has_discrete_categories:
+        # If categories already exist, then refresh granularity.
+        refresh_structure_granularity(
+            column_manager=column_manager,
+            structure_repo=structure_repo,
+            index_repo=index_repo,
+            aux_index_repo=aux_index_repo,
+            optimizations=optimizations,
+        )
+    else:
+        # If no categories yet, add "whole space" and build structure.
+        whole_space = set(index_repo.get_label_names())
+        add_discrete_categories(
+            categories=[whole_space],
+            column_manager=column_manager,
+            property_repo=property_repo,
+        )
+        rebuild_structure_table(
+            column_manager=column_manager,
+            property_repo=property_repo,
+            structure_repo=structure_repo,
+            index_repo=index_repo,
+            aux_index_repo=aux_index_repo,
+            optimizations=optimizations,
+        )
+
+
 def set_domain(
     domain: Dict[str, str],
     column_manager: BaseColumnManager,
