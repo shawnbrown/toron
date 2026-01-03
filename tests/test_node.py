@@ -1305,7 +1305,7 @@ class TestInsertIndex3(unittest.TestCase):
         with self.assertRaisesRegex(Exception, regex):
             node.insert_index3(data=[('A', 'B'), ('foo', 5.0), ('bar', 4.0)])
 
-    def test_insert_different_column_order(self):
+    def test_different_column_order(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
@@ -1328,7 +1328,7 @@ class TestInsertIndex3(unittest.TestCase):
         ]
         self.assertEqual(self.get_weights_helper(node), expected)
 
-    def test_insert_skip_empty_rows(self):
+    def test_skip_empty_rows(self):
         """Text based files (like CSV files) often end with a newline
         character. Many parsers interpret this as an empty row of data.
         """
@@ -1382,7 +1382,7 @@ class TestInsertIndex3(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
-    def test_insert_no_existing_structure(self):
+    def test_no_existing_structure(self):
         """Should auto-add categories and structure if not defined."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
