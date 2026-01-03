@@ -1477,6 +1477,31 @@ class TestInsertIndex3(unittest.TestCase):
             crosswalk = crosswalk_repo.get(2)
             self.assertFalse(crosswalk.is_locally_complete)
 
+    def test_empty_string_values(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+
+        with self.assertLogs('app-toron') as cm:
+            node.insert_index3([
+                ('A',   'B'),
+                ('foo', 'x'),
+                ('',    'x'),  # <- Contains empty string.
+                ('bar', ''),   # <- Contains empty string.
+                ('bar', 'y'),
+            ])
+
+        # Check for logged message.
+        self.assertIn(
+            'WARNING:app-toron.node:skipped 2 records having some empty string labels',
+            cm.output,
+        )
+
+        # Check the loaded data.
+        self.assertEqual(
+            self.get_index_helper(node),
+            [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')],
+        )
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod

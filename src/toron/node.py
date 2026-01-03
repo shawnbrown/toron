@@ -469,6 +469,10 @@ class TopoNode(object):
                 # Get label values by internal column order.
                 labels = [row[pos] for pos in label_position_list]
 
+                if '' in labels:  # If label is empty string, skip to next.
+                    counter['empty_labels'] += 1
+                    continue
+
                 # Insert index record.
                 index_repo.add(*labels)
                 counter['inserted'] += 1
@@ -516,6 +520,9 @@ class TopoNode(object):
         if extra_columns:
             extra_fmt = ', '.join(repr(x) for x in extra_columns)
             applogger.info(f'ignored extra columns: {extra_fmt}')
+
+        if counter['empty_labels']:
+            applogger.warning(f"skipped {counter['empty_labels']} records having some empty string labels")
 
     def insert_index(
         self,
