@@ -1397,6 +1397,34 @@ class TestInsertIndex3(unittest.TestCase):
         ]
         self.assertEqual(self.get_structure_helper(node), expected)
 
+    def test_weight_group_completeness(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+        self.add_weight_group_helper(node, name='D')
+        self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
+
+        with node._managed_cursor() as cursor:
+            index_hash = node._dal.PropertyRepository(cursor).get('index_hash')
+
+        data = [
+            ('A',   'B', 'C',   'D'),
+            ('foo', 'x', '5.0', '2.0'),
+            ('bar', 'y', '4.0', ''),
+        ]
+        node.insert_index3(data)
+
+        # Check weight group property `is_complete=1`.
+        expected = [
+            WeightGroup(id=1, name='C', description=None, selectors=None, is_complete=1),
+            WeightGroup(id=2, name='D', description=None, selectors=None, is_complete=0),
+        ]
+        self.assertEqual(self.get_weight_groups_helper(node), expected)
+
+        # Check `on_conflict='replace'` to complete weight group 'D'.
+        #node.insert_index3([('A', 'B', 'D'), ('bar', 'y', '8.0')])
+        #self.assertEqual(self.get_weight_groups_helper(node), expected)
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod
