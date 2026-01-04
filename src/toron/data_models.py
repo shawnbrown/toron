@@ -692,7 +692,7 @@ class BaseWeightRepository(ABC):
         weight_group_id: int,
         index_id: int,
         value: float,
-        on_conflict: Literal['abort', 'skip', 'overwrite', 'sum'] = 'abort',
+        on_conflict: Literal['abort', 'ignore', 'overwrite', 'sum'] = 'abort',
     ) -> Literal['inserted', 'skipped', 'overwritten', 'summed']:
         """Add a record to the repository or resolve conflict.
 
@@ -705,7 +705,7 @@ class BaseWeightRepository(ABC):
         | ``'abort'``     | raise an error when conflict arises        |
         |                 | (same as ``add()`` method)                 |
         +-----------------+--------------------------------------------+
-        | ``'skip'``      | ignore the conflict and exit without error |
+        | ``'ignore'``    | ignore the conflict and exit without error |
         +-----------------+--------------------------------------------+
         | ``'overwrite'`` | replace value of conflicting record with   |
         |                 | new value                                  |
@@ -729,7 +729,7 @@ class BaseWeightRepository(ABC):
             if index_id == 0 or value < 0.0:
                 raise  # Reraise error if undefined record or negative value.
 
-            if on_conflict == 'skip':
+            if on_conflict == 'ignore':
                 return 'skipped'  # <- EXIT!
 
             weight = self.get_by_weight_group_id_and_index_id(
@@ -751,14 +751,14 @@ class BaseWeightRepository(ABC):
                 msg = (
                     f"a weight record already exists for weight_group_id "
                     f"{weight_group_id} and index_id {index_id}; change load "
-                    f"behavior by setting on_conflict to 'skip', 'overwrite', "
-                    f"or 'sum'"
+                    f"behavior by setting on_conflict to 'ignore', "
+                    f"'overwrite', or 'sum'"
                 )
                 raise Exception(msg)
 
             raise ValueError(
-                f"on_conflict must be 'abort', 'skip', 'overwrite', or 'sum'; "
-                f"got {on_conflict!r}"
+                f"on_conflict must be 'abort', 'ignore', 'overwrite', or "
+                f"'sum'; got {on_conflict!r}"
             )
 
     def merge_by_index_id(

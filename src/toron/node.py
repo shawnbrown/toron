@@ -1014,10 +1014,10 @@ class TopoNode(object):
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
         value_column: Optional[str] = None,
-        on_conflict: Literal['abort', 'skip', 'overwrite', 'sum'] = 'abort',
+        on_conflict: Literal['abort', 'ignore', 'overwrite', 'sum'] = 'abort',
     ) -> None:
-        if on_conflict not in ('abort', 'skip', 'overwrite', 'sum'):
-            msg = (f"on_conflict must be 'abort', 'skip', 'overwrite', "
+        if on_conflict not in ('abort', 'ignore', 'overwrite', 'sum'):
+            msg = (f"on_conflict must be 'abort', 'ignore', 'overwrite', "
                    f"or 'sum'; got {on_conflict!r}")
             raise ValueError(msg)
 
