@@ -495,7 +495,7 @@ class TopoNode(object):
                         weight_group_id=group_id,
                         index_id=index_id,
                         value=float(weight_value),
-                        on_conflict='overwrite',
+                        on_conflict='replace',
                     )
 
             if counter['inserted']:
@@ -1014,10 +1014,10 @@ class TopoNode(object):
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
         value_column: Optional[str] = None,
-        on_conflict: Literal['abort', 'ignore', 'overwrite', 'sum'] = 'abort',
+        on_conflict: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
     ) -> None:
-        if on_conflict not in ('abort', 'ignore', 'overwrite', 'sum'):
-            msg = (f"on_conflict must be 'abort', 'ignore', 'overwrite', "
+        if on_conflict not in ('abort', 'ignore', 'replace', 'sum'):
+            msg = (f"on_conflict must be 'abort', 'ignore', 'replace', "
                    f"or 'sum'; got {on_conflict!r}")
             raise ValueError(msg)
 

@@ -692,7 +692,7 @@ class BaseWeightRepository(ABC):
         weight_group_id: int,
         index_id: int,
         value: float,
-        on_conflict: Literal['abort', 'ignore', 'overwrite', 'sum'] = 'abort',
+        on_conflict: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
     ) -> Literal['inserted', 'skipped', 'overwritten', 'summed']:
         """Add a record to the repository or resolve conflict.
 
@@ -707,7 +707,7 @@ class BaseWeightRepository(ABC):
         +-----------------+--------------------------------------------+
         | ``'ignore'``    | ignore the conflict and exit without error |
         +-----------------+--------------------------------------------+
-        | ``'overwrite'`` | replace value of conflicting record with   |
+        | ``'replace'``   | replace value of conflicting record with   |
         |                 | new value                                  |
         +-----------------+--------------------------------------------+
         | ``'sum'``       | replace value of conflicting record with   |
@@ -737,7 +737,7 @@ class BaseWeightRepository(ABC):
                 index_id,
             )
 
-            if on_conflict == 'overwrite':
+            if on_conflict == 'replace':
                 weight.value = value  # Replace value.
                 self.update(weight)
                 return 'overwritten'  # <- EXIT!
@@ -752,12 +752,12 @@ class BaseWeightRepository(ABC):
                     f"a weight record already exists for weight_group_id "
                     f"{weight_group_id} and index_id {index_id}; change load "
                     f"behavior by setting on_conflict to 'ignore', "
-                    f"'overwrite', or 'sum'"
+                    f"'replace', or 'sum'"
                 )
                 raise Exception(msg)
 
             raise ValueError(
-                f"on_conflict must be 'abort', 'ignore', 'overwrite', or "
+                f"on_conflict must be 'abort', 'ignore', 'replace', or "
                 f"'sum'; got {on_conflict!r}"
             )
 

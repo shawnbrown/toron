@@ -2664,7 +2664,7 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
         ]
 
         with self.assertLogs('app-toron') as cm:
-            self.node.insert_weights('group1', data, on_conflict='overwrite')
+            self.node.insert_weights('group1', data, on_conflict='replace')
 
         self.assertEqual(
             cm.output,
