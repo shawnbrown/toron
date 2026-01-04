@@ -475,11 +475,16 @@ class TopoNode(object):
                     counter['empty_labels'] += 1
                     continue
 
-                # Insert index record.
-                index_repo.add(*labels)
-                counter['inserted'] += 1
-                index_record = next(index_repo.filter_by_label(dict(zip(label_columns, labels))))
-                index_id = index_record.id
+                try:
+                    # Find record if it already exists (search by labels).
+                    index_record = next(index_repo.filter_by_label(dict(zip(label_columns, labels))))
+                    index_id = index_record.id
+                except StopIteration:
+                    # Insert new index record.
+                    index_repo.add(*labels)
+                    counter['inserted'] += 1
+                    index_record = next(index_repo.filter_by_label(dict(zip(label_columns, labels))))
+                    index_id = index_record.id
 
                 # Insert weight values.
                 for group_id, value_pos in weight_position_dict.items():

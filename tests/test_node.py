@@ -1502,6 +1502,26 @@ class TestInsertIndex3(unittest.TestCase):
             [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')],
         )
 
+    def test_duplicate_labels(self):
+        """Duplicate labels should be skipped automatically
+        regardless of ``on_conflict`` value.
+        """
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+
+        node.insert_index3([
+            ('A',   'B'),
+            ('foo', 'x'),
+            ('foo', 'x'),  # <- Duplicate index label.
+            ('bar', 'y'),
+            ('bar', 'y'),  # <- Duplicate index label.
+        ])
+
+        self.assertEqual(
+            self.get_index_helper(node),
+            [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')],
+        )
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod
