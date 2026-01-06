@@ -556,7 +556,7 @@ class BaseStructureRepository(ABC):
         raise KeyError(msg)
 
 
-@dataclass
+@dataclass(frozen=True)
 class WeightGroup(object):
     """WeightGroup record."""
     id: int

@@ -453,7 +453,7 @@ class TopoNode(object):
                     weight_groups.append(weight_group)
 
             weight_position_dict = {
-                x.id: columns.index(x.name) for x in weight_groups if x.name in columns
+                x: columns.index(x.name) for x in weight_groups if x.name in columns
             }
 
             # Get extra columns.
@@ -487,14 +487,14 @@ class TopoNode(object):
                     index_id = index_record.id
 
                 # Insert weight values.
-                for group_id, value_pos in weight_position_dict.items():
+                for group, value_pos in weight_position_dict.items():
                     weight_value = row[value_pos]
                     if weight_value is None or weight_value == '':
                         continue
 
                     try:
                         weight_record = weight_repo.get_by_weight_group_id_and_index_id(
-                            weight_group_id=group_id, index_id=index_id
+                            weight_group_id=group.id, index_id=index_id
                         )
                         #if on_conflict == 'abort':
                         #    ...
@@ -506,9 +506,10 @@ class TopoNode(object):
                         #    ...
                         #else:
                         #    ...
+
                     except KeyError:
                         weight_repo.add(
-                            weight_group_id=group_id,
+                            weight_group_id=group.id,
                             index_id=index_id,
                             value=float(weight_value),
                         )
