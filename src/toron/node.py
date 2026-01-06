@@ -491,12 +491,27 @@ class TopoNode(object):
                     weight_value = row[value_pos]
                     if weight_value is None or weight_value == '':
                         continue
-                    weight_repo.add_or_resolve(
-                        weight_group_id=group_id,
-                        index_id=index_id,
-                        value=float(weight_value),
-                        on_conflict='replace',
-                    )
+
+                    try:
+                        weight_record = weight_repo.get_by_weight_group_id_and_index_id(
+                            weight_group_id=group_id, index_id=index_id
+                        )
+                        #if on_conflict == 'abort':
+                        #    ...
+                        #elif on_conflict == 'ignore':
+                        #    ...
+                        #elif on_conflict == 'replace':
+                        #    ...
+                        #elif on_conflict == 'sum':
+                        #    ...
+                        #else:
+                        #    ...
+                    except KeyError:
+                        weight_repo.add(
+                            weight_group_id=group_id,
+                            index_id=index_id,
+                            value=float(weight_value),
+                        )
 
             if counter['inserted']:
                 refresh_index_hash_property(
