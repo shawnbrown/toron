@@ -496,8 +496,11 @@ class TopoNode(object):
                         weight_record = weight_repo.get_by_weight_group_id_and_index_id(
                             weight_group_id=group.id, index_id=index_id
                         )
-                        #if on_conflict == 'abort':
-                        #    ...
+                        if on_conflict == 'abort':
+                            raise ValueError(
+                                f'weight group {group.name!r} already has a '
+                                f'value for {index_record!r}'
+                            )
                         #elif on_conflict == 'ignore':
                         #    ...
                         #elif on_conflict == 'replace':

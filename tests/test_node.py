@@ -1527,6 +1527,22 @@ class TestInsertIndex3(unittest.TestCase):
             [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')],
         )
 
+    def test_on_conflict_abort(self):
+        """Using 'abort' should raise an error."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+
+        regex = r"weight group 'C' already has a value for Index.+"
+        with self.assertRaisesRegex(ValueError, regex):
+            node.insert_index3(
+                [('A',   'B', 'C'),
+                 ('foo', 'x', '5.0'),
+                 ('bar', 'y', '4.0'),
+                 ('bar', 'y', '3.0')],  # <- Second weight should raise an error.
+                on_conflict='abort',
+            )
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod
