@@ -490,7 +490,9 @@ class TopoNode(object):
                 for group, value_pos in weight_position_dict.items():
                     weight_value = row[value_pos]
                     if weight_value is None or weight_value == '':
-                        continue
+                        continue  # Skip to next weight group.
+                    else:
+                        weight_value = float(weight_value)
 
                     try:
                         weight_record = weight_repo.get_by_weight_group_id_and_index_id(
@@ -503,8 +505,8 @@ class TopoNode(object):
                             )
                         elif on_conflict == 'ignore':
                             continue  # Skip to next weight group.
-                        #elif on_conflict == 'replace':
-                        #    ...
+                        elif on_conflict == 'replace':
+                            weight_repo.update(replace(weight_record, value=weight_value))
                         #elif on_conflict == 'sum':
                         #    ...
                         #else:

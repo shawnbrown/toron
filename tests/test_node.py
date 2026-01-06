@@ -1563,6 +1563,26 @@ class TestInsertIndex3(unittest.TestCase):
         ]
         self.assertEqual(self.get_weights_helper(node), expected)
 
+    def test_on_conflict_replace(self):
+        """Using 'replace' should replace existing records with new ones."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+
+        node.insert_index3(
+            [('A',   'B', 'C'),
+             ('foo', 'x', '5.0'),
+             ('bar', 'y', '4.0'),   # <- First `'bar', 'y'` weight value.
+             ('bar', 'y', '3.0')],  # <- Second weight should replace first one.
+            on_conflict='replace',
+        )
+
+        expected = [
+            Weight(1, weight_group_id=1, index_id=1, value=5.0),
+            Weight(2, weight_group_id=1, index_id=2, value=3.0),  # <- Replaced `value=4.0`.
+        ]
+        self.assertEqual(self.get_weights_helper(node), expected)
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod
