@@ -1603,6 +1603,21 @@ class TestInsertIndex3(unittest.TestCase):
         ]
         self.assertEqual(self.get_weights_helper(node), expected)
 
+    def test_on_conflict_bad_value(self):
+        """Should raise an error when given bad value."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+
+        regex = r"on_conflict must be 'abort', 'ignore', 'replace', or 'sum'; got 'BAD VALUE'"
+        with self.assertRaisesRegex(ValueError, regex):
+            node.insert_index3(
+                [('A',   'B', 'C'),
+                 ('foo', 'x', '5.0'),
+                 ('bar', 'y', '4.0'),
+                 ('bar', 'y', '3.0')],
+                on_conflict='BAD VALUE',
+            )
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod

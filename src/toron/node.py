@@ -510,8 +510,11 @@ class TopoNode(object):
                         elif on_conflict == 'sum':
                             weight_value = weight_value + weight_record.value
                             weight_repo.update(replace(weight_record, value=weight_value))
-                        #else:
-                        #    ...
+                        else:
+                            raise ValueError(
+                                f"on_conflict must be 'abort', 'ignore', "
+                                f"'replace', or 'sum'; got {on_conflict!r}"
+                            )
 
                     except KeyError:
                         weight_repo.add(
