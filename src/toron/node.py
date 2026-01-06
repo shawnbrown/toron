@@ -501,8 +501,8 @@ class TopoNode(object):
                                 f'weight group {group.name!r} already has a '
                                 f'value for {index_record!r}'
                             )
-                        #elif on_conflict == 'ignore':
-                        #    ...
+                        elif on_conflict == 'ignore':
+                            continue  # Skip to next weight group.
                         #elif on_conflict == 'replace':
                         #    ...
                         #elif on_conflict == 'sum':

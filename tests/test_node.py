@@ -1543,6 +1543,26 @@ class TestInsertIndex3(unittest.TestCase):
                 on_conflict='abort',
             )
 
+    def test_on_conflict_ignore(self):
+        """Using 'ignore' should skip duplicate records."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+
+        node.insert_index3(
+            [('A',   'B', 'C'),
+             ('foo', 'x', '5.0'),
+             ('bar', 'y', '4.0'),
+             ('bar', 'y', '3.0')],  # <- Second weight should be ignored.
+            on_conflict='ignore',
+        )
+
+        expected = [
+            Weight(1, weight_group_id=1, index_id=1, value=5.0),
+            Weight(2, weight_group_id=1, index_id=2, value=4.0),
+        ]
+        self.assertEqual(self.get_weights_helper(node), expected)
+
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):
     @staticmethod
