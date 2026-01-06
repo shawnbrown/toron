@@ -482,7 +482,7 @@ class TopoNode(object):
                 except StopIteration:
                     # Insert new index record.
                     index_repo.add(*labels)
-                    counter['inserted'] += 1
+                    counter['label_inserted'] += 1
                     index_record = next(index_repo.filter_by_label(dict(zip(label_columns, labels))))
                     index_id = index_record.id
 
@@ -512,8 +512,9 @@ class TopoNode(object):
                             index_id=index_id,
                             value=float(weight_value),
                         )
+                        counter['weight_inserted'] += 1
 
-            if counter['inserted']:
+            if counter['label_inserted']:
                 refresh_index_hash_property(
                     index_repo=index_repo,
                     prop_repo=self._dal.PropertyRepository(cursor),
@@ -528,16 +529,17 @@ class TopoNode(object):
                     optimizations=self._dal.optimizations,
                 )
 
-                # Update `is_complete` status for all weight groups.
-                for group in weight_group_repo.get_all():
-                    is_complete = weight_repo.weight_group_is_complete(group.id)
-                    weight_group_repo.update(replace(group, is_complete=is_complete))
-
                 # Existing crosswalks will not include newly inserted indexes.
                 crosswalk_repo = self._dal.CrosswalkRepository(cursor)
                 for crosswalk in crosswalk_repo.get_all():
                     if crosswalk.is_locally_complete:
                         crosswalk_repo.update(replace(crosswalk, is_locally_complete=False))
+
+            if counter['label_inserted'] or counter['weight_inserted']:
+                # Update `is_complete` status for all weight groups.
+                for group in weight_group_repo.get_all():
+                    is_complete = weight_repo.weight_group_is_complete(group.id)
+                    weight_group_repo.update(replace(group, is_complete=is_complete))
 
         if extra_columns:
             extra_fmt = ', '.join(repr(x) for x in extra_columns)

@@ -1428,23 +1428,28 @@ class TestInsertIndex3(unittest.TestCase):
         with node._managed_cursor() as cursor:
             index_hash = node._dal.PropertyRepository(cursor).get('index_hash')
 
-        data = [
+        # Check weight groups 'C' should be complete, 'D' should be incomplete.
+        node.insert_index3([
             ('A',   'B', 'C',   'D'),
             ('foo', 'x', '5.0', '2.0'),
             ('bar', 'y', '4.0', ''),
-        ]
-        node.insert_index3(data)
-
-        # Check weight group property `is_complete=1`.
+        ])
         expected = [
             WeightGroup(id=1, name='C', description=None, selectors=None, is_complete=1),
             WeightGroup(id=2, name='D', description=None, selectors=None, is_complete=0),
         ]
         self.assertEqual(self.get_weight_groups_helper(node), expected)
 
-        # Check `on_conflict='replace'` to complete weight group 'D'.
-        #node.insert_index3([('A', 'B', 'D'), ('bar', 'y', '8.0')])
-        #self.assertEqual(self.get_weight_groups_helper(node), expected)
+        # Add missing weight from group 'D', should make 'D' complete.
+        node.insert_index3([
+            ('A',   'B', 'D'),
+            ('bar', 'y', '8.0'),
+        ])
+        expected = [
+            WeightGroup(id=1, name='C', description=None, selectors=None, is_complete=1),
+            WeightGroup(id=2, name='D', description=None, selectors=None, is_complete=1),
+        ]
+        self.assertEqual(self.get_weight_groups_helper(node), expected)
 
     def test_crosswalk_is_complete(self):
         node = TopoNode()
