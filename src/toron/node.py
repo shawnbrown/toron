@@ -507,8 +507,9 @@ class TopoNode(object):
                             continue  # Skip to next weight group.
                         elif on_conflict == 'replace':
                             weight_repo.update(replace(weight_record, value=weight_value))
-                        #elif on_conflict == 'sum':
-                        #    ...
+                        elif on_conflict == 'sum':
+                            weight_value = weight_value + weight_record.value
+                            weight_repo.update(replace(weight_record, value=weight_value))
                         #else:
                         #    ...
 
