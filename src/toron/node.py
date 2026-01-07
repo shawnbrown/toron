@@ -452,12 +452,14 @@ class TopoNode(object):
                     weight_group = weight_group_repo.get_by_name(weight)
                     weight_groups.append(weight_group)
 
+            weight_names = [group.name for group in weight_groups]
             weight_position_dict = {
                 x: columns.index(x.name) for x in weight_groups if x.name in columns
             }
 
             # Get extra columns.
             extra_columns = [x for x in columns if (x not in label_columns
+                                                    and x not in weight_names
                                                     and x != 'index_id'
                                                     and x != 'domain')]
 
@@ -554,6 +556,12 @@ class TopoNode(object):
         if extra_columns:
             extra_fmt = ', '.join(repr(x) for x in extra_columns)
             applogger.info(f'ignored extra columns: {extra_fmt}')
+
+        if counter['label_inserted']:
+            applogger.info(f"loaded {counter['label_inserted']} index labels")
+
+        if counter['weight_inserted']:
+            applogger.info(f"loaded {counter['weight_inserted']} index weights")
 
         if counter['empty_labels']:
             applogger.warning(f"skipped {counter['empty_labels']} records having some empty string labels")

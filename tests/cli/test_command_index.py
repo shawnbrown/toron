@@ -11,7 +11,7 @@ class TestIndexWriteToStdout(unittest.TestCase):
     def test_basic_behavior(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
-        node.insert_index([
+        node.insert_index3([
             ['state', 'county'],
             ['Illinois', 'Cook'],
             ['Indiana', 'Porter'],
@@ -35,14 +35,16 @@ class TestIndexWriteToStdout(unittest.TestCase):
 
 
 class TestIndexReadFromStdin(unittest.TestCase):
-    def test_input_labels(self):
+    def test_input_labels_and_weights(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
+        node.add_weight_group('population', make_default=True)
+
         dummy_stdin = DummyRedirection(
-            'state,county\n'
-            'Illinois,Cook\n'
-            'Indiana,Porter\n'
-            'Michigan,Cass\n'
+            'state,county,population\n'
+            'Illinois,Cook,5275541\n'
+            'Indiana,Porter,175860\n'
+            'Michigan,Cass,51589\n'
         )
         args = argparse.Namespace(command='index', node=node, stdin=dummy_stdin)
 
@@ -58,4 +60,8 @@ class TestIndexReadFromStdin(unittest.TestCase):
             (3, 'Michigan', 'Cass'),
         ]
         self.assertEqual(index_values, expected_values)
-        self.assertEqual(logs_cm.output, ['INFO:app-toron.node:loaded 3 index records'])
+        self.assertEqual(
+            logs_cm.output,
+            ['INFO:app-toron.node:loaded 3 index labels',
+             'INFO:app-toron.node:loaded 3 index weights'],
+        )
