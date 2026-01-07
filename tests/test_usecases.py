@@ -22,34 +22,19 @@ class TestIdiomaticUsage(unittest.TestCase):
         self.node1 = TopoNode()
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
         self.node1.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
-        self.node1.insert_index([
-            ['idx1', 'idx2', 'idx3'],
-            ['A', 'z', 'a'],
-            ['B', 'x', 'b'],
-            ['B', 'y', 'c'],
-            ['C', 'x', 'd'],
-            ['C', 'y', 'e'],
-            ['D', 'x', 'f'],
-            ['D', 'x', 'g'],
-            ['D', 'y', 'h'],
-            ['D', 'y', 'i'],
-        ])
         self.node1.add_weight_group('wght', make_default=True)
-        self.node1.insert_weights(
-            weight_group_name='wght',
-            data=[
-                ['idx1', 'idx2', 'idx3', 'wght'],
-                ['A', 'z', 'a', 72],
-                ['B', 'x', 'b', 37.5],
-                ['B', 'y', 'c', 62.5],
-                ['C', 'x', 'd', 75],
-                ['C', 'y', 'e', 25],
-                ['D', 'x', 'f', 25],
-                ['D', 'x', 'g', 0],
-                ['D', 'y', 'h', 50],
-                ['D', 'y', 'i', 25],
-            ],
-        )
+        self.node1.insert_index3([
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'z', 'a', 72],
+            ['B', 'x', 'b', 37.5],
+            ['B', 'y', 'c', 62.5],
+            ['C', 'x', 'd', 75],
+            ['C', 'y', 'e', 25],
+            ['D', 'x', 'f', 25],
+            ['D', 'x', 'g', 0],
+            ['D', 'y', 'h', 50],
+            ['D', 'y', 'i', 25],
+        ])
         self.node1.insert_quantities(
             data=[
                 ['idx1', 'idx2', 'idx3', 'variable', 'value'],
@@ -70,34 +55,20 @@ class TestIdiomaticUsage(unittest.TestCase):
         self.node2 = TopoNode()
         self.node2.add_index_columns('idx1', 'idx2')
         self.node2.add_discrete_categories({'idx1'})
-        self.node2.insert_index([
-            ['idx1', 'idx2'],
-            ['A', 'Athens'],
-            ['A', 'Boston'],
-            ['B', 'Charleston'],
-            ['C', 'Dover'],
-            ['C', 'Erie'],
-            ['D', 'Fayetteville'],
-            ['D', 'Greensboro'],
-            ['D', 'Hartford'],
-            ['D', 'Irvine'],
-        ])
         self.node2.add_weight_group('wght', make_default=True)
-        self.node2.insert_weights(
-            weight_group_name='wght',
-            data=[
-                ['idx1', 'idx2', 'wght'],
-                ['A', 'Athens', 25],
-                ['A', 'Boston', 75],
-                ['B', 'Charleston', 80],
-                ['C', 'Dover', 25],
-                ['C', 'Erie', 75],
-                ['D', 'Fayetteville', 37.5],
-                ['D', 'Greensboro', 43.75],
-                ['D', 'Hartford', 31.25],
-                ['D', 'Irvine', 31.25],
-            ],
-        )
+        self.node2.insert_index3([
+            ['idx1', 'idx2', 'wght'],
+            ['A', 'Athens', 25],
+            ['A', 'Boston', 75],
+            ['B', 'Charleston', 80],
+            ['C', 'Dover', 25],
+            ['C', 'Erie', 75],
+            ['D', 'Fayetteville', 37.5],
+            ['D', 'Greensboro', 43.75],
+            ['D', 'Hartford', 31.25],
+            ['D', 'Irvine', 31.25],
+
+        ])
 
         # Set up stream object to capture log messages.
         self.log_stream = StringIO()
