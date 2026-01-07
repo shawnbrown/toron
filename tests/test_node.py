@@ -5008,20 +5008,12 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
         node = TopoNode()
         node.add_index_columns('state', 'county')
         node.add_discrete_categories({'state'}, {'state', 'county'})
-        node.insert_index([('state', 'county'),
-                           ('OH', 'BUTLER'),
-                           ('OH', 'FRANKLIN'),
-                           ('IN', 'KNOX'),
-                           ('IN', 'LAPORTE')])
         node.add_weight_group('totpop', make_default=True)
-        node.insert_weights(
-            'totpop',
-            [('state', 'county',   'totpop'),
-             ('OH',    'BUTLER',   374150),
-             ('OH',    'FRANKLIN', 1336250),
-             ('IN',    'KNOX',     36864),
-             ('IN',    'LAPORTE',  110592)]
-        )
+        node.insert_index3([('state', 'county',   'totpop'),
+                            ('OH',    'BUTLER',   374150),
+                            ('OH',    'FRANKLIN', 1336250),
+                            ('IN',    'KNOX',     36864),
+                            ('IN',    'LAPORTE',  110592)])
         node.insert_quantities(
             value='counts',
             attributes=['category', 'sex'],
