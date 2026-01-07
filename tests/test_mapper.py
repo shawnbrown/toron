@@ -268,39 +268,29 @@ class TwoNodesBaseTest(unittest.TestCase):
     def setUp(self):
         self.node1 = TopoNode()
         self.node1.add_index_columns('idx')
-        self.node1.insert_index([['idx'], ['A'], ['B'], ['C']])
-        self.node1.add_weight_group('wght', make_default=True)
-        self.node1.insert_weights(
-            weight_group_name='wght',
-            data=[['idx', 'wght'], ['A', 16], ['B', 8], ['C', 32]],
-        )
         self.node1.add_discrete_categories({'idx'})
+        self.node1.add_weight_group('wght', make_default=True)
+        self.node1.insert_index3([
+            ['idx', 'wght'],
+            ['A', 16],
+            ['B', 8],
+            ['C', 32],
+        ])
 
         self.node2 = TopoNode()
         self.node2.add_index_columns('idx1', 'idx2')
-        self.node2.insert_index([
-            ['idx1', 'idx2'],
-            ['A', 'x'],
-            ['A', 'y'],
-            ['B', 'x'],
-            ['B', 'y'],
-            ['C', 'x'],
-            ['C', 'y'],
-        ])
-        self.node2.add_weight_group('wght', make_default=True)
-        self.node2.insert_weights(
-            weight_group_name='wght',
-            data=[
-                ['idx1', 'idx2', 'wght'],
-                ['A', 'x',  5],
-                ['A', 'y', 15],
-                ['B', 'x',  3],
-                ['B', 'y',  5],
-                ['C', 'x', 13],
-                ['C', 'y', 22],
-            ],
-        )
         self.node2.add_discrete_categories({'idx1'})
+        self.node2.add_weight_group('wght', make_default=True)
+        self.node2.insert_index3([
+            ['idx1', 'idx2', 'wght'],
+            ['A', 'x',  5],
+            ['A', 'y', 15],
+            ['B', 'x',  3],
+            ['B', 'y',  5],
+            ['C', 'x', 13],
+            ['C', 'y', 22],
+
+        ])
 
         # Set up stream object to capture log messages.
         self.log_stream = StringIO()
