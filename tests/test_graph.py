@@ -164,7 +164,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
         self.node1.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
         self.node1.add_weight_group('wght', make_default=True)
-        self.node1.insert_index3([
+        self.node1.insert_index([
             ['idx1', 'idx2', 'idx3', 'wght'],
             ['A', 'z', 'a', 72],
             ['B', 'x', 'b', 37.5],
@@ -183,7 +183,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         self.node2.add_index_columns('idx1', 'idx2', 'idx3')
         self.node2.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
         self.node2.add_weight_group('wght', make_default=True)
-        self.node2.insert_index3([
+        self.node2.insert_index([
             ['idx1', 'idx2', 'idx3', 'wght'],
             ['A', 'z', 'a', 25],
             ['A', 'z', 'b', 75],
@@ -938,7 +938,7 @@ class TestGetWeights(unittest.TestCase):
             self.node.add_index_columns('idx1', 'idx2', 'idx3')
             self.node.add_weight_group('wght1', make_default=True)
             self.node.add_weight_group('wght2')
-            self.node.insert_index3([
+            self.node.insert_index([
                 ['idx1', 'idx2', 'idx3', 'wght1', 'wght2'],
                 ['A',    'x',    'a',         72,     702],
                 ['B',    'y',    'b',       37.5,     400],
@@ -1021,7 +1021,7 @@ class TestTranslate(unittest.TestCase):
         self.node = TopoNode()
         self.node.add_index_columns('A', 'B', 'C')
         self.node.add_discrete_categories({'A', 'B', 'C'})
-        self.node.insert_index3([
+        self.node.insert_index([
             ['A', 'B', 'C'],
             ['a1', 'b1', 'c1'],  # <- index_id=1
             ['a1', 'b1', 'c2'],  # <- index_id=2

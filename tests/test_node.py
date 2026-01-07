@@ -1165,7 +1165,7 @@ class TestIndexMethods(unittest.TestCase):
         )
 
 
-class TestInsertIndex3(unittest.TestCase):
+class TestInsertIndex(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -1233,7 +1233,7 @@ class TestInsertIndex3(unittest.TestCase):
         regex = r"missing required columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
             data = [('A', 'C'), ('foo', '5.0'), ('bar', '4.0')]
-            node.insert_index3(data)
+            node.insert_index(data)
 
     def test_weight_not_in_input_data(self):
         node = TopoNode()
@@ -1242,7 +1242,7 @@ class TestInsertIndex3(unittest.TestCase):
         regex = r"weights not in input data: 'D', 'E'"
         with self.assertRaisesRegex(KeyError, regex):
             data = [('A', 'B', 'C'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0')]
-            node.insert_index3(data, weights=['C', 'D', 'E'])
+            node.insert_index(data, weights=['C', 'D', 'E'])
 
     def test_weight_not_in_node(self):
         node = TopoNode()
@@ -1251,7 +1251,7 @@ class TestInsertIndex3(unittest.TestCase):
         regex = r"no weight group named 'C'"
         with self.assertRaisesRegex(KeyError, regex):
             data = [('A', 'B', 'C'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0')]
-            node.insert_index3(data, weights='C')
+            node.insert_index(data, weights='C')
 
     def test_insert_records(self):
         node = TopoNode()
@@ -1263,7 +1263,7 @@ class TestInsertIndex3(unittest.TestCase):
             index_hash = node._dal.PropertyRepository(cursor).get('index_hash')
 
         data = [('A', 'B', 'C'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0')]
-        node.insert_index3(data)
+        node.insert_index(data)
 
         # Check index records.
         expected = [
@@ -1303,7 +1303,7 @@ class TestInsertIndex3(unittest.TestCase):
 
         regex = r'no label columns defined'
         with self.assertRaisesRegex(Exception, regex):
-            node.insert_index3(data=[('A', 'B'), ('foo', 5.0), ('bar', 4.0)])
+            node.insert_index(data=[('A', 'B'), ('foo', 5.0), ('bar', 4.0)])
 
     def test_different_column_order(self):
         node = TopoNode()
@@ -1313,7 +1313,7 @@ class TestInsertIndex3(unittest.TestCase):
 
         # Define `data` with columns in different order than node.
         data = [('C', 'B', 'A'), ('5.0', 'x', 'foo'), ('4.0', 'y', 'bar')]
-        node.insert_index3(data)
+        node.insert_index(data)
 
         expected = [
             Index(0, '-', '-'),
@@ -1337,7 +1337,7 @@ class TestInsertIndex3(unittest.TestCase):
 
         # Insert data where second and last items are empty.
         data = [('foo', 'x'), (), ('bar', 'y'), ()]  # <- Includes empty rows!
-        node.insert_index3(data, columns=['A', 'B'])
+        node.insert_index(data, columns=['A', 'B'])
 
         expected = [
             Index(0, '-', '-'),
@@ -1354,7 +1354,7 @@ class TestInsertIndex3(unittest.TestCase):
 
         regex = r"missing required columns: 'C', 'D'"
         with self.assertRaisesRegex(ValueError, regex):
-            node.insert_index3([
+            node.insert_index([
                 ('A', 'B', 'E'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0'),
             ])
 
@@ -1363,7 +1363,7 @@ class TestInsertIndex3(unittest.TestCase):
         self.add_cols_helper(node, 'A', 'B')
 
         with self.assertLogs('app-toron') as cm:
-            node.insert_index3([
+            node.insert_index([
                 ('A',   'B', 'D',   'E'),  # <- Extra columns (D and E).
                 ('foo', 'x', 'ddd', 'eee'),
                 ('bar', 'y', 'ddd', 'eee'),
@@ -1389,14 +1389,14 @@ class TestInsertIndex3(unittest.TestCase):
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
 
-            node.insert_index3([('A', 'B'), ('foo', 'a'), ('bar', 'b')])
+            node.insert_index([('A', 'B'), ('foo', 'a'), ('bar', 'b')])
             self.assertEqual(
                 prop_repo.get('index_hash'),
                 '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
                 msg='hash for index_ids 0, 1, and 2',
             )
 
-            node.insert_index3([('A', 'B'), ('baz', 'z')])
+            node.insert_index([('A', 'B'), ('baz', 'z')])
             self.assertEqual(
                 prop_repo.get('index_hash'),
                 'c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
@@ -1410,7 +1410,7 @@ class TestInsertIndex3(unittest.TestCase):
         self.add_weight_group_helper(node, name='C')
 
         data = [('A', 'B', 'C'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0')]
-        node.insert_index3(data)
+        node.insert_index(data)
 
         expected = [
             Structure(id=1, granularity=None, bits=(0, 0)),
@@ -1429,7 +1429,7 @@ class TestInsertIndex3(unittest.TestCase):
             index_hash = node._dal.PropertyRepository(cursor).get('index_hash')
 
         # Check weight groups 'C' should be complete, 'D' should be incomplete.
-        node.insert_index3([
+        node.insert_index([
             ('A',   'B', 'C',   'D'),
             ('foo', 'x', '5.0', '2.0'),
             ('bar', 'y', '4.0', ''),
@@ -1441,7 +1441,7 @@ class TestInsertIndex3(unittest.TestCase):
         self.assertEqual(self.get_weight_groups_helper(node), expected)
 
         # Add missing weight from group 'D', should make 'D' complete.
-        node.insert_index3([
+        node.insert_index([
             ('A',   'B', 'D'),
             ('bar', 'y', '8.0'),
         ])
@@ -1472,7 +1472,7 @@ class TestInsertIndex3(unittest.TestCase):
             relation_repo.add(2, 2, 1, None, 2000)  # <- Maps to local index_id 1 (no relation goes to index_id 2)
 
             # Insert new index record!
-            node.insert_index3([('A', 'B'), ('baz', 'z')])
+            node.insert_index([('A', 'B'), ('baz', 'z')])
 
             # Check that edge1's is_locally_complete is changed to False.
             crosswalk = crosswalk_repo.get(1)
@@ -1487,7 +1487,7 @@ class TestInsertIndex3(unittest.TestCase):
         self.add_cols_helper(node, 'A', 'B')
 
         with self.assertLogs('app-toron') as cm:
-            node.insert_index3([
+            node.insert_index([
                 ('A',   'B'),
                 ('foo', 'x'),
                 ('',    'x'),  # <- Contains empty string.
@@ -1514,7 +1514,7 @@ class TestInsertIndex3(unittest.TestCase):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
-        node.insert_index3([
+        node.insert_index([
             ('A',   'B'),
             ('foo', 'x'),
             ('foo', 'x'),  # <- Duplicate index label.
@@ -1535,7 +1535,7 @@ class TestInsertIndex3(unittest.TestCase):
 
         regex = r"weight group 'C' already has a value for Index.+"
         with self.assertRaisesRegex(ValueError, regex):
-            node.insert_index3(
+            node.insert_index(
                 [('A',   'B', 'C'),
                  ('foo', 'x', '5.0'),
                  ('bar', 'y', '4.0'),
@@ -1549,7 +1549,7 @@ class TestInsertIndex3(unittest.TestCase):
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
-        node.insert_index3(
+        node.insert_index(
             [('A',   'B', 'C'),
              ('foo', 'x', '5.0'),
              ('bar', 'y', '4.0'),
@@ -1569,7 +1569,7 @@ class TestInsertIndex3(unittest.TestCase):
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
-        node.insert_index3(
+        node.insert_index(
             [('A',   'B', 'C'),
              ('foo', 'x', '5.0'),
              ('bar', 'y', '4.0'),   # <- First `'bar', 'y'` weight value.
@@ -1589,7 +1589,7 @@ class TestInsertIndex3(unittest.TestCase):
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
-        node.insert_index3(
+        node.insert_index(
             [('A',   'B', 'C'),
              ('foo', 'x', '5.0'),
              ('bar', 'y', '4.0'),   # <- First `'bar', 'y'` weight value.
@@ -1611,7 +1611,7 @@ class TestInsertIndex3(unittest.TestCase):
 
         regex = r"on_conflict must be 'abort', 'ignore', 'replace', or 'sum'; got 'BAD VALUE'"
         with self.assertRaisesRegex(ValueError, regex):
-            node.insert_index3(
+            node.insert_index(
                 [('A',   'B', 'C'),
                  ('foo', 'x', '5.0'),
                  ('bar', 'y', '4.0'),
@@ -5009,11 +5009,11 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
         node.add_index_columns('state', 'county')
         node.add_discrete_categories({'state'}, {'state', 'county'})
         node.add_weight_group('totpop', make_default=True)
-        node.insert_index3([('state', 'county',   'totpop'),
-                            ('OH',    'BUTLER',   374150),
-                            ('OH',    'FRANKLIN', 1336250),
-                            ('IN',    'KNOX',     36864),
-                            ('IN',    'LAPORTE',  110592)])
+        node.insert_index([('state', 'county',   'totpop'),
+                           ('OH',    'BUTLER',   374150),
+                           ('OH',    'FRANKLIN', 1336250),
+                           ('IN',    'KNOX',     36864),
+                           ('IN',    'LAPORTE',  110592)])
         node.insert_quantities(
             value='counts',
             attributes=['category', 'sex'],

@@ -71,7 +71,7 @@ class TestNodeReader(unittest.TestCase):
     def test_iteration_and_aggregation(self):
         node = TopoNode()
         node.add_index_columns('county', 'town')
-        node.insert_index3([
+        node.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -101,7 +101,7 @@ class TestNodeReader(unittest.TestCase):
     def test_iteration_and_cleanup(self):
         node = TopoNode()
         node.add_index_columns('county', 'town')
-        node.insert_index3([
+        node.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -128,7 +128,7 @@ class TestNodeReader(unittest.TestCase):
         """Check convertion to Pandas DataFrame."""
         node = TopoNode()
         node.add_index_columns('county', 'town')
-        node.insert_index3([
+        node.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -160,7 +160,7 @@ class TestNodeReader(unittest.TestCase):
         """Check convertion to Pandas DataFrame."""
         node = TopoNode()
         node.add_index_columns('county', 'town')
-        node.insert_index3([
+        node.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -197,7 +197,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         self.node = TopoNode()
         self.node.add_index_columns('A', 'B', 'C')
         self.node.add_discrete_categories({'A', 'B', 'C'})
-        self.node.insert_index3([
+        self.node.insert_index([
             ['A', 'B', 'C'],
             ['a1', 'b1', 'c1'],  # <- index_id=1
             ['a1', 'b1', 'c2'],  # <- index_id=2
@@ -258,7 +258,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         source_node = TopoNode()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
-        source_node.insert_index3(
+        source_node.insert_index(
             data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
             columns=['X']
         )
@@ -291,7 +291,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         source_node = TopoNode()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
-        source_node.insert_index3(
+        source_node.insert_index(
             data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
             columns=['X']
         )
@@ -338,7 +338,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         source_node = TopoNode()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
-        source_node.insert_index3(
+        source_node.insert_index(
             data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
             columns=['X']
         )
@@ -389,7 +389,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         source_node = TopoNode()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
-        source_node.insert_index3(
+        source_node.insert_index(
             data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
             columns=['X']
         )
@@ -428,7 +428,7 @@ class TestPivotReader(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         node.add_index_columns('county', 'town')
-        node.insert_index3([
+        node.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),

@@ -11,7 +11,7 @@ class TestIndexWriteToStdout(unittest.TestCase):
     def test_basic_behavior(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
-        node.insert_index3([
+        node.insert_index([
             ['state', 'county'],
             ['Illinois', 'Cook'],
             ['Indiana', 'Porter'],

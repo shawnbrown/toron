@@ -399,7 +399,7 @@ class TopoNode(object):
 
             col_manager.drop_columns(column, *columns)
 
-    def insert_index3(
+    def insert_index(
         self,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,

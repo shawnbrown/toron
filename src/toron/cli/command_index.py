@@ -39,7 +39,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     """Insert index records read from stdin stream."""
     reader = csv.reader(args.stdin)
-    args.node.insert_index3(reader)
+    args.node.insert_index(reader)
 
     return ExitCode.OK
 
