@@ -566,7 +566,7 @@ class TopoNode(object):
         if counter['empty_labels']:
             applogger.warning(f"skipped {counter['empty_labels']} records having some empty string labels")
 
-    def insert_index(
+    def insert_index_OLD(
         self,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,

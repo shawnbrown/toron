@@ -908,13 +908,13 @@ class TestIndexMethods(unittest.TestCase):
             structures = sorted(repository.get_all(), key=lambda x: x.id)
         return normalize_structures(structures)
 
-    def test_insert(self):
+    def test_insert_OLD(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
 
         data = [('A', 'B'), ('foo', 'x'), ('bar', 'y')]
-        node.insert_index(data)
+        node.insert_index_OLD(data)
 
         expected = [
             Index(0, '-', '-'),
@@ -929,14 +929,14 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_structure_helper(node), expected)
 
-    def test_insert_no_existing_structure(self):
+    def test_insert_no_existing_structure_OLD(self):
         """Should auto-add categories and structure if not defined."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         self.assertEqual(self.get_structure_helper(node), [], msg='should start empty')
 
-        node.insert_index([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
+        node.insert_index_OLD([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
         expected = [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')]
         self.assertEqual(self.get_index_helper(node), expected)
 
@@ -946,7 +946,7 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_structure_helper(node), expected, msg='should be automatically added')
 
-    def test_insert_skip_empty_rows(self):
+    def test_insert_skip_empty_rows_OLD(self):
         """Text based files (like CSV files) often end with a newline
         character. Many parsers interpret this as an empty row of data.
         """
@@ -955,7 +955,7 @@ class TestIndexMethods(unittest.TestCase):
 
         # Insert data where second and last items are empty.
         data = [('foo', 'x'), (), ('bar', 'y'), ()]  # <- Includes empty rows!
-        node.insert_index(data, columns=['A', 'B'])
+        node.insert_index_OLD(data, columns=['A', 'B'])
 
         expected = [
             Index(0, '-', '-'),
@@ -964,12 +964,12 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
-    def test_insert_different_order(self):
+    def test_insert_different_order_OLD(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         data = [('B', 'A'), ('x', 'foo'), ('y', 'bar')]  # <- Different order.
-        node.insert_index(data)
+        node.insert_index_OLD(data)
 
         expected = [
             Index(0, '-', '-'),
@@ -978,20 +978,20 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
-    def test_insert_missing_columns(self):
+    def test_insert_missing_columns_OLD(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = r"missing required columns: 'C', 'D'"
         with self.assertRaisesRegex(ValueError, regex):
-            node.insert_index([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
+            node.insert_index_OLD([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
 
-    def test_insert_extra_columns(self):
+    def test_insert_extra_columns_OLD(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         with self.assertLogs('app-toron') as cm:
-            node.insert_index([
+            node.insert_index_OLD([
                 ('C',   'B', 'D', 'A'),  # <- Extra columns (C and D).
                 ('111', 'x', '1', 'foo'),
                 ('222', 'y', '2', 'bar'),
@@ -1011,12 +1011,12 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
-    def test_insert_duplicate_or_empty_strings(self):
+    def test_insert_duplicate_or_empty_strings_OLD(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         with self.assertLogs('app-toron') as cm:
-            node.insert_index([
+            node.insert_index_OLD([
                 ('A', 'B'),
                 ('foo', 'x'),
                 ('foo', 'x'),  # <- Duplicate of previous record.
@@ -1042,7 +1042,7 @@ class TestIndexMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_index_helper(node), expected)
 
-    def test_insert_index_group_is_complete(self):
+    def test_insert_index_group_is_complete_OLD(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('bar', 'y')]
@@ -1062,7 +1062,7 @@ class TestIndexMethods(unittest.TestCase):
             weight_repo.add(2, 1, 6000)
 
             # Insert new index record!
-            node.insert_index([('A', 'B'), ('baz', 'z')])
+            node.insert_index_OLD([('A', 'B'), ('baz', 'z')])
 
             # Check that group1's is_complete status is changed to False.
             group = group_repo.get_by_name('group1')
@@ -1072,7 +1072,7 @@ class TestIndexMethods(unittest.TestCase):
             group = group_repo.get_by_name('group2')
             self.assertFalse(group.is_complete)
 
-    def test_insert_index_crosswalk_is_complete(self):
+    def test_insert_index_crosswalk_is_complete_OLD(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('bar', 'y')]
@@ -1093,7 +1093,7 @@ class TestIndexMethods(unittest.TestCase):
             relation_repo.add(2, 2, 1, None, 2000)  # <- Maps to local index_id 1 (no relation goes to index_id 2)
 
             # Insert new index record!
-            node.insert_index([('A', 'B'), ('baz', 'z')])
+            node.insert_index_OLD([('A', 'B'), ('baz', 'z')])
 
             # Check that edge1's is_locally_complete is changed to False.
             crosswalk = crosswalk_repo.get(1)
@@ -1103,21 +1103,21 @@ class TestIndexMethods(unittest.TestCase):
             crosswalk = crosswalk_repo.get(2)
             self.assertFalse(crosswalk.is_locally_complete)
 
-    def test_insert_index_modifies_index_hash(self):
+    def test_insert_index_modifies_index_hash_OLD(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
 
-            node.insert_index([('A', 'B'), ('foo', 'a'), ('bar', 'b')])
+            node.insert_index_OLD([('A', 'B'), ('foo', 'a'), ('bar', 'b')])
             self.assertEqual(
                 prop_repo.get('index_hash'),
                 '5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
                 msg='hash for index_ids 0, 1, and 2',
             )
 
-            node.insert_index([('A', 'B'), ('baz', 'z')])
+            node.insert_index_OLD([('A', 'B'), ('baz', 'z')])
             self.assertEqual(
                 prop_repo.get('index_hash'),
                 'c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
