@@ -2,6 +2,7 @@
 
 import logging
 import unittest
+import unittest.mock
 import warnings
 from io import StringIO
 
@@ -162,67 +163,38 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         self.node1.path_hint = 'file1.toron'
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
         self.node1.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
-        self.node1.insert_index([
-            ['idx1', 'idx2', 'idx3'],
-            ['A', 'z', 'a'],
-            ['B', 'x', 'b'],
-            ['B', 'y', 'c'],
-            ['C', 'x', 'd'],
-            ['C', 'y', 'e'],
-            ['D', 'x', 'f'],
-            ['D', 'x', 'g'],
-            ['D', 'y', 'h'],
-            ['D', 'y', 'i'],
-        ])
         self.node1.add_weight_group('wght', make_default=True)
-        self.node1.insert_weights(
-            weight_group_name='wght',
-            data=[
-                ['idx1', 'idx2', 'idx3', 'wght'],
-                ['A', 'z', 'a', 72],
-                ['B', 'x', 'b', 37.5],
-                ['B', 'y', 'c', 62.5],
-                ['C', 'x', 'd', 75],
-                ['C', 'y', 'e', 25],
-                ['D', 'x', 'f', 25],
-                ['D', 'x', 'g', 0],
-                ['D', 'y', 'h', 50],
-                ['D', 'y', 'i', 25],
-            ],
-        )
+        self.node1.insert_index3([
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'z', 'a', 72],
+            ['B', 'x', 'b', 37.5],
+            ['B', 'y', 'c', 62.5],
+            ['C', 'x', 'd', 75],
+            ['C', 'y', 'e', 25],
+            ['D', 'x', 'f', 25],
+            ['D', 'x', 'g', 0],
+            ['D', 'y', 'h', 50],
+            ['D', 'y', 'i', 25],
+
+        ])
 
         self.node2 = TopoNode()
         self.node2.path_hint = 'file2.toron'
         self.node2.add_index_columns('idx1', 'idx2', 'idx3')
         self.node2.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
-        self.node2.insert_index([
-            ['idx1', 'idx2', 'idx3'],
-            ['A', 'z', 'a'],
-            ['A', 'z', 'b'],
-            ['B', 'x', 'c'],
-            ['C', 'x', 'd'],
-            ['C', 'y', 'e'],
-            ['D', 'x', 'f'],
-            ['D', 'x', 'g'],
-            ['D', 'y', 'h'],
-            ['D', 'y', 'i'],
-        ])
         self.node2.add_weight_group('wght', make_default=True)
-        self.node2.insert_weights(
-            weight_group_name='wght',
-            data=[
-                ['idx1', 'idx2', 'idx3', 'wght'],
-                ['A', 'z', 'a', 25],
-                ['A', 'z', 'b', 75],
-                ['B', 'x', 'c', 80],
-                ['C', 'x', 'd', 25],
-                ['C', 'y', 'e', 75],
-                ['D', 'x', 'f', 37.5],
-                ['D', 'x', 'g', 43.75],
-                ['D', 'y', 'h', 31.25],
-                ['D', 'y', 'i', 31.25],
-            ],
-        )
+        self.node2.insert_index3([
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'z', 'a', 25],
+            ['A', 'z', 'b', 75],
+            ['B', 'x', 'c', 80],
+            ['C', 'x', 'd', 25],
+            ['C', 'y', 'e', 75],
+            ['D', 'x', 'f', 37.5],
+            ['D', 'x', 'g', 43.75],
+            ['D', 'y', 'h', 31.25],
+            ['D', 'y', 'i', 31.25],
+        ])
 
         # Set up stream object to capture log messages.
         self.log_stream = StringIO()
@@ -962,24 +934,17 @@ class TestGetWeights(unittest.TestCase):
         null_handler = logging.NullHandler()
         applogger.addHandler(null_handler)
         try:
-            # Create node with two weights.
-            data = [
+            self.node = TopoNode()
+            self.node.add_index_columns('idx1', 'idx2', 'idx3')
+            self.node.add_weight_group('wght1', make_default=True)
+            self.node.add_weight_group('wght2')
+            self.node.insert_index3([
                 ['idx1', 'idx2', 'idx3', 'wght1', 'wght2'],
                 ['A',    'x',    'a',         72,     702],
                 ['B',    'y',    'b',       37.5,     400],
                 ['C',    'z',    'c',         75,     801],
                 ['D',    'z',    'd',         25,     232],
-            ]
-            self.node = TopoNode()
-
-            self.node.add_index_columns('idx1', 'idx2', 'idx3')
-            self.node.insert_index(data)
-
-            self.node.add_weight_group('wght1', make_default=True)
-            self.node.insert_weights('wght1', data=data)
-
-            self.node.add_weight_group('wght2')
-            self.node.insert_weights('wght2', data=data)
+            ])
         finally:
             # Reset logging to default.
             applogger.removeHandler(null_handler)
@@ -1056,7 +1021,7 @@ class TestTranslate(unittest.TestCase):
         self.node = TopoNode()
         self.node.add_index_columns('A', 'B', 'C')
         self.node.add_discrete_categories({'A', 'B', 'C'})
-        self.node.insert_index([
+        self.node.insert_index3([
             ['A', 'B', 'C'],
             ['a1', 'b1', 'c1'],  # <- index_id=1
             ['a1', 'b1', 'c2'],  # <- index_id=2
