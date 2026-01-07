@@ -407,7 +407,7 @@ class TopoNode(object):
         weights: Optional[Union[str, Iterable[str]]] = None,
         on_conflict: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
     ) -> None:
-        """Insert index label and weight records."""
+        """Load index labels and weights."""
         data, columns = normalize_tabular(data, columns)
 
         if weights is not None:
@@ -527,14 +527,16 @@ class TopoNode(object):
                         counter['weight_inserted'] += 1
 
             if counter['label_inserted']:
+                prop_repo = self._dal.PropertyRepository(cursor)
+
                 refresh_index_hash_property(
                     index_repo=index_repo,
-                    prop_repo=self._dal.PropertyRepository(cursor),
+                    prop_repo=prop_repo,
                 )
 
                 refresh_or_rebuild_structure_granularity(
                     column_manager=self._dal.ColumnManager(cursor),
-                    property_repo=self._dal.PropertyRepository(cursor),
+                    property_repo=prop_repo,
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
                     aux_index_repo=self._dal.IndexRepository(aux_cursor),
