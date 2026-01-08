@@ -39,7 +39,12 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     """Insert index records read from stdin stream."""
     reader = csv.reader(args.stdin)
-    args.node.insert_index(reader)
+    try:
+        args.node.insert_index(reader, on_conflict=args.on_conflict)
+    except ValueError as e:
+        msg = f'{e}\n  load behavior can be changed using --on-conflict'
+        applogger.error(msg)
+        return ExitCode.ERR
 
     return ExitCode.OK
 

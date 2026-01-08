@@ -506,12 +506,15 @@ class TopoNode(object):
                                 f'value for {index_record!r}'
                             )
                         elif on_conflict == 'ignore':
+                            counter['weight_ignored'] += 1
                             continue  # Skip to next weight group.
                         elif on_conflict == 'replace':
                             weight_repo.update(replace(weight_record, value=weight_value))
+                            counter['weight_replaced'] += 1
                         elif on_conflict == 'sum':
                             weight_value = weight_value + weight_record.value
                             weight_repo.update(replace(weight_record, value=weight_value))
+                            counter['weight_summed'] += 1
                         else:
                             raise ValueError(
                                 f"on_conflict must be 'abort', 'ignore', "
@@ -562,11 +565,20 @@ class TopoNode(object):
         if counter['label_inserted']:
             applogger.info(f"loaded {counter['label_inserted']} index labels")
 
+        if counter['empty_labels']:
+            applogger.warning(f"skipped {counter['empty_labels']} records having some empty string labels")
+
         if counter['weight_inserted']:
             applogger.info(f"loaded {counter['weight_inserted']} index weights")
 
-        if counter['empty_labels']:
-            applogger.warning(f"skipped {counter['empty_labels']} records having some empty string labels")
+        if counter['weight_ignored']:
+            applogger.info(f"skipped {counter['weight_ignored']} index weights")
+
+        if counter['weight_replaced']:
+            applogger.info(f"replaced {counter['weight_replaced']} index weights")
+
+        if counter['weight_summed']:
+            applogger.info(f"combined {counter['weight_summed']} index weights")
 
     def insert_index_OLD(
         self,

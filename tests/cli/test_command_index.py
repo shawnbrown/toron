@@ -46,7 +46,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
             'Indiana,Porter,175860\n'
             'Michigan,Cass,51589\n'
         )
-        args = argparse.Namespace(command='index', node=node, stdin=dummy_stdin)
+        args = argparse.Namespace(command='index', node=node, on_conflict='abort', stdin=dummy_stdin)
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
             command_index.read_from_stdin(args)  # <- Function under test.
@@ -64,4 +64,64 @@ class TestIndexReadFromStdin(unittest.TestCase):
             logs_cm.output,
             ['INFO:app-toron.node:loaded 3 index labels',
              'INFO:app-toron.node:loaded 3 index weights'],
+        )
+
+    def test_abort_on_conflict(self):
+        node = TopoNode()
+        node.add_index_columns('state', 'county')
+        node.add_weight_group('population', make_default=True)
+
+        dummy_stdin = DummyRedirection(
+            'state,county,population\n'
+            'Illinois,Cook,5275541\n'
+            'Indiana,Porter,175860\n'
+            'Michigan,Cass,51589\n'
+            'Michigan,Cass,50000\n'  # <- Will abort operation.
+        )
+        args = argparse.Namespace(command='index', node=node, on_conflict='abort', stdin=dummy_stdin)
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index.read_from_stdin(args)  # <- Function under test.
+
+        index_values = list(node.select_index(header=True))
+        expected_values = [('index_id', 'state', 'county'), (0, '-', '-')]
+        self.assertEqual(index_values, expected_values)
+        self.assertEqual(
+            logs_cm.output,
+            ["ERROR:app-toron:weight group 'population' already has "
+               "a value for Index(id=3, labels=('Michigan', 'Cass'))\n"
+               "  load behavior can be changed using --on-conflict"],
+        )
+
+    def test_replace_on_conflict(self):
+        node = TopoNode()
+        node.add_index_columns('state', 'county')
+        node.add_weight_group('population', make_default=True)
+
+        dummy_stdin = DummyRedirection(
+            'state,county,population\n'
+            'Illinois,Cook,5275541\n'
+            'Indiana,Porter,175860\n'
+            'Michigan,Cass,0\n'  # <- Will get replaced by later record.
+            'Michigan,Cass,51589\n'
+        )
+        args = argparse.Namespace(command='index', node=node, on_conflict='replace', stdin=dummy_stdin)
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index.read_from_stdin(args)  # <- Function under test.
+
+        index_values = list(node.select_index(header=True))
+        expected_values = [
+            ('index_id', 'state', 'county'),
+            (0, '-', '-'),
+            (1, 'Illinois', 'Cook'),
+            (2, 'Indiana', 'Porter'),
+            (3, 'Michigan', 'Cass'),
+        ]
+        self.assertEqual(index_values, expected_values)
+        self.assertEqual(
+            logs_cm.output,
+            ['INFO:app-toron.node:loaded 3 index labels',
+             'INFO:app-toron.node:loaded 3 index weights',
+             'INFO:app-toron.node:replaced 1 index weights'],
         )
