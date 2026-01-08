@@ -178,7 +178,7 @@ def get_parser() -> argparse.ArgumentParser:
                               help='Toron node file', metavar='FILE')
     parser_index.add_argument('--on-conflict',
                               default='abort',
-                              choices=['abort', 'ignore', 'replace', 'sum'],
+                              choices=['abort', 'ignore', 'replace'],
                               dest='on_conflict',
                               help='handle conflicts when a value already exists (defaults to \'abort\')')
     parser_index.add_argument('--no-backup', action='store_false',

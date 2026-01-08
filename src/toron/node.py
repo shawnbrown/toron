@@ -405,7 +405,7 @@ class TopoNode(object):
         columns: Optional[Sequence[str]] = None,
         *,
         weights: Optional[Union[str, Iterable[str]]] = None,
-        on_conflict: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
+        on_conflict: Literal['abort', 'ignore', 'replace'] = 'abort',
     ) -> None:
         """Load index labels and weights."""
         data, columns = normalize_tabular(data, columns)
@@ -511,14 +511,10 @@ class TopoNode(object):
                         elif on_conflict == 'replace':
                             weight_repo.update(replace(weight_record, value=weight_value))
                             counter['weight_replaced'] += 1
-                        elif on_conflict == 'sum':
-                            weight_value = weight_value + weight_record.value
-                            weight_repo.update(replace(weight_record, value=weight_value))
-                            counter['weight_summed'] += 1
                         else:
                             raise ValueError(
-                                f"on_conflict must be 'abort', 'ignore', "
-                                f"'replace', or 'sum'; got {on_conflict!r}"
+                                f"on_conflict must be 'abort', 'ignore', or "
+                                f"'replace'; got {on_conflict!r}"
                             )
 
                     except KeyError:
@@ -576,9 +572,6 @@ class TopoNode(object):
 
         if counter['weight_replaced']:
             applogger.info(f"replaced {counter['weight_replaced']} index weights")
-
-        if counter['weight_summed']:
-            applogger.info(f"combined {counter['weight_summed']} index weights")
 
     def insert_index_OLD(
         self,

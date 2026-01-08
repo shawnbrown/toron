@@ -1583,33 +1583,13 @@ class TestInsertIndex(unittest.TestCase):
         ]
         self.assertEqual(self.get_weights_helper(node), expected)
 
-    def test_on_conflict_sum(self):
-        """Using 'sum' should sum values of existing records with new values."""
-        node = TopoNode()
-        self.add_cols_helper(node, 'A', 'B')
-        self.add_weight_group_helper(node, name='C')
-
-        node.insert_index(
-            [('A',   'B', 'C'),
-             ('foo', 'x', '5.0'),
-             ('bar', 'y', '4.0'),   # <- First `'bar', 'y'` weight value.
-             ('bar', 'y', '3.0')],  # <- Second weight should be summed with first.
-            on_conflict='sum',
-        )
-
-        expected = [
-            Weight(1, weight_group_id=1, index_id=1, value=5.0),
-            Weight(2, weight_group_id=1, index_id=2, value=7.0),  # <- Sum of 4.0 and 3.0.
-        ]
-        self.assertEqual(self.get_weights_helper(node), expected)
-
     def test_on_conflict_bad_value(self):
         """Should raise an error when given bad value."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
-        regex = r"on_conflict must be 'abort', 'ignore', 'replace', or 'sum'; got 'BAD VALUE'"
+        regex = r"on_conflict must be 'abort', 'ignore', or 'replace'; got 'BAD VALUE'"
         with self.assertRaisesRegex(ValueError, regex):
             node.insert_index(
                 [('A',   'B', 'C'),
