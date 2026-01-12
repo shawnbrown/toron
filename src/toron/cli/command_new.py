@@ -21,11 +21,19 @@ def create_file(args: argparse.Namespace) -> ExitCode:
         return ExitCode.ERR
 
     node = TopoNode()
+
+    if args.domain:
+        node.set_domain({'domain': args.domain})
+    else:
+        node.set_domain({'domain': os.path.splitext(os.path.basename(args.node_path))[0]})
+
     try:
         node.to_file(args.node_path)
     except OSError as e:
         applogger.error(f'cancelled: {e}')
         return ExitCode.ERR
 
+    if args.domain is None:
+        applogger.info(f"domain defaulting to {node.domain['domain']!r}")
     applogger.info(f'created file: {args.node_path!r}')
     return ExitCode.OK

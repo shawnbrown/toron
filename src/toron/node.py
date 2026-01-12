@@ -248,6 +248,7 @@ class TopoNode(object):
     @property
     def domain(self) -> Dict[str, str]:
         """The common set of attributes associated with all node data."""
+        # The domain defines the scope of data a node will represent.
         with self._managed_cursor() as cursor:
             return get_domain(self._dal.PropertyRepository(cursor))
 

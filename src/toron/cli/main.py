@@ -113,6 +113,8 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_new.add_argument('node_path', type=str,
                             help='name of file to create', metavar='FILE')
+    parser_new.add_argument('--domain',
+                            help='define a domain (defaults to FILE without extension)')
     parser_new.set_defaults(func=command_new.create_file)
 
     # Add command.

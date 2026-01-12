@@ -9,21 +9,46 @@ from toron.cli import command_new
 
 
 class TestNew(unittest.TestCase):
-    def test_create_new_file(self):
+    def test_create_new_file_implicit_domain(self):
         """Should create new file at given path location."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             node_path = os.path.join(tmpdir, 'blerg.toron')
-            args = argparse.Namespace(command='new', node_path=node_path)
+            args = argparse.Namespace(command='new', node_path=node_path, domain=None)
 
             self.assertFalse(os.path.exists(node_path))
-            command_new.create_file(args)
+            with self.assertLogs('app-toron', level='INFO') as logs_cm:
+                command_new.create_file(args)  # <- Function under test.
             self.assertTrue(os.path.exists(node_path))
+
+            self.assertRegex(
+                '\n'.join(logs_cm.output),
+                (r"INFO:app-toron:domain defaulting to 'blerg'\n"  # <- Because domain was not specified.
+                 r"INFO:app-toron:created file: '.*blerg.toron'"),
+            )
+
+    def test_create_new_file_explicit_domain(self):
+        """Create a new file with an explicitly given domain."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            node_path = os.path.join(tmpdir, 'blerg.toron')
+            args = argparse.Namespace(command='new', node_path=node_path, domain='dorp')
+
+            self.assertFalse(os.path.exists(node_path))
+
+            with self.assertLogs('app-toron', level='INFO') as logs_cm:
+                command_new.create_file(args)  # <- Function under test.
+
+            self.assertTrue(os.path.exists(node_path))
+
+            self.assertRegex(
+                '\n'.join(logs_cm.output),
+                 r"INFO:app-toron:created file: '.*blerg.toron'",
+            )
 
     def test_missing_directory(self):
         """Should give "cancelled" error if target dir doesn't exist."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             node_path = os.path.join(tmpdir, 'does_not_exist', 'blerg.toron')
-            args = argparse.Namespace(command='new', node_path=node_path)
+            args = argparse.Namespace(command='new', node_path=node_path, domain=None)
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
                 command_new.create_file(args)  # <- Function under test.
