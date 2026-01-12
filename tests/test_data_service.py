@@ -66,7 +66,17 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         regex = "'value' is a reserved name"
         with self.assertRaisesRegex(ToronError, regex):
             validate_new_index_columns(
-                new_column_names=iter(['value']),
+                new_column_names=iter(['foo', 'bar', 'value']),
+                reserved_identifiers=self.reserved_identifiers,
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+                attribute_repo=self.attribute_repo,
+            )
+
+        regex = "'domain' is a reserved name"
+        with self.assertRaisesRegex(ToronError, regex):
+            validate_new_index_columns(
+                new_column_names=iter(['foo', 'bar', 'domain']),
                 reserved_identifiers=self.reserved_identifiers,
                 column_manager=self.column_manager,
                 property_repo=self.property_repo,

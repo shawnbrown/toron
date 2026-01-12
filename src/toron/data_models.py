@@ -52,6 +52,7 @@ TORON_MAGIC_NUMBER: Final[bytes] = b'\x01\x2d\x84\xc8'
 # common set of reserved identifiers here, individual backends
 # (like DAL1) may define additional ones.
 COMMON_RESERVED_IDENTIFIERS: Final[Set[str]] = {
+    'domain',
     'index_id',
     'value',
     'weight',
