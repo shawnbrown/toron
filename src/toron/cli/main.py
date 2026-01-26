@@ -178,11 +178,11 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_index.add_argument('node', type=TopoNodeType(),
                               help='Toron node file', metavar='FILE')
-    parser_index.add_argument('--on-conflict',
+    parser_index.add_argument('--on-weight-conflict',
                               default='abort',
-                              choices=['abort', 'ignore', 'replace'],
-                              dest='on_conflict',
-                              help='handle conflicts when a value already exists (defaults to \'abort\')')
+                              choices=['ignore', 'replace', 'abort'],
+                              dest='on_weight_conflict',
+                              help='how to handle weight conflicts (default: %(default)s)')
     parser_index.add_argument('--no-backup', action='store_false',
                               dest='backup',
                               help='do not make a backup file')

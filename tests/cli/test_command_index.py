@@ -40,13 +40,17 @@ class TestIndexReadFromStdin(unittest.TestCase):
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
 
-        dummy_stdin = DummyRedirection(
-            'state,county,population\n'
-            'Illinois,Cook,5275541\n'
-            'Indiana,Porter,175860\n'
-            'Michigan,Cass,51589\n'
+        args = argparse.Namespace(
+            command='index',
+            node=node,
+            on_weight_conflict='abort',
+            stdin=DummyRedirection(
+                'state,county,population\n'
+                'Illinois,Cook,5275541\n'
+                'Indiana,Porter,175860\n'
+                'Michigan,Cass,51589\n'
+            ),
         )
-        args = argparse.Namespace(command='index', node=node, on_conflict='abort', stdin=dummy_stdin)
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
             command_index.read_from_stdin(args)  # <- Function under test.
@@ -71,14 +75,18 @@ class TestIndexReadFromStdin(unittest.TestCase):
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
 
-        dummy_stdin = DummyRedirection(
-            'state,county,population\n'
-            'Illinois,Cook,5275541\n'
-            'Indiana,Porter,175860\n'
-            'Michigan,Cass,51589\n'
-            'Michigan,Cass,50000\n'  # <- Will abort operation.
+        args = argparse.Namespace(
+            command='index',
+            node=node,
+            on_weight_conflict='abort',
+            stdin=DummyRedirection(
+                'state,county,population\n'
+                'Illinois,Cook,5275541\n'
+                'Indiana,Porter,175860\n'
+                'Michigan,Cass,51589\n'
+                'Michigan,Cass,50000\n'  # <- Will abort operation.
+            ),
         )
-        args = argparse.Namespace(command='index', node=node, on_conflict='abort', stdin=dummy_stdin)
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
             command_index.read_from_stdin(args)  # <- Function under test.
@@ -90,7 +98,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
             logs_cm.output,
             ["ERROR:app-toron:weight group 'population' already has "
                "a value for Index(id=3, labels=('Michigan', 'Cass'))\n"
-               "  load behavior can be changed using --on-conflict"],
+               "  load behavior can be changed using --on-weight-conflict"],
         )
 
     def test_replace_on_weight_conflict(self):
@@ -98,14 +106,18 @@ class TestIndexReadFromStdin(unittest.TestCase):
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
 
-        dummy_stdin = DummyRedirection(
-            'state,county,population\n'
-            'Illinois,Cook,5275541\n'
-            'Indiana,Porter,175860\n'
-            'Michigan,Cass,0\n'  # <- Will get replaced by later record.
-            'Michigan,Cass,51589\n'
+        args = argparse.Namespace(
+            command='index',
+            node=node,
+            on_weight_conflict='replace',
+            stdin=DummyRedirection(
+                'state,county,population\n'
+                'Illinois,Cook,5275541\n'
+                'Indiana,Porter,175860\n'
+                'Michigan,Cass,0\n'  # <- Will get replaced by later record.
+                'Michigan,Cass,51589\n'
+            ),
         )
-        args = argparse.Namespace(command='index', node=node, on_conflict='replace', stdin=dummy_stdin)
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
             command_index.read_from_stdin(args)  # <- Function under test.
