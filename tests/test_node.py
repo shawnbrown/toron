@@ -1527,7 +1527,7 @@ class TestInsertIndex(unittest.TestCase):
             [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')],
         )
 
-    def test_on_conflict_abort(self):
+    def test_on_weight_conflict_abort(self):
         """Using 'abort' should raise an error."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
@@ -1540,10 +1540,10 @@ class TestInsertIndex(unittest.TestCase):
                  ('foo', 'x', '5.0'),
                  ('bar', 'y', '4.0'),
                  ('bar', 'y', '3.0')],  # <- Second weight should raise an error.
-                on_conflict='abort',
+                on_weight_conflict='abort',
             )
 
-    def test_on_conflict_ignore(self):
+    def test_on_weight_conflict_ignore(self):
         """Using 'ignore' should skip duplicate records."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
@@ -1554,7 +1554,7 @@ class TestInsertIndex(unittest.TestCase):
              ('foo', 'x', '5.0'),
              ('bar', 'y', '4.0'),
              ('bar', 'y', '3.0')],  # <- Second weight should be ignored.
-            on_conflict='ignore',
+            on_weight_conflict='ignore',
         )
 
         expected = [
@@ -1563,7 +1563,7 @@ class TestInsertIndex(unittest.TestCase):
         ]
         self.assertEqual(self.get_weights_helper(node), expected)
 
-    def test_on_conflict_replace(self):
+    def test_on_weight_conflict_replace(self):
         """Using 'replace' should replace existing records with new ones."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
@@ -1574,7 +1574,7 @@ class TestInsertIndex(unittest.TestCase):
              ('foo', 'x', '5.0'),
              ('bar', 'y', '4.0'),   # <- First `'bar', 'y'` weight value.
              ('bar', 'y', '3.0')],  # <- Second weight should replace first one.
-            on_conflict='replace',
+            on_weight_conflict='replace',
         )
 
         expected = [
@@ -1583,20 +1583,20 @@ class TestInsertIndex(unittest.TestCase):
         ]
         self.assertEqual(self.get_weights_helper(node), expected)
 
-    def test_on_conflict_bad_value(self):
+    def test_on_weight_conflict_bad_value(self):
         """Should raise an error when given bad value."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
-        regex = r"on_conflict must be 'abort', 'ignore', or 'replace'; got 'BAD VALUE'"
+        regex = r"on_weight_conflict must be 'abort', 'ignore', or 'replace'; got 'BAD VALUE'"
         with self.assertRaisesRegex(ValueError, regex):
             node.insert_index(
                 [('A',   'B', 'C'),
                  ('foo', 'x', '5.0'),
                  ('bar', 'y', '4.0'),
                  ('bar', 'y', '3.0')],
-                on_conflict='BAD VALUE',
+                on_weight_conflict='BAD VALUE',
             )
 
 class TestTopoNodeUpdateIndex(unittest.TestCase):

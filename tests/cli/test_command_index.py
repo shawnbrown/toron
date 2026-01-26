@@ -66,7 +66,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
              'INFO:app-toron.node:loaded 3 index weights'],
         )
 
-    def test_abort_on_conflict(self):
+    def test_abort_on_weight_conflict(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
@@ -93,7 +93,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
                "  load behavior can be changed using --on-conflict"],
         )
 
-    def test_replace_on_conflict(self):
+    def test_replace_on_weight_conflict(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)

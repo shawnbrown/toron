@@ -406,7 +406,7 @@ class TopoNode(object):
         columns: Optional[Sequence[str]] = None,
         *,
         weights: Optional[Union[str, Iterable[str]]] = None,
-        on_conflict: Literal['abort', 'ignore', 'replace'] = 'abort',
+        on_weight_conflict: Literal['abort', 'ignore', 'replace'] = 'abort',
     ) -> None:
         """Load index labels and weights."""
         data, columns = normalize_tabular(data, columns)
@@ -501,21 +501,21 @@ class TopoNode(object):
                         weight_record = weight_repo.get_by_weight_group_id_and_index_id(
                             weight_group_id=group.id, index_id=index_id
                         )
-                        if on_conflict == 'abort':
+                        if on_weight_conflict == 'abort':
                             raise ValueError(
                                 f'weight group {group.name!r} already has a '
                                 f'value for {index_record!r}'
                             )
-                        elif on_conflict == 'ignore':
+                        elif on_weight_conflict == 'ignore':
                             counter['weight_ignored'] += 1
                             continue  # Skip to next weight group.
-                        elif on_conflict == 'replace':
+                        elif on_weight_conflict == 'replace':
                             weight_repo.update(replace(weight_record, value=weight_value))
                             counter['weight_replaced'] += 1
                         else:
                             raise ValueError(
-                                f"on_conflict must be 'abort', 'ignore', or "
-                                f"'replace'; got {on_conflict!r}"
+                                f"on_weight_conflict must be 'abort', 'ignore', or "
+                                f"'replace'; got {on_weight_conflict!r}"
                             )
 
                     except KeyError:
