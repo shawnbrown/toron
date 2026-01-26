@@ -173,8 +173,9 @@ def get_parser() -> argparse.ArgumentParser:
     # Index command.
     parser_index = subparsers.add_parser(
         name='index',
-        help='select index records',
-        description='Select index records in CSV format.',
+        help='select index records, or insert records from input',
+        description=('Select index records and print them as CSV, or '
+                     'insert records supplied as input.'),
     )
     parser_index.add_argument('node', type=TopoNodeType(),
                               help='Toron node file', metavar='FILE')
