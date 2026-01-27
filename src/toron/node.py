@@ -484,10 +484,9 @@ class TopoNode(object):
                     index_id = index_record.id
                 except StopIteration:
                     # Insert new index record.
-                    index_repo.add(*labels)
+                    index_id = index_repo.add(*labels)
                     counter['label_inserted'] += 1
-                    index_record = next(index_repo.filter_by_label(dict(zip(label_columns, labels))))
-                    index_id = index_record.id
+                    index_record = index_repo.get(index_id)
 
                 # Insert weight values.
                 for group, value_pos in weight_position_dict.items():
