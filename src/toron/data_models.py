@@ -295,8 +295,8 @@ class BaseIndexRepository(ABC):
         """Initialize a new IndexRepository instance."""
 
     @abstractmethod
-    def add(self, label: str, *labels: str) -> None:
-        """Add a record to the repository.
+    def add(self, label: str, *labels: str) -> int:
+        """Add a record to the repository and return its ``index_id``.
 
         Duplicate or invalid data should raise a ValueError.
         """

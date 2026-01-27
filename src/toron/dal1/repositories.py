@@ -15,6 +15,7 @@ from toron._typing import (
     Sequence,
     Tuple,
     Union,
+    cast,
 )
 
 from .schema import (
@@ -40,8 +41,8 @@ class IndexRepository(BaseIndexRepository):
         """Initialize a new IndexRepository instance."""
         self._cursor = cursor
 
-    def add(self, label: str, *labels: str) -> None:
-        """Add a record to the repository."""
+    def add(self, label: str, *labels: str) -> int:
+        """Add a record to the repository and return its ``index_id``."""
         labels = (label,) + labels
         qmarks = ', '.join('?' * len(labels))
         sql = f'INSERT INTO main.node_index VALUES (NULL, {qmarks})'
@@ -49,6 +50,7 @@ class IndexRepository(BaseIndexRepository):
             self._cursor.execute(sql, labels)
         except sqlite3.IntegrityError as err:
             raise ValueError(str(err))
+        return cast(int, self._cursor.lastrowid)
 
     def get(self, id: int) -> Index:
         """Get a record from the repository.

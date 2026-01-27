@@ -210,11 +210,11 @@ class IndexRepositoryBaseTest(ABC):
         """Test add(), get(), update() and delete() interaction."""
         self.manager.add_columns('A', 'B')
 
-        self.repository.add('foo', 'x')
-        self.repository.add('bar', 'y')
+        index_id = self.repository.add('foo', 'x')
+        self.assertEqual(self.repository.get(index_id), Index(1, 'foo', 'x'))
 
-        self.assertEqual(self.repository.get(1), Index(1, 'foo', 'x'))
-        self.assertEqual(self.repository.get(2), Index(2, 'bar', 'y'))
+        index_id = self.repository.add('bar', 'y')
+        self.assertEqual(self.repository.get(index_id), Index(2, 'bar', 'y'))
 
         self.repository.update(Index(2, 'bar', 'z'))
         self.assertEqual(self.repository.get(2), Index(2, 'bar', 'z'))

@@ -34,7 +34,8 @@ class TestIndexRepository(unittest.TestCase):
             CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
         """)
 
-        repository.add('foo', 'bar')
+        index_id = repository.add('foo', 'bar')
+        self.assertEqual(index_id, 1, msg='should return an index_id of 1')
 
         self.cursor.execute('SELECT * FROM node_index')
         self.assertEqual(
