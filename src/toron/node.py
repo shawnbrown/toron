@@ -473,20 +473,24 @@ class TopoNode(object):
                 # Get label values by internal column order.
                 labels = [row[pos] for pos in label_position_list]
 
-                # If label is empty string, skip to next.
+                # If one or more labels are empty strings, skip to next.
                 if '' in labels:
                     counter['empty_labels'] += 1
                     continue
 
                 try:
-                    # Find record if it already exists (search by labels).
-                    index_record = next(index_repo.filter_by_label(dict(zip(label_columns, labels))))
-                    index_id = index_record.id
-                except StopIteration:
                     # Insert new index record.
                     index_id = index_repo.add(*labels)
                     counter['label_inserted'] += 1
                     index_record = index_repo.get(index_id)
+                except ValueError as val_err:
+                    # Find index if it already exists.
+                    criteria = dict(zip(label_columns, labels))
+                    filtered = index_repo.filter_by_label(criteria)
+                    index_record = next(filtered, None)
+                    if index_record is None:
+                        raise val_err
+                    index_id = index_record.id
 
                 # Insert weight values.
                 for group, value_pos in weight_position_dict.items():
