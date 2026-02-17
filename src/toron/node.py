@@ -428,24 +428,26 @@ class TopoNode(object):
             weight_group_repo = self._dal.WeightGroupRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
 
-            label_columns = index_repo.get_label_names()
-            if not label_columns:
+            all_label_cols = index_repo.get_label_names()
+            if not all_label_cols:
                 msg = 'cannot insert records, no label columns defined'
                 raise Exception(msg)
 
+            # Define lambda func to get raw index_id value.
             if 'index_id' in columns:
-                # Define lambda func to get raw index_id value.
                 index_position = columns.index('index_id')
                 get_raw_index_id = lambda row: row[index_position]
             else:
-                # If not matching on 'index_id', `data` must have all labels.
-                verify_columns_set(columns, label_columns, allow_extras=True)
                 get_raw_index_id = lambda row: ''  # <- Dummy function.
 
-            # Get positions of label columns in input.
-            label_position_list = [
-                columns.index(x) for x in label_columns if x in columns
-            ]
+            label_names = tuple(x for x in columns if x in all_label_cols)
+            if label_names:  # If input labels given, must include all labels.
+                verify_columns_set(label_names, all_label_cols, allow_extras=True)
+
+            # Get label positions in node-label order.
+            label_position_list = tuple(
+                columns.index(x) for x in all_label_cols if x in label_names
+            )
 
             # Get list of weight groups.
             if weights is None:
@@ -462,7 +464,7 @@ class TopoNode(object):
             }
 
             # Get extra columns.
-            extra_columns = [x for x in columns if (x not in label_columns
+            extra_columns = [x for x in columns if (x not in label_names
                                                     and x not in weight_names
                                                     and x != 'index_id'
                                                     and x != 'domain')]
@@ -474,7 +476,7 @@ class TopoNode(object):
                     continue
 
                 # Get label values by internal column order.
-                labels = [row[pos] for pos in label_position_list]
+                labels = tuple(row[pos] for pos in label_position_list)
 
                 # If one or more labels are empty strings, skip to next.
                 if '' in labels:
@@ -494,7 +496,7 @@ class TopoNode(object):
                         index_record = index_repo.get(index_id)
                     except ValueError as val_err:
                         # Find index if it already exists.
-                        criteria = dict(zip(label_columns, labels))
+                        criteria = dict(zip(all_label_cols, labels))
                         filtered = index_repo.filter_by_label(criteria)
                         try:
                             index_record = next(filtered)
