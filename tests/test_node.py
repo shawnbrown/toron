@@ -1527,6 +1527,41 @@ class TestInsertIndex(unittest.TestCase):
             [Index(0, '-', '-'), Index(1, 'foo', 'x'), Index(2, 'bar', 'y')],
         )
 
+    def test_insert_weights_with_index_id_and_labels(self):
+        """Should allow 'index_id' and 'labels' if index already exists."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+        self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
+
+        # Includes both 'index_id' and label columns.
+        node.insert_index([
+            ('index_id', 'A',   'B', 'C'  ),
+            (1,          'foo', 'x', '5.0'),
+            (2,          'bar', 'y', '4.0'),
+        ])
+
+        # Check weight records.
+        expected = [
+            Weight(1, 1, 1, 5.0),
+            Weight(2, 1, 2, 4.0),
+        ]
+        self.assertEqual(self.get_weights_helper(node), expected)
+
+    def test_insert_weights_with_index_id(self):
+        """Should allow 'index_id' input if index already exists."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+        self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
+
+        # Uses 'index_id' column only, no labels.
+        node.insert_index([('index_id', 'C'), (1, '5.0'), (2, '4.0')])
+
+        # Check weight records.
+        expected = [Weight(1, 1, 1, 5.0), Weight(2, 1, 2, 4.0)]
+        self.assertEqual(self.get_weights_helper(node), expected)
+
     def test_on_weight_conflict_abort(self):
         """Using 'abort' should raise an error."""
         node = TopoNode()

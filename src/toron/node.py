@@ -431,15 +431,22 @@ class TopoNode(object):
             # Get index_id position (if provided).
             if 'index_id' in columns:
                 index_position = columns.index('index_id')
+                get_raw_index_id = lambda row: row[index_position]
             else:
                 index_position = None
+                get_raw_index_id = lambda row: ''
 
-            # Get label columns.
+            # Get label columns defined in node.
             label_columns = index_repo.get_label_names()
             if not label_columns:
                 msg = 'cannot insert records, no label columns defined'
                 raise Exception(msg)
-            verify_columns_set(columns, label_columns, allow_extras=True)
+
+            # If 'index_id' not given, must provide all label columns.
+            if index_position is None:
+                verify_columns_set(columns, label_columns, allow_extras=True)
+
+            # Get positions of given label columns.
             label_position_list = [
                 columns.index(x) for x in label_columns if x in columns
             ]
@@ -478,19 +485,26 @@ class TopoNode(object):
                     counter['empty_labels'] += 1
                     continue
 
-                try:
-                    # Insert new index record.
-                    index_id = index_repo.add(*labels)
-                    counter['label_inserted'] += 1
+                raw_index_id = get_raw_index_id(row)  # Raw id usually str or int.
+                if raw_index_id != '':
+                    # Get existing index record by `id`.
+                    index_id = int(raw_index_id)
                     index_record = index_repo.get(index_id)
-                except ValueError as val_err:
-                    # Find index if it already exists.
-                    criteria = dict(zip(label_columns, labels))
-                    filtered = index_repo.filter_by_label(criteria)
-                    index_record = next(filtered, None)
-                    if index_record is None:
-                        raise val_err
-                    index_id = index_record.id
+                else:
+                    try:
+                        # Insert new index record.
+                        index_id = index_repo.add(*labels)
+                        counter['label_inserted'] += 1
+                        index_record = index_repo.get(index_id)
+                    except ValueError as val_err:
+                        # Find index if it already exists.
+                        criteria = dict(zip(label_columns, labels))
+                        filtered = index_repo.filter_by_label(criteria)
+                        try:
+                            index_record = next(filtered)
+                        except StopIteration:
+                            raise val_err
+                        index_id = index_record.id
 
                 # Insert weight values.
                 for group, value_pos in weight_position_dict.items():
