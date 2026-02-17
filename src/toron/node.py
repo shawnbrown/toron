@@ -428,25 +428,21 @@ class TopoNode(object):
             weight_group_repo = self._dal.WeightGroupRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
 
-            # Get index_id position (if provided).
-            if 'index_id' in columns:
-                index_position = columns.index('index_id')
-                get_raw_index_id = lambda row: row[index_position]
-            else:
-                index_position = None
-                get_raw_index_id = lambda row: ''
-
-            # Get label columns defined in node.
             label_columns = index_repo.get_label_names()
             if not label_columns:
                 msg = 'cannot insert records, no label columns defined'
                 raise Exception(msg)
 
-            # If 'index_id' not given, must provide all label columns.
-            if index_position is None:
+            if 'index_id' in columns:
+                # Define lambda func to get raw index_id value.
+                index_position = columns.index('index_id')
+                get_raw_index_id = lambda row: row[index_position]
+            else:
+                # If not matching on 'index_id', `data` must have all labels.
                 verify_columns_set(columns, label_columns, allow_extras=True)
+                get_raw_index_id = lambda row: ''  # <- Dummy function.
 
-            # Get positions of given label columns.
+            # Get positions of label columns in input.
             label_position_list = [
                 columns.index(x) for x in label_columns if x in columns
             ]
