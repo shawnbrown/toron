@@ -496,6 +496,11 @@ class TopoNode(object):
                                 f'index_id {index_id} and labels {labels!r} '
                                 f'do not match {index_record!r}'
                             )
+                        else:
+                            raise ValueError(
+                                f"on_label_conflict must be 'abort', 'ignore', or "
+                                f"'replace'; got {on_weight_conflict!r}"
+                            )
                 else:
                     try:
                         # Insert new index record.
