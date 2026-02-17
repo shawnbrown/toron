@@ -1562,6 +1562,29 @@ class TestInsertIndex(unittest.TestCase):
         expected = [Weight(1, 1, 1, 5.0), Weight(2, 1, 2, 4.0)]
         self.assertEqual(self.get_weights_helper(node), expected)
 
+    def test_on_label_conflict_abort(self):
+        """Using 'abort' should raise an error."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+        self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
+        self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
+
+        regex = (
+            r"index_id 2 and labels \('bar', 'z'\) do not match "
+            r"Index\(id=2, labels=\('bar', 'y'\)\)"
+        )
+        with self.assertRaisesRegex(ValueError, regex):
+            node.insert_index(
+                [('index_id', 'A',  'B', 'C'),
+                 (1, 'foo', 'x', '5.0'),
+                 (2, 'bar', 'z', '4.0')],  # <- Expects `(2, 'bar', 'y', ...)`.
+                on_label_conflict='abort',
+            )
+
+        msg = 'should not have loaded weights'
+        self.assertEqual(self.get_weights_helper(node), [], msg=msg)
+
     def test_on_weight_conflict_abort(self):
         """Using 'abort' should raise an error."""
         node = TopoNode()

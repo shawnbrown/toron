@@ -406,6 +406,7 @@ class TopoNode(object):
         columns: Optional[Sequence[str]] = None,
         *,
         weights: Optional[Union[str, Iterable[str]]] = None,
+        on_label_conflict: Literal['abort', 'ignore', 'replace'] = 'abort',
         on_weight_conflict: Literal['abort', 'ignore', 'replace'] = 'abort',
     ) -> None:
         """Load index labels and weights."""
@@ -488,6 +489,13 @@ class TopoNode(object):
                     # Get existing index record by `id`.
                     index_id = int(raw_index_id)
                     index_record = index_repo.get(index_id)
+
+                    if labels and labels != index_record.labels:
+                        if on_label_conflict == 'abort':
+                            raise ValueError(
+                                f'index_id {index_id} and labels {labels!r} '
+                                f'do not match {index_record!r}'
+                            )
                 else:
                     try:
                         # Insert new index record.
