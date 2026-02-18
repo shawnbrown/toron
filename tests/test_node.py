@@ -1615,6 +1615,36 @@ class TestInsertIndex(unittest.TestCase):
         msg = 'weights should get loaded despite mismatched label'
         self.assertEqual(self.get_weights_helper(node), expected, msg=msg)
 
+    def test_on_label_conflict_replace(self):
+        """Using 'replace' should overwrite existing labels with new ones."""
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B')
+        self.add_weight_group_helper(node, name='C')
+        self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
+        self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
+
+        node.insert_index(
+            [('index_id', 'A',  'B', 'C'),
+             (1, 'foo', 'x', '5.0'),
+             (2, 'baz', 'z', '4.0')],  # <- `baz, z` will replace `bar, y`
+            on_label_conflict='replace',
+        )
+
+        expected = [
+            Index(0, '-', '-'),
+            Index(1, 'foo', 'x'),
+            Index(2, 'baz', 'z'),  # <- Newly updated label values.
+        ]
+        msg = 'index labels should be updated'
+        self.assertEqual(self.get_index_helper(node), expected, msg=msg)
+
+        expected = [
+            Weight(id=1, weight_group_id=1, index_id=1, value=5.0),
+            Weight(id=2, weight_group_id=1, index_id=2, value=4.0),
+        ]
+        msg = 'weights should get loaded too'
+        self.assertEqual(self.get_weights_helper(node), expected, msg=msg)
+
     def test_on_weight_conflict_abort(self):
         """Using 'abort' should raise an error."""
         node = TopoNode()

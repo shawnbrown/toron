@@ -498,6 +498,9 @@ class TopoNode(object):
                             )
                         elif on_label_conflict == 'ignore':
                             counter['label_ignored'] += 1
+                        elif on_label_conflict == 'replace':
+                            index_repo.update(replace(index_record, labels=labels))
+                            counter['label_replaced'] += 1
                         else:
                             raise ValueError(
                                 f"on_label_conflict must be 'abort', 'ignore', or "
