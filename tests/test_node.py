@@ -1578,7 +1578,7 @@ class TestInsertIndex(unittest.TestCase):
             node.insert_index(
                 [('index_id', 'A',  'B', 'C'),
                  (1, 'foo', 'x', '5.0'),
-                 (2, 'baz', 'z', '4.0')],  # <- Expects `bar, y` (not `baz, z`).
+                 (2, 'baz', 'z', '4.0')],  # <- `baz, z` != `bar, y`
                 on_label_conflict='abort',
             )
 
@@ -1596,7 +1596,7 @@ class TestInsertIndex(unittest.TestCase):
         node.insert_index(
             [('index_id', 'A',  'B', 'C'),
              (1, 'foo', 'x', '5.0'),
-             (2, 'baz', 'z', '4.0')],  # <- Mismatched `(2, 'bar', 'y', ...)`.
+             (2, 'baz', 'z', '4.0')],  # <- `baz, z` != `bar, y`
             on_label_conflict='ignore',
         )
 
