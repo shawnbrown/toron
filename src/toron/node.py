@@ -496,6 +496,8 @@ class TopoNode(object):
                                 f'index_id {index_id} and labels {labels!r} '
                                 f'do not match {index_record!r}'
                             )
+                        elif on_label_conflict == 'ignore':
+                            counter['label_ignored'] += 1
                         else:
                             raise ValueError(
                                 f"on_label_conflict must be 'abort', 'ignore', or "
