@@ -1571,14 +1571,14 @@ class TestInsertIndex(unittest.TestCase):
         self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
 
         regex = (
-            r"index_id 2 and labels \('bar', 'z'\) do not match "
+            r"index_id 2 and labels \('baz', 'z'\) do not match "
             r"Index\(id=2, labels=\('bar', 'y'\)\)"
         )
         with self.assertRaisesRegex(ValueError, regex):
             node.insert_index(
                 [('index_id', 'A',  'B', 'C'),
                  (1, 'foo', 'x', '5.0'),
-                 (2, 'bar', 'z', '4.0')],  # <- Expects `(2, 'bar', 'y', ...)`.
+                 (2, 'baz', 'z', '4.0')],  # <- Expects `bar, y` (not `baz, z`).
                 on_label_conflict='abort',
             )
 
