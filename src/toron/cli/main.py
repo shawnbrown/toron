@@ -179,6 +179,11 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_index.add_argument('node', type=TopoNodeType(),
                               help='Toron node file', metavar='FILE')
+    parser_index.add_argument('--on-label-conflict',
+                              default='abort',
+                              choices=['ignore', 'replace', 'abort'],
+                              dest='on_label_conflict',
+                              help='how to handle label conflicts (default: %(default)s)')
     parser_index.add_argument('--on-weight-conflict',
                               default='abort',
                               choices=['ignore', 'replace', 'abort'],

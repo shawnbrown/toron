@@ -40,9 +40,14 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     """Insert index records read from stdin stream."""
     reader = csv.reader(args.stdin)
     try:
-        args.node.insert_index(reader, on_weight_conflict=args.on_weight_conflict)
+        args.node.insert_index(
+            reader,
+            on_label_conflict=args.on_label_conflict,
+            on_weight_conflict=args.on_weight_conflict,
+        )
     except ValueError as e:
-        msg = f'{e}\n  load behavior can be changed using --on-weight-conflict'
+        msg = (f'{e}\n  load behavior can be changed using '
+               f'--on-label-conflict and --on-weight-conflict')
         applogger.error(msg)
         return ExitCode.ERR
 

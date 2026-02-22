@@ -595,6 +595,12 @@ class TopoNode(object):
         if counter['label_inserted']:
             applogger.info(f"loaded {counter['label_inserted']} index labels")
 
+        if counter['label_ignored']:
+            applogger.info(f"ignored {counter['label_ignored']} non-matching index labels")
+
+        if counter['label_replaced']:
+            applogger.info(f"replaced {counter['label_replaced']} index labels")
+
         if counter['empty_labels']:
             applogger.warning(f"skipped {counter['empty_labels']} index labels containing empty values")
 
