@@ -596,7 +596,7 @@ class TopoNode(object):
             applogger.info(f"loaded {counter['label_inserted']} index labels")
 
         if counter['empty_labels']:
-            applogger.warning(f"skipped {counter['empty_labels']} records having some empty string labels")
+            applogger.warning(f"skipped {counter['empty_labels']} index labels containing empty values")
 
         if counter['weight_inserted']:
             applogger.info(f"loaded {counter['weight_inserted']} index weights")

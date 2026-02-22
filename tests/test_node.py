@@ -1490,14 +1490,14 @@ class TestInsertIndex(unittest.TestCase):
             node.insert_index([
                 ('A',   'B'),
                 ('foo', 'x'),
-                ('',    'x'),  # <- Contains empty string.
-                ('bar', ''),   # <- Contains empty string.
+                ('',    'x'),  # <- Contains empty string value.
+                ('bar', ''),   # <- Contains empty string value.
                 ('bar', 'y'),
             ])
 
         # Check for logged message.
         self.assertIn(
-            'WARNING:app-toron.node:skipped 2 records having some empty string labels',
+            'WARNING:app-toron.node:skipped 2 index labels containing empty values',
             cm.output,
         )
 
