@@ -1,5 +1,6 @@
 """Tests for toron/cli/common.py module."""
 import logging
+import uuid
 from io import BytesIO, TextIOWrapper
 from .. import _unittest as unittest
 from ..common import (  # <- tests/common.py (not cli/common.py)
@@ -14,6 +15,8 @@ from toron.cli.common import (
     StyleCodes,
     get_stream_styles,
     get_formatter_class,
+    index_id_to_code,
+    index_code_to_id,
 )
 
 
@@ -138,3 +141,53 @@ class TestGetFormatterClass(unittest.TestCase):
         log_record.levelno = 999  # <- Level does not match a styled formatter.
         value = formatter.format(log_record)
         self.assertEqual(value, 'hello world', msg='output should be unstyled')
+
+
+class TestIndexCodeHandling(unittest.TestCase):
+    def setUp(self):
+        self.unique_id1 = uuid.UUID('11111111-1111-1111-1111-111111111111')
+        self.unique_id2 = uuid.UUID('22222222-2222-2222-2222-222222222222')
+
+    def test_index_id_to_code(self):
+        """Check index_id_to_code() function (e.g., 999 -> 999X04C3FB2E)."""
+        values = [
+            (0,   self.unique_id1, 0,    '0X1180DF36'),
+            (0,   self.unique_id1, 4, '0000X1180DF36'),
+            (999, self.unique_id1, 0,  '999X04C3FB2E'),
+            (999, self.unique_id1, 4, '0999X04C3FB2E'),
+            (0,   self.unique_id2, 0,    '0X1C32E64D'),
+            (0,   self.unique_id2, 4, '0000X1C32E64D'),
+            (999, self.unique_id2, 0,  '999X0971C255'),
+            (999, self.unique_id2, 4, '0999X0971C255'),
+        ]
+
+        for index_id, unique_id, pad_len, expected_code in values:
+            with self.subTest(index_id=index_id, unique_id=unique_id, pad_len=pad_len):
+                index_code = index_id_to_code(index_id, unique_id.bytes, pad_len)
+                self.assertEqual(index_code, expected_code)
+
+    def test_index_code_to_id(self):
+        """Check index_code_to_id() function (e.g., 999X04C3FB2E -> 999)."""
+        values = [
+            (   '0X1180DF36', self.unique_id1,   0),
+            ('0000X1180DF36', self.unique_id1,   0),
+            ( '999X04C3FB2E', self.unique_id1, 999),
+            ('0999X04C3FB2E', self.unique_id1, 999),
+            (   '0X1C32E64D', self.unique_id2,   0),
+            ('0000X1C32E64D', self.unique_id2,   0),
+            ( '999X0971C255', self.unique_id2, 999),
+            ('0999X0971C255', self.unique_id2, 999),
+        ]
+
+        for index_code, unique_id, expected_id in values:
+            with self.subTest(index_code=index_code, unique_id=unique_id):
+                index_id = index_code_to_id(index_code, unique_id.bytes)
+                self.assertEqual(index_id, expected_id)
+
+        regex = r'checksum mismatch for index code: 123XDBE54EF9'
+        with self.assertRaisesRegex(ValueError, regex):
+            index_code_to_id('123XDBE54EF9', self.unique_id1.bytes)
+
+        regex = r'badly formatted index code: 123_D6577782'
+        with self.assertRaisesRegex(ValueError, regex):
+            index_code_to_id('123_D6577782', self.unique_id1.bytes)

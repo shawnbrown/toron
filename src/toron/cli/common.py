@@ -6,9 +6,11 @@ import logging
 import logging.config
 import os
 import sys
+from binascii import crc32
 from contextlib import contextmanager
 from dataclasses import astuple, dataclass
 from enum import IntEnum
+from struct import Struct
 from .._typing import (
     Any,
     Dict,
@@ -236,3 +238,38 @@ def configure_applogger(
             },
         },
     })
+
+
+# =====================
+# Handle Index ID Codes
+# =====================
+
+# Serialize `int` as signed 64-bit big-endian ('>q' format).
+pack_i64_be = Struct('>q').pack
+
+
+def index_id_to_code(
+    index_id: int, unique_id_bytes: bytes, pad_len: int = 0
+) -> str:
+    """Convert ``index_id`` into an ``index_code``."""
+    # Using crc32 to verify IDs and distinguish datasets; not for security.
+    checksum = crc32(unique_id_bytes + pack_i64_be(index_id)) & 0xffffffff
+    return f'{index_id:0{pad_len}}X{checksum:08X}'
+
+
+def index_code_to_id(
+    index_code: str, unique_id_bytes: bytes
+) -> int:
+    """Verify ``index_code`` checksum and return ``index_id``."""
+    try:
+        index_id_dec, _, checksum_hex = index_code.partition('X')
+        index_id = int(index_id_dec)
+        checksum = int(checksum_hex, 16)
+    except ValueError:
+        raise ValueError(f'badly formatted index code: {index_code}')
+
+    # Using crc32 to verify IDs and distinguish datasets; not for security.
+    if checksum != crc32(unique_id_bytes + pack_i64_be(index_id)) & 0xffffffff:
+        raise ValueError(f'checksum mismatch for index code: {index_code}')
+
+    return index_id
