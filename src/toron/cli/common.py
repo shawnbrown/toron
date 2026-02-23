@@ -240,9 +240,9 @@ def configure_applogger(
     })
 
 
-# =====================
-# Handle Index ID Codes
-# =====================
+# ==================
+# Handle Index Codes
+# ==================
 
 # Serialize `int` as signed 64-bit big-endian ('>q' format).
 pack_i64_be = Struct('>q').pack
@@ -253,7 +253,7 @@ def index_id_to_code(
 ) -> str:
     """Convert ``index_id`` into an ``index_code``."""
     # Using crc32 to verify IDs and distinguish datasets; not for security.
-    checksum = crc32(unique_id_bytes + pack_i64_be(index_id)) & 0xffffffff
+    checksum = crc32(pack_i64_be(index_id) + unique_id_bytes) & 0xffffffff
     return f'{index_id:0{pad_len}}X{checksum:08X}'
 
 
@@ -269,7 +269,7 @@ def index_code_to_id(
         raise ValueError(f'badly formatted index code: {index_code}')
 
     # Using crc32 to verify IDs and distinguish datasets; not for security.
-    if checksum != crc32(unique_id_bytes + pack_i64_be(index_id)) & 0xffffffff:
+    if checksum != crc32(pack_i64_be(index_id) + unique_id_bytes) & 0xffffffff:
         raise ValueError(f'checksum mismatch for index code: {index_code}')
 
     return index_id

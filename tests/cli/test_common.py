@@ -152,16 +152,16 @@ class TestIndexCodeHandling(unittest.TestCase):
         """Check ``index_id_to_code()`` function (e.g., 999 -> 999X04C3FB2E)."""
         values = [
             # Check without zero-padding.
-            (0, self.node_id1, 0, '0X1180DF36'),
-            (0, self.node_id2, 0, '0X1C32E64D'),
-            (999, self.node_id1, 0, '999X04C3FB2E'),
-            (999, self.node_id2, 0, '999X0971C255'),
+            (0, self.node_id1, 0, '0X27B3B62D'),
+            (0, self.node_id2, 0, '0X7054347B'),
+            (999, self.node_id1, 0, '999X24CE8BE2'),
+            (999, self.node_id2, 0, '999X732909B4'),
 
             # Should zero-pad index_id values to 4 chars.
-            (0, self.node_id1, 4, '0000X1180DF36'),
-            (0, self.node_id2, 4, '0000X1C32E64D'),
-            (999, self.node_id1, 4, '0999X04C3FB2E'),
-            (999, self.node_id2, 4, '0999X0971C255'),
+            (0, self.node_id1, 4, '0000X27B3B62D'),
+            (0, self.node_id2, 4, '0000X7054347B'),
+            (999, self.node_id1, 4, '0999X24CE8BE2'),
+            (999, self.node_id2, 4, '0999X732909B4'),
         ]
 
         for index_id, unique_id, pad_len, expected_code in values:
@@ -173,16 +173,16 @@ class TestIndexCodeHandling(unittest.TestCase):
         """Check ``index_code_to_id()`` function (e.g., 999X04C3FB2E -> 999)."""
         values = [
             # Check index codes without zero-padding.
-            ('0X1180DF36', self.node_id1, 0),
-            ('0X1C32E64D', self.node_id2, 0),
-            ('999X04C3FB2E', self.node_id1, 999),
-            ('999X0971C255', self.node_id2, 999),
+            ('0X27B3B62D', self.node_id1, 0),
+            ('0X7054347B', self.node_id2, 0),
+            ('999X24CE8BE2', self.node_id1, 999),
+            ('999X732909B4', self.node_id2, 999),
 
             # Check index codes with zero-padding.
-            ('0000X1180DF36', self.node_id1, 0),
-            ('0000X1C32E64D', self.node_id2, 0),
-            ('0999X04C3FB2E', self.node_id1, 999),
-            ('0999X0971C255', self.node_id2, 999),
+            ('0000X27B3B62D', self.node_id1, 0),
+            ('0000X7054347B', self.node_id2, 0),
+            ('0999X24CE8BE2', self.node_id1, 999),
+            ('0999X732909B4', self.node_id2, 999),
         ]
 
         for index_code, unique_id, expected_id in values:
