@@ -1256,7 +1256,7 @@ class TestInsertIndex(unittest.TestCase):
     def test_insert_records(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
-        self.add_weight_group_helper(node, name='C')
+        self.add_weight_group_helper(node, name='C', selectors=['[baz]'])
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
 
         with node._managed_cursor() as cursor:
@@ -1294,7 +1294,7 @@ class TestInsertIndex(unittest.TestCase):
 
         # Check weight group property `is_complete=1`.
         expected = [
-            WeightGroup(id=1, name='C', description=None, selectors=None, is_complete=1)
+            WeightGroup(id=1, name='C', description=None, selectors=['[baz]'], is_complete=1)
         ]
         self.assertEqual(self.get_weight_groups_helper(node), expected)
 

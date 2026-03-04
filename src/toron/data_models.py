@@ -566,6 +566,8 @@ class WeightGroup(object):
     selectors: Optional[List[str]]
     is_complete: bool = False
 
+    __hash__ = None  # type: ignore[assignment]
+
 
 class BaseWeightGroupRepository(ABC):
     @abstractmethod

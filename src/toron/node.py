@@ -459,14 +459,19 @@ class TopoNode(object):
                     weight_group = weight_group_repo.get_by_name(weight)
                     weight_groups.append(weight_group)
 
-            weight_names = [group.name for group in weight_groups]
-            weight_position_dict = {
-                x: columns.index(x.name) for x in weight_groups if x.name in columns
+            # Get names of weight groups.
+            names_to_groups = {group.name: group for group in weight_groups}
+
+            # Get column positions of weight groups.
+            positions_to_groups = {
+                position: names_to_groups[name]
+                for position, name in enumerate(columns)
+                if name in names_to_groups
             }
 
             # Get extra columns.
             extra_columns = [x for x in columns if (x not in label_names
-                                                    and x not in weight_names
+                                                    and x not in names_to_groups
                                                     and x != 'index_id'
                                                     and x != 'domain')]
 
@@ -523,8 +528,8 @@ class TopoNode(object):
                         index_id = index_record.id
 
                 # Insert weight values.
-                for group, value_pos in weight_position_dict.items():
-                    weight_value = row[value_pos]
+                for position, group in positions_to_groups.items():
+                    weight_value = row[position]
                     if weight_value is None or weight_value == '':
                         continue  # Skip to next weight group.
                     else:
