@@ -278,3 +278,16 @@ def index_code_to_id(
         raise ValueError(f'checksum mismatch for index code: {index_code}')
 
     return index_id
+
+
+def is_index_code(
+    value: str, unique_id_bytes: bytes
+) -> bool:
+    """Returns True if ``value`` is a valid index code for the given id
+    bytes, else return False.
+    """
+    try:
+        index_code_to_id(value, unique_id_bytes)
+    except ValueError:
+        return False
+    return True

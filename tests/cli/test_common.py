@@ -17,6 +17,7 @@ from toron.cli.common import (
     get_formatter_class,
     index_id_to_code,
     index_code_to_id,
+    is_index_code,
 )
 
 
@@ -202,3 +203,13 @@ class TestIndexCodeHandling(unittest.TestCase):
                  r"index_code must be a str, got None")
         with self.assertRaisesRegex(AttributeError, regex):
             index_code_to_id(None, self.node_id1.bytes)
+
+    def test_is_index_code(self):
+        self.assertTrue(is_index_code('0999X24CE8BE2', self.node_id1.bytes))
+        self.assertFalse(is_index_code('0999X24CE8BE2', self.node_id2.bytes))
+
+        self.assertTrue(is_index_code('0999X732909B4', self.node_id2.bytes))
+        self.assertFalse(is_index_code('0999X732909B4', self.node_id1.bytes))
+
+        self.assertFalse(is_index_code('<BADLY FORMED>', self.node_id1.bytes))
+        self.assertFalse(is_index_code('', self.node_id1.bytes))
