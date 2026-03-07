@@ -263,6 +263,11 @@ def index_code_to_id(
     """Verify ``index_code`` checksum and return ``index_id``."""
     try:
         index_id_dec, _, checksum_hex = index_code.partition('X')
+    except AttributeError as e:
+        msg = f'{e}; index_code must be a str, got {index_code!r}'
+        raise AttributeError(msg)
+
+    try:
         index_id = int(index_id_dec)
         checksum = int(checksum_hex, 16)
     except ValueError:

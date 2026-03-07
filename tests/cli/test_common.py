@@ -197,3 +197,8 @@ class TestIndexCodeHandling(unittest.TestCase):
         regex = r'badly formatted index code: 123_D6577782'
         with self.assertRaisesRegex(ValueError, regex):
             index_code_to_id('123_D6577782', self.node_id1.bytes)
+
+        regex = (r"'NoneType' object has no attribute 'partition'; "
+                 r"index_code must be a str, got None")
+        with self.assertRaisesRegex(AttributeError, regex):
+            index_code_to_id(None, self.node_id1.bytes)
