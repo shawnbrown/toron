@@ -18,6 +18,7 @@ from toron.cli.common import (
     index_id_to_code,
     index_code_to_id,
     is_index_code,
+    get_index_code_position,
 )
 
 
@@ -213,3 +214,39 @@ class TestIndexCodeHandling(unittest.TestCase):
 
         self.assertFalse(is_index_code('<BADLY FORMED>', self.node_id1.bytes))
         self.assertFalse(is_index_code('', self.node_id1.bytes))
+
+    def test_get_index_code_position(self):
+        sample_rows = [
+            ['index_code1', 'weight', 'index_code2'],
+            ['1XA0157D6E', '150', '5X84FAD8F7'],
+            ['2XF38F26EA', '120', '8X96447BE5'],
+            ['3X7429EDA9', '180', '4X035C13B4'],
+        ]
+
+        position = get_index_code_position(sample_rows, self.node_id1.bytes)
+        self.assertEqual(position, 0)
+
+        position = get_index_code_position(sample_rows, self.node_id2.bytes)
+        self.assertEqual(position, 2)
+
+        # Raise an error if no column contains matching index codes.
+        sample_rows = [
+            ['index_code3', 'weight', 'index_code4'],
+            ['21X9239A237', '110', '32XA468A4BC'],
+            ['22XB2ABDE7C', '170', '35X06B329DB'],
+            ['23X350D153F', '140', '36XF21DC557'],
+        ]
+        regex = r'no column found with matching index codes'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            get_index_code_position(sample_rows, self.node_id1.bytes)
+
+        # Raise an error if two or more columns contain matching index codes.
+        sample_rows = [
+            ['index_code1', 'weight', 'index_code2'],
+            ['1XA0157D6E', '150', '5X84FAD8F7'],
+            ['2XF38F26EA', '125', '8XC1A3F9B3'],  # <- Code '8XC1A3F9B3' matches index_code1.
+            ['3X7429EDA9', '180', '4X035C13B4'],
+        ]
+        regex = r'found multiple columns with matching index codes at positions: 0 and 2'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            get_index_code_position(sample_rows, self.node_id1.bytes)

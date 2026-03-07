@@ -7,6 +7,7 @@ import logging.config
 import os
 import sys
 from binascii import crc32
+from collections import Counter
 from contextlib import contextmanager
 from dataclasses import astuple, dataclass
 from enum import IntEnum
@@ -15,9 +16,11 @@ from .._typing import (
     Any,
     Dict,
     Generator,
+    Iterable,
     Literal,
     Mapping,
     Optional,
+    Sequence,
     TextIO,
     Tuple,
     Type,
@@ -291,3 +294,33 @@ def is_index_code(
     except ValueError:
         return False
     return True
+
+
+def get_index_code_position(
+    sample_rows: Iterable[Sequence], unique_id_bytes: bytes
+) -> int:
+    """Get the column position containing a node's index codes.
+
+    Return the 0-based position of the column associated with
+    a node's *unique_id_bytes*. If a single column cannot be
+    identified, a ``RuntimeError`` is raised.
+    """
+    counter: Counter[int] = Counter()
+    for row in sample_rows:
+        for pos, cell in enumerate(row):
+            counter[pos] += is_index_code(cell, unique_id_bytes)
+
+    counter = +counter  # Keep only positive counts (n >= 1).
+
+    if len(counter) == 1:
+        position = counter.most_common(1)[0][0]
+        return position  # <- EXIT!
+
+    if len(counter) == 0:
+        msg = 'no column found with matching index codes'
+    else:
+        *nonfinal, final = (str(x) for x in sorted(counter))  # Unpack conjuncts.
+        msg = (f"found multiple columns with matching index codes "
+               f"at positions: {', '.join(nonfinal)} and {final}")
+
+    raise RuntimeError(msg)
