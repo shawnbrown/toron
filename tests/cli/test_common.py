@@ -214,6 +214,7 @@ class TestIndexCodeHandling(unittest.TestCase):
 
         self.assertFalse(is_index_code('<BADLY FORMED>', self.node_id1.bytes))
         self.assertFalse(is_index_code('', self.node_id1.bytes))
+        self.assertFalse(is_index_code(123, self.node_id1.bytes))
 
     def test_get_index_code_position(self):
         sample_rows = [

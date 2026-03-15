@@ -291,7 +291,7 @@ def is_index_code(
     """
     try:
         index_code_to_id(value, unique_id_bytes)
-    except ValueError:
+    except (ValueError, AttributeError):
         return False
     return True
 
