@@ -19,6 +19,7 @@ from toron.cli.common import (
     index_code_to_id,
     is_index_code,
     get_index_code_position,
+    remap_index_codes_to_index_ids,
 )
 
 
@@ -251,3 +252,35 @@ class TestIndexCodeHandling(unittest.TestCase):
         regex = r'found multiple columns with matching index codes at positions: 0 and 2'
         with self.assertRaisesRegex(RuntimeError, regex):
             get_index_code_position(sample_rows, self.node_id1.bytes)
+
+    def test_remap_index_codes_to_index_ids(self):
+        index_rows = [
+            ['index_code1', 'geo1', 'geo2', 'weight'],
+            ['1XA0157D6E', 'A', 'X', '150'],
+            ['2XF38F26EA', 'A', 'Y', '120'],
+            ['3X7429EDA9', 'B', '2', '180'],
+        ]
+        remapped = remap_index_codes_to_index_ids(index_rows, self.node_id1.bytes, 0)
+        expected = [
+            ['index_id', 'geo1', 'geo2', 'weight'],
+            [1, 'A', 'X', '150'],
+            [2, 'A', 'Y', '120'],
+            [3, 'B', '2', '180'],
+        ]
+        self.assertEqual(list(remapped), expected)
+
+        crosswalk_rows = [
+            ['index_code1', 'weight', 'index_code2'],
+            ['1XA0157D6E', '150', '5X84FAD8F7'],
+            ['2XF38F26EA', '120', '8X96447BE5'],
+            ['3X7429EDA9', '180', '4X035C13B4'],
+        ]
+        remapped1 = remap_index_codes_to_index_ids(crosswalk_rows, self.node_id1.bytes, position=0)
+        remapped2 = remap_index_codes_to_index_ids(remapped1, self.node_id2.bytes, position=2)
+        expected = [
+            ['index_id', 'weight', 'index_id'],
+            [1, '150', 5],
+            [2, '120', 8],
+            [3, '180', 4],
+        ]
+        self.assertEqual(list(remapped2), expected)

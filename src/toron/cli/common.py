@@ -17,6 +17,7 @@ from .._typing import (
     Dict,
     Generator,
     Iterable,
+    List,
     Literal,
     Mapping,
     Optional,
@@ -324,3 +325,26 @@ def get_index_code_position(
                f"at positions: {', '.join(nonfinal)} and {final}")
 
     raise RuntimeError(msg)
+
+
+def remap_index_codes_to_index_ids(
+    data: Iterable[Sequence], unique_id_bytes: bytes, position: int
+) -> Generator[List, None, None]:
+    """Change the data's index code column into an "index_id" column.
+
+    Accepts an iterable of lists (*data*, usually a CSV reader). Yields
+    an updated header with the index column name changed to "index_id",
+    and yields rows with the converted index_id values.
+    """
+    iterator = iter(data)
+
+    header = list(next(iterator))
+    header[position] = 'index_id'
+    yield header
+
+    for row in iterator:
+        row = list(row)
+        index_code = row[position]
+        if index_code:
+            row[position] = index_code_to_id(index_code, unique_id_bytes)
+        yield row
