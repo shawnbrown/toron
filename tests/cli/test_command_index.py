@@ -10,6 +10,7 @@ from toron.cli import command_index
 class TestIndexWriteToStdout(unittest.TestCase):
     def test_basic_behavior(self):
         node = TopoNode()
+        node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
         node.insert_index([
             ['state', 'county'],
@@ -24,11 +25,11 @@ class TestIndexWriteToStdout(unittest.TestCase):
             command_index.write_to_stdout(args)  # <- Function under test.
 
         expected_values = (
-            'index_id,state,county\n'
-            '0,-,-\n'
-            '1,Illinois,Cook\n'
-            '2,Indiana,Porter\n'
-            '3,Michigan,Cass\n'
+            'index_code,state,county\n'
+            '0X27B3B62D,-,-\n'
+            '1XA0157D6E,Illinois,Cook\n'
+            '2XF38F26EA,Indiana,Porter\n'
+            '3X7429EDA9,Michigan,Cass\n'
         )
         self.assertEqual(dummy_stdout.getvalue(), expected_values)
         self.assertEqual(logs_cm.output, ['INFO:app-toron:written 4 records'])
@@ -73,6 +74,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
 
     def test_abort_on_label_conflict(self):
         node = TopoNode()
+        node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
         node.insert_index([['state', 'county'],
@@ -86,10 +88,10 @@ class TestIndexReadFromStdin(unittest.TestCase):
             on_label_conflict='abort',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
-                'index_id,state,county,population\n'
-                '1,Illinois,Cook,5275541\n'
-                '2,Indiana,Porter,175860\n'
-                '3,Michigan,OTHERVALUE,51589\n'  # <- Will abort operation.
+                'index_code,state,county,population\n'
+                '1XA0157D6E,Illinois,Cook,5275541\n'
+                '2XF38F26EA,Indiana,Porter,175860\n'
+                '3X7429EDA9,Michigan,OTHERVALUE,51589\n'  # <- Will abort operation.
             ),
         )
 
@@ -98,7 +100,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
 
         self.assertEqual(
             logs_cm.output,
-            ["ERROR:app-toron:index_id 3 and labels ('Michigan', 'OTHERVALUE') "
+            ["ERROR:app-toron:index code 3X7429EDA9 and labels ('Michigan', 'OTHERVALUE') "
                "do not match Index(id=3, labels=('Michigan', 'Cass'))\n"
                "  load behavior can be changed using --on-label-conflict "
                "and --on-weight-conflict"]
@@ -106,6 +108,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
 
     def test_ignore_on_label_conflict(self):
         node = TopoNode()
+        node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
         node.insert_index([['state', 'county'],
@@ -119,10 +122,10 @@ class TestIndexReadFromStdin(unittest.TestCase):
             on_label_conflict='ignore',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
-                'index_id,state,county,population\n'
-                '1,Illinois,Cook,5275541\n'
-                '2,Indiana,Porter,175860\n'
-                '3,Michigan,OTHERVALUE,51589\n'  # <- Will abort operation.
+                'index_code,state,county,population\n'
+                '1XA0157D6E,Illinois,Cook,5275541\n'
+                '2XF38F26EA,Indiana,Porter,175860\n'
+                '3X7429EDA9,Michigan,OTHERVALUE,51589\n'  # <- Label will be ignored.
             ),
         )
 
@@ -137,6 +140,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
 
     def test_replace_on_label_conflict(self):
         node = TopoNode()
+        node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
         node.insert_index([['state', 'county'],
@@ -151,9 +155,9 @@ class TestIndexReadFromStdin(unittest.TestCase):
             on_weight_conflict='abort',
             stdin=DummyRedirection(
                 'index_id,state,county,population\n'
-                '1,Illinois,Cook,5275541\n'
-                '2,Indiana,Porter,175860\n'
-                '3,Michigan,OTHERVALUE,51589\n'  # <- Will abort operation.
+                '1XA0157D6E,Illinois,Cook,5275541\n'
+                '2XF38F26EA,Indiana,Porter,175860\n'
+                '3X7429EDA9,Michigan,OTHERVALUE,51589\n'  # <- Will replace with new label.
             ),
         )
 
