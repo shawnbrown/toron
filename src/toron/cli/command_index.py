@@ -35,13 +35,14 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     header = [f'{domain_formatted}index_code'] + weights_header[1:]
 
     unique_id_bytes = uuid.UUID(args.node.unique_id).bytes
+    pad_len = len(str(args.node.max_index_id))
 
     row_count = 0
     with csv_stdout_writer(args.stdout) as writer:
         writer.writerow(header)
 
         for index_id, *row in weights:
-            index_code = index_id_to_code(index_id, unique_id_bytes)
+            index_code = index_id_to_code(index_id, unique_id_bytes, pad_len)
             writer.writerow([index_code] + row)
             row_count += 1
 
@@ -81,7 +82,8 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
         if match:
             # Replace index_id with index code in error message.
             index_id = int(match.group(1))
-            index_code = index_id_to_code(index_id, unique_id_bytes)
+            pad_len = len(str(args.node.max_index_id))
+            index_code = index_id_to_code(index_id, unique_id_bytes, pad_len)
             e_str = e_str.replace(match.group(0), f'index code {index_code}')
 
         msg = (f'{e_str}\n  load behavior can be changed using '

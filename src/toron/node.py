@@ -332,6 +332,11 @@ class TopoNode(object):
             )
 
     @property
+    def max_index_id(self) -> int:
+        with self._managed_cursor() as cursor:
+            return self._dal.IndexRepository(cursor).get_max_index_id()
+
+    @property
     def index_columns(self) -> List[str]:
         with self._managed_cursor() as cursor:
             return self._dal.IndexRepository(cursor).get_label_names()
