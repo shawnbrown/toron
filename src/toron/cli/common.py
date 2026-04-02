@@ -76,8 +76,8 @@ def process_backup_option(
     already exists, it is overwritten. If the path hint is None, a
     FileNotFoundError is raised.
 
-    Multiple files can be backed up by passing their names as
-    *node_args*::
+    Multiple files can be backed up by providing a list of argument
+    names as *node_args*::
 
         process_backup_option(args, node_args=['node1', 'node2'])
     """
@@ -85,13 +85,17 @@ def process_backup_option(
         return  # Exit without making backups if `args.backup` is not True.
 
     if isinstance(node_args, str):
-        nodes = [getattr(args, node_args)]  # Single-item list.
-    else:
-        nodes = [getattr(args, x) for x in node_args]
+        node_args = [node_args]  # Single-item list.
 
-    for node in nodes:
+    nodes = []
+    for node_arg in node_args:
+        node = getattr(args, node_arg)
         if node.path_hint is None:
-            raise FileNotFoundError('node is not associated with a file path')
+            raise FileNotFoundError(
+                f'{node_arg} is not associated with a file path '
+                f'(has no `path_hint`)'
+            )
+        nodes.append(node)
 
     for node in nodes:
         dir_name, base_name = os.path.split(node.path_hint)
