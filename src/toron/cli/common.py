@@ -25,6 +25,7 @@ from .._typing import (
     TextIO,
     Tuple,
     Type,
+    Union,
     TYPE_CHECKING,
 )
 
@@ -64,22 +65,38 @@ def csv_stdout_writer(
             pass
 
 
-def process_backup_option(args: argparse.Namespace) -> None:
-    """Make a backup copy of `args.node` if `args.backup` is True.
+def process_backup_option(
+    args: argparse.Namespace,
+    node_args: Union[str, List[str]] = 'node',
+) -> None:
+    """Make a backup copy of node args if `args.backup` is True.
 
-    The backup file name is the same as `args.node.path_hint` but
+    The backup file name is the same as the node's `path_hint` but
     with the prefix 'backup-'. When a backup file of the same name
     already exists, it is overwritten. If the path hint is None, a
     FileNotFoundError is raised.
+
+    Multiple files can be backed up by passing their names as
+    *node_args*::
+
+        process_backup_option(args, node_args=['node1', 'node2'])
     """
     if not getattr(args, 'backup', False):
-        return  # Exit without making a backup if `args.backup` is not True.
+        return  # Exit without making backups if `args.backup` is not True.
 
-    if args.node.path_hint is None:
-        raise FileNotFoundError('node is not associated with a file path')
-    dir_name, base_name = os.path.split(args.node.path_hint)
-    backup_path = os.path.join(dir_name, f'backup-{base_name}')
-    args.node.to_file(backup_path)
+    if isinstance(node_args, str):
+        nodes = [getattr(args, node_args)]  # Single-item list.
+    else:
+        nodes = [getattr(args, x) for x in node_args]
+
+    for node in nodes:
+        if node.path_hint is None:
+            raise FileNotFoundError('node is not associated with a file path')
+
+    for node in nodes:
+        dir_name, base_name = os.path.split(node.path_hint)
+        backup_path = os.path.join(dir_name, f'backup-{base_name}')
+        node.to_file(backup_path)
 
 
 # ============================
