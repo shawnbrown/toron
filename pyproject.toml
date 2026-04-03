@@ -87,6 +87,14 @@ legacy_tox_ini = """
   commands =
     python tests/check_dependencies.py
 
+  [testenv:py311]
+  basepython = python3.11
+  description = Use CPython only
+
+  [testenv:pypy311]
+  basepython = pypy3.11
+  description = Use PyPy only
+
   [testenv:build_dist]
   # Build source-distribution and wheel in the 'dist/' directory.
   skip_install = true
