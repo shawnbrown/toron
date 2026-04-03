@@ -1496,6 +1496,15 @@ class TopoNode(object):
             other_crosswalks = \
                 list(crosswalk_repo.find_by_other_unique_id(other_unique_id))
 
+            # Check if name already exists (ToronError assures consistent
+            # error message).
+            for crosswalk in other_crosswalks:
+                if crosswalk.name == crosswalk_name:
+                    raise ToronError(
+                        f'a crosswalk named {crosswalk_name!r} already exists '
+                        f'between these two nodes'
+                    )
+
             if is_default is None:
                 if not other_crosswalks:
                     # If *is_default* is None and this is the first crosswalk
