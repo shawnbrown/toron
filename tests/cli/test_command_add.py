@@ -2,7 +2,7 @@
 import argparse
 from .. import _unittest as unittest
 from toron import TopoNode, ToronError
-from toron.data_models import WeightGroup
+from toron.data_models import Crosswalk, WeightGroup
 
 from toron.cli import command_add
 
@@ -74,3 +74,106 @@ class TestAddWeight(unittest.TestCase):
         regex = r"index weight group 'population' already exists"
         with self.assertRaisesRegex(ToronError, regex):
             command_add.add_weight(args)
+
+
+class TestAddCrosswalk(unittest.TestCase):
+    def setUp(self):
+        self.node1 = TopoNode()
+        self.node1._connector._unique_id = '11111111-1111-1111-1111-111111111111'
+        self.node1.path_hint = 'node1.toron'
+
+        self.node2 = TopoNode()
+        self.node2._connector._unique_id = '22222222-2222-2222-2222-222222222222'
+        self.node2.path_hint = 'node2.toron'
+
+    def test_add_crosswalk(self):
+        """Add crosswalk in both directions (default behavior)."""
+        args = argparse.Namespace(
+            command='add',
+            element='crosswalk',
+            node1=self.node1,
+            node2=self.node2,
+            crosswalk='population',
+            direction='both',
+            description=None,
+            selectors=None,
+            make_default=True,
+        )
+        command_add.add_crosswalk(args)
+
+        # Check right-side crosswalk (node1 -> node2).
+        actual = self.node2.get_crosswalk(self.node1, 'population')
+        expected = Crosswalk(
+            id=1,
+            other_unique_id='11111111-1111-1111-1111-111111111111',
+            other_filename_hint='node1.toron',
+            name='population',
+            is_default=True,
+        )
+        self.assertEqual(actual, expected)
+
+        # Check left-side crosswalk (node1 <- node2).
+        actual = self.node1.get_crosswalk(self.node2, 'population')
+        expected = Crosswalk(
+            id=1,
+            other_unique_id='22222222-2222-2222-2222-222222222222',
+            other_filename_hint='node2.toron',
+            name='population',
+            is_default=True,
+        )
+        self.assertEqual(actual, expected)
+
+    def test_with_direction(self):
+        args = argparse.Namespace(
+            command='add',
+            element='crosswalk',
+            node1=self.node1,
+            node2=self.node2,
+            crosswalk='population',
+            direction='right',  # <- Right-side crosswalk only.
+            description=None,
+            selectors=None,
+            make_default=True,
+        )
+        command_add.add_crosswalk(args)
+
+        # Check right-side crosswalk (node1 -> node2).
+        actual = self.node2.get_crosswalk(self.node1, 'population')
+        expected = Crosswalk(
+            id=1,
+            other_unique_id='11111111-1111-1111-1111-111111111111',
+            other_filename_hint='node1.toron',
+            name='population',
+            is_default=True,
+        )
+        self.assertEqual(actual, expected)
+
+        # Check that left-side crosswalk (node1 <- node2) does not exist.
+        actual = self.node1.get_crosswalk(self.node2, 'population')
+        self.assertIsNone(actual)
+
+    def test_crosswalk_already_exists(self):
+        self.node1.add_crosswalk(
+            node=self.node2,
+            crosswalk_name='population',
+            other_filename_hint=self.node2.path_hint,
+            description=None,
+            selectors=None,
+            is_default=True,
+        )
+
+        args = argparse.Namespace(
+            command='add',
+            element='crosswalk',
+            node1=self.node1,
+            node2=self.node2,
+            crosswalk='population',
+            direction='both',
+            description=None,
+            selectors=None,
+            make_default=True,
+        )
+
+        regex = r"a crosswalk named 'population' already exists"
+        with self.assertRaisesRegex(ToronError, regex):
+            command_add.add_crosswalk(args)

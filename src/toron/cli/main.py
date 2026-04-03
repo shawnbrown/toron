@@ -170,6 +170,51 @@ def get_parser() -> argparse.ArgumentParser:
                                    help='do not make a backup file')
     parser_add_weight.set_defaults(func=command_add.add_weight)
 
+    # Add crosswalk command.
+    parser_add_crosswalk = parser_add_subparsers.add_parser(
+        'crosswalk',
+        help='add crosswalks between two node files',
+        description='Add crosswalks between two existing node files.',
+    )
+    parser_add_crosswalk.add_argument('node1', type=TopoNodeType(mode='rw'),
+                                      help='first (left) filename',
+                                      metavar='FILE1')
+    parser_add_crosswalk.add_argument('node2', type=TopoNodeType(mode='rw'),
+                                      help='second (right) filename',
+                                      metavar='FILE2')
+    parser_add_crosswalk.add_argument('crosswalk',
+                                      help='name of crosswalk to add',
+                                      metavar='CROSSWALK')
+    parser_add_crosswalk_group = parser_add_crosswalk.add_mutually_exclusive_group()
+    parser_add_crosswalk_group.add_argument(
+        '--right',
+        action='store_const',
+        const='right',
+        dest='direction',
+        help='add single direction: FILE1 -> FILE2',
+    )
+    parser_add_crosswalk_group.add_argument(
+        '--left',
+        action='store_const',
+        const='left',
+        dest='direction',
+        help='add single direction: FILE1 <- FILE2',
+    )
+    parser_add_crosswalk.add_argument('--description',
+                                      help='description of crosswalk')
+    parser_add_crosswalk.add_argument('--selectors', nargs='+',
+                                      help='attribute selectors')
+    parser_add_crosswalk.add_argument('--default', action='store_true',
+                                      dest='make_default',
+                                      help='set as the default crosswalk')
+    parser_add_crosswalk.add_argument('--no-backup', action='store_false',
+                                      dest='backup',
+                                      help='do not make backup files')
+    parser_add_crosswalk.set_defaults(
+        func=command_add.add_crosswalk,
+        direction='both',
+    )
+
     # Index command.
     parser_index = subparsers.add_parser(
         name='index',

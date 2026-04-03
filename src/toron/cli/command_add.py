@@ -43,3 +43,35 @@ def add_weight(args: argparse.Namespace) -> ExitCode:
     applogger.info(msg)
 
     return ExitCode.OK
+
+
+def add_crosswalk(args: argparse.Namespace) -> ExitCode:
+    """Add crosswalks between two node files."""
+    process_backup_option(args, node_args=['node1', 'node2'])
+
+    if args.make_default:
+        make_default = True
+    else:
+        make_default = None  # Use `None` instead of `False` for appropriate
+                             # `add_crosswalk()` behavior.
+
+    do_add = lambda tail, head, args: head.add_crosswalk(
+        node=tail,
+        crosswalk_name=args.crosswalk,
+        other_filename_hint=tail.path_hint,
+        description=args.description,
+        selectors=args.selectors,
+        is_default=make_default,
+    )
+
+    if args.direction == 'both':
+        do_add(args.node1, args.node2, args)  # node1 -> node2
+        do_add(args.node2, args.node1, args)  # node1 <- node2
+    elif args.direction == 'right':
+        do_add(args.node1, args.node2, args)  # node1 -> node2
+    elif args.direction == 'left':
+        do_add(args.node2, args.node1, args)  # node1 <- node2
+    else:
+        raise RuntimeError(f'unhandled direction: {args.direction!r}')
+
+    return ExitCode.OK
