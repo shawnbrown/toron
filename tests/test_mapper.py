@@ -7,9 +7,24 @@ from contextlib import closing
 from io import StringIO
 
 from toron.node import TopoNode
-from toron.mapper import Mapper_OLD
+from toron.mapper import Mapper, Mapper_OLD
 from toron.data_models import Structure
 from toron._utils import BitFlags
+
+
+class TestMapperInit(unittest.TestCase):
+    def test_create_schema(self):
+        with closing(sqlite3.connect('')) as con:
+            Mapper._create_schema(con)  # <- Method under test.
+
+            cur = con.execute("SELECT name FROM sqlite_schema WHERE type = 'table';")
+            actual = set(x[0] for x in cur.fetchall())
+            expected = {'mapping_data', 'node1_matches', 'node2_matches'}
+
+            self.assertTrue(
+                actual.issuperset(expected),
+                msg=f'Missing item(s): {expected - actual}',
+            )
 
 
 class TestMapper_OLD_Init(unittest.TestCase):
