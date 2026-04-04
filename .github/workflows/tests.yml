@@ -40,9 +40,9 @@ jobs:
     timeout-minutes: ${{ inputs.timeout && fromJSON(inputs.timeout) || 25 }}
     steps:
     - name: Checkout last commit
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Set up multiple Python versions
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         # For a list of supported versions, see 'versions-manifest.json'
         # in the https://github.com/actions/python-versions/ repository.
@@ -61,7 +61,7 @@ jobs:
             3.13
         cache: pip
     - name: Configure tox cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: .tox
         key: tox-directory-${{ matrix.os }}-${{ hashFiles('.github/workflows/test.yml', 'pyproject.toml', 'requirements-dev.txt') }}
