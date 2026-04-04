@@ -50,7 +50,7 @@ from .data_service import (
 from .node import TopoNode
 from .mapper import (
     find_relation_value_index,
-    Mapper,
+    Mapper_OLD,
 )
 from .selectors import (
     parse_selector,
@@ -296,7 +296,7 @@ def load_mapping(
         right_domain=right_node.domain,
     )
 
-    mapper = Mapper(crosswalk_name, data, columns)
+    mapper = Mapper_OLD(crosswalk_name, data, columns)
     mapper.match_records(left_node, 'left', match_limit, allow_overlapping)
     mapper.match_records(right_node, 'right', match_limit, allow_overlapping)
 

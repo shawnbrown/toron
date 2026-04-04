@@ -1658,7 +1658,7 @@ class TopoNode(object):
 
         .. note::
 
-            This is a new implementation to use with the updated Mapper
+            This is a new implementation to use with the Mapper_OLD
             class. Once the use cases for relation handling are better
             defined, the existing methods should be revisited and
             finalized.

@@ -7,12 +7,12 @@ from contextlib import closing
 from io import StringIO
 
 from toron.node import TopoNode
-from toron.mapper import Mapper
+from toron.mapper import Mapper_OLD
 from toron.data_models import Structure
 from toron._utils import BitFlags
 
 
-class TestMapperInit(unittest.TestCase):
+class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod
     def get_mapping_data(mapper):
         """Helper method to get contents of 'mapping_data' table."""
@@ -29,7 +29,7 @@ class TestMapperInit(unittest.TestCase):
             ['A', 7, 'A', ''],
             ['B', 8, '', 'y'],
         ]
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',  # <- Matches name of column exactly.
             data=data,
         )
@@ -51,7 +51,7 @@ class TestMapperInit(unittest.TestCase):
             ['A', 70, 'A', 'x'],
             ['B', 80, 'B', 'y'],
         ]
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',  # <- Matches name in shorthand syntax.
             data=data,
         )
@@ -72,7 +72,7 @@ class TestMapperInit(unittest.TestCase):
             ['B', 80, 'B', 'y'],
             [],  # <- Empty row to simulate trailing newline from text file input.
         ]
-        mapper = Mapper('population', data)
+        mapper = Mapper_OLD('population', data)
 
         self.assertEqual(
             self.get_mapping_data(mapper),
@@ -81,7 +81,7 @@ class TestMapperInit(unittest.TestCase):
         )
 
 
-class TestMapperGetLevelPairs(unittest.TestCase):
+class TestMapper_OLD_GetLevelPairs(unittest.TestCase):
     def test_same_column_order(self):
         right_columns = ['A', 'B', 'C']
         right_levels = [
@@ -99,7 +99,7 @@ class TestMapperGetLevelPairs(unittest.TestCase):
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
         ]
 
-        level_pairs = Mapper._get_level_pairs(  # <- Method under test.
+        level_pairs = Mapper_OLD._get_level_pairs(  # <- Method under test.
             right_columns,
             right_levels,
             node_columns,
@@ -133,7 +133,7 @@ class TestMapperGetLevelPairs(unittest.TestCase):
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
         ]
 
-        level_pairs = Mapper._get_level_pairs(  # <- Method under test.
+        level_pairs = Mapper_OLD._get_level_pairs(  # <- Method under test.
             right_columns,
             right_levels,
             node_columns,
@@ -150,7 +150,7 @@ class TestMapperGetLevelPairs(unittest.TestCase):
         )
 
 
-class TestMatchRefreshProportions(unittest.TestCase):
+class TestMapper_OLD_MatchRefreshProportions(unittest.TestCase):
     def setUp(self):
         # Create simplified dummy table for testing.
         connection = sqlite3.connect(':memory:')
@@ -177,7 +177,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (4, 4,  7.0, X'C0', NULL)
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        Mapper_OLD._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.assertEqual(self.select_all_helper(), [(1, 1,  3.0, b'\xc0', 1.0),
                                                     (2, 2, 15.0, b'\xc0', 1.0),
@@ -195,7 +195,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (4, 2,  7.0, X'C0', NULL)
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        Mapper_OLD._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.assertEqual(self.select_all_helper(), [(1, 1,  3.0, b'\xc0', 1.0),
                                                     (2, 1, 15.0, b'\xc0', 1.0),
@@ -213,7 +213,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (3, 4, 37.5, X'C0', NULL)
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        Mapper_OLD._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.assertEqual(self.select_all_helper(), [(1, 1,  3.0, b'\xc0', 1.00),
                                                     (2, 2,  7.0, b'\xc0', 1.00),
@@ -231,7 +231,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (2, 2, 37.5, X'C0', NULL)
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        Mapper_OLD._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.assertEqual(self.select_all_helper(), [(1, 1, 20.0, b'\x80', 0.625),
                                                     (1, 2, 12.0, b'\x80', 0.375),
@@ -252,7 +252,7 @@ class TestMatchRefreshProportions(unittest.TestCase):
                 (3, 5, 0.0, X'80', NULL)
         """)
 
-        Mapper._refresh_proportions(self.cursor, 'right')  # <- Method under test.
+        Mapper_OLD._refresh_proportions(self.cursor, 'right')  # <- Method under test.
 
         self.assertEqual(self.select_all_helper(), [(1, 1, 0.0, b'\xe0', 1.00),
                                                     (2, 2, 0.0, b'\xc0', 0.50),
@@ -304,7 +304,7 @@ class TwoNodesBaseTest(unittest.TestCase):
         self.addCleanup(lambda: applogger.removeHandler(handler))
 
 
-class TestMapperMatchRecords(TwoNodesBaseTest):
+class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
     @staticmethod
     def select_all_helper(mapper, table):
         """Helper method to get contents of a table in mapper."""
@@ -314,7 +314,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         return contents
 
     def test_exact_matches(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
@@ -332,7 +332,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         )
 
     def test_ambiguous_matches_over_limit(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
@@ -358,7 +358,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         )
 
     def test_ambiguous_matches_within_limit(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
@@ -377,7 +377,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         )
 
     def test_invalid_categories(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
@@ -407,7 +407,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         The presence of unknown columns will prevent matching and users
         need to be informed why the match failed.
         """
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2', 'idx3'],
                   ['A', 70, 'A', 'x', 'z'],
@@ -431,7 +431,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
 
     def test_missing_weight_exact_match(self):
         """Exact matches are OK even when weight is missing."""
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
@@ -458,7 +458,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         match must be skipped because there's no way to calculate a
         distribution.
         """
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],  # <- exact match
@@ -493,7 +493,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         # because it's an exact match (despite lacking a weight).
 
     def test_overlapping_not_allowed(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
@@ -520,7 +520,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         )
 
     def test_overlapping_allowed(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
@@ -552,7 +552,7 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         should be matched normally if they all use the same mapping
         level--they should not count as being overlapped.
         """
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
@@ -574,9 +574,9 @@ class TestMapperMatchRecords(TwoNodesBaseTest):
         )
 
 
-class TestGetRelations(TwoNodesBaseTest):
+class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
     def test_exact_matches(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 10, 'A', 'x'],
@@ -599,7 +599,7 @@ class TestGetRelations(TwoNodesBaseTest):
                                            (3, 6, b'\xc0', 50.0)])
 
     def test_ambiguous_no_overlaps(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 90, 'A',  ''],   # <- Matched to 2 right-side records.
@@ -624,7 +624,7 @@ class TestGetRelations(TwoNodesBaseTest):
         self.assertEqual(list(relations), expected)
 
     def test_ambiguous_with_overlaps(self):
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 90, 'A',  ''],   # <- Matched to 2 right-side records.
@@ -657,7 +657,7 @@ class TestGetRelations(TwoNodesBaseTest):
         loading). Instead, the mapper should accept such values and
         sum them internally.
         """
-        mapper = Mapper(
+        mapper = Mapper_OLD(
             crosswalk_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 30, 'A', ''],   # <- Duplicate labels using same mapping level.

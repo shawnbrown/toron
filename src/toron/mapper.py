@@ -58,7 +58,7 @@ def find_relation_value_index(
     raise ValueError(msg)
 
 
-class Mapper(object):
+class Mapper_OLD(object):
     """Class to build a weighted crosswalk between sets of labels.
 
     This class create a temporary database--when an instance is garbage
@@ -163,7 +163,7 @@ class Mapper(object):
 
         .. code-block:: python
 
-            >>> mapper = Mapper(...)
+            >>> mapper = Mapper_OLD(...)
             >>> level_pairs = mapper._get_level_pairs(
             ...     left_columns,
             ...     left_levels,
