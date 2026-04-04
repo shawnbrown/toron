@@ -45,10 +45,10 @@ if TYPE_CHECKING:
 applogger = logging.getLogger(f'app-{__name__}')
 
 
-def find_relation_value_index(
+def get_mapping_value_position(
     columns: Sequence[str], crosswalk_name: str
 ) -> int:
-    """Return the position of the relation value column."""
+    """Return the position of the mapping value column."""
     for i, col in enumerate(columns):
         if (crosswalk_name == col or
                 crosswalk_name == parse_edge_shorthand(col).get('edge_name')):
@@ -165,7 +165,7 @@ class Mapper_OLD(object):
 
             data, columns = normalize_tabular(data, columns)
 
-            value_pos = find_relation_value_index(columns, crosswalk_name)
+            value_pos = get_mapping_value_position(columns, crosswalk_name)
             self.left_columns = columns[:value_pos]
             self.right_columns = columns[value_pos+1:]
 

@@ -49,7 +49,7 @@ from .data_service import (
 )
 from .node import TopoNode
 from .mapper import (
-    find_relation_value_index,
+    get_mapping_value_position,
     Mapper_OLD,
 )
 from .selectors import (
@@ -75,7 +75,7 @@ def normalize_mapping_data(
     right_domain: Dict[str, str],
 ) -> Tuple[Iterator[Sequence], Sequence]:
     """Validate domain and format *data* stream and *columns*."""
-    value_pos = find_relation_value_index(columns, crosswalk_name)
+    value_pos = get_mapping_value_position(columns, crosswalk_name)
 
     domain_indexes: Dict[int, Tuple[str, str]] = {}
 
