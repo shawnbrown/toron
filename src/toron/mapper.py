@@ -80,7 +80,7 @@ class Mapper(object):
                               +---------------------+
     """
     @staticmethod
-    def _create_schema(con) -> None:
+    def _create_schema(con: sqlite3.Connection) -> None:
         with closing(con.cursor()) as cur:
             cur.executescript("""
                 CREATE TABLE mapping_data(
