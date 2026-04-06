@@ -67,44 +67,37 @@ class Mapper(object):
 
     .. code-block:: text
 
-        +----------------+    +---------------------+    +----------------+
-        | node1_matches  |    | mapping_data        |    | node2_matches  |
-        +----------------+    +---------------------+    +----------------+
-        | run_id         |<---| run_id              |--->| run_id         |
-        | index_id       |    | node1_index_id      |    | index_id       |
-        | mapping_level  |    | node1_labels        |    | mapping_level  |
-        | weight_value   |    | node1_mapping_level |    | weight_value   |
-        | proportion     |    | node2_index_id      |    | proportion     |
-        +----------------+    | node2_labels        |    +----------------+
-                              | node2_mapping_level |
-                              | mapping_value       |
-                              +---------------------+
+        +---------------+    +----------------+    +---------------+
+        | node1_matches |    | mapping_source |    | node2_matches |
+        +---------------+    +----------------+    +---------------+
+        | run_id        |<---| run_id         |--->| run_id        |
+        | index_id      |    | left_side      |    | index_id      |
+        | mapping_level |    | right_side     |    | mapping_level |
+        | weight_value  |    | mapping_value  |    | weight_value  |
+        | proportion    |    +----------------+    | proportion    |
+        +---------------+                          +---------------+
     """
     @staticmethod
     def _create_schema(con: sqlite3.Connection) -> None:
         with closing(con.cursor()) as cur:
             cur.executescript("""
-                CREATE TABLE mapping_data(
+                CREATE TABLE mapping_source(
                     run_id INTEGER PRIMARY KEY,
-                    node1_index_id INTEGER,
-                    node1_labels TEXT NOT NULL,
-                    node1_mapping_level BLOB_BITFLAGS NOT NULL,
-                    node2_index_id INTEGER,
-                    node2_labels TEXT NOT NULL,
-                    node2_mapping_level BLOB_BITFLAGS NOT NULL,
-                    mapping_value REAL NOT NULL
+                    left_side TEXT NOT NULL,
+                    right_side TEXT NOT NULL,
+                    mapping_value REAL CHECK (0.0 <= mapping_value)
                 );
                 CREATE TABLE node1_matches(
-                    run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
+                    run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
                     index_id INTEGER,
-                    mapping_level BLOB_BITFLAGS NOT NULL,
+                    mapping_level BLOB NOT NULL,
                     weight_value REAL CHECK (0.0 <= weight_value),
                     proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
                 );
                 CREATE TABLE node2_matches(
-                    run_id INTEGER NOT NULL REFERENCES mapping_data(run_id),
+                    run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
                     index_id INTEGER,
-                    mapping_level BLOB_BITFLAGS NOT NULL,
+                    mapping_level BLOB NOT NULL,
                     weight_value REAL CHECK (0.0 <= weight_value),
                     proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
                 );

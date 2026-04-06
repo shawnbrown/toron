@@ -19,7 +19,7 @@ class TestMapperInit(unittest.TestCase):
 
             cur = con.execute("SELECT name FROM sqlite_schema WHERE type = 'table';")
             actual = set(x[0] for x in cur.fetchall())
-            expected = {'mapping_data', 'node1_matches', 'node2_matches'}
+            expected = {'mapping_source', 'node1_matches', 'node2_matches'}
 
             self.assertTrue(
                 actual.issuperset(expected),
