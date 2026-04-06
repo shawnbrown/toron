@@ -15,16 +15,17 @@ from toron._utils import BitFlags
 class TestMapperInit(unittest.TestCase):
     def test_create_schema(self):
         with closing(sqlite3.connect('')) as con:
-            Mapper._create_schema(con)  # <- Method under test.
+            with closing(con.cursor()) as cur:
+                Mapper._create_schema(cur)  # <- Method under test.
 
-            cur = con.execute("SELECT name FROM sqlite_schema WHERE type = 'table';")
-            actual = set(x[0] for x in cur.fetchall())
-            expected = {'mapping_source', 'node1_matches', 'node2_matches'}
+                cur = con.execute("SELECT name FROM sqlite_schema WHERE type = 'table';")
+                actual = set(x[0] for x in cur.fetchall())
+                expected = {'mapping_source', 'node1_matches', 'node2_matches'}
 
-            self.assertTrue(
-                actual.issuperset(expected),
-                msg=f'Missing item(s): {expected - actual}',
-            )
+                self.assertTrue(
+                    actual.issuperset(expected),
+                    msg=f'Missing item(s): {expected - actual}',
+                )
 
     def test_load_mapping_source(self):
         data = [
@@ -34,8 +35,8 @@ class TestMapperInit(unittest.TestCase):
             ['C-1', 'Z-1', '3-1', '300.0', 'C-2', 'Z-2'],
         ]
         with closing(sqlite3.connect('')) as con:
-            Mapper._create_schema(con)
             with closing(con.cursor()) as cur:
+                Mapper._create_schema(cur)
                 Mapper._load_mapping_source(cur, data, value_position=3)
 
             cur = con.execute('SELECT * FROM mapping_source;')

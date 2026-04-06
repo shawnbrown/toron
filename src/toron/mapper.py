@@ -78,30 +78,29 @@ class Mapper(object):
         +---------------+                          +---------------+
     """
     @staticmethod
-    def _create_schema(con: sqlite3.Connection) -> None:
-        with closing(con.cursor()) as cur:
-            cur.executescript("""
-                CREATE TABLE mapping_source(
-                    run_id INTEGER PRIMARY KEY,
-                    left_side TEXT NOT NULL,
-                    right_side TEXT NOT NULL,
-                    mapping_value REAL CHECK (0.0 <= mapping_value)
-                );
-                CREATE TABLE node1_matches(
-                    run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
-                    index_id INTEGER,
-                    mapping_level BLOB NOT NULL,
-                    weight_value REAL CHECK (0.0 <= weight_value),
-                    proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
-                );
-                CREATE TABLE node2_matches(
-                    run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
-                    index_id INTEGER,
-                    mapping_level BLOB NOT NULL,
-                    weight_value REAL CHECK (0.0 <= weight_value),
-                    proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
-                );
-            """)
+    def _create_schema(cur: sqlite3.Cursor) -> None:
+        cur.executescript("""
+            CREATE TABLE mapping_source(
+                run_id INTEGER PRIMARY KEY,
+                left_side TEXT NOT NULL,
+                right_side TEXT NOT NULL,
+                mapping_value REAL CHECK (0.0 <= mapping_value)
+            );
+            CREATE TABLE node1_matches(
+                run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
+                index_id INTEGER,
+                mapping_level BLOB NOT NULL,
+                weight_value REAL CHECK (0.0 <= weight_value),
+                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
+            );
+            CREATE TABLE node2_matches(
+                run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
+                index_id INTEGER,
+                mapping_level BLOB NOT NULL,
+                weight_value REAL CHECK (0.0 <= weight_value),
+                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
+            );
+        """)
 
     @staticmethod
     def _load_mapping_source(
