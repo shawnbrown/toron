@@ -77,6 +77,24 @@ class Mapper(object):
         | proportion    |    +----------------+    | proportion    |
         +---------------+                          +---------------+
     """
+    def __init__(
+        self,
+        crosswalk_name: str,
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        self.con = sqlite3.connect('')  # Empty string creates temp file.
+
+        data, columns = normalize_tabular(data, columns)
+
+        value_position = get_mapping_value_position(columns, crosswalk_name)
+        self.left_header = columns[:value_position]
+        self.right_header = columns[value_position+1:]
+
+        with closing(self.con.cursor()) as cur:
+            self._create_schema(cur)
+            self._load_mapping_source(cur, data, value_position)
+
     @staticmethod
     def _create_schema(cur: sqlite3.Cursor) -> None:
         cur.executescript("""
@@ -167,6 +185,13 @@ class Mapper(object):
             return [(row[i] if i != -1 else '') for i in indexes]
 
         return get_location
+
+    def close(self) -> None:
+        """Close internal connection to temporary database."""
+        self.con.close()
+
+    def __del__(self) -> None:
+        self.close()
 
 
 class Mapper_OLD(object):

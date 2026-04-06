@@ -47,6 +47,22 @@ class TestMapperInit(unittest.TestCase):
             ]
             self.assertEqual(cur.fetchall(), expected)
 
+    def test_init(self):
+        data = [
+            ['foo', 'bar', 'baz', 'qux', 'foo', 'bar'],
+            ['A-1', 'X-1', '1-1', 100.0, 'A-2', 'X-2'],
+            ['B-1', 'Y-1', '2-1', 200.0, 'B-2', 'Y-2'],
+            ['C-1', 'Z-1', '3-1', 300.0, 'C-2', 'Z-2'],
+        ]
+
+        mapper = Mapper('qux', data)
+        self.assertEqual(mapper.left_header, ['foo', 'bar', 'baz'])
+        self.assertEqual(mapper.right_header, ['foo', 'bar'])
+
+        regex = "'corge' is not in data"
+        with self.assertRaisesRegex(ValueError, regex):
+            Mapper('corge', data)
+
     def test_get_location_factory(self):
         source = [
             ['foo', 'bar', 'baz', 'qux', 'foo', 'bar'],
