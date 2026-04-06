@@ -104,6 +104,20 @@ class Mapper(object):
             """)
 
     @staticmethod
+    def _load_mapping_source(
+        cur: sqlite3.Cursor,
+        data: Iterable[Sequence],
+        value_position: int,
+    ) -> None:
+        data_params = (
+            (dumps(row[:value_position]), dumps(row[value_position+1:]), row[value_position])
+            for row in data
+            if row
+        )
+        cur.executemany('INSERT INTO mapping_source VALUES(NULL, ?, ?, ?)',
+                        data_params)
+
+    @staticmethod
     def _get_location_factory(
         header_row: Sequence[str],
         label_columns: Sequence[str],

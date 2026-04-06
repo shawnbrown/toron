@@ -26,6 +26,26 @@ class TestMapperInit(unittest.TestCase):
                 msg=f'Missing item(s): {expected - actual}',
             )
 
+    def test_load_mapping_source(self):
+        data = [
+            ['A-1', 'X-1', '1-1', '100.0', 'A-2', 'X-2'],
+            ['B-1', 'Y-1', '2-1', '200.0', 'B-2', 'Y-2'],
+            [],  # <- Missing row.
+            ['C-1', 'Z-1', '3-1', '300.0', 'C-2', 'Z-2'],
+        ]
+        with closing(sqlite3.connect('')) as con:
+            Mapper._create_schema(con)
+            with closing(con.cursor()) as cur:
+                Mapper._load_mapping_source(cur, data, value_position=3)
+
+            cur = con.execute('SELECT * FROM mapping_source;')
+            expected = [
+                (1, '["A-1", "X-1", "1-1"]', '["A-2", "X-2"]', 100.0),
+                (2, '["B-1", "Y-1", "2-1"]', '["B-2", "Y-2"]', 200.0),
+                (3, '["C-1", "Z-1", "3-1"]', '["C-2", "Z-2"]', 300.0),
+            ]
+            self.assertEqual(cur.fetchall(), expected)
+
     def test_get_location_factory(self):
         source = [
             ['foo', 'bar', 'baz', 'qux', 'foo', 'bar'],
