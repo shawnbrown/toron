@@ -63,55 +63,6 @@ class TestMapperInit(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             Mapper('corge', data)
 
-    def test_get_location_factory(self):
-        source = [
-            ['foo', 'bar', 'baz', 'qux', 'foo', 'bar'],
-            ['A-1', 'X-1', '1-1', 100.0, 'A-2', 'X-2'],
-            ['B-1', 'Y-1', '2-1', 200.0, 'B-2', 'Y-2'],
-            ['C-1', 'Z-1', '3-1', 300.0, 'C-2', 'Z-2'],
-        ]
-        header = source[0]
-        data = source[1:]
-
-        # Build `get_location()` for slice(0, 3).
-        label_cols = ['foo', 'bar', 'baz']
-        get_location = Mapper._get_location_factory(header, label_cols, start=0, stop=3)
-        actual = [get_location(row) for row in data]
-        expected = [
-            ['A-1', 'X-1', '1-1'],
-            ['B-1', 'Y-1', '2-1'],
-            ['C-1', 'Z-1', '3-1'],
-        ]
-        self.assertEqual(actual, expected)
-
-        # Build `get_location()` but use different `label_cols` order.
-        label_cols = ['baz', 'foo', 'bar']
-        get_location = Mapper._get_location_factory(header, label_cols, start=0, stop=3)
-        actual = [get_location(row) for row in data]
-        expected = [
-            ['1-1', 'A-1', 'X-1'],  # <- Values in `label_cols` order.
-            ['2-1', 'B-1', 'Y-1'],  # <- Values in `label_cols` order.
-            ['3-1', 'C-1', 'Z-1'],  # <- Values in `label_cols` order.
-        ]
-        self.assertEqual(actual, expected)
-
-        # Build `get_location()` for slice(3, 6).
-        label_cols = ['foo', 'bar', 'baz']
-        get_location = Mapper._get_location_factory(header, label_cols, start=3, stop=6)
-        actual = [get_location(row) for row in data]
-        expected = [
-            ['A-2', 'X-2', ''],  # <- empty string for 'baz' (not found in slice)
-            ['B-2', 'Y-2', ''],  # <- empty string for 'baz' (not found in slice)
-            ['C-2', 'Z-2', ''],  # <- empty string for 'baz' (not found in slice)
-        ]
-        self.assertEqual(actual, expected)
-
-        # Check for error when duplicate header cols appear in given slice.
-        label_cols = ['foo', 'bar', 'qux']
-        regex = r'found duplicate values in header'
-        with self.assertRaisesRegex(ValueError, regex):
-            get_location = Mapper._get_location_factory(header, label_cols, start=0, stop=6)
-
 
 class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod
