@@ -1,5 +1,12 @@
 """Implementation for "crosswalk" command."""
+import argparse
+import logging
 from .._typing import Callable, List, Optional, Sequence
+
+from .common import ExitCode
+
+
+applogger = logging.getLogger('app-toron')
 
 
 def get_location_factory(
@@ -52,3 +59,9 @@ def get_location_factory(
         return [(row[i] if i != -1 else '') for i in indexes]
 
     return get_location
+
+
+def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
+    """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
+    applogger.error('not implemented')
+    return ExitCode.ERR

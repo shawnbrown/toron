@@ -20,6 +20,7 @@ from . import (
     command_add,
     command_info,
     command_index,
+    command_crosswalk,
     command_new,
 )
 from .common import (
@@ -238,6 +239,45 @@ def get_parser() -> argparse.ArgumentParser:
                               dest='backup',
                               help='do not make a backup file')
     parser_index.set_defaults(func=command_index.process_index_action)
+
+    # Crosswalk command.
+    parser_crosswalk = subparsers.add_parser(
+        name='crosswalk',
+        help='select crosswalk relations, or insert relations from input',
+        description=('Select crosswalk relations and print them as CSV, or '
+                     'insert relations supplied as input.'),
+    )
+    parser_crosswalk.add_argument('node1', type=TopoNodeType(mode='rw'),
+                                  help='first (left) filename',
+                                  metavar='FILE1')
+    parser_crosswalk.add_argument('node2', type=TopoNodeType(mode='rw'),
+                                  help='second (right) filename',
+                                  metavar='FILE2')
+    parser_crosswalk.add_argument('crosswalk',
+                                  help='name of crosswalk',
+                                  metavar='CROSSWALK')
+    parser_crosswalk.add_argument('--no-backup', action='store_false',
+                                  dest='backup',
+                                  help='do not make a backup file')
+    parser_crosswalk_group = parser_crosswalk.add_mutually_exclusive_group()
+    parser_crosswalk_group.add_argument(
+        '--right',
+        action='store_const',
+        const='right',
+        dest='direction',
+        help='add single direction: FILE1 -> FILE2',
+    )
+    parser_crosswalk_group.add_argument(
+        '--left',
+        action='store_const',
+        const='left',
+        dest='direction',
+        help='add single direction: FILE1 <- FILE2',
+    )
+    parser_crosswalk.set_defaults(
+        func=command_crosswalk.process_crosswalk_action,
+        direction='both',
+    )
 
     # Info command.
     parser_info = subparsers.add_parser(
