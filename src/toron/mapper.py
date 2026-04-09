@@ -80,8 +80,21 @@ class Mapper(object):
                              | mapping_value  |
                              +----------------+
     """
-    def __init__(self, data: Iterable[Sequence]) -> None:
+    def __init__(
+        self,
+        node1: 'TopoNode',
+        node2: 'TopoNode',
+        data: Iterable[Sequence],
+    ) -> None:
         self.con = sqlite3.connect('')  # Empty string creates temp file.
+        self.node1 = node1
+        self.node2 = node2
+
+        with self.node1._managed_cursor() as node_cur:
+            self.node1_structure = self.node1._dal.StructureRepository(node_cur).get_all()
+
+        with self.node2._managed_cursor() as node_cur:
+            self.node2_structure = self.node1._dal.StructureRepository(node_cur).get_all()
 
         with closing(self.con.cursor()) as cur:
             cur.executescript("""
@@ -111,19 +124,40 @@ class Mapper(object):
                 );
             """)
 
+            # Structure bits are determined by a node's discrete categories.
+            node1_allowed_bytes = {bytes(BitFlags(s.bits)) for s in self.node1_structure}
+            node2_allowed_bytes = {bytes(BitFlags(s.bits)) for s in self.node2_structure}
+
             for row in data:
                 # Unpack row values.
-                node1_index_id, node1_location, node1_level, \
-                node2_index_id, node2_location, node2_level, mapping_value = row
+                node1_index_id, node1_location, node1_bitflags, \
+                node2_index_id, node2_location, node2_bitflags, mapping_value = row
+
+                node1_level = bytes(node1_bitflags)
+                node2_level = bytes(node2_bitflags)
+
+                if node1_level not in node1_allowed_bytes:
+                    bad_category = compress(self.node1.index_columns, node1_bitflags)
+                    raise RuntimeError(
+                        f'FILE1 has no category {tuple(bad_category)}; '
+                        f'cannot load values {node1_location!r}'
+                    )
+
+                if node2_level not in node2_allowed_bytes:
+                    bad_category = compress(self.node2.index_columns, node2_bitflags)
+                    raise RuntimeError(
+                        f'FILE2 has no category {tuple(bad_category)}; '
+                        f'cannot load values {node2_location!r}'
+                    )
 
                 sql = 'INSERT INTO mapping_source VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)'
                 parameters = (
                     node1_index_id,
                     dumps(node1_location),
-                    bytes(node1_level),
+                    node1_level,
                     node2_index_id,
                     dumps(node2_location),
-                    bytes(node2_level),
+                    node2_level,
                     mapping_value,
                 )
                 cur.execute(sql, parameters)

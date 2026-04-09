@@ -6,13 +6,15 @@ import unittest
 from contextlib import closing
 from io import StringIO
 
+from .common import TwoNodeFixtures
+
 from toron.node import TopoNode
 from toron.mapper import Mapper, Mapper_OLD
 from toron.data_models import Structure
 from toron._utils import BitFlags
 
 
-class TestMapperInit(unittest.TestCase):
+class TestMapperInit(TwoNodeFixtures, unittest.TestCase):
     @staticmethod
     def get_mapping_source(mapper):
         """Helper method to get contents of 'mapping_source' table."""
@@ -27,7 +29,7 @@ class TestMapperInit(unittest.TestCase):
             [3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
         ]
 
-        mapper = Mapper(data)  # <- Init under test.
+        mapper = Mapper(self.node_a, self.node_b, data)  # <- Init under test.
 
         result = self.get_mapping_source(mapper)
         expected = {
@@ -36,6 +38,38 @@ class TestMapperInit(unittest.TestCase):
             (3, 3, '["C-1", "Z-1", "3-1"]', b'\xe0', 3, '["C-2", "Z-2"]', b'\xc0', 300.0)
         }
         self.assertEqual(result, expected)
+
+    def test_different_levels(self):
+        self.node_a.add_discrete_categories(('foo', 'bar'), ('foo',))
+        self.node_b.add_discrete_categories(('foo',))
+        data = [
+            [None, ['A-1',    '',    ''], BitFlags(1, 0, 0), None, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
+            [None, ['B-1', 'Y-1',    ''], BitFlags(1, 1, 0), None, ['B-2',    ''], BitFlags(1, 0), 200.0],
+            [None, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), None, ['C-2',    ''], BitFlags(1, 0), 300.0],
+        ]
+
+        mapper = Mapper(self.node_a, self.node_b, data)  # <- Init under test.
+
+        result = self.get_mapping_source(mapper)
+        expected = {
+            (1, None, '["A-1", "", ""]',       b'\x80', None, '["A-2", "X-2"]', b'\xc0', 100.0),
+            (2, None, '["B-1", "Y-1", ""]',    b'\xc0', None, '["B-2", ""]',    b'\x80', 200.0),
+            (3, None, '["C-1", "Z-1", "3-1"]', b'\xe0', None, '["C-2", ""]',    b'\x80', 300.0),
+        }
+        self.assertEqual(result, expected)
+
+    def test_invalid_level(self):
+        self.node_a.add_discrete_categories(('foo', 'bar'), ('foo',))
+        self.node_b.add_discrete_categories(('foo',))
+        data = [
+            [None, ['A-1',    '',    ''], BitFlags(1, 0, 0), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
+            [None, ['B-1', 'Y-1',    ''], BitFlags(1, 1, 0), 2, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
+            [None, ['C-1',    '', '3-1'], BitFlags(1, 0, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
+        ]
+
+        regex = r"FILE1 has no category \('foo', 'baz'\); cannot load values \['C-1', '', '3-1'\]"
+        with self.assertRaisesRegex(RuntimeError, regex):
+            mapper = Mapper(self.node_a, self.node_b, data)
 
 
 class TestMapper_OLD_Init(unittest.TestCase):
