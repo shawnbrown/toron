@@ -133,6 +133,14 @@ def get_column_positions(
                 f"     Found: {', '.join(repr(x) for x in columns[other_start:other_stop])}"
             )
 
+    elif node1_start is None and node2_start is None:
+        # If no indexes, require node1 labels to match left side
+        # and node2 labels to match right side.
+        if (node1.index_columns == columns[:value_position]
+                and node2.index_columns == columns[value_position+1:]):
+            node1_start, node1_stop = 0, value_position
+            node2_start, node2_stop = value_position+1, len(columns)
+
     # Prepare and return result values.
     positions = {
         'node1_index_pos': node1_index_pos,

@@ -168,6 +168,33 @@ class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
                 columns=['XXX', 'YYY', 'ZZZ', 'corge', 'index_code', 'foo', 'bar'],
             )
 
+    def test_no_indexes_only_label_columns(self):
+        """If no indexes are given, label columns must match exactly
+        (with node1 on the left and node2 on the right).
+        """
+        positions, _ = command_crosswalk.get_column_positions(
+            node1=self.node_a,
+            node2=self.node_b,
+            crosswalk_name='corge',
+            data=[
+                ['A-1', 'X-1', '1-1', 100.0, 'A-2', 'X-2'],
+                ['B-1', 'Y-1', '2-1', 200.0, 'B-2', 'Y-2'],
+                ['C-1', 'Z-1', '3-1', 300.0, 'C-2', 'Z-2'],
+            ],
+            columns=['foo', 'bar', 'baz', 'corge', 'foo', 'bar'],
+        )
+
+        self.assertEqual(
+            positions,
+            {'node1_index_pos': None,
+             'node1_start': 0,
+             'node1_stop': 3,
+             'node2_index_pos': None,
+             'node2_start': 4,
+             'node2_stop': 6,
+             'value_position': 3},
+        )
+
     def test_bad_column_order(self):
         regex = r'Invalid column order in mapping data.'
         with self.assertRaisesRegex(RuntimeError, regex):
