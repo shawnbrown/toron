@@ -1,7 +1,12 @@
 """Implementation for "crosswalk" command."""
 import argparse
 import logging
-from .._typing import Callable, List, Optional, Sequence
+from .._typing import (
+    Callable,
+    List,
+    Optional,
+    Sequence,
+)
 
 from .common import ExitCode
 
