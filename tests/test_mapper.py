@@ -13,6 +13,13 @@ from toron._utils import BitFlags
 
 
 class TestMapperInit(unittest.TestCase):
+    @staticmethod
+    def get_mapping_source(mapper):
+        """Helper method to get contents of 'mapping_source' table."""
+        with closing(mapper.con.cursor()) as cur:
+            cur.execute('SELECT * FROM mapping_source;')
+            return set(cur.fetchall())
+
     def test_instantiation(self):
         data = [
             [1, ['A-1', 'X-1', '1-1'], BitFlags(1, 1, 1), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
@@ -22,15 +29,12 @@ class TestMapperInit(unittest.TestCase):
 
         mapper = Mapper('qux', data)  # <- Init under test.
 
-        with closing(mapper.con.cursor()) as cur:
-            cur.execute('SELECT * FROM mapping_source;')
-            result = cur.fetchall()
-
-        expected = [
+        result = self.get_mapping_source(mapper)
+        expected = {
             (1, 1, '["A-1", "X-1", "1-1"]', b'\xe0', 1, '["A-2", "X-2"]', b'\xc0', 100.0),
             (2, 2, '["B-1", "Y-1", "2-1"]', b'\xe0', 2, '["B-2", "Y-2"]', b'\xc0', 200.0),
             (3, 3, '["C-1", "Z-1", "3-1"]', b'\xe0', 3, '["C-2", "Z-2"]', b'\xc0', 300.0)
-        ]
+        }
         self.assertEqual(result, expected)
 
 
