@@ -504,3 +504,19 @@ class TestNormalizeMappingData(TwoNodeFixtures, unittest.TestCase):
                 [   3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), None, ['C-2',    ''], BitFlags(1, 0), 300.0],
         ]
         self.assertEqual(list(actual), expected)
+
+    def test_immediate_error(self):
+        """Should raise errors immediately, rather than waiting for iteration."""
+        regex = r"crosswalk 'blerg' not found"
+        with self.assertRaisesRegex(ToronError, regex):
+            command_crosswalk.normalize_mapping_data(
+                node1=self.node_a,
+                node2=self.node_b,
+                crosswalk_name='blerg',
+                data=[
+                    ['index_code', 'corge', 'index_code'],
+                    ['1XA0157D6E',   100.0, '1XF7F2FF38'],
+                    ['2XF38F26EA',   200.0, '2XA468A4BC'],
+                    ['3X7429EDA9',   300.0, '3X23CE6FFF'],
+                ],
+            )

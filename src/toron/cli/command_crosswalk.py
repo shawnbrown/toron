@@ -28,6 +28,7 @@ from .common import (
     get_index_code_position,
 )
 from .._utils import (
+    eagerly_initialize,
     normalize_tabular,
     ToronError,
     BitFlags,
@@ -278,6 +279,7 @@ def make_getter_functions(
     return (node_get_index_id, node_get_location, node_get_level)
 
 
+@eagerly_initialize
 def normalize_mapping_data(
     node1: TopoNode,
     node2: TopoNode,
