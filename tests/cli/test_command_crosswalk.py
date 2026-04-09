@@ -459,9 +459,9 @@ class TestNormalizeMappingData(TwoNodeFixtures, unittest.TestCase):
         )
 
         expected = [
-                [1, ['A-1', 'X-1', '1-1'], BitFlags(1, 1, 1), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
-                [2, ['B-1', 'Y-1', '2-1'], BitFlags(1, 1, 1), 2, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
-                [3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
+            [1, ['A-1', 'X-1', '1-1'], BitFlags(1, 1, 1), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
+            [2, ['B-1', 'Y-1', '2-1'], BitFlags(1, 1, 1), 2, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
+            [3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
         ]
         self.assertEqual(list(actual), expected)
 
@@ -479,9 +479,9 @@ class TestNormalizeMappingData(TwoNodeFixtures, unittest.TestCase):
         )
 
         expected = [
-                [1, ['', '', ''], BitFlags(1, 1, 1), 1, ['', ''], BitFlags(1, 1), 100.0],
-                [2, ['', '', ''], BitFlags(1, 1, 1), 2, ['', ''], BitFlags(1, 1), 200.0],
-                [3, ['', '', ''], BitFlags(1, 1, 1), 3, ['', ''], BitFlags(1, 1), 300.0],
+            [1, ['', '', ''], BitFlags(1, 1, 1), 1, ['', ''], BitFlags(1, 1), 100.0],
+            [2, ['', '', ''], BitFlags(1, 1, 1), 2, ['', ''], BitFlags(1, 1), 200.0],
+            [3, ['', '', ''], BitFlags(1, 1, 1), 3, ['', ''], BitFlags(1, 1), 300.0],
         ]
         self.assertEqual(list(actual), expected)
 
@@ -499,9 +499,9 @@ class TestNormalizeMappingData(TwoNodeFixtures, unittest.TestCase):
         )
 
         expected = [
-                [None, ['A-1',    '',    ''], BitFlags(1, 0, 0),    1, [   '',    ''], BitFlags(1, 1), 100.0],
-                [   2, ['B-1', 'Y-1', '2-1'], BitFlags(1, 1, 1), None, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
-                [   3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), None, ['C-2',    ''], BitFlags(1, 0), 300.0],
+            [None, ['A-1',    '',    ''], BitFlags(1, 0, 0),    1, [   '',    ''], BitFlags(1, 1), 100.0],
+            [   2, ['B-1', 'Y-1', '2-1'], BitFlags(1, 1, 1), None, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
+            [   3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), None, ['C-2',    ''], BitFlags(1, 0), 300.0],
         ]
         self.assertEqual(list(actual), expected)
 
