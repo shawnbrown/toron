@@ -80,11 +80,7 @@ class Mapper(object):
                              | mapping_value  |
                              +----------------+
     """
-    def __init__(
-        self,
-        crosswalk_name: str,
-        data: Iterable[Sequence],
-    ) -> None:
+    def __init__(self, data: Iterable[Sequence]) -> None:
         self.con = sqlite3.connect('')  # Empty string creates temp file.
 
         with closing(self.con.cursor()) as cur:
