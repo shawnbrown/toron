@@ -40,7 +40,13 @@ def get_column_positions(
     """Find positions and return positions dict and data iterator."""
     data_iter = iter(data)  # Must be iterator.
 
-    value_position = get_mapping_value_position(columns, crosswalk_name)
+    try:
+        value_position = get_mapping_value_position(columns, crosswalk_name)
+    except ValueError:
+        raise ToronError(
+            f"crosswalk {crosswalk_name!r} not found in columns: "
+            f"{', '.join(repr(x) for x in columns)}"
+        )
 
     # Scan through data 8 rows (chunk_size) at a time looking for index
     # code columns but give up after 256 (scan_limit) rows.

@@ -235,6 +235,21 @@ class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
                 columns=['index_code1', 'index_code2', 'corge'],
             )
 
+    def test_missing_crosswalk_column(self):
+        regex = r"crosswalk 'blerg' not found in columns: 'index_code', 'corge', 'index_code'"
+        with self.assertRaisesRegex(ToronError, regex):
+            command_crosswalk.get_column_positions(
+                node1=self.node_a,
+                node2=self.node_b,
+                crosswalk_name='blerg',
+                data=[
+                    ['1XA0157D6E', 100.0, '1XF7F2FF38'],
+                    ['2XF38F26EA', 200.0, '2XA468A4BC'],
+                    ['3X7429EDA9', 300.0, '3X23CE6FFF'],
+                ],
+                columns=['index_code', 'corge', 'index_code'],
+            )
+
 
 class TestGetLocationFactory(unittest.TestCase):
     def setUp(self):
