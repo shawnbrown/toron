@@ -140,6 +140,18 @@ def get_column_positions(
                 and node2.index_columns == columns[value_position+1:]):
             node1_start, node1_stop = 0, value_position
             node2_start, node2_stop = value_position+1, len(columns)
+        else:
+            raise ToronError(
+                f"no index codes found, unable to match by label columns;\n"
+                f"\n"
+                f"unable to find FILE1 columns;\n"
+                f"  Expected: {', '.join(repr(x) for x in node1.index_columns)}\n"
+                f"     Found: {', '.join(repr(x) for x in columns[0:value_position])}\n"
+                f"\n"
+                f"unable to find FILE2 columns;\n"
+                f"  Expected: {', '.join(repr(x) for x in node2.index_columns)}\n"
+                f"     Found: {', '.join(repr(x) for x in columns[value_position+1:len(columns)])}"
+            )
 
     # Prepare and return result values.
     positions = {

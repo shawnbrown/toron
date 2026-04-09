@@ -195,6 +195,31 @@ class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
              'value_position': 3},
         )
 
+    def test_no_indexes_no_label_column_match(self):
+        """Should raise an error if no indexes and headers don't match."""
+        regex = (
+            r"no index codes found, unable to match by label columns;\s+"
+            r"unable to find FILE1 columns;\s+"
+            r"Expected: 'foo', 'bar', 'baz'\s+"
+            r"Found: 'foo', 'bar'\s+"
+            r"unable to find FILE2 columns;\s+"
+            r"Expected: 'foo', 'bar'\s+"
+            r"Found: 'foo', 'bar', 'baz'"
+        )
+
+        with self.assertRaisesRegex(ToronError, regex):
+            command_crosswalk.get_column_positions(
+                node1=self.node_a,
+                node2=self.node_b,
+                crosswalk_name='corge',
+                data=[
+                    ['A-2', 'X-2', 100.0, 'A-1', 'X-1', '1-1'],
+                    ['B-2', 'Y-2', 200.0, 'B-1', 'Y-1', '2-1'],
+                    ['C-2', 'Z-2', 300.0, 'C-1', 'Z-1', '3-1'],
+                ],
+                columns=['foo', 'bar', 'corge', 'foo', 'bar', 'baz'],
+            )
+
     def test_bad_column_order(self):
         regex = r'Invalid column order in mapping data.'
         with self.assertRaisesRegex(RuntimeError, regex):
