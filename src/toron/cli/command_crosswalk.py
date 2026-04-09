@@ -22,9 +22,13 @@ from .. import TopoNode
 from ..mapper import get_mapping_value_position
 from .common import (
     ExitCode,
+    index_code_to_id,
     get_index_code_position,
 )
-from .._utils import ToronError
+from .._utils import (
+    ToronError,
+    BitFlags,
+)
 
 
 applogger = logging.getLogger('app-toron')
@@ -224,6 +228,51 @@ def get_location_factory(
         return [(row[i] if i != -1 else '') for i in indexes]
 
     return get_location
+
+
+def make_getter_functions(
+    node: TopoNode,
+    index_code_pos: Optional[int],
+    sample_header: Sequence[str],
+    start: Optional[int],
+    stop: Optional[int],
+) -> Tuple[Callable[[Sequence], Optional[int]],
+           Callable[[Sequence], List],
+           Callable[[Optional[int], Sequence[str]], BitFlags]]:
+    """Make and return a tuple of three getter functions.
+
+    The three functions are:
+
+    * get_index_id(): Takes a row with index code and returns index_id.
+    * get_location(): Takes a row and slice positions, returns location.
+    * get_level(): Takes an index_id and location, returns BitFlags.
+    """
+    if index_code_pos is not None:
+        node_unique_id_bytes = uuid.UUID(node.unique_id).bytes
+        def node_get_index_id(row: Sequence) -> Optional[int]:
+            index_code = row[index_code_pos]
+            if not index_code:
+                return None
+            return index_code_to_id(index_code, node_unique_id_bytes)
+    else:
+        def node_get_index_id(row: Sequence) -> Optional[int]:
+            return None
+
+    node_get_location = get_location_factory(
+        header_row=sample_header,
+        label_columns=node.index_columns,
+        start=start,
+        stop=stop,
+    )
+
+    node_entire_space = BitFlags([1] * len(node.index_columns))  # All ones.
+
+    def node_get_level(index_id: Optional[int], location: Sequence[str]) -> BitFlags:
+        if index_id is None:
+            return BitFlags(location)
+        return node_entire_space
+
+    return (node_get_index_id, node_get_location, node_get_level)
 
 
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:

@@ -1,8 +1,7 @@
 """Tests for toron/cli/command_crosswalk.py module."""
 from .. import _unittest as unittest
 from toron import TopoNode
-from toron._utils import ToronError
-
+from toron._utils import ToronError, BitFlags
 from toron.cli import command_crosswalk
 
 
@@ -322,3 +321,124 @@ class TestGetLocationFactory(unittest.TestCase):
                 start=0,
                 stop=6,
             )
+
+
+class TestMakeGetterFunctions(TwoNodeFixtures, unittest.TestCase):
+    def test_return_types(self):
+        result = command_crosswalk.make_getter_functions(
+            node=self.node_a,
+            index_code_pos=0,
+            sample_header=['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar'],
+            start=0,
+            stop=4,
+        )
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 3)
+        self.assertTrue(callable(result[0]))
+        self.assertTrue(callable(result[1]))
+        self.assertTrue(callable(result[2]))
+
+    def test_node_get_index_id(self):
+        node_get_index_id, _, _ = command_crosswalk.make_getter_functions(
+            node=self.node_a,
+            index_code_pos=0,
+            sample_header=['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar'],
+            start=0,
+            stop=4,
+        )
+        data_list = [
+            ['1XA0157D6E', 'A-1', 'X-1', '1-1', 100.0, '1XF7F2FF38', 'A-2', 'X-2'],
+            ['2XF38F26EA', 'B-1', 'Y-1', '2-1', 200.0, '2XA468A4BC', 'B-2', 'Y-2'],
+            ['3X7429EDA9', 'C-1', 'Z-1', '3-1', 300.0, '3X23CE6FFF', 'C-2', 'Z-2'],
+        ]
+        index_ids = [node_get_index_id(row) for row in data_list]
+        self.assertEqual(index_ids, [1, 2, 3])
+
+        # Missing index_code position.
+        node_get_index_id, _, _ = command_crosswalk.make_getter_functions(
+            node=self.node_a,
+            index_code_pos=None,  # <- Position is None!
+            sample_header=['foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar'],
+            start=0,
+            stop=3,
+        )
+        data_list = [
+            ['A-1', 'X-1', '1-1', 100.0, '1XF7F2FF38', 'A-2', 'X-2'],
+            ['B-1', 'Y-1', '2-1', 200.0, '2XA468A4BC', 'B-2', 'Y-2'],
+            ['C-1', 'Z-1', '3-1', 300.0, '3X23CE6FFF', 'C-2', 'Z-2'],
+        ]
+        actual = [node_get_index_id(row) for row in data_list]
+        self.assertEqual(actual, [None, None, None])
+
+    def test_node_get_location(self):
+        _, node_get_location, _ = command_crosswalk.make_getter_functions(
+            node=self.node_a,
+            index_code_pos=0,
+            sample_header=['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code'],
+            start=0,
+            stop=4,
+        )
+        data_list = [
+            ['1XA0157D6E', 'A-1', 'X-1', '1-1', 100.0, '1XF7F2FF38'],
+            ['2XF38F26EA', 'B-1', 'Y-1', '2-1', 200.0, '2XA468A4BC'],
+            ['3X7429EDA9', 'C-1', 'Z-1', '3-1', 300.0, '3X23CE6FFF'],
+        ]
+        actual = [node_get_location(row) for row in data_list]
+        expected = [
+            ['A-1', 'X-1', '1-1'],
+            ['B-1', 'Y-1', '2-1'],
+            ['C-1', 'Z-1', '3-1'],
+        ]
+        self.assertEqual(actual, expected)
+
+        # No label columns.
+        _, node_get_location, _ = command_crosswalk.make_getter_functions(
+            node=self.node_a,
+            index_code_pos=0,
+            sample_header=['index_code', 'corge', 'index_code'],
+            start=0,
+            stop=1,
+        )
+        data_list = [
+            ['1XA0157D6E', 100.0, '1XF7F2FF38'],
+            ['2XF38F26EA', 200.0, '2XA468A4BC'],
+            ['3X7429EDA9', 300.0, '3X23CE6FFF'],
+        ]
+        actual = [node_get_location(row) for row in data_list]
+        expected = [
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', ''],
+        ]
+        self.assertEqual(actual, expected)
+
+    def test_node_get_level(self):
+        _, _, node_get_level = command_crosswalk.make_getter_functions(
+            node=self.node_a,
+            index_code_pos=0,
+            sample_header=['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code'],
+            start=0,
+            stop=4,
+        )
+
+        self.assertEqual(
+            node_get_level(1, ['A-1', 'X-1', '1-1']),
+            BitFlags(1, 1, 1),
+        )
+        self.assertEqual(
+            node_get_level(1, ['', '', '']),
+            BitFlags(1, 1, 1),
+            msg='when index is given, bitflags should be all ones even if labels are omitted',
+        )
+        self.assertEqual(
+            node_get_level(None, ['A-1', 'X-1', '1-1']),
+            BitFlags(1, 1, 1),
+        )
+        self.assertEqual(
+            node_get_level(None, ['A-1', 'X-1', '']),
+            BitFlags(1, 1, 0),
+        )
+        self.assertEqual(
+            node_get_level(None, ['A-1', '', '']),
+            BitFlags(1, 0, 0),
+        )
