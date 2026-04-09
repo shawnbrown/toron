@@ -102,6 +102,37 @@ def get_column_positions(
     else:
         node2_start, node2_stop = value_position + 1, len(columns)  # node2 on right
 
+    # If only one node is matched, try to match the other side by header.
+    if node1_start is not None and node2_start is None:
+        if node1_start > value_position:
+            other_start, other_stop = 0, value_position  # left side
+        else:
+            other_start, other_stop = value_position + 1, len(columns)  # right side
+
+        if node2.index_columns == columns[other_start:other_stop]:  # check header.
+            node2_start, node2_stop = other_start, other_stop
+        else:
+            raise ToronError(
+                f"unable to find FILE2 columns;\n"
+                f"  Expected: {', '.join(repr(x) for x in node2.index_columns)}\n"
+                f"     Found: {', '.join(repr(x) for x in columns[other_start:other_stop])}"
+            )
+
+    elif node2_start is not None and node1_start is None:
+        if node2_start > value_position:
+            other_start, other_stop = 0, value_position  # left side
+        else:
+            other_start, other_stop = value_position + 1, len(columns)  # right side
+
+        if node1.index_columns == columns[other_start:other_stop]:  # check header.
+            node1_start, node1_stop = other_start, other_stop
+        else:
+            raise ToronError(
+                f"unable to find FILE1 columns;\n"
+                f"  Expected: {', '.join(repr(x) for x in node1.index_columns)}\n"
+                f"     Found: {', '.join(repr(x) for x in columns[other_start:other_stop])}"
+            )
+
     # Prepare and return result values.
     positions = {
         'node1_index_pos': node1_index_pos,
