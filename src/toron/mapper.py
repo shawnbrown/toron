@@ -132,45 +132,6 @@ class Mapper(object):
                 )
                 cur.execute(sql, parameters)
 
-    @staticmethod
-    def _create_schema(cur: sqlite3.Cursor) -> None:
-        cur.executescript("""
-            CREATE TABLE mapping_source(
-                run_id INTEGER PRIMARY KEY,
-                left_side TEXT NOT NULL,
-                right_side TEXT NOT NULL,
-                mapping_value REAL CHECK (0.0 <= mapping_value)
-            );
-            CREATE TABLE node1_matches(
-                run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
-                index_id INTEGER,
-                mapping_level BLOB NOT NULL,
-                weight_value REAL CHECK (0.0 <= weight_value),
-                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
-            );
-            CREATE TABLE node2_matches(
-                run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
-                index_id INTEGER,
-                mapping_level BLOB NOT NULL,
-                weight_value REAL CHECK (0.0 <= weight_value),
-                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
-            );
-        """)
-
-    @staticmethod
-    def _load_mapping_source(
-        cur: sqlite3.Cursor,
-        data: Iterable[Sequence],
-        value_position: int,
-    ) -> None:
-        data_params = (
-            (dumps(row[:value_position]), dumps(row[value_position+1:]), row[value_position])
-            for row in data
-            if row
-        )
-        cur.executemany('INSERT INTO mapping_source VALUES(NULL, ?, ?, ?)',
-                        data_params)
-
     def close(self) -> None:
         """Close internal connection to temporary database."""
         self.con.close()

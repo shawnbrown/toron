@@ -13,40 +13,6 @@ from toron._utils import BitFlags
 
 
 class TestMapperInit(unittest.TestCase):
-    def test_create_schema(self):
-        with closing(sqlite3.connect('')) as con:
-            with closing(con.cursor()) as cur:
-                Mapper._create_schema(cur)  # <- Method under test.
-
-                cur = con.execute("SELECT name FROM sqlite_schema WHERE type = 'table';")
-                actual = set(x[0] for x in cur.fetchall())
-                expected = {'mapping_source', 'node1_matches', 'node2_matches'}
-
-                self.assertTrue(
-                    actual.issuperset(expected),
-                    msg=f'Missing item(s): {expected - actual}',
-                )
-
-    def test_load_mapping_source(self):
-        data = [
-            ['A-1', 'X-1', '1-1', '100.0', 'A-2', 'X-2'],
-            ['B-1', 'Y-1', '2-1', '200.0', 'B-2', 'Y-2'],
-            [],  # <- Missing row.
-            ['C-1', 'Z-1', '3-1', '300.0', 'C-2', 'Z-2'],
-        ]
-        with closing(sqlite3.connect('')) as con:
-            with closing(con.cursor()) as cur:
-                Mapper._create_schema(cur)
-                Mapper._load_mapping_source(cur, data, value_position=3)
-
-            cur = con.execute('SELECT * FROM mapping_source;')
-            expected = [
-                (1, '["A-1", "X-1", "1-1"]', '["A-2", "X-2"]', 100.0),
-                (2, '["B-1", "Y-1", "2-1"]', '["B-2", "Y-2"]', 200.0),
-                (3, '["C-1", "Z-1", "3-1"]', '["C-2", "Z-2"]', 300.0),
-            ]
-            self.assertEqual(cur.fetchall(), expected)
-
     def test_instantiation(self):
         data = [
             [1, ['A-1', 'X-1', '1-1'], BitFlags(1, 1, 1), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
