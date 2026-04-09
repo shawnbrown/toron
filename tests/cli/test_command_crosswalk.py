@@ -63,6 +63,21 @@ class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
         )
         self.assertEqual(list(data_iter), data_list)
 
+    def test_bad_column_order(self):
+        regex = r'Invalid column order in mapping data.'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            command_crosswalk.get_column_positions(
+                node1=self.node_a,
+                node2=self.node_b,
+                crosswalk_name='corge',
+                data=[
+                    ['1XA0157D6E', '1XF7F2FF38', 100.0],
+                    ['2XF38F26EA', '2XA468A4BC', 200.0],
+                    ['3X7429EDA9', '3X23CE6FFF', 300.0],
+                ],
+                columns=['index_code1', 'index_code2', 'corge'],
+            )
+
 
 class TestGetLocationFactory(unittest.TestCase):
     def setUp(self):

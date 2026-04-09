@@ -72,6 +72,21 @@ def get_column_positions(
         else:
             sample_rows = list(islice(unscanned_rows, chunk_size))
 
+    # If column order is invalid, raise error.
+    if (node1_index_pos is not None
+        and node2_index_pos is not None
+        and (max(node1_index_pos, node2_index_pos) < value_position
+             or min(node1_index_pos, node2_index_pos) > value_position)):
+        raise RuntimeError(
+            f'Invalid column order in mapping data. The crosswalk column '
+            f'must appear between the two groups of node columns.\n\n'
+            f'Expected layout:\n'
+            f'  <first node columns> <crosswalk name> <second node columns>\n\n'
+            f'Found index code columns at positions {node1_index_pos} and '
+            f'{node2_index_pos}, but the crosswalk column is at position '
+            f'{value_position} -- it does not separate them.'
+        )
+
     # Prepare and return result values.
     positions = {
         'node1_index_pos': node1_index_pos,
