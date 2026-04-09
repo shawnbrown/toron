@@ -1,37 +1,9 @@
 """Tests for toron/cli/command_crosswalk.py module."""
 from .. import _unittest as unittest
-from toron import TopoNode
+from ..common import TwoNodeFixtures
 from toron._utils import ToronError, BitFlags
+
 from toron.cli import command_crosswalk
-
-
-class TwoNodeFixtures(object):
-    def setUp(self):
-        self.maxDiff = None
-
-        self.node_a = TopoNode()
-        self.node_a._connector._unique_id = '11111111-1111-1111-1111-111111111111'
-        self.node_a.add_index_columns('foo', 'bar', 'baz')
-        self.node_a.add_discrete_categories({'foo', 'bar', 'baz'})
-        self.node_a.add_weight_group('qux', make_default=True)
-        self.node_a.insert_index([
-            ['foo', 'bar', 'baz', 'qux'],
-            ['A-1', 'X-1', '1-1', 100.0],
-            ['B-1', 'Y-1', '2-1', 200.0],
-            ['C-1', 'Z-1', '3-1', 300.0],
-        ])
-
-        self.node_b = TopoNode()
-        self.node_b._connector._unique_id = '22222222-2222-2222-2222-222222222222'
-        self.node_b.add_index_columns('foo', 'bar')
-        self.node_b.add_discrete_categories({'foo', 'bar'})
-        self.node_b.add_weight_group('quux', make_default=True)
-        self.node_b.insert_index([
-            ['foo', 'bar', 'quux'],
-            ['A-2', 'X-2', 100.0],
-            ['B-2', 'Y-2', 200.0],
-            ['C-2', 'Z-2', 300.0],
-        ])
 
 
 class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
