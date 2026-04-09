@@ -58,7 +58,11 @@ class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
         self.assertEqual(
             positions,
             {'node1_index_pos': 0,
+             'node1_start': 0,
+             'node1_stop': 4,
              'node2_index_pos': 5,
+             'node2_start': 5,
+             'node2_stop': 8,
              'value_position': 4},
         )
         self.assertEqual(list(data_iter), data_list)

@@ -87,10 +87,29 @@ def get_column_positions(
             f'{value_position} -- it does not separate them.'
         )
 
+    # Get slice positions for location columns.
+    if node1_index_pos is None:
+        node1_start, node1_stop = None, None
+    elif node1_index_pos < value_position:
+        node1_start, node1_stop = 0, value_position  # node1 on left
+    else:
+        node1_start, node1_stop = value_position + 1, len(columns)  # node1 on right
+
+    if node2_index_pos is None:
+        node2_start, node2_stop = None, None
+    elif node2_index_pos < value_position:
+        node2_start, node2_stop = 0, value_position  # node2 on left
+    else:
+        node2_start, node2_stop = value_position + 1, len(columns)  # node2 on right
+
     # Prepare and return result values.
     positions = {
         'node1_index_pos': node1_index_pos,
+        'node1_start': node1_start,
+        'node1_stop': node1_stop,
         'node2_index_pos': node2_index_pos,
+        'node2_start': node2_start,
+        'node2_stop': node2_stop,
         'value_position': value_position,
     }
     data_iter = chain(scanned_rows, data_iter)
