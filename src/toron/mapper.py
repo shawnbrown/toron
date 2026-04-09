@@ -71,29 +71,66 @@ class Mapper(object):
         | node1_matches |    | mapping_source |    | node2_matches |
         +---------------+    +----------------+    +---------------+
         | run_id        |<---| run_id         |--->| run_id        |
-        | index_id      |    | left_side      |    | index_id      |
-        | mapping_level |    | right_side     |    | mapping_level |
-        | weight_value  |    | mapping_value  |    | weight_value  |
-        | proportion    |    +----------------+    | proportion    |
-        +---------------+                          +---------------+
+        | index_id      |    | node1_index_id |    | index_id      |
+        | mapping_level |    | node1_location |    | mapping_level |
+        | weight_value  |    | node1_level    |    | weight_value  |
+        | proportion    |    | node2_index_id |    | proportion    |
+        +---------------+    | node2_location |    +---------------+
+                             | node2_level    |
+                             | mapping_value  |
+                             +----------------+
     """
     def __init__(
         self,
         crosswalk_name: str,
-        data: Union[Iterable[Sequence], Iterable[Dict]],
-        columns: Optional[Sequence[str]] = None,
+        data: Iterable[Sequence],
     ) -> None:
         self.con = sqlite3.connect('')  # Empty string creates temp file.
 
-        data, columns = normalize_tabular(data, columns)
-
-        value_position = get_mapping_value_position(columns, crosswalk_name)
-        self.left_header = columns[:value_position]
-        self.right_header = columns[value_position+1:]
-
         with closing(self.con.cursor()) as cur:
-            self._create_schema(cur)
-            self._load_mapping_source(cur, data, value_position)
+            cur.executescript("""
+                CREATE TABLE mapping_source(
+                    run_id INTEGER PRIMARY KEY,
+                    node1_index_id INTEGER,
+                    node1_location TEXT NOT NULL,
+                    node1_level BLOB NOT NULL,
+                    node2_index_id INTEGER,
+                    node2_location TEXT NOT NULL,
+                    node2_level BLOB NOT NULL,
+                    mapping_value REAL CHECK (0.0 <= mapping_value)
+                );
+                CREATE TABLE node1_matches(
+                    run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
+                    index_id INTEGER,
+                    mapping_level BLOB NOT NULL,
+                    weight_value REAL CHECK (0.0 <= weight_value),
+                    proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
+                );
+                CREATE TABLE node2_matches(
+                    run_id INTEGER NOT NULL REFERENCES mapping_source(run_id),
+                    index_id INTEGER,
+                    mapping_level BLOB NOT NULL,
+                    weight_value REAL CHECK (0.0 <= weight_value),
+                    proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0)
+                );
+            """)
+
+            for row in data:
+                # Unpack row values.
+                node1_index_id, node1_location, node1_level, \
+                node2_index_id, node2_location, node2_level, mapping_value = row
+
+                sql = 'INSERT INTO mapping_source VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)'
+                parameters = (
+                    node1_index_id,
+                    dumps(node1_location),
+                    bytes(node1_level),
+                    node2_index_id,
+                    dumps(node2_location),
+                    bytes(node2_level),
+                    mapping_value,
+                )
+                cur.execute(sql, parameters)
 
     @staticmethod
     def _create_schema(cur: sqlite3.Cursor) -> None:

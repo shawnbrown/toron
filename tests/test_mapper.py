@@ -47,21 +47,25 @@ class TestMapperInit(unittest.TestCase):
             ]
             self.assertEqual(cur.fetchall(), expected)
 
-    def test_init(self):
+    def test_instantiation(self):
         data = [
-            ['foo', 'bar', 'baz', 'qux', 'foo', 'bar'],
-            ['A-1', 'X-1', '1-1', 100.0, 'A-2', 'X-2'],
-            ['B-1', 'Y-1', '2-1', 200.0, 'B-2', 'Y-2'],
-            ['C-1', 'Z-1', '3-1', 300.0, 'C-2', 'Z-2'],
+            [1, ['A-1', 'X-1', '1-1'], BitFlags(1, 1, 1), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
+            [2, ['B-1', 'Y-1', '2-1'], BitFlags(1, 1, 1), 2, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
+            [3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
         ]
 
-        mapper = Mapper('qux', data)
-        self.assertEqual(mapper.left_header, ['foo', 'bar', 'baz'])
-        self.assertEqual(mapper.right_header, ['foo', 'bar'])
+        mapper = Mapper('qux', data)  # <- Init under test.
 
-        regex = "'corge' is not in data"
-        with self.assertRaisesRegex(ValueError, regex):
-            Mapper('corge', data)
+        with closing(mapper.con.cursor()) as cur:
+            cur.execute('SELECT * FROM mapping_source;')
+            result = cur.fetchall()
+
+        expected = [
+            (1, 1, '["A-1", "X-1", "1-1"]', b'\xe0', 1, '["A-2", "X-2"]', b'\xc0', 100.0),
+            (2, 2, '["B-1", "Y-1", "2-1"]', b'\xe0', 2, '["B-2", "Y-2"]', b'\xc0', 200.0),
+            (3, 3, '["C-1", "Z-1", "3-1"]', b'\xe0', 3, '["C-2", "Z-2"]', b'\xc0', 300.0)
+        ]
+        self.assertEqual(result, expected)
 
 
 class TestMapper_OLD_Init(unittest.TestCase):
