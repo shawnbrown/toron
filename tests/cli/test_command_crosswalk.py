@@ -465,6 +465,28 @@ class TestNormalizeMappingData(TwoNodeFixtures, unittest.TestCase):
         ]
         self.assertEqual(list(actual), expected)
 
+    def test_input_flipped(self):
+        """Regardless of input order, should output node1 (left) node2 (right)."""
+        flipped_input_data = [
+            ['index_code', 'foo', 'bar', 'corge', 'index_code', 'foo', 'bar', 'baz'],
+            ['1XF7F2FF38', 'A-2', 'X-2',   100.0, '1XA0157D6E', 'A-1', 'X-1', '1-1'],
+            ['2XA468A4BC', 'B-2', 'Y-2',   200.0, '2XF38F26EA', 'B-1', 'Y-1', '2-1'],
+            ['3X23CE6FFF', 'C-2', 'Z-2',   300.0, '3X7429EDA9', 'C-1', 'Z-1', '3-1'],
+        ]
+        actual = command_crosswalk.normalize_mapping_data(
+            node1=self.node_a,
+            node2=self.node_b,
+            crosswalk_name='corge',
+            data=flipped_input_data,  # <- Flipped left-to-right.
+        )
+
+        expected = [
+            [1, ['A-1', 'X-1', '1-1'], BitFlags(1, 1, 1), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
+            [2, ['B-1', 'Y-1', '2-1'], BitFlags(1, 1, 1), 2, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
+            [3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
+        ]
+        self.assertEqual(list(actual), expected, msg='order should be: <node1> <node2> <crosswalk>')
+
     def test_index_codes_only(self):
         actual = command_crosswalk.normalize_mapping_data(
             node1=self.node_a,
