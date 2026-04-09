@@ -68,6 +68,30 @@ class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
         )
         self.assertEqual(list(data_iter), data_list)
 
+    def test_index_codes_only(self):
+        positions, _ = command_crosswalk.get_column_positions(
+            node1=self.node_a,
+            node2=self.node_b,
+            crosswalk_name='corge',
+            data=[
+                ['1XA0157D6E', 100.0, '1XF7F2FF38'],
+                ['2XF38F26EA', 200.0, '2XA468A4BC'],
+                ['3X7429EDA9', 300.0, '3X23CE6FFF'],
+            ],
+            columns=['index_code', 'corge', 'index_code'],
+        )
+
+        self.assertEqual(
+            positions,
+            {'node1_index_pos': 0,
+             'node1_start': 0,
+             'node1_stop': 1,
+             'node2_index_pos': 2,
+             'node2_start': 2,
+             'node2_stop': 3,
+             'value_position': 1},
+        )
+
     def test_one_missing_index(self):
         """When only one index is found, check other side for header match."""
         positions, _ = command_crosswalk.get_column_positions(
