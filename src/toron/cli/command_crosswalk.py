@@ -10,12 +10,14 @@ from itertools import (
 from .._typing import (
     Callable,
     Dict,
+    Generator,
     Iterable,
     Iterator,
     List,
     Optional,
     Sequence,
     Tuple,
+    Union,
 )
 
 from .. import TopoNode
@@ -26,6 +28,7 @@ from .common import (
     get_index_code_position,
 )
 from .._utils import (
+    normalize_tabular,
     ToronError,
     BitFlags,
 )
@@ -273,6 +276,56 @@ def make_getter_functions(
         return node_entire_space
 
     return (node_get_index_id, node_get_location, node_get_level)
+
+
+def normalize_mapping_data(
+    node1: TopoNode,
+    node2: TopoNode,
+    crosswalk_name: str,
+    data: Union[Iterable[Sequence], Iterable[Dict]],
+    columns: Optional[Sequence[str]] = None,
+) -> Generator[Sequence, None, None]:
+    """Normalize mapping data to yield lists to load into Mapper."""
+    data, columns = normalize_tabular(data, columns)
+    positions, data_iter = get_column_positions(node1, node2, crosswalk_name, data, columns)
+
+    value_position = get_mapping_value_position(columns, crosswalk_name)
+    get_mapping_value = lambda row: row[value_position]
+
+    (node1_get_index_id,
+     node1_get_location,
+     node1_get_level) = make_getter_functions(node1,
+                                              positions['node1_index_pos'],
+                                              columns,
+                                              positions['node1_start'],
+                                              positions['node1_stop'])
+
+    (node2_get_index_id,
+     node2_get_location,
+     node2_get_level) = make_getter_functions(node2,
+                                              positions['node2_index_pos'],
+                                              columns,
+                                              positions['node2_start'],
+                                              positions['node2_stop'])
+
+    for row in data_iter:
+        node1_index_id = node1_get_index_id(row)
+        node1_location = node1_get_location(row)
+
+        node2_index_id = node2_get_index_id(row)
+        node2_location = node2_get_location(row)
+
+        yield [
+            node1_index_id,
+            node1_location,
+            node1_get_level(node1_index_id, node1_location),
+
+            node2_index_id,
+            node2_location,
+            node2_get_level(node2_index_id, node2_location),
+
+            get_mapping_value(row),
+        ]
 
 
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
