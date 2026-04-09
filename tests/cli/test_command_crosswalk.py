@@ -1,7 +1,67 @@
 """Tests for toron/cli/command_crosswalk.py module."""
 from .. import _unittest as unittest
+from toron import TopoNode
 
 from toron.cli import command_crosswalk
+
+
+class TwoNodeFixtures(object):
+    def setUp(self):
+        self.maxDiff = None
+
+        self.node_a = TopoNode()
+        self.node_a._connector._unique_id = '11111111-1111-1111-1111-111111111111'
+        self.node_a.add_index_columns('foo', 'bar', 'baz')
+        self.node_a.add_discrete_categories({'foo', 'bar', 'baz'})
+        self.node_a.add_weight_group('qux', make_default=True)
+        self.node_a.insert_index([
+            ['foo', 'bar', 'baz', 'qux'],
+            ['A-1', 'X-1', '1-1', 100.0],
+            ['B-1', 'Y-1', '2-1', 200.0],
+            ['C-1', 'Z-1', '3-1', 300.0],
+        ])
+
+        self.node_b = TopoNode()
+        self.node_b._connector._unique_id = '22222222-2222-2222-2222-222222222222'
+        self.node_b.add_index_columns('foo', 'bar')
+        self.node_b.add_discrete_categories({'foo', 'bar'})
+        self.node_b.add_weight_group('quux', make_default=True)
+        self.node_b.insert_index([
+            ['foo', 'bar', 'quux'],
+            ['A-2', 'X-2', 100.0],
+            ['B-2', 'Y-2', 200.0],
+            ['C-2', 'Z-2', 300.0],
+        ])
+
+
+class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
+    def test_simple_case(self):
+        header = ['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar']
+        data_list = [
+            ['1XA0157D6E', 'A-1', 'X-1', '1-1', 100.0, '1XF7F2FF38', 'A-2', 'X-2'],
+            ['2XF38F26EA', 'B-1', 'Y-1', '2-1', 200.0, '2XA468A4BC', 'B-2', 'Y-2'],
+            ['3X7429EDA9', 'C-1', 'Z-1', '3-1', 300.0, '3X23CE6FFF', 'C-2', 'Z-2'],
+        ]
+
+        result = command_crosswalk.get_column_positions(
+            node1=self.node_a,
+            node2=self.node_b,
+            crosswalk_name='corge',
+            data=data_list,
+            columns=header,
+        )
+
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        positions, data_iter = result
+
+        self.assertEqual(
+            positions,
+            {'node1_index_pos': 0,
+             'node2_index_pos': 5,
+             'value_position': 4},
+        )
+        self.assertEqual(list(data_iter), data_list)
 
 
 class TestGetLocationFactory(unittest.TestCase):

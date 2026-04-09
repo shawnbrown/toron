@@ -1,17 +1,86 @@
 """Implementation for "crosswalk" command."""
 import argparse
 import logging
+import uuid
+from contextlib import suppress
+from itertools import (
+    chain,
+    islice,
+)
 from .._typing import (
     Callable,
+    Dict,
+    Iterable,
+    Iterator,
     List,
     Optional,
     Sequence,
+    Tuple,
 )
 
-from .common import ExitCode
+from .. import TopoNode
+from ..mapper import get_mapping_value_position
+from .common import (
+    ExitCode,
+    get_index_code_position,
+)
+from .._utils import ToronError
 
 
 applogger = logging.getLogger('app-toron')
+
+
+def get_column_positions(
+    node1: TopoNode,
+    node2: TopoNode,
+    crosswalk_name: str,
+    data: Iterable[Sequence],
+    columns: Sequence[str],
+) -> Tuple[Dict[str, Optional[int]], Iterator[Sequence]]:
+    """Find positions and return positions dict and data iterator."""
+    data_iter = iter(data)  # Must be iterator.
+
+    value_position = get_mapping_value_position(columns, crosswalk_name)
+
+    # Scan through data 8 rows (chunk_size) at a time looking for index
+    # code columns but give up after 256 (scan_limit) rows.
+    chunk_size = 8
+    scan_limit = 256
+
+    unscanned_rows = islice(data_iter, scan_limit)
+    scanned_rows = []
+
+    node1_id_bytes = uuid.UUID(node1.unique_id).bytes
+    node2_id_bytes = uuid.UUID(node2.unique_id).bytes
+
+    node1_index_pos = None
+    node2_index_pos = None
+
+    sample_rows: List[Sequence] = list(islice(unscanned_rows, chunk_size))
+    while sample_rows:
+        if node1_index_pos is None:
+            with suppress(RuntimeError):
+                node1_index_pos = get_index_code_position(sample_rows, node1_id_bytes)
+
+        if node2_index_pos is None:
+            with suppress(RuntimeError):
+                node2_index_pos = get_index_code_position(sample_rows, node2_id_bytes)
+
+        scanned_rows.extend(sample_rows)
+        if (node1_index_pos is not None) and (node2_index_pos is not None):
+            break
+        else:
+            sample_rows = list(islice(unscanned_rows, chunk_size))
+
+    # Prepare and return result values.
+    positions = {
+        'node1_index_pos': node1_index_pos,
+        'node2_index_pos': node2_index_pos,
+        'value_position': value_position,
+    }
+    data_iter = chain(scanned_rows, data_iter)
+
+    return (positions, data_iter)
 
 
 def get_location_factory(
