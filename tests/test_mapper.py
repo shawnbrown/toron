@@ -72,6 +72,123 @@ class TestMapperInit(TopoNodeFixtures, unittest.TestCase):
             mapper = Mapper(self.node_a, self.node_b, data)
 
 
+class TestRefreshProportions(unittest.TestCase):
+    def setUp(self):
+        """Set-up cursor and simplified dummy table for testing."""
+        connection = sqlite3.connect(':memory:')
+        self.addCleanup(connection.close)
+
+        self.cursor = connection.cursor()
+        self.addCleanup(self.cursor.close)
+
+        self.cursor.execute("""
+            CREATE TEMP TABLE node2_matches(
+                run_id, index_id, mapping_level, weight_value, proportion
+            )
+        """)
+
+    def get_node2_matches(self):
+        """Helper method to get contents of 'node2_matches' table."""
+        self.cursor.execute('SELECT * FROM node2_matches;')
+        return set(self.cursor.fetchall())
+
+    def test_one_to_one(self):
+        self.cursor.execute("""
+            INSERT INTO
+                node2_matches
+            VALUES
+                (1, 1, X'C0',  3.0, NULL),
+                (2, 2, X'C0', 15.0, NULL),
+                (3, 3, X'C0',  3.0, NULL),
+                (4, 4, X'C0',  7.0, NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'node2')  # <- Method under test.
+
+        self.assertEqual(self.get_node2_matches(), {(1, 1, b'\xc0',  3.0, 1.0),
+                                                    (2, 2, b'\xc0', 15.0, 1.0),
+                                                    (3, 3, b'\xc0',  3.0, 1.0),
+                                                    (4, 4, b'\xc0',  7.0, 1.0)})
+
+    def test_many_to_one(self):
+        self.cursor.execute("""
+            INSERT INTO
+                node2_matches
+            VALUES
+                (1, 1, X'C0',  3.0, NULL),
+                (2, 1, X'C0', 15.0, NULL),
+                (3, 2, X'C0',  3.0, NULL),
+                (4, 2, X'C0',  7.0, NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'node2')  # <- Method under test.
+
+        self.assertEqual(self.get_node2_matches(), {(1, 1, b'\xc0',  3.0, 1.0),
+                                                    (2, 1, b'\xc0', 15.0, 1.0),
+                                                    (3, 2, b'\xc0',  3.0, 1.0),
+                                                    (4, 2, b'\xc0',  7.0, 1.0)})
+
+    def test_one_to_many(self):
+        self.cursor.execute("""
+            INSERT INTO
+                node2_matches
+            VALUES
+                (1, 1, X'C0',  3.0, NULL),
+                (2, 2, X'C0',  7.0, NULL),
+                (3, 3, X'C0', 12.5, NULL),
+                (3, 4, X'C0', 37.5, NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'node2')  # <- Method under test.
+
+        self.assertEqual(self.get_node2_matches(), {(1, 1, b'\xc0',  3.0, 1.00),
+                                                    (2, 2, b'\xc0',  7.0, 1.00),
+                                                    (3, 3, b'\xc0', 12.5, 0.25),
+                                                    (3, 4, b'\xc0', 37.5, 0.75)})
+
+    def test_many_to_many(self):
+        self.cursor.execute("""
+            INSERT INTO
+                node2_matches
+            VALUES
+                (1, 1, X'80', 20.0, NULL),
+                (1, 2, X'80', 12.0, NULL),
+                (2, 1, X'C0', 12.5, NULL),
+                (2, 2, X'C0', 37.5, NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'node2')  # <- Method under test.
+
+        self.assertEqual(self.get_node2_matches(), {(1, 1, b'\x80', 20.0, 0.625),
+                                                    (1, 2, b'\x80', 12.0, 0.375),
+                                                    (2, 1, b'\xc0', 12.5, 0.250),
+                                                    (2, 2, b'\xc0', 37.5, 0.750)})
+
+    def test_many_to_many_zero_weight(self):
+        self.cursor.execute("""
+            INSERT INTO
+                node2_matches
+            VALUES
+                (1, 1, X'E0', 0.0, NULL),
+                (2, 2, X'C0', 0.0, NULL),
+                (2, 3, X'C0', 0.0, NULL),
+                (3, 2, X'80', 0.0, NULL),
+                (3, 3, X'80', 0.0, NULL),
+                (3, 4, X'80', 0.0, NULL),
+                (3, 5, X'80', 0.0, NULL)
+        """)
+
+        Mapper._refresh_proportions(self.cursor, 'node2')  # <- Method under test.
+
+        self.assertEqual(self.get_node2_matches(), {(1, 1, b'\xe0', 0.0, 1.00),
+                                                    (2, 2, b'\xc0', 0.0, 0.50),
+                                                    (2, 3, b'\xc0', 0.0, 0.50),
+                                                    (3, 2, b'\x80', 0.0, 0.25),
+                                                    (3, 3, b'\x80', 0.0, 0.25),
+                                                    (3, 4, b'\x80', 0.0, 0.25),
+                                                    (3, 5, b'\x80', 0.0, 0.25)})
+
+
 class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod
     def get_mapping_data(mapper):

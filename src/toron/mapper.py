@@ -162,6 +162,32 @@ class Mapper(object):
                 )
                 cur.execute(sql, parameters)
 
+    @staticmethod
+    def _refresh_proportions(
+        cur: sqlite3.Cursor, node_var: Literal['node1', 'node2']
+    ) -> None:
+        """Update 'proportion' values in left or right matches table."""
+        cur.execute(f"""
+            WITH
+                WeightAggregates AS (
+                    SELECT
+                        run_id,
+                        SUM(weight_value) AS total_weight,
+                        COUNT(*)          AS record_count
+                    FROM {node_var}_matches
+                    GROUP BY run_id
+                )
+            UPDATE {node_var}_matches
+            SET proportion=COALESCE(
+                (CAST(weight_value AS REAL) / (SELECT total_weight
+                                               FROM WeightAggregates
+                                               WHERE {node_var}_matches.run_id=WeightAggregates.run_id)),
+                (1.0 / (SELECT record_count
+                        FROM WeightAggregates
+                        WHERE {node_var}_matches.run_id=WeightAggregates.run_id))
+            )
+        """)
+
     def close(self) -> None:
         """Close internal connection to temporary database."""
         self.con.close()
