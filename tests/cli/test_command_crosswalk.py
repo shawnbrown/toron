@@ -1,12 +1,12 @@
 """Tests for toron/cli/command_crosswalk.py module."""
 from .. import _unittest as unittest
-from ..common import TwoNodeFixtures
+from ..common import TopoNodeFixtures
 from toron._utils import ToronError, BitFlags
 
 from toron.cli import command_crosswalk
 
 
-class TestGetColumnPositions(TwoNodeFixtures, unittest.TestCase):
+class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
     def test_simple_case(self):
         header = ['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar']
         data_list = [
@@ -295,7 +295,7 @@ class TestGetLocationFactory(unittest.TestCase):
             )
 
 
-class TestMakeGetterFunctions(TwoNodeFixtures, unittest.TestCase):
+class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
     def test_return_types(self):
         result = command_crosswalk.make_getter_functions(
             node=self.node_a,
@@ -416,7 +416,7 @@ class TestMakeGetterFunctions(TwoNodeFixtures, unittest.TestCase):
         )
 
 
-class TestNormalizeMappingData(TwoNodeFixtures, unittest.TestCase):
+class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
     def test_index_codes_and_labels(self):
         actual = command_crosswalk.normalize_mapping_data(
             node1=self.node_a,

@@ -90,8 +90,8 @@ class TempDirTestCase(unittest.TestCase):
                 os.remove(path)
 
 
-class TwoNodeFixtures(object):
-    """A mixin class for testing with two TopoNode fixtures in setUp()."""
+class TopoNodeFixtures(object):
+    """A mixin class for testing with TopoNode fixtures in setUp()."""
     def setUp(self):
         self.maxDiff = None
 
@@ -117,6 +117,33 @@ class TwoNodeFixtures(object):
             ['A-2', 'X-2', 100.0],
             ['B-2', 'Y-2', 200.0],
             ['C-2', 'Z-2', 300.0],
+        ])
+
+        self.node_c = TopoNode()
+        self.node_c._connector._unique_id = '33333333-3333-3333-3333-333333333333'
+        self.node_c.add_index_columns('lbl1')
+        self.node_c.add_discrete_categories({'lbl1'})
+        self.node_c.add_weight_group('wght1', make_default=True)
+        self.node_c.insert_index([
+            ['lbl1', 'wght1'],
+            ['A', 16],
+            ['B', 8],
+            ['C', 32],
+        ])
+
+        self.node_d = TopoNode()
+        self.node_d._connector._unique_id = '44444444-4444-4444-4444-444444444444'
+        self.node_d.add_index_columns('lbl1', 'lbl2')
+        self.node_d.add_discrete_categories({'lbl1'})
+        self.node_d.add_weight_group('wght1', make_default=True)
+        self.node_d.insert_index([
+            ['lbl1', 'lbl2', 'wght1'],
+            ['A', 'x',  5],
+            ['A', 'y', 15],
+            ['B', 'x',  3],
+            ['B', 'y',  5],
+            ['C', 'x', 13],
+            ['C', 'y', 22],
         ])
 
 

@@ -6,7 +6,7 @@ import unittest
 from contextlib import closing
 from io import StringIO
 
-from .common import TwoNodeFixtures
+from .common import TopoNodeFixtures
 
 from toron.node import TopoNode
 from toron.mapper import Mapper, Mapper_OLD
@@ -14,7 +14,7 @@ from toron.data_models import Structure
 from toron._utils import BitFlags
 
 
-class TestMapperInit(TwoNodeFixtures, unittest.TestCase):
+class TestMapperInit(TopoNodeFixtures, unittest.TestCase):
     @staticmethod
     def get_mapping_source(mapper):
         """Helper method to get contents of 'mapping_source' table."""
