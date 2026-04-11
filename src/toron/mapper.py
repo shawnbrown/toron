@@ -246,9 +246,18 @@ class Mapper(object):
                         criteria = {k: v for k, v in zipped if v != ''}
                         all_matches = index_repo.filter_index_ids_by_label(criteria)
 
-                        matches = list(all_matches)  # Eagerly evaluate (TODO: REFINE THIS).
-                        if len(matches) > 1:
-                            raise NotImplementedError('ambiguous mappings not yet implemented')
+                        # Eagerly evaluate up to `match_limit` + 1 matches.
+                        matches = list(islice(all_matches, match_limit + 1))
+                        len_matches = len(matches)
+
+                        # If over match_limit, count and skip to next.
+                        if len_matches > match_limit:
+                            overlimit = len_matches + sum(1 for _ in all_matches)
+                            counter['highest_overlimit'] = max(
+                                counter['highest_overlimit'], overlimit
+                            )
+                            counter['count_overlimit'] += 1
+                            continue  # Skip to next row in mapping.
 
                     # Build tuple of `(index_id, weight_value)` for matches.
                     index_id_and_weight_value = []
@@ -268,6 +277,17 @@ class Mapper(object):
                         cur2.execute(sql, parameters)
 
             self._refresh_proportions(cur1, node_var)
+
+        if counter['count_overlimit']:
+            applogger.warning(
+                f"skipped {counter['count_overlimit']} values that matched "
+                f"too many records"
+            )
+            applogger.warning(
+                f"current match_limit is {match_limit} but mapping includes "
+                f"values that match up to {counter['highest_overlimit']} "
+                f"records"
+            )
 
     def close(self) -> None:
         """Close internal connection to temporary database."""

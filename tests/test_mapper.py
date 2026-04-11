@@ -234,6 +234,51 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
              (3, 3, b'\x80', 32.0, 1.0)},
         )
 
+    def test_ambiguous_matches_over_limit(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
+                  [None, ['A'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 40],
+                  [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 80]],  # <- Matches to 2 records.
+        )
+
+        with self.assertLogs('app-toron') as cm:
+            mapper.match_node_records('node2')  # <- match_limit dafaults to 1
+
+        self.assertEqual(
+            cm.output,
+            ['WARNING:app-toron.mapper:skipped 1 values that matched too many records',
+             'WARNING:app-toron.mapper:current match_limit is 1 but mapping includes values that match up to 2 records'],
+        )
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node2'),
+            {(1, 1, b'\xc0',  5.0, 1.0),
+             (2, 2, b'\xc0', 15.0, 1.0)},
+            msg=('should only match two records, other records are '
+                 'over the match limit'),
+        )
+
+    def test_ambiguous_matches_within_limit(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
+                  [None, ['A'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 40],
+                  [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 80]],  # <- Matches to 2 records.
+        )
+
+        mapper.match_node_records('node2', match_limit=2)  # <- match_limit dafaults to 1
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node2'),
+            {(1, 1, b'\xc0',  5.0, 1.0),
+             (2, 2, b'\xc0', 15.0, 1.0),
+             (3, 3, b'\x80',  3.0, 0.375),   # <- Ambiguous, has different level (b'\x80').
+             (3, 4, b'\x80',  5.0, 0.625)},  # <- Ambiguous, has different level (b'\x80').
+        )
+
 
 class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod
