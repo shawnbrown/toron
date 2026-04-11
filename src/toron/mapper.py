@@ -253,6 +253,9 @@ class Mapper(object):
                         # Eagerly evaluate up to `match_limit` + 1 matches.
                         matches = list(islice(all_matches, match_limit + 1))
                         len_matches = len(matches)
+                        if not len_matches:
+                            counter['no_label_match'] += 1
+                            continue  # Skip to next record.
 
                         # If over match_limit, count and skip to next.
                         if len_matches > match_limit:
@@ -320,6 +323,12 @@ class Mapper(object):
             applogger.warning(
                 f"skipped {counter['missing_index_id']} index id values that "
                 f"no longer exist"
+            )
+
+        if counter['no_label_match']:
+            applogger.warning(
+                f"skipped {counter['no_label_match']} rows because their "
+                f"labels do not match any index records"
             )
 
         if counter['overlaps_included']:
