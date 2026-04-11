@@ -259,6 +259,26 @@ class Mapper(object):
                             counter['count_overlimit'] += 1
                             continue  # Skip to next row in mapping.
 
+                        # If match is ambiguous, check for records that overlap
+                        # with records that have already been matched at a finer
+                        # level of granularity.
+                        if len_matches > 1:
+                            sql = f"""
+                                SELECT EXISTS (
+                                    SELECT 1 FROM {node_var}_matches
+                                    WHERE index_id = ? AND mapping_level != ?
+                                )
+                            """
+                            is_overlap = lambda x: cur2.execute(sql, (x, mapping_level)).fetchone()[0]
+
+                            if allow_overlapping:
+                                counter['overlaps_included'] += \
+                                    sum(is_overlap(x) for x in matches)
+                            else:
+                                # When not allowed, filter to non-overlapping only.
+                                matches = [x for x in matches if is_overlap(x) == 0]
+                                counter['overlaps_excluded'] += len_matches - len(matches)
+
                     # Build tuple of `(index_id, weight_value)` for matches.
                     index_id_and_weight_value = []
                     for index_id in matches:
@@ -286,6 +306,19 @@ class Mapper(object):
                         cur2.execute(sql, parameters)
 
             self._refresh_proportions(cur1, node_var)
+
+        if counter['overlaps_included']:
+            applogger.info(
+                f"included {counter['overlaps_included']} ambiguous matches "
+                f"that overlap with records that were also matched at a finer "
+                f"level of granularity"
+            )
+        elif counter['overlaps_excluded']:
+            applogger.warning(
+                f"omitted {counter['overlaps_excluded']} ambiguous matches "
+                f"that overlap with records that were already matched at a "
+                f"finer level of granularity"
+            )
 
         if counter['count_overlimit']:
             applogger.warning(

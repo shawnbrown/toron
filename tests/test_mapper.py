@@ -339,6 +339,91 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         # notice that the self.mapper_data record `['A', 70, 'A', 'x']` IS matched
         # because it's an exact match (despite lacking a weight).
 
+    def test_overlapping_not_allowed(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
+                  [None, ['A'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 40],
+                  [None, ['B'], BitFlags(1), None, ['B', 'x'], BitFlags(1, 1), 80],
+                  [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 80]],  # <- Ambiguous mapping.
+        )
+
+        with self.assertLogs('app-toron') as cm:
+            mapper.match_node_records('node2', match_limit=2)  # <- allow_overlapping defaults to False
+
+        self.assertEqual(
+            cm.output,
+            ['WARNING:app-toron.mapper:omitted 1 ambiguous matches that '
+               'overlap with records that were already matched at a finer '
+               'level of granularity'],
+        )
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node2'),
+            {(1, 1, b'\xc0',  5.0, 1.0),
+             (2, 2, b'\xc0', 15.0, 1.0),
+             (3, 3, b'\xc0',  3.0, 1.0),  # <- 3 on right side is already matched
+             (4, 4, b'\x80',  5.0, 1.0)},  # <- Only one record (overlap of 3 is omitted)
+            msg='should omit the overlap with `B, x` (index_id 3 on the right side)',
+        )
+
+    def test_overlapping_allowed(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
+                  [None, ['A'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 40],
+                  [None, ['B'], BitFlags(1), None, ['B', 'x'], BitFlags(1, 1), 80],
+                  [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 80]],  # <- Ambiguous mapping.
+        )
+
+        with self.assertLogs('app-toron') as cm:
+            mapper.match_node_records('node2', match_limit=2, allow_overlapping=True)
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.mapper:included 1 ambiguous matches that '
+               'overlap with records that were also matched at a finer '
+               'level of granularity'],
+        )
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node2'),
+            {(1, 1, b'\xc0',  5.0, 1.0),
+             (2, 2, b'\xc0', 15.0, 1.0),
+             (3, 3, b'\xc0',  3.0, 1.0),
+             (4, 3, b'\x80',  3.0, 0.375),  # <- Overlaps with exact match `3, 3`.
+             (4, 4, b'\x80',  5.0, 0.625)},
+            msg='should include the overlap with `B, x` (index_id 3)',
+        )
+
+    def test_duplicate_labels_not_always_overlapping(self):
+        """If there are multiple records that use the same labels, they
+        should be matched normally if they all use the same mapping
+        level--they should not count as being overlapped.
+        """
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
+                  [None, ['A'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 40],
+                  [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 20],   # <- Duplicate labels using same mapping level.
+                  [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 40]],  # <- Duplicate labels using same mapping level.
+        )
+
+        mapper.match_node_records('node2', match_limit=2)  # <- allow_overlapping defaults to False
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node2'),
+            {(1, 1, b'\xc0',  5.0, 1.0),
+             (2, 2, b'\xc0', 15.0, 1.0),
+             (3, 3, b'\x80',  3.0, 0.375),   # <- Multiple matches.
+             (3, 4, b'\x80',  5.0, 0.625),   # <- Multiple matches.
+             (4, 3, b'\x80',  3.0, 0.375),   # <- Multiple matches.
+             (4, 4, b'\x80',  5.0, 0.625)},  # <- Multiple matches.
+        )
+
 
 class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod
