@@ -279,6 +279,66 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
              (3, 4, b'\x80',  5.0, 0.625)},  # <- Ambiguous, has different level (b'\x80').
         )
 
+    def test_missing_weight_exact_match(self):
+        """Exact matches are OK even when weight is missing."""
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
+                  [None, ['A'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 40],
+                  [None, ['B'], BitFlags(1), None, ['B', 'x'], BitFlags(1, 1), 80],
+                  [None, ['B'], BitFlags(1), None, ['B', 'y'], BitFlags(1, 1), 80]],
+        )
+        # Delete a weight record that's only involved in an exact match.
+        self.node_d.delete_weights('wght1', lbl1='B', lbl2='x')
+
+        mapper.match_node_records('node2', match_limit=2)  # <- Method under test.
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node2'),
+            {(1, 1, b'\xc0',  5.0, 1.0),
+             (2, 2, b'\xc0', 15.0, 1.0),
+             (3, 3, b'\xc0', None, 1.0),  # <- Weight missing but exact match.
+             (4, 4, b'\xc0',  5.0, 1.0)},
+        )
+
+    def test_missing_weight_ambiguous_match(self):
+        """Ambiguous matches require weight values for all records.
+        If one or more matched records is missing a weight, then the
+        match must be skipped because there's no way to calculate a
+        distribution.
+        """
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],   # <- exact match
+                  [None, ['A'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 30],   # <- exact match
+                  [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 80]],  # <- ambiguous match
+        )
+        self.node_d.delete_weights('wght1', lbl1='A', lbl2='x')  # <- gets matched exactly
+        self.node_d.delete_weights('wght1', lbl1='B', lbl2='y')  # <- gets matched ambiguously
+
+        with self.assertLogs('app-toron') as cm:
+            mapper.match_node_records('node2', match_limit=2)  # <- Method under test.
+
+        self.assertEqual(
+            cm.output,
+            ['WARNING:app-toron.mapper:skipped 1 values that ambiguously '
+               'matched to one or more records that have no associated weight'],
+        )
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node2'),
+            {(1, 1, b'\xc0', None, 1.0),  # <- Weight missing but exact match.
+             (2, 2, b'\xc0', 15.0, 1.0)},
+        )
+
+        # Above, the self.mapper_data record `['B', 80, 'B', '']` is not matched
+        # to the right-side table because it's ambiguous AND one of the involved
+        # index records has no corresponding weight (`B, y`, index_id 4). Also
+        # notice that the self.mapper_data record `['A', 70, 'A', 'x']` IS matched
+        # because it's an exact match (despite lacking a weight).
+
 
 class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod

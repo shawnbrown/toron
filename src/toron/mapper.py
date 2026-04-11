@@ -262,8 +262,17 @@ class Mapper(object):
                     # Build tuple of `(index_id, weight_value)` for matches.
                     index_id_and_weight_value = []
                     for index_id in matches:
-                        weight_value = get_weight(weight_group_id, index_id).value
+                        try:
+                            weight_value = get_weight(weight_group_id, index_id).value
+                        except KeyError:
+                            weight_value = None
                         index_id_and_weight_value.append((index_id, weight_value))
+
+                    # If match is ambiguous and any weight is missing, skip it.
+                    if len(index_id_and_weight_value) > 1 and \
+                            any(x is None for _, x in index_id_and_weight_value):
+                        counter['count_unweighted'] += 1
+                        continue  # Skip to next row in mapping.
 
                     # Insert matches into appropriate table.
                     for index_id, weight_value in index_id_and_weight_value:
@@ -287,6 +296,12 @@ class Mapper(object):
                 f"current match_limit is {match_limit} but mapping includes "
                 f"values that match up to {counter['highest_overlimit']} "
                 f"records"
+            )
+
+        if counter['count_unweighted']:
+            applogger.warning(
+                f"skipped {counter['count_unweighted']} values that ambiguously "
+                f"matched to one or more records that have no associated weight"
             )
 
     def close(self) -> None:
