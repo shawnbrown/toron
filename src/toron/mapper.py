@@ -337,6 +337,44 @@ class Mapper(object):
                 f"matched to one or more records that have no associated weight"
             )
 
+    @eagerly_initialize
+    def get_relations(
+        self, target_node: Literal['node1', 'node2']
+    ) -> Generator[Tuple[int, int, float, BitFlags], None, None]:
+        """Returns an iterator of relations for the given target node."""
+        if target_node == 'node1':
+            source_node = 'node2'
+        elif target_node == 'node2':
+            source_node = 'node1'
+        else:
+            raise ValueError
+
+        with closing(self.con.cursor()) as cur:
+            cur.execute(f"""
+                WITH
+                    joint_probability AS (
+                        SELECT
+                            run_id,
+                            src.index_id AS other_index_id,
+                            trg.index_id AS index_id,
+                            trg.mapping_level AS mapping_level,
+                            src.proportion * trg.proportion AS proportion
+                        FROM {source_node}_matches src
+                        JOIN {target_node}_matches trg USING (run_id)
+                    )
+                SELECT
+                    other_index_id,
+                    index_id,
+                    mapping_level,
+                    SUM(mapping_value * proportion) AS relation_value
+                FROM mapping_source
+                JOIN joint_probability USING (run_id)
+                GROUP BY other_index_id, index_id, mapping_level
+                ORDER BY other_index_id, index_id, mapping_level
+            """)
+            for row in cur:
+                yield row
+
     def close(self) -> None:
         """Close internal connection to temporary database."""
         self.con.close()

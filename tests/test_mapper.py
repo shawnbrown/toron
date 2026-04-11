@@ -426,6 +426,111 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         )
 
 
+class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
+    def test_exact_matches(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[1, [''], BitFlags(1), 1, ['', ''], BitFlags(1, 1), 10],
+                  [1, [''], BitFlags(1), 2, ['', ''], BitFlags(1, 1), 70],
+                  [2, [''], BitFlags(1), 3, ['', ''], BitFlags(1, 1), 20],
+                  [2, [''], BitFlags(1), 4, ['', ''], BitFlags(1, 1), 60],
+                  [3, [''], BitFlags(1), 5, ['', ''], BitFlags(1, 1), 30],
+                  [3, [''], BitFlags(1), 6, ['', ''], BitFlags(1, 1), 50]],
+        )
+        mapper.match_node_records('node1')
+        mapper.match_node_records('node2')
+
+        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+
+        self.assertEqual(set(relations), {(1, 1, b'\xc0', 10.0),
+                                          (1, 2, b'\xc0', 70.0),
+                                          (2, 3, b'\xc0', 20.0),
+                                          (2, 4, b'\xc0', 60.0),
+                                          (3, 5, b'\xc0', 30.0),
+                                          (3, 6, b'\xc0', 50.0)})
+
+    def test_ambiguous_no_overlaps(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A',  ''], BitFlags(1, 0), 90],   # <- Matched to 2 right-side records.
+                  [None, ['B'], BitFlags(1), None, ['B', 'x'], BitFlags(1, 1), 20],   # <- Exact match.
+                  [None, ['B'], BitFlags(1), None, ['B', 'y'], BitFlags(1, 1), 60],   # <- Exact match.
+                  [None, ['C'], BitFlags(1), None, ['C',  ''], BitFlags(1, 0), 28],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
+                  [None, ['C'], BitFlags(1), None, ['C', 'y'], BitFlags(1, 1),  7]],  # <- Exact match (overlaps the records matched on "C" alone).
+        )
+        mapper.match_node_records('node1')
+        mapper.match_node_records('node2', match_limit=2)
+
+        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+
+        self.assertEqual(
+            set(relations),
+            {(1, 1, b'\x80', 22.5),
+             (1, 2, b'\x80', 67.5),
+             (2, 3, b'\xc0', 20.0),
+             (2, 4, b'\xc0', 60.0),
+             (3, 5, b'\x80', 28.0),   # <- Gets full weight, `3, 6` overlap omitted.
+             (3, 6, b'\xc0',  7.0)},  # <- `3, 6` already matched at finer granularity.
+        )
+
+    def test_ambiguous_with_overlaps(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A',  ''], BitFlags(1, 0), 90],   # <- Matched to 2 right-side records.
+                  [None, ['B'], BitFlags(1), None, ['B', 'x'], BitFlags(1, 1), 20],   # <- Exact match.
+                  [None, ['B'], BitFlags(1), None, ['B', 'y'], BitFlags(1, 1), 60],   # <- Exact match.
+                  [None, ['C'], BitFlags(1), None, ['C',  ''], BitFlags(1, 0), 28],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
+                  [None, ['C'], BitFlags(1), None, ['C', 'y'], BitFlags(1, 1),  7]],  # <- Exact match (overlaps the records matched on "C" alone).
+        )
+        mapper.match_node_records('node1')
+        mapper.match_node_records('node2', match_limit=2, allow_overlapping=True)
+
+        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+
+        self.assertEqual(
+            set(relations),
+            {(1, 1, b'\x80', 22.5),
+             (1, 2, b'\x80', 67.5),
+             (2, 3, b'\xc0', 20.0),
+             (2, 4, b'\xc0', 60.0),
+             (3, 5, b'\x80', 10.4),   # <- Gets proportion of weight.
+             (3, 6, b'\x80', 17.6),   # <- Gets proportion of weight, overlaps with exact match `3, 6`.
+             (3, 6, b'\xc0',  7.0)},  # <- Exact match overlapped by ambiguous match.
+        )
+
+    def test_ambiguous_duplicate_mapping_labels(self):
+        """Duplicate records should not count as overlaps if they
+        share the same mapping level. When preparing a mappings, it's
+        convinient to delete values that cannot be precisely matched
+        but leave the original rows (rather than summing them before
+        loading). Instead, the mapper should accept such values and
+        sum them internally.
+        """
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', ''], BitFlags(1, 0), 30],   # <- Duplicate labels using same mapping level.
+                  [None, ['A'], BitFlags(1), None, ['A', ''], BitFlags(1, 0), 50],   # <- Duplicate labels using same mapping level.
+                  [None, ['B'], BitFlags(1), None, ['B', ''], BitFlags(1, 0), 20],   # <- Duplicate labels using same mapping level.
+                  [None, ['B'], BitFlags(1), None, ['B', ''], BitFlags(1, 0), 40]],  # <- Duplicate labels using same mapping level.
+        )
+        mapper.match_node_records('node1')
+        mapper.match_node_records('node2', match_limit=2, allow_overlapping=True)
+
+        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+
+        self.assertEqual(
+            set(relations),
+            {(1, 1, b'\x80', 20.0),   # <- total of 80 (30 + 50) distributed across two records
+             (1, 2, b'\x80', 60.0),   # <- total of 80 (30 + 50) distributed across two records
+             (2, 3, b'\x80', 22.5),   # <- total of 60 (20 + 40) distributed across two records
+             (2, 4, b'\x80', 37.5)},  # <- total of 60 (20 + 40) distributed across two records
+        )
+
+
 class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod
     def get_mapping_data(mapper):
