@@ -60,32 +60,34 @@ def get_mapping_value_position(
 
 
 class Mapper(object):
-    """Class to build a weighted crosswalk between sets of labels.
-
-    This class create a temporary database--when an instance is garbage
-    collected, its database is deleted. It uses the following schema:
-
-    .. code-block:: text
-
-        +---------------+    +----------------+    +---------------+
-        | node1_matches |    | mapping_source |    | node2_matches |
-        +---------------+    +----------------+    +---------------+
-        | run_id        |<---| run_id         |--->| run_id        |
-        | index_id      |    | node1_index_id |    | index_id      |
-        | mapping_level |    | node1_location |    | mapping_level |
-        | weight_value  |    | node1_level    |    | weight_value  |
-        | proportion    |    | node2_index_id |    | proportion    |
-        +---------------+    | node2_location |    +---------------+
-                             | node2_level    |
-                             | mapping_value  |
-                             +----------------+
-    """
+    """A class to build crosswalk relations between two nodes."""
     def __init__(
         self,
         node1: 'TopoNode',
         node2: 'TopoNode',
         data: Iterable[Sequence],
     ) -> None:
+        """Initialize a new Mapper instance.
+
+        This class create a temporary database--when an instance is
+        garbage collected, its database is deleted. It uses the
+        following schema:
+
+        .. code-block:: text
+
+            +---------------+    +----------------+    +---------------+
+            | node1_matches |    | mapping_source |    | node2_matches |
+            +---------------+    +----------------+    +---------------+
+            | run_id        |<---| run_id         |--->| run_id        |
+            | index_id      |    | node1_index_id |    | index_id      |
+            | mapping_level |    | node1_location |    | mapping_level |
+            | weight_value  |    | node1_level    |    | weight_value  |
+            | proportion    |    | node2_index_id |    | proportion    |
+            +---------------+    | node2_location |    +---------------+
+                                 | node2_level    |
+                                 | mapping_value  |
+                                 +----------------+
+        """
         self.con = sqlite3.connect('')  # Empty string creates temp file.
         self.node1 = node1
         self.node2 = node2
@@ -166,7 +168,7 @@ class Mapper(object):
     def _refresh_proportions(
         cur: sqlite3.Cursor, node_var: Literal['node1', 'node2']
     ) -> None:
-        """Update 'proportion' values in left or right matches table."""
+        """Update "proportion" values in a node's "matches" table."""
         cur.execute(f"""
             WITH
                 WeightAggregates AS (
@@ -194,7 +196,7 @@ class Mapper(object):
         match_limit: int = 1,
         allow_overlapping: bool = False,
     ) -> None:
-        """."""
+        """Match mapping data to a node's index records."""
         if node_var == 'node1':
             node = self.node1
             node_structure = self.node1_structure
@@ -365,7 +367,7 @@ class Mapper(object):
     def get_relations(
         self, target_node: Literal['node1', 'node2']
     ) -> Generator[Tuple[int, int, float, BitFlags], None, None]:
-        """Returns an iterator of relations for the given target node."""
+        """Return an iterator of relations for the given target node."""
         if target_node == 'node1':
             source_node = 'node2'
         elif target_node == 'node2':
