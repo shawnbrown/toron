@@ -333,11 +333,12 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
              (2, 2, b'\xc0', 15.0, 1.0)},
         )
 
-        # Above, the self.mapper_data record `['B', 80, 'B', '']` is not matched
-        # to the right-side table because it's ambiguous AND one of the involved
-        # index records has no corresponding weight (`B, y`, index_id 4). Also
-        # notice that the self.mapper_data record `['A', 70, 'A', 'x']` IS matched
-        # because it's an exact match (despite lacking a weight).
+        # Above, the source data record `['B']...['B', '']...80]` is
+        # not matched to the right-side table because it's ambiguous
+        # AND one of the involved index records has no corresponding
+        # weight (`B, y`, index_id 4). Also notice that the source
+        # data record `['A']...['A', 'x']...70]` IS matched because
+        # it's an exact match (despite lacking a weight).
 
     def test_overlapping_not_allowed(self):
         mapper = Mapper(
