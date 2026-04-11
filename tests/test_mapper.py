@@ -189,6 +189,34 @@ class TestRefreshProportions(unittest.TestCase):
                                                     (3, 5, b'\x80', 0.0, 0.25)})
 
 
+class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
+    @staticmethod
+    def get_node_matches(mapper, node_var):
+        """Helper method to get contents of 'node#_matches' table."""
+        assert node_var in {'node1', 'node2'}
+        with closing(mapper.con.cursor()) as cur:
+            cur.execute(f'SELECT * FROM {node_var}_matches;')
+            return set(cur.fetchall())
+
+    def test_exact_match_by_index_id(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[1, [''], BitFlags(1), 1, ['', ''], BitFlags(1, 1), 70],
+                  [2, [''], BitFlags(1), 4, ['', ''], BitFlags(1, 1), 80],
+                  [3, [''], BitFlags(1), 2, ['', ''], BitFlags(1, 1), 15]],
+        )
+
+        mapper.match_node_records('node1')  # <- Method under test.
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node1'),
+            {(1, 1, b'\x80', 16.0, 1.0),
+             (2, 2, b'\x80',  8.0, 1.0),
+             (3, 3, b'\x80', 32.0, 1.0)},
+        )
+
+
 class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod
     def get_mapping_data(mapper):

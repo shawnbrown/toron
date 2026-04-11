@@ -188,6 +188,76 @@ class Mapper(object):
             )
         """)
 
+    def match_node_records(
+        self,
+        node_var: Literal['node1', 'node2'],
+        match_limit: int = 1,
+        allow_overlapping: bool = False,
+    ) -> None:
+        """."""
+        if node_var == 'node1':
+            node = self.node1
+            node_structure = self.node1_structure
+            node_label_cols = self.node1.index_columns
+        elif node_var == 'node2':
+            node = self.node2
+            node_structure = self.node2_structure
+            node_label_cols = self.node2.index_columns
+        else:
+            raise ValueError
+
+        # Get all possible levels sorted from highest to lowest granularity.
+        keyfunc = lambda x: x.granularity if x.granularity is not None else -1
+        sorted_structure = sorted(node_structure, key=keyfunc, reverse=True)
+        sorted_levels = [bytes(BitFlags(x.bits)) for x in sorted_structure]
+
+        counter: Counter = Counter()
+        with node._managed_cursor() as node_cur, \
+                closing(self.con.cursor()) as cur1, \
+                closing(self.con.cursor()) as cur2:
+
+            index_repo = node._dal.IndexRepository(node_cur)
+            get_weight = (  # <- Assign shorter function name.
+                node._dal.WeightRepository(node_cur)
+                .get_by_weight_group_id_and_index_id
+            )
+            weight_group_id = get_default_weight_group(
+                node._dal.PropertyRepository(node_cur),
+                node._dal.WeightGroupRepository(node_cur),
+            ).id
+
+            # Loop over levels from highest to lowest granularity.
+            for mapping_level in sorted_levels:
+                sql = f"""
+                    SELECT run_id, {node_var}_index_id, {node_var}_location
+                    FROM mapping_source
+                    WHERE {node_var}_level=?
+                """
+                cur1.execute(sql, (mapping_level,))
+
+                for run_id, index_id, location in cur1:
+                    if index_id:
+                        index_repo.get(index_id)  # Verify that index exists.
+                        weight_value = get_weight(weight_group_id, index_id).value
+                        sql = f"""
+                            INSERT INTO {node_var}_matches
+                                (run_id, index_id, mapping_level, weight_value)
+                            VALUES
+                                (?, ?, ?, ?)
+                        """
+                        parameters = (run_id, index_id, mapping_level, weight_value)
+                        cur2.execute(sql, parameters)
+
+                    else:
+                        raise NotImplementedError('mapping by labels is not yet implemented')
+                        #zipped = zip(node_label_cols, loads(location))
+                        #criteria = {k: v for k, v in zipped if v != ''}
+                        #all_matches = index_repo.filter_index_ids_by_label(criteria)
+                        #...
+
+            self._refresh_proportions(cur1, node_var)
+
+
     def close(self) -> None:
         """Close internal connection to temporary database."""
         self.con.close()
