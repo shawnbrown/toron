@@ -237,17 +237,9 @@ class Mapper(object):
 
                 for run_id, index_id, location in cur1:
                     if index_id:
-                        index_repo.get(index_id)  # Verify that index exists.
-                        weight_value = get_weight(weight_group_id, index_id).value
-                        sql = f"""
-                            INSERT INTO {node_var}_matches
-                                (run_id, index_id, mapping_level, weight_value)
-                            VALUES
-                                (?, ?, ?, ?)
-                        """
-                        parameters = (run_id, index_id, mapping_level, weight_value)
-                        cur2.execute(sql, parameters)
-
+                        # Verify that index exists.
+                        index_repo.get(index_id)
+                        matches = [index_id]
                     else:
                         # Find records by matching labels.
                         zipped = zip(node_label_cols, loads(location))
@@ -258,25 +250,24 @@ class Mapper(object):
                         if len(matches) > 1:
                             raise NotImplementedError('ambiguous mappings not yet implemented')
 
-                        # Build tuple of `(index_id, weight_value)` for matches.
-                        index_id_and_weight_value = []
-                        for index_id in matches:
-                            weight_value = get_weight(weight_group_id, index_id).value
-                            index_id_and_weight_value.append((index_id, weight_value))
+                    # Build tuple of `(index_id, weight_value)` for matches.
+                    index_id_and_weight_value = []
+                    for index_id in matches:
+                        weight_value = get_weight(weight_group_id, index_id).value
+                        index_id_and_weight_value.append((index_id, weight_value))
 
-                        # Insert matches into appropriate table.
-                        for index_id, weight_value in index_id_and_weight_value:
-                            sql = f"""
-                                INSERT INTO {node_var}_matches
-                                    (run_id, index_id, mapping_level, weight_value)
-                                VALUES
-                                    (?, ?, ?, ?)
-                            """
-                            parameters = (run_id, index_id, mapping_level, weight_value)
-                            cur2.execute(sql, parameters)
+                    # Insert matches into appropriate table.
+                    for index_id, weight_value in index_id_and_weight_value:
+                        sql = f"""
+                            INSERT INTO {node_var}_matches
+                                (run_id, index_id, mapping_level, weight_value)
+                            VALUES
+                                (?, ?, ?, ?)
+                        """
+                        parameters = (run_id, index_id, mapping_level, weight_value)
+                        cur2.execute(sql, parameters)
 
             self._refresh_proportions(cur1, node_var)
-
 
     def close(self) -> None:
         """Close internal connection to temporary database."""
