@@ -216,6 +216,24 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
              (3, 3, b'\x80', 32.0, 1.0)},
         )
 
+    def test_exact_match_by_labels(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
+                  [None, ['B'], BitFlags(1), None, ['B', 'y'], BitFlags(1, 1), 80],
+                  [None, ['C'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 15]],
+        )
+
+        mapper.match_node_records('node1')  # <- Method under test.
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node1'),
+            {(1, 1, b'\x80', 16.0, 1.0),
+             (2, 2, b'\x80',  8.0, 1.0),
+             (3, 3, b'\x80', 32.0, 1.0)},
+        )
+
 
 class TestMapper_OLD_Init(unittest.TestCase):
     @staticmethod

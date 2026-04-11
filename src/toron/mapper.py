@@ -249,11 +249,31 @@ class Mapper(object):
                         cur2.execute(sql, parameters)
 
                     else:
-                        raise NotImplementedError('mapping by labels is not yet implemented')
-                        #zipped = zip(node_label_cols, loads(location))
-                        #criteria = {k: v for k, v in zipped if v != ''}
-                        #all_matches = index_repo.filter_index_ids_by_label(criteria)
-                        #...
+                        # Find records by matching labels.
+                        zipped = zip(node_label_cols, loads(location))
+                        criteria = {k: v for k, v in zipped if v != ''}
+                        all_matches = index_repo.filter_index_ids_by_label(criteria)
+
+                        matches = list(all_matches)  # Eagerly evaluate (TODO: REFINE THIS).
+                        if len(matches) > 1:
+                            raise NotImplementedError('ambiguous mappings not yet implemented')
+
+                        # Build tuple of `(index_id, weight_value)` for matches.
+                        index_id_and_weight_value = []
+                        for index_id in matches:
+                            weight_value = get_weight(weight_group_id, index_id).value
+                            index_id_and_weight_value.append((index_id, weight_value))
+
+                        # Insert matches into appropriate table.
+                        for index_id, weight_value in index_id_and_weight_value:
+                            sql = f"""
+                                INSERT INTO {node_var}_matches
+                                    (run_id, index_id, mapping_level, weight_value)
+                                VALUES
+                                    (?, ?, ?, ?)
+                            """
+                            parameters = (run_id, index_id, mapping_level, weight_value)
+                            cur2.execute(sql, parameters)
 
             self._refresh_proportions(cur1, node_var)
 
