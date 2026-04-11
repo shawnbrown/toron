@@ -425,6 +425,30 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
              (4, 4, b'\x80',  5.0, 0.625)},  # <- Multiple matches.
         )
 
+    def test_no_match_for_index_id(self):
+        """A mapping may have ``index_id`` values that no longer exist."""
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[1,   [''], BitFlags(1), 1, ['', ''], BitFlags(1, 1), 70],
+                  [999, [''], BitFlags(1), 4, ['', ''], BitFlags(1, 1), 80],  # <- No match for 999.
+                  [3,   [''], BitFlags(1), 2, ['', ''], BitFlags(1, 1), 15]],
+        )
+
+        with self.assertLogs('app-toron') as cm:
+            mapper.match_node_records('node1')  # <- Method under test.
+
+        self.assertEqual(
+            cm.output,
+            ['WARNING:app-toron.mapper:skipped 1 index id values that no longer exist'],
+        )
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node1'),
+            {(1, 1, b'\x80', 16.0, 1.0),
+             (3, 3, b'\x80', 32.0, 1.0)},
+        )
+
 
 class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
     def test_exact_matches(self):

@@ -237,9 +237,13 @@ class Mapper(object):
 
                 for run_id, index_id, location in cur1:
                     if index_id:
-                        # Verify that index exists.
-                        index_repo.get(index_id)
-                        matches = [index_id]
+                        # Verify that index_id exists.
+                        try:
+                            index_repo.get(index_id)
+                            matches = [index_id]
+                        except KeyError:
+                            counter['missing_index_id'] += 1
+                            continue  # Skip to next record.
                     else:
                         # Find records by matching labels.
                         zipped = zip(node_label_cols, loads(location))
@@ -306,6 +310,17 @@ class Mapper(object):
                         cur2.execute(sql, parameters)
 
             self._refresh_proportions(cur1, node_var)
+
+        if counter['missing_index_id']:
+            # A mapping's `index_id` values are only accepted as "index
+            # codes" from the user interface--and code checksums prevent
+            # node mis-identification. Therefore, all the `index_id`
+            # values in a mapping are treated as valid references to
+            # an existing or formerly existing index record.
+            applogger.warning(
+                f"skipped {counter['missing_index_id']} index id values that "
+                f"no longer exist"
+            )
 
         if counter['overlaps_included']:
             applogger.info(
