@@ -1,6 +1,8 @@
 """Tests for toron/cli/command_crosswalk.py module."""
+import argparse
+from dataclasses import astuple
 from .. import _unittest as unittest
-from ..common import TopoNodeFixtures
+from ..common import DummyRedirection, TopoNodeFixtures
 from toron._utils import ToronError, BitFlags
 
 from toron.cli import command_crosswalk
@@ -514,3 +516,82 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
                     ['3X7429EDA9',   300.0, '3X23CE6FFF'],
                 ],
             )
+
+
+class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
+    @staticmethod
+    def get_relations(source_node, target_node, crosswalk_name):
+        with target_node._managed_cursor() as cur:
+            relation_repository = target_node._dal.RelationRepository(cur)
+            crosswalk = target_node._get_crosswalk(
+                source_node,
+                crosswalk_name,
+                target_node._dal.CrosswalkRepository(cur),
+            )
+            relations = relation_repository.find(crosswalk_id=crosswalk.id)
+            return set(astuple(rel) for rel in relations)
+
+    def test_insert_both_directions(self):
+        self.node_c.add_crosswalk(node=self.node_d,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_d',
+                                  is_default=True)
+
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='both',
+            stdin=DummyRedirection(
+                'index_c,population,index_d\n'
+                '1X73808335,10,1X583DFB94\n'
+                '1X73808335,70,2X0BA7A010\n'
+                '2X201AD8B1,20,3X8C016B53\n'
+                '2X201AD8B1,60,4XAC931718\n'
+                '3XA7BC13F2,30,5X2B35DC5B\n'
+                '3XA7BC13F2,50,6X78AF87DF\n'
+            ),
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            command_crosswalk.read_from_stdin(args)  # <- Function under test.
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'INFO:app-toron:loading relations: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 6 relations',
+             'INFO:app-toron:crosswalk is complete',
+             'INFO:app-toron:loading relations: FILE1 <- FILE2',
+             'INFO:app-toron.node:loaded 6 relations',
+             'INFO:app-toron:crosswalk is complete'],
+        )
+
+        self.assertEqual(
+            self.get_relations(self.node_c, self.node_d, 'population'),
+            {(1, 1, 1, 1, b'\xc0', 10.0, 0.125),
+             (2, 1, 1, 2, b'\xc0', 70.0, 0.875),
+             (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
+             (4, 1, 2, 4, b'\xc0', 60.0, 0.75),
+             (5, 1, 3, 5, b'\xc0', 30.0, 0.375),
+             (6, 1, 3, 6, b'\xc0', 50.0, 0.625),
+             (7, 1, 0, 0,    None,  0.0, 1.0)},
+        )
+
+        self.assertEqual(
+            self.get_relations(self.node_d, self.node_c, 'population'),
+            {(1, 1, 1, 1, b'\x80', 10.0, 1.0),
+             (2, 1, 2, 1, b'\x80', 70.0, 1.0),
+             (3, 1, 3, 2, b'\x80', 20.0, 1.0),
+             (4, 1, 4, 2, b'\x80', 60.0, 1.0),
+             (5, 1, 5, 3, b'\x80', 30.0, 1.0),
+             (6, 1, 6, 3, b'\x80', 50.0, 1.0),
+             (7, 1, 0, 0,    None,  0.0, 1.0)},
+        )

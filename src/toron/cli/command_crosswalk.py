@@ -1,5 +1,6 @@
 """Implementation for "crosswalk" command."""
 import argparse
+import csv
 import logging
 import uuid
 from contextlib import suppress
@@ -21,17 +22,21 @@ from .._typing import (
 )
 
 from .. import TopoNode
-from ..mapper import get_mapping_value_position
-from .common import (
-    ExitCode,
-    index_code_to_id,
-    get_index_code_position,
+from ..mapper import (
+    get_mapping_value_position,
+    Mapper,
 )
 from .._utils import (
     eagerly_initialize,
     normalize_tabular,
     ToronError,
     BitFlags,
+)
+from .common import (
+    ExitCode,
+    index_code_to_id,
+    get_index_code_position,
+    process_backup_option,
 )
 
 
@@ -330,7 +335,57 @@ def normalize_mapping_data(
         ]
 
 
+def read_from_stdin(args: argparse.Namespace) -> ExitCode:
+    """Insert crosswalk relations read from stdin stream."""
+    data = normalize_mapping_data(
+        args.node1, args.node2, args.crosswalk, csv.reader(args.stdin)
+    )
+    mapper = Mapper(args.node1, args.node2, data)
+
+    # Match mapping to node labels.
+    applogger.info(f'matching FILE1 index records')
+    mapper.match_node_records('node1', match_limit=1, allow_overlapping=False)
+    applogger.info(f'matching FILE2 index records')
+    mapper.match_node_records('node2', match_limit=1, allow_overlapping=False)
+
+    # Insert relations into FILE2.
+    applogger.info(f'loading relations: FILE1 -> FILE2')
+    relations = mapper.get_relations('node2')
+    args.node2.insert_relations2(
+        args.node1,
+        args.crosswalk,
+        data=relations,
+        columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+    )
+    crosswalk = args.node2.get_crosswalk(args.node1, args.crosswalk)
+    if crosswalk.is_locally_complete:
+        applogger.info(f'crosswalk is complete')
+    else:
+        applogger.warning(f'crosswalk is incomplete')
+
+    # Insert relations into FILE1.
+    applogger.info(f'loading relations: FILE1 <- FILE2')
+    relations = mapper.get_relations('node1')
+    args.node1.insert_relations2(
+        args.node2,
+        args.crosswalk,
+        data=relations,
+        columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+    )
+    crosswalk = args.node1.get_crosswalk(args.node2, args.crosswalk)
+    if crosswalk.is_locally_complete:
+        applogger.info(f'crosswalk is complete')
+    else:
+        applogger.warning(f'crosswalk is incomplete')
+
+    return ExitCode.OK
+
+
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
     """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
-    applogger.error('not implemented')
-    return ExitCode.ERR
+    if args.stdin_is_streamed:
+        process_backup_option(args)
+        return read_from_stdin(args)
+    else:
+        applogger.error('not implemented')
+        return ExitCode.ERR
