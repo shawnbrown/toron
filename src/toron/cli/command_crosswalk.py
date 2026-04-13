@@ -409,7 +409,7 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
     """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
     if args.stdin_is_streamed:
-        process_backup_option(args)
+        process_backup_option(args, node_args=['node1', 'node2'])
         return read_from_stdin(args)
     else:
         applogger.error('not implemented')
