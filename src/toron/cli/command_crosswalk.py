@@ -337,6 +337,29 @@ def normalize_mapping_data(
 
 def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     """Insert crosswalk relations read from stdin stream."""
+    # Check that crosswalk is defined in nodes.
+    left_crosswalk = args.node1.get_crosswalk(args.node2, args.crosswalk)
+    right_crosswalk = args.node2.get_crosswalk(args.node1, args.crosswalk)
+    if args.direction == 'both':
+        if right_crosswalk and not left_crosswalk:
+            applogger.warning(f'no {args.crosswalk!r} crosswalk in FILE1')
+            args.direction = 'right'
+        elif left_crosswalk and not right_crosswalk:
+            applogger.warning(f'no {args.crosswalk!r} crosswalk in FILE2')
+            args.direction = 'left'
+        elif not left_crosswalk and not right_crosswalk:
+            applogger.error(f'no {args.crosswalk!r} crosswalk in FILE1 or FILE2')
+            return ExitCode.ERR  # <- EXIT!
+    elif args.direction == 'left' and not left_crosswalk:
+        applogger.error(f'no {args.crosswalk!r} crosswalk in FILE1')
+        return ExitCode.ERR  # <- EXIT!
+    elif args.direction == 'right' and not right_crosswalk:
+        applogger.error(f'no {args.crosswalk!r} crosswalk in FILE2')
+        return ExitCode.ERR  # <- EXIT!
+    else:
+        raise ValueError
+
+    # Normalize and load mapping data.
     data = normalize_mapping_data(
         args.node1, args.node2, args.crosswalk, csv.reader(args.stdin)
     )
@@ -349,34 +372,36 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     mapper.match_node_records('node2', match_limit=1, allow_overlapping=False)
 
     # Insert relations into FILE2.
-    applogger.info(f'loading relations: FILE1 -> FILE2')
-    relations = mapper.get_relations('node2')
-    args.node2.insert_relations2(
-        args.node1,
-        args.crosswalk,
-        data=relations,
-        columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
-    )
-    crosswalk = args.node2.get_crosswalk(args.node1, args.crosswalk)
-    if crosswalk.is_locally_complete:
-        applogger.info(f'crosswalk is complete')
-    else:
-        applogger.warning(f'crosswalk is incomplete')
+    if args.direction in {'both', 'right'}:
+        applogger.info(f'loading relations: FILE1 -> FILE2')
+        relations = mapper.get_relations('node2')
+        args.node2.insert_relations2(
+            args.node1,
+            args.crosswalk,
+            data=relations,
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+        crosswalk = args.node2.get_crosswalk(args.node1, args.crosswalk)
+        if crosswalk.is_locally_complete:
+            applogger.info(f'crosswalk is complete')
+        else:
+            applogger.warning(f'crosswalk is incomplete')
 
     # Insert relations into FILE1.
-    applogger.info(f'loading relations: FILE1 <- FILE2')
-    relations = mapper.get_relations('node1')
-    args.node1.insert_relations2(
-        args.node2,
-        args.crosswalk,
-        data=relations,
-        columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
-    )
-    crosswalk = args.node1.get_crosswalk(args.node2, args.crosswalk)
-    if crosswalk.is_locally_complete:
-        applogger.info(f'crosswalk is complete')
-    else:
-        applogger.warning(f'crosswalk is incomplete')
+    if args.direction in {'both', 'left'}:
+        applogger.info(f'loading relations: FILE1 <- FILE2')
+        relations = mapper.get_relations('node1')
+        args.node1.insert_relations2(
+            args.node2,
+            args.crosswalk,
+            data=relations,
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+        crosswalk = args.node1.get_crosswalk(args.node2, args.crosswalk)
+        if crosswalk.is_locally_complete:
+            applogger.info(f'crosswalk is complete')
+        else:
+            applogger.warning(f'crosswalk is incomplete')
 
     return ExitCode.OK
 
