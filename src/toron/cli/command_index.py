@@ -4,10 +4,9 @@ import csv
 import logging
 import os
 import re
-import sys
 import uuid
 from itertools import chain, islice
-from .._typing import Iterator, List, Optional, TextIO
+from .._typing import Iterator, List
 
 from .common import (
     ExitCode,
@@ -17,8 +16,6 @@ from .common import (
     get_index_code_position,
     remap_index_codes_to_index_ids,
 )
-from .. import bind_node
-from ..graph import get_weights
 
 
 applogger = logging.getLogger('app-toron')
@@ -69,27 +66,56 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
 
 def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     """Print node index in CSV format to stdout stream."""
-    weights = get_weights(node=args.node, weights=None, header=True)
-    weights_header = next(weights)
+    node = args.node
 
-    domain_formatted = args.node.domain.get('domain', '')
-    if domain_formatted:
-        domain_formatted = domain_formatted.replace(' ', '_') + '_'
-    header = [f'{domain_formatted}index_code'] + weights_header[1:]
+    domain_value = node.domain.get('domain', '')
+    unique_id_bytes = uuid.UUID(node.unique_id).bytes
+    pad_len = len(str(node.max_index_id))
 
-    unique_id_bytes = uuid.UUID(args.node.unique_id).bytes
-    pad_len = len(str(args.node.max_index_id))
+    with node._managed_cursor(n=2) as (cur1, cur2):
+        index_repo = node._dal.IndexRepository(cur1)
 
-    row_count = 0
-    with csv_stdout_writer(args.stdout) as writer:
-        writer.writerow(header)
+        # Get groups and sort (start with default group then order by name).
+        try:
+            default_id = node._dal.PropertyRepository(cur1).get('default_weight_group_id')
+        except KeyError:
+            default_id = None
+        groups = node._dal.WeightGroupRepository(cur1).get_all()
+        groups = sorted(groups, key=lambda g: (g.id!=default_id, g.name))
+        weight_group_names = [group.name for group in groups]
+        weight_group_ids = [group.id for group in groups]
 
-        for index_id, *row in weights:
-            index_code = index_id_to_code(index_id, unique_id_bytes, pad_len)
-            writer.writerow([index_code] + row)
-            row_count += 1
+        # Define a helper function to get weight values (needs separate cursor).
+        _get_weight_obj = node._dal.WeightRepository(cur2).get_by_weight_group_id_and_index_id
+        def get_weight_value(group_id, index_id):
+            try:
+                return _get_weight_obj(group_id, index_id).value
+            except KeyError:
+                return 0.0 if index_id == 0 else None
 
-    applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
+        # Prepare domain text for header row.
+        if domain_value:
+            domain_value = domain_value.replace(' ', '_') + '_'
+
+        row_count = 0
+        with csv_stdout_writer(args.stdout) as writer:
+            # Write header row.
+            writer.writerow(chain(
+                [f'{domain_value}index_code'],
+                index_repo.get_label_names(),
+                weight_group_names,
+            ))
+
+            # Write data rows.
+            for index in index_repo.find_all():
+                writer.writerow(chain(
+                    [index_id_to_code(index.id, unique_id_bytes, pad_len)],
+                    index.labels,
+                    (get_weight_value(grp_id, index.id) for grp_id in weight_group_ids),
+                ))
+                row_count += 1
+
+        applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
 
     return ExitCode.OK
 

@@ -219,11 +219,15 @@ class TestIndexWriteToStdout(unittest.TestCase):
         node = TopoNode()
         node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
+        node.add_weight_group('wght3', make_default=False)
+        node.add_weight_group('wght2', make_default=True)
+        node.add_weight_group('wght1')
+
         node.insert_index([
-            ['state', 'county'],
-            ['Illinois', 'Cook'],
-            ['Indiana', 'Porter'],
-            ['Michigan', 'Cass'],
+            ['state', 'county', 'wght1', 'wght2', 'wght3'],
+            ['Illinois', 'Cook', 100, 200, 300],
+            ['Indiana', 'Porter', 100, 200, 300],
+            ['Michigan', 'Cass', 100, 200, 300],
         ])
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(command='index', node=node, stdout=dummy_stdout)
@@ -232,11 +236,11 @@ class TestIndexWriteToStdout(unittest.TestCase):
             command_index.write_to_stdout(args)  # <- Function under test.
 
         expected_values = (
-            'index_code,state,county\n'
-            '0X27B3B62D,-,-\n'
-            '1XA0157D6E,Illinois,Cook\n'
-            '2XF38F26EA,Indiana,Porter\n'
-            '3X7429EDA9,Michigan,Cass\n'
+            'index_code,state,county,wght2,wght1,wght3\n'
+            '0X27B3B62D,-,-,0.0,0.0,0.0\n'
+            '1XA0157D6E,Illinois,Cook,200.0,100.0,300.0\n'
+            '2XF38F26EA,Indiana,Porter,200.0,100.0,300.0\n'
+            '3X7429EDA9,Michigan,Cass,200.0,100.0,300.0\n'
         )
         self.assertEqual(dummy_stdout.getvalue(), expected_values)
         self.assertEqual(logs_cm.output, ['INFO:app-toron:written 4 records'])
