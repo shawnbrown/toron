@@ -153,6 +153,45 @@ class TopoNodeFixtures(object):
             ['C', 'y', 22],
         ])
 
+        self.node_e = TopoNode()
+        self.set_unique_id(self.node_e, '55555555-5555-5555-5555-555555555555')
+        self.node_e.path_hint = 'node_e.toron'
+        self.node_e.add_index_columns('idx1', 'idx2', 'idx3')
+        self.node_e.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
+        self.node_e.add_weight_group('wght', make_default=True)
+        self.node_e.insert_index([
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'z', 'a', 72],
+            ['B', 'x', 'b', 37.5],
+            ['B', 'y', 'c', 62.5],
+            ['C', 'x', 'd', 75],
+            ['C', 'y', 'e', 25],
+            ['D', 'x', 'f', 25],
+            ['D', 'x', 'g', 0],
+            ['D', 'y', 'h', 50],
+            ['D', 'y', 'i', 25],
+
+        ])
+
+        self.node_f = TopoNode()
+        self.set_unique_id(self.node_f, '66666666-6666-6666-6666-666666666666')
+        self.node_f.path_hint = 'node_f.toron'
+        self.node_f.add_index_columns('idx1', 'idx2', 'idx3')
+        self.node_f.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
+        self.node_f.add_weight_group('wght', make_default=True)
+        self.node_f.insert_index([
+            ['idx1', 'idx2', 'idx3', 'wght'],
+            ['A', 'z', 'a', 25],
+            ['A', 'z', 'b', 75],
+            ['B', 'x', 'c', 80],
+            ['C', 'x', 'd', 25],
+            ['C', 'y', 'e', 75],
+            ['D', 'x', 'f', 37.5],
+            ['D', 'x', 'g', 43.75],
+            ['D', 'y', 'h', 31.25],
+            ['D', 'y', 'i', 31.25],
+        ])
+
 
 class StreamWrapperTestCase(unittest.TestCase):
     def setUp(self):

@@ -9,6 +9,7 @@ from toron._typing import (
     Callable,
     Collection,
     Dict,
+    Generator,
     Iterable,
     Iterator,
     List,
@@ -18,6 +19,7 @@ from toron._typing import (
     Tuple,
     Union,
     cast,
+    TypeAlias,
 )
 
 from .categories import (
@@ -447,6 +449,65 @@ def make_get_crosswalk_id_func(
         return crosswalk_id
 
     return get_crosswalk_id_func
+
+
+_MappingElementsTuple : TypeAlias = Union[
+    Tuple[int, int, Optional[bytes], float],  # <- Matched elements.
+    Tuple[None, int, None, None],  # <- Unmatched right-side elements.
+    Tuple[int, None, None, None],  # <- Unmatched left-side elements.
+]
+
+def generate_mapping_elements(
+    crosswalk_name: Optional[str],
+    trg_index_repo: BaseIndexRepository,
+    trg_crosswalk_repo: BaseCrosswalkRepository,
+    trg_relation_repo: BaseRelationRepository,
+    src_index_repo: BaseIndexRepository,
+    src_prop_repo: BasePropertyRepository,
+) -> Generator[_MappingElementsTuple, None, None]:
+    """Get all mapped and disjoint elements involved in a mapping.
+
+    When mapping elements are grouped by match-status, they should be
+    given in the following order:
+
+    * Matched records should be given first.
+    * Unmatched right-side elements second.
+    * Unmatched left-side elements last.
+
+    This order is easier to work with in a spreadsheet program. It's
+    best to avoid giving right-side elements last because it's very
+    easy for users to overlook them when working on a mapping.
+    """
+    unique_id = cast(str, src_prop_repo.get('unique_id'))
+    crosswalk = None
+    for cw in trg_crosswalk_repo.find_by_other_unique_id(unique_id):
+        if cw.name == crosswalk_name:
+            crosswalk = cw
+
+    if not crosswalk:
+        msg = f'no crosswalk named {crosswalk_name!r}'
+        raise Exception(msg)
+
+    # Yield matched records.
+    relations = trg_relation_repo.find(crosswalk_id=crosswalk.id)
+    for rel in relations:
+        yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
+
+    # If target is not complete, yield unmatched right-side elements.
+    if not crosswalk.is_locally_complete:
+        unmatched_index_ids = trg_index_repo.find_unmatched_index_ids(crosswalk.id)
+        for index_id in unmatched_index_ids:
+            yield (None, index_id, None, None)
+
+    # If source index is different, yield unmatched left-side elements.
+    if src_prop_repo.get('index_hash') != crosswalk.other_index_hash:
+        for other_index_id in src_index_repo.find_all_index_ids():
+            matches = trg_relation_repo.find(
+                crosswalk_id=crosswalk.id,
+                other_index_id=other_index_id,
+            )
+            if next(matches, None) is None:  # Yield only if unmatched.
+                yield (other_index_id, None, None, None)
 
 
 def set_default_weight_group(

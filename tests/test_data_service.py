@@ -2,7 +2,7 @@
 
 import array
 import unittest
-from .common import normalize_structures
+from .common import normalize_structures, TopoNodeFixtures
 
 from toron.data_models import (
     Index,
@@ -26,6 +26,7 @@ from toron.data_service import (
     get_quantity_value_sum,
     disaggregate_value,
     find_crosswalks_by_ref,
+    generate_mapping_elements,
     set_default_weight_group,
     get_default_weight_group,
     find_matching_weight_groups,
@@ -639,6 +640,200 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
 
         crosswalks = find_crosswalks_by_ref(None, self.crosswalk_repo)
         self.assertEqual(crosswalks, [])
+
+
+class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+
+        trg_cm = self.node_f._managed_cursor()
+        trg_cur = trg_cm.__enter__()
+        self.addCleanup(lambda: trg_cm.__exit__(None, None, None))
+
+        self.trg_index_repo = self.node_f._dal.IndexRepository(trg_cur)
+        self.trg_crosswalk_repo = self.node_f._dal.CrosswalkRepository(trg_cur)
+        self.trg_relation_repo = self.node_f._dal.RelationRepository(trg_cur)
+
+        src_cm = self.node_e._managed_cursor()
+        src_cur = src_cm.__enter__()
+        self.addCleanup(lambda: src_cm.__exit__(None, None, None))
+
+        self.src_prop_repo = self.node_e._dal.PropertyRepository(src_cur)
+        self.src_index_repo = self.node_e._dal.IndexRepository(src_cur)
+
+    def make_population_croswalk(self, data):
+        """Helper to make "population" crosswalk from node_e to node_f."""
+        self.node_f.add_crosswalk(self.node_e, 'population', is_default=True)
+        self.node_f.insert_relations2(
+            node_or_ref=self.node_e,
+            crosswalk_name='population',
+            data=data,
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+
+    def test_fully_joined(self):
+        """Check fully mapped crosswalk."""
+        self.make_population_croswalk([
+            (1, 1, b'\xe0',  25.0),
+            (1, 2, b'\xe0',  25.0),
+            (2, 3, b'\xe0',  50.0),
+            (3, 3, b'\xe0',  50.0),
+            (4, 4, b'\xe0',  55.0),
+            (5, 5, b'\xe0',  50.0),
+            (6, 6, b'\xe0', 100.0),
+            (7, 7, b'\xe0', 100.0),
+            (8, 8, b'\xe0', 100.0),
+            (9, 9, b'\xe0', 100.0),
+        ])
+
+        actual = generate_mapping_elements(
+            'population',
+            self.trg_index_repo,
+            self.trg_crosswalk_repo,
+            self.trg_relation_repo,
+            self.src_index_repo,
+            self.src_prop_repo,
+        )
+
+        self.assertEqual(
+            list(actual),
+            [(0, 0, None,      0.0),
+             (1, 1, b'\xe0',  25.0),
+             (1, 2, b'\xe0',  25.0),
+             (2, 3, b'\xe0',  50.0),
+             (3, 3, b'\xe0',  50.0),
+             (4, 4, b'\xe0',  55.0),
+             (5, 5, b'\xe0',  50.0),
+             (6, 6, b'\xe0', 100.0),
+             (7, 7, b'\xe0', 100.0),
+             (8, 8, b'\xe0', 100.0),
+             (9, 9, b'\xe0', 100.0)],
+        )
+
+    def test_missing_left(self):
+        """Check unmapped left-side elemenets."""
+        self.make_population_croswalk([
+            (1, 1, b'\xe0',  25.0),
+            (1, 2, b'\xe0',  25.0),
+            (2, 3, b'\xe0',  50.0),
+            (3, 3, b'\xe0',  50.0),
+            (4, 4, b'\xe0',  55.0),
+            (5, 5, b'\xe0',  50.0),
+            (5, 6, b'\xe0', 100.0),
+            (5, 7, b'\xe0', 100.0),
+            (5, 8, b'\xe0', 100.0),
+            (5, 9, b'\xe0', 100.0),
+        ])
+
+        actual = generate_mapping_elements(
+            'population',
+            self.trg_index_repo,
+            self.trg_crosswalk_repo,
+            self.trg_relation_repo,
+            self.src_index_repo,
+            self.src_prop_repo,
+        )
+
+        self.assertEqual(
+            list(actual),
+            [(0, 0, None,      0.0),
+             (1, 1, b'\xe0',  25.0),
+             (1, 2, b'\xe0',  25.0),
+             (2, 3, b'\xe0',  50.0),
+             (3, 3, b'\xe0',  50.0),
+             (4, 4, b'\xe0',  55.0),
+             (5, 5, b'\xe0',  50.0),
+             (5, 6, b'\xe0', 100.0),
+             (5, 7, b'\xe0', 100.0),
+             (5, 8, b'\xe0', 100.0),
+             (5, 9, b'\xe0', 100.0),
+             (6, None, None,  None),   # <- Unmapped left-side element.
+             (7, None, None,  None),   # <- Unmapped left-side element.
+             (8, None, None,  None),   # <- Unmapped left-side element.
+             (9, None, None,  None)],  # <- Unmapped left-side element.
+        )
+
+    def test_missing_right(self):
+        """Check unmapped right-side elemenets."""
+        self.make_population_croswalk([
+            (1, 1, b'\xe0',  25.0),
+            (1, 2, b'\xe0',  25.0),
+            (2, 3, b'\xe0',  50.0),
+            (3, 3, b'\xe0',  50.0),
+            (4, 4, b'\xe0',  55.0),
+            (5, 5, b'\xe0',  50.0),
+            (6, 5, b'\xe0', 100.0),
+            (7, 5, b'\xe0', 100.0),
+            (8, 5, b'\xe0', 100.0),
+            (9, 5, b'\xe0', 100.0),
+        ])
+
+        actual = generate_mapping_elements(
+            'population',
+            self.trg_index_repo,
+            self.trg_crosswalk_repo,
+            self.trg_relation_repo,
+            self.src_index_repo,
+            self.src_prop_repo,
+        )
+
+        self.assertEqual(
+            list(actual),
+            [(0,    0, None,      0.0),
+             (1,    1, b'\xe0',  25.0),
+             (1,    2, b'\xe0',  25.0),
+             (2,    3, b'\xe0',  50.0),
+             (3,    3, b'\xe0',  50.0),
+             (4,    4, b'\xe0',  55.0),
+             (5,    5, b'\xe0',  50.0),
+             (6,    5, b'\xe0', 100.0),
+             (7,    5, b'\xe0', 100.0),
+             (8,    5, b'\xe0', 100.0),
+             (9,    5, b'\xe0', 100.0),
+             (None, 6, None,     None),   # <- Unmapped right-side element.
+             (None, 7, None,     None),   # <- Unmapped right-side element.
+             (None, 8, None,     None),   # <- Unmapped right-side element.
+             (None, 9, None,     None)],  # <- Unmapped right-side element.
+        )
+
+    def test_missing_left_and_right(self):
+        """Check unmapped left-side and right-side elemenets."""
+        self.make_population_croswalk([
+            (1, 1, b'\xe0',  25.0),
+            (1, 2, b'\xe0',  25.0),
+            (2, 3, b'\xe0',  50.0),
+            (3, 3, b'\xe0',  50.0),
+            (4, 4, b'\xe0',  55.0),
+            (5, 5, b'\xe0',  50.0),
+        ])
+
+        actual = generate_mapping_elements(
+            'population',
+            self.trg_index_repo,
+            self.trg_crosswalk_repo,
+            self.trg_relation_repo,
+            self.src_index_repo,
+            self.src_prop_repo,
+        )
+
+        self.assertEqual(
+            list(actual),
+            [(0,    0, None,      0.0),
+             (1,    1, b'\xe0',  25.0),
+             (1,    2, b'\xe0',  25.0),
+             (2,    3, b'\xe0',  50.0),
+             (3,    3, b'\xe0',  50.0),
+             (4,    4, b'\xe0',  55.0),
+             (5,    5, b'\xe0',  50.0),
+             (None, 6, None,     None),   # <- Unmapped right-side element.
+             (None, 7, None,     None),   # <- Unmapped right-side element.
+             (None, 8, None,     None),   # <- Unmapped right-side element.
+             (None, 9, None,     None),   # <- Unmapped right-side element.
+             (6, None, None,     None),   # <- Unmapped left-side element.
+             (7, None, None,     None),   # <- Unmapped left-side element.
+             (8, None, None,     None),   # <- Unmapped left-side element.
+             (9, None, None,     None)],  # <- Unmapped left-side element.
+        )
 
 
 class TestGetAndSetDefaultWeightGroup(unittest.TestCase):

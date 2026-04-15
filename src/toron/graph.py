@@ -45,6 +45,7 @@ from .data_models import (
 )
 from .data_service import (
     find_crosswalks_by_ref,
+    generate_mapping_elements,
     get_domain,
 )
 from .node import TopoNode
@@ -367,62 +368,20 @@ def _get_mapping_elements(
     target_node: TopoNode,
     crosswalk_name: Optional[str] = None,
 ) -> Generator[_MappingElementsTuple, None, None]:
-    """Get all mapped and disjoint elements involved in a mapping.
+    """See ``data_service.generate_mapping_elements()`` for details."""
+    with (source_node._managed_cursor() as src_cur,
+          target_node._managed_cursor() as trg_cur):
 
-    When mapping elements are grouped by match-status, they should be
-    given in the following order:
-
-    * Matched records should be given first.
-    * Unmatched right-side elements second.
-    * Unmatched left-side elements last.
-
-    This order is easier to work with in a spreadsheet program. It's
-    best to avoid giving right-side elements last because it's very
-    easy for users to overlook them when working on a mapping.
-    """
-    with target_node._managed_cursor() as trg_cursor:
-        trg_index_repo = target_node._dal.IndexRepository(trg_cursor)
-        trg_crosswalk_repo = target_node._dal.CrosswalkRepository(trg_cursor)
-        trg_relation_repo = target_node._dal.RelationRepository(trg_cursor)
-
-        crosswalk = target_node._get_crosswalk(
-            source_node,
-            crosswalk_name,
-            trg_crosswalk_repo,
+        generator = generate_mapping_elements(
+            crosswalk_name=crosswalk_name,
+            trg_index_repo=target_node._dal.IndexRepository(trg_cur),
+            trg_crosswalk_repo=target_node._dal.CrosswalkRepository(trg_cur),
+            trg_relation_repo=target_node._dal.RelationRepository(trg_cur),
+            src_index_repo=source_node._dal.IndexRepository(src_cur),
+            src_prop_repo=source_node._dal.PropertyRepository(src_cur),
         )
-
-        if not crosswalk:
-            msg = f'no crosswalk named {crosswalk_name!r}'
-            raise Exception(msg)
-
-        # Yield matched records.
-        relations = trg_relation_repo.find(crosswalk_id=crosswalk.id)
-        for rel in relations:
-            yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
-
-        # Yield unmatched right-side elements.
-        if not crosswalk.is_locally_complete:
-            # Only search for elements when crosswalk is not locally complete.
-            unmatched_index_ids = trg_index_repo.find_unmatched_index_ids(crosswalk.id)
-            for index_id in unmatched_index_ids:
-                yield (None, index_id, None, None)
-
-        # Yield unmatched left-side elements.
-        with source_node._managed_cursor() as src_cur:
-            src_prop_repo = source_node._dal.PropertyRepository(src_cur)
-
-            # Only check source indexes if the index hash is different.
-            if src_prop_repo.get('index_hash') != crosswalk.other_index_hash:
-                src_index_repo = source_node._dal.IndexRepository(src_cur)
-
-                # Check that each source index is matched to the target.
-                for other_index_id in src_index_repo.find_all_index_ids():
-                    matches = trg_relation_repo.find(
-                        crosswalk_id=crosswalk.id,
-                        other_index_id=other_index_id,
-                    )
-                    if next(matches, None) is None:  # Yield only if unmatched.
-                        yield (other_index_id, None, None, None)
+        for result in generator:
+            yield result
 
 
 def _get_ambiguous_fields(
