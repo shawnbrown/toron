@@ -92,11 +92,18 @@ class TempDirTestCase(unittest.TestCase):
 
 class TopoNodeFixtures(object):
     """A mixin class for testing with TopoNode fixtures in setUp()."""
+    @staticmethod
+    def set_unique_id(node, unique_id):
+        node._connector._unique_id = unique_id
+        with node._managed_transaction() as cur:
+            property_repo = node._dal.PropertyRepository(cur)
+            property_repo.update('unique_id', unique_id)
+
     def setUp(self):
         self.maxDiff = None
 
         self.node_a = TopoNode()
-        self.node_a._connector._unique_id = '11111111-1111-1111-1111-111111111111'
+        self.set_unique_id(self.node_a, '11111111-1111-1111-1111-111111111111')
         self.node_a.add_index_columns('foo', 'bar', 'baz')
         self.node_a.add_discrete_categories({'foo', 'bar', 'baz'})
         self.node_a.add_weight_group('qux', make_default=True)
@@ -108,7 +115,7 @@ class TopoNodeFixtures(object):
         ])
 
         self.node_b = TopoNode()
-        self.node_b._connector._unique_id = '22222222-2222-2222-2222-222222222222'
+        self.set_unique_id(self.node_b, '22222222-2222-2222-2222-222222222222')
         self.node_b.add_index_columns('foo', 'bar')
         self.node_b.add_discrete_categories({'foo', 'bar'})
         self.node_b.add_weight_group('quux', make_default=True)
@@ -120,7 +127,7 @@ class TopoNodeFixtures(object):
         ])
 
         self.node_c = TopoNode()
-        self.node_c._connector._unique_id = '33333333-3333-3333-3333-333333333333'
+        self.set_unique_id(self.node_c, '33333333-3333-3333-3333-333333333333')
         self.node_c.add_index_columns('lbl1')
         self.node_c.add_discrete_categories({'lbl1'})
         self.node_c.add_weight_group('wght1', make_default=True)
@@ -132,7 +139,7 @@ class TopoNodeFixtures(object):
         ])
 
         self.node_d = TopoNode()
-        self.node_d._connector._unique_id = '44444444-4444-4444-4444-444444444444'
+        self.set_unique_id(self.node_d, '44444444-4444-4444-4444-444444444444')
         self.node_d.add_index_columns('lbl1', 'lbl2')
         self.node_d.add_discrete_categories({'lbl1'})
         self.node_d.add_weight_group('wght1', make_default=True)
