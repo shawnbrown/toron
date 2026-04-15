@@ -160,17 +160,25 @@ def get_column_positions(
             node1_start, node1_stop = 0, value_position
             node2_start, node2_stop = value_position+1, len(columns)
         else:
-            raise ToronError(
-                f"no index codes found, unable to match by label columns;\n"
-                f"\n"
-                f"unable to find FILE1 columns;\n"
-                f"  Expected: {', '.join(repr(x) for x in node1.index_columns)}\n"
-                f"     Found: {', '.join(repr(x) for x in columns[0:value_position])}\n"
-                f"\n"
-                f"unable to find FILE2 columns;\n"
-                f"  Expected: {', '.join(repr(x) for x in node2.index_columns)}\n"
-                f"     Found: {', '.join(repr(x) for x in columns[value_position+1:len(columns)])}"
-            )
+            msg_list = [
+                f"no index codes found, unable to match by label columns;"
+            ]
+            if node1.index_columns != columns[:value_position]:
+                msg_list.extend([
+                    f"",
+                    f"unable to find FILE1 columns;",
+                    f"  Expected: {', '.join(repr(x) for x in node1.index_columns)}",
+                    f"     Found: {', '.join(repr(x) for x in columns[:value_position])}",
+                ])
+            if node2.index_columns != columns[value_position+1:]:
+                msg_list.extend([
+                    f"",
+                    f"unable to find FILE2 columns;",
+                    f"  Expected: {', '.join(repr(x) for x in node2.index_columns)}",
+                    f"     Found: {', '.join(repr(x) for x in columns[value_position+1:])}",
+                ])
+
+            raise ToronError('\n'.join(msg_list))
 
     # Prepare and return result values.
     positions = {
