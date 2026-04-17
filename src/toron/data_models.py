@@ -1001,6 +1001,18 @@ class BaseCrosswalkRepository(ABC):
         """Delete a Crosswalk and any associated Relation records."""
 
     @abstractmethod
+    def get_by_unique_id_and_name(
+        self,
+        other_unique_id: str,
+        name: str,
+    ) -> Crosswalk:
+        """Get record with matching *other_unique_id* and *name*.
+
+        If no crosswalk matches the given id values, a ``KeyError`` is
+        raised.
+        """
+
+    @abstractmethod
     def find_by_other_unique_id(
         self, other_unique_id: str
     ) -> Iterator[Crosswalk]:

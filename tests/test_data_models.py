@@ -1317,6 +1317,18 @@ class CrosswalkRepositoryBaseTest(ABC):
             Crosswalk(2, '222-22-2222', None, 'other2', is_locally_complete=False),
         )
 
+    def test_get_by_unique_id_and_name(self):
+        self.repository.add('111-11-1111', None, 'other1')
+
+        self.assertEqual(
+            self.repository.get_by_unique_id_and_name('111-11-1111', 'other1'),
+            Crosswalk(1, '111-11-1111', None, 'other1', is_locally_complete=False),
+        )
+
+        regex = r"no crosswalk exists with other_unique_id 111-11-1111 and name 'blerg'"
+        with self.assertRaisesRegex(KeyError, regex):
+            self.repository.get_by_unique_id_and_name('111-11-1111', 'blerg')
+
 
 class RelationRepositoryBaseTest(ABC):
     @property

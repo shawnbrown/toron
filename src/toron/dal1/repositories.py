@@ -904,6 +904,30 @@ class CrosswalkRepository(BaseCrosswalkRepository):
             'DELETE FROM main.crosswalk WHERE crosswalk_id=?', (id,)
         )
 
+    def get_by_unique_id_and_name(
+        self,
+        other_unique_id: str,
+        name: str,
+    ) -> Crosswalk:
+        """Get record with matching *other_unique_id* and *name*.
+
+        If no crosswalk matches the given id values, a ``KeyError`` is
+        raised.
+        """
+        self._cursor.execute(
+            'SELECT * FROM main.crosswalk WHERE other_unique_id=? AND name=?',
+            (other_unique_id, name),
+        )
+
+        record = self._cursor.fetchone()
+        if not record:
+            raise KeyError(
+                f'no crosswalk exists with other_unique_id {other_unique_id} '
+                f'and name {name!r}'
+            )
+
+        return self._make_crosswalk(record)
+
     def find_by_other_unique_id(
         self, other_unique_id: str
     ) -> Iterator[Crosswalk]:
