@@ -451,7 +451,7 @@ def make_get_crosswalk_id_func(
     return get_crosswalk_id_func
 
 
-_MappingElementsTuple : TypeAlias = Union[
+MappingElement : TypeAlias = Union[
     Tuple[int, int, Optional[bytes], float],  # <- Matched elements.
     Tuple[None, int, None, None],  # <- Unmatched right-side elements.
     Tuple[int, None, None, None],  # <- Unmatched left-side elements.
@@ -464,7 +464,7 @@ def generate_mapping_elements(
     trg_relation_repo: BaseRelationRepository,
     src_index_repo: BaseIndexRepository,
     src_prop_repo: BasePropertyRepository,
-) -> Generator[_MappingElementsTuple, None, None]:
+) -> Generator[MappingElement, None, None]:
     """Get all mapped and disjoint elements involved in a mapping.
 
     When mapping elements are grouped by match-status, they should be
