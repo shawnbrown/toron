@@ -1173,6 +1173,16 @@ class RelationRepository(BaseRelationRepository):
         is_complete = self._cursor.fetchone()[0]
         return bool(is_complete)
 
+    def get_distinct_mapping_levels(self, crosswalk_id: int) -> List[bytes]:
+        """Return a list of distinct mapping levels used by a crosswalk."""
+        sql = """
+            SELECT DISTINCT mapping_level
+            FROM main.relation
+            WHERE crosswalk_id=? AND mapping_level IS NOT NULL
+        """
+        self._cursor.execute(sql, (crosswalk_id,))
+        return [row[0] for row in self._cursor]
+
 
 class PropertyRepository(BasePropertyRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:

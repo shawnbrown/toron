@@ -1644,6 +1644,18 @@ class RelationRepositoryBaseTest(ABC):
              Relation(18, 3, 3, 3, None, 100.0, 0.25)],
         )
 
+    def test_get_distinct_mapping_levels(self):
+        self.crosswalk.add('333-33-3333', None, 'other3')
+        self.repository.add(3, 1, 1, b'\xc0', 131250, 1.0)
+        self.repository.add(3, 2, 1, b'\x40',  40960, 0.625)
+        self.repository.add(3, 2, 2, b'\x40',  24576, 0.375)
+        self.repository.add(3, 3, 3, b'\xc0', 100000, 1.0)
+
+        self.assertEqual(
+            [b'\x40', b'\xc0'],
+            sorted(self.repository.get_distinct_mapping_levels(3)),
+        )
+
 
 class PropertyRepositoryBaseTest(ABC):
     @property

@@ -1101,6 +1101,19 @@ class BaseRelationRepository(ABC):
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
 
+    @abstractmethod
+    def get_distinct_mapping_levels(self, crosswalk_id: int) -> List[bytes]:
+        """Return a list of distinct mapping levels used by a crosswalk.
+
+        A concrete DAL should implement an optimized version of this
+        method. But as a stop-gap, this unoptimized base implementation
+        can be called with ``super().get_distinct_mapping_levels()``.
+        """
+        distinct_mapping_levels = set(
+            rel.mapping_level for rel in self.find(crosswalk_id=crosswalk_id)
+        )
+        return [x for x in distinct_mapping_levels if x is not None]
+
     def merge_by_index_id(
         self, index_ids: Union[Iterable[int], int], target: int
     ) -> None:
