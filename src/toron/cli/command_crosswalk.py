@@ -414,6 +414,30 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
+def get_ambiguous_field_text(
+    mapping_level: Optional[bytes], label_names: Sequence[str]
+) -> Optional[str]:
+    """Return a formatted string of ambiguous field names.
+
+    .. code-block:: python
+
+        >>> label_names = ['foo', 'bar', 'baz']
+        >>> get_ambiguous_field_text(bytes(BitFlags(1, 0, 0)), label_names)
+        'bar, baz'
+        >>> get_ambiguous_field_text(bytes(BitFlags(1, 1, 0)), label_names)
+        'baz'
+        >>> get_ambiguous_field_text(bytes(BitFlags(1, 1, 1)), label_names)
+        ''
+        >>> get_ambiguous_field_text(None, label_names)
+        ''
+    """
+    if mapping_level is None:
+        return None
+    inverted_level = [(not bit) for bit in BitFlags(mapping_level)]
+    ambiguous_fields = compress(label_names, inverted_level)
+    return ', '.join(ambiguous_fields) or None
+
+
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
     """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
     if args.stdin_is_streamed:
