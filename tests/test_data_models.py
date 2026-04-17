@@ -29,6 +29,7 @@ from toron.data_models import (
     Weight, BaseWeightRepository,
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
+    Crosswalk, BaseCrosswalkRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
     QuantityIterator,
@@ -1282,6 +1283,41 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
         )
 
 
+class CrosswalkRepositoryBaseTest(ABC):
+    @property
+    @abstractmethod
+    def dal(self):
+        ...
+
+    def setUp(self):
+        connector = self.dal.DataConnector()
+        self.connection = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(self.connection))
+
+        cursor = connector.acquire_cursor(self.connection)
+        self.addCleanup(lambda: connector.release_cursor(cursor))
+
+        self.repository = self.dal.CrosswalkRepository(cursor)
+
+    def test_inheritance(self):
+        """Must inherit from appropriate abstract base class."""
+        self.assertTrue(issubclass(self.dal.CrosswalkRepository, BaseCrosswalkRepository))
+
+    def test_add_get(self):
+        """Check ``add()`` and ``get()`` methods."""
+        self.repository.add('111-11-1111', None, 'other1', is_locally_complete=True)  # Adds crosswalk_id 1.
+        self.repository.add('222-22-2222', None, 'other2')  # Adds crosswalk_id 2.
+
+        self.assertEqual(
+            self.repository.get(1),
+            Crosswalk(1, '111-11-1111', None, 'other1', is_locally_complete=True),
+        )
+        self.assertEqual(
+            self.repository.get(2),
+            Crosswalk(2, '222-22-2222', None, 'other2', is_locally_complete=False),
+        )
+
+
 class RelationRepositoryBaseTest(ABC):
     @property
     @abstractmethod
@@ -1911,6 +1947,9 @@ class QuantityRepositoryDAL1(QuantityRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class QuantityRepositoryFindByStructureBaseTest(QuantityRepositoryFindByStructureBaseTest, unittest.TestCase):
+    dal = dal1
+
+class CrosswalkRepositoryDAL1(CrosswalkRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class RelationRepositoryDAL1(RelationRepositoryBaseTest, unittest.TestCase):
