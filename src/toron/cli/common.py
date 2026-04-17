@@ -369,3 +369,20 @@ def remap_index_codes_to_index_ids(
         if index_code:
             row[position] = index_code_to_id(index_code, unique_id_bytes)
         yield row
+
+
+def make_index_code_header(domain: Union[str, Dict[str, str]]) -> str:
+    """Make an "index code" column name prefixed with domain text."""
+    # If using an old-style domain (dict), process values.
+    if isinstance(domain, dict):
+        # TODO: Remove `dict` handling once domain is properly updated.
+        values = [v.strip() for _, v in sorted(domain.items())]
+        values = [v.replace(' ', '_') for v in values if v]
+        if values:
+            return f"{'_'.join(values)}_index_code"  # <- EXIT!
+        return 'index_code'  # <- EXIT!
+
+    domain = domain.strip()
+    if domain:
+        return f'{domain.replace(' ', '_')}_index_code'
+    return 'index_code'

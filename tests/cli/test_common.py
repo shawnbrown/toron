@@ -20,6 +20,7 @@ from toron.cli.common import (
     is_index_code,
     get_index_code_position,
     remap_index_codes_to_index_ids,
+    make_index_code_header,
 )
 
 
@@ -284,3 +285,30 @@ class TestIndexCodeHandling(unittest.TestCase):
             [3, '180', 4],
         ]
         self.assertEqual(list(remapped2), expected)
+
+
+class TestMakeIndexCodeHeader(unittest.TestCase):
+    def test_str_input(self):
+        values = [
+            ('foo',      'foo_index_code'),
+            ('   foo\t', 'foo_index_code'),
+            ('foo bar',  'foo_bar_index_code'),
+            ('',         'index_code'),
+        ]
+        for domain, expected in values:
+            with self.subTest(domain=domain):
+                self.assertEqual(make_index_code_header(domain), expected)
+
+    def test_dict_input(self):
+        # NOTE: When `domain` is changed to str, this test will be unneeded.
+        values = [
+            ({'domain': 'foo'},                'foo_index_code'),
+            ({'domain': '   foo\t'},           'foo_index_code'),
+            ({'domain': 'foo bar'},            'foo_bar_index_code'),
+            ({'domain': ''},                   'index_code'),
+            ({'bbb': 'bar baz', 'aaa': 'foo'}, 'foo_bar_baz_index_code'),
+            ({},                               'index_code'),
+        ]
+        for legacy_domain, expected in values:
+            with self.subTest(domain=legacy_domain):
+                self.assertEqual(make_index_code_header(legacy_domain), expected)
