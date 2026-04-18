@@ -256,9 +256,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_crosswalk.add_argument('crosswalk',
                                   help='name of crosswalk',
                                   metavar='CROSSWALK')
-    parser_crosswalk.add_argument('--no-backup', action='store_false',
-                                  dest='backup',
-                                  help='do not make a backup file')
     parser_crosswalk_group = parser_crosswalk.add_mutually_exclusive_group()
     parser_crosswalk_group.add_argument(
         '--right',
@@ -274,6 +271,9 @@ def get_parser() -> argparse.ArgumentParser:
         dest='direction',
         help='add single direction: FILE1 <- FILE2',
     )
+    parser_crosswalk.add_argument('--no-backup', action='store_false',
+                                  dest='backup',
+                                  help='do not make a backup file')
     parser_crosswalk.set_defaults(
         func=command_crosswalk.process_crosswalk_action,
         direction='both',
