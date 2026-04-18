@@ -150,7 +150,7 @@ class TopoNodeFixtures(object):
             ['B', 'x',  3],
             ['B', 'y',  5],
             ['C', 'x', 13],
-            ['C', 'y', 22],
+            ['C', 'y', 19],
         ])
 
         self.node_e = TopoNode()

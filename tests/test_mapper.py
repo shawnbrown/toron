@@ -544,9 +544,9 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
              (1, 2, b'\x80', 67.5),
              (2, 3, b'\xc0', 20.0),
              (2, 4, b'\xc0', 60.0),
-             (3, 5, b'\x80', 10.4),   # <- Gets proportion of weight.
-             (3, 6, b'\x80', 17.6),   # <- Gets proportion of weight, overlaps with exact match `3, 6`.
-             (3, 6, b'\xc0',  7.0)},  # <- Exact match overlapped by ambiguous match.
+             (3, 5, b'\x80', 11.375),  # <- Gets proportion of weight.
+             (3, 6, b'\x80', 16.625),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
+             (3, 6, b'\xc0',  7.0)},   # <- Exact match overlapped by ambiguous match.
         )
 
     def test_ambiguous_duplicate_mapping_labels(self):
