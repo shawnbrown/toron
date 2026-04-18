@@ -796,8 +796,8 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
              (None, 9, None,     None)],  # <- Unmapped right-side element.
         )
 
-    def test_missing_left_and_right(self):
-        """Check unmapped left-side and right-side elemenets."""
+    def test_missing_some_left_and_some_right(self):
+        """Check some unmapped left-side and right-side elements."""
         self.make_population_croswalk([
             (1, 1, b'\xe0',  25.0),
             (1, 2, b'\xe0',  25.0),
@@ -833,6 +833,43 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
              (7, None, None,     None),   # <- Unmapped left-side element.
              (8, None, None,     None),   # <- Unmapped left-side element.
              (9, None, None,     None)],  # <- Unmapped left-side element.
+        )
+
+    def test_missing_all_left_and_all_right(self):
+        """Check fully-disjoint left-side and right-side elements."""
+        # Add crosswalk, but don't load any relations.
+        self.node_f.add_crosswalk(self.node_e, 'population', is_default=True)
+
+        actual = generate_mapping_elements(
+            'population',
+            self.trg_index_repo,
+            self.trg_crosswalk_repo,
+            self.trg_relation_repo,
+            self.src_index_repo,
+            self.src_prop_repo,
+        )
+
+        self.assertEqual(
+            list(actual),
+            [(0, 0, None, 0),  # <- Undefined records are always considered mapped.
+             (None, 1, None, None),
+             (None, 2, None, None),
+             (None, 3, None, None),
+             (None, 4, None, None),
+             (None, 5, None, None),
+             (None, 6, None, None),
+             (None, 7, None, None),
+             (None, 8, None, None),
+             (None, 9, None, None),
+             (1, None, None, None),
+             (2, None, None, None),
+             (3, None, None, None),
+             (4, None, None, None),
+             (5, None, None, None),
+             (6, None, None, None),
+             (7, None, None, None),
+             (8, None, None, None),
+             (9, None, None, None)],
         )
 
 

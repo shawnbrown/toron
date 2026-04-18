@@ -493,6 +493,14 @@ def generate_mapping_elements(
     for rel in relations:
         yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
 
+    # If undefined-to-undefined mapping was not included, yield it too.
+    undefined_record = next(
+        trg_relation_repo.find(crosswalk_id=crosswalk.id, other_index_id=0, index_id=0),
+        None,
+    )
+    if not undefined_record:
+        yield (0, 0, None, 0)
+
     # If target is not complete, yield unmatched right-side elements.
     if not crosswalk.is_locally_complete:
         unmatched_index_ids = trg_index_repo.find_unmatched_index_ids(crosswalk.id)
@@ -502,6 +510,11 @@ def generate_mapping_elements(
     # If source index is different, yield unmatched left-side elements.
     if src_prop_repo.get('index_hash') != crosswalk.other_index_hash:
         for other_index_id in src_index_repo.find_all_index_ids():
+            # In a mapping, an undefined record is always considered matched
+            # to the other node's undefined record (can never be unmatched).
+            if other_index_id == 0:
+                continue
+
             matches = trg_relation_repo.find(
                 crosswalk_id=crosswalk.id,
                 other_index_id=other_index_id,
