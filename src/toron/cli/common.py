@@ -384,5 +384,5 @@ def make_index_code_header(domain: Union[str, Dict[str, str]]) -> str:
 
     domain = domain.strip()
     if domain:
-        return f'{domain.replace(' ', '_')}_index_code'
+        return f"{domain.replace(' ', '_')}_index_code"
     return 'index_code'
