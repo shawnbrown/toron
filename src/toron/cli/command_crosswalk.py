@@ -458,8 +458,8 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     trg_index_header = make_index_code_header(target_node.domain)
 
     counter: Counter[str] = Counter()
-    with (source_node._managed_cursor(n=2) as (src_cur1, src_cur2),
-          target_node._managed_cursor(n=2) as (trg_cur1, trg_cur2)):
+    with source_node._managed_cursor(n=2) as (src_cur1, src_cur2), \
+            target_node._managed_cursor(n=2) as (trg_cur1, trg_cur2):
 
         src_index_repo = source_node._dal.IndexRepository(src_cur1)
         src_prop_repo = source_node._dal.PropertyRepository(src_cur1)
