@@ -677,3 +677,134 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             cm.output,
             ["ERROR:app-toron:no 'population' crosswalk in FILE1 or FILE2"],
         )
+
+
+class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
+    def test_full_mapping(self):
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        self.node_d.insert_relations2(
+            self.node_c,
+            'population',
+            data=[(1, 1, b'\xc0', 10.0),
+                  (1, 2, b'\xc0', 70.0),
+                  (2, 3, b'\xc0', 20.0),
+                  (2, 4, b'\xc0', 60.0),
+                  (3, 5, b'\xc0', 30.0),
+                  (3, 6, b'\xc0', 50.0),
+                  (0, 0,    None,  0.0)],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+
+        dummy_stdout = DummyRedirection()
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='both',
+            stdout=dummy_stdout,
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_crosswalk.write_to_stdout(args)  # <- Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            dummy_stdout.getvalue(),
+            ('index_code,lbl1,population,index_code,lbl1,lbl2\n'
+             '0XF4264876,-,0.0,0XDF9B30D7,-,-\n'
+             '1X73808335,A,10.0,1X583DFB94,A,x\n'
+             '1X73808335,A,70.0,2X0BA7A010,A,y\n'
+             '2X201AD8B1,B,20.0,3X8C016B53,B,x\n'
+             '2X201AD8B1,B,60.0,4XAC931718,B,y\n'
+             '3XA7BC13F2,C,30.0,5X2B35DC5B,C,x\n'
+             '3XA7BC13F2,C,50.0,6X78AF87DF,C,y\n'),
+        )
+
+    def test_some_ambiguous_some_disjoint(self):
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        self.node_d.insert_relations2(
+            self.node_c,
+            'population',
+            data=[(1, 1, b'\xc0', 10.0),
+                  (1, 2, b'\xc0', 70.0),
+                  (2, 3, b'\x80', 20.0),
+                  (2, 4, b'\x80', 60.0),
+                  # Omitting 3 -> 5
+                  # Omitting 3 -> 6
+                  (0, 0,    None,  0.0)],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+        )
+
+        dummy_stdout = DummyRedirection()
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='both',
+            stdout=dummy_stdout,
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_crosswalk.write_to_stdout(args)  # <- Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            dummy_stdout.getvalue(),
+            ('index_code,lbl1,population,index_code,lbl1,lbl2,ambiguous_fields\n'
+             '0XF4264876,-,0.0,0XDF9B30D7,-,-,\n'
+             '1X73808335,A,10.0,1X583DFB94,A,x,\n'
+             '1X73808335,A,70.0,2X0BA7A010,A,y,\n'
+             '2X201AD8B1,B,20.0,3X8C016B53,B,x,lbl2\n'  # <- 'lbl2' is ambiguous
+             '2X201AD8B1,B,60.0,4XAC931718,B,y,lbl2\n'  # <- 'lbl2' is ambiguous
+             ',,,5X2B35DC5B,C,x,\n'  # <- Target index_id 5 is disjoint.
+             ',,,6X78AF87DF,C,y,\n'  # <- Target index_id 6 is disjoint.
+             '3XA7BC13F2,C,,,,,\n'),  # <- Source index_id 3 is disjoint.
+        )
+
+    def test_full_disjoint(self):
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        dummy_stdout = DummyRedirection()
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='both',
+            stdout=dummy_stdout,
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_crosswalk.write_to_stdout(args)  # <- Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            dummy_stdout.getvalue(),
+            ('index_code,lbl1,population,index_code,lbl1,lbl2\n'
+             '0XF4264876,-,0,0XDF9B30D7,-,-\n'  # <- Undefined records always match to each other.
+             ',,,1X583DFB94,A,x\n'
+             ',,,2X0BA7A010,A,y\n'
+             ',,,3X8C016B53,B,x\n'
+             ',,,4XAC931718,B,y\n'
+             ',,,5X2B35DC5B,C,x\n'
+             ',,,6X78AF87DF,C,y\n'
+             '1X73808335,A,,,,\n'
+             '2X201AD8B1,B,,,,\n'
+             '3XA7BC13F2,C,,,,\n'),
+        )

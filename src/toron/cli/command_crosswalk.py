@@ -2,10 +2,13 @@
 import argparse
 import csv
 import logging
+import os
 import uuid
+from collections import Counter
 from contextlib import suppress
 from itertools import (
     chain,
+    compress,
     islice,
 )
 from .._typing import (
@@ -15,6 +18,7 @@ from .._typing import (
     Iterable,
     Iterator,
     List,
+    Never,
     Optional,
     Sequence,
     Tuple,
@@ -22,6 +26,7 @@ from .._typing import (
 )
 
 from .. import TopoNode
+from ..data_service import generate_mapping_elements
 from ..mapper import (
     get_mapping_value_position,
     Mapper,
@@ -34,9 +39,12 @@ from .._utils import (
 )
 from .common import (
     ExitCode,
+    csv_stdout_writer,
     index_code_to_id,
+    index_id_to_code,
     get_index_code_position,
     process_backup_option,
+    make_index_code_header,
 )
 
 
@@ -438,11 +446,144 @@ def get_ambiguous_field_text(
     return ', '.join(ambiguous_fields) or None
 
 
+def write_to_stdout(args: argparse.Namespace) -> ExitCode:
+    """Print crosswalk in CSV format to stdout stream."""
+    source_node = args.node1
+    target_node = args.node2
+
+    src_unique_id = source_node.unique_id
+    trg_unique_id = target_node.unique_id
+
+    src_index_header = make_index_code_header(source_node.domain)
+    trg_index_header = make_index_code_header(target_node.domain)
+
+    counter: Counter[str] = Counter()
+    with (source_node._managed_cursor(n=2) as (src_cur1, src_cur2),
+          target_node._managed_cursor(n=2) as (trg_cur1, trg_cur2)):
+
+        src_index_repo = source_node._dal.IndexRepository(src_cur1)
+        src_prop_repo = source_node._dal.PropertyRepository(src_cur1)
+        trg_index_repo = target_node._dal.IndexRepository(trg_cur1)
+        trg_crosswalk_repo = target_node._dal.CrosswalkRepository(trg_cur1)
+        trg_relation_repo = target_node._dal.RelationRepository(trg_cur1)
+
+        src_label_names = src_index_repo.get_label_names()
+        trg_label_names = trg_index_repo.get_label_names()
+
+        src_label_no_values = (None,) * len(src_label_names)
+        trg_label_no_values = (None,) * len(trg_label_names)
+
+        # Check if crosswalk has ambiguous mappings.
+        crosswalk = trg_crosswalk_repo.get_by_unique_id_and_name(
+            other_unique_id=src_unique_id, name=args.crosswalk,
+        )
+        mapping_levels = trg_relation_repo.get_distinct_mapping_levels(crosswalk.id)
+        whole_space_bytes = bytes(BitFlags(trg_label_names))
+        ambiguous_header: Tuple[str, ...]
+        get_ambiguous: Callable[[Union[bytes, None], Sequence[str]],
+                                Union[Tuple[Never, ...], Tuple[Optional[str]]]]
+        if not len(mapping_levels) or (len(mapping_levels) == 1
+                                       and mapping_levels[0] == whole_space_bytes):
+            ambiguous_header = tuple()
+            get_ambiguous = lambda lvl, lbls: tuple()
+        else:
+            ambiguous_header = ('ambiguous_fields',)
+            get_ambiguous = lambda lvl, lbls: (get_ambiguous_field_text(lvl, lbls),)
+
+        with csv_stdout_writer(args.stdout) as writer:
+            # Write header row.
+            writer.writerow(chain(
+                (src_index_header,),
+                src_label_names,
+                (args.crosswalk,
+                 trg_index_header),
+                trg_label_names,
+                ambiguous_header,
+            ))
+
+            generator = generate_mapping_elements(
+                crosswalk_name=args.crosswalk,
+                trg_index_repo=trg_index_repo,
+                trg_crosswalk_repo=trg_crosswalk_repo,
+                trg_relation_repo=trg_relation_repo,
+                src_index_repo=src_index_repo,
+                src_prop_repo=src_prop_repo,
+            )
+
+            aux_src_index_repo = source_node._dal.IndexRepository(src_cur2)
+            aux_trg_index_repo = target_node._dal.IndexRepository(trg_cur2)
+            src_id_bytes = uuid.UUID(src_unique_id).bytes
+            trg_id_bytes = uuid.UUID(trg_unique_id).bytes
+
+            # Write data rows.
+            for src_index, trg_index, level, value in generator:
+                # Since source labels come from a separate node, it's possible
+                # to have orphan references. A `KeyError` indicates that an
+                # index in the source node has been deleted after the crosswalk
+                # was created (the crosswalk is now "stale") which results in
+                # some missing labels.
+                if src_index is not None:
+                    try:
+                        src_labels = aux_src_index_repo.get(src_index).labels
+                    except KeyError:
+                        src_labels = src_label_no_values
+                        counter['invalid_source_index'] += 1
+                    src_index_code = index_id_to_code(src_index, src_id_bytes)
+                else:
+                    src_labels = src_label_no_values
+                    src_index_code = None
+                    counter['unmatched_source_index'] += 1
+
+                # Target labels come from the same node as a crosswalk's
+                # relations (unlike source labels). So it's not possible to
+                # have orphan references.
+                if trg_index is not None:
+                    trg_labels = aux_trg_index_repo.get(trg_index).labels
+                    trg_index_code = index_id_to_code(trg_index, trg_id_bytes)
+                else:
+                    trg_labels = trg_label_no_values
+                    trg_index_code = None
+                    counter['unmatched_target_index'] += 1
+
+                writer.writerow(chain(
+                    (src_index_code,),
+                    src_labels,
+                    (value,
+                     trg_index_code),
+                    trg_labels,
+                    get_ambiguous(level, trg_label_names),
+                ))
+                counter['row_count'] += 1
+
+    if counter['invalid_source_index']:
+        applogger.error(
+            f"contains {counter['invalid_source_index']} indexes "
+            f"that no longer exist in FILE1 (included but labels are missing)"
+        )
+    if counter['unmatched_source_index']:
+        applogger.warning(
+            f"contains {counter['unmatched_source_index']} unmatched indexes "
+            f"from FILE1"
+        )
+    if counter['unmatched_target_index']:
+        applogger.warning(
+            f"contains {counter['unmatched_target_index']} unmatched indexes "
+            f"from FILE2"
+        )
+
+    row_count = counter['row_count']
+    applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
+
+    return ExitCode.OK
+
+
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
     """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
     if args.stdin_is_streamed:
         process_backup_option(args, node_args=['node1', 'node2'])
         return read_from_stdin(args)
     else:
-        applogger.error('not implemented')
-        return ExitCode.ERR
+        try:
+            return write_to_stdout(args)
+        except BrokenPipeError:
+            os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
