@@ -369,8 +369,8 @@ def _get_mapping_elements(
     crosswalk_name: Optional[str] = None,
 ) -> Generator[_MappingElementsTuple, None, None]:
     """See ``data_service.generate_mapping_elements()`` for details."""
-    with (source_node._managed_cursor() as src_cur,
-          target_node._managed_cursor() as trg_cur):
+    with source_node._managed_cursor() as src_cur, \
+            target_node._managed_cursor() as trg_cur:
 
         generator = generate_mapping_elements(
             crosswalk_name=crosswalk_name,
