@@ -734,6 +734,60 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              'INFO:app-toron:crosswalk is complete'],
         )
 
+    @unittest.expectedFailure  # Not fully implemented.
+    def test_match_limit_with_allow_overlapping(self):
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='right',
+            match_limit=2,  # <- Allow up to one-to-two matches.
+            allow_overlapping=True,  # <- Allowing overlaps.
+            stdin=DummyRedirection(
+                'index_c,population,index_d,lbl1,lbl2\n'
+                '1X73808335,90,,A,\n'             # <- Matched to 2 right-side records.
+                '2X201AD8B1,20,3X8C016B53,B,x\n'  # <- Exact match (by index code).
+                '2X201AD8B1,60,,B,y\n'            # <- Exact match (by index labels).
+                '3XA7BC13F2,28,,C,\n'             # <- Matched to 2 right-side records (one of which is an overlap).
+                '3XA7BC13F2,7,6X78AF87DF,C,y\n'   # <- Exact match (overlaps the records matched on "C" alone).
+            ),
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            self.get_relations(self.node_c, self.node_d, 'population'),
+            {(1, 1, 1, 1, b'\x80', 22.5,   0.25),   # <- Gets proportion of weight.
+             (2, 1, 1, 2, b'\x80', 67.5,   0.75),   # <- Gets proportion of weight.
+             (3, 1, 2, 3, b'\xc0', 20.0,   0.25),
+             (4, 1, 2, 4, b'\xc0', 60.0,   0.75),
+             (5, 1, 3, 5, b'\x80', 11.375, 0.325),  # <- Gets proportion of weight.
+             (6, 1, 3, 6, b'\x80', 16.625, 0.475),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
+             (7, 1, 3, 6, b'\xc0',  7.0,   0.2),    # <- Exact match overlapped by ambiguous match.
+             (8, 1, 0, 0,    None,  0.0,   1.0)},
+        )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'INFO:app-toron.mapper:included 1 ambiguous matches that ' \
+                'overlap with records that were also matched at a finer ' \
+                'level of granularity',
+             'INFO:app-toron:loading relations: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 7 relations',
+             'INFO:app-toron:crosswalk is complete'],
+        )
+
 
 class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
     def test_full_mapping(self):

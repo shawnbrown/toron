@@ -276,6 +276,9 @@ def get_parser() -> argparse.ArgumentParser:
                                   type=int,
                                   help='exclude matches exceeding one-to-LIMIT (default 1)',
                                   metavar='LIMIT')
+    parser_crosswalk.add_argument('--allow-overlapping',
+                                  action='store_true',
+                                  help='allow ambiguous matches to overlap')
     parser_crosswalk.add_argument('--no-backup', action='store_false',
                                   dest='backup',
                                   help='do not make a backup file')
