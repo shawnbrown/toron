@@ -372,8 +372,6 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     elif args.direction == 'right' and not right_crosswalk:
         applogger.error(f'no {args.crosswalk!r} crosswalk in FILE2')
         return ExitCode.ERR  # <- EXIT!
-    else:
-        raise ValueError
 
     # Normalize and load mapping data.
     data = normalize_mapping_data(
