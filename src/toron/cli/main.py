@@ -271,6 +271,11 @@ def get_parser() -> argparse.ArgumentParser:
         dest='direction',
         help='add single direction: FILE1 <- FILE2',
     )
+    parser_crosswalk.add_argument('--match-limit',
+                                  default=1,
+                                  type=int,
+                                  help='exclude matches exceeding one-to-LIMIT (default 1)',
+                                  metavar='LIMIT')
     parser_crosswalk.add_argument('--no-backup', action='store_false',
                                   dest='backup',
                                   help='do not make a backup file')

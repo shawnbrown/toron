@@ -551,6 +551,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             node2=self.node_d,
             crosswalk='population',
             direction='both',
+            match_limit=1,
+            allow_overlapping=False,
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
                 '1X73808335,10,1X583DFB94\n'
@@ -613,6 +615,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             node2=self.node_d,
             crosswalk='population',
             direction='both',  # <- Direction indicates both, but left-side is missing.
+            match_limit=1,
+            allow_overlapping=False,
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
                 '1X73808335,10,1X583DFB94\n'
@@ -676,6 +680,58 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(
             cm.output,
             ["ERROR:app-toron:no 'population' crosswalk in FILE1 or FILE2"],
+        )
+
+    def test_match_limit_without_overlapping(self):
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='right',
+            match_limit=2,  # <- Allow up to one-to-two matches.
+            allow_overlapping=False,  # <- Default (no overlapping allowed).
+            stdin=DummyRedirection(
+                'index_c,population,index_d,lbl1,lbl2\n'
+                '1X73808335,90,,A,\n'             # <- Matched to 2 right-side records.
+                '2X201AD8B1,20,3X8C016B53,B,x\n'  # <- Exact match (by index code).
+                '2X201AD8B1,60,,B,y\n'            # <- Exact match (by index labels).
+                '3XA7BC13F2,28,,C,\n'             # <- Matched to 2 right-side records (2-ambiguous, minus 1-exact overlap).
+                '3XA7BC13F2,7,6X78AF87DF,C,y\n'   # <- Exact match (overlaps the records matched on "C" alone).
+            ),
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            self.get_relations(self.node_c, self.node_d, 'population'),
+            {(1, 1, 1, 1, b'\x80', 22.5, 0.25),  # <- Gets proportion of weight.
+             (2, 1, 1, 2, b'\x80', 67.5, 0.75),  # <- Gets proportion of weight.
+             (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
+             (4, 1, 2, 4, b'\xc0', 60.0, 0.75),
+             (5, 1, 3, 5, b'\x80', 28.0, 0.8),   # <- Gets full weight after excluding split created by overlap.
+             (6, 1, 3, 6, b'\xc0',  7.0, 0.2),   # <- Exact match that was overlapped.
+             (7, 1, 0, 0,    None,  0.0, 1.0)},
+        )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'WARNING:app-toron.mapper:omitted 1 ambiguous matches that ' \
+                'overlap with records that were already matched at a finer ' \
+                'level of granularity',
+             'INFO:app-toron:loading relations: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 6 relations',
+             'INFO:app-toron:crosswalk is complete'],
         )
 
 

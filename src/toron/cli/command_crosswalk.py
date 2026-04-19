@@ -381,9 +381,13 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
 
     # Match mapping to node labels.
     applogger.info(f'matching FILE1 index records')
-    mapper.match_node_records('node1', match_limit=1, allow_overlapping=False)
+    mapper.match_node_records('node1',
+                              match_limit=args.match_limit,
+                              allow_overlapping=False)
     applogger.info(f'matching FILE2 index records')
-    mapper.match_node_records('node2', match_limit=1, allow_overlapping=False)
+    mapper.match_node_records('node2',
+                              match_limit=args.match_limit,
+                              allow_overlapping=False)
 
     # Insert relations into FILE2.
     if args.direction in {'both', 'right'}:
