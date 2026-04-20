@@ -488,18 +488,13 @@ def generate_mapping_elements(
         msg = f'no crosswalk named {crosswalk_name!r}'
         raise Exception(msg)
 
+    # Yield undefined-to-undefined record (always considered matched).
+    yield (0, 0, None, 0.0)
+
     # Yield matched records.
     relations = trg_relation_repo.find(crosswalk_id=crosswalk.id)
     for rel in relations:
         yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
-
-    # If undefined-to-undefined mapping was not included, yield it too.
-    undefined_record = next(
-        trg_relation_repo.find(crosswalk_id=crosswalk.id, other_index_id=0, index_id=0),
-        None,
-    )
-    if not undefined_record:
-        yield (0, 0, None, 0)
 
     # If target is not complete, yield unmatched right-side elements.
     if not crosswalk.is_locally_complete:

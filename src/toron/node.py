@@ -1605,7 +1605,7 @@ class TopoNode(object):
                               + ('ambiguous_fields',))
                 yield header_row
 
-            for index in index_repo.filter_by_label(criteria):
+            for index in index_repo.filter_by_label(criteria, include_undefined=False):
                 index_id = index.id
                 relations = self._dal.RelationRepository(aux_cursor).find(
                     crosswalk_id=crosswalk.id,
@@ -1705,18 +1705,6 @@ class TopoNode(object):
                 )
                 counter['inserted'] += 1
 
-            # If missing, add the "undefined" relation (0 -> 0).
-            if next(relation_repo.find(crosswalk_id=crosswalk_id,
-                                       other_index_id=0,
-                                       index_id=0), None) is None:
-                relation_repo.add(
-                    crosswalk_id=crosswalk_id,
-                    other_index_id=0,  # <- Undefined record.
-                    index_id=0,  # <- Undefined record.
-                    mapping_level=None,
-                    value=0.0,
-                )
-
             if counter['inserted'] and crosswalk:
                 applogger.info(f"loaded {counter['inserted']} relations")
 
@@ -1805,20 +1793,23 @@ class TopoNode(object):
                     continue  # <- Skip to next item.
 
                 # Verify mapping level if provided.
-                mapping_level = row_dict.get('mapping_level') or None
+                mapping_level = row_dict['mapping_level']
                 if mapping_level and BitFlags(mapping_level) not in structure:
                     counter['bad_mapping_level'] += 1
                     continue  # <- Skip to next item.
 
-                # Add relation record.
-                relation_repo.add(
-                    crosswalk_id=crosswalk_id,
-                    other_index_id=other_index_id,
-                    index_id=index_id,
-                    mapping_level=mapping_level,
-                    value=value,
-                )
-                counter['inserted'] += 1
+                try:
+                    # Add relation record.
+                    relation_repo.add(
+                        crosswalk_id=crosswalk_id,
+                        other_index_id=other_index_id,
+                        index_id=index_id,
+                        mapping_level=mapping_level,
+                        value=value,
+                    )
+                    counter['inserted'] += 1
+                except Exception as e:
+                    raise Exception(f'{e}; {crosswalk_id} {other_index_id} {index_id} {mapping_level} {value}')
 
             if counter['inserted'] and crosswalk:
                 # Get ordered sequence of other_index_id values.
@@ -1900,7 +1891,7 @@ class TopoNode(object):
                     continue  # <- Skip to next item.
 
                 # Verify mapping level if provided.
-                mapping_level = row_dict.get('mapping_level') or None
+                mapping_level = row_dict['mapping_level']
                 if mapping_level and BitFlags(mapping_level) not in structure:
                     counter['bad_mapping_level'] += 1
                     continue  # <- Skip to next item.
@@ -2017,6 +2008,8 @@ class TopoNode(object):
                 label_columns = col_manager.get_columns()
                 verify_columns_set(columns, label_columns, allow_extras=True)
 
+                whole_space_mapping_level = bytes(BitFlags(label_columns))
+
                 if tuple(columns[:3]) != ('other_index_id', crosswalk_name, 'index_id'):
                     raise ValueError(
                         f"columns should be start with "
@@ -2057,7 +2050,7 @@ class TopoNode(object):
                             continue  # <- Skip to next item.
 
                         # Check for mapping level, skip if present.
-                        if relation_record.mapping_level:
+                        if relation_record.mapping_level != whole_space_mapping_level:
                             counter['approximate_relations'] += 1
                             continue  # <- Skip to next item.
 

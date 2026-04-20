@@ -588,8 +588,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
              (4, 1, 2, 4, b'\xc0', 60.0, 0.75),
              (5, 1, 3, 5, b'\xc0', 30.0, 0.375),
-             (6, 1, 3, 6, b'\xc0', 50.0, 0.625),
-             (7, 1, 0, 0,    None,  0.0, 1.0)},
+             (6, 1, 3, 6, b'\xc0', 50.0, 0.625)},
         )
 
         self.assertEqual(
@@ -599,8 +598,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              (3, 1, 3, 2, b'\x80', 20.0, 1.0),
              (4, 1, 4, 2, b'\x80', 60.0, 1.0),
              (5, 1, 5, 3, b'\x80', 30.0, 1.0),
-             (6, 1, 6, 3, b'\x80', 50.0, 1.0),
-             (7, 1, 0, 0,    None,  0.0, 1.0)},
+             (6, 1, 6, 3, b'\x80', 50.0, 1.0)},
         )
 
     def test_missing_one_side(self):
@@ -650,8 +648,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
              (4, 1, 2, 4, b'\xc0', 60.0, 0.75),
              (5, 1, 3, 5, b'\xc0', 30.0, 0.375),
-             (6, 1, 3, 6, b'\xc0', 50.0, 0.625),
-             (7, 1, 0, 0,    None,  0.0, 1.0)},
+             (6, 1, 3, 6, b'\xc0', 50.0, 0.625)},
         )
 
     def test_missing_both_sides(self):
@@ -718,8 +715,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
              (4, 1, 2, 4, b'\xc0', 60.0, 0.75),
              (5, 1, 3, 5, b'\x80', 28.0, 0.8),   # <- Gets full weight after excluding split created by overlap.
-             (6, 1, 3, 6, b'\xc0',  7.0, 0.2),   # <- Exact match that was overlapped.
-             (7, 1, 0, 0,    None,  0.0, 1.0)},
+             (6, 1, 3, 6, b'\xc0',  7.0, 0.2)},  # <- Exact match that was overlapped.
         )
 
         self.assertEqual(
@@ -804,8 +800,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
                   (2, 3, b'\xc0', 20.0),
                   (2, 4, b'\xc0', 60.0),
                   (3, 5, b'\xc0', 30.0),
-                  (3, 6, b'\xc0', 50.0),
-                  (0, 0,    None,  0.0)],
+                  (3, 6, b'\xc0', 50.0)],
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
 
@@ -848,10 +843,9 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
             data=[(1, 1, b'\xc0', 10.0),
                   (1, 2, b'\xc0', 70.0),
                   (2, 3, b'\x80', 20.0),
-                  (2, 4, b'\x80', 60.0),
+                  (2, 4, b'\x80', 60.0)],
                   # Omitting 3 -> 5
                   # Omitting 3 -> 6
-                  (0, 0,    None,  0.0)],
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
 
@@ -907,7 +901,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(
             dummy_stdout.getvalue(),
             ('index_code,lbl1,population,index_code,lbl1,lbl2\n'
-             '0XF4264876,-,0,0XDF9B30D7,-,-\n'  # <- Undefined records always match to each other.
+             '0XF4264876,-,0.0,0XDF9B30D7,-,-\n'  # <- Undefined records always match to each other.
              ',,,1X583DFB94,A,x\n'
              ',,,2X0BA7A010,A,y\n'
              ',,,3X8C016B53,B,x\n'

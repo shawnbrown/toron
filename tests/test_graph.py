@@ -224,7 +224,6 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
                 (7, 7, b'\xe0', 100.0),
                 (8, 8, b'\xe0', 100.0),
                 (9, 9, b'\xe0', 100.0),
-                (0, 0,    None,   0.0),
             ],
             columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
@@ -258,7 +257,6 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
                 (7, 7, b'\xe0', 100.0),
                 (8, 8, b'\xe0', 100.0),
                 (9, 9, b'\xe0', 100.0),
-                (0, 0,    None,   0.0),
             ],
             columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
@@ -292,7 +290,6 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
                 (7, 7, b'\xe0', 100.0),
                 (8, 8, b'\xe0', 100.0),
                 (9, 9, b'\xe0', 100.0),
-                (0, 0,    None,   0.0),
             ],
             columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
@@ -326,7 +323,6 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
                 (7, 7, b'\xe0', 100.0),
                 (8, 8, b'\xe0', 100.0),
                 (9, 9, b'\xe0', 100.0),
-                (0, 0,    None,   0.0),
             ],
             columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
@@ -392,7 +388,6 @@ class TestLoadMapping(TwoNodesBaseTestCase):
                 (8,  1, 7, 7, b'\xe0', 100.0, 1.0),
                 (9,  1, 8, 8, b'\xe0', 100.0, 1.0),
                 (10, 1, 9, 9, b'\xe0', 100.0, 1.0),
-                (11, 1, 0, 0, None,      0.0, 1.0),
             ]
             self.assertEqual(results, expected)
 
@@ -446,7 +441,6 @@ class TestLoadMapping(TwoNodesBaseTestCase):
                 (16, 1, 9, 6, b'\x80', 28.125,  0.375),
                 (17, 1, 9, 8, b'\x80', 23.4375, 0.3125),
                 (18, 1, 9, 9, b'\x80', 23.4375, 0.3125),
-                (19, 1, 0, 0, None,    0.0,     1.0),
             ]
             self.assertEqual(results, expected)
 
@@ -491,7 +485,6 @@ class TestLoadMapping(TwoNodesBaseTestCase):
                 (4, 1, 3, 3, b'\x80', 62.5, 0.625),
                 (5, 1, 4, 4, b'\xe0', 55.0, 1.0),
                 (6, 1, 5, 5, b'\xe0', 50.0, 1.0),
-                (7, 1, 0, 0, None,     0.0, 1.0),
             ]
             self.assertEqual(results, expected)
 
@@ -505,7 +498,6 @@ class TestLoadMapping(TwoNodesBaseTestCase):
                 (4, 1, 3, 3, b'\x80', 62.5, 1.0),
                 (5, 1, 4, 4, b'\xe0', 55.0, 1.0),
                 (6, 1, 5, 5, b'\xe0', 50.0, 1.0),
-                (7, 1, 0, 0, None,     0.0, 1.0),
             ]
             self.assertEqual(results, expected)
 
@@ -555,7 +547,6 @@ class TestLoadMapping(TwoNodesBaseTestCase):
                 (8,  1, 7, 7, b'\xe0', 100.0, 1.0),
                 (9,  1, 8, 8, b'\xe0', 100.0, 1.0),
                 (10, 1, 9, 9, b'\xe0', 100.0, 1.0),
-                (11, 1, 0, 0, None,      0.0, 1.0),
             ]
             self.assertEqual(results, expected)
 
@@ -881,17 +872,16 @@ class TestTranslate(unittest.TestCase):
             node_or_ref='other-file',
             crosswalk_name='edge 1',
             data=[
-                ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C'),
-                (1,  39.0, 1, 'a1', 'b1', 'c1'),  # proportion: 0.6
-                (1,  26.0, 2, 'a1', 'b1', 'c2'),  # proportion: 0.4
-                (2,  16.0, 2, 'a1', 'b1', 'c2'),  # proportion: 1.0
-                (3,  50.0, 2, 'a1', 'b1', 'c2'),  # proportion: 0.250
-                (3,  25.0, 3, 'a1', 'b2', 'c3'),  # proportion: 0.125
-                (3, 125.0, 4, 'a1', 'b2', 'c4'),  # proportion: 0.625
-                (4,  64.0, 3, 'a1', 'b2', 'c3'),  # proportion: 1.0
-                (5,  19.0, 3, 'a1', 'b2', 'c3'),  # proportion: 0.38
-                (5,  31.0, 4, 'a1', 'b2', 'c4'),  # proportion: 0.62
-                (0,   0.0, 0, '-',  '-',  '-' ),  # proportion: 1.0
+                ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C', 'mapping_level'),
+                (1,  39.0, 1, 'a1', 'b1', 'c1', b'\xe0'),  # proportion: 0.6
+                (1,  26.0, 2, 'a1', 'b1', 'c2', b'\xe0'),  # proportion: 0.4
+                (2,  16.0, 2, 'a1', 'b1', 'c2', b'\xe0'),  # proportion: 1.0
+                (3,  50.0, 2, 'a1', 'b1', 'c2', b'\xe0'),  # proportion: 0.250
+                (3,  25.0, 3, 'a1', 'b2', 'c3', b'\xe0'),  # proportion: 0.125
+                (3, 125.0, 4, 'a1', 'b2', 'c4', b'\xe0'),  # proportion: 0.625
+                (4,  64.0, 3, 'a1', 'b2', 'c3', b'\xe0'),  # proportion: 1.0
+                (5,  19.0, 3, 'a1', 'b2', 'c3', b'\xe0'),  # proportion: 0.38
+                (5,  31.0, 4, 'a1', 'b2', 'c4', b'\xe0'),  # proportion: 0.62
             ],
         )
         self.node.add_crosswalk(
@@ -905,17 +895,16 @@ class TestTranslate(unittest.TestCase):
             node_or_ref='other-file',
             crosswalk_name='edge 2',
             data=[
-                ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C'),
-                (1, 32.0,  1, 'a1', 'b1', 'c1'),  # proportion: 0.5
-                (1, 32.0,  2, 'a1', 'b1', 'c2'),  # proportion: 0.5
-                (2, 15.0,  2, 'a1', 'b1', 'c2'),  # proportion: 1.0
-                (3, 85.5,  2, 'a1', 'b1', 'c2'),  # proportion: 0.333984375
-                (3, 85.25, 3, 'a1', 'b2', 'c3'),  # proportion: 0.3330078125
-                (3, 85.25, 4, 'a1', 'b2', 'c4'),  # proportion: 0.3330078125
-                (4, 64.0,  3, 'a1', 'b2', 'c3'),  # proportion: 1.0
-                (5, 50.0,  3, 'a1', 'b2', 'c3'),  # proportion: 0.5
-                (5, 50.0,  4, 'a1', 'b2', 'c4'),  # proportion: 0.5
-                (0,  0.0,  0, '-',  '-',  '-' ),  # proportion: 1.0
+                ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C', 'mapping_level'),
+                (1, 32.0,  1, 'a1', 'b1', 'c1', b'\xe0'),  # proportion: 0.5
+                (1, 32.0,  2, 'a1', 'b1', 'c2', b'\xe0'),  # proportion: 0.5
+                (2, 15.0,  2, 'a1', 'b1', 'c2', b'\xe0'),  # proportion: 1.0
+                (3, 85.5,  2, 'a1', 'b1', 'c2', b'\xe0'),  # proportion: 0.333984375
+                (3, 85.25, 3, 'a1', 'b2', 'c3', b'\xe0'),  # proportion: 0.3330078125
+                (3, 85.25, 4, 'a1', 'b2', 'c4', b'\xe0'),  # proportion: 0.3330078125
+                (4, 64.0,  3, 'a1', 'b2', 'c3', b'\xe0'),  # proportion: 1.0
+                (5, 50.0,  3, 'a1', 'b2', 'c3', b'\xe0'),  # proportion: 0.5
+                (5, 50.0,  4, 'a1', 'b2', 'c4', b'\xe0'),  # proportion: 0.5
             ],
         )
 

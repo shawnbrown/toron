@@ -962,11 +962,14 @@ class RelationRepository(BaseRelationRepository):
             crosswalk_id: int,
             other_index_id: int,
             index_id: int,
-            mapping_level: Union[bytes, None],
+            mapping_level: bytes,
             value: float,
             proportion: Optional[float] = None,
         ) -> None:
             """Add a record to the repository."""
+            if not isinstance(mapping_level, bytes):
+                raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
+
             sql = """
                 INSERT INTO main.relation (
                     crosswalk_id,
@@ -983,7 +986,7 @@ class RelationRepository(BaseRelationRepository):
                 other_index_id,
                 index_id,
                 value,
-                bytes(mapping_level) if mapping_level else None,
+                mapping_level,
                 proportion,
             )
             self._cursor.execute(sql, parameters)
@@ -996,11 +999,14 @@ class RelationRepository(BaseRelationRepository):
             crosswalk_id: int,
             other_index_id: int,
             index_id: int,
-            mapping_level: Union[bytes, None],
+            mapping_level: bytes,
             value: float,
             proportion: Optional[float] = None,
         ) -> None:
             """Add a record to the repository."""
+            if not isinstance(mapping_level, bytes):
+                raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
+
             sql = """
                 INSERT INTO main.relation (
                     crosswalk_id,
@@ -1017,7 +1023,7 @@ class RelationRepository(BaseRelationRepository):
                 int(other_index_id),
                 index_id,
                 float(value),
-                bytes(mapping_level) if mapping_level else None,
+                mapping_level,
                 proportion,
             )
             self._cursor.execute(sql, parameters)
@@ -1092,7 +1098,9 @@ class RelationRepository(BaseRelationRepository):
         )
 
     def find_distinct_other_index_ids(
-        self, crosswalk_id: int, ordered: bool = False
+        self, crosswalk_id: int,
+        ordered: bool = False,
+        include_undefined: bool = True,
     ) -> Iterator[int]:
         """Get distinct other_index_id values for the given crosswalk.
         When *ordered* is True, must return values in ascending order.
@@ -1100,10 +1108,14 @@ class RelationRepository(BaseRelationRepository):
         sql = f"""
             SELECT DISTINCT other_index_id
             FROM main.relation
-            WHERE crosswalk_id=?
+            WHERE crosswalk_id=? AND other_index_id > 0
             {'ORDER BY other_index_id' if ordered else ''}
         """
         self._cursor.execute(sql, (crosswalk_id,))
+
+        if include_undefined:
+            yield 0  # Yield undefined other_index_id.
+
         for row in self._cursor:
             yield row[0]
 
@@ -1146,13 +1158,14 @@ class RelationRepository(BaseRelationRepository):
         sql = (
             'SELECT COUNT(DISTINCT index_id)\n'
             'FROM main.relation\n'
-            'WHERE crosswalk_id=?'
+            'WHERE crosswalk_id=? AND index_id != 0'
         )
-        if not include_undefined:
-            sql += ' AND index_id != 0'
 
         self._cursor.execute(sql, (crosswalk_id,))
-        return self._cursor.fetchone()[0]
+        result = self._cursor.fetchone()[0]
+        if include_undefined:
+            result += 1
+        return result
 
     def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
         """Return True if there's a relation for every index record."""
