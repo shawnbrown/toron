@@ -3449,7 +3449,6 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         """
         data = [
             ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
-            (0, 0, b'\xc0',  0.0),
             (1, 1, b'\x40', 10.0),  # <- Bad mapping level, should be omitted.
             (2, 2, b'\x40', 20.0),  # <- Bad mapping level, should be omitted.
             (3, 2, b'\x80',  5.0),
@@ -3461,16 +3460,15 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 3 relations',
+            ['INFO:app-toron.node:loaded 2 relations',
              'WARNING:app-toron.node:skipped 2 relations with invalid mapping levels'],
         )
 
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(1, 1, 0, 0, mapping_level=b'\xc0', value=0.0,  proportion=1.00),
-                Relation(2, 1, 3, 2, mapping_level=b'\x80', value=5.0,  proportion=0.25),
-                Relation(3, 1, 3, 3, mapping_level=b'\x80', value=15.0, proportion=0.75),
+                Relation(1, 1, 3, 2, mapping_level=b'\x80', value=5.0,  proportion=0.25),
+                Relation(2, 1, 3, 3, mapping_level=b'\x80', value=15.0, proportion=0.75),
             ],
         )
 
@@ -3480,7 +3478,6 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
 
             data = [
                 ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
-                (0, 0, b'\xc0',  0.0),
                 (1, 1, b'\xc0', 10.0),
                 (2, 2, b'\xc0', 20.0),
                 (3, 2, b'\xc0',  5.0),

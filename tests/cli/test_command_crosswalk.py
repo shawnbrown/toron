@@ -768,8 +768,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              (4, 1, 2, 4, b'\xc0', 60.0,   0.75),
              (5, 1, 3, 5, b'\x80', 11.375, 0.325),  # <- Gets proportion of weight.
              (6, 1, 3, 6, b'\x80', 16.625, 0.475),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
-             (7, 1, 3, 6, b'\xc0',  7.0,   0.2),    # <- Exact match overlapped by ambiguous match.
-             (8, 1, 0, 0,    None,  0.0,   1.0)},
+             (7, 1, 3, 6, b'\xc0',  7.0,   0.2)},   # <- Exact match overlapped by ambiguous match.
         )
 
         self.assertEqual(

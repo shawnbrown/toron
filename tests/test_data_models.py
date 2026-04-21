@@ -1400,22 +1400,22 @@ class RelationRepositoryBaseTest(ABC):
     def test_add_bad_types(self):
         """String values that cannot be coerced should raise an error."""
         with self.assertRaises(Exception):
-            self.repository.add('foo', 4, 1, None, 4242, 1.0)
+            self.repository.add('foo', 4, 1, b'\xc0', 4242, 1.0)
 
         with self.assertRaises(Exception):
-            self.repository.add(1, 'foo', 1, None, 4242, 1.0)
+            self.repository.add(1, 'foo', 1, b'\xc0', 4242, 1.0)
 
         with self.assertRaises(Exception):
-            self.repository.add(1, 4, 'foo', None, 4242, 1.0)
+            self.repository.add(1, 4, 'foo', b'\xc0', 4242, 1.0)
 
         with self.assertRaises(Exception):
             self.repository.add(1, 4, 1, 'foo', 4242, 1.0)
 
         with self.assertRaises(Exception):
-            self.repository.add(1, 4, 1, None, 'foo', 1.0)
+            self.repository.add(1, 4, 1, b'\xc0', 'foo', 1.0)
 
         with self.assertRaises(Exception):
-            self.repository.add(1, 4, 1, None, 4242, 'foo')
+            self.repository.add(1, 4, 1, b'\xc0', 4242, 'foo')
 
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
