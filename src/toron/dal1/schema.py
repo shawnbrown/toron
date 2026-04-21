@@ -361,6 +361,33 @@ def create_node_schema(cur: sqlite3.Cursor) -> None:
     create_schema_constraints(cur)
 
 
+def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
+    """Run SQLite's "PRAGMA foreign_key_check" to verify that schema
+    changes did not break any foreign key constraints. If there are
+    foreign key violations, raise a RuntimeError--if not, then pass
+    without error.
+    """
+    cursor.execute('PRAGMA main.foreign_key_check')
+    first_ten_violations = cursor.fetchmany(size=10)
+
+    if not first_ten_violations:
+        return  # <- EXIT!
+
+    formatted = '\n  '.join(str(x) for x in first_ten_violations)
+    msg = (
+        f'Legacy support for SQLite {sqlite3.sqlite_version} encountered '
+        f'unexpected foreign key violations:\n  {formatted}'
+    )
+    additional_count = sum(1 for row in cursor)  # Count remaining.
+    if additional_count:
+        msg = (
+            f'{msg}\n'
+            f'  ...\n'
+            f'  Additionally, {additional_count} more violations occurred.'
+        )
+    raise RuntimeError(msg)
+
+
 # TODO: Revisit use of `verify_node_schema()` and `is_supported_schema()`.
 # The `data_access` module already does some of this itself. Perhaps the
 # schema code itself doesn't need to do this sort of checking.

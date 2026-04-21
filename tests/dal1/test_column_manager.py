@@ -7,7 +7,6 @@ from toron.dal1.data_connector import DataConnector
 from toron.data_models import BaseColumnManager
 from toron.dal1.column_manager import (
     ColumnManager,
-    verify_foreign_key_check,
     legacy_rename_columns,
     legacy_drop_columns,
 )
@@ -138,57 +137,6 @@ class TestColumnManager(unittest.TestCase):
         regex = 'requires SQLite 3.35.5 or newer'
         with self.assertRaisesRegex(Exception, regex):
             manager.drop_columns('bar')
-
-
-class TestVerifyForeignKeyCheck(unittest.TestCase):
-    def setUp(self):
-        connection = sqlite3.connect(':memory:')
-        self.addCleanup(connection.close)
-
-        self.cursor = connection.cursor()
-        self.addCleanup(self.cursor.close)
-
-        self.cursor.executescript("""
-            CREATE TABLE foo (
-                foo_id INTEGER PRIMARY KEY,
-                foo_value TEXT
-            );
-            CREATE TABLE bar (
-                bar_id INTEGER PRIMARY KEY,
-                foo_id INTEGER,
-                bar_value NUMERIC,
-                FOREIGN KEY (foo_id) REFERENCES foo(foo_id)
-            );
-        """)
-
-    def test_key_references_good(self):
-        self.cursor.executescript("""
-            INSERT INTO foo (foo_id, foo_value) VALUES (1, 'qux');
-            INSERT INTO foo (foo_id, foo_value) VALUES (2, 'quux');
-
-            INSERT INTO bar (foo_id, bar_value) VALUES (1, 5.0);
-            INSERT INTO bar (foo_id, bar_value) VALUES (2, 20.0);
-            INSERT INTO bar (foo_id, bar_value) VALUES (1, 15.0);
-            INSERT INTO bar (foo_id, bar_value) VALUES (2, 25.0);
-        """)
-        try:
-            verify_foreign_key_check(self.cursor)
-        except Exception as err:
-            self.fail(f'should pass without error, got {err!r}')
-
-    def test_key_violations(self):
-        self.cursor.executescript("""
-            INSERT INTO foo (foo_id, foo_value) VALUES (1, 'qux');
-            INSERT INTO foo (foo_id, foo_value) VALUES (2, 'quux');
-
-            INSERT INTO bar (foo_id, bar_value) VALUES (1, 5.0);
-            INSERT INTO bar (foo_id, bar_value) VALUES (2, 20.0);
-            INSERT INTO bar (foo_id, bar_value) VALUES (3, 15.0); /* <- key violation */
-            INSERT INTO bar (foo_id, bar_value) VALUES (4, 25.0); /* <- key violation */
-        """)
-        regex = 'unexpected foreign key violations'
-        with self.assertRaisesRegex(RuntimeError, regex):
-            verify_foreign_key_check(self.cursor)
 
 
 class TestLegacyUpdateColumns(unittest.TestCase):
