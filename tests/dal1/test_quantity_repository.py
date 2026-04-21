@@ -19,6 +19,7 @@ class TestQuantityRepository(unittest.TestCase):
 
         # Disable foreign keys for testing only.
         self.cursor.execute('PRAGMA foreign_keys=OFF')
+        self.addCleanup(lambda: self.cursor.execute('PRAGMA foreign_keys=ON'))
 
     def assertRecords(self, expected_records, msg=None):
         self.cursor.execute(f'SELECT * FROM quantity')
