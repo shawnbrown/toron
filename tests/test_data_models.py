@@ -1417,6 +1417,22 @@ class RelationRepositoryBaseTest(ABC):
         with self.assertRaises(Exception):
             self.repository.add(1, 4, 1, b'\xc0', 4242, 'foo')
 
+    def test_add_bad_other_index_id(self):
+        """The relation table should not contain any records where
+        'other_index_id' is ``0``. Nothing should come *from* another
+        node's "undefined record" and the "undefined-to-undefined"
+        relation is implicit (auto-added) and not stored in the
+        RelationRepository.
+        """
+        regex = r'other_index_id 0'
+        msg = "should mention 'other_index_id 0' somewhere in the error message"
+
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            self.repository.add(1, 0, 0, b'\xc0', 0, 1.0)
+
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            self.repository.add(1, '0', 0, b'\xc0', 0, 1.0)
+
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
         results = self.get_relations_helper()

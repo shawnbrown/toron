@@ -967,6 +967,9 @@ class RelationRepository(BaseRelationRepository):
             proportion: Optional[float] = None,
         ) -> None:
             """Add a record to the repository."""
+            if int(other_index_id) == 0:
+                raise ValueError(f'cannot add relation from other_index_id 0')
+
             if not isinstance(mapping_level, bytes):
                 raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
 
@@ -1004,6 +1007,9 @@ class RelationRepository(BaseRelationRepository):
             proportion: Optional[float] = None,
         ) -> None:
             """Add a record to the repository."""
+            if int(other_index_id) == 0:
+                raise ValueError(f'cannot add relation from other_index_id 0')
+
             if not isinstance(mapping_level, bytes):
                 raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
 
