@@ -1032,7 +1032,7 @@ class Relation(object):
     crosswalk_id: int
     other_index_id: int
     index_id: int
-    mapping_level: Union[bytes, None]
+    mapping_level: bytes
     value: float
     proportion: Optional[float] = None
 
