@@ -195,15 +195,15 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
 
         CREATE TABLE main.relation(
             relation_id INTEGER PRIMARY KEY,
-            crosswalk_id INTEGER,
-            other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = "integer"),
-            index_id INTEGER,
-            mapping_level BLOB_BITFLAGS,
-            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) = "real" AND 0.0 <= relation_value),
-            proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
+            crosswalk_id INTEGER NOT NULL,
+            other_index_id INTEGER NOT NULL CHECK (other_index_id != 0),
+            index_id INTEGER NOT NULL,
+            mapping_level BLOB_BITFLAGS NOT NULL,
+            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) IN ("real", "integer") AND relation_value >= 0.0),
+            proportion REAL CHECK (proportion BETWEEN 0.0 AND 1.0),
             FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,
             FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
-            UNIQUE (crosswalk_id, other_index_id, index_id)
+            UNIQUE (crosswalk_id, other_index_id, index_id, mapping_level)
         );
 
         CREATE TABLE main.property(
@@ -215,7 +215,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
         INSERT INTO main.node_index (index_id) VALUES (0);
 
         /* Set properties for Toron schema and application versions. */
-        INSERT INTO main.property VALUES ('toron_schema_version', '"0.2.0"');
+        INSERT INTO main.property VALUES ('toron_schema_version', '"0.3.0"');
         INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
     """)
 
