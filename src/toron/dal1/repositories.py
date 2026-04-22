@@ -966,7 +966,10 @@ class RelationRepository(BaseRelationRepository):
             value: float,
             proportion: Optional[float] = None,
         ) -> None:
-            """Add a record to the repository."""
+            """Add a record to the repository.
+
+            If *other_index_id* is ``0``, a ``ValueError`` is raised.
+            """
             if int(other_index_id) == 0:
                 raise ValueError(f'cannot add relation from other_index_id 0')
 
@@ -1006,7 +1009,10 @@ class RelationRepository(BaseRelationRepository):
             value: float,
             proportion: Optional[float] = None,
         ) -> None:
-            """Add a record to the repository."""
+            """Add a record to the repository.
+
+            If *other_index_id* is ``0``, a ``ValueError`` is raised.
+            """
             if int(other_index_id) == 0:
                 raise ValueError(f'cannot add relation from other_index_id 0')
 

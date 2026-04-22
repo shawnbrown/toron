@@ -1052,7 +1052,10 @@ class BaseRelationRepository(ABC):
         value: float,
         proportion: Optional[float] = None,
     ) -> None:
-        """Add a record to the repository."""
+        """Add a record to the repository.
+
+        If *other_index_id* is ``0``, a ``ValueError`` is raised.
+        """
 
     @abstractmethod
     def get(self, id: int) -> Relation:
