@@ -11,6 +11,7 @@ import tempfile
 import unittest
 from abc import ABC, abstractmethod
 from contextlib import closing, suppress
+from dataclasses import replace
 
 try:
     import pandas as pd
@@ -1374,6 +1375,19 @@ class RelationRepositoryBaseTest(ABC):
         cur = self.connection.execute('SELECT * FROM main.relation')
         return set(cur.fetchall())
 
+    def test_relation_dataclass(self):
+        regex = r'other_index_id cannot be 0'
+        with self.assertRaisesRegex(ValueError, regex):
+            Relation(
+                id=1,
+                crosswalk_id=1,
+                other_index_id=0,  # <- Cannot be 0.
+                index_id=1,
+                mapping_level=b'\xc0',
+                value=50.0,
+                proportion=None,
+            )
+
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
         self.assertTrue(issubclass(self.dal.RelationRepository, BaseRelationRepository))
@@ -1504,8 +1518,7 @@ class RelationRepositoryBaseTest(ABC):
         """
         # Set one of the original proportions to None.
         relation = self.repository.get(3)
-        relation.proportion = None
-        self.repository.update(relation)
+        self.repository.update(replace(relation, proportion=None))
 
         # Merge index_ids 1, 2, and 3 into index_id 1.
         self.repository.merge_by_index_id(index_ids=(1, 2, 3), target=1)

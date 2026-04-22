@@ -1906,9 +1906,11 @@ class TopoNode(object):
 
                 if relation_record:
                     # Update relation record if it exists.
-                    relation_record.value = value
-                    relation_record.mapping_level = mapping_level
-                    relation_repo.update(relation_record)
+                    relation_repo.update(replace(
+                        relation_record,
+                        value=value,
+                        mapping_level=mapping_level,
+                    ))
                     counter['updated'] += 1
                 else:
                     # Add new relation if it does not exist.

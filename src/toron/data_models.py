@@ -7,7 +7,7 @@ all of the base classes given in this sub-module.
 import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import groupby
 
 from toron._typing import (
@@ -1025,7 +1025,7 @@ class BaseCrosswalkRepository(ABC):
         """Find all records with matching other_filename_hint."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class Relation(object):
     """Relation record."""
     id: int
@@ -1035,6 +1035,14 @@ class Relation(object):
     mapping_level: bytes
     value: float
     proportion: Optional[float] = None
+
+    def __post_init__(self):
+        # A `Relation` object should never represent data coming *from*
+        # another node's undefined record (other_index_id 0).
+        if not isinstance(self.other_index_id, int):
+            raise TypeError('other_index_id must be an integer')
+        if self.other_index_id == 0:
+            raise ValueError('other_index_id cannot be 0')
 
 
 class BaseRelationRepository(ABC):
@@ -1162,23 +1170,14 @@ class BaseRelationRepository(ABC):
             crosswalk_id=crosswalk_id, other_index_id=other_index_id
         ))
 
-        if other_index_id == 0:
-            # Set the proportion to 0.0 for undefined-to-defined relations.
-            # And set the proportion to 1.0 for the undefined-to-undefined
-            # relation.
-            for relation in relations:
-                relation.proportion = 0.0 if relation.index_id != 0 else 1.0
-                self.update(relation)
-            return  # <- EXIT!
-
         values_sum = sum(rel.value for rel in relations)
         for relation in relations:
             try:
-                relation.proportion = relation.value / values_sum
+                proportion = relation.value / values_sum
             except ZeroDivisionError:
-                relation.proportion = 1 / len(relations)
+                proportion = 1 / len(relations)
 
-            self.update(relation)
+            self.update(replace(relation, proportion=proportion))
 
 
 class BasePropertyRepository(ABC):
