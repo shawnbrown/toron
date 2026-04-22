@@ -20,6 +20,7 @@ from toron._typing import (
 )
 
 from . import schema
+from .migrations import apply_migrations
 from ..data_models import BaseDataConnector
 
 
@@ -497,6 +498,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                     src_con.backup(con)
 
                 with closing(con.cursor()) as cur:
+                    apply_migrations(cur)
                     unique_id = schema.get_unique_id(cur)
 
             # Keep file path, no in-memory connection.
@@ -515,6 +517,7 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
                 src_con.backup(con)
 
             with closing(con.cursor()) as cur:
+                apply_migrations(cur)
                 unique_id = schema.get_unique_id(cur)
 
             schema.create_functions_and_temporary_triggers(con)
@@ -570,6 +573,8 @@ class DataConnector(BaseDataConnector[ToronSqlite3Connection, sqlite3.Cursor]):
             with closing(con.cursor()) as cur:
                 if is_new_file:
                     schema.create_node_schema(cur)
+                else:
+                    apply_migrations(cur, mode)
                 unique_id = schema.get_unique_id(cur)
 
         obj = cls.__new__(cls)
