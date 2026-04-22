@@ -380,8 +380,6 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     mapper = Mapper(args.node1, args.node2, data)
 
     # Match mapping to node labels.
-    if args.allow_overlapping:
-        raise NotImplementedError
     applogger.info(f'matching FILE1 index records')
     mapper.match_node_records('node1',
                               match_limit=args.match_limit,

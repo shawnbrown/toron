@@ -730,7 +730,6 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              'INFO:app-toron:crosswalk is complete'],
         )
 
-    @unittest.expectedFailure  # Not fully implemented.
     def test_match_limit_with_allow_overlapping(self):
         self.node_d.add_crosswalk(node=self.node_c,
                                   crosswalk_name='population',
