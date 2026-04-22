@@ -8,7 +8,7 @@ from . import schema
 from toron._utils import BitFlags
 
 
-def v020_to_v030(cursor, whole_space_level):
+def v020_to_v030(cursor: sqlite3.Cursor, whole_space_level: bytes) -> None:
     """Upgrade schema 0.2.0 to 0.3.0 (update 'relation' table)."""
     # Create new 'relation' table with updated constraints.
     cursor.execute("""
@@ -68,7 +68,7 @@ def apply_migrations(
     toron_schema_version = cursor.fetchone()[0]
 
     # Exit without changes if schema already uses the latest version.
-    if toron_schema_version == '0.3.0':
+    if toron_schema_version in {'0.3.0', '"0.3.0"'}:
         return  # <- EXIT!
 
     if mode == 'ro':
@@ -76,7 +76,7 @@ def apply_migrations(
             'Node schema version is out of date, unable to update when file '
             'is open in read-only mode. Open and save the file in read-write '
             'mode to update schema.'
-    )
+        )
 
     # Get "whole space" mapping level as bytes (to replace any NULLs in relation).
     cursor.execute("PRAGMA main.table_info('node_index')")
@@ -94,7 +94,7 @@ def apply_migrations(
         schema.drop_schema_constraints(cursor)
 
         # Apply migrations.
-        if toron_schema_version in {'"0.2.0"', '0.2.0'}:
+        if toron_schema_version in {'0.2.0', '"0.2.0"'}:
             v020_to_v030(cursor, whole_space_level)
 
         # Check integrity, re-create constraints, and commit transaction.
