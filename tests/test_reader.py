@@ -421,6 +421,35 @@ class TestNodeReaderTranslate(unittest.TestCase):
         }
         self.assertEqual(set(reader), expected)
 
+    def test_undefined_handling(self):
+        source_node = TopoNode()
+        source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
+        source_node.add_index_columns('X')
+        source_node.insert_index(
+            data=[['aaa'], ['bbb'], ['ccc'], ['ddd'], ['eee']],
+            columns=['X']
+        )
+        data = [
+            (0, {'foo': 'bar'},  25.0),  # <- Undefined record (0).
+            (1, {'foo': 'bar'}, 100.0),
+            (2, {'foo': 'bar'}, 100.0),
+            (3, {'foo': 'bar'}, 100.0),
+            (4, {'foo': 'bar'}, 100.0),
+            (5, {'foo': 'bar'}, 100.0),
+        ]
+        reader = NodeReader(data, source_node)
+
+        reader.translate(self.node)  # <- Method under test.
+
+        expected = {
+            ('-',  '-',  '-',  'bar',  25.0),  # <- Remains unchanged.
+            ('a1', 'b1', 'c1', 'bar',  60.0),
+            ('a1', 'b1', 'c2', 'bar', 165.0),
+            ('a1', 'b2', 'c3', 'bar', 150.5),
+            ('a1', 'b2', 'c4', 'bar', 124.5)
+        }
+        self.assertEqual(set(reader), expected)
+
 
 class TestPivotReader(unittest.TestCase):
     def setUp(self):

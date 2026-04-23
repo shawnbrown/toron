@@ -321,6 +321,15 @@ class NodeReader(object):
                     JOIN main.attr_data USING (attr_data_id)
                 """)
                 for index_id, attr_data_id, quant_value, crosswalk_id in cur1:
+                        # If undefined record, quantities remain undefined.
+                        if index_id == 0:
+                            cur2.execute(
+                                'INSERT INTO main.new_quant_data VALUES (?, ?, ?)',
+                                (0, attr_data_id, quant_value),
+                            )
+                            continue  # Skip to next record.
+
+                        # All other quantities are translated using relations.
                         rels = relation_repo.find(
                             crosswalk_id=crosswalk_id,
                             other_index_id=index_id,

@@ -277,6 +277,7 @@ class TestBuildUsingCLI(unittest.TestCase):
         self.node1.insert_quantities(  # <- Using API, CLI not ready yet.
             data=[
                 ['idx1', 'idx2', 'idx3', 'variable', 'value'],
+                ['-', '-', '-', 'foo',   5],
                 ['A', 'z', 'a', 'foo', 100],
                 ['B', 'x', 'b', 'foo', 100],
                 ['B', 'y', 'c', 'bar', 100],
@@ -373,7 +374,8 @@ class TestBuildUsingCLI(unittest.TestCase):
         )
         self.assertEqual(
             set(result_iter),
-            {('-', '-',            'baz',  10.0),
+            {('-', '-',            'foo',   5.0),
+             ('-', '-',            'baz',  10.0),
              ('A', 'Athens',       'foo',  50.0),
              ('A', 'Boston',       'foo',  50.0),
              ('B', 'Charleston',   'foo', 100.0),
