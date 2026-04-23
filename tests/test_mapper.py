@@ -24,6 +24,7 @@ class TestMapperInit(TopoNodeFixtures, unittest.TestCase):
 
     def test_instantiation(self):
         data = [
+            [0, ['-',   '-',   '-'],   BitFlags(1, 1, 1), 0, ['-',   '-'],   BitFlags(1, 1),   0.0],
             [1, ['A-1', 'X-1', '1-1'], BitFlags(1, 1, 1), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
             [2, ['B-1', 'Y-1', '2-1'], BitFlags(1, 1, 1), 2, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
             [3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
@@ -33,9 +34,10 @@ class TestMapperInit(TopoNodeFixtures, unittest.TestCase):
 
         result = self.get_mapping_source(mapper)
         expected = {
-            (1, 1, '["A-1", "X-1", "1-1"]', b'\xe0', 1, '["A-2", "X-2"]', b'\xc0', 100.0),
-            (2, 2, '["B-1", "Y-1", "2-1"]', b'\xe0', 2, '["B-2", "Y-2"]', b'\xc0', 200.0),
-            (3, 3, '["C-1", "Z-1", "3-1"]', b'\xe0', 3, '["C-2", "Z-2"]', b'\xc0', 300.0)
+            (1, 0, '["-", "-", "-"]',       b'\xe0', 0, '["-", "-"]',     b'\xc0',   0.0),
+            (2, 1, '["A-1", "X-1", "1-1"]', b'\xe0', 1, '["A-2", "X-2"]', b'\xc0', 100.0),
+            (3, 2, '["B-1", "Y-1", "2-1"]', b'\xe0', 2, '["B-2", "Y-2"]', b'\xc0', 200.0),
+            (4, 3, '["C-1", "Z-1", "3-1"]', b'\xe0', 3, '["C-2", "Z-2"]', b'\xc0', 300.0)
         }
         self.assertEqual(result, expected)
 
@@ -202,7 +204,8 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         mapper = Mapper(
             node1=self.node_c,
             node2=self.node_d,
-            data=[[1, [''], BitFlags(1), 1, ['', ''], BitFlags(1, 1), 70],
+            data=[[0, [''], BitFlags(1), 0, ['', ''], BitFlags(1, 1),  0],
+                  [1, [''], BitFlags(1), 1, ['', ''], BitFlags(1, 1), 70],
                   [2, [''], BitFlags(1), 4, ['', ''], BitFlags(1, 1), 80],
                   [3, [''], BitFlags(1), 2, ['', ''], BitFlags(1, 1), 15]],
         )
@@ -211,16 +214,18 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node1'),
-            {(1, 1, b'\x80', 16.0, 1.0),
-             (2, 2, b'\x80',  8.0, 1.0),
-             (3, 3, b'\x80', 32.0, 1.0)},
+            {(1, 0, b'\x80',  0.0, 1.0),
+             (2, 1, b'\x80', 16.0, 1.0),
+             (3, 2, b'\x80',  8.0, 1.0),
+             (4, 3, b'\x80', 32.0, 1.0)},
         )
 
     def test_exact_match_by_labels(self):
         mapper = Mapper(
             node1=self.node_c,
             node2=self.node_d,
-            data=[[None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
+            data=[[None, ['-'], BitFlags(1), None, ['-', '-'], BitFlags(1, 1),  0],
+                  [None, ['A'], BitFlags(1), None, ['A', 'x'], BitFlags(1, 1), 70],
                   [None, ['B'], BitFlags(1), None, ['B', 'y'], BitFlags(1, 1), 80],
                   [None, ['C'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 15]],
         )
@@ -229,9 +234,46 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node1'),
-            {(1, 1, b'\x80', 16.0, 1.0),
-             (2, 2, b'\x80',  8.0, 1.0),
-             (3, 3, b'\x80', 32.0, 1.0)},
+            {(1, 0, b'\x80',  0.0, 1.0),
+             (2, 1, b'\x80', 16.0, 1.0),
+             (3, 2, b'\x80',  8.0, 1.0),
+             (4, 3, b'\x80', 32.0, 1.0)},
+        )
+
+    def test_exact_match_undefined_handling(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[0,    [''],  BitFlags(1), 0,    ['', ''],   BitFlags(1, 1),  0],
+                  [1,    [''],  BitFlags(1), 1,    ['', ''],   BitFlags(1, 1), 65],
+                  [None, ['A'], BitFlags(1), None, ['-', '-'], BitFlags(1, 1),  5],
+                  [2,    [''],  BitFlags(1), 4,    ['', ''],   BitFlags(1, 1), 75],
+                  [None, ['-'], BitFlags(1), None, ['B', 'y'], BitFlags(1, 1),  5],
+                  [3,    [''],  BitFlags(1), 2,    ['', ''],   BitFlags(1, 1), 15]],
+        )
+
+        mapper.match_node_records('node1')  # <- Method under test.
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node1'),
+            {(1, 0, b'\x80',  0.0, 1.0),
+             (2, 1, b'\x80', 16.0, 1.0),
+             (3, 1, b'\x80', 16.0, 1.0),
+             (4, 2, b'\x80',  8.0, 1.0),
+             (5, 0, b'\x80',  0.0, 1.0),
+             (6, 3, b'\x80', 32.0, 1.0)},
+        )
+
+        mapper.match_node_records('node2')  # <- Method under test.
+
+        self.assertEqual(
+            self.get_node_matches(mapper, 'node2'),
+            {(1, 0, b'\xc0',  0.0, 1.0),
+             (2, 1, b'\xc0',  5.0, 1.0),
+             (3, 0, b'\xc0',  0.0, 1.0),
+             (4, 4, b'\xc0',  5.0, 1.0),
+             (5, 4, b'\xc0',  5.0, 1.0),
+             (6, 2, b'\xc0', 15.0, 1.0)},
         )
 
     def test_ambiguous_matches_over_limit(self):
@@ -498,6 +540,43 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
                                           (3, 5, b'\xc0', 30.0),
                                           (3, 6, b'\xc0', 50.0)})
 
+    def test_exact_matches_with_undefined(self):
+        mapper = Mapper(
+            node1=self.node_c,
+            node2=self.node_d,
+            data=[[0, [''], BitFlags(1), 0, ['', ''], BitFlags(1, 1),  0],  # <- Undefined to undefined (0 to 0).
+                  [1, [''], BitFlags(1), 1, ['', ''], BitFlags(1, 1), 10],
+                  [1, [''], BitFlags(1), 2, ['', ''], BitFlags(1, 1), 65],
+                  [1, [''], BitFlags(1), 0, ['', ''], BitFlags(1, 1),  5],  # <- Defined to undefined (1 to 0).
+                  [2, [''], BitFlags(1), 3, ['', ''], BitFlags(1, 1), 20],
+                  [2, [''], BitFlags(1), 4, ['', ''], BitFlags(1, 1), 56],
+                  [0, [''], BitFlags(1), 4, ['', ''], BitFlags(1, 1),  4],  # <- Undefined to defined (0 to 4).
+                  [3, [''], BitFlags(1), 5, ['', ''], BitFlags(1, 1), 30],
+                  [3, [''], BitFlags(1), 6, ['', ''], BitFlags(1, 1), 50]],
+        )
+        mapper.match_node_records('node1')
+        mapper.match_node_records('node2')
+
+        relations = mapper.get_relations(target_node='node1')  # <- Method under test.
+
+        self.assertEqual(set(relations), {(1, 1, b'\x80', 10.0),
+                                          (2, 1, b'\x80', 65.0),
+                                          (3, 2, b'\x80', 20.0),
+                                          (4, 0, b'\x80',  4.0),
+                                          (4, 2, b'\x80', 56.0),
+                                          (5, 3, b'\x80', 30.0),
+                                          (6, 3, b'\x80', 50.0)})
+
+        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+
+        self.assertEqual(set(relations), {(1, 0, b'\xc0',  5.0),
+                                          (1, 1, b'\xc0', 10.0),
+                                          (1, 2, b'\xc0', 65.0),
+                                          (2, 3, b'\xc0', 20.0),
+                                          (2, 4, b'\xc0', 56.0),
+                                          (3, 5, b'\xc0', 30.0),
+                                          (3, 6, b'\xc0', 50.0)})
+
     def test_ambiguous_no_overlaps(self):
         mapper = Mapper(
             node1=self.node_c,
@@ -515,12 +594,12 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
 
         self.assertEqual(
             set(relations),
-            {(1, 1, b'\x80', 22.5),
-             (1, 2, b'\x80', 67.5),
-             (2, 3, b'\xc0', 20.0),
-             (2, 4, b'\xc0', 60.0),
-             (3, 5, b'\x80', 28.0),   # <- Gets full weight, `3, 6` overlap omitted.
-             (3, 6, b'\xc0',  7.0)},  # <- `3, 6` already matched at finer granularity.
+            {(1, 1, b'\x80', 22.5),   # <- 25% of 90
+             (1, 2, b'\x80', 67.5),   # <- 75% of 90
+             (2, 3, b'\xc0', 20.0),   # <- 100% of 20
+             (2, 4, b'\xc0', 60.0),   # <- 100% of 60
+             (3, 5, b'\x80', 28.0),   # <- 100% of 28, overlap with `3, 6` omitted
+             (3, 6, b'\xc0',  7.0)},  # <- 100% of 7, already matched `3, 6` at finer granularity
         )
 
     def test_ambiguous_with_overlaps(self):
@@ -540,13 +619,13 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
 
         self.assertEqual(
             set(relations),
-            {(1, 1, b'\x80', 22.5),
-             (1, 2, b'\x80', 67.5),
-             (2, 3, b'\xc0', 20.0),
-             (2, 4, b'\xc0', 60.0),
-             (3, 5, b'\x80', 11.375),  # <- Gets proportion of weight.
-             (3, 6, b'\x80', 16.625),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
-             (3, 6, b'\xc0',  7.0)},   # <- Exact match overlapped by ambiguous match.
+            {(1, 1, b'\x80', 22.5),    # <- 25% of 90
+             (1, 2, b'\x80', 67.5),    # <- 75% of 90
+             (2, 3, b'\xc0', 20.0),    # <- 100% of 20
+             (2, 4, b'\xc0', 60.0),    # <- 100% of 60
+             (3, 5, b'\x80', 11.375),  # <- 40.625% of 28
+             (3, 6, b'\x80', 16.625),  # <- 59.375% of 28, overlaps with exact match `3, 6`
+             (3, 6, b'\xc0',  7.0)},   # <- 100% of 7, exact match overlapped by ambiguous match
         )
 
     def test_ambiguous_duplicate_mapping_labels(self):
@@ -561,7 +640,8 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
             node1=self.node_c,
             node2=self.node_d,
             data=[[None, ['A'], BitFlags(1), None, ['A', ''], BitFlags(1, 0), 30],   # <- Duplicate labels using same mapping level.
-                  [None, ['A'], BitFlags(1), None, ['A', ''], BitFlags(1, 0), 50],   # <- Duplicate labels using same mapping level.
+                  [None, ['A'], BitFlags(1), None, ['A', ''], BitFlags(1, 0), 48],   # <- Duplicate labels using same mapping level.
+                  [None, ['A'], BitFlags(1), None, ['-', ''], BitFlags(1, 0),  2],   # <- Duplicate labels using same mapping level.
                   [None, ['B'], BitFlags(1), None, ['B', ''], BitFlags(1, 0), 20],   # <- Duplicate labels using same mapping level.
                   [None, ['B'], BitFlags(1), None, ['B', ''], BitFlags(1, 0), 40]],  # <- Duplicate labels using same mapping level.
         )
@@ -572,10 +652,20 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
 
         self.assertEqual(
             set(relations),
-            {(1, 1, b'\x80', 20.0),   # <- total of 80 (30 + 50) distributed across two records
-             (1, 2, b'\x80', 60.0),   # <- total of 80 (30 + 50) distributed across two records
-             (2, 3, b'\x80', 22.5),   # <- total of 60 (20 + 40) distributed across two records
-             (2, 4, b'\x80', 37.5)},  # <- total of 60 (20 + 40) distributed across two records
+            {
+                # Total of 78 (30 + 48) distributed across two records using
+                # proportions derived from target node's default weights.
+                (1, 1, b'\x80', 19.5),  # <- 25% of 78
+                (1, 2, b'\x80', 58.5),  # <- 75% of 78
+
+                # Though it's the undefined record, this match is unique.
+                (1, 0, b'\x80',  2.0),  # <- 100% of 2
+
+                # Total of 60 (20 + 40) distributed across two records using
+                # proportions derived from target node's default weights.
+                (2, 3, b'\x80', 22.5),  # <- 37.5% of 60
+                (2, 4, b'\x80', 37.5),  # <- 62.5% of 60
+            },
         )
 
 

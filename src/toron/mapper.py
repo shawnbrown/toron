@@ -238,7 +238,7 @@ class Mapper(object):
                 cur1.execute(sql, (mapping_level,))
 
                 for run_id, index_id, location in cur1:
-                    if index_id:
+                    if index_id is not None and index_id != '':
                         # Verify that index_id exists.
                         try:
                             index_repo.get(index_id)
@@ -294,7 +294,10 @@ class Mapper(object):
                         try:
                             weight_value = get_weight(weight_group_id, index_id).value
                         except KeyError:
-                            weight_value = None
+                            if index_id == 0:
+                                weight_value = 0.0
+                            else:
+                                weight_value = None
                         index_id_and_weight_value.append((index_id, weight_value))
 
                     # If match is ambiguous and any weight is missing, skip it.
@@ -387,6 +390,7 @@ class Mapper(object):
                             src.proportion * trg.proportion AS proportion
                         FROM {source_node}_matches src
                         JOIN {target_node}_matches trg USING (run_id)
+                        WHERE src.index_id != 0
                     )
                 SELECT
                     other_index_id,

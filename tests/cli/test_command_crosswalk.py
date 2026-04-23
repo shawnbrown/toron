@@ -555,10 +555,13 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             allow_overlapping=False,
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
-                '1X73808335,10,1X583DFB94\n'
-                '1X73808335,70,2X0BA7A010\n'
+                '0XF4264876,0,0XDF9B30D7\n'
+                '1X73808335,18,1X583DFB94\n'
+                '1X73808335,46,2X0BA7A010\n'
+                '0XF4264876,34,2X0BA7A010\n'
                 '2X201AD8B1,20,3X8C016B53\n'
-                '2X201AD8B1,60,4XAC931718\n'
+                '2X201AD8B1,10,0XDF9B30D7\n'
+                '2X201AD8B1,50,4XAC931718\n'
                 '3XA7BC13F2,30,5X2B35DC5B\n'
                 '3XA7BC13F2,50,6X78AF87DF\n'
             ),
@@ -574,31 +577,33 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             ['INFO:app-toron:matching FILE1 index records',
              'INFO:app-toron:matching FILE2 index records',
              'INFO:app-toron:loading relations: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 6 relations',
+             'INFO:app-toron.node:loaded 7 relations',
              'INFO:app-toron:crosswalk is complete',
              'INFO:app-toron:loading relations: FILE1 <- FILE2',
-             'INFO:app-toron.node:loaded 6 relations',
+             'INFO:app-toron.node:loaded 7 relations',
              'INFO:app-toron:crosswalk is complete'],
         )
 
         self.assertEqual(
             self.get_relations(self.node_c, self.node_d, 'population'),
-            {(1, 1, 1, 1, b'\xc0', 10.0, 0.125),
-             (2, 1, 1, 2, b'\xc0', 70.0, 0.875),
-             (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
-             (4, 1, 2, 4, b'\xc0', 60.0, 0.75),
-             (5, 1, 3, 5, b'\xc0', 30.0, 0.375),
-             (6, 1, 3, 6, b'\xc0', 50.0, 0.625)},
+             {(1, 1, 1, 1, b'\xc0', 18.0, 0.28125),
+              (2, 1, 1, 2, b'\xc0', 46.0, 0.71875),
+              (3, 1, 2, 0, b'\xc0', 10.0, 0.125),
+              (4, 1, 2, 3, b'\xc0', 20.0, 0.25),
+              (5, 1, 2, 4, b'\xc0', 50.0, 0.625),
+              (6, 1, 3, 5, b'\xc0', 30.0, 0.375),
+              (7, 1, 3, 6, b'\xc0', 50.0, 0.625)},
         )
 
         self.assertEqual(
             self.get_relations(self.node_d, self.node_c, 'population'),
-            {(1, 1, 1, 1, b'\x80', 10.0, 1.0),
-             (2, 1, 2, 1, b'\x80', 70.0, 1.0),
-             (3, 1, 3, 2, b'\x80', 20.0, 1.0),
-             (4, 1, 4, 2, b'\x80', 60.0, 1.0),
-             (5, 1, 5, 3, b'\x80', 30.0, 1.0),
-             (6, 1, 6, 3, b'\x80', 50.0, 1.0)},
+            {(1, 1, 1, 1, b'\x80', 18.0, 1.0),
+             (2, 1, 2, 0, b'\x80', 34.0, 0.425),
+             (3, 1, 2, 1, b'\x80', 46.0, 0.575),
+             (4, 1, 3, 2, b'\x80', 20.0, 1.0),
+             (5, 1, 4, 2, b'\x80', 50.0, 1.0),
+             (6, 1, 5, 3, b'\x80', 30.0, 1.0),
+             (7, 1, 6, 3, b'\x80', 50.0, 1.0)},
         )
 
     def test_missing_one_side(self):
