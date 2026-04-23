@@ -2,6 +2,7 @@
 that we want make sure are as convinient as possible for users.
 """
 
+import argparse
 import logging
 import unittest
 from io import StringIO
@@ -11,11 +12,13 @@ try:
 except ImportError:
     pd = None
 
+from .common import DummyRedirection
 from toron.node import TopoNode
 from toron.graph import load_mapping
+from toron import cli
 
 
-class TestIdiomaticUsage(unittest.TestCase):
+class TestBuildUsingAPI(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
@@ -230,3 +233,155 @@ class TestIdiomaticUsage(unittest.TestCase):
         )
 
         pd.testing.assert_frame_equal(df_pivoted, df_expected)
+
+
+class TestBuildUsingCLI(unittest.TestCase):
+    def setUp(self):
+        self.maxDiff = None
+
+        self.node1 = TopoNode()
+        self.node1._connector._unique_id = '11111111-1111-1111-1111-111111111111'
+        cli.command_add.add_label(argparse.Namespace(
+            command='add',
+            element='label',
+            node=self.node1,
+            labels=['idx1', 'idx2', 'idx3']
+        ))
+        cli.command_add.add_weight(argparse.Namespace(
+            command='add',
+            element='weight',
+            node=self.node1,
+            weight='wght',
+            description=None,
+            selectors=None,
+            make_default=True,
+        ))
+        cli.command_index.read_from_stdin(argparse.Namespace(
+            command='index',
+            node=self.node1,
+            on_label_conflict='abort',
+            on_weight_conflict='abort',
+            stdin=DummyRedirection(
+                'idx1,idx2,idx3,wght\n'
+                'A,z,a,72\n'
+                'B,x,b,37.5\n'
+                'B,y,c,62.5\n'
+                'C,x,d,75\n'
+                'C,y,e,25\n'
+                'D,x,f,25\n'
+                'D,x,g,0\n'
+                'D,y,h,50\n'
+                'D,y,i,25\n'
+            ),
+        ))
+        self.node1.insert_quantities(  # <- Using API, CLI not ready yet.
+            data=[
+                ['idx1', 'idx2', 'idx3', 'variable', 'value'],
+                ['A', 'z', 'a', 'foo', 100],
+                ['B', 'x', 'b', 'foo', 100],
+                ['B', 'y', 'c', 'bar', 100],
+                ['C', 'x', 'd', 'bar', 100],
+                ['C', 'y', 'e', 'bar', 100],
+                ['D', 'x', 'f', 'bar', 100],
+                ['D', 'x', 'g', 'baz', 100],
+                ['D', 'y', 'h', 'baz', 100],
+                ['D', 'y', 'i', 'baz', 100],
+            ],
+            value='value',
+            attributes='variable',
+        )
+
+        self.node2 = TopoNode()
+        self.node2._connector._unique_id = '22222222-2222-2222-2222-222222222222'
+        cli.command_add.add_label(argparse.Namespace(
+            command='add',
+            element='label',
+            node=self.node2,
+            labels=['idx1', 'idx2']
+        ))
+        cli.command_add.add_weight(argparse.Namespace(
+            command='add',
+            element='weight',
+            node=self.node2,
+            weight='wght',
+            description=None,
+            selectors=None,
+            make_default=True,
+        ))
+        cli.command_index.read_from_stdin(argparse.Namespace(
+            command='index',
+            node=self.node2,
+            on_label_conflict='abort',
+            on_weight_conflict='abort',
+            stdin=DummyRedirection(
+                'idx1,idx2,wght\n'
+                'A,Athens,25\n'
+                'A,Boston,75\n'
+                'B,Charleston,80\n'
+                'C,Dover,25\n'
+                'C,Erie,75\n'
+                'D,Fayetteville,37.5\n'
+                'D,Greensboro,43.75\n'
+                'D,Hartford,31.25\n'
+                'D,Irvine,31.25\n'
+            ),
+        ))
+
+        cli.command_add.add_crosswalk(argparse.Namespace(
+            command='add',
+            element='crosswalk',
+            node1=self.node1,
+            node2=self.node2,
+            crosswalk='population',
+            direction='both',
+            description=None,
+            selectors=None,
+            make_default=True,
+        ))
+        cli.command_crosswalk.read_from_stdin(argparse.Namespace(
+            command='crosswalk',
+            node1=self.node1,
+            node2=self.node2,
+            crosswalk='population',
+            direction='both',
+            match_limit=1,
+            allow_overlapping=False,
+            stdin=DummyRedirection(
+                'index_code,population,index_code\n'
+                '0X27B3B62D,0.0,0X7054347B\n'
+                '1XA0157D6E,25.0,1XF7F2FF38\n'
+                '1XA0157D6E,25.0,2XA468A4BC\n'
+                '2XF38F26EA,50.0,3X23CE6FFF\n'
+                '3X7429EDA9,50.0,3X23CE6FFF\n'
+                '4X54BB91E2,55.0,4X035C13B4\n'
+                '5XD31D5AA1,45.0,5X84FAD8F7\n'
+                '0X27B3B62D,5.0,5X84FAD8F7\n'
+                '6X80870125,100.0,6XD7608373\n'
+                '7X0721CA66,90.0,7X50C64830\n'
+                '7X0721CA66,10.0,0X7054347B\n'
+                '8XC1A3F9B3,100.0,8X96447BE5\n'
+                '9X460532F0,100.0,9X11E2B0A6\n'
+            ),
+        ))
+
+    def test_disaggregate_translate(self):
+        result_iter = self.node1() >> self.node2
+
+        self.assertEqual(
+            result_iter.columns,
+            ['idx1', 'idx2', 'variable', 'value'],
+        )
+        self.assertEqual(
+            set(result_iter),
+            {('-', '-',            'baz',  10.0),
+             ('A', 'Athens',       'foo',  50.0),
+             ('A', 'Boston',       'foo',  50.0),
+             ('B', 'Charleston',   'foo', 100.0),
+             ('B', 'Charleston',   'bar', 100.0),
+             ('C', 'Dover',        'bar', 100.0),
+             ('C', 'Erie',         'bar', 100.0),
+             ('D', 'Fayetteville', 'bar', 100.0),
+             ('D', 'Greensboro',   'baz',  90.0),
+             ('D', 'Hartford',     'baz', 100.0),
+             ('D', 'Irvine',       'baz', 100.0)},
+        )
