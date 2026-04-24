@@ -39,6 +39,8 @@ class TestBuildUsingAPI(unittest.TestCase):
             ['D', 'y', 'i', 25],
         ])
         self.node1.insert_quantities(
+            value='value',
+            attributes='variable',
             data=[
                 ['idx1', 'idx2', 'idx3', 'variable', 'value'],
                 ['A', 'z', 'a', 'foo', 100],
@@ -51,8 +53,6 @@ class TestBuildUsingAPI(unittest.TestCase):
                 ['D', 'y', 'h', 'baz', 100],
                 ['D', 'y', 'i', 'baz', 100],
             ],
-            value='value',
-            attributes='variable',
         )
 
         self.node2 = TopoNode()
@@ -139,14 +139,14 @@ class TestBuildUsingAPI(unittest.TestCase):
     def test_disagg_trans_negative_quantities(self):
         """Test disaggregation including negative quantities."""
         self.node1.insert_quantities(
+            value='value',
+            attributes='variable',
             data=[
                 ['idx1', 'idx2', 'idx3', 'variable', 'value'],
                 ['A', 'z', 'a', 'qux', -8.0],
                 ['B', 'x', 'b', 'qux', +3.0],
                 ['B', 'y', 'c', 'qux', -8.0],
             ],
-            value='value',
-            attributes='variable',
         )
 
         result_iter = self.node1('[variable="foo"]', '[variable="qux"]') >> self.node2
@@ -275,6 +275,8 @@ class TestBuildUsingCLI(unittest.TestCase):
             ),
         ))
         self.node1.insert_quantities(  # <- Using API, CLI not ready yet.
+            value='value',
+            attributes='variable',
             data=[
                 ['idx1', 'idx2', 'idx3', 'variable', 'value'],
                 ['-', '-', '-', 'foo',   5],
@@ -288,8 +290,6 @@ class TestBuildUsingCLI(unittest.TestCase):
                 ['D', 'y', 'h', 'baz', 100],
                 ['D', 'y', 'i', 'baz', 100],
             ],
-            value='value',
-            attributes='variable',
         )
 
         self.node2 = TopoNode()
