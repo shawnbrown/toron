@@ -132,20 +132,20 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     # Add label command.
-    parser_add_label = parser_add_subparsers.add_parser(
-        'label',
-        aliases=['labels'],
+    parser_add_labels = parser_add_subparsers.add_parser(
+        'labels',
+        aliases=['label'],
         help='add index labels to node file',
         description='Add index labels to an existing node file.',
     )
-    parser_add_label.add_argument('node', type=TopoNodeType(mode='rw'),
-                                  help='name of file to modify', metavar='FILE')
-    parser_add_label.add_argument('labels', nargs='+',
-                                  help='index label to add', metavar='LABEL')
-    parser_add_label.add_argument('--no-backup', action='store_false',
-                                  dest='backup',
-                                  help='do not make a backup file')
-    parser_add_label.set_defaults(func=command_add.add_label)
+    parser_add_labels.add_argument('node', type=TopoNodeType(mode='rw'),
+                                   help='name of file to modify', metavar='FILE')
+    parser_add_labels.add_argument('labels', nargs='+',
+                                   help='index label to add', metavar='LABEL')
+    parser_add_labels.add_argument('--no-backup', action='store_false',
+                                   dest='backup',
+                                   help='do not make a backup file')
+    parser_add_labels.set_defaults(func=command_add.add_labels)
 
     # Add weight command.
     parser_add_weight = parser_add_subparsers.add_parser(

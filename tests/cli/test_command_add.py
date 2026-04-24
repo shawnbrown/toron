@@ -7,7 +7,7 @@ from toron.data_models import Crosswalk, WeightGroup
 from toron.cli import command_add
 
 
-class TestAddLabel(unittest.TestCase):
+class TestAddLabels(unittest.TestCase):
     def test_add_labels(self):
         node = TopoNode()
 
@@ -16,19 +16,19 @@ class TestAddLabel(unittest.TestCase):
         args = argparse.Namespace(
             command='add', element='label', node=node, labels=['A', 'B', 'C']
         )
-        command_add.add_label(args)  # Function under test.
+        command_add.add_labels(args)  # Function under test.
 
         self.assertEqual(node.index_columns, ['A', 'B', 'C'])
 
     def test_label_already_exists(self):
         node = TopoNode()
-        command_add.add_label(argparse.Namespace(
+        command_add.add_labels(argparse.Namespace(
             command='add', element='label', node=node, labels=['A', 'B', 'C']
         ))
 
         regex = r"index label column 'B' already exists"
         with self.assertRaisesRegex(ToronError, regex):
-            command_add.add_label(argparse.Namespace(
+            command_add.add_labels(argparse.Namespace(
                 command='add', element='label', node=node, labels=['B']
             ))
 
