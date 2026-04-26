@@ -247,7 +247,7 @@ def configure_applogger(
         'disable_existing_loggers': False,
         'formatters': {
             'cli_formatter': {
-                '()': formatter_class,  # Special key '()' to call Formatter factory.
+                '()': formatter_class,  # Special key '()' to call instance factory.
                 'fmt': '%(levelname)s: %(message)s',
             },
         },
