@@ -121,6 +121,7 @@ class StyleCodes:
     critical: str = ''
     reset: str = ''
     bright: str = ''
+    dim: str = ''
 
 
 # ANSI terminal control codes.
@@ -131,6 +132,7 @@ ansi_codes = {
     'critical': '\33[48;5;196m\33[38;5;16m',  # red background
     'reset': '\33[0m',                        # reset styles
     'bright': '\33[1m',                       # bright text
+    'dim': '\33[2m',                          # dim text
 }
 
 
