@@ -19,6 +19,7 @@ from toron._typing import (
     Iterator,
     List,
     Literal,
+    Mapping,
     Optional,
     Self,
     Sequence,
@@ -40,7 +41,7 @@ T1 = TypeVar('T1')
 T2 = TypeVar('T2')
 
 JsonTypes: TypeAlias = Union[
-    Dict[str, 'JsonTypes'], List['JsonTypes'], str, int, float, bool, None
+    Mapping[str, 'JsonTypes'], Sequence['JsonTypes'], str, int, float, bool, None
 ]
 
 # Magic number to use as file signature for Toron files.
