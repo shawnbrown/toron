@@ -36,6 +36,8 @@ from toron.data_service import (
     refresh_structure_granularity,
     set_domain,
     get_domain,
+    set_registered_attributes,
+    get_registered_attributes,
 )
 
 
@@ -1386,3 +1388,76 @@ class TestDomainMethods(unittest.TestCase):
         """Should return existing 'domain' property."""
         self.property_repo.add('domain', {'foo': 'bar'})
         self.assertEqual(get_domain(self.property_repo), {'foo': 'bar'})
+
+
+class TestRegisteredAttributeFunctions(unittest.TestCase):
+    def setUp(self):
+        self.dal = data_access.get_data_access_layer()
+
+        connector = self.dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        self.index_repo = self.dal.IndexRepository(cur)
+        self.property_repo = self.dal.PropertyRepository(cur)
+        self.column_manager = self.dal.ColumnManager(cur)
+
+    def test_set_and_get_registered_attributes(self):
+        """Should assign 'registered_attributes' to property repository."""
+        set_registered_attributes(
+            attribute_columns=['foo', 'bar', 'baz'],
+            reserved_identifiers=self.dal.reserved_identifiers,
+            index_repo=self.index_repo,
+            property_repo=self.property_repo,
+        )
+
+        result = get_registered_attributes(
+            property_repo=self.property_repo
+        )
+
+        self.assertEqual(result, ['foo', 'bar', 'baz'])
+
+    def test_get_registered_attributes_empty(self):
+        """When no 'registered_attributes', should return empty list."""
+        result = get_registered_attributes(
+            property_repo=self.property_repo
+        )
+        self.assertEqual(result, [], msg='should be empty list')
+
+    def test_set_registered_attributes_bad_name(self):
+        """Should raise ValueError when given bad attribute values."""
+        regex = r"'domain' is a reserved name"
+        with self.assertRaisesRegex(ValueError, regex):
+            set_registered_attributes(
+                attribute_columns=['foo', 'bar', 'domain'],
+                reserved_identifiers=self.dal.reserved_identifiers,
+                index_repo=self.index_repo,
+                property_repo=self.property_repo,
+            )
+
+        regex = r"'foo' appears more than once; attributes must be unique"
+        with self.assertRaisesRegex(ValueError, regex):
+            set_registered_attributes(
+                attribute_columns=['foo', 'bar', 'foo'],
+                reserved_identifiers=self.dal.reserved_identifiers,
+                index_repo=self.index_repo,
+                property_repo=self.property_repo,
+            )
+
+        self.column_manager.add_columns('A', 'B', 'baz')
+        regex = r"'baz' is already used as an index label"
+        with self.assertRaisesRegex(ValueError, regex):
+            set_registered_attributes(
+                attribute_columns=['foo', 'bar', 'baz'],
+                reserved_identifiers=self.dal.reserved_identifiers,
+                index_repo=self.index_repo,
+                property_repo=self.property_repo,
+            )
+
+        self.assertEqual(get_registered_attributes(
+            self.property_repo),
+            [],
+            msg='should be empty list; should not add columns when there are issues',
+        )

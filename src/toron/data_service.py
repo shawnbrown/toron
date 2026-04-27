@@ -15,6 +15,7 @@ from toron._typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -834,6 +835,50 @@ def get_domain(property_repo: BasePropertyRepository) -> Dict[str, str]:
         return check_type(domain, dict)
     except KeyError:
         return {}
+
+
+def set_registered_attributes(
+    attribute_columns: Sequence[str],
+    reserved_identifiers: Set[str],
+    index_repo: BaseIndexRepository,
+    property_repo: BasePropertyRepository,
+) -> None:
+    """Set the node's registered attribute columns."""
+    all_reserved_identifiers = \
+        reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
+
+    index_labels = set(index_repo.get_label_names())
+
+    unique_attribute_columns = []  # Assure uniqueness while keeping order.
+    for attr in attribute_columns:
+        if attr in all_reserved_identifiers:
+            raise ValueError(f'{attr!r} is a reserved name')
+
+        if attr in index_labels:
+            raise ValueError(f'{attr!r} is already used as an index label')
+
+        if attr in unique_attribute_columns:
+            raise ValueError(
+                f'{attr!r} appears more than once; attributes must be unique'
+            )
+
+        unique_attribute_columns.append(attr)
+
+    # Save 'registered_attributes' value in property repository.
+    property_repo.add_or_update(
+        'registered_attributes', unique_attribute_columns
+    )
+
+
+def get_registered_attributes(
+    property_repo: BasePropertyRepository,
+) -> List[str]:
+    """Get the node's registered attribute columns."""
+    try:
+        registered_attributes = property_repo.get('registered_attributes')
+        return check_type(registered_attributes, required_type=list)
+    except KeyError:
+        return []
 
 
 def get_node_info_text(
