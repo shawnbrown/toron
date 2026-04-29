@@ -5,6 +5,7 @@ from toron import TopoNode, ToronError
 from toron.data_models import Crosswalk, WeightGroup
 
 from toron.cli import command_add
+from toron.cli.common import ExitCode
 
 
 class TestAddLabels(unittest.TestCase):
@@ -74,6 +75,72 @@ class TestAddWeight(unittest.TestCase):
         regex = r"index weight group 'population' already exists"
         with self.assertRaisesRegex(ToronError, regex):
             command_add.add_weight(args)
+
+
+class TestAddAttributes(unittest.TestCase):
+    def test_add_attributes(self):
+        node = TopoNode()
+
+        self.assertEqual(node.get_registered_attributes(), [])
+
+        args = argparse.Namespace(
+            command='add',
+            element='attributes',
+            node=node,
+            attributes=['foo', 'bar', 'baz'],
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_add.add_attribute(args)  # Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+        self.assertEqual(
+            cm.output,
+            ["INFO:app-toron:added attribute columns: 'foo', 'bar', 'baz'"],
+        )
+        self.assertEqual(node.get_registered_attributes(), ['foo', 'bar', 'baz'])
+
+    def test_attribute_already_exists(self):
+        node = TopoNode()
+        node.set_registered_attributes(['baz'])
+
+        args = argparse.Namespace(
+            command='add',
+            element='attributes',
+            node=node,
+            attributes=['foo', 'bar', 'baz'],
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_add.add_attribute(args)  # Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            cm.output,
+            ["WARNING:app-toron:skipping 'baz' (already registered)",
+             "INFO:app-toron:added attribute columns: 'foo', 'bar'"],
+        )
+
+        self.assertEqual(
+            node.get_registered_attributes(),
+            ['baz', 'foo', 'bar'],  # <- First item is 'baz'.
+            msg="since 'baz' already existed, it retains its original position",
+        )
+
+    def test_bad_attribute_name(self):
+        node = TopoNode()
+
+        args = argparse.Namespace(
+            command='add',
+            element='attributes',
+            node=node,
+            attributes=['foo', 'bar', 'domain'],
+        )
+
+        regex = r"'domain' is a reserved name"
+        with self.assertRaisesRegex(ToronError, regex):
+            command_add.add_attribute(args)  # Function under test.
 
 
 class TestAddCrosswalk(unittest.TestCase):

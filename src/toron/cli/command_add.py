@@ -6,6 +6,9 @@ from .common import (
     process_backup_option,
     ExitCode,
 )
+from .._utils import (
+    ToronError,
+)
 
 
 applogger = logging.getLogger('app-toron')
@@ -35,6 +38,32 @@ def add_weight(args: argparse.Namespace) -> ExitCode:
 
     msg = f'added index weight group {args.weight!r} to {args.node.path_hint}'
     applogger.info(msg)
+
+    return ExitCode.OK
+
+
+def add_attribute(args: argparse.Namespace) -> ExitCode:
+    """Add attribute columns to the given node file."""
+    process_backup_option(args)
+
+    attribute_columns = args.node.get_registered_attributes()
+
+    new_attributes = []
+    for attr in args.attributes:
+        if attr not in attribute_columns:
+            new_attributes.append(attr)
+        else:
+            applogger.warning(f'skipping {attr!r} (already registered)')
+
+    if new_attributes:
+        try:
+            args.node.set_registered_attributes(attribute_columns + new_attributes)
+        except ValueError as e:
+            raise ToronError(str(e))
+        formatted_attrs = ', '.join(repr(x) for x in new_attributes)
+        applogger.info(f'added attribute columns: {formatted_attrs}')
+    else:
+        applogger.info(f'no attributes added')
 
     return ExitCode.OK
 

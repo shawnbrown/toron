@@ -171,6 +171,21 @@ def get_parser() -> argparse.ArgumentParser:
                                    help='do not make a backup file')
     parser_add_weight.set_defaults(func=command_add.add_weight)
 
+    # Add attribute command.
+    parser_add_attribute = parser_add_subparsers.add_parser(
+        'attribute',
+        help='add attribute columns to node file',
+        description='Add attribute columns to an existing node file.',
+    )
+    parser_add_attribute.add_argument('node', type=TopoNodeType(mode='rw'),
+                                      help='name of file to modify', metavar='FILE')
+    parser_add_attribute.add_argument('attributes', nargs='+',
+                                      help='attribute column to add', metavar='ATTRIBUTE')
+    parser_add_attribute.add_argument('--no-backup', action='store_false',
+                                      dest='backup',
+                                      help='do not make a backup file')
+    parser_add_attribute.set_defaults(func=command_add.add_attribute)
+
     # Add crosswalk command.
     parser_add_crosswalk = parser_add_subparsers.add_parser(
         'crosswalk',
