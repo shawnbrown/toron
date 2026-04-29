@@ -705,6 +705,16 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
             node.drop_discrete_categories({'A', 'B', 'C'})
 
 
+class TestRegisteredAttributesMethods(unittest.TestCase):
+    def test_set_and_get_registered_attributes(self):
+        node = TopoNode()
+
+        self.assertEqual(node.get_registered_attributes(), [])
+
+        node.set_registered_attributes(['foo', 'bar'])
+        self.assertEqual(node.get_registered_attributes(), ['foo', 'bar'])
+
+
 class TestIndexColumnMethods(unittest.TestCase):
     @staticmethod
     def get_cols_helper(node):  # <- Helper function.

@@ -66,6 +66,8 @@ from .data_service import (
     refresh_structure_granularity,
     set_domain,
     get_domain,
+    set_registered_attributes,
+    get_registered_attributes,
     get_node_info_text,
 )
 from toron.reader import (
@@ -330,6 +332,23 @@ class TopoNode(object):
                 aux_index_repo=self._dal.IndexRepository(aux_cursor),
                 optimizations=self._dal.optimizations,
             )
+
+    def set_registered_attributes(
+        self, attribute_columns: Sequence[str]
+    ) -> None:
+        """Set the node's registered attribute columns."""
+        with self._managed_transaction() as cur:
+            set_registered_attributes(
+                attribute_columns=attribute_columns,
+                reserved_identifiers=self._dal.reserved_identifiers,
+                index_repo=self._dal.IndexRepository(cur),
+                property_repo=self._dal.PropertyRepository(cur),
+            )
+
+    def get_registered_attributes(self) -> List[str]:
+        """Get the node's registered attribute columns."""
+        with self._managed_cursor() as cur:
+            return get_registered_attributes(self._dal.PropertyRepository(cur))
 
     @property
     def max_index_id(self) -> int:
