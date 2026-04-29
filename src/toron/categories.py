@@ -43,23 +43,21 @@ def make_structure(discrete_categories: List[Set[str]]) -> List[Set[str]]:
         data can be loaded using these invalid sets making the data
         invalid, too.
 
-        When this happens, *unions* that include an invalid category are
-        typically **more specific** than their components. This extra
-        specificity helps preserve context, making it easier to identify
-        and correct such mistakes.
+        When this happens, *unions* that include an invalid category
+        contain more context than their components. This extra
+        information helps to identify and correct such mistakes.
 
-        In contrast, *intersections* involving an invalid category are
-        **less specific**. These less specific sets can lack important
-        context information, and if data is loaded into them, it can be
-        more difficult to fix--especially if the issue isn't caught
+        In contrast, an *intersection* of categories contains less
+        context than its components. If data is loaded using an
+        intersection made from an invalid category, it can be more
+        difficult to fix--especially if the issue isn't caught
         immediately.
 
-        To prevent such accidental losses of specificity, Toron avoids
-        using topological spaces (which require closure under finite
-        intersections) and instead uses join-semilattices of basic
-        categories. This approach ensures that all derived sets remain
-        as specific as the original inputs, helping preserve valuable
-        context for validation and correction.
+        To prevent such issues, Toron avoids using topological spaces
+        (which require closure under finite intersections) and instead
+        uses join-semilattices of basic categories. This approach
+        ensures that all derived sets preserve valuable context for
+        validation and correction.
     """
     structure = []  # Use list to preserve lexical order of input.
     for length in range(len(discrete_categories) + 1):
