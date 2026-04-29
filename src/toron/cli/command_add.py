@@ -26,17 +26,11 @@ def add_weight(args: argparse.Namespace) -> ExitCode:
     """Add index weight groups to the given node file."""
     process_backup_option(args)
 
-    if args.make_default:
-        make_default = True
-    else:
-        make_default = None  # Use `None` instead of `False` for appropriate
-                             # `add_weight_group()` behavior.
-
     args.node.add_weight_group(
         name=args.weight,
         description=args.description,
         selectors=args.selectors,
-        make_default=make_default,
+        make_default=args.make_default or None,  # Use `None` instead of `False`.
     )
 
     msg = f'added index weight group {args.weight!r} to {args.node.path_hint}'
@@ -49,19 +43,13 @@ def add_crosswalk(args: argparse.Namespace) -> ExitCode:
     """Add crosswalks between two node files."""
     process_backup_option(args, node_args=['node1', 'node2'])
 
-    if args.make_default:
-        make_default = True
-    else:
-        make_default = None  # Use `None` instead of `False` for appropriate
-                             # `add_crosswalk()` behavior.
-
     do_add = lambda tail, head, args: head.add_crosswalk(
         node=tail,
         crosswalk_name=args.crosswalk,
         other_filename_hint=tail.path_hint,
         description=args.description,
         selectors=args.selectors,
-        is_default=make_default,
+        is_default=args.make_default or None,  # Use `None` instead of `False`.
     )
 
     if args.direction == 'both':
