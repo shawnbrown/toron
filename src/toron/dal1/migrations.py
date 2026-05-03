@@ -1,4 +1,5 @@
 """Database schema version migration functions."""
+import json
 import sqlite3
 from toron._typing import (
     Optional,
@@ -46,6 +47,33 @@ def v020_to_v030(cursor: sqlite3.Cursor, whole_space_level: bytes) -> None:
     # Drop old 'relation' table and rename new table.
     cursor.execute('DROP TABLE main.relation')
     cursor.execute('ALTER TABLE main.new_relation RENAME TO relation')
+
+    # Update domain (change `dict` to `str`).
+    cursor.execute("SELECT value FROM main.property WHERE key='domain'")
+    domain_result = cursor.fetchone()
+    if domain_result:
+        if isinstance(domain_result[0], str):
+            domain_dict = json.loads(domain_result[0])
+        else:
+            domain_dict = domain_result[0]
+
+        if not isinstance(domain_dict, dict):
+            raise Exception(
+                'in DAL1 schema 0.2.0, the domain property should be a '
+                'JSON Object'
+            )
+
+        if len(domain_dict) == 1 and 'domain' in domain_dict:
+            domain = domain_dict['domain']
+        else:
+            domain = '_'.join(f'{x}_{y}' for x, y in sorted(domain_dict.items()))
+    else:
+        domain = ''
+
+    cursor.execute(
+        "UPDATE main.property SET value=? WHERE key='domain'",
+        (json.dumps(domain),)
+    )
 
     # Update schema version number.
     cursor.execute("""

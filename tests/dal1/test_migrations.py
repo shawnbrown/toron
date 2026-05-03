@@ -134,6 +134,7 @@ FULL_NODE_SCHEMA_V_020 = """
     INSERT INTO "property" VALUES('index_hash','"c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079"');
     INSERT INTO "property" VALUES('default_weight_group_id','1');
     INSERT INTO "property" VALUES('discrete_categories','[["label_b", "label_c", "label_a"]]');
+    INSERT INTO "property" VALUES('domain','{"foo": "bar", "baz": "qux"}');
 
     CREATE UNIQUE INDEX unique_index_label_columns ON node_index("label_a", "label_b", "label_c");
     CREATE UNIQUE INDEX unique_location_label_columns ON location("label_a", "label_b", "label_c");
@@ -193,12 +194,16 @@ class TestApplyMigrations(unittest.TestCase):
                 value TEXT_JSON
             );
             INSERT INTO "property" VALUES('toron_schema_version','"0.2.0"');
+            INSERT INTO "property" VALUES('domain','{"domain": "foo_bar"}');
         """)
 
         v020_to_v030(self.cur, whole_space_level=b'\xe0')  # <- Function under test.
 
         self.cur.execute("SELECT value from property where key='toron_schema_version'")
         self.assertEqual(self.cur.fetchone()[0], '"0.3.0"')
+
+        self.cur.execute("SELECT value from property where key='domain'")
+        self.assertEqual(self.cur.fetchone()[0], '"foo_bar"')
 
         self.cur.execute('SELECT * FROM relation')
         self.assertEqual(
@@ -220,6 +225,9 @@ class TestApplyMigrations(unittest.TestCase):
 
         self.cur.execute("SELECT value from property where key='toron_schema_version'")
         self.assertEqual(self.cur.fetchone()[0], '"0.3.0"')
+
+        self.cur.execute("SELECT value from property where key='domain'")
+        self.assertEqual(self.cur.fetchone()[0], '"baz_qux_foo_bar"')
 
         self.cur.execute('SELECT * FROM relation')
         self.assertEqual(
