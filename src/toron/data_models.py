@@ -1220,22 +1220,16 @@ class QuantityIterator(object):
         self,
         unique_id: str,
         index_hash: str,
-        domain: Dict[str, str],
+        domain: str,
         data: Iterable[Tuple[Index, AttributesDict, Optional[float]]],
         label_names: Sequence[str],
         attribute_keys: Iterable[str],
     ):
         self._unique_id = unique_id
         self._index_hash = index_hash
-
-        if domain:
-            domain_names, domain_values = zip(*sorted(domain.items()))
-            self._domain_names = domain_names
-            self._domain_values = domain_values
-        else:
-            self._domain_names = tuple()
-            self._domain_values = tuple()
-
+        self._domain_col = ('domain',) if domain else tuple()
+        self._domain_val = (domain,) if domain else tuple()
+        self._domain = domain
         self._data = iter(data)
         self._label_names = tuple(label_names)
         self._attribute_keys = tuple(attribute_keys)
@@ -1249,8 +1243,8 @@ class QuantityIterator(object):
         return self._index_hash
 
     @property
-    def domain(self) -> Dict[str, str]:
-        return dict(zip(self._domain_names, self._domain_values))
+    def domain(self) -> str:
+        return self._domain
 
     @property
     def data(self) -> Iterator[Tuple[Index, AttributesDict, Optional[float]]]:
@@ -1266,12 +1260,12 @@ class QuantityIterator(object):
 
     @property
     def columns(self) -> Tuple[str, ...]:
-        return self._label_names + self._domain_names + self._attribute_keys + ('value',)
+        return self._label_names + self._domain_col + self._attribute_keys + ('value',)
 
     def __next__(self) -> Tuple[Union[str, float, None], ...]:
         index, attributes, quantity = next(self._data)
         attr_vals = tuple(attributes.get(x) for x in self._attribute_keys)
-        return index.labels + self._domain_values + attr_vals + (quantity,)
+        return index.labels + self._domain_val + attr_vals + (quantity,)
 
     def __iter__(self):
         return self

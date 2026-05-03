@@ -23,9 +23,9 @@ def create_file(args: argparse.Namespace) -> ExitCode:
     node = TopoNode()
 
     if args.domain:
-        node.set_domain({'domain': args.domain})
+        node.set_domain(args.domain)
     else:
-        node.set_domain({'domain': os.path.splitext(os.path.basename(args.node_path))[0]})
+        node.set_domain(os.path.splitext(os.path.basename(args.node_path))[0])
 
     try:
         node.to_file(args.node_path)
@@ -34,6 +34,6 @@ def create_file(args: argparse.Namespace) -> ExitCode:
         return ExitCode.ERR
 
     if args.domain is None:
-        applogger.info(f"domain defaulting to {node.domain['domain']!r}")
+        applogger.info(f"domain set to {node.domain!r}")
     applogger.info(f'created file: {args.node_path!r}')
     return ExitCode.OK

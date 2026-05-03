@@ -32,12 +32,12 @@ from toron.graph import (
 class TestNormalizeMappingData(unittest.TestCase):
     def setUp(self):
         self.columns = [
-            'dom1', 'dom2', 'idx1', 'value', 'dom1', 'dom2', 'idx1'
+            'domain', 'idx1', 'value', 'domain', 'idx1'
         ]
         self.data = [
-            ['foo', 'bar', 'A', 25, 'baz', 'qux', 'a'],
-            ['foo', 'bar', 'B', 50, 'baz', 'qux', 'b'],
-            ['foo', 'bar', 'C', 55, 'baz', 'qux', 'c'],
+            ['foo', 'A', 25, 'bar', 'a'],
+            ['foo', 'B', 50, 'bar', 'b'],
+            ['foo', 'C', 55, 'bar', 'c'],
         ]
 
     def test_full_domain(self):
@@ -45,8 +45,8 @@ class TestNormalizeMappingData(unittest.TestCase):
             data=self.data,
             columns=self.columns,
             crosswalk_name='value',
-            left_domain={'dom1': 'foo', 'dom2': 'bar'},
-            right_domain={'dom1': 'baz', 'dom2': 'qux'}
+            left_domain='foo',
+            right_domain='bar',
         )
         expected_columns = ['idx1', 'value', 'idx1']
         self.assertEqual(columns, expected_columns)
@@ -63,21 +63,31 @@ class TestNormalizeMappingData(unittest.TestCase):
             data=self.data,
             columns=self.columns,
             crosswalk_name='value',
-            left_domain={},
-            right_domain={}
+            left_domain='',
+            right_domain='',
         )
         self.assertEqual(columns, self.columns)
         self.assertEqual(list(data), self.data)
 
     def test_varrying_domain(self):
+        """Other/extra columns get passed through."""
+        columns = [
+            'domain', 'other_l', 'idx1', 'value', 'other_r', 'domain', 'idx1'
+        ]
+        data = [
+            ['foo', 'bar', 'A', 25, 'baz', 'qux', 'a'],
+            ['foo', 'bar', 'B', 50, 'baz', 'qux', 'b'],
+            ['foo', 'bar', 'C', 55, 'baz', 'qux', 'c'],
+        ]
+
         data, columns = normalize_mapping_data(
-            data=self.data,
-            columns=self.columns,
+            data=data,
+            columns=columns,
             crosswalk_name='value',
-            left_domain={'dom1': 'foo'},
-            right_domain={'dom2': 'qux'}
+            left_domain='foo',
+            right_domain='qux',
         )
-        expected_columns = ['dom2', 'idx1', 'value', 'dom1', 'idx1']
+        expected_columns = ['other_l', 'idx1', 'value', 'other_r', 'idx1']
         self.assertEqual(columns, expected_columns)
 
         expected_data = [
@@ -88,23 +98,23 @@ class TestNormalizeMappingData(unittest.TestCase):
         self.assertEqual(list(data), expected_data)
 
     def test_invalid_domain(self):
-        # Append row to `data` with invalid righ-side domain value.
+        # Append row to `data` with invalid right-side domain value.
         self.data.append(
-            ['foo', 'bar', 'D', 65, 'baz', 'corge', 'd']
+            ['foo', 'D', 65, 'baz', 'd']
         )
 
         data, columns = normalize_mapping_data(
             data=self.data,
             columns=self.columns,
             crosswalk_name='value',
-            left_domain={'dom1': 'foo', 'dom2': 'bar'},
-            right_domain={'dom1': 'baz', 'dom2': 'qux'}
+            left_domain='foo',
+            right_domain='bar',
         )
 
         expected_columns = ['idx1', 'value', 'idx1']
         self.assertEqual(columns, expected_columns)
 
-        regex = "error in right-side domain: 'dom2' should be 'qux', got 'corge'"
+        regex = "error in right-side domain: 'domain' should be 'bar', got 'baz'"
         with self.assertRaisesRegex(ValueError, regex):
             list(data)  # Use list to consume iterator.
 
@@ -502,21 +512,21 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             self.assertEqual(results, expected)
 
     def test_mapping_with_domains(self):
-        self.node1.set_domain({'foo': 'bar'})
-        self.node2.set_domain({'baz': 'qux'})
+        self.node1.set_domain('foo')
+        self.node2.set_domain('bar')
 
         mapping_data = [
-            ['foo', 'idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
-            ['bar', 'A', 'z', 'a',  25, 'A', 'z', 'a'],
-            ['bar', 'A', 'z', 'a',  25, 'A', 'z', 'b'],
-            ['bar', 'B', 'x', 'b',  50, 'B', 'x', 'c'],
-            ['bar', 'B', 'y', 'c',  50, 'B', 'x', 'c'],
-            ['bar', 'C', 'x', 'd',  55, 'C', 'x', 'd'],
-            ['bar', 'C', 'y', 'e',  50, 'C', 'y', 'e'],
-            ['bar', 'D', 'x', 'f', 100, 'D', 'x', 'f'],
-            ['bar', 'D', 'x', 'g', 100, 'D', 'x', 'g'],
-            ['bar', 'D', 'y', 'h', 100, 'D', 'y', 'h'],
-            ['bar', 'D', 'y', 'i', 100, 'D', 'y', 'i'],
+            ['domain', 'idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],
+            ['foo', 'A', 'z', 'a',  25, 'A', 'z', 'a'],
+            ['foo', 'A', 'z', 'a',  25, 'A', 'z', 'b'],
+            ['foo', 'B', 'x', 'b',  50, 'B', 'x', 'c'],
+            ['foo', 'B', 'y', 'c',  50, 'B', 'x', 'c'],
+            ['foo', 'C', 'x', 'd',  55, 'C', 'x', 'd'],
+            ['foo', 'C', 'y', 'e',  50, 'C', 'y', 'e'],
+            ['foo', 'D', 'x', 'f', 100, 'D', 'x', 'f'],
+            ['foo', 'D', 'x', 'g', 100, 'D', 'x', 'g'],
+            ['foo', 'D', 'y', 'h', 100, 'D', 'y', 'h'],
+            ['foo', 'D', 'y', 'i', 100, 'D', 'y', 'i'],
         ]
         load_mapping(  # <- The method under test.
             left_node=self.node1,
@@ -592,8 +602,8 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
     def test_fully_joined_with_domain(self):
         """Check fully mapped crosswalk."""
-        self.node1.set_domain({'dataset': 'AAA', 'group': 'XXX'})
-        self.node2.set_domain({'dataset': 'BBB'})
+        self.node1.set_domain('AAA')
+        self.node2.set_domain('BBB')
 
         self.node2.add_crosswalk(self.node1, 'population', is_default=True)
         self.node2.insert_relations2(
@@ -616,18 +626,18 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
         actual = get_mapping(self.node1, self.node2, 'population')
         expected = [
-            ('index_id', 'dataset', 'group', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'dataset', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
-            (0, 'AAA', 'XXX', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', None),
-            (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 1, 'BBB', 'A', 'z', 'a', None),
-            (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 2, 'BBB', 'A', 'z', 'b', None),
-            (2, 'AAA', 'XXX', 'B', 'x', 'b', 50.0, 3, 'BBB', 'B', 'x', 'c', None),
-            (3, 'AAA', 'XXX', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', None),
-            (4, 'AAA', 'XXX', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', None),
-            (5, 'AAA', 'XXX', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', None),
-            (6, 'AAA', 'XXX', 'D', 'x', 'f', 100.0, 6, 'BBB', 'D', 'x', 'f', None),
-            (7, 'AAA', 'XXX', 'D', 'x', 'g', 100.0, 7, 'BBB', 'D', 'x', 'g', None),
-            (8, 'AAA', 'XXX', 'D', 'y', 'h', 100.0, 8, 'BBB', 'D', 'y', 'h', None),
-            (9, 'AAA', 'XXX', 'D', 'y', 'i', 100.0, 9, 'BBB', 'D', 'y', 'i', None),
+            ('index_id', 'domain', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'domain', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
+            (0, 'AAA', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', None),
+            (1, 'AAA', 'A', 'z', 'a', 25.0, 1, 'BBB', 'A', 'z', 'a', None),
+            (1, 'AAA', 'A', 'z', 'a', 25.0, 2, 'BBB', 'A', 'z', 'b', None),
+            (2, 'AAA', 'B', 'x', 'b', 50.0, 3, 'BBB', 'B', 'x', 'c', None),
+            (3, 'AAA', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', None),
+            (4, 'AAA', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', None),
+            (5, 'AAA', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', None),
+            (6, 'AAA', 'D', 'x', 'f', 100.0, 6, 'BBB', 'D', 'x', 'f', None),
+            (7, 'AAA', 'D', 'x', 'g', 100.0, 7, 'BBB', 'D', 'x', 'g', None),
+            (8, 'AAA', 'D', 'y', 'h', 100.0, 8, 'BBB', 'D', 'y', 'h', None),
+            (9, 'AAA', 'D', 'y', 'i', 100.0, 9, 'BBB', 'D', 'y', 'i', None),
         ]
         self.assertEqual(list(actual), expected)
 
@@ -717,8 +727,8 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
     def test_missing_left_and_right(self):
         """Check unmapped left-side and right-side elemenets."""
-        self.node1.set_domain({'dataset': 'AAA', 'group': 'XXX'})
-        self.node2.set_domain({'dataset': 'BBB'})
+        self.node1.set_domain('AAA')
+        self.node2.set_domain('BBB')
 
         self.node2.add_crosswalk(self.node1, 'population', is_default=True)
         self.node2.insert_relations2(
@@ -737,22 +747,22 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
         actual = get_mapping(self.node1, self.node2, 'population')
         expected = [
-            ('index_id', 'dataset', 'group', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'dataset', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
-            (0, 'AAA', 'XXX', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', None),
-            (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 1, 'BBB', 'A', 'z', 'a', None),
-            (1, 'AAA', 'XXX', 'A', 'z', 'a', 25.0, 2, 'BBB', 'A', 'z', 'b', None),
-            (2, 'AAA', 'XXX', 'B', 'x', 'b', 50.0, 3, 'BBB', 'B', 'x', 'c', None),
-            (3, 'AAA', 'XXX', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', None),
-            (4, 'AAA', 'XXX', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', None),
-            (5, 'AAA', 'XXX', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', None),
-            (None, None, None, None, None, None, None, 6, 'BBB', 'D', 'x', 'f', None),
-            (None, None, None, None, None, None, None, 7, 'BBB', 'D', 'x', 'g', None),
-            (None, None, None, None, None, None, None, 8, 'BBB', 'D', 'y', 'h', None),
-            (None, None, None, None, None, None, None, 9, 'BBB', 'D', 'y', 'i', None),
-            (6, 'AAA', 'XXX', 'D', 'x', 'f', None, None, None, None, None, None, None),
-            (7, 'AAA', 'XXX', 'D', 'x', 'g', None, None, None, None, None, None, None),
-            (8, 'AAA', 'XXX', 'D', 'y', 'h', None, None, None, None, None, None, None),
-            (9, 'AAA', 'XXX', 'D', 'y', 'i', None, None, None, None, None, None, None),
+            ('index_id', 'domain', 'idx1', 'idx2', 'idx3', 'population', 'index_id', 'domain', 'idx1', 'idx2', 'idx3', 'ambiguous_fields'),
+            (0, 'AAA', '-', '-', '-', 0.0, 0, 'BBB', '-', '-', '-', None),
+            (1, 'AAA', 'A', 'z', 'a', 25.0, 1, 'BBB', 'A', 'z', 'a', None),
+            (1, 'AAA', 'A', 'z', 'a', 25.0, 2, 'BBB', 'A', 'z', 'b', None),
+            (2, 'AAA', 'B', 'x', 'b', 50.0, 3, 'BBB', 'B', 'x', 'c', None),
+            (3, 'AAA', 'B', 'y', 'c', 50.0, 3, 'BBB', 'B', 'x', 'c', None),
+            (4, 'AAA', 'C', 'x', 'd', 55.0, 4, 'BBB', 'C', 'x', 'd', None),
+            (5, 'AAA', 'C', 'y', 'e', 50.0, 5, 'BBB', 'C', 'y', 'e', None),
+            (None, None, None, None, None, None, 6, 'BBB', 'D', 'x', 'f', None),
+            (None, None, None, None, None, None, 7, 'BBB', 'D', 'x', 'g', None),
+            (None, None, None, None, None, None, 8, 'BBB', 'D', 'y', 'h', None),
+            (None, None, None, None, None, None, 9, 'BBB', 'D', 'y', 'i', None),
+            (6, 'AAA', 'D', 'x', 'f', None, None, None, None, None, None, None),
+            (7, 'AAA', 'D', 'x', 'g', None, None, None, None, None, None, None),
+            (8, 'AAA', 'D', 'y', 'h', None, None, None, None, None, None, None),
+            (9, 'AAA', 'D', 'y', 'i', None, None, None, None, None, None, None),
         ]
         self.assertEqual(list(actual), expected)
 
@@ -796,16 +806,16 @@ class TestGetWeights(unittest.TestCase):
 
     def test_domain(self):
         """If domain is defined, it should be included in output."""
-        self.node.set_domain({'dataset': 'foo', 'group': 'bar'})
+        self.node.set_domain('foo')
 
         actual = get_weights(self.node)
         expected = [
-            ['index_id', 'dataset', 'group', 'idx1', 'idx2', 'idx3', 'wght1', 'wght2'],
-            [0, 'foo', 'bar', '-', '-', '-',  0.0,   0.0],
-            [1, 'foo', 'bar', 'A', 'x', 'a', 72.0, 702.0],
-            [2, 'foo', 'bar', 'B', 'y', 'b', 37.5, 400.0],
-            [3, 'foo', 'bar', 'C', 'z', 'c', 75.0, 801.0],
-            [4, 'foo', 'bar', 'D', 'z', 'd', 25.0, 232.0],
+            ['index_id', 'domain', 'idx1', 'idx2', 'idx3', 'wght1', 'wght2'],
+            [0, 'foo', '-', '-', '-',  0.0,   0.0],
+            [1, 'foo', 'A', 'x', 'a', 72.0, 702.0],
+            [2, 'foo', 'B', 'y', 'b', 37.5, 400.0],
+            [3, 'foo', 'C', 'z', 'c', 75.0, 801.0],
+            [4, 'foo', 'D', 'z', 'd', 25.0, 232.0],
         ]
         self.assertEqual(list(actual), expected)
 
@@ -912,7 +922,7 @@ class TestTranslate(unittest.TestCase):
         quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
-            domain={},
+            domain='',
             data=[(Index(1, 'aaa'), {'foo': 'bar'}, 100),
                   (Index(2, 'bbb'), {'foo': 'bar'}, 100),
                   (Index(3, 'ccc'), {'foo': 'bar'}, 100),
@@ -941,7 +951,7 @@ class TestTranslate(unittest.TestCase):
         quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
-            domain={},
+            domain='',
             data=[(Index(1, 'aaa'), {'foo': 'bar'}, 100),
                   (Index(2, 'bbb'), {'foo': 'bar'}, 100),
                   (Index(3, 'ccc'), {'foo': 'bar'}, 100),
@@ -997,7 +1007,7 @@ class TestTranslate(unittest.TestCase):
         quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
-            domain={},
+            domain='',
             data=[
                 # Attributes {'foo': 'bar'} match 'edge 1' ([foo="bar"])
                 # and 'edge 2' ([foo]), but 'edge 1' is used because it
@@ -1064,7 +1074,7 @@ class TestTranslate(unittest.TestCase):
         quantities = QuantityIterator(
             unique_id='00000000-0000-0000-0000-000000000000',
             index_hash='55e56a09c8793714d050eb888d945ca3b66d10ce5c5b489946df6804dd60324e',
-            domain={},
+            domain='',
             data=[(Index(1, 'aaa'), {'foo': 'bar'}, 100),
                   (Index(2, 'bbb'), {'foo': 'bar'}, 100),
                   (Index(3, 'ccc'), {'foo': 'bar'}, 100),

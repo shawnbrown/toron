@@ -1824,7 +1824,7 @@ class TestQuantityIterator(unittest.TestCase):
         iterator = QuantityIterator(
             unique_id='0000-00-00-00-000000',
             index_hash='00000000000000000000000000000000',
-            domain={},
+            domain='',
             data=iter([]),  # <- Empty iterable for testing.
             label_names=['x', 'y'],
             attribute_keys=['a'],
@@ -1884,7 +1884,7 @@ class TestQuantityIterator(unittest.TestCase):
         iterator = QuantityIterator(
             unique_id='0000-00-00-00-000000',
             index_hash='00000000000000000000000000000000',
-            domain={'xxx': 'yyy'},
+            domain='xxx',
             data=[
                 (Index(1, 'FOO'), {'a': 'baz'}, 50.0),
                 (Index(1, 'FOO'), {'a': 'qux'}, 55.0),
@@ -1897,16 +1897,16 @@ class TestQuantityIterator(unittest.TestCase):
 
         self.assertEqual(
             iterator.columns,
-            ('x', 'xxx', 'a', 'value'),
+            ('x', 'domain', 'a', 'value'),
             msg='`columns` should be usable as a header row',
         )
 
         self.assertEqual(
             list(iterator),
-            [('FOO', 'yyy', 'baz', 50.0),
-             ('FOO', 'yyy', 'qux', 55.0),
-             ('BAR', 'yyy', 'baz', 60.0),
-             ('BAR', 'yyy', 'qux', 65.0)],
+            [('FOO', 'xxx', 'baz', 50.0),
+             ('FOO', 'xxx', 'qux', 55.0),
+             ('BAR', 'xxx', 'baz', 60.0),
+             ('BAR', 'xxx', 'qux', 65.0)],
             msg='iteration should yield flattened rows',
         )
 
@@ -1916,7 +1916,7 @@ class TestQuantityIterator(unittest.TestCase):
         iterator = QuantityIterator(
             unique_id='0000-00-00-00-000000',
             index_hash='00000000000000000000000000000000',
-            domain={'xxx': 'yyy'},
+            domain='xxx',
             data=[
                 (Index(1, 'FOO'), {'a': 'baz'}, 50.0),
                 (Index(1, 'FOO'), {'a': 'qux'}, 55.0),
@@ -1929,7 +1929,7 @@ class TestQuantityIterator(unittest.TestCase):
         df1 = iterator.to_pandas()  # <- Method under test.
         expected_df1 = pd.DataFrame({
             'x': pd.Series(['FOO', 'FOO', 'BAR', 'BAR'], dtype='string'),
-            'xxx': pd.Series(['yyy', 'yyy', 'yyy', 'yyy'], dtype='string'),
+            'domain': pd.Series(['xxx', 'xxx', 'xxx', 'xxx'], dtype='string'),
             'a': pd.Series(['baz', 'qux', 'baz', 'qux'], dtype='string'),
             'value': pd.Series([50.0, 55.0, 60.0, 65.0], dtype='float64'),
         })
@@ -1939,7 +1939,7 @@ class TestQuantityIterator(unittest.TestCase):
         iterator = QuantityIterator(
             unique_id='0000-00-00-00-000000',
             index_hash='00000000000000000000000000000000',
-            domain={'xxx': 'yyy'},
+            domain='xxx',
             data=[
                 (Index(1, 'FOO'), {'a': 'baz'}, 50.0),
                 (Index(1, 'FOO'), {'a': 'qux'}, 55.0),
@@ -1951,7 +1951,7 @@ class TestQuantityIterator(unittest.TestCase):
         )
         df2 = iterator.to_pandas(index=True)  # <- Method under test.
         expected_df2 = pd.DataFrame({
-            'xxx': pd.Series(['yyy', 'yyy', 'yyy', 'yyy'], dtype='string'),
+            'domain': pd.Series(['xxx', 'xxx', 'xxx', 'xxx'], dtype='string'),
             'a': pd.Series(['baz', 'qux', 'baz', 'qux'], dtype='string'),
             'value': pd.Series([ 50.0,  55.0,  60.0,  65.0], dtype='float64'),
         })

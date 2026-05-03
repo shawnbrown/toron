@@ -248,13 +248,17 @@ class TopoNode(object):
         return self._connector.unique_id
 
     @property
-    def domain(self) -> Dict[str, str]:
-        """The common set of attributes associated with all node data."""
+    def domain(self) -> str:
+        """A short string describing the type of data the node contains.
+
+        Typically this should be a name or code (often the same name as
+        the node's file on drive).
+        """
         # The domain defines the scope of data a node will represent.
         with self._managed_cursor() as cursor:
             return get_domain(self._dal.PropertyRepository(cursor))
 
-    def set_domain(self, domain: Dict[str, str]) -> None:
+    def set_domain(self, domain: str) -> None:
         """Set the node's domain value."""
         with self._managed_cursor() as cursor:
             set_domain(
@@ -2240,7 +2244,10 @@ class TopoNode(object):
             attribute_repo = self._dal.AttributeGroupRepository(cursor)
             quantity_repo = self._dal.QuantityRepository(cursor)
 
-            domain_dict = get_domain(property_repo)
+            domain = get_domain(property_repo)
+            # Patch to use old `dict` logic for domain handling. This method
+            # will eventually be replaced so there's no strong need to refactor.
+            domain_dict = {'domain': domain} if domain else {}
 
             if any((x in attributes) for x in domain_dict.keys()):
                 applogger.warning('removing domain columns from attributes')
@@ -2288,10 +2295,9 @@ class TopoNode(object):
             applogger.warning('no quantities loaded')
 
         if counter['bad_domain']:
-            items = [f'{k} must be {v!r}' for k, v in domain_dict.items()]
             applogger.warning(
                 f"skipped {counter['bad_domain']} quantities with "
-                f"bad domain values: {', '.join(items)}"
+                f"bad domain values; domain must be {domain!r}"
             )
 
     def select_quantities(self, header: bool = True) -> Iterator[Sequence]:
@@ -2302,8 +2308,12 @@ class TopoNode(object):
             quantity_repo = self._dal.QuantityRepository(cur3)
 
             domain = get_domain(property_repo)
-            domain_cols = list(domain.keys())
-            domain_vals = list(domain.values())
+            if domain:
+                domain_cols = ['domain']
+                domain_vals = [domain]
+            else:
+                domain_cols = []
+                domain_vals = []
 
             label_cols = location_repo.get_label_names()
             attr_cols = attribute_repo.get_all_attribute_names()
@@ -2336,14 +2346,18 @@ class TopoNode(object):
             quantity_repo = self._dal.QuantityRepository(cur4)
 
             domain = get_domain(property_repo)
+            if domain:
+                domain_cols = ['domain']
+                domain_vals = [domain]
+            else:
+                domain_cols = []
+                domain_vals = []
 
             if header:
-                domain_cols = list(domain.keys())
                 label_cols = location_repo.get_label_names()
                 attr_cols = attribute_repo.get_all_attribute_names()
                 yield domain_cols + label_cols + attr_cols + ['quantity']
 
-            domain_vals = list(domain.values())
             locations = find_locations_without_index(
                 location_repo=location_repo,
                 aux_index_repo=aux_index_repo,
@@ -2411,14 +2425,18 @@ class TopoNode(object):
             quantity_repo = self._dal.QuantityRepository(cur4)
 
             domain = get_domain(property_repo)
+            if domain:
+                domain_cols = ['domain']
+                domain_vals = [domain]
+            else:
+                domain_cols = []
+                domain_vals = []
 
             if header:
-                domain_cols = list(domain.keys())
                 label_cols = location_repo.get_label_names()
                 attr_cols = attribute_repo.get_all_attribute_names()
                 yield domain_cols + label_cols + attr_cols + ['quantity']
 
-            domain_vals = list(domain.values())
             locations = find_nonmatching_locations(
                 location_repo=location_repo,
                 structure_repo=structure_repo,
@@ -2470,7 +2488,9 @@ class TopoNode(object):
         quantize: bool = False,
     ) -> Generator[Tuple[int, AttributesDict, float], None, None]:
         """Generator to yield index, attribute, and quantity tuples."""
-        domain = self.domain  # Assign locally to reduce dot-lookups.
+        # Assign domain locally to reduce dot-lookups.
+        # TODO: Refactor this to remove old `dict` handling logic for domain.
+        domain_dict = {'domain': self.domain} if self.domain else {}
 
         with self._managed_cursor(n=3) as (cur1, cur2, cur3):
             # These repository instances can share a single cursor.
@@ -2534,7 +2554,7 @@ class TopoNode(object):
                         for quantity in group:
                             attribute_group = attribute_repo.get(quantity.attribute_group_id)
                             attributes = attribute_group.attributes
-                            attributes.update(domain)  # Add domain to attributes.
+                            attributes.update(domain_dict)  # Add domain to attributes.
                             yield (index_id, attributes, quantity.value)
                 else:
                     for location_id, group in grouped:
@@ -2555,7 +2575,7 @@ class TopoNode(object):
                         for quantity in group:
                             attribute_group = attribute_repo.get(quantity.attribute_group_id)
                             attributes = attribute_group.attributes
-                            attributes.update(domain)  # Add domain to attributes.
+                            attributes.update(domain_dict)  # Add domain to attributes.
 
                             weight_group_id = get_greatest_unique_specificity(
                                 row_dict=attributes,
@@ -2651,7 +2671,10 @@ class TopoNode(object):
             if isinstance(sum_by_attrs, str):
                 sum_by_attrs = [sum_by_attrs]
             sum_by_attrs = set(sum_by_attrs)
-            sum_by_attrs = sum_by_attrs.union(domain)  # Domain always included.
+
+            # If domain is set, always include it.
+            if domain:
+                sum_by_attrs.add('domain')
 
             def filter_attrs(attrs):
                 return {k: v for k, v in attrs.items() if k in sum_by_attrs}
@@ -2683,13 +2706,12 @@ class TopoNode(object):
                 crosswalk_repo=self._dal.CrosswalkRepository(cursor),
             )
 
-        domain_str = '\n  '.join(info['domain_list'])
         crosswalks_str = '\n  '.join(info['crosswalks_list'])
 
         return (
             f"{super().__repr__()}\n"  # Use default repr as a first line.
             f"domain:\n"
-            f"  {domain_str}\n"
+            f"  {info['domain_str']}\n"
             f"index:\n"
             f"  {', '.join(info['index_list'])}\n"
             f"granularity:\n"

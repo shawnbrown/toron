@@ -72,23 +72,21 @@ def normalize_mapping_data(
     data: Iterator[Sequence],
     columns: Sequence[str],
     crosswalk_name: str,
-    left_domain: Dict[str, str],
-    right_domain: Dict[str, str],
+    left_domain: str,
+    right_domain: str,
 ) -> Tuple[Iterator[Sequence], Sequence]:
     """Validate domain and format *data* stream and *columns*."""
     value_pos = get_mapping_value_position(columns, crosswalk_name)
 
     domain_indexes: Dict[int, Tuple[str, str]] = {}
 
-    for key, val in left_domain.items():
-        if key in columns[:value_pos]:  # Search left-side only.
-            pos = columns[:value_pos].index(key)
-            domain_indexes[pos] = (key, val)
+    if left_domain and 'domain' in columns[:value_pos]:
+        pos = columns[:value_pos].index('domain')  # Slice to search left-side only.
+        domain_indexes[pos] = ('domain', left_domain)
 
-    for key, val in right_domain.items():
-        if key in columns[value_pos + 1:]:  # Search right-side only.
-            pos = columns.index(key, value_pos + 1)
-            domain_indexes[pos] = (key, val)
+    if right_domain and 'domain' in columns[value_pos + 1:]:
+        pos = columns.index('domain', value_pos + 1)  # Use `start` arg to search right-side only.
+        domain_indexes[pos] = ('domain', right_domain)
 
     def validate_and_parse(row):
         """Verify domain if given, return rows without domain items."""
@@ -432,11 +430,19 @@ def get_mapping(
     src_index_cols = tuple(source_node.index_columns)
     trg_index_cols = tuple(target_node.index_columns)
 
-    src_domain = source_node.domain
+    # Patch to use old `dict` logic for domain handling. This function
+    # will eventually be removed so there's no strong need to refactor.
+    if source_node.domain:
+        src_domain = {'domain': source_node.domain}
+    else:
+        src_domain = {}
     src_domain_keys = tuple(src_domain.keys())
     src_domain_vals = tuple(src_domain.values())
 
-    trg_domain = target_node.domain
+    if target_node.domain:
+        trg_domain = {'domain': target_node.domain}
+    else:
+        trg_domain = {}
     trg_domain_keys = tuple(trg_domain.keys())
     trg_domain_vals = tuple(trg_domain.values())
 
@@ -576,8 +582,12 @@ def get_weights(
         weight_repo = node._dal.WeightRepository(cur2)
 
         domain = get_domain(prop_repo)
-        domain_keys = list(domain.keys())
-        domain_vals = list(domain.values())
+        if domain:
+            domain_keys = ['domain']
+            domain_vals = [domain]
+        else:
+            domain_keys = []
+            domain_vals = []
 
         if weights is None:
             groups = group_repo.get_all()

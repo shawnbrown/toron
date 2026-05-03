@@ -22,7 +22,7 @@ class TestNew(unittest.TestCase):
 
             self.assertRegex(
                 '\n'.join(logs_cm.output),
-                (r"INFO:app-toron:domain defaulting to 'blerg'\n"  # <- Because domain was not specified.
+                (r"INFO:app-toron:domain set to 'blerg'\n"  # <- Because domain was not specified.
                  r"INFO:app-toron:created file: '.*blerg.toron'"),
             )
 

@@ -68,7 +68,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     """Print node index in CSV format to stdout stream."""
     node = args.node
 
-    domain_value = node.domain.get('domain', '')
+    domain_value = node.domain
     unique_id_bytes = uuid.UUID(node.unique_id).bytes
     pad_len = len(str(node.max_index_id))
 

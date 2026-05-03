@@ -535,11 +535,11 @@ class TestDomainMethods(unittest.TestCase):
             prop_repo = self.node._dal.PropertyRepository(cur)
 
             # Get domain when no value is set.
-            self.assertEqual(self.node.domain, {})
+            self.assertEqual(self.node.domain, '')
 
             # Get domain when a value does exist.
-            prop_repo.add('domain', {'foo': 'bar'})
-            self.assertEqual(self.node.domain, {'foo': 'bar'})
+            prop_repo.add('domain', 'foo')
+            self.assertEqual(self.node.domain, 'foo')
 
     def test_set_domain(self):
         # Set up initial node values for conflict checks.
@@ -557,22 +557,12 @@ class TestDomainMethods(unittest.TestCase):
             prop_repo = self.node._dal.PropertyRepository(cur)
 
             # Set domain when none exists.
-            self.node.set_domain({'foo': 'bar'})
-            self.assertEqual(prop_repo.get('domain'), {'foo': 'bar'})
+            self.node.set_domain('foo')
+            self.assertEqual(prop_repo.get('domain'), 'foo')
 
             # Set domain when a value already exists.
-            self.node.set_domain({'baz': 'qux'})  # <- Replace existing value.
-            self.assertEqual(prop_repo.get('domain'), {'baz': 'qux'})
-
-            # Check for name conflict with index columns.
-            regex = "cannot add domain, 'A' is already used as an index column"
-            with self.assertRaisesRegex(ValueError, regex):
-                self.node.set_domain({'A': '111'})
-
-            # Check for name conflict with attribute.
-            regex = "cannot add domain, 'corge' is already used as a quantity attribute"
-            with self.assertRaisesRegex(ValueError, regex):
-                self.node.set_domain({'corge': 'flurm'})
+            self.node.set_domain('baz')  # <- Replace existing value.
+            self.assertEqual(prop_repo.get('domain'), 'baz')
 
 
 class TestDiscreteCategoriesMethods(unittest.TestCase):
@@ -764,11 +754,11 @@ class TestIndexColumnMethods(unittest.TestCase):
         """An index column cannot be the same as a domain name."""
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            node._dal.PropertyRepository(cursor).add('domain', {'baz': '111', 'qux': '222'})
+            node._dal.PropertyRepository(cursor).add('domain', 'baz')
 
-        regex = "'baz' is used in the domain"
+        regex = "'domain' is a reserved name"
         with self.assertRaisesRegex(ToronError, regex):
-            node.add_index_columns('foo', 'bar', 'baz')
+            node.add_index_columns('foo', 'bar', 'domain')
 
         regex = "'value' is a reserved name"
         with self.assertRaisesRegex(ToronError, regex):
@@ -815,16 +805,13 @@ class TestIndexColumnMethods(unittest.TestCase):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
-        with node._managed_cursor() as cursor:
-            node._dal.PropertyRepository(cursor).add('domain', {'T': 'xxx'})
-
-        regex = "'T' is used in the domain"
+        regex = "'domain' is a reserved name"
         with self.assertRaisesRegex(ToronError, regex):
             if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
-                node.rename_index_columns({'B': 'G', 'D': 'T'})
+                node.rename_index_columns({'B': 'G', 'D': 'domain'})
             else:
                 import toron.dal1
-                toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
+                toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'domain'})
 
     def test_rename_index_columns_reserved_identifier(self):
         node = TopoNode()
@@ -4558,17 +4545,17 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
         )
 
     def test_insert_quantities_domain_included(self):
-        self.node.set_domain({'countryiso': 'US'})
+        self.node.set_domain('iso_US')
 
         self.node.insert_quantities(
             value='counts',
             attributes=['category', 'sex'],
             data=[
-                ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
-                ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
-                ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
-                ('US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
-                ('US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+                ('domain', 'state', 'county', 'category', 'sex', 'counts'),
+                ('iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                ('iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                ('iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+                ('iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
             ],
         )
 
@@ -4581,9 +4568,9 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
         )
 
     def test_insert_quantities_domain_missing(self):
-        self.node.set_domain({'countryiso': 'US'})
+        self.node.set_domain('iso_US')
 
-        regex = "invalid column names\n  missing required columns: 'countryiso'"
+        regex = "invalid column names\n  missing required columns: 'domain'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities(
                 value='counts',
@@ -4598,18 +4585,18 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
             )
 
     def test_insert_quantities_domain_listed_in_attributes(self):
-        self.node.set_domain({'countryiso': 'US'})
+        self.node.set_domain('iso_US')
 
         with self.assertLogs('app-toron', level='INFO') as cm:
             self.node.insert_quantities(
                 value='counts',
-                attributes=['category', 'sex', 'countryiso'],
+                attributes=['category', 'sex', 'domain'],
                 data=[
-                    ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
-                    ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
-                    ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
-                    ('US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
-                    ('US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
+                    ('domain', 'state', 'county', 'category', 'sex', 'counts'),
+                    ('iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                    ('iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                    ('iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
+                    ('iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
                 ],
             )
 
@@ -4628,16 +4615,16 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
         )
 
     def test_insert_quantities_domain_bad_values(self):
-        self.node.set_domain({'countryiso': 'US'})
+        self.node.set_domain('iso_US')
 
         with self.assertLogs('app-toron', level='INFO') as cm:
             self.node.insert_quantities(
                 value='counts',
                 attributes=['category', 'sex'],
                 data=[
-                    ('countryiso', 'state', 'county', 'category', 'sex', 'counts'),
-                    ('US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
-                    ('US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
+                    ('domain', 'state', 'county', 'category', 'sex', 'counts'),
+                    ('iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140),
+                    ('iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990),
                     ('', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499),
                     ('', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915),
                 ],
@@ -4645,9 +4632,9 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 2 quantities',
-             ("WARNING:app-toron.node:skipped 2 quantities with bad "
-              "domain values: countryiso must be 'US'")],
+            ["INFO:app-toron.node:loaded 2 quantities",
+             "WARNING:app-toron.node:skipped 2 quantities with bad domain " \
+               "values; domain must be 'iso_US'"],
         )
 
         self.assertEqual(
@@ -4694,13 +4681,13 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
         )
 
     def test_select_quantities(self):
-        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.set_domain('year2025')
         data = [
-            ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-            ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
-            ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
-            ['A', '2025', 'IN', '', 'TOTAL', None, 6924275],
-            ['A', '2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
+            ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['year2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+            ['year2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+            ['year2025', 'IN', '', 'TOTAL', None, 6924275],
+            ['year2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
         ]
         self.node.insert_quantities(
             value='quantity',
@@ -4713,39 +4700,39 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
         self.assertEqual(list(results), data, msg='should match original data')
 
     def test_select_quantities_without_index(self):
-        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.set_domain('year2025')
         self.node.insert_quantities(
             value='quantity',
             attributes=['category', 'sex'],
             data=[
-                ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
-                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
-                ['A', '2025', 'RI', '', 'TOTAL', None, 1112308],  # <- No matching index.
-                ['A', '2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
+                ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['year2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+                ['year2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+                ['year2025', 'RI', '', 'TOTAL', None, 1112308],  # <- No matching index.
+                ['year2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
             ],
         )
 
         results = self.node.select_quantities_without_index()  # <- Method under test.
 
         expected = [
-            ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-            ['A', '2025', 'RI', '', 'TOTAL', None, 1112308],
-            ['A', '2025', 'AL', '', 'TOTAL', None, 5024279],
+            ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['year2025', 'RI', '', 'TOTAL', None, 1112308],
+            ['year2025', 'AL', '', 'TOTAL', None, 5024279],
         ]
         self.assertEqual(list(results), expected)
 
     def test_delete_quantities_without_index(self):
-        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.set_domain('year2025')
         self.node.insert_quantities(
             value='quantity',
             attributes=['category', 'sex'],
             data=[
-                ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
-                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
-                ['A', '2025', 'RI', '', 'TOTAL', None, 1112308],  # <- No matching index.
-                ['A', '2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
+                ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['year2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+                ['year2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+                ['year2025', 'RI', '', 'TOTAL', None, 1112308],  # <- No matching index.
+                ['year2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
             ],
         )
 
@@ -4753,9 +4740,9 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
 
         results = self.node.select_quantities()
         expected = [
-            ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-            ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
-            ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+            ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['year2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+            ['year2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
         ]
         self.assertEqual(list(results), expected)
 
@@ -4774,44 +4761,44 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
 
     def test_select_unmatched_quantities(self):
         """Check quantities without matching index or structure."""
-        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.set_domain('year2025')
         self.node.add_discrete_categories({'state'})
         self.node.insert_quantities(
             value='quantity',
             attributes=['category', 'sex'],
             data=[
-                ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
-                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
-                ['A', '2025', 'OH', '', 'TOTAL', None, 1112308],
-                ['A', '2025', '',   'BUTLER', 'TOTAL', None, 52967],  # <- structure mismatch
-                ['A', '2025', 'AL', '', 'TOTAL', None, 233687],  # <- index mismatch
+                ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['year2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+                ['year2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+                ['year2025', 'OH', '', 'TOTAL', None, 1112308],
+                ['year2025', '',   'BUTLER', 'TOTAL', None, 52967],  # <- structure mismatch
+                ['year2025', 'AL', '', 'TOTAL', None, 233687],  # <- index mismatch
             ],
         )
 
         results = self.node.select_unmatched_quantities()  # <- Method under test.
 
         expected = [
-            ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-            ['A', '2025', '', 'BUTLER', 'TOTAL', None, 52967.0],
-            ['A', '2025', 'AL', '', 'TOTAL', None, 233687.0],
+            ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['year2025', '', 'BUTLER', 'TOTAL', None, 52967.0],
+            ['year2025', 'AL', '', 'TOTAL', None, 233687.0],
         ]
         self.assertEqual(list(results), expected)
 
     def test_delete_unmatched_quantities(self):
         """Check quantities without matching index or structure."""
-        self.node.set_domain({'group': 'A', 'year': '2025'})
+        self.node.set_domain('year2025')
         self.node.add_discrete_categories({'state'})
         self.node.insert_quantities(
             value='quantity',
             attributes=['category', 'sex'],
             data=[
-                ['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
-                ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
-                ['A', '2025', 'OH', '', 'TOTAL', None, 1112308],
-                ['A', '2025', '',   'BUTLER', 'SUBTOTAL', None, 52967],  # <- structure mismatch
-                ['A', '2025', 'AL', '', 'SUBTOTAL', None, 233687],  # <- index mismatch
+                ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['year2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+                ['year2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+                ['year2025', 'OH', '', 'TOTAL', None, 1112308],
+                ['year2025', '',   'BUTLER', 'SUBTOTAL', None, 52967],  # <- structure mismatch
+                ['year2025', 'AL', '', 'SUBTOTAL', None, 233687],  # <- index mismatch
             ],
         )
 
@@ -4819,10 +4806,10 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
 
         self.assertEqual(
             list(self.node.select_quantities()),
-            [['group', 'year', 'state', 'county', 'category', 'sex', 'quantity'],
-             ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140.0],
-             ['A', '2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990.0],
-             ['A', '2025', 'OH', '', 'TOTAL', None, 1112308.0]],
+            [['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+             ['year2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140.0],
+             ['year2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990.0],
+             ['year2025', 'OH', '', 'TOTAL', None, 1112308.0]],
             msg='quantities associated with mismatched structures or indexes should be removed',
         )
 
@@ -5137,6 +5124,24 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
              ('IN', 'LAPORTE',  'TOTAL', 110592.0)},
         )
 
+    def test_sum_by_attribute_with_domain(self):
+        """Test summing by specified attributes."""
+        self.node.set_domain('CENSUS')
+        node_reader = self.node(sum_by_attrs=['category'])  # <- Sum by 'category' attribute.
+
+        self.assertEqual(
+            node_reader.columns,
+            ['state', 'county', 'category', 'domain', 'value'],
+        )
+
+        self.assertEqual(
+            set(node_reader),
+            {('OH', 'BUTLER',   'TOTAL', 'CENSUS', 374587.5),
+             ('OH', 'FRANKLIN', 'TOTAL', 'CENSUS', 1337812.5),
+             ('IN', 'KNOX',     'TOTAL', 'CENSUS', 36864.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'CENSUS', 110592.0)},
+        )
+
     def test_attribute_selector(self):
         """Testing single selector."""
         quant_iter = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
@@ -5150,20 +5155,20 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
         )
 
     def test_domain_inclusion(self):
-        """Domain items should be included with attributes."""
-        self.node.set_domain({'country': 'USA'})
+        """When domain is set, it should be included with attributes."""
+        self.node.set_domain('CENSUS')
         reader = self.node('[sex="MALE"][category="TOTAL"]')  # <- Disaggregate.
 
         self.assertEqual(
             reader.columns,
-            ['state', 'county', 'category', 'country', 'sex', 'value'],
+            ['state', 'county', 'category', 'domain', 'sex', 'value'],
         )
         self.assertEqual(
             set(reader),
-            {('OH', 'BUTLER',   'TOTAL', 'USA', 'MALE', 187293.75),
-             ('OH', 'FRANKLIN', 'TOTAL', 'USA', 'MALE', 668906.25),
-             ('IN', 'KNOX',     'TOTAL', 'USA', 'MALE', 18432.0),
-             ('IN', 'LAPORTE',  'TOTAL', 'USA', 'MALE', 55296.0)},
+            {('OH', 'BUTLER',   'TOTAL', 'CENSUS', 'MALE', 187293.75),
+             ('OH', 'FRANKLIN', 'TOTAL', 'CENSUS', 'MALE', 668906.25),
+             ('IN', 'KNOX',     'TOTAL', 'CENSUS', 'MALE', 18432.0),
+             ('IN', 'LAPORTE',  'TOTAL', 'CENSUS', 'MALE', 55296.0)},
         )
 
     def test_multiple_attribute_selectors(self):
@@ -5269,12 +5274,11 @@ class TestTopoNodeRepr(unittest.TestCase):
 
     def test_domain(self):
         node = TopoNode()
-        node.set_domain({'foo': 'bar', 'baz': 'qux'})
+        node.set_domain('FooBar')
 
         expected = """
             domain:
-              baz: qux
-              foo: bar
+              FooBar
             index:
               None
             granularity:

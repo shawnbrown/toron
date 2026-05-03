@@ -74,7 +74,6 @@ def validate_new_index_columns(
     all_reserved_identifiers = \
         reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
     existing_columns = set(column_manager.get_columns())
-    domain_keys = set(get_domain(property_repo).keys())
     attribute_names = set(attribute_repo.get_all_attribute_names())
 
     for col in new_column_names:
@@ -86,11 +85,6 @@ def validate_new_index_columns(
         if col in existing_columns:
             raise ToronError(
                 f'index label column {col!r} already exists'
-            )
-
-        if col in domain_keys:
-            raise ToronError(
-                f'{col!r} is used in the domain'
             )
 
         if col in attribute_names:
@@ -798,43 +792,23 @@ def refresh_or_rebuild_structure_granularity(
 
 
 def set_domain(
-    domain: Dict[str, str],
+    domain: str,
     column_manager: BaseColumnManager,
     attribute_repo: BaseAttributeGroupRepository,
     property_repo: BasePropertyRepository,
 ) -> None:
     """Set the node's domain."""
-    # Check that domain does not conflict with index columns
-    # or attribute names.
-    columns = column_manager.get_columns()
-    attribute_names = attribute_repo.get_all_attribute_names()
-    for key in domain.keys():
-        if key in columns:
-            raise ValueError(
-                f'cannot add domain, {key!r} is already used as '
-                f'an index column'
-            )
-
-        if key in attribute_names:
-            raise ValueError(
-                f'cannot add domain, {key!r} is already used as '
-                f'a quantity attribute'
-            )
-
-    # Save domain value in the property repository.
-    property_repo.add_or_update(
-        'domain',
-        {check_type(k, str): check_type(v, str) for k, v in domain.items()},
-    )
+    check_type(domain, str)
+    property_repo.add_or_update('domain', domain)
 
 
-def get_domain(property_repo: BasePropertyRepository) -> Dict[str, str]:
+def get_domain(property_repo: BasePropertyRepository) -> str:
     """Return the node's domain."""
     try:
         domain = property_repo.get('domain')
-        return check_type(domain, dict)
+        return check_type(domain, str)
     except KeyError:
-        return {}
+        return ''
 
 
 def set_registered_attributes(
@@ -890,12 +864,10 @@ def get_node_info_text(
     crosswalk_repo: BaseCrosswalkRepository,
 ) -> Dict[str, Union[List[str], str]]:
     """Return dictionary of node information appropriate for repr."""
-    # Get list of domain items.
-    domain = get_domain(property_repo)
-    if domain:
-        domain_list = [f'{k}: {v}' for k, v in sorted(domain.items())]
-    else:
-        domain_list = ['None']
+    # Get domain string.
+    domain_str = get_domain(property_repo)
+    if not domain_str:
+        domain_str = 'None'
 
     # Get list of index column names.
     index_columns = column_manager.get_columns()
@@ -960,7 +932,7 @@ def get_node_info_text(
         crosswalks_list = ['None']
 
     return {
-        'domain_list': domain_list,
+        'domain_str': domain_str,
         'index_list': index_list,
         'granularity_str': granularity_str,
         'weights_list': weights_list,
