@@ -3,7 +3,8 @@ import sqlite3
 import unittest
 
 from toron.dal1.migrations import (
-    v020_to_v030,
+    v020_to_v030_relation_table,
+    v020_to_v030_properties,
     apply_migrations,
 )
 
@@ -167,8 +168,9 @@ class TestApplyMigrations(unittest.TestCase):
         self.cur.execute('PRAGMA foreign_keys=OFF')
         self.addCleanup(lambda: self.cur.execute('PRAGMA foreign_keys=ON'))
 
-    def test_v020_to_v030(self):
+    def test_v020_to_v030_relation(self):
         self.cur.executescript("""
+            /* Create old style (version 0.2.0) 'relation' table. */
             CREATE TABLE relation(
                 relation_id INTEGER PRIMARY KEY,
                 crosswalk_id INTEGER,
@@ -188,22 +190,9 @@ class TestApplyMigrations(unittest.TestCase):
             INSERT INTO main.relation VALUES(5, 1, 4, 2, X'C0', 60.0, 1.0);
             INSERT INTO main.relation VALUES(6, 1, 5, 3, X'C0', 30.0, 1.0);
             INSERT INTO main.relation VALUES(7, 1, 6, 3, X'80', 50.0, 1.0);
-
-            CREATE TABLE property(
-                key TEXT PRIMARY KEY NOT NULL,
-                value TEXT_JSON
-            );
-            INSERT INTO "property" VALUES('toron_schema_version','"0.2.0"');
-            INSERT INTO "property" VALUES('domain','{"domain": "foo_bar"}');
         """)
 
-        v020_to_v030(self.cur, whole_space_level=b'\xe0')  # <- Function under test.
-
-        self.cur.execute("SELECT value from property where key='toron_schema_version'")
-        self.assertEqual(self.cur.fetchone()[0], '"0.3.0"')
-
-        self.cur.execute("SELECT value from property where key='domain'")
-        self.assertEqual(self.cur.fetchone()[0], '"foo_bar"')
+        v020_to_v030_relation_table(self.cur, whole_space_level=b'\xe0')  # <- Function under test.
 
         self.cur.execute('SELECT * FROM relation')
         self.assertEqual(
@@ -217,6 +206,24 @@ class TestApplyMigrations(unittest.TestCase):
                 (7, 1, 6, 3, b'\x80', 50.0, 1.0),
             },
         )
+
+    def test_v020_to_v030_properties(self):
+        self.cur.executescript("""
+            CREATE TABLE property(
+                key TEXT PRIMARY KEY NOT NULL,
+                value TEXT_JSON
+            );
+            INSERT INTO "property" VALUES('toron_schema_version', '"0.2.0"');
+            INSERT INTO "property" VALUES('domain', '{"domain": "foo_bar"}');
+        """)
+
+        v020_to_v030_properties(self.cur)  # <- Function under test.
+
+        self.cur.execute("SELECT value from property where key='toron_schema_version'")
+        self.assertEqual(self.cur.fetchone()[0], '"0.3.0"')
+
+        self.cur.execute("SELECT value from property where key='domain'")
+        self.assertEqual(self.cur.fetchone()[0], '"foo_bar"')
 
     def test_apply_migrations(self):
         self.cur.executescript(FULL_NODE_SCHEMA_V_020)

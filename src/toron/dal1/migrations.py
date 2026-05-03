@@ -9,8 +9,10 @@ from . import schema
 from toron._utils import BitFlags
 
 
-def v020_to_v030(cursor: sqlite3.Cursor, whole_space_level: bytes) -> None:
-    """Upgrade schema 0.2.0 to 0.3.0 (update 'relation' table)."""
+def v020_to_v030_relation_table(
+    cursor: sqlite3.Cursor, whole_space_level: bytes
+) -> None:
+    """Update 'relation' constraints for 0.2.0 to 0.3.0 migration."""
     # Create new 'relation' table with updated constraints.
     cursor.execute("""
         CREATE TABLE main.new_relation(
@@ -48,6 +50,9 @@ def v020_to_v030(cursor: sqlite3.Cursor, whole_space_level: bytes) -> None:
     cursor.execute('DROP TABLE main.relation')
     cursor.execute('ALTER TABLE main.new_relation RENAME TO relation')
 
+
+def v020_to_v030_properties(cursor: sqlite3.Cursor) -> None:
+    """Update 'property' values for 0.2.0 to 0.3.0 migration."""
     # Update domain (change `dict` to `str`).
     cursor.execute("SELECT value FROM main.property WHERE key='domain'")
     domain_result = cursor.fetchone()
@@ -123,7 +128,8 @@ def apply_migrations(
 
         # Apply migrations.
         if toron_schema_version in {'0.2.0', '"0.2.0"'}:
-            v020_to_v030(cursor, whole_space_level)
+            v020_to_v030_relation_table(cursor, whole_space_level)
+            v020_to_v030_properties(cursor)
 
         # Check integrity, re-create constraints, and commit transaction.
         schema.verify_foreign_key_check(cursor)
