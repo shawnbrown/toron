@@ -241,7 +241,7 @@ class TestBuildUsingCLI(unittest.TestCase):
 
         self.node1 = TopoNode()
         self.node1._connector._unique_id = '11111111-1111-1111-1111-111111111111'
-        cli.command_add.add_labels(argparse.Namespace(
+        cli.command_add.add_label(argparse.Namespace(
             command='add',
             element='label',
             node=self.node1,
@@ -294,7 +294,7 @@ class TestBuildUsingCLI(unittest.TestCase):
 
         self.node2 = TopoNode()
         self.node2._connector._unique_id = '22222222-2222-2222-2222-222222222222'
-        cli.command_add.add_labels(argparse.Namespace(
+        cli.command_add.add_label(argparse.Namespace(
             command='add',
             element='label',
             node=self.node2,
