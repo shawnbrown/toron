@@ -4382,7 +4382,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             Relation(7, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
         ]
         self.assertEqual(self.get_relations_helper(), expected)
-        # * Note regarding relation 3: This relation maps a portion of
+        # * Note regarding relation 2: This relation maps a portion of
         #   other_index_id 1 to index_id 2. The labels associated with
         #   index_id 2 are `bar, y`. And even though `reify_relations()`
         #   is selecting records using A='bar' (which matches the first
