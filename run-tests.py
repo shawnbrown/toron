@@ -18,11 +18,11 @@ args = [
 args.extend(sys.argv[1:] or ['discover', '-s', 'tests', '-t', '.'])
 
 # Get working directory for subprocess.
-cwd = os.path.dirname(__file__) or '.'
+cwd = os.path.dirname(os.path.realpath(__file__)) or '.'
 
 # Make package importable from 'src' directory.
 env = os.environ.copy()
-env['PYTHONPATH'] = 'src'
+env['PYTHONPATH'] = os.path.join(cwd, 'src')
 
 # Run tests in subprocess.
-sys.exit(subprocess.call(args=args, cwd=cwd, env=env))
+sys.exit(subprocess.run(args, cwd=cwd, env=env).returncode)
