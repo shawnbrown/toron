@@ -2222,6 +2222,84 @@ class TopoNode(object):
 
         warn_if_issues(counter, expected='reified')
 
+    def insert_quantities2(
+        self,
+        *,
+        value_column: str,
+        data: Union[Iterable[Sequence], Iterable[Dict]],
+        columns: Optional[Sequence[str]] = None,
+    ) -> None:
+        """Load quantity and attribute values."""
+        data, columns = normalize_tabular(data, columns)
+
+        counter: Counter[str] = Counter()
+
+        with self._managed_transaction() as cur:
+            property_repo = self._dal.PropertyRepository(cur)
+            location_repo = self._dal.LocationRepository(cur)
+            attribute_repo = self._dal.AttributeGroupRepository(cur)
+            quantity_repo = self._dal.QuantityRepository(cur)
+
+            label_names = location_repo.get_label_names()
+
+            registered_attributes = self.get_registered_attributes()
+            if not registered_attributes:
+                raise ToronError('operation cancelled, no attributes registered')
+
+            attributes_to_load = [x for x in registered_attributes if x in columns]
+
+            verify_columns_set(
+                columns=columns,
+                required_columns=chain(label_names, attributes_to_load, [value_column]),
+                allow_extras=True,
+            )
+
+            domain = self.domain  # Assign locally to reduce dot-lookups.
+
+            for row in data:
+                row_dict = dict(zip(columns, row))
+
+                # If 'domain' is given, it must match `node.domain`.
+                if 'domain' in row_dict and row_dict['domain'] != domain:
+                    counter['bad_domain'] += 1
+                    continue  # Skip to next record.
+
+                # Parse row into separate label and attribute dictionaries.
+                labels_dict = {k: row_dict[k] for k in label_names}
+                attr_dict = {k: row_dict[k] for k in attributes_to_load if row_dict[k]}
+
+                # Skip record if it has no attribute values.
+                if not attr_dict:
+                    counter['no_attrs'] += 1
+                    continue
+
+                # Get `location` and `attribute_group` instances.
+                location = location_repo.get_by_labels_add_if_missing(labels_dict)
+                attribute_group = attribute_repo.get_by_value_add_if_missing(attr_dict)
+
+                # Add quantity.
+                quantity_repo.add(
+                    location_id=location.id,
+                    attribute_group_id=attribute_group.id,
+                    value=row_dict[value_column],
+                )
+                counter['inserted'] += 1
+
+        if counter['bad_domain']:
+            applogger.warning(
+                f"skipped {counter['bad_domain']} quantities with "
+                f"bad domain values; requires domain {domain!r}"
+            )
+        if counter['no_attrs']:
+            applogger.info(
+                f"skipped {counter['no_attrs']} quantities with no "
+                f"attribute values"
+            )
+        if counter['inserted']:
+            applogger.info(f"loaded {counter['inserted']} quantities")
+        else:
+            applogger.warning('no quantities loaded')
+
     def insert_quantities(
         self,
         *,

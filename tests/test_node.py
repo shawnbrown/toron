@@ -4394,6 +4394,288 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         #   match based on definitive associations.
 
 
+class TestTopoNodeInsertQuantities2(unittest.TestCase):
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            manager = node._dal.ColumnManager(cursor)
+            manager.add_columns(*columns)
+
+    @staticmethod
+    def add_index_helper(node, data):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            repository = node._dal.IndexRepository(cursor)
+            for row in data:
+                repository.add(*row)
+
+    def setUp(self):
+        self.node = TopoNode()
+        self.add_cols_helper(self.node, 'state', 'county')
+        self.add_index_helper(self.node, [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')])
+        self.node.set_domain('iso_US')
+        self.node.set_registered_attributes(['category', 'sex'])
+
+    def assertLocationsEqual(self, values):
+        """Test that *values* are equal to self.node locations."""
+        with self.node._managed_cursor() as cursor:
+            repository = self.node._dal.LocationRepository(cursor)
+            location = sorted(repository.find_all(), key=lambda x: x.id)
+        self.assertEqual(location, values)
+
+    def assertAttributesEqual(self, values):
+        """Test that *values* are equal to self.node attributes."""
+        with self.node._managed_cursor() as cursor:
+            repository = self.node._dal.AttributeGroupRepository(cursor)
+            attributes = sorted(repository.find_all(), key=lambda x: x.id)
+        self.assertEqual(attributes, values)
+
+    def assertQuantitiesEqual(self, values):
+        """Test that *values* are equal to self.node quantities."""
+        with self.node._managed_cursor(n=2) as (cur1, cur2):
+            location_repo = self.node._dal.LocationRepository(cur1)
+            quantity_repo = self.node._dal.QuantityRepository(cur2)
+            quantities = []
+            for location in location_repo.find_all():
+                quantity = quantity_repo.find(location_id=location.id)
+                quantities.extend(quantity)
+            quantities = sorted(quantities, key=lambda x: x.id)
+        self.assertEqual(quantities, values)
+
+    def test_insert_with_domain(self):
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('domain', 'state', 'county',   'category', 'sex',    'counts'),
+                    ('iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499),
+                    ('iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),
+                ],
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:loaded 4 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+            Location(2, 'OH', 'FRANKLIN'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 1, 2, 187990),
+            Quantity(3, 2, 1, 566499),
+            Quantity(4, 2, 2, 596915),
+        ])
+
+    def test_insert_without_domain(self):
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county',   'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499),
+                    ('OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),
+                ],
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:loaded 4 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+            Location(2, 'OH', 'FRANKLIN'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 1, 2, 187990),
+            Quantity(3, 2, 1, 566499),
+            Quantity(4, 2, 2, 596915),
+        ])
+
+    def test_bad_domain_values(self):
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('domain', 'state', 'county',   'category', 'sex',   'counts'),
+                    ('iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('',       'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499),  # <- Invalid domain.
+                    ('census', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),  # <- Invalid domain.
+                ],
+            )
+
+        self.assertEqual(
+            cm.output,
+            ["WARNING:app-toron.node:skipped 2 quantities with bad domain "
+               "values; requires domain 'iso_US'",
+             "INFO:app-toron.node:loaded 2 quantities"],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 1, 2, 187990),
+        ])
+
+    def test_some_records_missing_some_attributes(self):
+        """Attribute keys with empty values should be omitted."""
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county',   'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('OH',    'FRANKLIN', '',         'MALE',   566499),  # <- 'category' value is empty string!
+                    ('OH',    'FRANKLIN', '',         'FEMALE', 596915),  # <- 'category' value is empty string!
+                ],
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:loaded 4 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+            Location(2, 'OH', 'FRANKLIN'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+            AttributeGroup(3, {'sex': 'MALE'}),    # <- should not have 'category'
+            AttributeGroup(4, {'sex': 'FEMALE'}),  # <- should not have 'category'
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 1, 2, 187990),
+            Quantity(3, 2, 3, 566499),
+            Quantity(4, 2, 4, 596915),
+        ])
+
+    def test_some_records_missing_all_attributes(self):
+        """When rows are missing all attribute values they should be
+        omitted entirely.
+        """
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county',   'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('OH',    'FRANKLIN', '',         '',       566499),  # <- all attr values are empty string!
+                    ('OH',    'FRANKLIN', '',         '',       596915),  # <- all attr values are empty string!
+                ],
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:skipped 2 quantities with no attribute values',
+             'INFO:app-toron.node:loaded 2 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 1, 2, 187990),
+        ])
+
+    def test_registered_attributes_different_from_input(self):
+        """Should only load registered attribute columns."""
+        # Change registered attributes to 'category' only (removes 'sex').
+        self.node.set_registered_attributes(['category'])
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county',   'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499),
+                    ('OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),
+                ],
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:loaded 4 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+            Location(2, 'OH', 'FRANKLIN'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 1, 1, 187990),
+            Quantity(3, 2, 1, 566499),
+            Quantity(4, 2, 1, 596915),
+        ])
+
+    def test_no_registered_attributes(self):
+        """Should raise an error when no attributes have been registered."""
+        # Change registered attributes to 'category' only (removes 'sex').
+        self.node.set_registered_attributes([])
+
+        regex = 'operation cancelled, no attributes registered'
+        with self.assertRaisesRegex(ToronError, regex):
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county',   'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499),
+                    ('OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),
+                ],
+            )
+
+
 class TestTopoNodeInsertQuantities(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
