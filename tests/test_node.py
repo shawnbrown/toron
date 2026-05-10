@@ -5503,15 +5503,28 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
     def test_logging_messages(self):
         """Should log weight names and matched attribute groups."""
         with self.assertLogs('app-toron', level='DEBUG') as cm:
-            quant_iter = self.node()  # <- Disaggregate (should log info).
+            self.node()  # <- Disaggregate (should log info).
 
-        self.assertEqual(
-            cm.output,
-            ["INFO:app-toron.node:using weights: 'totpop'",
-             ("DEBUG:app-toron.node:attribute matches:\n"
-              "{'totpop': [{'category': 'TOTAL', 'sex': 'MALE'},\n"
-              "            {'category': 'TOTAL', 'sex': 'FEMALE'}]}")]
-        )
+        # Testing with regex because Python 3.15.0b1 changed the default values
+        # for the `pprint.pformat()` function's `indent` and `width` arguments
+        # and the output now includes line breaks where none previously existed.
+        regex_list = [
+            re.compile(r"INFO:app-toron.node:using weights: 'totpop'"),
+
+            re.compile(r"""
+                DEBUG:app-toron.node:attribute\ matches:\s+
+                \{\s*
+                    'totpop':\ \[\s*
+                        \{'category':\ 'TOTAL',\ 'sex':\ 'MALE'\},\s*
+                        \{'category':\ 'TOTAL',\ 'sex':\ 'FEMALE'\}\s*
+                    \]\s*
+                \}
+            """, re.VERBOSE)
+        ]
+
+        for text, regex in zip(cm.output, regex_list):
+            with self.subTest(regex=regex):
+                self.assertRegex(text, regex)
 
 
 class TestTopoNodeRepr(unittest.TestCase):
