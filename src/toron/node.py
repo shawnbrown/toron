@@ -2734,7 +2734,9 @@ class TopoNode(object):
                     matches_dict[weight_group.name].append(attrs)
 
             applogger.info(f"using weights: {', '.join(repr(x) for x in matches_dict)}")
-            applogger.debug(f'attribute matches:\n{pformat(dict(matches_dict))}')
+
+            formatted = pformat(dict(matches_dict), indent=1, width=80)
+            applogger.debug(f'attribute matches:\n{formatted}')
 
             # TODO: Once adaptive disaggregation has been reimplemented,
             # investigate the idea of using `matches` to build a dict
