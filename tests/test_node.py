@@ -5517,7 +5517,7 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
                     'totpop':\ \[\s*
                         \{'category':\ 'TOTAL',\ 'sex':\ 'MALE'\},\s*
                         \{'category':\ 'TOTAL',\ 'sex':\ 'FEMALE'\}\s*
-                    \]\s*
+                    \],?\s*
                 \}
             """, re.VERBOSE)
         ]
