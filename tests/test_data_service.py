@@ -374,8 +374,7 @@ class TestGetQuantityValueSum(unittest.TestCase):
         quantity_repo = dal.QuantityRepository(cursor)
         quantity_repo.add(location_id=1, attribute_group_id=1, value=20.0)  # Add quantity_id 1
         quantity_repo.add(location_id=1, attribute_group_id=2, value=0.0)   # Add quantity_id 2
-        quantity_repo.add(location_id=2, attribute_group_id=2, value=10.0)  # Add quantity_id 3
-        quantity_repo.add(location_id=2, attribute_group_id=2, value=35.0)  # Add quantity_id 4
+        quantity_repo.add(location_id=2, attribute_group_id=2, value=45.0)  # Add quantity_id 3
 
         self.quantity_repo = quantity_repo
 

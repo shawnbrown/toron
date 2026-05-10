@@ -1078,6 +1078,28 @@ class QuantityRepositoryBaseTest(ABC):
         """Must inherit from appropriate abstract base class."""
         self.assertTrue(isinstance(self.repository, BaseQuantityRepository))
 
+    def test_add_and_get(self):
+        self.repository.add(location_id=1, attribute_group_id=1, value=10.5)  # Add quantity_id 1
+
+        self.assertEqual(
+            self.repository.get(1),
+            Quantity(id=1, location_id=1, attribute_group_id=1, value=10.5),
+        )
+
+    def test_unique_location_and_attributes(self):
+        """Verify that the QuantityRepository enforces uniqueness for
+        combinations of ``location_id`` and ``attribute_group_id``.
+
+        Adding a second record with the same values should raise an
+        exception.
+        """
+        self.repository.add(location_id=1, attribute_group_id=1, value=10.0)
+
+        msg = ('should raise an exception because a Quantity with '
+               'location_id=1, attribute_group_id=1 already exists.')
+        with self.assertRaises(Exception, msg=msg):
+            self.repository.add(location_id=1, attribute_group_id=1, value=20.0)
+
     def test_get_value_type(self):
         """The type of ``Quantity.value`` objects should be ``float``
         regardless of input or storage type.
@@ -1094,8 +1116,7 @@ class QuantityRepositoryBaseTest(ABC):
         self.repository.add(location_id=1, attribute_group_id=1, value=15.0)  # Add quantity_id 1
         self.repository.add(location_id=2, attribute_group_id=1, value=20.0)  # Add quantity_id 2
         self.repository.add(location_id=1, attribute_group_id=2, value=25.0)  # Add quantity_id 3
-        self.repository.add(location_id=2, attribute_group_id=2, value=10.0)  # Add quantity_id 4
-        self.repository.add(location_id=2, attribute_group_id=2, value=35.0)  # Add quantity_id 5
+        self.repository.add(location_id=2, attribute_group_id=2, value=45.0)  # Add quantity_id 4
 
         result = list(self.repository.find(location_id=1, attribute_group_id=2))
         self.assertEqual(
@@ -1113,17 +1134,10 @@ class QuantityRepositoryBaseTest(ABC):
         )
 
         self.assertEqual(
-            list(self.repository.find(attribute_group_id=1)),
-            [Quantity(id=1, location_id=1, attribute_group_id=1, value=15.0),
-             Quantity(id=2, location_id=2, attribute_group_id=1, value=20.0)],
-            msg='matches attribute_group_id 1',
-        )
-
-        self.assertEqual(
-            list(self.repository.find(location_id=2, attribute_group_id=2)),
-            [Quantity(id=4, location_id=2, attribute_group_id=2, value=10.0),
-             Quantity(id=5, location_id=2, attribute_group_id=2, value=35.0)],
-            msg='matches location_id 2 and attribute_group_id 2 (two matching records)',
+            list(self.repository.find(attribute_group_id=2)),
+            [Quantity(id=3, location_id=1, attribute_group_id=2, value=25.0),
+             Quantity(id=4, location_id=2, attribute_group_id=2, value=45.0)],
+            msg='matches attribute_group_id 2',
         )
 
         self.assertEqual(
@@ -1175,10 +1189,9 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
         self.repository.add(location_id=3, attribute_group_id=1, value=5.0)   # Add quantity_id 3
         self.repository.add(location_id=4, attribute_group_id=1, value=2.0)   # Add quantity_id 4
         self.repository.add(location_id=1, attribute_group_id=2, value=25.0)  # Add quantity_id 5
-        self.repository.add(location_id=2, attribute_group_id=2, value=10.0)  # Add quantity_id 6
-        self.repository.add(location_id=2, attribute_group_id=2, value=35.0)  # Add quantity_id 7
-        self.repository.add(location_id=3, attribute_group_id=3, value=3.0)   # Add quantity_id 8
-        self.repository.add(location_id=4, attribute_group_id=3, value=7.0)   # Add quantity_id 9
+        self.repository.add(location_id=2, attribute_group_id=2, value=45.0)  # Add quantity_id 6
+        self.repository.add(location_id=3, attribute_group_id=3, value=3.0)   # Add quantity_id 7
+        self.repository.add(location_id=4, attribute_group_id=3, value=7.0)   # Add quantity_id 8
 
     def test_attribute_id_single(self):
         result = self.repository.find_by_structure(
@@ -1200,7 +1213,7 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
         self.assertEqual(
             list(result),
             [Quantity(id=4, location_id=4, attribute_group_id=1, value=2.0),
-             Quantity(id=9, location_id=4, attribute_group_id=3, value=7.0)],
+             Quantity(id=8, location_id=4, attribute_group_id=3, value=7.0)],
             msg='should match attribute_group_id 1 and 3 where column B is defined',
         )
 
@@ -1220,7 +1233,7 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
         self.assertEqual(
             list(result),
             [Quantity(id=4, location_id=4, attribute_group_id=1, value=2.0),
-             Quantity(id=9, location_id=4, attribute_group_id=3, value=7.0)],
+             Quantity(id=8, location_id=4, attribute_group_id=3, value=7.0)],
             msg='should work with any sequence and match where column B is defined',
         )
 
@@ -1256,8 +1269,7 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
             [Quantity(id=1, location_id=1, attribute_group_id=1, value=15.0),
              Quantity(id=5, location_id=1, attribute_group_id=2, value=25.0),
              Quantity(id=2, location_id=2, attribute_group_id=1, value=20.0),
-             Quantity(id=6, location_id=2, attribute_group_id=2, value=10.0),
-             Quantity(id=7, location_id=2, attribute_group_id=2, value=35.0)],
+             Quantity(id=6, location_id=2, attribute_group_id=2, value=45.0)],
             msg='should match records that have "A" and "B" location values',
         )
 
@@ -1268,7 +1280,7 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
         self.assertEqual(
             list(result),
             [Quantity(id=3, location_id=3, attribute_group_id=1, value=5.0),
-             Quantity(id=8, location_id=3, attribute_group_id=3, value=3.0)],
+             Quantity(id=7, location_id=3, attribute_group_id=3, value=3.0)],
             msg='should match records that have only "A" location values',
         )
 
@@ -1279,7 +1291,7 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
         self.assertEqual(
             list(result),
             [Quantity(id=4, location_id=4, attribute_group_id=1, value=2.0),
-             Quantity(id=9, location_id=4, attribute_group_id=3, value=7.0)],
+             Quantity(id=8, location_id=4, attribute_group_id=3, value=7.0)],
             msg='should match records that have only "B" location values',
         )
 
