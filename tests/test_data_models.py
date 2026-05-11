@@ -1086,6 +1086,19 @@ class QuantityRepositoryBaseTest(ABC):
             Quantity(id=1, location_id=1, attribute_group_id=1, value=10.5),
         )
 
+    def test_get_by_location_id_and_attribute_group_id(self):
+        self.repository.add(location_id=1, attribute_group_id=2, value=15.0)
+
+        result = self.repository.get_by_location_id_and_attribute_group_id(1, 2)
+        self.assertEqual(
+            result,
+            Quantity(id=1, location_id=1, attribute_group_id=2, value=15.0),
+        )
+
+        regex = 'no quantity with location_id of 1 and attribute_group_id of 9'
+        with self.assertRaisesRegex(KeyError, regex):
+            self.repository.get_by_location_id_and_attribute_group_id(1, 9),
+
     def test_unique_location_and_attributes(self):
         """Verify that the QuantityRepository enforces uniqueness for
         combinations of ``location_id`` and ``attribute_group_id``.

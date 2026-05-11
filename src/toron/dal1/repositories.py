@@ -685,6 +685,25 @@ class QuantityRepository(BaseQuantityRepository):
             'DELETE FROM main.quantity WHERE quantity_id=?', (id,)
         )
 
+    def get_by_location_id_and_attribute_group_id(
+        self, location_id: int, attribute_group_id: int
+    ) -> Quantity:
+        """Get record by matching *location_id* and *attribute_group_id*.
+
+        If no quantity matches the given ids, a ``KeyError`` is raised.
+        """
+        sql = """
+            SELECT quantity_id, quantity_value FROM main.quantity
+            WHERE _location_id=? AND attribute_group_id=?
+        """
+        self._cursor.execute(sql, (location_id, attribute_group_id))
+        quantity = self._cursor.fetchone()
+        if quantity is None:
+            raise KeyError(f'no quantity with location_id of {location_id} '
+                           f'and attribute_group_id of {attribute_group_id}')
+        quant_id, quant_val = quantity
+        return Quantity(quant_id, location_id, attribute_group_id, float(quant_val))
+
     def find(
         self,
         *,

@@ -899,6 +899,15 @@ class BaseQuantityRepository(ABC):
         """Delete a record from the repository."""
 
     @abstractmethod
+    def get_by_location_id_and_attribute_group_id(
+        self, location_id: int, attribute_group_id: int
+    ) -> Quantity:
+       """Get record by matching *location_id* and *attribute_group_id*.
+
+        If no quantity matches the given ids, a ``KeyError`` is raised.
+        """
+
+    @abstractmethod
     def find(
         self,
         *,
