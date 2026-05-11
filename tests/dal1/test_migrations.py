@@ -4,6 +4,7 @@ import unittest
 
 from toron.dal1.migrations import (
     v020_to_v030_relation_table,
+    v020_to_v030_quantity_table,
     v020_to_v030_properties,
     apply_migrations,
 )
@@ -29,6 +30,9 @@ FULL_NODE_SCHEMA_V_020 = """
         "label_b" TEXT NOT NULL DEFAULT '',
         "label_c" TEXT NOT NULL DEFAULT ''
     );
+    INSERT INTO "location" VALUES(1, '1A', '1B', '1C');
+    INSERT INTO "location" VALUES(2, '2A', '2B', '2C');
+    INSERT INTO "location" VALUES(3, '3A', '3B', '3C');
 
     CREATE TABLE structure(
         _structure_id INTEGER PRIMARY KEY,
@@ -68,6 +72,8 @@ FULL_NODE_SCHEMA_V_020 = """
         attributes TEXT_ATTRIBUTES NOT NULL,
         UNIQUE (attributes)
     );
+    INSERT INTO "attribute_group" VALUES(1, '{"category": "one"}');
+    INSERT INTO "attribute_group" VALUES(2, '{"category": "two"}');
 
     CREATE TABLE quantity(
         quantity_id INTEGER PRIMARY KEY,
@@ -77,6 +83,11 @@ FULL_NODE_SCHEMA_V_020 = """
         FOREIGN KEY(_location_id) REFERENCES location(_location_id) ON DELETE CASCADE,
         FOREIGN KEY(attribute_group_id) REFERENCES attribute_group(attribute_group_id) ON DELETE CASCADE
     );
+    INSERT INTO "quantity" VALUES(1, 1, 1, 15);
+    INSERT INTO "quantity" VALUES(2, 2, 1, 10);  /* <- Same location and attrs as quantity_id 4 */
+    INSERT INTO "quantity" VALUES(3, 3, 2, 20);
+    INSERT INTO "quantity" VALUES(4, 2, 1, 35);  /* <- Same location and attrs as quantity_id 2 */
+    INSERT INTO "quantity" VALUES(5, 1, 2, 10);
 
     CREATE TABLE crosswalk(
         crosswalk_id INTEGER PRIMARY KEY,
@@ -207,6 +218,38 @@ class TestApplyMigrations(unittest.TestCase):
             },
         )
 
+    def test_v020_to_v030_relation(self):
+        self.cur.executescript("""
+            /* Create old style (version 0.2.0) 'quantity' table. */
+            CREATE TABLE quantity(
+                quantity_id INTEGER PRIMARY KEY,
+                _location_id INTEGER,
+                attribute_group_id INTEGER,
+                quantity_value NUMERIC NOT NULL,
+                FOREIGN KEY(_location_id) REFERENCES location(_location_id) ON DELETE CASCADE,
+                FOREIGN KEY(attribute_group_id) REFERENCES attribute_group(attribute_group_id) ON DELETE CASCADE
+            );
+            INSERT INTO "quantity" VALUES(1, 1, 1, 15);
+            INSERT INTO "quantity" VALUES(2, 2, 1, 10);  /* <- Same location and attrs as quantity_id 4 */
+            INSERT INTO "quantity" VALUES(3, 3, 2, 20);
+            INSERT INTO "quantity" VALUES(4, 2, 1, 35);  /* <- Same location and attrs as quantity_id 2 */
+            INSERT INTO "quantity" VALUES(5, 1, 2, 10);
+        """)
+
+        v020_to_v030_quantity_table(self.cur)  # <- Function under test.
+
+        self.cur.execute('SELECT * FROM quantity')
+        self.assertEqual(
+            set(self.cur.fetchall()),
+            {
+                (1, 1, 1, 15),
+                (2, 2, 1, 45),  # <- Summed value from old 2 and old 4 (10 + 35).
+                (3, 3, 2, 20),
+                                # <- Quantity with `id=4` no longer exists.
+                (5, 1, 2, 10),
+            },
+        )
+
     def test_v020_to_v030_properties(self):
         self.cur.executescript("""
             CREATE TABLE property(
@@ -246,5 +289,17 @@ class TestApplyMigrations(unittest.TestCase):
                 (5, 1, 4, 2, b'\xc0', 60.0, 1.0),
                 (6, 1, 5, 3, b'\xc0', 30.0, 1.0),
                 (7, 1, 6, 3, b'\x80', 50.0, 1.0),
+            },
+        )
+
+        self.cur.execute('SELECT * FROM quantity')
+        self.assertEqual(
+            set(self.cur.fetchall()),
+            {
+                (1, 1, 1, 15),
+                (2, 2, 1, 45),  # <- Summed value from old 2 and old 4 (10 + 35).
+                (3, 3, 2, 20),
+                                # <- Quantity with `id=4` no longer exists.
+                (5, 1, 2, 10),
             },
         )

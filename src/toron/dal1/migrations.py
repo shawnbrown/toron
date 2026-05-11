@@ -51,6 +51,39 @@ def v020_to_v030_relation_table(
     cursor.execute('ALTER TABLE main.new_relation RENAME TO relation')
 
 
+def v020_to_v030_quantity_table(cursor: sqlite3.Cursor) -> None:
+    """Update 'quantity' table and values for 0.2.0 to 0.3.0 migration."""
+    # Create new 'quantity' table with a UNIQUE constraint.
+    cursor.execute("""
+        CREATE TABLE main.new_quantity(
+            quantity_id INTEGER PRIMARY KEY,
+            _location_id INTEGER,
+            attribute_group_id INTEGER,
+            quantity_value NUMERIC NOT NULL,
+            FOREIGN KEY(_location_id) REFERENCES location(_location_id) ON DELETE CASCADE,
+            FOREIGN KEY(attribute_group_id) REFERENCES attribute_group(attribute_group_id) ON DELETE CASCADE,
+            UNIQUE (_location_id, attribute_group_id)
+        );
+    """)
+
+    # Transfer contents into new 'quantity' table making sure to sum the
+    # values for records that share the same location and attribute group.
+    cursor.execute("""
+        INSERT INTO main.new_quantity
+        SELECT
+            MIN(quantity_id),
+            _location_id,
+            attribute_group_id,
+            SUM(quantity_value)
+        FROM main.quantity
+        GROUP BY _location_id, attribute_group_id
+    """)
+
+    # Drop old 'quantity' table and rename new table.
+    cursor.execute('DROP TABLE main.quantity')
+    cursor.execute('ALTER TABLE main.new_quantity RENAME TO quantity')
+
+
 def v020_to_v030_properties(cursor: sqlite3.Cursor) -> None:
     """Update 'property' values for 0.2.0 to 0.3.0 migration."""
     # Update domain (change `dict` to `str`).
@@ -129,6 +162,7 @@ def apply_migrations(
         # Apply migrations.
         if toron_schema_version in {'0.2.0', '"0.2.0"'}:
             v020_to_v030_relation_table(cursor, whole_space_level)
+            v020_to_v030_quantity_table(cursor)
             v020_to_v030_properties(cursor)
 
         # Check integrity, re-create constraints, and commit transaction.
