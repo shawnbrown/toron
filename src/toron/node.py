@@ -2228,6 +2228,7 @@ class TopoNode(object):
         value_column: str,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
+        on_existing: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
     ) -> None:
         """Load quantity and attribute values."""
         data, columns = normalize_tabular(data, columns)
@@ -2277,24 +2278,76 @@ class TopoNode(object):
                 location = location_repo.get_by_labels_add_if_missing(labels_dict)
                 attribute_group = attribute_repo.get_by_value_add_if_missing(attr_dict)
 
-                # Add quantity.
-                quantity_repo.add(
-                    location_id=location.id,
-                    attribute_group_id=attribute_group.id,
-                    value=row_dict[value_column],
-                )
-                counter['inserted'] += 1
+                try:
+                    # Add new quantity record.
+                    quantity_repo.add(
+                        location_id=location.id,
+                        attribute_group_id=attribute_group.id,
+                        value=row_dict[value_column],
+                    )
+                    counter['inserted'] += 1
+                except Exception as err:  # <- Use `Exception` because different
+                    try:                  #    backends could raise different types.
+                        quantity = quantity_repo.get_by_location_id_and_attribute_group_id(
+                            location_id=location.id,
+                            attribute_group_id=attribute_group.id,
+                        )
+                    except KeyError:
+                        # If we get a KeyError, then a duplicate quantity does
+                        # not exist. This means that the original error was for
+                        # some other reason.
+                        raise err  # Re-raise original error.
+
+                    if on_existing == 'abort':
+                        raise ValueError(
+                            'data contains quantities for locations and '
+                            'attributes that have already been loaded; use '
+                            '--on-existing to change load behavior'
+                        )
+                    elif on_existing == 'ignore':
+                        counter['existing_ignored'] += 1
+                        continue  # Skip to next.
+                    elif on_existing == 'replace':
+                        quantity_repo.update(replace(quantity, value=row_dict[value_column]))
+                        counter['existing_replaced'] += 1
+                    elif on_existing == 'sum':
+                        summed_value = quantity.value + float(row_dict[value_column])
+                        quantity_repo.update(replace(quantity, value=summed_value))
+                        counter['existing_summed'] += 1
+                    else:
+                        raise ValueError(
+                            f"--on-existing must be 'abort', 'ignore', "
+                            f"'replace', or 'sum'; got {on_existing!r}"
+                        )
 
         if counter['bad_domain']:
             applogger.warning(
                 f"skipped {counter['bad_domain']} quantities with "
                 f"bad domain values; requires domain {domain!r}"
             )
+
+        if counter['existing_ignored']:
+            applogger.info(
+                f"skipped {counter['existing_ignored']} quantities with "
+                f"existing attributes and locations"
+            )
+        elif counter['existing_replaced']:
+            applogger.info(
+                f"replaced {counter['existing_replaced']} quantities for "
+                f"existing attributes and locations"
+            )
+        elif counter['existing_summed']:
+            applogger.info(
+                f"added {counter['existing_summed']} quantities to existing "
+                f"attributes and locations"
+            )
+
         if counter['no_attrs']:
             applogger.info(
                 f"skipped {counter['no_attrs']} quantities with no "
                 f"attribute values"
             )
+
         if counter['inserted']:
             applogger.info(f"loaded {counter['inserted']} quantities")
         else:

@@ -4422,12 +4422,12 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             location = sorted(repository.find_all(), key=lambda x: x.id)
         self.assertEqual(location, values)
 
-    def assertAttributesEqual(self, values):
+    def assertAttributesEqual(self, values, msg=None):
         """Test that *values* are equal to self.node attributes."""
         with self.node._managed_cursor() as cursor:
             repository = self.node._dal.AttributeGroupRepository(cursor)
             attributes = sorted(repository.find_all(), key=lambda x: x.id)
-        self.assertEqual(attributes, values)
+        self.assertEqual(attributes, values, msg=msg)
 
     def assertQuantitiesEqual(self, values):
         """Test that *values* are equal to self.node quantities."""
@@ -4619,8 +4619,6 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             Quantity(2, 1, 2, 187990),
         ])
 
-    # TODO: Update this after implementing `on_duplicate` handling.
-    @unittest.expectedFailure
     def test_registered_attributes_different_from_input(self):
         """Should only load registered attribute columns."""
         # Change registered attributes to 'category' only (removes 'sex').
@@ -4632,15 +4630,13 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
                 data=[
                     ('state', 'county',   'category', 'sex',    'counts'),
                     ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
-                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
                     ('OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499),
-                    ('OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),
                 ],
             )
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 4 quantities'],
+            ['INFO:app-toron.node:loaded 2 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -4648,15 +4644,14 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             Location(2, 'OH', 'FRANKLIN'),
         ])
 
-        self.assertAttributesEqual([
-            AttributeGroup(1, {'category': 'TOTAL'}),
-        ])
+        self.assertAttributesEqual(
+            [AttributeGroup(1, {'category': 'TOTAL'})],
+            msg="should only load 'category' column, no other columns registered",
+        )
 
         self.assertQuantitiesEqual([
             Quantity(1, 1, 1, 180140),
-            Quantity(2, 1, 1, 187990),
-            Quantity(3, 2, 1, 566499),
-            Quantity(4, 2, 1, 596915),
+            Quantity(2, 2, 1, 566499),
         ])
 
     def test_no_registered_attributes(self):
@@ -4676,6 +4671,120 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
                     ('OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),
                 ],
             )
+
+    def test_on_existing_abort(self):
+        with self.assertRaises(ValueError):
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county', 'category', 'sex',   'counts'),
+                    ('OH',    'BUTLER', 'TOTAL',    'MALE',  180140),
+                    ('OH',    'BUTLER', 'TOTAL',    'MALE',  566499),
+                ],
+                on_existing='abort',  # <- This is the default value.
+            )
+
+    def test_on_existing_ignore(self):
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county',   'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   0),  # <- Gets ignored.
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 0),  # <- Gets ignored.
+                ],
+                on_existing='ignore',
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:skipped 2 quantities with existing attributes and locations',
+             'INFO:app-toron.node:loaded 2 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 1, 2, 187990),
+        ])
+
+    def test_on_existing_replace(self):
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county',   'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   101),  # <- Replaces previous value.
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 102),  # <- Replaces previous value.
+                ],
+                on_existing='replace',
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:replaced 2 quantities for existing attributes and locations',
+             'INFO:app-toron.node:loaded 2 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 101),
+            Quantity(2, 1, 2, 102),
+        ])
+
+    def test_on_existing_sum(self):
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county',   'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',   100),
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE', 200),
+                    ('OH',    'BUTLER',   'TOTAL',    'MALE',    11),  # <- Summed with previous value.
+                    ('OH',    'BUTLER',   'TOTAL',    'FEMALE',  22),  # <- Summed with previous value.
+                ],
+                on_existing='sum',  # <- Will sum values with matching location and attributes.
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:added 2 quantities to existing attributes and locations',
+             'INFO:app-toron.node:loaded 2 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 111),
+            Quantity(2, 1, 2, 222),
+        ])
 
 
 class TestTopoNodeInsertQuantities(unittest.TestCase):
