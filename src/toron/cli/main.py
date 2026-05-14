@@ -20,6 +20,7 @@ from . import (
     command_add,
     command_info,
     command_index,
+    command_quantity,
     command_crosswalk,
     command_new,
 )
@@ -253,6 +254,25 @@ def get_parser() -> argparse.ArgumentParser:
                               dest='backup',
                               help='do not make a backup file')
     parser_index.set_defaults(func=command_index.process_index_action)
+
+    # Quantity command.
+    parser_index = subparsers.add_parser(
+        name='quantity',
+        help='write quantities to stdout or load quantities from stdin',
+        description=('Write quantity records to stdout or load quantity '
+                     'records from stdin (CSV format).'),
+    )
+    parser_index.add_argument('node', type=TopoNodeType(),
+                              help='Toron node file', metavar='FILE')
+    parser_index.add_argument('--on-existing',
+                              default='abort',
+                              choices=['ignore', 'replace', 'sum', 'abort'],
+                              dest='on_existing',
+                              help='how to handle label conflicts (default: %(default)s)')
+    parser_index.add_argument('--no-backup', action='store_false',
+                              dest='backup',
+                              help='do not make a backup file')
+    parser_index.set_defaults(func=command_quantity.process_quantity_action)
 
     # Crosswalk command.
     parser_crosswalk = subparsers.add_parser(
