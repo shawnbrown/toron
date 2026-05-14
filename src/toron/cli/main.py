@@ -233,9 +233,9 @@ def get_parser() -> argparse.ArgumentParser:
     # Index command.
     parser_index = subparsers.add_parser(
         name='index',
-        help='select index records, or insert records from input',
-        description=('Select index records and print them as CSV, or '
-                     'insert records supplied as input.'),
+        help='write index to stdout or load index from stdin',
+        description=('Write index records to stdout or load index records '
+                     'from stdin (CSV format).'),
     )
     parser_index.add_argument('node', type=TopoNodeType(),
                               help='Toron node file', metavar='FILE')
@@ -257,9 +257,10 @@ def get_parser() -> argparse.ArgumentParser:
     # Crosswalk command.
     parser_crosswalk = subparsers.add_parser(
         name='crosswalk',
-        help='select crosswalk relations, or insert relations from input',
-        description=('Select crosswalk relations and print them as CSV, or '
-                     'insert relations supplied as input.'),
+        help='write relations to stdout or load relations from stdin',
+        description=('Write crosswalk relations to stdout or load crosswalk '
+                     'relations from stdin (CSV format).'),
+
     )
     parser_crosswalk.add_argument('node1', type=TopoNodeType(mode='rw'),
                                   help='first (left) filename',
