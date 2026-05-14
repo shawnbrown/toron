@@ -256,23 +256,23 @@ def get_parser() -> argparse.ArgumentParser:
     parser_index.set_defaults(func=command_index.process_index_action)
 
     # Quantity command.
-    parser_index = subparsers.add_parser(
+    parser_quantity = subparsers.add_parser(
         name='quantity',
         help='write quantities to stdout or load quantities from stdin',
         description=('Write quantity records to stdout or load quantity '
                      'records from stdin (CSV format).'),
     )
-    parser_index.add_argument('node', type=TopoNodeType(),
-                              help='Toron node file', metavar='FILE')
-    parser_index.add_argument('--on-existing',
-                              default='abort',
-                              choices=['ignore', 'replace', 'sum', 'abort'],
-                              dest='on_existing',
-                              help='how to handle label conflicts (default: %(default)s)')
-    parser_index.add_argument('--no-backup', action='store_false',
-                              dest='backup',
-                              help='do not make a backup file')
-    parser_index.set_defaults(func=command_quantity.process_quantity_action)
+    parser_quantity.add_argument('node', type=TopoNodeType(),
+                                 help='Toron node file', metavar='FILE')
+    parser_quantity.add_argument('--on-existing',
+                                 default='abort',
+                                 choices=['ignore', 'replace', 'sum', 'abort'],
+                                 dest='on_existing',
+                                 help='strategy for existing quantities (default: %(default)s)')
+    parser_quantity.add_argument('--no-backup', action='store_false',
+                                 dest='backup',
+                                 help='do not make a backup file')
+    parser_quantity.set_defaults(func=command_quantity.process_quantity_action)
 
     # Crosswalk command.
     parser_crosswalk = subparsers.add_parser(
@@ -280,7 +280,6 @@ def get_parser() -> argparse.ArgumentParser:
         help='write relations to stdout or load relations from stdin',
         description=('Write crosswalk relations to stdout or load crosswalk '
                      'relations from stdin (CSV format).'),
-
     )
     parser_crosswalk.add_argument('node1', type=TopoNodeType(mode='rw'),
                                   help='first (left) filename',
