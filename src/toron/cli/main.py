@@ -244,12 +244,12 @@ def get_parser() -> argparse.ArgumentParser:
                               default='abort',
                               choices=['ignore', 'replace', 'abort'],
                               dest='on_label_conflict',
-                              help='how to handle label conflicts (default: %(default)s)')
+                              help='strategy for label conflicts (default: %(default)s)')
     parser_index.add_argument('--on-weight-conflict',
                               default='abort',
                               choices=['ignore', 'replace', 'abort'],
                               dest='on_weight_conflict',
-                              help='how to handle weight conflicts (default: %(default)s)')
+                              help='strategy for weight conflicts (default: %(default)s)')
     parser_index.add_argument('--no-backup', action='store_false',
                               dest='backup',
                               help='do not make a backup file')
