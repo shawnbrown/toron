@@ -256,7 +256,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             selectors=None,
             make_default=True,
         ))
-        cli.command_index.read_from_stdin(argparse.Namespace(
+        cli.command_index.process_index_action(argparse.Namespace(
             command='index',
             node=self.node1,
             on_label_conflict='abort',
@@ -280,7 +280,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             node=self.node1,
             attributes=['variable'],
         ))
-        cli.command_quantity.read_from_stdin(argparse.Namespace(
+        cli.command_quantity.process_quantity_action(argparse.Namespace(
             command='quantity',
             node=self.node1,
             value_column='quantity',
@@ -316,7 +316,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             selectors=None,
             make_default=True,
         ))
-        cli.command_index.read_from_stdin(argparse.Namespace(
+        cli.command_index.process_index_action(argparse.Namespace(
             command='index',
             node=self.node2,
             on_label_conflict='abort',
@@ -346,7 +346,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             selectors=None,
             make_default=True,
         ))
-        cli.command_crosswalk.read_from_stdin(argparse.Namespace(
+        cli.command_crosswalk.process_crosswalk_action(argparse.Namespace(
             command='crosswalk',
             node1=self.node1,
             node2=self.node2,

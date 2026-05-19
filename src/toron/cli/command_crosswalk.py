@@ -39,6 +39,7 @@ from .._utils import (
 )
 from .common import (
     ExitCode,
+    is_streamed,
     csv_stdout_writer,
     index_code_to_id,
     index_id_to_code,
@@ -581,7 +582,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
     """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
-    if args.stdin_is_streamed:
+    if is_streamed(args.stdin):
         process_backup_option(args, node_args=['node1', 'node2'])
         return read_from_stdin(args)
     else:
