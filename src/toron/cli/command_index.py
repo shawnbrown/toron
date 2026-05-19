@@ -10,6 +10,7 @@ from .._typing import Iterator, List
 
 from .common import (
     ExitCode,
+    is_streamed,
     csv_stdout_writer,
     process_backup_option,
     index_id_to_code,
@@ -122,7 +123,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 
 def process_index_action(args: argparse.Namespace) -> ExitCode:
     """Write index to ``args.stdout`` or read from ``args.stdin``."""
-    if args.stdin_is_streamed:
+    if is_streamed(args.stdin):
         process_backup_option(args)
         return read_from_stdin(args)
     else:

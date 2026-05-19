@@ -41,6 +41,11 @@ class ExitCode(IntEnum):
     USAGE = 2  # Incorrect usage (invalid options or missing args).
 
 
+def is_streamed(standard_io: TextIO):
+    """Returns True if stream is redirected or piped."""
+    return not standard_io.isatty()
+
+
 @contextmanager
 def csv_stdout_writer(
     stdout: Optional[TextIO] = None

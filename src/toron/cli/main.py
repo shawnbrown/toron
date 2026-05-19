@@ -359,9 +359,8 @@ def main(
     args = parser.parse_args(argv)
 
     args.stdin = stdin or sys.stdin
-    args.stdin_is_streamed = not args.stdin.isatty()  # True if redirected or piped.
-
     args.stdout = stdout or sys.stdout
+
     args.stdout_style = stdout_style
 
     try:

@@ -6,6 +6,7 @@ import os
 
 from .common import (
     ExitCode,
+    is_streamed,
     csv_stdout_writer,
     process_backup_option,
 )
@@ -33,7 +34,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 
 def process_quantity_action(args: argparse.Namespace) -> ExitCode:
     """Write quantities to ``args.stdout`` or read from ``args.stdin``."""
-    if args.stdin_is_streamed:
+    if is_streamed(args.stdin):
         process_backup_option(args)
         return read_from_stdin(args)
     else:
