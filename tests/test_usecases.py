@@ -274,23 +274,30 @@ class TestBuildUsingCLI(unittest.TestCase):
                 'D,y,i,25\n'
             ),
         ))
-        self.node1.insert_quantities(  # <- Using API, CLI not ready yet.
-            value='value',
-            attributes='variable',
-            data=[
-                ['idx1', 'idx2', 'idx3', 'variable', 'value'],
-                ['-', '-', '-', 'foo',   5],
-                ['A', 'z', 'a', 'foo', 100],
-                ['B', 'x', 'b', 'foo', 100],
-                ['B', 'y', 'c', 'bar', 100],
-                ['C', 'x', 'd', 'bar', 100],
-                ['C', 'y', 'e', 'bar', 100],
-                ['D', 'x', 'f', 'bar', 100],
-                ['D', 'x', 'g', 'baz', 100],
-                ['D', 'y', 'h', 'baz', 100],
-                ['D', 'y', 'i', 'baz', 100],
-            ],
-        )
+        cli.command_add.add_attribute(argparse.Namespace(
+            command='add',
+            element='attribute',
+            node=self.node1,
+            attributes=['variable'],
+        ))
+        cli.command_quantity.read_from_stdin(argparse.Namespace(
+            command='quantity',
+            node=self.node1,
+            value_column='quantity',
+            stdin=DummyRedirection(
+                'idx1,idx2,idx3,variable,quantity\n'
+                '-,-,-,foo,5\n'
+                'A,z,a,foo,100\n'
+                'B,x,b,foo,100\n'
+                'B,y,c,bar,100\n'
+                'C,x,d,bar,100\n'
+                'C,y,e,bar,100\n'
+                'D,x,f,bar,100\n'
+                'D,x,g,baz,100\n'
+                'D,y,h,baz,100\n'
+                'D,y,i,baz,100\n'
+            ),
+        ))
 
         self.node2 = TopoNode()
         self.node2._connector._unique_id = '22222222-2222-2222-2222-222222222222'
