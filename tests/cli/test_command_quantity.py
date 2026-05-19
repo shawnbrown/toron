@@ -36,6 +36,7 @@ class TestReadFromStdin(unittest.TestCase):
         args = argparse.Namespace(
             command='quantity',
             node=self.node,
+            value_column='quantity',  # <- This is the default column name.
             on_existing='abort',
             stdin=DummyRedirection(
                 'domain,state,county,category,sex,quantity\n'
@@ -53,6 +54,35 @@ class TestReadFromStdin(unittest.TestCase):
             logs_cm.output,
             ['INFO:app-toron.node:loaded 4 quantities'],
         )
+
+        self.assertEqual(
+            list(self.node.select_quantities(header=True)),
+            [['domain', 'state', 'county',   'category', 'sex',    'quantity'],
+             ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140.0],
+             ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990.0],
+             ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499.0],
+             ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915.0]],
+        )
+
+    def test_alternate_value_column(self):
+        """Check data with non-default value column."""
+        self.node.set_registered_attributes(['category', 'sex'])
+
+        args = argparse.Namespace(
+            command='quantity',
+            node=self.node,
+            value_column='counts',  # <- Non-default value column.
+            on_existing='abort',
+            stdin=DummyRedirection(
+                'domain,state,county,category,sex,counts\n'  # <- Value in "counts" column.
+                'iso_US,OH,BUTLER,TOTAL,MALE,180140\n'
+                'iso_US,OH,BUTLER,TOTAL,FEMALE,187990\n'
+                'iso_US,OH,FRANKLIN,TOTAL,MALE,566499\n'
+                'iso_US,OH,FRANKLIN,TOTAL,FEMALE,596915\n'
+            ),
+        )
+
+        command_quantity.read_from_stdin(args)  # <- Function under test.
 
         self.assertEqual(
             list(self.node.select_quantities(header=True)),

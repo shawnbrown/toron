@@ -19,7 +19,7 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     reader = csv.reader(args.stdin)
 
     args.node.insert_quantities2(
-        value_column='quantity',
+        value_column=args.value_column,
         data=reader,
     )
 

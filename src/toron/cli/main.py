@@ -264,6 +264,11 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_quantity.add_argument('node', type=TopoNodeType(),
                                  help='Toron node file', metavar='FILE')
+    parser_quantity.add_argument('--column',
+                                 default='quantity',
+                                 dest='value_column',
+                                 help='name of column containing values (default: %(default)s)',
+                                 metavar='NAME')
     parser_quantity.add_argument('--on-existing',
                                  default='abort',
                                  choices=['ignore', 'replace', 'sum', 'abort'],
