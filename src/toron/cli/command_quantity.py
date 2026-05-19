@@ -16,7 +16,14 @@ applogger = logging.getLogger('app-toron')
 
 def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     """Load quantity records read from stdin stream."""
-    raise NotImplementedError
+    reader = csv.reader(args.stdin)
+
+    args.node.insert_quantities2(
+        value_column='quantity',
+        data=reader,
+    )
+
+    return ExitCode.OK
 
 
 def write_to_stdout(args: argparse.Namespace) -> ExitCode:
