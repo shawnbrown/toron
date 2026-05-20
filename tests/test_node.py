@@ -4395,23 +4395,15 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
 
 
 class TestTopoNodeInsertQuantities2(unittest.TestCase):
-    @staticmethod
-    def add_cols_helper(node, *columns):  # <- Helper function.
-        with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
-            manager.add_columns(*columns)
-
-    @staticmethod
-    def add_index_helper(node, data):  # <- Helper function.
-        with node._managed_cursor() as cursor:
-            repository = node._dal.IndexRepository(cursor)
-            for row in data:
-                repository.add(*row)
-
     def setUp(self):
         self.node = TopoNode()
-        self.add_cols_helper(self.node, 'state', 'county')
-        self.add_index_helper(self.node, [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')])
+        self.node.add_index_columns('state', 'county')
+        self.node.insert_index(
+            [['state', 'county'],
+             ['OH', 'BUTLER'],
+             ['OH', 'FRANKLIN'],
+             ['IN', 'KNOX']],
+        )
         self.node.set_domain('iso_US')
         self.node.set_registered_attributes(['category', 'sex'])
 
