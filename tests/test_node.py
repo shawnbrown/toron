@@ -4415,12 +4415,12 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         self.node.set_domain('iso_US')
         self.node.set_registered_attributes(['category', 'sex'])
 
-    def assertLocationsEqual(self, values):
+    def assertLocationsEqual(self, values, msg=None):
         """Test that *values* are equal to self.node locations."""
         with self.node._managed_cursor() as cursor:
             repository = self.node._dal.LocationRepository(cursor)
             location = sorted(repository.find_all(), key=lambda x: x.id)
-        self.assertEqual(location, values)
+        self.assertEqual(location, values, msg=msg)
 
     def assertAttributesEqual(self, values, msg=None):
         """Test that *values* are equal to self.node attributes."""
@@ -4429,7 +4429,7 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             attributes = sorted(repository.find_all(), key=lambda x: x.id)
         self.assertEqual(attributes, values, msg=msg)
 
-    def assertQuantitiesEqual(self, values):
+    def assertQuantitiesEqual(self, values, msg=None):
         """Test that *values* are equal to self.node quantities."""
         with self.node._managed_cursor(n=2) as (cur1, cur2):
             location_repo = self.node._dal.LocationRepository(cur1)
@@ -4439,7 +4439,7 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
                 quantity = quantity_repo.find(location_id=location.id)
                 quantities.extend(quantity)
             quantities = sorted(quantities, key=lambda x: x.id)
-        self.assertEqual(quantities, values)
+        self.assertEqual(quantities, values, msg=msg)
 
     def test_insert_with_domain(self):
         with self.assertLogs('app-toron', level='INFO') as cm:
