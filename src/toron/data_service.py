@@ -165,7 +165,7 @@ def find_locations_without_index(
     label_names = location_repo.get_label_names()
     for location in location_repo.find_all():
         criteria = {k: v for k, v in zip(label_names, location.labels) if v}
-        if not next(aux_index_repo.filter_index_ids_by_label(criteria), None):
+        if not any(aux_index_repo.filter_index_ids_by_label(criteria)):
             yield location
 
 
@@ -198,7 +198,7 @@ def find_nonmatching_locations(
             yield location
         else:
             criteria = {k: v for k, v in zip(label_names, location.labels) if v}
-            if not next(aux_index_repo.filter_index_ids_by_label(criteria), None):
+            if not any(aux_index_repo.filter_index_ids_by_label(criteria)):
                 yield location
 
 
@@ -226,7 +226,7 @@ def count_nonmatching_locations(
         nonmatching_structure = BitFlags(location.labels) not in all_structure_bits
 
         criteria = {k: v for k, v in zip(label_names, location.labels) if v}
-        nonmatching_index = not next(aux_index_repo.filter_index_ids_by_label(criteria), None)
+        nonmatching_index = not any(aux_index_repo.filter_index_ids_by_label(criteria))
 
         if nonmatching_structure and nonmatching_index:
             counter['structure_and_index'] += 1
@@ -245,7 +245,7 @@ def find_attribute_groups_without_quantity(
     """Find AttributeGroup records that have no matching Quantity."""
     for attr_group in attrib_repo.find_all():
         quantities = alt_quantity_repo.find(attribute_group_id=attr_group.id)
-        if not next(quantities, None):
+        if not any(quantities):
             yield attr_group
 
 
@@ -256,7 +256,7 @@ def find_locations_without_quantity(
     """Find Location records that have no matching Quantity."""
     for location in location_repo.find_all():
         quantities = alt_quantity_repo.find(location_id=location.id)
-        if not next(quantities, None):
+        if not any(quantities):
             yield location
 
 
@@ -509,7 +509,7 @@ def generate_mapping_elements(
                 crosswalk_id=crosswalk.id,
                 other_index_id=other_index_id,
             )
-            if next(matches, None) is None:  # Yield only if unmatched.
+            if not any(matches):  # Yield only if unmatched.
                 yield (other_index_id, None, None, None)
 
 
