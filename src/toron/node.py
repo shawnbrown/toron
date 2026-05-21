@@ -2228,6 +2228,7 @@ class TopoNode(object):
         value_column: str,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
+        allow_invalid_label: bool = False,
         allow_invalid_category: bool = False,
         on_existing: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
     ) -> None:
@@ -2237,6 +2238,7 @@ class TopoNode(object):
         counter: Counter[str] = Counter()
 
         with self._managed_transaction() as cur:
+            index_repo = self._dal.IndexRepository(cur)
             property_repo = self._dal.PropertyRepository(cur)
             location_repo = self._dal.LocationRepository(cur)
             attribute_repo = self._dal.AttributeGroupRepository(cur)
@@ -2272,9 +2274,15 @@ class TopoNode(object):
                 # Parse row into separate label and attribute dictionaries.
                 labels_dict = {k: row_dict[k] for k in label_names}
 
-                # Check for valid category (or skip if allowed).
+                # Check for valid category (or skip if allowing).
                 if not allow_invalid_category and BitFlags(labels_dict.values()) not in structure:
                     raise ValueError(f'invalid category: {list(labels_dict.values())!r}')
+
+                # Check for valid labels (or skip if allowing).
+                if not allow_invalid_label:
+                    criteria = {k: v for k, v in labels_dict.items() if v}
+                    if not any(index_repo.filter_by_label(criteria)):
+                        raise ValueError(f'invalid label: {list(criteria.values())!r}')
 
                 attr_dict = {k: row_dict[k] for k in attributes_to_load if row_dict[k]}
 

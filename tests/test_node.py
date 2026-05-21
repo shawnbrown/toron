@@ -4858,6 +4858,52 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             Quantity(2, 2, 2, 187990),
         ])
 
+    def test_invalid_label(self):
+        """Should fail when labels don't appear in index."""
+        regex = r"invalid label: \['OH', 'NULL ISLAND'\]"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_quantities2(
+                value_column='counts',
+                data=[
+                    ('state', 'county',      'category', 'sex',    'counts'),
+                    ('OH',    'BUTLER',      'TOTAL',    'MALE',   180140),
+                    ('',      '',            'TOTAL',    'FEMALE', 187990),
+                    ('OH',    'NULL ISLAND', 'TOTAL',    'MALE',   566499),  # <- Invalid label.
+                ],
+            )
+
+        self.assertLocationsEqual([], msg='should load no records')
+        self.assertAttributesEqual([], msg='should load no records')
+        self.assertQuantitiesEqual([], msg='should load no records')
+
+    def test_invalid_label_allowed(self):
+        """Should allow invalid labels when using `allow_invalid_label=True`."""
+        self.node.insert_quantities2(
+            value_column='counts',
+            data=[
+                ('state', 'county',      'category', 'sex',    'counts'),
+                ('OH',    'BUTLER',      'TOTAL',    'MALE',   180140),
+                ('',      '',            'TOTAL',    'FEMALE', 187990),
+                ('OH',    'NULL ISLAND', 'TOTAL',    'MALE',   566499),  # <- Invalid label.
+            ],
+            allow_invalid_label=True,  # <- Allowing invalid labels.
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+            Location(2, '', ''),
+            Location(3, 'OH', 'NULL ISLAND'),  # <- Invalid label.
+        ])
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'})
+        ])
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140.0),
+            Quantity(2, 2, 2, 187990.0),
+            Quantity(3, 3, 1, 566499.0),
+        ])
+
 
 class TestTopoNodeInsertQuantities(unittest.TestCase):
     @staticmethod
