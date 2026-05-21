@@ -4778,6 +4778,86 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             Quantity(2, 1, 2, 222),
         ])
 
+    def test_invalid_category(self):
+        """Should fail when quantities use an invalid category."""
+        data = [
+            ('state', 'county',   'category', 'sex',    'counts'),
+            ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+            ('OH',    '',         'TOTAL',    'FEMALE', 187990),
+        ]
+
+        # Should fail because "state" alone is not a valid category.
+        #
+        # To start, the node only has two valid categories:
+        #   1. {'state', 'county'} <- the whole space
+        #   3. {}                  <- the empty set
+        #
+        # The location `['OH', '']`, includes a state value but does not
+        # include a county value. And since {'state'} is not one of the
+        # valid categories, this should raise an error.
+        regex = r"invalid category: \['OH', ''\]"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_quantities2(value_column='counts', data=data)
+
+        self.assertLocationsEqual([], msg='should load no records')
+        self.assertAttributesEqual([], msg='should load no records')
+        self.assertQuantitiesEqual([], msg='should load no records')
+
+        # Should pass because "state" is added as a category.
+        #
+        # Here, we update the valid categories to the following:
+        #   1. {'state', 'county'} <- the whole space
+        #   2. {'state'}           <- state alone
+        #   3. {}                  <- the empty set
+        self.node.add_discrete_categories({'state'})  # <- Add "state".
+        self.node.insert_quantities2(value_column='counts', data=data)
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+            Location(2, 'OH', ''),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 2, 2, 187990),
+        ])
+
+    def test_invalid_category_allowed(self):
+        """Should allow invalid categories when using `allow_invalid_category=True`."""
+        # The location `['', 'BUTLER']`, includes a county value but
+        # does not include a state value. County alone ({'county'}) is
+        # not a valid category, but we can load this data regardless by
+        # passing the argument to ignore category errors.
+
+        self.node.insert_quantities2(
+            value_column='counts',
+            data=[
+                ('state', 'county',   'category', 'sex',    'counts'),
+                ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                ('',      'BUTLER',   'TOTAL',    'FEMALE', 187990),  # <- Invalid category.
+            ],
+            allow_invalid_category=True,  # <- Allowing invalid categories.
+        )
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+            Location(2, '',   'BUTLER'),  # <- Invalid category.
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 2, 2, 187990),
+        ])
+
 
 class TestTopoNodeInsertQuantities(unittest.TestCase):
     @staticmethod

@@ -2228,6 +2228,7 @@ class TopoNode(object):
         value_column: str,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
+        allow_invalid_category: bool = False,
         on_existing: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
     ) -> None:
         """Load quantity and attribute values."""
@@ -2240,6 +2241,7 @@ class TopoNode(object):
             location_repo = self._dal.LocationRepository(cur)
             attribute_repo = self._dal.AttributeGroupRepository(cur)
             quantity_repo = self._dal.QuantityRepository(cur)
+            struct_repo = self._dal.StructureRepository(cur)
 
             label_names = location_repo.get_label_names()
 
@@ -2257,6 +2259,8 @@ class TopoNode(object):
 
             domain = self.domain  # Assign locally to reduce dot-lookups.
 
+            structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
+
             for row in data:
                 row_dict = dict(zip(columns, row))
 
@@ -2267,6 +2271,11 @@ class TopoNode(object):
 
                 # Parse row into separate label and attribute dictionaries.
                 labels_dict = {k: row_dict[k] for k in label_names}
+
+                # Check for valid category (or skip if allowed).
+                if not allow_invalid_category and BitFlags(labels_dict.values()) not in structure:
+                    raise ValueError(f'invalid category: {list(labels_dict.values())!r}')
+
                 attr_dict = {k: row_dict[k] for k in attributes_to_load if row_dict[k]}
 
                 # Skip record if it has no attribute values.
