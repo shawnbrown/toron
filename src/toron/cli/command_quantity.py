@@ -22,6 +22,7 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     args.node.insert_quantities2(
         value_column=args.value_column,
         data=reader,
+        on_existing=args.on_existing,
     )
 
     return ExitCode.OK
