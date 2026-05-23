@@ -37,6 +37,8 @@ class TestReadFromStdin(unittest.TestCase):
             command='quantity',
             node=self.node,
             value_column='quantity',  # <- This is the default column name.
+            allow_invalid_label='abort',
+            allow_invalid_category='abort',
             on_existing='abort',
             stdin=DummyRedirection(
                 'domain,state,county,category,sex,quantity\n'
@@ -72,6 +74,8 @@ class TestReadFromStdin(unittest.TestCase):
             command='quantity',
             node=self.node,
             value_column='counts',  # <- Non-default value column.
+            allow_invalid_label='abort',
+            allow_invalid_category='abort',
             on_existing='abort',
             stdin=DummyRedirection(
                 'domain,state,county,category,sex,counts\n'  # <- Value in "counts" column.

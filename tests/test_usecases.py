@@ -284,6 +284,8 @@ class TestBuildUsingCLI(unittest.TestCase):
             command='quantity',
             node=self.node1,
             value_column='quantity',
+            allow_invalid_label='abort',
+            allow_invalid_category='abort',
             on_existing='abort',
             stdin=DummyRedirection(
                 'idx1,idx2,idx3,variable,quantity\n'
