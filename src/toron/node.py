@@ -2271,25 +2271,29 @@ class TopoNode(object):
                     counter['bad_domain'] += 1
                     continue  # Skip to next record.
 
-                # Parse row into separate label and attribute dictionaries.
-                labels_dict = {k: row_dict[k] for k in label_names}
-
-                # Check for valid category (or skip if allowing).
-                if not allow_invalid_category and BitFlags(labels_dict.values()) not in structure:
-                    raise ValueError(f'invalid category: {list(labels_dict.values())!r}')
-
-                # Check for valid labels (or skip if allowing).
-                if not allow_invalid_label:
-                    criteria = {k: v for k, v in labels_dict.items() if v}
-                    if not any(index_repo.filter_by_label(criteria)):
-                        raise ValueError(f'invalid label: {list(criteria.values())!r}')
-
+                # Parse row into separate attribute and label dictionaries.
                 attr_dict = {k: row_dict[k] for k in attributes_to_load if row_dict[k]}
+                labels_dict = {k: row_dict[k] for k in label_names}
 
                 # Skip record if it has no attribute values.
                 if not attr_dict:
                     counter['no_attrs'] += 1
-                    continue
+                    continue  # Skip to next row.
+
+                # Check for valid category.
+                if BitFlags(labels_dict.values()) not in structure:
+                    if allow_invalid_category:
+                        counter['invalid_category'] += 1
+                    else:
+                        raise ValueError(f'invalid category: {list(labels_dict.values())!r}')
+
+                # Check for valid labels.
+                criteria = {k: v for k, v in labels_dict.items() if v}
+                if not any(index_repo.filter_by_label(criteria)):
+                    if allow_invalid_label:
+                        counter['invalid_label'] += 1
+                    else:
+                        raise ValueError(f'invalid label: {list(criteria.values())!r}')
 
                 # Get `location` and `attribute_group` instances.
                 location = location_repo.get_by_labels_add_if_missing(labels_dict)

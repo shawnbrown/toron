@@ -4904,6 +4904,75 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             Quantity(3, 3, 1, 566499.0),
         ])
 
+    def test_order_of_error_checking(self):
+        """Check order of errors when multiple issues exist at the same time."""
+        data = [
+            ('state', 'county',      'category', 'sex',    'counts'),
+            ('OH',    'FRANKLIN',    '',         '',       None),
+            ('OH',    'FRANKLIN',    '',         '',       None),
+            ('OH',    'BUTLER',      'TOTAL',    'MALE',   180140),
+            ('OH',    'BUTLER',      'TOTAL',    'FEMALE', 187990),
+            ('OH',    'FRANKLIN',    'TOTAL',    'MALE',   566499),
+            ('OH',    'FRANKLIN',    'TOTAL',    'FEMALE', 596915),
+            ('',      'NULL ISLAND', 'TOTAL',    None,     111111),
+            ('',      'NULL ISLAND', 'TOTAL',    None,     111111),
+        ]
+
+        regex = r"invalid category: \['', 'NULL ISLAND'\]"
+        msg = 'first: should check categories'
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            self.node.insert_quantities2(
+                value_column='counts',
+                data=data,
+            )
+
+        regex = r"invalid label: \['NULL ISLAND'\]"
+        msg = 'second: should check labels (if invalid category is allowed)'
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            self.node.insert_quantities2(
+                value_column='counts',
+                data=data,
+                allow_invalid_category=True,
+            )
+
+        regex = r"already been loaded"
+        msg = 'third: should check for existing quantity (if allowing other issues)'
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            self.node.insert_quantities2(
+                value_column='counts',
+                data=data,
+                allow_invalid_label=True,
+                allow_invalid_category=True,
+            )
+
+        self.node.insert_quantities2(
+            value_column='counts',
+            data=data,
+            allow_invalid_label=True,
+            allow_invalid_category=True,
+            on_existing='sum',
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', 'BUTLER'),
+            Location(2, 'OH', 'FRANKLIN'),
+            Location(3, '', 'NULL ISLAND'),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+            AttributeGroup(3, {'category': 'TOTAL'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 180140),
+            Quantity(2, 1, 2, 187990),
+            Quantity(3, 2, 1, 566499),
+            Quantity(4, 2, 2, 596915),
+            Quantity(5, 3, 3, 222222),
+        ])
+
 
 class TestTopoNodeInsertQuantities(unittest.TestCase):
     @staticmethod
