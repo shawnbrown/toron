@@ -4504,38 +4504,23 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         ])
 
     def test_bad_domain_values(self):
-        with self.assertLogs('app-toron', level='INFO') as cm:
+        """If given, 'domain' must match node's domain or else fail."""
+        regex = r"domain must be 'iso_US', got: 'census'"
+        with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities2(  # <- Method under test.
                 value_column='counts',
                 data=[
                     ('domain', 'state', 'county',   'category', 'sex',   'counts'),
                     ('iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
                     ('iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
-                    ('',       'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499),  # <- Invalid domain.
+                    ('census', 'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499),  # <- Invalid domain.
                     ('census', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),  # <- Invalid domain.
                 ],
             )
 
-        self.assertEqual(
-            cm.output,
-            ["WARNING:app-toron.node:skipped 2 quantities with bad domain "
-               "values; requires domain 'iso_US'",
-             "INFO:app-toron.node:loaded 2 quantities"],
-        )
-
-        self.assertLocationsEqual([
-            Location(1, 'OH', 'BUTLER'),
-        ])
-
-        self.assertAttributesEqual([
-            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
-            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
-        ])
-
-        self.assertQuantitiesEqual([
-            Quantity(1, 1, 1, 180140),
-            Quantity(2, 1, 2, 187990),
-        ])
+        self.assertLocationsEqual([])
+        self.assertAttributesEqual([])
+        self.assertQuantitiesEqual([])
 
     def test_some_records_missing_some_attributes(self):
         """Attribute keys with empty values should be omitted."""

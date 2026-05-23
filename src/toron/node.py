@@ -2268,8 +2268,9 @@ class TopoNode(object):
 
                 # If 'domain' is given, it must match `node.domain`.
                 if 'domain' in row_dict and row_dict['domain'] != domain:
-                    counter['bad_domain'] += 1
-                    continue  # Skip to next record.
+                    raise ValueError(
+                        f"domain must be {domain!r}, got: {row_dict['domain']!r}"
+                    )
 
                 # Parse row into separate attribute and label dictionaries.
                 attr_dict = {k: row_dict[k] for k in attributes_to_load if row_dict[k]}
@@ -2340,12 +2341,6 @@ class TopoNode(object):
                             f"--on-existing must be 'abort', 'ignore', "
                             f"'replace', or 'sum'; got {on_existing!r}"
                         )
-
-        if counter['bad_domain']:
-            applogger.warning(
-                f"skipped {counter['bad_domain']} quantities with "
-                f"bad domain values; requires domain {domain!r}"
-            )
 
         if counter['no_attrs']:
             applogger.info(
