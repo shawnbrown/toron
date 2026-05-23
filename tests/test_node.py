@@ -4945,12 +4945,22 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
                 allow_invalid_category=True,
             )
 
-        self.node.insert_quantities2(
-            value_column='counts',
-            data=data,
-            allow_invalid_label=True,
-            allow_invalid_category=True,
-            on_existing='sum',
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(
+                value_column='counts',
+                data=data,
+                allow_invalid_label=True,
+                allow_invalid_category=True,
+                on_existing='sum',
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.node:skipped 2 quantities with no attribute values',
+             'INFO:app-toron.node:2 quantities used invalid categories',
+             'INFO:app-toron.node:2 quantities used invalid labels',
+             'INFO:app-toron.node:added 1 quantities to existing attributes and locations',
+             'INFO:app-toron.node:loaded 5 quantities'],
         )
 
         self.assertLocationsEqual([

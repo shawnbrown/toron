@@ -2347,6 +2347,24 @@ class TopoNode(object):
                 f"bad domain values; requires domain {domain!r}"
             )
 
+        if counter['no_attrs']:
+            applogger.info(
+                f"skipped {counter['no_attrs']} quantities with no "
+                f"attribute values"
+            )
+
+        if counter['invalid_category']:
+            applogger.info(
+                f"{counter['invalid_category']} quantities used "
+                f"invalid categories"
+            )
+
+        if counter['invalid_label']:
+            applogger.info(
+                f"{counter['invalid_label']} quantities used "
+                f"invalid labels"
+            )
+
         if counter['existing_ignored']:
             applogger.info(
                 f"skipped {counter['existing_ignored']} quantities with "
@@ -2361,12 +2379,6 @@ class TopoNode(object):
             applogger.info(
                 f"added {counter['existing_summed']} quantities to existing "
                 f"attributes and locations"
-            )
-
-        if counter['no_attrs']:
-            applogger.info(
-                f"skipped {counter['no_attrs']} quantities with no "
-                f"attribute values"
             )
 
         if counter['inserted']:
