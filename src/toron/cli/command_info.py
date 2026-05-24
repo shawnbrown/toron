@@ -35,12 +35,11 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     hr = '─' * min(len(filename), (get_terminal_size()[0] - 1))
 
     # Prepare and write output.
-    domain_str = '\n  '.join(info_dict['domain_list'])
     crosswalks_str = '\n  '.join(info_dict['crosswalks_list'])
     sys.stdout.write(
         f"{hr}\n{filename}\n{hr}\n"
         f"{bright}domain:{reset}\n"
-        f"  {domain_str}\n"
+        f"  {info_dict['domain_str']}\n"
         f"{bright}index:{reset}\n"
         f"  {', '.join(info_dict['index_list'])}\n"
         f"{bright}granularity:{reset}\n"
