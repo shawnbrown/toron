@@ -729,6 +729,56 @@ def add_discrete_categories(
         property_repo.update('discrete_categories', category_lists)
 
 
+def add_discrete_category(
+    category: Collection[str],
+    column_manager: BaseColumnManager,
+    property_repo: BasePropertyRepository,
+) -> None:
+    """Add discrete category.
+
+    Raises a ``ValueError`` if category uses index labels that do not
+    exist. Raises a ``RuntimeError`` if category cannot be created for
+    some other reason.
+    """
+    index_labels: Sequence[str] = column_manager.get_columns()
+
+    if not index_labels:
+        raise RuntimeError('must add index labels before defining a category')
+
+    category = set(category)
+    if category.difference(index_labels):
+        invalid_labels = category.difference(index_labels)
+        raise ValueError(
+            f"invalid category, "
+            f"no index label{'s' if len(invalid_labels) != 1 else ''} "
+            f"{', '.join(repr(x) for x in sorted(invalid_labels))}"
+        )
+
+    # Make helper function for consistent error reporting.
+    repr_sorted = lambda cat: f"""{{{
+        repr(sorted(cat, key=lambda x: index_labels.index(x)))[1:-1]
+    }}}"""
+
+    existing_cats = get_all_discrete_categories(column_manager, property_repo)
+
+    if category in existing_cats:
+        raise RuntimeError(f'category {repr_sorted(category)} is already defined')
+
+    whole_space = set(index_labels)
+    minimized_cats: List[Set[str]] = minimize_discrete_categories(
+        [category], existing_cats, [whole_space]
+    )
+
+    if category not in minimized_cats:
+        raise RuntimeError(
+            f'category {repr_sorted(category)} is already covered by a union '
+            f'of existing categories'
+        )
+
+    category_lists = cast(JsonTypes, [list(cat) for cat in minimized_cats])
+    property_repo.add_or_update('discrete_categories', category_lists)
+
+
 def refresh_structure_granularity(
     column_manager: BaseColumnManager,
     structure_repo: BaseStructureRepository,

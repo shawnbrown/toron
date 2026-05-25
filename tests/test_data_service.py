@@ -33,6 +33,7 @@ from toron.data_service import (
     rename_discrete_categories,
     rebuild_structure_table,
     add_discrete_categories,
+    add_discrete_category,
     refresh_structure_granularity,
     set_domain,
     get_domain,
@@ -1244,6 +1245,96 @@ class TestAddDiscreteCategories(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             add_discrete_categories(
                 categories=[{'A', 'B'}, {'C'}],
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+            )
+
+
+class TestAddDiscreteCategory(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        self.column_manager = dal.ColumnManager(cur)
+        self.property_repo = dal.PropertyRepository(cur)
+
+    def get_categories_helper(self):
+        """Helper function to return existing categories."""
+        try:
+            categories_json = self.property_repo.get('discrete_categories')
+        except:
+            return None
+        return [set(x) for x in categories_json]
+
+    def test_create_new_category(self):
+        """Test creating a new category when none previously exist."""
+        self.column_manager.add_columns('A', 'B')
+
+        add_discrete_category(  # <- Method under test.
+            category={'A'},
+            column_manager=self.column_manager,
+            property_repo=self.property_repo,
+        )
+
+        # The whole space {'A', 'B'} is also added automatically
+        # if it doesn't already exist.
+        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+
+    def test_add_to_existing(self):
+        """Test adding new categories to previously existing categories."""
+        self.column_manager.add_columns('A', 'B')
+
+        add_discrete_category(  # <- Method under test.
+            category={'A'},
+            column_manager=self.column_manager,
+            property_repo=self.property_repo,
+        )
+        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+
+        add_discrete_category(  # <- Method under test.
+            category={'B'},
+            column_manager=self.column_manager,
+            property_repo=self.property_repo,
+        )
+        self.assertEqual(
+            set(frozenset(x) for x in self.get_categories_helper()),
+            {frozenset(['A']), frozenset(['B'])}
+        )
+
+    def test_redundent_category(self):
+        """Should raise error if category is redundant."""
+        self.column_manager.add_columns('A', 'B')
+        add_discrete_categories([{'A'}, {'B'}], self.column_manager, self.property_repo)
+
+        regex = r"category \{'A', 'B'\} is already covered by a union of existing categories"
+        with self.assertRaisesRegex(RuntimeError, regex):
+            add_discrete_category(  # <- Method under test.
+                category={'A', 'B'},  # <- Already covered by existing categories.
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+            )
+
+    def test_no_columns_defined(self):
+        regex = 'must add index labels before defining a category'
+        with self.assertRaisesRegex(RuntimeError, regex):
+            add_discrete_category(  # <- Method under test.
+                category={'A', 'B', 'C'},
+                column_manager=self.column_manager,
+                property_repo=self.property_repo,
+            )
+
+    def test_bad_column_name(self):
+        self.column_manager.add_columns('A', 'B')
+
+        regex = "invalid category, no index label 'C'"
+        with self.assertRaisesRegex(ValueError, regex):
+            add_discrete_category(  # <- Method under test.
+                category={'A', 'C'},
                 column_manager=self.column_manager,
                 property_repo=self.property_repo,
             )
