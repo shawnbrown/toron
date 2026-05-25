@@ -7,7 +7,7 @@ from toron import TopoNode
 from toron.cli import command_quantity
 
 
-class TestReadFromStdin(unittest.TestCase):
+class QuantityMixin(object):
     @staticmethod
     def set_unique_id(node, unique_id):
         node._connector._unique_id = unique_id
@@ -29,6 +29,8 @@ class TestReadFromStdin(unittest.TestCase):
                                 ('IN',    'KNOX',     36864),
                                 ('IN',    'LAPORTE',  110592)])
 
+
+class TestReadFromStdin(QuantityMixin, unittest.TestCase):
     def test_standard_input_columns(self):
         """Check input with domain, all labels, and all attributes."""
         self.node.set_registered_attributes(['category', 'sex'])
