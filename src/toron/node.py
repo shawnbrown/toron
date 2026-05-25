@@ -278,6 +278,7 @@ class TopoNode(object):
     def add_discrete_categories(
         self, category: Set[str], *categories: Set[str]
     ) -> None:
+        """Add multiple discrete categories."""
         categories_to_add = (category,) + categories
 
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
