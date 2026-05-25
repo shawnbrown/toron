@@ -63,6 +63,7 @@ from .data_service import (
     rebuild_structure_table,
     refresh_or_rebuild_structure_granularity,
     add_discrete_categories,
+    add_discrete_category,
     refresh_structure_granularity,
     set_domain,
     get_domain,
@@ -289,6 +290,29 @@ class TopoNode(object):
 
             add_discrete_categories(
                 categories=categories_to_add,
+                column_manager=col_manager,
+                property_repo=prop_repo,
+            )
+
+            rebuild_structure_table(
+                column_manager=col_manager,
+                property_repo=prop_repo,
+                structure_repo=self._dal.StructureRepository(cursor),
+                index_repo=self._dal.IndexRepository(cursor),
+                aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                optimizations=self._dal.optimizations,
+            )
+
+    def add_discrete_category(self, category: Set[str]) -> None:
+        """Add discrete category."""
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
+
+            col_manager = self._dal.ColumnManager(cursor)
+            prop_repo = self._dal.PropertyRepository(cursor)
+
+            add_discrete_category(
+                category=category,
                 column_manager=col_manager,
                 property_repo=prop_repo,
             )

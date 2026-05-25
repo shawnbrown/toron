@@ -42,6 +42,18 @@ def add_weight(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
+def add_category(args: argparse.Namespace) -> ExitCode:
+    """Add a discrete category to an existing node file."""
+    process_backup_option(args)
+
+    try:
+        args.node.add_discrete_category(set(args.labels))
+    except (ValueError, RuntimeError) as e:
+        raise ToronError(str(e))
+
+    return ExitCode.OK
+
+
 def add_attribute(args: argparse.Namespace) -> ExitCode:
     """Add attribute columns to the given node file."""
     process_backup_option(args)

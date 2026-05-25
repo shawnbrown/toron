@@ -77,6 +77,42 @@ class TestAddWeight(unittest.TestCase):
             command_add.add_weight(args)
 
 
+class TestAddCategory(unittest.TestCase):
+    def test_add_category(self):
+        node = TopoNode()
+        node.add_index_columns('A', 'B', 'C')
+
+        args = argparse.Namespace(
+            command='add',
+            element='category',
+            node=node,
+            labels=['A', 'B'],
+        )
+
+        command_add.add_category(args)  # <- Method under test.
+
+        self.assertEqual(
+            node.discrete_categories,
+            [{'A', 'B'}, {'A', 'B', 'C'}],
+        )
+
+    def test_error_case(self):
+        """Failures should raise a ``ToronError``."""
+        node = TopoNode()
+        node.add_index_columns('A', 'B', 'C')
+
+        args = argparse.Namespace(
+            command='add',
+            element='category',
+            node=node,
+            labels=['C', 'D', 'E'],
+        )
+
+        regex = r"invalid category, no index labels 'D', 'E'"
+        with self.assertRaisesRegex(ToronError, regex):
+            command_add.add_category(args)  # <- Method under test.
+
+
 class TestAddAttributes(unittest.TestCase):
     def test_add_attributes(self):
         node = TopoNode()
