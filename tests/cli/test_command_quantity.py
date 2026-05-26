@@ -98,3 +98,40 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
              ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499.0],
              ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915.0]],
         )
+
+
+class TestWriteToStdout(QuantityMixin, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.node.set_registered_attributes(['category', 'sex'])
+        self.node.insert_quantities2(
+            value_column='quantity',
+            data=[['domain', 'state', 'county',   'category', 'sex',    'quantity'],
+                  ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140.0],
+                  ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990.0],
+                  ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499.0],
+                  ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915.0]],
+        )
+
+    def test_basic_behavior(self):
+        dummy_stdout = DummyRedirection()
+        args = argparse.Namespace(
+            command='quantity',
+            node=self.node,
+            stdout=dummy_stdout,
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_quantity.write_to_stdout(args)  # <- Function under test.
+
+        self.assertEqual(logs_cm.output, ['INFO:app-toron:written 4 records'])
+
+        expected_values = (
+            'domain,state,county,category,sex,quantity\n'
+            'iso_US,OH,BUTLER,TOTAL,MALE,180140.0\n'
+            'iso_US,OH,BUTLER,TOTAL,FEMALE,187990.0\n'
+            'iso_US,OH,FRANKLIN,TOTAL,MALE,566499.0\n'
+            'iso_US,OH,FRANKLIN,TOTAL,FEMALE,596915.0\n'
+        )
+        self.assertEqual(dummy_stdout.getvalue(), expected_values)

@@ -31,8 +31,23 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
 
 
 def write_to_stdout(args: argparse.Namespace) -> ExitCode:
-    """Write quantity records to stdout stream."""
-    raise NotImplementedError
+    """Write quantity records to stdout stream in CSV format."""
+    node = args.node
+    domain_value = node.domain
+
+    row_count = 0
+    with csv_stdout_writer(args.stdout) as writer:
+        data = node.select_quantities2(header=True)
+
+        header = next(data)
+        writer.writerow(header)
+
+        for row in data:
+            writer.writerow(row)
+            row_count += 1
+
+    applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
+    return ExitCode.OK
 
 
 def process_quantity_action(args: argparse.Namespace) -> ExitCode:
