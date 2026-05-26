@@ -2258,6 +2258,7 @@ class TopoNode(object):
         on_existing: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
     ) -> None:
         """Load quantity and attribute values."""
+        # This new method uses "registered attributes", unlike the original.
         data, columns = normalize_tabular(data, columns)
 
         counter: Counter[str] = Counter()
@@ -2405,6 +2406,39 @@ class TopoNode(object):
             applogger.info(f"loaded {counter['inserted']} quantities")
         else:
             applogger.warning('no quantities loaded')
+
+    def select_quantities2(self, header: bool = True) -> Iterator[Sequence]:
+        """Select quantites from node."""
+        # This new method uses "registered attributes", unlike the original.
+        with self._managed_cursor(n=3) as (cur1, cur2, cur3):
+            location_repo = self._dal.LocationRepository(cur1)
+            property_repo = self._dal.PropertyRepository(cur1)
+            attribute_repo = self._dal.AttributeGroupRepository(cur2)
+            quantity_repo = self._dal.QuantityRepository(cur3)
+
+            registered_attributes = get_registered_attributes(property_repo)
+            if not registered_attributes:
+                raise ToronError('operation cancelled, no attributes registered')
+
+            domain = get_domain(property_repo)
+            domain_col, domain_val = (['domain'], [domain]) if domain else ([], [])
+
+            # TODO: Change label output to follow a user-specified order property.
+            label_cols = location_repo.get_label_names()
+
+            if header:
+                yield list(chain(domain_col, label_cols, registered_attributes, ['quantity']))
+
+            for location in location_repo.find_all():
+                quantities = quantity_repo.find(location_id=location.id)
+                for quantity in quantities:
+                    label_vals = location.labels
+
+                    attr_group = attribute_repo.get(quantity.attribute_group_id)
+                    attr_dict = attr_group.attributes
+                    attr_vals = (attr_dict.get(col) for col in registered_attributes)
+
+                    yield list(chain(domain_val, label_vals, attr_vals, [quantity.value]))
 
     def insert_quantities(
         self,

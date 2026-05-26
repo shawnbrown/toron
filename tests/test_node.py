@@ -4969,6 +4969,40 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         ])
 
 
+class TestTopoNodeSelectQuantities2(unittest.TestCase):
+    def setUp(self):
+        self.node = TopoNode()
+        self.node.add_index_columns('state', 'county')
+        self.node.insert_index(
+            [['state', 'county'],
+             ['OH', 'BUTLER'],
+             ['OH', 'FRANKLIN'],
+             ['IN', 'KNOX']],
+        )
+        self.node.set_domain('iso_US')
+        self.node.set_registered_attributes(['category', 'sex'])
+
+    def test_select_quantities(self):
+        self.node.set_domain('year2025')
+        data = [
+            ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['year2025', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140],
+            ['year2025', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990],
+            ['year2025', 'IN', '', 'TOTAL', None, 6924275],
+            ['year2025', 'AL', '', 'TOTAL', None, 5024279],  # <- No matching index.
+        ]
+        self.node.insert_quantities2(
+            value_column='quantity',
+            data=data,
+            allow_invalid_label=True,
+            allow_invalid_category=True,
+        )
+
+        results = self.node.select_quantities2()  # <- Method under test.
+
+        self.assertEqual(list(results), data, msg='should match original data')
+
+
 class TestTopoNodeInsertQuantities(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
