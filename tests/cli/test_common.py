@@ -11,6 +11,7 @@ from ..common import (  # <- tests/common.py (not cli/common.py)
 
 from toron.cli.common import (
     csv_stdout_writer,
+    normalize_arg_list,
     ansi_codes,
     StyleCodes,
     get_stream_styles,
@@ -42,6 +43,66 @@ class TestCsvStdoutWriter(StreamWrapperTestCase):
         with csv_stdout_writer(dummy_stdout) as writer:
             writer.writerow(['\u0192\u00f3\u00f3', '\u0253\u00e0\u0155', '\u0184\u0251\u017e'])
         self.assertStream(dummy_stdout, 'ƒóó,ɓàŕ,Ƅɑž\n')
+
+
+class TestNormalizeArgList(unittest.TestCase):
+    def test_unchanged(self):
+        self.assertEqual(
+            normalize_arg_list(['A', 'B', 'C']),
+            ['A', 'B', 'C'],
+        )
+
+    def test_comma_separated(self):
+        self.assertEqual(
+            normalize_arg_list(['A,B,C']),
+            ['A', 'B', 'C'],
+        )
+
+    def test_quoted_comma(self):
+        self.assertEqual(
+            normalize_arg_list(['A,"B,C"']),
+            ['A', 'B,C'],
+        )
+
+    def test_escaped_quotes(self):
+        self.assertEqual(
+            normalize_arg_list(['A,"B ""C"" D",E']),
+            ['A', 'B "C" D', 'E'],
+        )
+
+    def test_irregular_whitespace(self):
+        self.assertEqual(
+            normalize_arg_list(['A , B , C,D  E']),
+            ['A', 'B', 'C', 'D  E'],
+        )
+
+    def test_quoted_irregular_whitespace(self):
+        self.assertEqual(
+            normalize_arg_list(['"A , B ", C,"D  E"']),
+            ['A , B', 'C', 'D  E'],
+        )
+
+    def test_newline_handline(self):
+        self.assertEqual(
+            normalize_arg_list(['A,B \nC,"D\n E","F\nG"']),
+            ['A', 'B C', 'D E', 'F G'],
+        )
+
+    def test_multiple_items(self):
+        arg_list = [
+            'A',          # Should remain unchanged.
+            'B,C,D',      # Should become `'B', 'C', 'D'`.
+            'E "F ", G',  # Should become `'E "F "', 'G'`.
+            'H',          # Should remain unchanged.
+        ]
+
+        self.assertEqual(
+            normalize_arg_list(arg_list),
+            ['A', 'B', 'C', 'D', 'E "F "', 'G', 'H'],
+        )
+
+    def test_empty_input(self):
+        self.assertEqual(normalize_arg_list([]), [])
 
 
 class TestGetStreamStyles(unittest.TestCase):

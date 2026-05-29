@@ -5,6 +5,7 @@ import io
 import logging
 import logging.config
 import os
+import re
 import sys
 from binascii import crc32
 from collections import Counter
@@ -106,6 +107,37 @@ def process_backup_option(
         dir_name, base_name = os.path.split(node.path_hint)
         backup_path = os.path.join(dir_name, f'backup-{base_name}')
         node.to_file(backup_path)
+
+
+def normalize_arg_list(arg_list: List[str]) -> List[str]:
+    """Normalize arg list converting CSV syntax into individual items.
+
+    This function is intended to be used on argparse arguments (gathered
+    into a list with `nargs='+'` or `nargs='*'`) that can contain CSV
+    syntax--like comma separated values and escaped quotes and commas.
+
+    .. code-block::
+
+        >>> normalize_arg_list(['A,B,C'])
+        ['A', 'B', 'C']
+        >>> normalize_arg_list(['A,B', 'C'])
+        ['A', 'B', 'C']
+        >>> normalize_arg_list(['A , B', ' ,C '])
+        ['A', 'B', 'C']
+        >>> normalize_arg_list(['A', 'B', 'C'])
+        ['A', 'B', 'C']
+    """
+    normalized = []
+
+    for value in arg_list:
+        line = re.sub(r'\b\r?\n\b', ' ', value)  # Newlines between words -> space.
+        line = ''.join(line.splitlines())  # Remaining newlines -> empty string.
+        for label in next(csv.reader([line]), []):
+            stripped = label.strip()  # Strip leading and trailing whitespace.
+            if stripped:
+                normalized.append(stripped)
+
+    return normalized
 
 
 # ============================
