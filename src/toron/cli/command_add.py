@@ -65,7 +65,7 @@ def add_attribute(args: argparse.Namespace) -> ExitCode:
     attribute_columns = args.node.get_registered_attributes()
 
     new_attributes = []
-    for attr in args.attributes:
+    for attr in normalize_arg_list(args.attributes):
         if attr not in attribute_columns:
             new_attributes.append(attr)
         else:

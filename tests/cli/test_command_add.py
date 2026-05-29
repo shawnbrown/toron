@@ -209,6 +209,18 @@ class TestAddAttributes(unittest.TestCase):
         with self.assertRaisesRegex(ToronError, regex):
             command_add.add_attribute(args)  # Function under test.
 
+    def test_add_attributes_comma_separated_value(self):
+        node = TopoNode()
+
+        command_add.add_attribute(argparse.Namespace(
+            command='add',
+            element='attributes',
+            node=node,
+            attributes=['foo,bar,baz'],  # <- Comma-separated value.
+        ))
+
+        self.assertEqual(node.get_registered_attributes(), ['foo', 'bar', 'baz'])
+
 
 class TestAddCrosswalk(unittest.TestCase):
     def setUp(self):

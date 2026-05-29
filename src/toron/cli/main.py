@@ -196,7 +196,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_attribute = parser_add_subparsers.add_parser(
         'attribute',
         help='add attribute columns to node file',
-        description='Add attribute columns to an existing node file.',
+        description=('Add attribute columns to an existing node file. '
+                     'Attributes may be provided as separate arguments '
+                     'or as a comma-separated list.'),
     )
     parser_add_attribute.add_argument('node', type=TopoNodeType(mode='rw'),
                                       help='name of file to modify', metavar='FILE')
