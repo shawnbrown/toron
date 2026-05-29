@@ -36,13 +36,12 @@ class TestAddLabels(unittest.TestCase):
     def test_add_label_comma_separated_value(self):
         node = TopoNode()
 
-        args = argparse.Namespace(
+        command_add.add_label(argparse.Namespace(
             command='add',
             element='label',
             node=node,
             labels=['A,B,C'],  # <- Comma-separated value.
-        )
-        command_add.add_label(args)  # Function under test.
+        ))
 
         self.assertEqual(node.index_columns, ['A', 'B', 'C'])
 
@@ -129,19 +128,14 @@ class TestAddCategory(unittest.TestCase):
         node = TopoNode()
         node.add_index_columns('A', 'B', 'C')
 
-        args = argparse.Namespace(
+        command_add.add_category(argparse.Namespace(
             command='add',
             element='category',
             node=node,
             labels=['A,B'],  # <- Comma-separated value.
-        )
+        ))
 
-        command_add.add_category(args)  # <- Method under test.
-
-        self.assertEqual(
-            node.discrete_categories,
-            [{'A', 'B'}, {'A', 'B', 'C'}],
-        )
+        self.assertEqual(node.discrete_categories, [{'A', 'B'}, {'A', 'B', 'C'}])
 
 
 class TestAddAttributes(unittest.TestCase):
