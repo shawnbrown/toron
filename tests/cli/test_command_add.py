@@ -33,6 +33,19 @@ class TestAddLabels(unittest.TestCase):
                 command='add', element='label', node=node, labels=['B']
             ))
 
+    def test_add_label_comma_separated_list(self):
+        node = TopoNode()
+
+        args = argparse.Namespace(
+            command='add',
+            element='label',
+            node=node,
+            labels=['A,B,C'],  # <- Comma-separated value.
+        )
+        command_add.add_label(args)  # Function under test.
+
+        self.assertEqual(node.index_columns, ['A', 'B', 'C'])
+
 
 class TestAddWeight(unittest.TestCase):
     def test_add_weight(self):

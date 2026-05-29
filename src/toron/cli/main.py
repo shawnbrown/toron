@@ -136,7 +136,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_label = parser_add_subparsers.add_parser(
         'label',
         help='add index label to node file',
-        description='Add index label to an existing node file.',
+        description=('Add index label to an existing node file. Labels may be '
+                     'provided as separate arguments or as a comma-separated '
+                     'list.'),
     )
     parser_add_label.add_argument('node', type=TopoNodeType(mode='rw'),
                                   help='name of file to modify', metavar='FILE')

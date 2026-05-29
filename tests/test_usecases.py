@@ -245,7 +245,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             command='add',
             element='label',
             node=self.node1,
-            labels=['idx1', 'idx2', 'idx3']
+            labels=['idx1,idx2,idx3'],
         ))
         cli.command_add.add_weight(argparse.Namespace(
             command='add',
