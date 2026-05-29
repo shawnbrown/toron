@@ -33,7 +33,7 @@ class TestAddLabels(unittest.TestCase):
                 command='add', element='label', node=node, labels=['B']
             ))
 
-    def test_add_label_comma_separated_list(self):
+    def test_add_label_comma_separated_value(self):
         node = TopoNode()
 
         args = argparse.Namespace(
@@ -124,6 +124,24 @@ class TestAddCategory(unittest.TestCase):
         regex = r"invalid category, no index labels 'D', 'E'"
         with self.assertRaisesRegex(ToronError, regex):
             command_add.add_category(args)  # <- Method under test.
+
+    def test_add_category_comma_separated_value(self):
+        node = TopoNode()
+        node.add_index_columns('A', 'B', 'C')
+
+        args = argparse.Namespace(
+            command='add',
+            element='category',
+            node=node,
+            labels=['A,B'],  # <- Comma-separated value.
+        )
+
+        command_add.add_category(args)  # <- Method under test.
+
+        self.assertEqual(
+            node.discrete_categories,
+            [{'A', 'B'}, {'A', 'B', 'C'}],
+        )
 
 
 class TestAddAttributes(unittest.TestCase):

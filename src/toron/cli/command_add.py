@@ -49,8 +49,9 @@ def add_category(args: argparse.Namespace) -> ExitCode:
     """Add a discrete category to an existing node file."""
     process_backup_option(args)
 
+    normalized = normalize_arg_list(args.labels)
     try:
-        args.node.add_discrete_category(set(args.labels))
+        args.node.add_discrete_category(set(normalized))
     except (ValueError, RuntimeError) as e:
         raise ToronError(str(e))
 

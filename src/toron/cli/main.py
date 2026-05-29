@@ -177,7 +177,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_category = parser_add_subparsers.add_parser(
         'category',
         help='add a discrete category to node file',
-        description='Add a discrete category to an existing node file.',
+        description=('Add a discrete category to an existing node file. '
+                     'Labels may be provided as separate arguments or as '
+                     'a comma-separated list.'),
     )
     parser_add_category.add_argument('node', type=TopoNodeType(mode='rw'),
                                      help='name of file to modify',
