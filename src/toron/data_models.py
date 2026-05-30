@@ -545,6 +545,10 @@ class BaseStructureRepository(ABC):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
 
+    @abstractmethod
+    def get_label_names(self) -> List[str]:
+        """Get a list of label column names."""
+
     def get_by_bits(
         self, bits: Sequence[Literal[0, 1]]
     ) -> Structure:

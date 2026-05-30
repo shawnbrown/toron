@@ -632,6 +632,15 @@ class StructureRepositoryBaseTest(ABC):
         with self.assertRaises(KeyError):
             self.repository.get(2)
 
+    def test_get_label_names(self):
+        """Test get_label_names() method."""
+        result = self.repository.get_label_names()
+        self.assertEqual(result, [], msg='should be empty list when no labels defined')
+
+        self.manager.add_columns('A', 'B', 'C')
+        result = self.repository.get_label_names()
+        self.assertEqual(result, ['A', 'B', 'C'])
+
     def test_get_by_bits(self):
         self.manager.add_columns('A', 'B', 'C')
         self.repository.add(None, 0, 0, 0)

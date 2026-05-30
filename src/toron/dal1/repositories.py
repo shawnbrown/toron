@@ -333,6 +333,12 @@ class StructureRepository(BaseStructureRepository):
             'DELETE FROM main.structure WHERE _structure_id=?', (id,)
         )
 
+    def get_label_names(self) -> List[str]:
+        """Get a list of label column names."""
+        self._cursor.execute(f"PRAGMA main.table_info('structure')")
+        column_names = list(row[1] for row in self._cursor)
+        return column_names[2:]  # Slice-off '_structure_id' and '_granularity'.
+
 
 class WeightGroupRepository(BaseWeightGroupRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
