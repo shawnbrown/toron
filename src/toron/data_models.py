@@ -28,6 +28,7 @@ from toron._typing import (
     TypeAlias,
     TypeVar,
     Union,
+    cast,
     overload,
     TYPE_CHECKING,  # <- Temporary.
 )
@@ -560,6 +561,17 @@ class BaseStructureRepository(ABC):
 
         msg = f"no structure matching bits: {', '.join(str(x) for x in bits)}"
         raise KeyError(msg)
+
+    def get_by_labels(self, labels: Iterable[str]) -> Structure:
+        """Get record with the matching category labels."""
+        labels = list(labels)
+        all_labels = self.get_label_names()
+        bits = [int(x in labels) for x in all_labels]
+        try:
+            return self.get_by_bits(cast(List[Literal[0, 1]], bits))  # <- EXIT!
+        except KeyError:
+            label_text = ', '.join(repr(x) for x in labels)
+            raise KeyError(f'no structure matching labels: {label_text}')
 
 
 @dataclass(frozen=True)

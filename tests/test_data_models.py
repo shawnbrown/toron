@@ -655,6 +655,32 @@ class StructureRepositoryBaseTest(ABC):
         with self.assertRaisesRegex(KeyError, regex):
             self.repository.get_by_bits([0, 0, 1])
 
+    def test_get_by_labels(self):
+        self.manager.add_columns('A', 'B', 'C')
+        self.repository.add(None, 0, 0, 0)
+        self.repository.add(2.75, 1, 1, 1)
+        self.repository.add(1.50, 1, 1, 0)
+
+        self.assertEqual(
+            self.repository.get_by_labels(['A', 'B', 'C']),
+            Structure(2, 2.75, 1, 1, 1),
+        )
+
+        self.assertEqual(
+            self.repository.get_by_labels(['C', 'A', 'B']),
+            Structure(2, 2.75, 1, 1, 1),
+            msg='order of labels should not matter',
+        )
+
+        self.assertEqual(
+            self.repository.get_by_labels(iter(['A', 'B'])),
+            Structure(3, 1.50, 1, 1, 0),
+        )
+
+        regex = r"no structure matching labels: 'B', 'C'"
+        with self.assertRaisesRegex(KeyError, regex):
+            self.repository.get_by_labels(iter(['B', 'C']))
+
 
 class WeightRepositoryBaseTest(ABC):
     @property
