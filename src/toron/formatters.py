@@ -2,7 +2,42 @@
 from ._typing import (
     List,
     Sequence,
+    Set,
 )
+
+
+def sort_categories(
+    discrete_categories: List[Set[str]],
+    labels: Sequence[str],
+) -> List[List[str]]:
+    """Sort a list of categories and sort labels within categories.
+    The order is determined by the given ``labels`` sequence.
+
+    .. code-block:: none
+
+        >>> sort_categories(
+        ...     [{'state', 'town'}, {'county', 'state'}],
+        ...     labels=['state', 'county', 'town'],
+        ... )
+        [['state', 'county', 'town'],
+         ['state', 'county'],
+         ['state', 'town']]
+    """
+    whole_space = set(labels)
+    if whole_space and (whole_space not in discrete_categories):
+        discrete_categories.append(whole_space)
+
+    # Sort categories (starting with whole space first).
+    catkey = lambda cat: tuple((x in cat) for x in labels)
+    discrete_categories = sorted(discrete_categories, key=catkey, reverse=True)
+
+    # Sort labels within categories.
+    label_to_index = {label: i for (i, label) in enumerate(labels)}
+    lblkey = lambda label: label_to_index[label]
+    try:
+        return [sorted(cat, key=lblkey) for cat in discrete_categories]
+    except KeyError as e:
+        raise ValueError(f'category label {e} missing from given labels {labels}')
 
 
 def format_granularity(granularity_values: Sequence[float]) -> List[str]:
