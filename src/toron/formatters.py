@@ -72,8 +72,7 @@ def format_granularity(
     unique_values = set(granularity_values) | {0.0}  # Always include `0.0`.
     unique_len = len(unique_values)
 
-    precision = 2
-    while True:
+    for precision in range(2, 18):
         fmtstr = f'{{:.{precision}f}}'
         func = lambda x: fmtstr.format(x) if x is not None else 'None'
         formatted = {func(x) for x in unique_values}
@@ -85,4 +84,4 @@ def format_granularity(
             func = lambda x: fmtstr.format(x) if x is not None else none_val
             return [func(x) for x in granularity_values]  # <- EXIT!
 
-        precision += 1
+    raise ValueError('cannot find a unique representation')
