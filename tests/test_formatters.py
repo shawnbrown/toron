@@ -78,6 +78,13 @@ class TestFormatGranularity(unittest.TestCase):
             ['5.30', '5.30'],
         )
 
+    def test_none_value(self):
+        """Should handle ``None`` values, too."""
+        self.assertEqual(
+            format_granularity([12.650378635397704, None, 8.297246124988996]),
+            ['12.65', ' None', ' 8.30'],
+        )
+
     def test_multiple_cases(self):
         """Should handle multiple cases at the same time."""
         self.assertEqual(

@@ -3,6 +3,7 @@ from ._typing import (
     List,
     Sequence,
     Set,
+    Union,
 )
 
 
@@ -40,7 +41,9 @@ def sort_categories(
         raise ValueError(f'category label {e} missing from given labels {labels}')
 
 
-def format_granularity(granularity_values: Sequence[float]) -> List[str]:
+def format_granularity(
+    granularity_values: Sequence[Union[float, None]]
+) -> List[str]:
     """Return rounded representations that preserve value uniqueness.
     Values are represented with two or more decimal places of precision.
 
@@ -48,7 +51,7 @@ def format_granularity(granularity_values: Sequence[float]) -> List[str]:
     input values from being rounded to the same representation. Output
     is also right-aligned for display.
 
-    .. code-block:: none
+    .. code-block::
 
         >>> format_granularity([12.650378635397704,
         ...                     12.647267731680174,
@@ -71,9 +74,15 @@ def format_granularity(granularity_values: Sequence[float]) -> List[str]:
 
     precision = 2
     while True:
-        formatted = {f'{x:.{precision}f}' for x in unique_values}
+        fmtstr = f'{{:.{precision}f}}'
+        func = lambda x: fmtstr.format(x) if x is not None else 'None'
+        formatted = {func(x) for x in unique_values}
+
         if len(formatted) == unique_len:
             width = max(len(x) for x in formatted)
             fmtstr = f'{{:>{width}.{precision}f}}'  # Build format-string.
-            return [fmtstr.format(x) for x in granularity_values]
+            none_val = 'None'.rjust(width)
+            func = lambda x: fmtstr.format(x) if x is not None else none_val
+            return [func(x) for x in granularity_values]  # <- EXIT!
+
         precision += 1
