@@ -1,6 +1,7 @@
 """Database schema version migration functions."""
 import json
 import sqlite3
+from itertools import chain
 from toron._typing import (
     Optional,
 )
@@ -111,6 +112,19 @@ def v020_to_v030_properties(cursor: sqlite3.Cursor) -> None:
     cursor.execute(
         "UPDATE main.property SET value=? WHERE key='domain'",
         (json.dumps(domain),)
+    )
+
+    # Add registered attributes.
+    cursor.execute('SELECT attributes FROM main.attribute_group '
+                   'WHERE attributes IS NOT NULL')
+    generator = (
+        json.loads(attr_dict) if isinstance(attr_dict, str) else attr_dict
+        for (attr_dict,) in cursor  # Unpack single item in `for` clause.
+    )
+    attribute_keys = sorted(set(chain.from_iterable(generator)))
+    cursor.execute(
+        "INSERT INTO main.property VALUES('registered_attributes', ?)",
+        (json.dumps(attribute_keys),)
     )
 
     # Update schema version number.

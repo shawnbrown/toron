@@ -252,6 +252,14 @@ class TestApplyMigrations(unittest.TestCase):
 
     def test_v020_to_v030_properties(self):
         self.cur.executescript("""
+            CREATE TABLE attribute_group(
+                attribute_group_id INTEGER PRIMARY KEY,
+                attributes TEXT_ATTRIBUTES NOT NULL,
+                UNIQUE (attributes)
+            );
+            INSERT INTO "attribute_group" VALUES(1, '{"A": "aaa"}');
+            INSERT INTO "attribute_group" VALUES(2, '{"B": "bbb", "C": "ccc"}');
+
             CREATE TABLE property(
                 key TEXT PRIMARY KEY NOT NULL,
                 value TEXT_JSON
@@ -268,6 +276,9 @@ class TestApplyMigrations(unittest.TestCase):
         self.cur.execute("SELECT value from property where key='domain'")
         self.assertEqual(self.cur.fetchone()[0], '"foo_bar"')
 
+        self.cur.execute("SELECT value from property where key='registered_attributes'")
+        self.assertEqual(self.cur.fetchone()[0], '["A", "B", "C"]')
+
     def test_apply_migrations(self):
         self.cur.executescript(FULL_NODE_SCHEMA_V_020)
 
@@ -278,6 +289,9 @@ class TestApplyMigrations(unittest.TestCase):
 
         self.cur.execute("SELECT value from property where key='domain'")
         self.assertEqual(self.cur.fetchone()[0], '"baz_qux_foo_bar"')
+
+        self.cur.execute("SELECT value from property where key='registered_attributes'")
+        self.assertEqual(self.cur.fetchone()[0], '["category"]')
 
         self.cur.execute('SELECT * FROM relation')
         self.assertEqual(
