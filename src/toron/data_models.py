@@ -570,8 +570,8 @@ class BaseStructureRepository(ABC):
         try:
             return self.get_by_bits(cast(List[Literal[0, 1]], bits))  # <- EXIT!
         except KeyError:
-            label_text = ', '.join(repr(x) for x in labels)
-            raise KeyError(f'no structure matching labels: {label_text}')
+            raise KeyError(f"no structure matching labels: "
+                           f"{', '.join(repr(x) for x in labels)}") from None
 
 
 @dataclass(frozen=True)
