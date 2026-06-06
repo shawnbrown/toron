@@ -44,7 +44,7 @@ def sort_categories(
 def format_granularity(
     granularity_values: Sequence[Union[float, None]]
 ) -> List[str]:
-    """Return rounded representations that preserve value uniqueness.
+    """Return rounded representations that preserve value distinctness.
     Values are represented with two or more decimal places of precision.
 
     Output uses the number of decimal places necessary to prevent unique
@@ -69,19 +69,23 @@ def format_granularity(
     and second values. The last two values are exactly the same so their
     rounded representations are also the same.
     """
-    unique_values = set(granularity_values) | {0.0}  # Always include `0.0`.
-    unique_len = len(unique_values)
+    # Get unique values and include 0.0 so that selected rounding precision
+    # is sufficient to distinguish small values from zero itself.
+    unique_vals = set(granularity_values) | {0.0}
+
+    unique_len = len(unique_vals)
 
     for precision in range(2, 18):
-        fmtstr = f'{{:.{precision}f}}'
-        func = lambda x: fmtstr.format(x) if x is not None else 'None'
-        formatted = {func(x) for x in unique_values}
-
-        if len(formatted) == unique_len:
-            width = max(len(x) for x in formatted)
-            fmtstr = f'{{:>{width}.{precision}f}}'  # Build format-string.
-            none_val = 'None'.rjust(width)
-            func = lambda x: fmtstr.format(x) if x is not None else none_val
-            return [func(x) for x in granularity_values]  # <- EXIT!
+        rounded_vals = {
+            f'{x:.{precision}f}' if x is not None else 'None'
+            for x in unique_vals
+        }
+        if len(rounded_vals) == unique_len:
+            width = max(len(x) for x in rounded_vals)
+            none_repr = 'None'.rjust(width)
+            return [
+                f'{x:>{width}.{precision}f}' if x is not None else none_repr
+                for x in granularity_values
+            ]
 
     raise ValueError('cannot find a unique representation')
