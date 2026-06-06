@@ -1,5 +1,6 @@
 """Tests for toron.formatters module."""
 import unittest
+from decimal import Decimal
 from toron.formatters import (
     sort_categories,
     format_granularity,
@@ -106,3 +107,13 @@ class TestFormatGranularity(unittest.TestCase):
     def test_empty_input(self):
         """Empty input should result in empty output."""
         self.assertEqual(format_granularity([]), [])
+
+    def test_no_distinct_repr(self):
+        """Should raise error if unable to create a distinct repr."""
+        regex = r'cannot find a unique representation'
+        msg = 'difference should be too small to create distinct output'
+        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+            format_granularity([
+                Decimal('12.650378635397704001'),
+                Decimal('12.650378635397704'),
+            ])
