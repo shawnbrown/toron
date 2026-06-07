@@ -23,6 +23,7 @@ except ImportError:
 #######################################################################
 
 from toron.data_models import (
+    EmptyCollectionError,
     BaseDataConnector,
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
@@ -643,6 +644,12 @@ class StructureRepositoryBaseTest(ABC):
 
     def test_get_by_bits(self):
         self.manager.add_columns('A', 'B', 'C')
+
+        msg = 'Should raise EmptyCollectionError when repository is empty.'
+        with self.assertRaises(EmptyCollectionError, msg=msg):
+            self.repository.get_by_bits([1, 1, 1])
+
+        # Add values to repository.
         self.repository.add(None, 0, 0, 0)
         self.repository.add(2.75, 1, 1, 1)
 

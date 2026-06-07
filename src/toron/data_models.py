@@ -61,6 +61,10 @@ COMMON_RESERVED_IDENTIFIERS: Final[Set[str]] = {
 }
 
 
+class EmptyCollectionError(LookupError):
+    """Raised when underlying data collection or resource is empty."""
+
+
 class BaseDataConnector(ABC, Generic[T1, T2]):
     @abstractmethod
     def __init__(self, **kwds) -> None:
@@ -554,8 +558,12 @@ class BaseStructureRepository(ABC):
         self, bits: Sequence[Literal[0, 1]]
     ) -> Structure:
         """Get record with the matching bit pattern."""
+        all_structures = self.get_all()
+        if not all_structures:
+            raise EmptyCollectionError('structure data not initialized')
+
         bits = tuple(bits)
-        for structure in self.get_all():
+        for structure in all_structures:
             if structure.bits == bits:
                 return structure  # <- EXIT!
 
