@@ -29,6 +29,7 @@ from .categories import (
 )
 from .data_models import (
     COMMON_RESERVED_IDENTIFIERS,
+    EmptyCollectionError,
     BaseAttributeGroupRepository,
     BaseColumnManager,
     BaseIndexRepository,
@@ -926,12 +927,11 @@ def get_node_info_text(
     else:
         index_list = ['None']
 
-    # Get structure for highest granularity (whole space).
-    bits = (1,) * len(index_columns)  # Bit pattern is all ones.
+    # Get granularity of whole space.
     try:
-        structure = structure_repo.get_by_bits(cast(Tuple[Literal[0, 1]], bits))
+        structure = structure_repo.get_by_labels(index_columns)
         granularity_str = str(structure.granularity)
-    except KeyError:
+    except EmptyCollectionError:
         granularity_str = 'None'
 
     # Get list of weight group names.
