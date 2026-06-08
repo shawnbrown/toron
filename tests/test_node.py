@@ -5877,9 +5877,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            index:
-              None
-            granularity:
+            categories:
               None
             weights:
               None
@@ -5901,9 +5899,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               FooBar
-            index:
-              None
-            granularity:
+            categories:
               None
             weights:
               None
@@ -5925,10 +5921,8 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            index:
-              foo, bar, baz
-            granularity:
-              None
+            categories:
+              None  foo, bar, baz
             weights:
               None
             attributes:
@@ -5953,10 +5947,8 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            index:
-              A, B, C
-            granularity:
-              2.75
+            categories:
+              2.75  A, B, C
             weights:
               None
             attributes:
@@ -5980,10 +5972,8 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            index:
-              A, B, C
-            granularity:
-              None
+            categories:
+              None  A, B, C
             weights:
               bar, baz (default, incomplete), foo (incomplete)
             attributes:
@@ -6007,9 +5997,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            index:
-              None
-            granularity:
+            categories:
               None
             weights:
               None
@@ -6064,9 +6052,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            index:
-              None
-            granularity:
+            categories:
               None
             weights:
               None

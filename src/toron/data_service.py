@@ -49,6 +49,10 @@ from .data_models import (
     Crosswalk,
     JsonTypes,
 )
+from .formatters import (
+    format_granularity,
+    sort_categories,
+)
 from .selectors import (
     parse_selector,
     get_greatest_unique_specificity,
@@ -927,12 +931,22 @@ def get_node_info_text(
     else:
         index_list = ['None']
 
-    # Get granularity of whole space.
-    try:
-        structure = structure_repo.get_by_labels(index_columns)
-        granularity_str = str(structure.granularity)
-    except EmptyCollectionError:
-        granularity_str = 'None'
+    # Get categories as an ordered list (granularity and labels).
+    discrete_categories = get_all_discrete_categories(column_manager, property_repo)
+    sorted_categories = sort_categories(discrete_categories, index_columns)
+    def _get_granularity(cat):
+        try:
+            return structure_repo.get_by_labels(cat).granularity
+        except EmptyCollectionError:
+            return None
+    raw_granularity = [_get_granularity(cat) for cat in sorted_categories]
+    formatted_granularity = format_granularity(raw_granularity)
+    category_list = [
+        f"{g}  {', '.join(c)}"
+        for g, c in zip(formatted_granularity, sorted_categories)
+    ]
+    if not category_list:
+        category_list = ['None']
 
     # Get list of weight group names.
     weight_groups = sorted(weight_group_repo.get_all(), key=lambda x: x.name)
@@ -984,7 +998,7 @@ def get_node_info_text(
     return {
         'domain_str': domain_str,
         'index_list': index_list,
-        'granularity_str': granularity_str,
+        'category_list': category_list,
         'weights_list': weights_list,
         'attribute_list': attribute_list,
         'crosswalks_list': crosswalks_list,

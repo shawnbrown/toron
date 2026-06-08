@@ -34,16 +34,17 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     # Define horizontal rule `hr` made from "Box Drawings" character.
     hr = '─' * min(len(filename), (get_terminal_size()[0] - 1))
 
-    # Prepare and write output.
+    # When dropping support for Python 3.11, move these into f-string.
+    categories_formatted = '\n  '.join(info_dict['category_list'])
     crosswalks_str = '\n  '.join(info_dict['crosswalks_list'])
+
+    # Prepare and write output.
     sys.stdout.write(
         f"{hr}\n{filename}\n{hr}\n"
         f"{bright}domain:{reset}\n"
         f"  {info_dict['domain_str']}\n"
-        f"{bright}index:{reset}\n"
-        f"  {', '.join(info_dict['index_list'])}\n"
-        f"{bright}granularity:{reset}\n"
-        f"  {info_dict['granularity_str']}\n"
+        f"{bright}categories:{reset}\n"
+        f"  {categories_formatted}\n"
         f"{bright}weights:{reset}\n"
         f"  {', '.join(info_dict['weights_list'])}\n"
         f"{bright}attributes:{reset}\n"

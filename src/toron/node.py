@@ -2924,16 +2924,16 @@ class TopoNode(object):
                 crosswalk_repo=self._dal.CrosswalkRepository(cursor),
             )
 
+        # When dropping support for Python 3.11, move these into f-string.
+        categories_formatted = '\n  '.join(info['category_list'])
         crosswalks_str = '\n  '.join(info['crosswalks_list'])
 
         return (
             f"{super().__repr__()}\n"  # Use default repr as a first line.
             f"domain:\n"
             f"  {info['domain_str']}\n"
-            f"index:\n"
-            f"  {', '.join(info['index_list'])}\n"
-            f"granularity:\n"
-            f"  {info['granularity_str']}\n"
+            f"categories:\n"
+            f"  {categories_formatted}\n"
             f"weights:\n"
             f"  {', '.join(info['weights_list'])}\n"
             f"attributes:\n"
