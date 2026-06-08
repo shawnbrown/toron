@@ -216,38 +216,24 @@ class TestIndexCodeHandling(unittest.TestCase):
     def test_index_id_to_code(self):
         """Check ``index_id_to_code()`` function (e.g., 999 -> 999X04C3FB2E)."""
         values = [
-            # Check without zero-padding.
-            (0, self.node_id1, 0, '0X27B3B62D'),
-            (0, self.node_id2, 0, '0X7054347B'),
-            (999, self.node_id1, 0, '999X24CE8BE2'),
-            (999, self.node_id2, 0, '999X732909B4'),
-
-            # Should zero-pad index_id values to 4 chars.
-            (0, self.node_id1, 4, '0000X27B3B62D'),
-            (0, self.node_id2, 4, '0000X7054347B'),
-            (999, self.node_id1, 4, '0999X24CE8BE2'),
-            (999, self.node_id2, 4, '0999X732909B4'),
+            (0,   self.node_id1, '0X27B3B62D'),
+            (0,   self.node_id2, '0X7054347B'),
+            (999, self.node_id1, '999X24CE8BE2'),
+            (999, self.node_id2, '999X732909B4'),
         ]
 
-        for index_id, unique_id, pad_len, expected_code in values:
-            with self.subTest(index_id=index_id, unique_id=unique_id, pad_len=pad_len):
-                index_code = index_id_to_code(index_id, unique_id.bytes, pad_len)  # <- Function under test.
+        for index_id, unique_id, expected_code in values:
+            with self.subTest(index_id=index_id, unique_id=unique_id):
+                index_code = index_id_to_code(index_id, unique_id.bytes)  # <- Function under test.
                 self.assertEqual(index_code, expected_code)
 
     def test_index_code_to_id(self):
         """Check ``index_code_to_id()`` function (e.g., 999X04C3FB2E -> 999)."""
         values = [
-            # Check index codes without zero-padding.
-            ('0X27B3B62D', self.node_id1, 0),
-            ('0X7054347B', self.node_id2, 0),
+            ('0X27B3B62D',   self.node_id1, 0),
+            ('0X7054347B',   self.node_id2, 0),
             ('999X24CE8BE2', self.node_id1, 999),
             ('999X732909B4', self.node_id2, 999),
-
-            # Check index codes with zero-padding.
-            ('0000X27B3B62D', self.node_id1, 0),
-            ('0000X7054347B', self.node_id2, 0),
-            ('0999X24CE8BE2', self.node_id1, 999),
-            ('0999X732909B4', self.node_id2, 999),
         ]
 
         for index_code, unique_id, expected_id in values:

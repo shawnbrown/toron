@@ -312,13 +312,11 @@ def configure_applogger(
 pack_i64_be = Struct('>q').pack
 
 
-def index_id_to_code(
-    index_id: int, unique_id_bytes: bytes, pad_len: int = 0
-) -> str:
+def index_id_to_code(index_id: int, unique_id_bytes: bytes) -> str:
     """Convert ``index_id`` into an ``index_code``."""
     # Using crc32 to verify IDs and distinguish datasets; not for security.
     checksum = crc32(pack_i64_be(index_id) + unique_id_bytes) & 0xffffffff
-    return f'{index_id:0{pad_len}}X{checksum:08X}'
+    return f'{index_id}X{checksum:08X}'
 
 
 def index_code_to_id(

@@ -53,8 +53,7 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
         if match:
             # Replace index_id with index code in error message.
             index_id = int(match.group(1))
-            pad_len = len(str(args.node.max_index_id))
-            index_code = index_id_to_code(index_id, unique_id_bytes, pad_len)
+            index_code = index_id_to_code(index_id, unique_id_bytes)
             e_str = e_str.replace(match.group(0), f'index code {index_code}')
 
         msg = (f'{e_str}\n  load behavior can be changed using '
@@ -71,7 +70,6 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 
     domain_value = node.domain
     unique_id_bytes = uuid.UUID(node.unique_id).bytes
-    pad_len = len(str(node.max_index_id))
 
     with node._managed_cursor(n=2) as (cur1, cur2):
         index_repo = node._dal.IndexRepository(cur1)
@@ -110,7 +108,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
             # Write data rows.
             for index in index_repo.find_all():
                 writer.writerow(chain(
-                    [index_id_to_code(index.id, unique_id_bytes, pad_len)],
+                    [index_id_to_code(index.id, unique_id_bytes)],
                     index.labels,
                     (get_weight_value(grp_id, index.id) for grp_id in weight_group_ids),
                 ))
