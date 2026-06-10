@@ -75,6 +75,7 @@ def get_parser() -> argparse.ArgumentParser:
     # Define nested class to close over `valid_choices`.
     class ToronArgumentParser(argparse.ArgumentParser):
         def parse_args(self, args=None, namespace=None):
+            """Parse ``args`` into a ``argparse.Namespace`` object."""
             if args is None:
                 args = sys.argv[1:]  # Default to system args.
 
