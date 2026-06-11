@@ -37,16 +37,21 @@ def calculate_granularity(
     If *columns* list is empty or if the index contains no records
     (other than the "undefined" record), then ``None`` will be returned.
 
-    This function implements a Shannon entropy based metric for the
-    "granularity measure of a partition" as described on p. 293 of:
+    This function implements a Shannon entropy based metric which
+    was first proposed by Mark Wierman for the "granularity measure
+    of a partition" on p. 293 of:
 
         MARK J. WIERMAN (1999) MEASURING UNCERTAINTY IN ROUGH SET
         THEORY, International Journal of General Systems, 28:4-5,
         283-297, DOI: 10.1080/03081079908935239
 
+    The metric uses block cardinalities to derive relative frequencies,
+    whose Shannon entropy serves as a measure of the partition's
+    granularity.
+
     In PROBABILISTIC APPROACHES TO ROUGH SETS (Y. Y. Yao, 2003),
-    Yiyu Yao presents the same equation in Eq. (6), using a form
-    more useful for our implimentation:
+    Yiyu Yao presents the same metric in Eq. (6), using a form
+    more useful for our implementation:
 
     .. code-block:: none
 
