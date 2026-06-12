@@ -1,5 +1,6 @@
 """Application logic functions that interact with repository objects."""
 
+import logging
 from collections import Counter
 from itertools import chain, compress, groupby
 from math import log2
@@ -64,6 +65,9 @@ from ._utils import (
     ToronWarning,
     BitFlags,
 )
+
+
+applogger = logging.getLogger('app-toron')
 
 
 def validate_new_index_columns(
@@ -683,9 +687,11 @@ def rebuild_structure_table(
     optimizations: Optional[Dict[str, Callable]] = None
 ) -> None:
     # Get granularity function (use optimized version when available).
-    if optimizations and hasattr(optimizations, 'calculate_granularity'):
-        granularity_func = optimizations.calculate_granularity
+    if optimizations and 'calculate_granularity' in optimizations:
+        applogger.debug('using DAL optimized calculate_granularity()')
+        granularity_func = optimizations['calculate_granularity']
     else:
+        applogger.debug('using unoptimized calculate_granularity()')
         granularity_func = calculate_granularity
 
     # Remove existing structure.

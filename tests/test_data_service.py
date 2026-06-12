@@ -1099,24 +1099,34 @@ class TestRebuildStructureTable(unittest.TestCase):
         ]
 
         # Using standard granularity function.
-        rebuild_structure_table(
-            self.column_manager,
-            self.property_repo,
-            self.structure_repo,
-            self.index_repo,
-            self.alt_index_repo,
-            optimizations=None,
+        with self.assertLogs('app-toron', level='DEBUG') as cm:
+            rebuild_structure_table(
+                self.column_manager,
+                self.property_repo,
+                self.structure_repo,
+                self.index_repo,
+                self.alt_index_repo,
+                optimizations=None,  # <- No optimizations.
+            )
+        self.assertEqual(
+            cm.output,
+            ['DEBUG:app-toron:using unoptimized calculate_granularity()'],
         )
         self.assertEqual(self.structure_repo.get_all(), expected)
 
         # Using optimized granularity function.
-        rebuild_structure_table(
-            self.column_manager,
-            self.property_repo,
-            self.structure_repo,
-            self.index_repo,
-            self.alt_index_repo,
-            optimizations=self.optimizations,
+        with self.assertLogs('app-toron', level='DEBUG') as cm:
+            rebuild_structure_table(
+                self.column_manager,
+                self.property_repo,
+                self.structure_repo,
+                self.index_repo,
+                self.alt_index_repo,
+                optimizations=self.optimizations,
+            )
+        self.assertEqual(
+            cm.output,
+            ['DEBUG:app-toron:using DAL optimized calculate_granularity()'],
         )
         self.assertEqual(normalize_structures(self.structure_repo.get_all()), expected)
 
