@@ -664,18 +664,16 @@ def calculate_granularity(
     if not total_cardinality:
         return None  # <- EXIT!
 
-    distinct_labels = index_repo.find_distinct_labels(
-        *columns, include_undefined=False
-    )
+    block_labels = index_repo.find_distinct_labels(*columns, include_undefined=False)
 
-    total_uncertainty = 0.0
-    for labels in distinct_labels:
+    partition_coarseness = 0.0
+    for labels in block_labels:
         criteria = dict(zip(columns, labels))
         records = aux_index_repo.filter_index_ids_by_label(criteria, include_undefined=False)
-        cardniality = sum(1 for x in records)
-        total_uncertainty += (cardniality / total_cardinality) * log2(cardniality)
+        block_cardinality = sum(1 for _ in records)
+        partition_coarseness += (block_cardinality / total_cardinality) * log2(block_cardinality)
 
-    return log2(total_cardinality) - total_uncertainty
+    return log2(total_cardinality) - partition_coarseness
 
 
 def rebuild_structure_table(

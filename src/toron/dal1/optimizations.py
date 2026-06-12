@@ -7,9 +7,11 @@ from toron._typing import (
     Optional,
 )
 
-from . import schema
 from .repositories import (
     IndexRepository,
+)
+from .schema import (
+    format_identifier,
 )
 
 
@@ -73,30 +75,29 @@ def calculate_granularity(
     if not total_cardinality:
         return None  # <- EXIT!
 
-    #from toron.dal1.schema import format_identifier
     if columns:
-        columns = [schema.format_identifier(col) for col in columns]
+        columns = [format_identifier(col) for col in columns]
         groupby_clause = f"\n                GROUP BY {', '.join(columns)}"
     else:
         groupby_clause = ''
 
     sql = f"""
         WITH
-            subset (cardinality) AS (
+            block (cardinality) AS (
                 SELECT CAST(COUNT(*) AS REAL)
                 FROM main.node_index
                 WHERE index_id > 0{groupby_clause}
             ),
-            summand (uncertainty) AS (
-                SELECT ((subset.cardinality / :partition_cardinality)
-                        * LOG2(subset.cardinality))
-                FROM subset
+            summand (partition_coarseness) AS (
+                SELECT SUM((block.cardinality / :total_cardinality)
+                           * LOG2(block.cardinality))
+                FROM block
             )
-        SELECT LOG2(:partition_cardinality) - SUM(uncertainty)
+        SELECT LOG2(:total_cardinality) - partition_coarseness
         FROM summand
     """
     cursor = index_repo._cursor  # Get cursor (non-public interface).
-    cursor.execute(sql, {'partition_cardinality': total_cardinality})
+    cursor.execute(sql, {'total_cardinality': total_cardinality})
     return cursor.fetchone()[0]
 
 
