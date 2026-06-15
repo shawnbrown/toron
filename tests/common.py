@@ -53,33 +53,18 @@ class TempDirTestCase(unittest.TestCase):
     # it for testing. After testing, the original working directory
     # is restored and the temporary directory is removed.
 
-    if hasattr(unittest.TestCase, 'addClassCleanup'):
-        # The addClassCleanup() method is new in Python 3.8.
-        @classmethod
-        def setUpClass(cls):
-            original_working_dir = os.getcwd()
+    @classmethod
+    def setUpClass(cls):
+        original_working_dir = os.getcwd()
 
-            cls._tempdir = tempfile.TemporaryDirectory()
-            os.chdir(cls._tempdir.name)
+        cls._tempdir = tempfile.TemporaryDirectory()
+        os.chdir(cls._tempdir.name)
 
-            def cleanup_func():
-                os.chdir(original_working_dir)
-                cls._tempdir.cleanup()
-
-            cls.addClassCleanup(cleanup_func)
-
-    else:
-        # Use tearDownClass() method on older versions.
-        @classmethod
-        def setUpClass(cls):
-            cls._original_working_dir = os.getcwd()
-            cls._tempdir = tempfile.TemporaryDirectory()
-            os.chdir(cls._tempdir.name)
-
-        @classmethod
-        def tearDownClass(cls):
-            os.chdir(cls._original_working_dir)
+        def cleanup_func():
+            os.chdir(original_working_dir)
             cls._tempdir.cleanup()
+
+        cls.addClassCleanup(cleanup_func)
 
     def cleanup_temp_files(self):
         """Remove all files from the current temporary directory."""
