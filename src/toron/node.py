@@ -1427,7 +1427,8 @@ class TopoNode(object):
         with self._managed_connection() as connection, \
                 self._managed_cursor(connection) as cursor, \
                 self._managed_transaction(cursor) as cursor:
-            # Line continuations (above) needed for Python 3.8 and earlier.
+            # Use line continuations (above) for Python 3.9 and earlier.
+            # Parenthesized context managers weren't official until 3.10.
 
             group_repo = self._dal.WeightGroupRepository(cursor)
             col_manager = self._dal.ColumnManager(cursor)
