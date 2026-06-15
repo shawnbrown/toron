@@ -1079,6 +1079,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         self.optimizations = dal.optimizations
 
         self.column_manager.add_columns('A', 'B', 'C')
+        self.property_repo.add('discrete_categories', [['A', 'B', 'C']])
         self.index_repo.add('a1', 'b1', 'c1')
         self.index_repo.add('a1', 'b1', 'c2')
         self.index_repo.add('a1', 'b2', 'c3')
@@ -1089,7 +1090,9 @@ class TestRebuildStructureTable(unittest.TestCase):
         self.index_repo.add('a2', 'b4', 'c8')
 
     def test_rebuild_structure(self):
-        self.property_repo.add('discrete_categories', [['A'], ['A', 'B'], ['A', 'B', 'C']])
+        self.property_repo.update(
+            'discrete_categories', [['A'], ['A', 'B'], ['A', 'B', 'C']]
+        )
 
         expected = [
             Structure(id=4, granularity=3.0,  bits=(1, 1, 1)),
@@ -1130,16 +1133,20 @@ class TestRebuildStructureTable(unittest.TestCase):
         )
         self.assertEqual(normalize_structures(self.structure_repo.get_all()), expected)
 
-    def test_rebuild_structure_no_categories(self):
-        """When no discrete categories are defined, the function should
-        build the "trivial topology".
+    def test_rebuild_structure_whole_space_only(self):
+        """When the only category is the "whole space", the function
+        should build the "trivial topology".
 
         The trivial topology (also called the "indiscrete topology")
         is one where the only open sets are the empty set (represented
         by all zeros e.g., ``(0, 0, 0)``) and the entire space
         (represented by all ones, e.g., ``(1, 1, 1)``).
         """
-        self.property_repo.delete('discrete_categories')  # <- No categories!
+        self.assertEqual(
+            self.property_repo.get('discrete_categories'),
+            [['A', 'B', 'C']],
+            msg='test should start with single "whole space" category',
+        )
 
         trivial_topology = [
             Structure(id=2, granularity=3.0,  bits=(1, 1, 1)),
@@ -1166,7 +1173,25 @@ class TestRebuildStructureTable(unittest.TestCase):
             self.alt_index_repo,
             optimizations=self.optimizations,
         )
-        self.assertEqual(normalize_structures(self.structure_repo.get_all()), trivial_topology)
+        self.assertEqual(
+            normalize_structures(self.structure_repo.get_all()),
+            trivial_topology,
+        )
+
+    def test_rebuild_structure_no_categories(self):
+        """Should fail if columns exist but discrete_categories are missing."""
+        self.property_repo.delete('discrete_categories')  # <- No categories!
+
+        regex = "node has columns but no 'discrete_categories'"
+        with self.assertRaisesRegex(RuntimeError, regex):
+            rebuild_structure_table(
+                self.column_manager,
+                self.property_repo,
+                self.structure_repo,
+                self.index_repo,
+                self.alt_index_repo,
+                optimizations=None,
+            )
 
 
 class TestAddDiscreteCategories(unittest.TestCase):

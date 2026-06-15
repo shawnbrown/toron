@@ -764,6 +764,19 @@ class TestIndexColumnMethods(unittest.TestCase):
         with self.assertRaisesRegex(ToronError, regex):
             node.add_index_columns('value')
 
+    def test_add_index_columns_interaction_with_categories(self):
+        node = TopoNode()
+
+        self.assertEqual(node.discrete_categories, [], msg='should start empty')
+
+        node.add_index_columns('A', 'B')
+        self.assertEqual(node.discrete_categories, [{'A', 'B'}],
+                         msg='should create whole space for all columns')
+
+        node.add_index_columns('C')
+        self.assertEqual(node.discrete_categories, [{'A', 'B', 'C'}],
+                         msg='should remove previous whole space if unused')
+
     def test_index_columns_property(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
@@ -5941,8 +5954,8 @@ class TestTopoNodeRepr(unittest.TestCase):
         node.add_index_columns('A', 'B', 'C')
         with node._managed_cursor() as cursor:
             structure_repo = node._dal.StructureRepository(cursor)
-            structure_repo.add(None, 0, 0, 0)
-            structure_repo.add(2.75, 1, 1, 1)
+            structure = structure_repo.get_by_labels(['A', 'B', 'C'])
+            structure_repo.update(replace(structure, granularity=2.75))
 
         expected = """
             domain:

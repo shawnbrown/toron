@@ -274,7 +274,7 @@ class TopoNode(object):
         with self._managed_cursor() as cursor:
             col_manager = self._dal.ColumnManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
-            return get_all_discrete_categories(col_manager, prop_repo)
+            return get_all_discrete_categories(prop_repo)
 
     def add_discrete_categories(
         self, category: Set[str], *categories: Set[str]
@@ -344,7 +344,7 @@ class TopoNode(object):
                 msg = f'cannot drop whole space: {whole_space!r}'
                 raise ValueError(msg)
 
-            existing_cats = get_all_discrete_categories(col_manager, prop_repo)
+            existing_cats = get_all_discrete_categories(prop_repo)
             cats_to_keep = [x for x in existing_cats if x not in cats_to_drop]
 
             category_sets = minimize_discrete_categories(
@@ -390,16 +390,60 @@ class TopoNode(object):
             return self._dal.IndexRepository(cursor).get_label_names()
 
     def add_index_columns(self, column: str, *columns: str) -> None:
-        with self._managed_transaction() as cursor:
+        with self._managed_cursor(n=2) as (cursor, aux_cursor), \
+                self._managed_transaction(cursor):
+
             column_manager = self._dal.ColumnManager(cursor)
+            property_repo = self._dal.PropertyRepository(cursor)
+            structure_repo = self._dal.StructureRepository(cursor)
+
             validate_new_index_columns(
                 new_column_names=chain([column], columns),
                 reserved_identifiers=self._dal.reserved_identifiers,
                 column_manager=column_manager,
-                property_repo=self._dal.PropertyRepository(cursor),
+                property_repo=property_repo,
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
+
+            old_whole_space = set(column_manager.get_columns())
             column_manager.add_columns(column, *columns)
+
+            # Add new "whole space" category.
+            add_discrete_category(
+                category=set(column_manager.get_columns()),  # All columns.
+                column_manager=column_manager,
+                property_repo=property_repo,
+            )
+
+            # TODO: Move to after call to drop_discrete_categories().
+            rebuild_structure_table(
+                column_manager=column_manager,
+                property_repo=property_repo,
+                structure_repo=structure_repo,
+                index_repo=self._dal.IndexRepository(cursor),
+                aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                optimizations=self._dal.optimizations,
+            )
+
+            # TODO: Make a data service remove_category_if_unused().
+            old_whole_structure = structure_repo.get_by_labels(old_whole_space)
+
+            is_unused_by_quantity = not next(
+                self._dal.QuantityRepository(cursor).find_by_structure(old_whole_structure
+            ), None)
+
+            crosswalks = self._dal.CrosswalkRepository(cursor).get_all()
+
+            relation_repo = self._dal.RelationRepository(cursor)
+            all_levels = set()
+            for crosswalk in crosswalks:
+                all_levels.update(
+                    relation_repo.get_distinct_mapping_levels(crosswalk.id)
+                )
+            is_unused_by_relation = not(all_levels)
+
+        if is_unused_by_quantity and is_unused_by_relation:
+            self.drop_discrete_categories(old_whole_space)  # <- TODO: Make a data service func.
 
     def rename_index_columns(self, mapping: Dict[str, str]) -> None:
         with self._managed_transaction() as cursor:

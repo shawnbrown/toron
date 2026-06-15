@@ -593,17 +593,14 @@ def find_matching_weight_groups(
 
 
 def get_all_discrete_categories(
-    column_manager: BaseColumnManager,
-    property_repo: BasePropertyRepository,
+    property_repo: BasePropertyRepository
 ) -> List[Set[str]]:
+    """Get all discrete categories defined for a node."""
     try:
         values = cast(List[List[str]], property_repo.get('discrete_categories'))
         return [set(x) for x in values]
     except KeyError:
-        columns = column_manager.get_columns()
-        if columns:
-            return [set(columns)]  # Default to whole space.
-        return []  # Empty when no columns defined.
+        return []  # Empty list when no columns are defined.
 
 
 def rename_discrete_categories(
@@ -611,7 +608,7 @@ def rename_discrete_categories(
     column_manager: BaseColumnManager,
     property_repo: BasePropertyRepository,
 ) -> None:
-    categories = get_all_discrete_categories(column_manager, property_repo)
+    categories = get_all_discrete_categories(property_repo)
     do_rename = lambda cat: {mapping.get(x, x) for x in cat}
     category_sets = [do_rename(cat) for cat in categories]
     category_lists: JsonTypes = [list(cat) for cat in category_sets]
@@ -696,9 +693,13 @@ def rebuild_structure_table(
     for structure in structure_repo.get_all():
         structure_repo.delete(structure.id)
 
-    # Regenerate new structure.
-    categories = get_all_discrete_categories(column_manager, property_repo)
+    # Get columns and categories.
     columns = column_manager.get_columns()
+    categories = get_all_discrete_categories(property_repo)
+    if columns and not categories:
+        raise RuntimeError("node has columns but no 'discrete_categories'")
+
+    # Regenerate new structure.
     for cat in make_structure(categories):
         granularity = granularity_func(list(cat), index_repo, aux_index_repo)
         bits = [(x in cat) for x in columns]
@@ -722,7 +723,7 @@ def add_discrete_categories(
                 f'must be present in index columns'
             )
 
-    existing_categories = get_all_discrete_categories(column_manager, property_repo)
+    existing_categories = get_all_discrete_categories(property_repo)
 
     whole_space = set(columns)
     category_sets: List[Set[str]] = minimize_discrete_categories(
@@ -773,7 +774,7 @@ def add_discrete_category(
         repr(sorted(cat, key=lambda x: index_labels.index(x)))[1:-1]
     }}}"""
 
-    existing_cats = get_all_discrete_categories(column_manager, property_repo)
+    existing_cats = get_all_discrete_categories(property_repo)
 
     if category in existing_cats:
         raise RuntimeError(f'category {repr_sorted(category)} is already defined')
@@ -941,7 +942,7 @@ def get_node_info_text(
         index_list = ['None']
 
     # Get categories as an ordered list (granularity and labels).
-    discrete_categories = get_all_discrete_categories(column_manager, property_repo)
+    discrete_categories = get_all_discrete_categories(property_repo)
     sorted_categories = sort_categories(discrete_categories, index_columns)
     def _get_granularity(cat):
         try:
