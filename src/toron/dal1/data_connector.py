@@ -28,9 +28,7 @@ from ..data_models import BaseDataConnector
 # notation for read/write for owner, group, and others).
 save_permissions = 0o666
 if os.name != 'nt':  # If not Windows.
-    _umask_value = os.umask(0)  # Set umask and return previous.
-    os.umask(_umask_value)  # Restore umask value.
-    #os.umask(_umask_value := os.umask(0))  # <- Use when 3.7 support is dropped.
+    os.umask(_umask_value := os.umask(0))  # Get and restore umask value.
     save_permissions = save_permissions & ~_umask_value  # Apply umask.
 
 
