@@ -453,30 +453,6 @@ def get_unique_id(cur: sqlite3.Cursor) -> str:
 #######################################################################
 
 
-if sys.version_info >= (3, 8):  # For Python 3.8 and newer.
-    def create_sql_function(
-        connection: sqlite3.Connection,
-        name: str,
-        narg: int,
-        func: Callable,
-        *,
-        deterministic: bool = False,
-    ) -> None:
-        """Create a user-defined SQL function."""
-        connection.create_function(name, narg, func, deterministic=deterministic)
-else:
-    def create_sql_function(
-        connection: sqlite3.Connection,
-        name: str,
-        narg: int,
-        func: Callable,
-        *,
-        deterministic: bool = False,
-    ) -> None:
-        """Create a user-defined SQL function."""
-        connection.create_function(name, narg, func)
-
-
 def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
     """Create a user defined SQL function named ``toron_check_selectors``.
 
@@ -496,11 +472,10 @@ def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
                 return 0
         return 1
 
-    create_sql_function(connection,
-                        name='toron_check_selectors',
-                        narg=1,
-                        func=toron_check_selectors,
-                        deterministic=True)
+    connection.create_function('toron_check_selectors',
+                               1,
+                               toron_check_selectors,
+                               deterministic=True)
 
 
 def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
@@ -563,11 +538,10 @@ def create_toron_check_attributes(connection: sqlite3.Connection) -> None:
                 return 0
         return 1
 
-    create_sql_function(connection,
-                        name='toron_check_attributes',
-                        narg=1,
-                        func=toron_check_attributes,
-                        deterministic=True)
+    connection.create_function('toron_check_attributes',
+                               1,
+                               toron_check_attributes,
+                               deterministic=True)
 
 
 def create_triggers_attributes(cur: sqlite3.Cursor) -> None:
@@ -622,11 +596,10 @@ def create_toron_check_user_properties(connection: sqlite3.Connection) -> None:
             return 0
         return 1 if isinstance(obj, dict) else 0
 
-    create_sql_function(connection,
-                        name='toron_check_user_properties',
-                        narg=1,
-                        func=toron_check_user_properties,
-                        deterministic=True)
+    connection.create_function('toron_check_user_properties',
+                               1,
+                               toron_check_user_properties,
+                               deterministic=True)
 
 
 def create_triggers_user_properties(cur: sqlite3.Cursor) -> None:
@@ -666,11 +639,10 @@ def create_toron_check_property_value(connection: sqlite3.Connection) -> None:
             return 0
         return 1
 
-    create_sql_function(connection,
-                        name='toron_check_property_value',
-                        narg=1,
-                        func=toron_check_property_value,
-                        deterministic=True)
+    connection.create_function('toron_check_property_value',
+                               1,
+                               toron_check_property_value,
+                               deterministic=True)
 
 
 def create_triggers_property_value(cur: sqlite3.Cursor) -> None:
@@ -714,11 +686,10 @@ def create_log2(
         except (ValueError, TypeError):  # Return None on error to match
             return None                  # SQLite's log2 behavior.
 
-    create_sql_function(connection,
-                        name=alt_name or 'log2',
-                        narg=1,
-                        func=log2,
-                        deterministic=True)
+    connection.create_function(alt_name or 'log2',
+                               1,
+                               log2,
+                               deterministic=True)
 
 
 def create_toron_apply_bit_flag(connection: sqlite3.Connection) -> None:
@@ -760,11 +731,10 @@ def create_toron_apply_bit_flag(connection: sqlite3.Connection) -> None:
             bit_flag = 0
         return value if bit_flag else None
 
-    create_sql_function(connection,
-                        name='toron_apply_bit_flag',
-                        narg=3,
-                        func=toron_apply_bit_flag,
-                        deterministic=True)
+    connection.create_function('toron_apply_bit_flag',
+                               3,
+                               toron_apply_bit_flag,
+                               deterministic=True)
 
 
 def create_toron_json_object_keep(connection: sqlite3.Connection) -> None:
@@ -812,11 +782,10 @@ def create_toron_json_object_keep(connection: sqlite3.Connection) -> None:
             return json_dumps(obj_subset, sort_keys=True)
         return None
 
-    create_sql_function(connection,
-                        name='toron_json_object_keep',
-                        narg=-1,  # Using -1 to indicate variable args.
-                        func=toron_json_object_keep,
-                        deterministic=True)
+    connection.create_function('toron_json_object_keep',
+                               -1,  # Using -1 to indicate variable args.
+                               toron_json_object_keep,
+                               deterministic=True)
 
 
 def create_functions_and_temporary_triggers(

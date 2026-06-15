@@ -14,7 +14,6 @@ from toron.dal1.schema import (
     verify_node_schema,
     is_supported_schema,
     get_unique_id,
-    create_sql_function,
     create_toron_check_property_value,
     create_triggers_property_value,
     create_toron_check_attributes,
@@ -241,34 +240,6 @@ class TestFormatIdentifier(unittest.TestCase):
 
         with self.assertRaises(UnicodeEncodeError):
             format_identifier(contains_nul)
-
-
-class TestCreateSqlFunction(unittest.TestCase):
-    def setUp(self):
-        self.con = sqlite3.connect(':memory:')
-        self.addCleanup(self.con.close)
-
-    def test_creation(self):
-        create_sql_function(
-            self.con,                  # <- positional `connection`
-            'title_case',              # <- positional `name`
-            1,                         # <- positional `narg`
-            lambda x: str(x).title(),  # <- positional `func`
-            deterministic=True,        # <- keyword only argument
-        )
-
-        cur = self.con.execute("SELECT title_case('hello world')")
-        self.assertEqual(cur.fetchall(), [('Hello World',)])
-
-    def test_error(self):
-        """Errors from function should not receive special handling."""
-        def bad_func(x):
-            raise Exception
-
-        create_sql_function(self.con, 'bad_func_name', 1, bad_func)
-
-        with self.assertRaises(sqlite3.OperationalError):
-            self.con.execute("SELECT bad_func_name('hello world')")
 
 
 class BasePropertyValueTestCase(unittest.TestCase):
