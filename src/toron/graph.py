@@ -138,12 +138,9 @@ def normalize_filename_hints(
     except ValueError:
         pass  # If prefix removal fails, use paths as-is.
 
-    # Remove `.toron` extension (change to removesuffix() method, new in 3.9,
-    # when support for Python 3.8 is dropped).
-    if left_filename_hint.endswith('.toron'):
-        left_filename_hint = left_filename_hint[:-6]
-    if right_filename_hint.endswith('.toron'):
-        right_filename_hint = right_filename_hint[:-6]
+    # Remove '.toron' file extension if present.
+    left_filename_hint = left_filename_hint.removesuffix('.toron')
+    right_filename_hint = right_filename_hint.removesuffix('.toron')
 
     # Return string or None values.
     return (left_filename_hint or None, right_filename_hint or None)
