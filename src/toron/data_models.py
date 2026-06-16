@@ -237,7 +237,7 @@ class BaseColumnManager(ABC):
 
     @abstractmethod
     def get_columns(self) -> Tuple[str, ...]:
-        """Get a tuple of label column names."""
+        """Return a tuple of label names in storage order."""
 
     @abstractmethod
     def rename_columns(self, mapping: Dict[str, str]) -> None:
@@ -324,7 +324,7 @@ class BaseIndexRepository(ABC):
 
     @abstractmethod
     def get_label_names(self) -> List[str]:
-        """Return a list of label column names."""
+        """Return a list of label names in storage order."""
 
     @abstractmethod
     def find_all(self, include_undefined: bool = True) -> Iterator[Index]:
@@ -441,7 +441,7 @@ class BaseLocationRepository(ABC):
 
     @abstractmethod
     def get_label_names(self) -> List[str]:
-        """Return a list of label column names."""
+        """Return a list of label names in storage order."""
 
     @abstractmethod
     def find_all(self) -> Iterator[Location]:
@@ -552,7 +552,7 @@ class BaseStructureRepository(ABC):
 
     @abstractmethod
     def get_label_names(self) -> List[str]:
-        """Get a list of label column names."""
+        """Return a list of label names in storage order."""
 
     def get_by_bits(
         self, bits: Sequence[Literal[0, 1]]
