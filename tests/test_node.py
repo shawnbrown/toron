@@ -6003,9 +6003,8 @@ class TestTopoNodeRepr(unittest.TestCase):
     def test_attributes(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            attrgroup_repo = node._dal.AttributeGroupRepository(cursor)
-            attrgroup_repo.add({'foo': 'aaa', 'bar': 'bbb'})
-            attrgroup_repo.add({'foo': 'ccc', 'baz': 'ddd'})
+            property_repo = node._dal.PropertyRepository(cursor)
+            property_repo.add('registered_attributes', ['foo', 'bar', 'baz'])
 
         expected = """
             domain:
@@ -6015,7 +6014,7 @@ class TestTopoNodeRepr(unittest.TestCase):
             weights:
               None
             attributes:
-              bar, baz, foo
+              foo, bar, baz
             incoming crosswalks:
               None
         """

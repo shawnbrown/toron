@@ -999,10 +999,6 @@ def get_node_info_text(
     else:
         weights_list = ['None']
 
-    attribute_list = sorted(attribute_repo.get_all_attribute_names())
-    if not attribute_list:
-        attribute_list = ['None']
-
     # Get list of crosswalk nodes and names.
     crosswalks = crosswalk_repo.get_all()
     if crosswalks:
@@ -1033,6 +1029,5 @@ def get_node_info_text(
         'index_list': index_list,
         'category_list': category_list,
         'weights_list': weights_list,
-        'attribute_list': attribute_list,
         'crosswalks_list': crosswalks_list,
     }

@@ -2960,14 +2960,18 @@ class TopoNode(object):
     def __repr__(self):
         """Return string representation of TopoNode object."""
         with self._managed_cursor() as cursor:
+            property_repo = self._dal.PropertyRepository(cursor)
+
             info = get_node_info_text(
-                property_repo=self._dal.PropertyRepository(cursor),
+                property_repo=property_repo,
                 column_manager=self._dal.ColumnManager(cursor),
                 structure_repo=self._dal.StructureRepository(cursor),
                 weight_group_repo=self._dal.WeightGroupRepository(cursor),
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
                 crosswalk_repo=self._dal.CrosswalkRepository(cursor),
             )
+
+            registered_attributes = get_registered_attributes(property_repo)
 
         # When dropping support for Python 3.11, move these into f-string.
         categories_formatted = '\n  '.join(info['category_list'])
@@ -2982,7 +2986,7 @@ class TopoNode(object):
             f"weights:\n"
             f"  {', '.join(info['weights_list'])}\n"
             f"attributes:\n"
-            f"  {', '.join(info['attribute_list'])}\n"
+            f"  {', '.join(registered_attributes) or 'None'}\n"
             f"incoming crosswalks:\n"
             f"  {crosswalks_str}"
         )
