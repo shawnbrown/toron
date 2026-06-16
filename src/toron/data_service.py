@@ -920,6 +920,29 @@ def get_registered_attributes(
         return []
 
 
+def get_loaded_attributes(
+    registered_attributes: List[str],
+    attribute_repo: BaseAttributeGroupRepository,
+) -> List[str]:
+    """Get the names of attributes that have been loaded.
+
+    Raises a ``RuntimeError`` if node contains unregistered attributes.
+    """
+    loaded_attrs_set = set(attribute_repo.get_all_attribute_names())
+
+    # Check for unregistered attributes.
+    registered_attrs_set = set(registered_attributes)
+    if not loaded_attrs_set.issubset(registered_attrs_set):
+        unregistered_attrs = loaded_attrs_set.difference(registered_attrs_set)
+        raise RuntimeError(
+            f"node contains unregistered attributes: "
+            f"{', '.join(repr(x) for x in sorted(unregistered_attrs))}"
+        )
+
+    # Return loaded attributes in `registered_attribute` order.
+    return [attr for attr in registered_attributes if attr in loaded_attrs_set]
+
+
 def get_node_info_text(
     property_repo: BasePropertyRepository,
     column_manager: BaseColumnManager,

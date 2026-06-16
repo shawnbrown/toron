@@ -39,6 +39,7 @@ from toron.data_service import (
     get_domain,
     set_registered_attributes,
     get_registered_attributes,
+    get_loaded_attributes,
 )
 
 
@@ -1561,3 +1562,46 @@ class TestRegisteredAttributeFunctions(unittest.TestCase):
             [],
             msg='should be empty list; should not add columns when there are issues',
         )
+
+
+class TestGetLoadedAttributes(unittest.TestCase):
+    def setUp(self):
+        self.dal = data_access.get_data_access_layer()
+
+        connector = self.dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(lambda: connector.release_connection(con))
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(lambda: connector.release_cursor(cur))
+
+        self.attribute_repo = self.dal.AttributeGroupRepository(cur)
+
+    def test_sorting(self):
+        """Should return loaded attributes in registered attribute order."""
+        self.attribute_repo.add({'baz': 'aaa'})
+        self.attribute_repo.add({'foo': 'bbb'})
+
+        result = get_loaded_attributes(
+            registered_attributes=['foo', 'bar', 'baz'],
+            attribute_repo=self.attribute_repo,
+        )
+        self.assertEqual(result, ['foo', 'baz'])
+
+        result = get_loaded_attributes(
+            registered_attributes=['baz', 'bar', 'foo'],
+            attribute_repo=self.attribute_repo,
+        )
+        self.assertEqual(result, ['baz', 'foo'])
+
+    def test_unregistered_attribute(self):
+        """Unregistered attributes should trigger an exception."""
+        self.attribute_repo.add({'foo': 'aaa'})
+        self.attribute_repo.add({'bar': 'bbb'})
+        self.attribute_repo.add({'qux': 'ccc'})
+
+        regex = r"node contains unregistered attributes: 'qux'"
+        with self.assertRaisesRegex(RuntimeError, regex):
+            get_loaded_attributes(
+                registered_attributes=['foo', 'bar', 'baz'],
+                attribute_repo=self.attribute_repo,
+            )
