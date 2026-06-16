@@ -882,7 +882,7 @@ def set_registered_attributes(
     index_repo: BaseIndexRepository,
     property_repo: BasePropertyRepository,
 ) -> None:
-    """Set the node's registered attribute columns."""
+    """Set the node's registered attribute columns in user-defined order."""
     all_reserved_identifiers = \
         reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
 
@@ -912,7 +912,7 @@ def set_registered_attributes(
 def get_registered_attributes(
     property_repo: BasePropertyRepository,
 ) -> List[str]:
-    """Get the node's registered attribute columns."""
+    """Get the node's registered attribute columns in user-defined order."""
     try:
         registered_attributes = property_repo.get('registered_attributes')
         return check_type(registered_attributes, required_type=list)
