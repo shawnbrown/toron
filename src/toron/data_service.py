@@ -985,7 +985,7 @@ def get_labels_in_display_order(
 
 def get_node_info_text(
     property_repo: BasePropertyRepository,
-    column_manager: BaseColumnManager,
+    index_repo: BaseIndexRepository,
     structure_repo: BaseStructureRepository,
     weight_group_repo: BaseWeightGroupRepository,
     attribute_repo: BaseAttributeGroupRepository,
@@ -998,15 +998,14 @@ def get_node_info_text(
         domain_str = 'None'
 
     # Get list of index column names.
-    index_columns = column_manager.get_columns()
-    if index_columns:
-        index_list = list(index_columns)
-    else:
-        index_list = ['None']
+    labels_in_display_order = get_labels_in_display_order(
+        index_repo=index_repo,
+        property_repo=property_repo,
+    )
 
     # Get categories as an ordered list (granularity and labels).
     discrete_categories = get_all_discrete_categories(property_repo)
-    sorted_categories = sort_categories(discrete_categories, index_columns)
+    sorted_categories = sort_categories(discrete_categories, labels_in_display_order)
     def _get_granularity(cat):
         try:
             return structure_repo.get_by_labels(cat).granularity
@@ -1066,7 +1065,6 @@ def get_node_info_text(
 
     return {
         'domain_str': domain_str,
-        'index_list': index_list,
         'category_list': category_list,
         'weights_list': weights_list,
         'crosswalks_list': crosswalks_list,

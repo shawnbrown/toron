@@ -2964,7 +2964,7 @@ class TopoNode(object):
 
             info = get_node_info_text(
                 property_repo=property_repo,
-                column_manager=self._dal.ColumnManager(cursor),
+                index_repo=self._dal.IndexRepository(cursor),
                 structure_repo=self._dal.StructureRepository(cursor),
                 weight_group_repo=self._dal.WeightGroupRepository(cursor),
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),

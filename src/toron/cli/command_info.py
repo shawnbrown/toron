@@ -24,7 +24,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 
         info_dict = get_node_info_text(
             property_repo=property_repo,
-            column_manager=node._dal.ColumnManager(cursor),
+            index_repo=node._dal.IndexRepository(cursor),
             structure_repo=node._dal.StructureRepository(cursor),
             weight_group_repo=node._dal.WeightGroupRepository(cursor),
             attribute_repo=attribute_repo,
