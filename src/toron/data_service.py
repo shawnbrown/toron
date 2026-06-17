@@ -943,6 +943,46 @@ def get_loaded_attributes(
     return [attr for attr in registered_attributes if attr in loaded_attrs_set]
 
 
+def set_labels_in_display_order(
+    labels: List[str],
+    index_repo: BaseIndexRepository,
+    property_repo: BasePropertyRepository,
+) -> None:
+    """Save the list of *labels* as the specified display order."""
+    all_labels = set(index_repo.get_label_names())
+
+    unknown_labels = [x for x in labels if x not in all_labels]
+    if unknown_labels:
+        raise ValueError(
+            f"cannot set display order for unknown labels: "
+            f"{', '.join(repr(x) for x in unknown_labels)}"
+        )
+    property_repo.add('label_display_order', labels)
+
+
+def get_labels_in_display_order(
+    index_repo: BaseIndexRepository,
+    property_repo: BasePropertyRepository,
+) -> List[str]:
+    """Return a list of labels in their specified display order.
+
+    Any labels without a specified order will fall back to storage
+    order and appear at the end of the list.
+    """
+    try:
+        display_order = cast(List[str], property_repo.get('label_display_order'))
+    except KeyError:
+        display_order = []
+
+    # Get any unspecified labels in storage order.
+    storage_order = index_repo.get_label_names()
+    unspecified_labels = [x for x in storage_order if x not in display_order]
+
+    if unspecified_labels:
+        display_order.extend(unspecified_labels)
+    return display_order
+
+
 def get_node_info_text(
     property_repo: BasePropertyRepository,
     column_manager: BaseColumnManager,
