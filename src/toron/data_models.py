@@ -1226,14 +1226,22 @@ class BaseRelationRepository(ABC):
             crosswalk_id=crosswalk_id, other_index_id=other_index_id
         ))
 
-        values_sum = sum(rel.value for rel in relations)
-        for relation in relations:
-            try:
-                proportion = relation.value / values_sum
-            except ZeroDivisionError:
-                proportion = 1 / len(relations)
+        if other_index_id == 0:
+            # Handle records from "undefined".
+            for relation in relations:
+                if relation.index_id == 0:
+                    raise ValueError('undefined-to-undefined relation is invalid')
+                self.update(replace(relation, proportion=0.0))
+        else:
+            # Handle fully-defined relations.
+            values_sum = sum(rel.value for rel in relations)
+            for relation in relations:
+                try:
+                    proportion = relation.value / values_sum
+                except ZeroDivisionError:
+                    proportion = 1 / len(relations)
 
-            self.update(replace(relation, proportion=proportion))
+                self.update(replace(relation, proportion=proportion))
 
 
 class BasePropertyRepository(ABC):
