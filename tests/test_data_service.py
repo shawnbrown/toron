@@ -1464,23 +1464,13 @@ class TestDomainMethods(unittest.TestCase):
 
     def test_set_domain_no_value(self):
         """Should assign 'domain' to property repository."""
-        set_domain(
-            domain='foo',
-            column_manager=self.column_manager,
-            attribute_repo=self.attribute_repo,
-            property_repo=self.property_repo,
-        )
+        set_domain(domain='foo', property_repo=self.property_repo)
         self.assertEqual(self.property_repo.get('domain'), 'foo')
 
     def test_set_domain_existing_value(self):
         """Should assign 'domain' even if one already exists."""
         self.property_repo.add('domain', 'foo')
-        set_domain(
-            domain='bar',
-            column_manager=self.column_manager,
-            attribute_repo=self.attribute_repo,
-            property_repo=self.property_repo,
-        )
+        set_domain(domain='bar', property_repo=self.property_repo)
         self.assertEqual(self.property_repo.get('domain'), 'bar')
 
     def test_get_domain_no_value(self):

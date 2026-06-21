@@ -865,12 +865,7 @@ def refresh_or_rebuild_structure_granularity(
         )
 
 
-def set_domain(
-    domain: str,
-    column_manager: BaseColumnManager,
-    attribute_repo: BaseAttributeGroupRepository,
-    property_repo: BasePropertyRepository,
-) -> None:
+def set_domain(domain: str, property_repo: BasePropertyRepository) -> None:
     """Set the node's domain."""
     check_type(domain, str)
     property_repo.add_or_update('domain', domain)

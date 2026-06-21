@@ -262,12 +262,7 @@ class TopoNode(object):
     def set_domain(self, domain: str) -> None:
         """Set the node's domain value."""
         with self._managed_cursor() as cursor:
-            set_domain(
-                domain=domain,
-                column_manager=self._dal.ColumnManager(cursor),
-                attribute_repo=self._dal.AttributeGroupRepository(cursor),
-                property_repo=self._dal.PropertyRepository(cursor),
-            )
+            set_domain(domain, self._dal.PropertyRepository(cursor))
 
     @property
     def discrete_categories(self) -> List[Set[str]]:
