@@ -390,7 +390,7 @@ class Mapper(object):
                             src.proportion * trg.proportion AS proportion
                         FROM {source_node}_matches src
                         JOIN {target_node}_matches trg USING (run_id)
-                        WHERE src.index_id != 0
+                        WHERE NOT (src.index_id = 0 AND trg.index_id = 0)
                     )
                 SELECT
                     other_index_id,

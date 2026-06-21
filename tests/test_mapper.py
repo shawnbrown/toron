@@ -559,7 +559,8 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
 
         relations = mapper.get_relations(target_node='node1')  # <- Method under test.
 
-        self.assertEqual(set(relations), {(1, 1, b'\x80', 10.0),
+        self.assertEqual(set(relations), {(0, 1, b'\x80',  5.0),
+                                          (1, 1, b'\x80', 10.0),
                                           (2, 1, b'\x80', 65.0),
                                           (3, 2, b'\x80', 20.0),
                                           (4, 0, b'\x80',  4.0),
@@ -569,7 +570,8 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
 
         relations = mapper.get_relations(target_node='node2')  # <- Method under test.
 
-        self.assertEqual(set(relations), {(1, 0, b'\xc0',  5.0),
+        self.assertEqual(set(relations), {(0, 4, b'\xc0',  4.0),
+                                          (1, 0, b'\xc0',  5.0),
                                           (1, 1, b'\xc0', 10.0),
                                           (1, 2, b'\xc0', 65.0),
                                           (2, 3, b'\xc0', 20.0),
