@@ -993,10 +993,11 @@ class RelationRepository(BaseRelationRepository):
         ) -> None:
             """Add a record to the repository.
 
-            If *other_index_id* is ``0``, a ``ValueError`` is raised.
+            If *other_index_id* ``0`` and *index_id* ``0`` (the relation
+            undefined-to-undefined), a ``ValueError`` is raised.
             """
-            if int(other_index_id) == 0:
-                raise ValueError(f'cannot add relation from other_index_id 0')
+            if int(other_index_id) == 0 and int(index_id) == 0:
+                raise ValueError(f'cannot add relation for undefined-to-undefined record')
 
             if not isinstance(mapping_level, bytes):
                 raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
@@ -1036,10 +1037,11 @@ class RelationRepository(BaseRelationRepository):
         ) -> None:
             """Add a record to the repository.
 
-            If *other_index_id* is ``0``, a ``ValueError`` is raised.
+            If *other_index_id* ``0`` and *index_id* ``0`` (the relation
+            undefined-to-undefined), a ``ValueError`` is raised.
             """
-            if int(other_index_id) == 0:
-                raise ValueError(f'cannot add relation from other_index_id 0')
+            if int(other_index_id) == 0 and int(index_id) == 0:
+                raise ValueError(f'cannot add relation for undefined-to-undefined record')
 
             if not isinstance(mapping_level, bytes):
                 raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')

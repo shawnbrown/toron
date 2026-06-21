@@ -1081,12 +1081,23 @@ class Relation(object):
     proportion: Optional[float] = None
 
     def __post_init__(self):
-        # A `Relation` object should never represent data coming *from*
-        # another node's undefined record (other_index_id 0).
         if not isinstance(self.other_index_id, int):
-            raise TypeError('other_index_id must be an integer')
-        if self.other_index_id == 0:
-            raise ValueError('other_index_id cannot be 0')
+            raise TypeError(
+                f'other_index_id must be an int, got '
+                f'{self.other_index_id.__class__.__name__}: {self.other_index_id!r}'
+            )
+
+        if self.other_index_id == 0:  # <- From undefined.
+            if self.index_id == 0:  # <- To undefined.
+                raise ValueError(
+                    'undefined-to-undefined relation (0 -> 0) not allowed'
+                )
+            else:  # <- To defined.
+                if self.proportion:
+                    raise ValueError(
+                        f'proportion from undefined-to-defined records must '
+                        f'be 0.0 or None, got: {self.proportion!r}'
+                    )
 
 
 class BaseRelationRepository(ABC):
@@ -1106,7 +1117,8 @@ class BaseRelationRepository(ABC):
     ) -> None:
         """Add a record to the repository.
 
-        If *other_index_id* is ``0``, a ``ValueError`` is raised.
+        If *other_index_id* ``0`` and *index_id* ``0`` (the relation
+        undefined-to-undefined), a ``ValueError`` is raised.
         """
 
     @abstractmethod
