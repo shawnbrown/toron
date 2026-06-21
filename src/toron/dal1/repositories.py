@@ -1057,9 +1057,9 @@ class RelationRepository(BaseRelationRepository):
             """
             parameters = (
                 crosswalk_id,
-                int(other_index_id),
+                int(other_index_id),  # <- Convert to int before loading.
                 index_id,
-                float(value),
+                float(value),  # <- Convert to float before loading.
                 mapping_level,
                 proportion,
             )
@@ -1119,10 +1119,10 @@ class RelationRepository(BaseRelationRepository):
             """
             parameters = (
                 record.crosswalk_id,
-                int(record.other_index_id),
+                int(record.other_index_id),  # <- Convert to int before loading.
                 record.index_id,
                 record.mapping_level,
-                float(record.value),
+                float(record.value),  # <- Convert to float before loading.
                 record.proportion,
                 record.id,
             )
