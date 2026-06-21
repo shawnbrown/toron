@@ -620,10 +620,19 @@ def calculate_granularity(
     index_repo: BaseIndexRepository,
     aux_index_repo: BaseIndexRepository,
 ) -> Optional[float]:
-    r"""Return granularity of a given level--as defined by *columns*.
+    r"""Return the granularity of a partition (as given by *columns*).
 
     If *columns* list is empty or if the index contains no records
     (other than the "undefined" record), then ``None`` will be returned.
+
+    .. code-block:: python
+
+        >>> calculate_granularity(
+        ...     ['county', 'town'],
+        ...     index_repo,
+        ...     aux_index_repo,
+        ... )
+        6.71556532205684
 
     This function implements a Shannon entropy based metric which
     was first proposed by Mark Wierman for the "granularity measure
