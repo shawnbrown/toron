@@ -19,20 +19,21 @@ def v020_to_v030_relation_table(
         CREATE TABLE main.new_relation(
             relation_id INTEGER PRIMARY KEY,
             crosswalk_id INTEGER NOT NULL,
-            other_index_id INTEGER NOT NULL CHECK (other_index_id != 0),
+            other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = 'integer'),
             index_id INTEGER NOT NULL,
             mapping_level BLOB_BITFLAGS NOT NULL,
-            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) IN ("real", "integer") AND relation_value >= 0.0),
-            proportion REAL CHECK (proportion BETWEEN 0.0 AND 1.0),
+            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) IN ('real', 'integer') AND relation_value >= 0.0),
+            proportion REAL CHECK (proportion BETWEEN 0.0 AND 1.0 OR proportion IS NULL),
+            CHECK (other_index_id != 0 OR index_id != 0),
             FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,
             FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
             UNIQUE (crosswalk_id, other_index_id, index_id, mapping_level)
         );
     """)
 
-    # Transfer contents into new 'relation' table making sure
-    # to omit records where other_index_id is 0 and also replace
-    # NULL mapping_level values with "whole space" bytes.
+    # Transfer contents into new 'relation' table making sure to omit
+    # any undefined-to-undefined records (0 -> 0) and also replace NULL
+    # mapping_level values with "whole space" bytes.
     cursor.execute("""
         INSERT INTO main.new_relation
         SELECT
@@ -44,7 +45,7 @@ def v020_to_v030_relation_table(
             relation_value,
             proportion
         FROM main.relation
-        WHERE other_index_id != 0
+        WHERE NOT (other_index_id = 0 AND index_id = 0);
     """, (whole_space_level,))
 
     # Drop old 'relation' table and rename new table.
@@ -58,9 +59,9 @@ def v020_to_v030_quantity_table(cursor: sqlite3.Cursor) -> None:
     cursor.execute("""
         CREATE TABLE main.new_quantity(
             quantity_id INTEGER PRIMARY KEY,
-            _location_id INTEGER,
-            attribute_group_id INTEGER,
-            quantity_value NUMERIC NOT NULL,
+            _location_id INTEGER NOT NULL,
+            attribute_group_id INTEGER NOT NULL,
+            quantity_value NUMERIC NOT NULL CHECK (TYPEOF(quantity_value) IN ('integer', 'real')),
             FOREIGN KEY(_location_id) REFERENCES location(_location_id) ON DELETE CASCADE,
             FOREIGN KEY(attribute_group_id) REFERENCES attribute_group(attribute_group_id) ON DELETE CASCADE,
             UNIQUE (_location_id, attribute_group_id)
