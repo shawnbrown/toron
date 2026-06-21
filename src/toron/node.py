@@ -1789,6 +1789,11 @@ class TopoNode(object):
                     counter['bad_mapping_level'] += 1
                     continue  # <- Skip to next item.
 
+                # Skip if undefined-to-undefined.
+                if other_index_id == 0 and index_id == 0:
+                    counter['undefined_to_undefined'] += 1
+                    continue  # <- Skip to next item.
+
                 relation_repo.add(
                     crosswalk_id=crosswalk_id,
                     other_index_id=other_index_id,
@@ -1822,6 +1827,12 @@ class TopoNode(object):
                 ))
             else:
                 applogger.warning('no relations loaded')
+
+            if counter['undefined_to_undefined']:
+                applogger.debug(
+                    f"skipped {counter['undefined_to_undefined']} "
+                    f"undefined-to-undefined relations"
+                )
 
             if counter['bad_mapping_level']:
                 applogger.warning(
