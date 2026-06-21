@@ -577,33 +577,112 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             ['INFO:app-toron:matching FILE1 index records',
              'INFO:app-toron:matching FILE2 index records',
              'INFO:app-toron:loading relations: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 7 relations',
+             'INFO:app-toron.node:loaded 8 relations',
              'INFO:app-toron:crosswalk is complete',
              'INFO:app-toron:loading relations: FILE1 <- FILE2',
-             'INFO:app-toron.node:loaded 7 relations',
+             'INFO:app-toron.node:loaded 8 relations',
              'INFO:app-toron:crosswalk is complete'],
         )
 
         self.assertEqual(
             self.get_relations(self.node_c, self.node_d, 'population'),
-             {(1, 1, 1, 1, b'\xc0', 18.0, 0.28125),
-              (2, 1, 1, 2, b'\xc0', 46.0, 0.71875),
-              (3, 1, 2, 0, b'\xc0', 10.0, 0.125),
-              (4, 1, 2, 3, b'\xc0', 20.0, 0.25),
-              (5, 1, 2, 4, b'\xc0', 50.0, 0.625),
-              (6, 1, 3, 5, b'\xc0', 30.0, 0.375),
-              (7, 1, 3, 6, b'\xc0', 50.0, 0.625)},
+            {(1, 1, 0, 2, b'\xc0', 34.0, 0.00000),
+             (2, 1, 1, 1, b'\xc0', 18.0, 0.28125),
+             (3, 1, 1, 2, b'\xc0', 46.0, 0.71875),
+             (4, 1, 2, 0, b'\xc0', 10.0, 0.12500),
+             (5, 1, 2, 3, b'\xc0', 20.0, 0.25000),
+             (6, 1, 2, 4, b'\xc0', 50.0, 0.62500),
+             (7, 1, 3, 5, b'\xc0', 30.0, 0.37500),
+             (8, 1, 3, 6, b'\xc0', 50.0, 0.62500)},
         )
 
         self.assertEqual(
             self.get_relations(self.node_d, self.node_c, 'population'),
-            {(1, 1, 1, 1, b'\x80', 18.0, 1.0),
-             (2, 1, 2, 0, b'\x80', 34.0, 0.425),
-             (3, 1, 2, 1, b'\x80', 46.0, 0.575),
-             (4, 1, 3, 2, b'\x80', 20.0, 1.0),
-             (5, 1, 4, 2, b'\x80', 50.0, 1.0),
-             (6, 1, 5, 3, b'\x80', 30.0, 1.0),
-             (7, 1, 6, 3, b'\x80', 50.0, 1.0)},
+            {(1, 1, 0, 2, b'\x80', 10.0, 0.000),
+             (2, 1, 1, 1, b'\x80', 18.0, 1.000),
+             (3, 1, 2, 0, b'\x80', 34.0, 0.425),
+             (4, 1, 2, 1, b'\x80', 46.0, 0.575),
+             (5, 1, 3, 2, b'\x80', 20.0, 1.000),
+             (6, 1, 4, 2, b'\x80', 50.0, 1.000),
+             (7, 1, 5, 3, b'\x80', 30.0, 1.000),
+             (8, 1, 6, 3, b'\x80', 50.0, 1.000)},
+        )
+
+    def test_insert_both_directions_with_undefined_cases(self):
+        self.node_c.add_crosswalk(node=self.node_d,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_d',
+                                  is_default=True)
+
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='both',
+            match_limit=1,
+            allow_overlapping=False,
+            stdin=DummyRedirection(
+                'index_c,population,index_d\n'
+                '0XF4264876,0,0XDF9B30D7\n'   # <- From undefined, to undefined.
+                '0XF4264876,18,1X583DFB94\n'  # <- From undefined, to defined (exlusive)
+                '1X73808335,18,0XDF9B30D7\n'  # <- From defined, to undefined (exlusive)
+                '2X201AD8B1,10,2X0BA7A010\n'
+                '0XF4264876,10,2X0BA7A010\n'  # <- From undefined, to defined (non-exclusive)
+                '3XA7BC13F2,20,3X8C016B53\n'
+                '3XA7BC13F2,12,0XDF9B30D7\n'  # <- From defined, to undefined (non-exclusive)
+                '0XF4264876,45,4XAC931718\n'  # <- From undefined, to defined (exlusive)
+                '0XF4264876,29,5X2B35DC5B\n'  # <- From undefined, to defined (exlusive)
+                '0XF4264876,50,6X78AF87DF\n'  # <- From undefined, to defined (exlusive)
+            ),
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'INFO:app-toron:loading relations: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 9 relations',
+             'INFO:app-toron:crosswalk is complete',
+             'INFO:app-toron:loading relations: FILE1 <- FILE2',
+             'INFO:app-toron.node:loaded 9 relations',
+             'INFO:app-toron:crosswalk is complete'],
+        )
+
+        self.assertEqual(
+            self.get_relations(self.node_c, self.node_d, 'population'),
+            {(1, 1, 0, 1, b'\xc0', 18.0, 0.000),   # <- From undefined, to defined.
+             (2, 1, 0, 2, b'\xc0', 10.0, 0.000),   # <- From undefined, to defined.
+             (3, 1, 0, 4, b'\xc0', 45.0, 0.000),   # <- From undefined, to defined.
+             (4, 1, 0, 5, b'\xc0', 29.0, 0.000),   # <- From undefined, to defined.
+             (5, 1, 0, 6, b'\xc0', 50.0, 0.000),   # <- From undefined, to defined.
+             (6, 1, 1, 0, b'\xc0', 18.0, 1.000),   # <- From defined, to undefined.
+             (7, 1, 2, 2, b'\xc0', 10.0, 1.000),
+             (8, 1, 3, 0, b'\xc0', 12.0, 0.375),   # <- From defined, to undefined.
+             (9, 1, 3, 3, b'\xc0', 20.0, 0.625)},
+        )
+
+        self.assertEqual(
+            self.get_relations(self.node_d, self.node_c, 'population'),
+            {(1, 1, 0, 1, b'\x80', 18.0, 0.000),   # <- From undefined, to defined.
+             (2, 1, 0, 3, b'\x80', 12.0, 0.000),   # <- From undefined, to defined.
+             (3, 1, 1, 0, b'\x80', 18.0, 1.000),   # <- From defined, to undefined.
+             (4, 1, 2, 0, b'\x80', 10.0, 0.500),   # <- From defined, to undefined.
+             (5, 1, 2, 2, b'\x80', 10.0, 0.500),
+             (6, 1, 3, 3, b'\x80', 20.0, 1.000),
+             (7, 1, 4, 0, b'\x80', 45.0, 1.000),   # <- From defined, to undefined.
+             (8, 1, 5, 0, b'\x80', 29.0, 1.000),   # <- From defined, to undefined.
+             (9, 1, 6, 0, b'\x80', 50.0, 1.000)},  # <- From defined, to undefined.
         )
 
     def test_missing_one_side(self):

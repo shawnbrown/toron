@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from abc import ABC, abstractmethod
 from contextlib import closing, suppress
-from dataclasses import replace
+from dataclasses import replace, FrozenInstanceError
 
 try:
     import pandas as pd
@@ -1442,18 +1442,50 @@ class RelationRepositoryBaseTest(ABC):
         cur = self.connection.execute('SELECT * FROM main.relation')
         return set(cur.fetchall())
 
-    def test_relation_dataclass(self):
-        regex = r'other_index_id cannot be 0'
+    def test_relation_post_init(self):
+        """Should raise errors for bad types and values."""
+        # Normal init should raise no errors.
+        Relation(1, 1, 1, 2, b'\xc0', 50.0, None)
+
+        # From undefined to defined (0 -> 2) should raise no errors.
+        Relation(1, 1, 0, 2, b'\xc0', 50.0, None)
+
+        # From defined to undefined (2 -> 0) should raise no errors.
+        Relation(1, 1, 2, 0, b'\xc0', 50.0, None)
+
+        # Non-int value in `other_index_id` should raise TypeError.
+        regex = r"other_index_id must be an int, got str: '1'"
+        with self.assertRaisesRegex(TypeError, regex):
+            Relation(1, 1, '1', 2, b'\xc0', 50.0, None)
+
+        # From undefined to undefined (0 -> 0) should raise ValueError.
+        regex = r"undefined-to-undefined relation \(0 -> 0\) not allowed"
         with self.assertRaisesRegex(ValueError, regex):
-            Relation(
-                id=1,
-                crosswalk_id=1,
-                other_index_id=0,  # <- Cannot be 0.
-                index_id=1,
-                mapping_level=b'\xc0',
-                value=50.0,
-                proportion=None,
-            )
+            Relation(1, 1, 0, 0, b'\xc0', 50.0, None)
+
+    def test_relation_assign_value(self):
+        """Should raise an error when assigning to fields."""
+        rel = Relation(1, 1, 1, 2, b'\xc0', 100.0, None)
+
+        with self.assertRaises(FrozenInstanceError):
+            rel.index_id = 3
+
+    def test_relation_assign_bad_value(self):
+        """One of the reasons for not allowing assignment is so that
+        `__post_init__()` checks can't be bypassed by assigning bad
+        values after creation.
+
+        However, if the class is ever changed to allow assignment, bad
+        values should *still* raise an exception.
+        """
+        rel = Relation(1, 1, 1, 2, b'\xc0', 100.0, None)
+
+        with self.assertRaises((TypeError, FrozenInstanceError)):
+            rel.other_index_id = '1'
+
+        with self.assertRaises((ValueError, FrozenInstanceError)):
+            rel.other_index_id = 0
+            rel.index_id = 0
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
@@ -1498,21 +1530,19 @@ class RelationRepositoryBaseTest(ABC):
         with self.assertRaises(Exception):
             self.repository.add(1, 4, 1, b'\xc0', 4242, 'foo')
 
-    def test_add_bad_other_index_id(self):
-        """The relation table should not contain any records where
-        'other_index_id' is ``0``. Nothing should come *from* another
-        node's "undefined record" and the "undefined-to-undefined"
-        relation is implicit (auto-added) and not stored in the
-        RelationRepository.
-        """
-        regex = r'other_index_id 0'
-        msg = "should mention 'other_index_id 0' somewhere in the error message"
+    def test_add_undefined_relations(self):
+        """Test relations involving the "undefined" record."""
+        # Check defined-to-undefined relation.
+        self.repository.add(1, 1, 0, b'\xc0', 100.0, 1.0)
 
-        with self.assertRaisesRegex(ValueError, regex, msg=msg):
-            self.repository.add(1, 0, 0, b'\xc0', 0, 1.0)
+        # Check undefined-to-defined relation.
+        self.repository.add(1, 0, 1, b'\xc0', 100.0, 1.0)
 
-        with self.assertRaisesRegex(ValueError, regex, msg=msg):
-            self.repository.add(1, '0', 0, b'\xc0', 0, 1.0)
+        # Check undefined-to-undefined.
+        regex = r'undefined-to-undefined'
+        msg = 'should mention "undefined-to-undefined" somewhere in the error message'
+        with self.assertRaisesRegex(ValueError, regex):
+            self.repository.add(1, 0, 0, b'\xc0', 100.0, 1.0)
 
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
@@ -1708,27 +1738,28 @@ class RelationRepositoryBaseTest(ABC):
         * defined-to-undefined (non-zero -> 0) is calculated normally.
         """
         self.crosswalk.add('333-33-3333', None, 'other3')  # Adds crosswalk_id 3.
-        self.repository.add(3, 1, 1, b'\xc0', 100.0, None)
+        self.repository.add(3, 0, 2, b'\xc0', 100.0, None)
         self.repository.add(3, 1, 0, b'\xc0', 100.0, None)
-        self.repository.add(3, 2, 2, b'\xc0', 100.0, None)
+        self.repository.add(3, 1, 1, b'\xc0', 100.0, None)
+        self.repository.add(3, 2, 0, b'\xc0', 100.0, None)
+        self.repository.add(3, 3, 0, b'\xc0',  10.0, None)
         self.repository.add(3, 3, 1, b'\xc0', 100.0, None)
-        self.repository.add(3, 3, 2, b'\xc0', 100.0, None)
-        self.repository.add(3, 3, 0, b'\xc0', 100.0, None)
-        self.repository.add(3, 3, 3, b'\xc0', 100.0, None)
+        self.repository.add(3, 3, 3, b'\xc0',  90.0, None)
 
+        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=0)
         self.repository.refresh_proportions(crosswalk_id=3, other_index_id=1)
         self.repository.refresh_proportions(crosswalk_id=3, other_index_id=2)
         self.repository.refresh_proportions(crosswalk_id=3, other_index_id=3)
 
         self.assertEqual(
             list(self.repository.find(crosswalk_id=3)),
-            [Relation(11, 3, 1, 0, b'\xc0', 100.0, 0.5),
-             Relation(10, 3, 1, 1, b'\xc0', 100.0, 0.5),
-             Relation(12, 3, 2, 2, b'\xc0', 100.0, 1.0),
-             Relation(15, 3, 3, 0, b'\xc0', 100.0, 0.25),
-             Relation(13, 3, 3, 1, b'\xc0', 100.0, 0.25),
-             Relation(14, 3, 3, 2, b'\xc0', 100.0, 0.25),
-             Relation(16, 3, 3, 3, b'\xc0', 100.0, 0.25)],
+            [Relation(10, 3, 0, 2, b'\xc0', 100.0, 0.00),
+             Relation(11, 3, 1, 0, b'\xc0', 100.0, 0.50),
+             Relation(12, 3, 1, 1, b'\xc0', 100.0, 0.50),
+             Relation(13, 3, 2, 0, b'\xc0', 100.0, 1.00),
+             Relation(14, 3, 3, 0, b'\xc0',  10.0, 0.05),
+             Relation(15, 3, 3, 1, b'\xc0', 100.0, 0.50),
+             Relation(16, 3, 3, 3, b'\xc0',  90.0, 0.45)],
         )
 
     def test_get_distinct_mapping_levels(self):

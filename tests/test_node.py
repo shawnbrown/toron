@@ -3385,6 +3385,30 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
             ],
         )
 
+    def test_insert_from_undefined(self):
+        data = [
+            ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
+            (0, 0, b'\xc0',  0.0),  # <- From undefined-to-undefined (0 -> 0).
+            (0, 2, b'\xc0',  5.0),  # <- From undefined-to-defined (0 -> 2).
+            (1, 0, b'\xc0', 10.0),  # <- From defined-to-undefined (1 -> 0).
+            (1, 1, b'\xc0', 10.0),
+            (2, 1, b'\xc0', 20.0),
+            (3, 3, b'\xc0', 15.0),
+        ]
+        self.node.insert_relations2('myfile', 'rel1', data)
+
+        self.assertEqual(
+            self.get_relations_helper(),
+            [
+                #Relation(1, 1, 0, 0, mapping_level=b'\xc0', value=0.0,  proportion=1.0),  # <- 100%
+                Relation(1, 1, 0, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.0),  # <- 0%
+                Relation(2, 1, 1, 0, mapping_level=b'\xc0', value=10.0, proportion=0.5),  # <- Calculated normally.
+                Relation(3, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=0.5),
+                Relation(4, 1, 2, 1, mapping_level=b'\xc0', value=20.0, proportion=1.0),
+                Relation(5, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=1.0),
+            ],
+        )
+
     def test_string_input(self):
         """When data is given as strings they should be automatically
         converted to the appropriate numeric type:
