@@ -191,7 +191,7 @@ class TestRefreshProportions(unittest.TestCase):
                                                     (3, 5, b'\x80', 0.0, 0.25)})
 
 
-class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
+class TestMatchRecords(TopoNodeFixtures, unittest.TestCase):
     @staticmethod
     def get_node_matches(mapper, node_var):
         """Helper method to get contents of 'node#_matches' table."""
@@ -210,7 +210,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
                   [3, [''], BitFlags(1), 2, ['', ''], BitFlags(1, 1), 15]],
         )
 
-        mapper.match_node_records('node1')  # <- Method under test.
+        mapper.match_records('node1')  # <- Method under test.
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node1'),
@@ -230,7 +230,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
                   [None, ['C'], BitFlags(1), None, ['A', 'y'], BitFlags(1, 1), 15]],
         )
 
-        mapper.match_node_records('node1')  # <- Method under test.
+        mapper.match_records('node1')  # <- Method under test.
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node1'),
@@ -252,7 +252,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
                   [3,    [''],  BitFlags(1), 2,    ['', ''],   BitFlags(1, 1), 15]],
         )
 
-        mapper.match_node_records('node1')  # <- Method under test.
+        mapper.match_records('node1')  # <- Method under test.
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node1'),
@@ -264,7 +264,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
              (6, 3, b'\x80', 32.0, 1.0)},
         )
 
-        mapper.match_node_records('node2')  # <- Method under test.
+        mapper.match_records('node2')  # <- Method under test.
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node2'),
@@ -286,7 +286,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron') as cm:
-            mapper.match_node_records('node2')  # <- match_limit dafaults to 1
+            mapper.match_records('node2')  # <- match_limit dafaults to 1
 
         self.assertEqual(
             cm.output,
@@ -311,7 +311,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
                   [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 80]],  # <- Matches to 2 records.
         )
 
-        mapper.match_node_records('node2', match_limit=2)  # <- match_limit dafaults to 1
+        mapper.match_records('node2', match_limit=2)  # <- match_limit dafaults to 1
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node2'),
@@ -334,7 +334,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         # Delete a weight record that's only involved in an exact match.
         self.node_d.delete_weights('wght1', lbl1='B', lbl2='x')
 
-        mapper.match_node_records('node2', match_limit=2)  # <- Method under test.
+        mapper.match_records('node2', match_limit=2)  # <- Method under test.
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node2'),
@@ -361,7 +361,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         self.node_d.delete_weights('wght1', lbl1='B', lbl2='y')  # <- gets matched ambiguously
 
         with self.assertLogs('app-toron') as cm:
-            mapper.match_node_records('node2', match_limit=2)  # <- Method under test.
+            mapper.match_records('node2', match_limit=2)  # <- Method under test.
 
         self.assertEqual(
             cm.output,
@@ -393,7 +393,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron') as cm:
-            mapper.match_node_records('node2', match_limit=2)  # <- allow_overlapping defaults to False
+            mapper.match_records('node2', match_limit=2)  # <- allow_overlapping defaults to False
 
         self.assertEqual(
             cm.output,
@@ -422,7 +422,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron') as cm:
-            mapper.match_node_records('node2', match_limit=2, allow_overlapping=True)
+            mapper.match_records('node2', match_limit=2, allow_overlapping=True)
 
         self.assertEqual(
             cm.output,
@@ -455,7 +455,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
                   [None, ['B'], BitFlags(1), None, ['B',  ''], BitFlags(1, 0), 40]],  # <- Duplicate labels using same mapping level.
         )
 
-        mapper.match_node_records('node2', match_limit=2)  # <- allow_overlapping defaults to False
+        mapper.match_records('node2', match_limit=2)  # <- allow_overlapping defaults to False
 
         self.assertEqual(
             self.get_node_matches(mapper, 'node2'),
@@ -478,7 +478,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron') as cm:
-            mapper.match_node_records('node1')  # <- Method under test.
+            mapper.match_records('node1')  # <- Method under test.
 
         self.assertEqual(
             cm.output,
@@ -501,7 +501,7 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron') as cm:
-            mapper.match_node_records('node1')  # <- Method under test.
+            mapper.match_records('node1')  # <- Method under test.
 
         self.assertEqual(
             cm.output,
@@ -528,8 +528,8 @@ class TestMapperIsFullyMatched(TopoNodeFixtures, unittest.TestCase):
         ]
 
         mapper = Mapper(self.node_c, self.node_d, data=complete_mapping)
-        mapper.match_node_records('node1')
-        mapper.match_node_records('node2')
+        mapper.match_records('node1')
+        mapper.match_records('node2')
         self.assertTrue(mapper.is_fully_matched())
 
     def test_not_fully_matched(self):
@@ -540,12 +540,12 @@ class TestMapperIsFullyMatched(TopoNodeFixtures, unittest.TestCase):
         ]
 
         mapper = Mapper(self.node_c, self.node_d, data=incomplete_mapping)
-        mapper.match_node_records('node1')
-        mapper.match_node_records('node2')
+        mapper.match_records('node1')
+        mapper.match_records('node2')
         self.assertFalse(mapper.is_fully_matched())
 
 
-class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
+class TestMapperIterRelations(TopoNodeFixtures, unittest.TestCase):
     def test_exact_matches(self):
         mapper = Mapper(
             node1=self.node_c,
@@ -557,10 +557,10 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
                   [3, [''], BitFlags(1), 5, ['', ''], BitFlags(1, 1), 30],
                   [3, [''], BitFlags(1), 6, ['', ''], BitFlags(1, 1), 50]],
         )
-        mapper.match_node_records('node1')
-        mapper.match_node_records('node2')
+        mapper.match_records('node1')
+        mapper.match_records('node2')
 
-        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
 
         self.assertEqual(set(relations), {(1, 1, b'\xc0', 10.0),
                                           (1, 2, b'\xc0', 70.0),
@@ -583,10 +583,10 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
                   [3, [''], BitFlags(1), 5, ['', ''], BitFlags(1, 1), 30],
                   [3, [''], BitFlags(1), 6, ['', ''], BitFlags(1, 1), 50]],
         )
-        mapper.match_node_records('node1')
-        mapper.match_node_records('node2')
+        mapper.match_records('node1')
+        mapper.match_records('node2')
 
-        relations = mapper.get_relations(target_node='node1')  # <- Method under test.
+        relations = mapper.iter_relations(target_node='node1')  # <- Method under test.
 
         self.assertEqual(set(relations), {(0, 1, b'\x80',  5.0),
                                           (1, 1, b'\x80', 10.0),
@@ -597,7 +597,7 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
                                           (5, 3, b'\x80', 30.0),
                                           (6, 3, b'\x80', 50.0)})
 
-        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
 
         self.assertEqual(set(relations), {(0, 4, b'\xc0',  4.0),
                                           (1, 0, b'\xc0',  5.0),
@@ -618,10 +618,10 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
                   [None, ['C'], BitFlags(1), None, ['C',  ''], BitFlags(1, 0), 28],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
                   [None, ['C'], BitFlags(1), None, ['C', 'y'], BitFlags(1, 1),  7]],  # <- Exact match (overlaps the records matched on "C" alone).
         )
-        mapper.match_node_records('node1')
-        mapper.match_node_records('node2', match_limit=2)
+        mapper.match_records('node1')
+        mapper.match_records('node2', match_limit=2)
 
-        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
 
         self.assertEqual(
             set(relations),
@@ -643,10 +643,10 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
                   [None, ['C'], BitFlags(1), None, ['C',  ''], BitFlags(1, 0), 28],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
                   [None, ['C'], BitFlags(1), None, ['C', 'y'], BitFlags(1, 1),  7]],  # <- Exact match (overlaps the records matched on "C" alone).
         )
-        mapper.match_node_records('node1')
-        mapper.match_node_records('node2', match_limit=2, allow_overlapping=True)
+        mapper.match_records('node1')
+        mapper.match_records('node2', match_limit=2, allow_overlapping=True)
 
-        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
 
         self.assertEqual(
             set(relations),
@@ -676,10 +676,10 @@ class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
                   [None, ['B'], BitFlags(1), None, ['B', ''], BitFlags(1, 0), 20],   # <- Duplicate labels using same mapping level.
                   [None, ['B'], BitFlags(1), None, ['B', ''], BitFlags(1, 0), 40]],  # <- Duplicate labels using same mapping level.
         )
-        mapper.match_node_records('node1')
-        mapper.match_node_records('node2', match_limit=2, allow_overlapping=True)
+        mapper.match_records('node1')
+        mapper.match_records('node2', match_limit=2, allow_overlapping=True)
 
-        relations = mapper.get_relations(target_node='node2')  # <- Method under test.
+        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
 
         self.assertEqual(
             set(relations),

@@ -382,13 +382,13 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
 
     # Match mapping to node labels.
     applogger.info(f'matching FILE1 index records')
-    mapper.match_node_records('node1',
-                              match_limit=args.match_limit,
-                              allow_overlapping=args.allow_overlapping)
+    mapper.match_records('node1',
+                         match_limit=args.match_limit,
+                         allow_overlapping=args.allow_overlapping)
     applogger.info(f'matching FILE2 index records')
-    mapper.match_node_records('node2',
-                              match_limit=args.match_limit,
-                              allow_overlapping=args.allow_overlapping)
+    mapper.match_records('node2',
+                         match_limit=args.match_limit,
+                         allow_overlapping=args.allow_overlapping)
 
     # Check if all records are matched on both sides.
     if not args.allow_incomplete and not mapper.is_fully_matched():
@@ -397,7 +397,7 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     # Insert relations into FILE2.
     if args.direction in {'both', 'right'}:
         applogger.info(f'loading relations: FILE1 -> FILE2')
-        relations = mapper.get_relations('node2')
+        relations = mapper.iter_relations('node2')
         args.node2.insert_relations2(
             args.node1,
             args.crosswalk,
@@ -413,7 +413,7 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     # Insert relations into FILE1.
     if args.direction in {'both', 'left'}:
         applogger.info(f'loading relations: FILE1 <- FILE2')
-        relations = mapper.get_relations('node1')
+        relations = mapper.iter_relations('node1')
         args.node1.insert_relations2(
             args.node2,
             args.crosswalk,

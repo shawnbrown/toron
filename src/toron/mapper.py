@@ -190,7 +190,7 @@ class Mapper(object):
             )
         """)
 
-    def match_node_records(
+    def match_records(
         self,
         node_var: Literal['node1', 'node2'],
         match_limit: int = 1,
@@ -395,7 +395,7 @@ class Mapper(object):
                 and node2_cardinality == node2_match_count)
 
     @eagerly_initialize
-    def get_relations(
+    def iter_relations(
         self, target_node: Literal['node1', 'node2']
     ) -> Generator[Tuple[int, int, float, BitFlags], None, None]:
         """Return an iterator of relations for the given target node."""
