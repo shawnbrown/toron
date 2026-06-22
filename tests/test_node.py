@@ -569,10 +569,10 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
     def setUp(self):
         self.node = TopoNode()
         with self.node._managed_cursor() as cur:
-            column_manager = self.node._dal.ColumnManager(cur)
+            label_manager = self.node._dal.LabelManager(cur)
             index_repo = self.node._dal.IndexRepository(cur)
 
-            column_manager.add_columns('A', 'B', 'C')
+            label_manager.add_columns('A', 'B', 'C')
             index_repo.add('a1', 'b1', 'c1')
             index_repo.add('a1', 'b1', 'c2')
             index_repo.add('a1', 'b2', 'c3')
@@ -709,12 +709,12 @@ class TestIndexColumnMethods(unittest.TestCase):
     @staticmethod
     def get_cols_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            return node._dal.ColumnManager(cursor).get_columns()
+            return node._dal.LabelManager(cursor).get_columns()
 
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             manager.add_columns(*columns)
 
     @staticmethod
@@ -793,7 +793,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             node.rename_index_columns({'B': 'G', 'D': 'T'})
         else:
             import toron.dal1
-            toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
+            toron.dal1.legacy_rename_labels(node, {'B': 'G', 'D': 'T'})
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
 
@@ -806,7 +806,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             node.rename_index_columns({'B': 'G', 'D': 'T'})
         else:
             import toron.dal1
-            toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'T'})
+            toron.dal1.legacy_rename_labels(node, {'B': 'G', 'D': 'T'})
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
         self.assertEqual(
@@ -824,7 +824,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 node.rename_index_columns({'B': 'G', 'D': 'domain'})
             else:
                 import toron.dal1
-                toron.dal1.legacy_rename_columns(node, {'B': 'G', 'D': 'domain'})
+                toron.dal1.legacy_rename_labels(node, {'B': 'G', 'D': 'domain'})
 
     def test_rename_index_columns_reserved_identifier(self):
         node = TopoNode()
@@ -837,7 +837,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 node.rename_index_columns({'B': 'value'})
             else:
                 import toron.dal1
-                toron.dal1.legacy_rename_columns(node, {'B': 'value'})
+                toron.dal1.legacy_rename_labels(node, {'B': 'value'})
 
         # Check source-name conflict.
         regex = "'index_id' is a reserved name"
@@ -846,7 +846,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 node.rename_index_columns({'index_id': 'G'})
             else:
                 import toron.dal1
-                toron.dal1.legacy_rename_columns(node, {'index_id': 'G'})
+                toron.dal1.legacy_rename_labels(node, {'index_id': 'G'})
 
     def test_drop_index_columns(self):
         node = TopoNode()
@@ -856,7 +856,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             node.drop_index_columns('B', 'D')
         else:
             import toron.dal1
-            toron.dal1.legacy_drop_columns(node, 'B', 'D')
+            toron.dal1.legacy_drop_labels(node, 'B', 'D')
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'C'))
 
@@ -881,14 +881,14 @@ class TestIndexColumnMethods(unittest.TestCase):
                 node.drop_index_columns('C', 'index_id')
             else:
                 import toron.dal1
-                toron.dal1.legacy_drop_columns(node, 'C', 'index_id')
+                toron.dal1.legacy_drop_labels(node, 'C', 'index_id')
 
 
 class TestIndexMethods(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             manager.add_columns(*columns)
 
     @staticmethod
@@ -1179,7 +1179,7 @@ class TestInsertIndex(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             manager.add_columns(*columns)
 
     @staticmethod
@@ -1751,7 +1751,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             manager.add_columns('A', 'B')
 
             repository = node._dal.IndexRepository(cursor)
@@ -2014,7 +2014,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             manager.add_columns(*columns)
 
     @staticmethod
@@ -2424,7 +2424,7 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
     def test_drop_weight_group(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             property_repo = node._dal.PropertyRepository(cursor)
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
@@ -2472,7 +2472,7 @@ class TestTopoNodeSelectWeights(unittest.TestCase):
         node = TopoNode()
         with node._managed_cursor() as cursor:
             # Add index columns and records.
-            node._dal.ColumnManager(cursor).add_columns('A', 'B')
+            node._dal.LabelManager(cursor).add_columns('A', 'B')
             index_repo = node._dal.IndexRepository(cursor)
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
@@ -2565,12 +2565,12 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            col_manager = node._dal.ColumnManager(cursor)
+            label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
 
             # Add index columns and records.
-            col_manager.add_columns('A', 'B')
+            label_manager.add_columns('A', 'B')
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
@@ -3119,11 +3119,11 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            col_manager = node._dal.ColumnManager(cursor)
+            label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
 
             # Add index columns and records.
-            col_manager.add_columns('A', 'B')
+            label_manager.add_columns('A', 'B')
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
@@ -3340,12 +3340,12 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         # Build TopoNode fixture to use in test cases.
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            col_manager = node._dal.ColumnManager(cursor)
+            label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             crosswalk_repo = node._dal.CrosswalkRepository(cursor)
 
             # Add index columns and records.
-            col_manager.add_columns('A', 'B')
+            label_manager.add_columns('A', 'B')
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
@@ -3546,13 +3546,13 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            col_manager = node._dal.ColumnManager(cursor)
+            label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             crosswalk_repo = node._dal.CrosswalkRepository(cursor)
             structure_repo = node._dal.StructureRepository(cursor)
 
             # Add index columns and records.
-            col_manager.add_columns('A', 'B')
+            label_manager.add_columns('A', 'B')
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
@@ -3612,7 +3612,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
 
     def test_select_with_ambiguous_mappings(self):
         with self.node._managed_cursor() as cursor:
-            col_manager = self.node._dal.ColumnManager(cursor)
+            label_manager = self.node._dal.LabelManager(cursor)
             relation_repo = self.node._dal.RelationRepository(cursor)
 
             relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
@@ -3622,7 +3622,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
 
             # Adding another column makes existing relations ambiguous
             # because they were mapped without knowledge of the new column.
-            col_manager.add_columns('C')
+            label_manager.add_columns('C')
 
         relations = self.node.select_relations('myfile', 'rel1', header=True)
         expected = [
@@ -3846,13 +3846,13 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            col_manager = node._dal.ColumnManager(cursor)
+            label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             crosswalk_repo = node._dal.CrosswalkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
 
             # Add index columns and records.
-            col_manager.add_columns('A', 'B')
+            label_manager.add_columns('A', 'B')
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
@@ -4046,13 +4046,13 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            col_manager = node._dal.ColumnManager(cursor)
+            label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             crosswalk_repo = node._dal.CrosswalkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
 
             # Add index columns and records.
-            col_manager.add_columns('A', 'B')
+            label_manager.add_columns('A', 'B')
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
@@ -4315,14 +4315,14 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            col_manager = node._dal.ColumnManager(cursor)
+            label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             crosswalk_repo = node._dal.CrosswalkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
             structure_repo = node._dal.StructureRepository(cursor)
 
             # Add index columns and records.
-            col_manager.add_columns('A', 'B')
+            label_manager.add_columns('A', 'B')
             index_repo.add('foo', 'x')
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
@@ -5044,7 +5044,7 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             manager.add_columns(*columns)
 
     @staticmethod
@@ -5294,7 +5294,7 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             manager.add_columns(*columns)
 
     @staticmethod
@@ -5480,7 +5480,7 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
         node = TopoNode()
 
         with node._managed_cursor() as cursor:
-            manager = node._dal.ColumnManager(cursor)
+            manager = node._dal.LabelManager(cursor)
             manager.add_columns('state', 'county')
 
             structure_repo = node._dal.StructureRepository(cursor)

@@ -32,7 +32,7 @@ from .data_models import (
     COMMON_RESERVED_IDENTIFIERS,
     EmptyCollectionError,
     BaseAttributeGroupRepository,
-    BaseColumnManager,
+    BaseLabelManager,
     BaseIndexRepository,
     BaseLocationRepository,
     BaseWeightGroupRepository,
@@ -73,7 +73,7 @@ applogger = logging.getLogger('app-toron')
 def validate_new_index_columns(
     new_column_names: Iterable[str],
     reserved_identifiers: Set[str],
-    column_manager: BaseColumnManager,
+    label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
     attribute_repo: BaseAttributeGroupRepository,
 ) -> None:
@@ -82,7 +82,7 @@ def validate_new_index_columns(
     """
     all_reserved_identifiers = \
         reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
-    existing_columns = set(column_manager.get_columns())
+    existing_columns = set(label_manager.get_columns())
     attribute_names = set(attribute_repo.get_all_attribute_names())
 
     for col in new_column_names:
@@ -605,7 +605,7 @@ def get_all_discrete_categories(
 
 def rename_discrete_categories(
     mapping: Dict[str, str],
-    column_manager: BaseColumnManager,
+    label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
 ) -> None:
     categories = get_all_discrete_categories(property_repo)
@@ -683,7 +683,7 @@ def calculate_granularity(
 
 
 def rebuild_structure_table(
-    column_manager: BaseColumnManager,
+    label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
     structure_repo: BaseStructureRepository,
     index_repo: BaseIndexRepository,
@@ -703,7 +703,7 @@ def rebuild_structure_table(
         structure_repo.delete(structure.id)
 
     # Get columns and categories.
-    columns = column_manager.get_columns()
+    columns = label_manager.get_columns()
     categories = get_all_discrete_categories(property_repo)
     if columns and not categories:
         raise RuntimeError("node has columns but no 'discrete_categories'")
@@ -717,10 +717,10 @@ def rebuild_structure_table(
 
 def add_discrete_categories(
     categories: Iterable[Set[str]],
-    column_manager: BaseColumnManager,
+    label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
 ) -> None:
-    columns = column_manager.get_columns()
+    columns = label_manager.get_columns()
     if not columns:
         msg = 'must add index columns before defining categories'
         raise RuntimeError(msg)
@@ -755,7 +755,7 @@ def add_discrete_categories(
 
 def add_discrete_category(
     category: Collection[str],
-    column_manager: BaseColumnManager,
+    label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
 ) -> None:
     """Add discrete category.
@@ -764,7 +764,7 @@ def add_discrete_category(
     exist. Raises a ``RuntimeError`` if category cannot be created for
     some other reason.
     """
-    index_labels: Sequence[str] = column_manager.get_columns()
+    index_labels: Sequence[str] = label_manager.get_columns()
 
     if not index_labels:
         raise RuntimeError('must add index labels before defining a category')
@@ -804,7 +804,7 @@ def add_discrete_category(
 
 
 def refresh_structure_granularity(
-    column_manager: BaseColumnManager,
+    label_manager: BaseLabelManager,
     structure_repo: BaseStructureRepository,
     index_repo: BaseIndexRepository,
     aux_index_repo: BaseIndexRepository,
@@ -817,7 +817,7 @@ def refresh_structure_granularity(
         granularity_func = calculate_granularity
 
     # Recalculate granularity and update structure records.
-    label_columns = column_manager.get_columns()
+    label_columns = label_manager.get_columns()
     for structure in structure_repo.get_all():
         category = list(compress(label_columns, structure.bits))
         granularity = granularity_func(category, index_repo, aux_index_repo)
@@ -826,7 +826,7 @@ def refresh_structure_granularity(
 
 
 def refresh_or_rebuild_structure_granularity(
-    column_manager: BaseColumnManager,
+    label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
     structure_repo: BaseStructureRepository,
     index_repo: BaseIndexRepository,
@@ -841,7 +841,7 @@ def refresh_or_rebuild_structure_granularity(
     if has_discrete_categories:
         # If categories already exist, then refresh granularity.
         refresh_structure_granularity(
-            column_manager=column_manager,
+            label_manager=label_manager,
             structure_repo=structure_repo,
             index_repo=index_repo,
             aux_index_repo=aux_index_repo,
@@ -852,11 +852,11 @@ def refresh_or_rebuild_structure_granularity(
         whole_space = set(index_repo.get_label_names())
         add_discrete_categories(
             categories=[whole_space],
-            column_manager=column_manager,
+            label_manager=label_manager,
             property_repo=property_repo,
         )
         rebuild_structure_table(
-            column_manager=column_manager,
+            label_manager=label_manager,
             property_repo=property_repo,
             structure_repo=structure_repo,
             index_repo=index_repo,

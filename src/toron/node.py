@@ -267,7 +267,7 @@ class TopoNode(object):
     @property
     def discrete_categories(self) -> List[Set[str]]:
         with self._managed_cursor() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
             return get_all_discrete_categories(prop_repo)
 
@@ -280,17 +280,17 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
 
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
 
             add_discrete_categories(
                 categories=categories_to_add,
-                column_manager=col_manager,
+                label_manager=label_manager,
                 property_repo=prop_repo,
             )
 
             rebuild_structure_table(
-                column_manager=col_manager,
+                label_manager=label_manager,
                 property_repo=prop_repo,
                 structure_repo=self._dal.StructureRepository(cursor),
                 index_repo=self._dal.IndexRepository(cursor),
@@ -303,17 +303,17 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
 
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
 
             add_discrete_category(
                 category=category,
-                column_manager=col_manager,
+                label_manager=label_manager,
                 property_repo=prop_repo,
             )
 
             rebuild_structure_table(
-                column_manager=col_manager,
+                label_manager=label_manager,
                 property_repo=prop_repo,
                 structure_repo=self._dal.StructureRepository(cursor),
                 index_repo=self._dal.IndexRepository(cursor),
@@ -329,10 +329,10 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
 
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
 
-            columns = col_manager.get_columns()
+            columns = label_manager.get_columns()
             whole_space = set(columns)
 
             if whole_space in cats_to_drop:
@@ -349,7 +349,7 @@ class TopoNode(object):
             prop_repo.update('discrete_categories', category_lists)
 
             rebuild_structure_table(
-                column_manager=col_manager,
+                label_manager=label_manager,
                 property_repo=prop_repo,
                 structure_repo=self._dal.StructureRepository(cursor),
                 index_repo=self._dal.IndexRepository(cursor),
@@ -388,31 +388,31 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
 
-            column_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             property_repo = self._dal.PropertyRepository(cursor)
             structure_repo = self._dal.StructureRepository(cursor)
 
             validate_new_index_columns(
                 new_column_names=chain([column], columns),
                 reserved_identifiers=self._dal.reserved_identifiers,
-                column_manager=column_manager,
+                label_manager=label_manager,
                 property_repo=property_repo,
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
 
-            old_whole_space = set(column_manager.get_columns())
-            column_manager.add_columns(column, *columns)
+            old_whole_space = set(label_manager.get_columns())
+            label_manager.add_columns(column, *columns)
 
             # Add new "whole space" category.
             add_discrete_category(
-                category=set(column_manager.get_columns()),  # All columns.
-                column_manager=column_manager,
+                category=set(label_manager.get_columns()),  # All columns.
+                label_manager=label_manager,
                 property_repo=property_repo,
             )
 
             # TODO: Move to after call to drop_discrete_categories().
             rebuild_structure_table(
-                column_manager=column_manager,
+                label_manager=label_manager,
                 property_repo=property_repo,
                 structure_repo=structure_repo,
                 index_repo=self._dal.IndexRepository(cursor),
@@ -442,7 +442,7 @@ class TopoNode(object):
 
     def rename_index_columns(self, mapping: Dict[str, str]) -> None:
         with self._managed_transaction() as cursor:
-            column_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             property_repo = self._dal.PropertyRepository(cursor)
 
             # Check old column names.
@@ -457,22 +457,22 @@ class TopoNode(object):
             validate_new_index_columns(
                 new_column_names=mapping.values(),
                 reserved_identifiers=self._dal.reserved_identifiers,
-                column_manager=column_manager,
+                label_manager=label_manager,
                 property_repo=property_repo,
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
 
             # Rename columns and discrete categories.
-            column_manager.rename_columns(mapping)
+            label_manager.rename_columns(mapping)
             rename_discrete_categories(
                 mapping=mapping,
-                column_manager=column_manager,
+                label_manager=label_manager,
                 property_repo=property_repo,
             )
 
     def drop_index_columns(self, column: str, *columns: str) -> None:
         with self._managed_transaction() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
 
             all_reserved_identifiers = \
                 self._dal.reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
@@ -481,7 +481,7 @@ class TopoNode(object):
                     msg = f'cannot alter columns, {col!r} is a reserved identifier'
                     raise ValueError(msg)
 
-            if set(col_manager.get_columns()).issubset(chain([column], columns)):
+            if set(label_manager.get_columns()).issubset(chain([column], columns)):
                 msg = (
                     'cannot remove all index columns\n'
                     '\n'
@@ -490,7 +490,7 @@ class TopoNode(object):
                 )
                 raise RuntimeError(msg)
 
-            col_manager.drop_columns(column, *columns)
+            label_manager.drop_columns(column, *columns)
 
     def insert_index(
         self,
@@ -665,7 +665,7 @@ class TopoNode(object):
                 )
 
                 refresh_or_rebuild_structure_granularity(
-                    column_manager=self._dal.ColumnManager(cursor),
+                    label_manager=self._dal.LabelManager(cursor),
                     property_repo=prop_repo,
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
@@ -721,10 +721,10 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
 
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
-            index_columns = col_manager.get_columns()
+            index_columns = label_manager.get_columns()
             verify_columns_set(columns, index_columns, allow_extras=True)
             extra_columns = [x for x in columns if x not in index_columns]
 
@@ -759,7 +759,7 @@ class TopoNode(object):
                 )
 
                 refresh_or_rebuild_structure_granularity(
-                    column_manager=col_manager,
+                    label_manager=label_manager,
                     property_repo=prop_repo,
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
@@ -797,7 +797,7 @@ class TopoNode(object):
     ) -> Iterator[Sequence]:
         with self._managed_cursor() as cursor:
             if header:
-                label_columns = self._dal.ColumnManager(cursor).get_columns()
+                label_columns = self._dal.LabelManager(cursor).get_columns()
                 yield ('index_id',) + label_columns  # Yield header row.
 
             index_repo = self._dal.IndexRepository(cursor)
@@ -825,9 +825,9 @@ class TopoNode(object):
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
 
-            label_columns = col_manager.get_columns()
+            label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             previously_merged = set()
@@ -880,7 +880,7 @@ class TopoNode(object):
 
             if counter['merged'] or counter['updated']:
                 refresh_structure_granularity(
-                    column_manager=col_manager,
+                    label_manager=label_manager,
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
                     aux_index_repo=self._dal.IndexRepository(aux_cursor),
@@ -935,14 +935,14 @@ class TopoNode(object):
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
 
             if data:
                 data, columns = normalize_tabular(data, columns)
                 if 'index_id' not in columns:
                     raise ValueError("column 'index_id' required to delete records")
 
-                label_columns = col_manager.get_columns()
+                label_columns = label_manager.get_columns()
                 verify_columns_set(columns, label_columns, allow_extras=True)
 
                 for row in data:
@@ -990,7 +990,7 @@ class TopoNode(object):
                 )
 
                 refresh_structure_granularity(
-                    column_manager=col_manager,
+                    label_manager=label_manager,
                     structure_repo=self._dal.StructureRepository(cursor),
                     index_repo=index_repo,
                     aux_index_repo=aux_index_repo,
@@ -1174,8 +1174,8 @@ class TopoNode(object):
             index_hash = check_type(property_repo.get('index_hash'), str)
             domain = get_domain(property_repo)
 
-            col_manager = self._dal.ColumnManager(cursor)
-            label_names = col_manager.get_columns()
+            label_manager = self._dal.LabelManager(cursor)
+            label_names = label_manager.get_columns()
 
         quantity_iter = QuantityIterator(
             unique_id=unique_id,
@@ -1204,12 +1204,12 @@ class TopoNode(object):
 
         counter: Counter = Counter()
         with self._managed_transaction() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             group_repo = self._dal.WeightGroupRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
 
-            label_columns = col_manager.get_columns()
+            label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             try:
@@ -1325,12 +1325,12 @@ class TopoNode(object):
 
         counter: Counter = Counter()
         with self._managed_transaction() as cursor:
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             group_repo = self._dal.WeightGroupRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
 
-            label_columns = col_manager.get_columns()
+            label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             group = group_repo.get_by_name(weight_group_name)
@@ -1426,7 +1426,7 @@ class TopoNode(object):
             # Parenthesized context managers weren't official until 3.10.
 
             group_repo = self._dal.WeightGroupRepository(cursor)
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
 
@@ -1438,7 +1438,7 @@ class TopoNode(object):
                 if 'index_id' not in columns:
                     raise ValueError("column 'index_id' required to delete records")
 
-                label_columns = col_manager.get_columns()
+                label_columns = label_manager.get_columns()
                 verify_columns_set(columns, label_columns, allow_extras=True)
 
                 for row in data:
@@ -1674,7 +1674,7 @@ class TopoNode(object):
         **criteria: str,
     ) -> Iterator[Sequence]:
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
 
@@ -1685,7 +1685,7 @@ class TopoNode(object):
                     f'and name {crosswalk_name!r}'
                 )
 
-            label_columns = col_manager.get_columns()
+            label_columns = label_manager.get_columns()
 
             if header:
                 header_row = (('other_index_id', crosswalk.name, 'index_id')
@@ -1854,13 +1854,13 @@ class TopoNode(object):
         counter: Counter = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
 
-            label_columns = col_manager.get_columns()
+            label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
@@ -1952,13 +1952,13 @@ class TopoNode(object):
         counter: Counter = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
 
-            label_columns = col_manager.get_columns()
+            label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
@@ -2089,7 +2089,7 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
 
-            col_manager = self._dal.ColumnManager(cursor)
+            label_manager = self._dal.LabelManager(cursor)
             crosswalk_repo = self._dal.CrosswalkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             aux_relation_repo = self._dal.RelationRepository(aux_cursor)
@@ -2106,7 +2106,7 @@ class TopoNode(object):
             if data:
                 data, columns = normalize_tabular(data, columns)
 
-                label_columns = col_manager.get_columns()
+                label_columns = label_manager.get_columns()
                 verify_columns_set(columns, label_columns, allow_extras=True)
 
                 whole_space_mapping_level = bytes(BitFlags(label_columns))
@@ -2161,7 +2161,7 @@ class TopoNode(object):
                         counter['no_relation'] += 1
 
             elif criteria:
-                label_columns = col_manager.get_columns()
+                label_columns = label_manager.get_columns()
                 criteria_keys = set(criteria.keys())
                 criteria_level = BitFlags(x in criteria_keys for x in label_columns)
 
@@ -2887,8 +2887,8 @@ class TopoNode(object):
             index_hash = check_type(property_repo.get('index_hash'), str)
             domain = get_domain(property_repo)
 
-            col_manager = self._dal.ColumnManager(cursor)
-            label_names = col_manager.get_columns()
+            label_manager = self._dal.LabelManager(cursor)
+            label_names = label_manager.get_columns()
 
             attribute_repo = self._dal.AttributeGroupRepository(cursor)
 

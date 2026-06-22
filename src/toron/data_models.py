@@ -225,8 +225,15 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
         """
 
 
-class BaseColumnManager(ABC):
-    """Manage node's label columns (add, get, update, and delete)."""
+class BaseLabelManager(ABC):
+    """Manage a consistent set of label columns across repositories.
+
+    The data stores backing the 'index', 'location', and 'structure'
+    repositories must provide the same label columns in the same
+    storage order. This class defines an interface for adding,
+    retrieving, renaming, and removing label columns across all
+    three repositories.
+    """
     @abstractmethod
     def __init__(self, cursor: Any) -> None:
         """Initialize a new instance."""

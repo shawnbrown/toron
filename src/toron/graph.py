@@ -603,7 +603,7 @@ def get_weights(
 
         if header:
             # Make and yield header row.
-            label_columns = node._dal.ColumnManager(cur1).get_columns()
+            label_columns = node._dal.LabelManager(cur1).get_columns()
             group_names = [grp.name for grp in groups]
             yield ['index_id'] + domain_keys + list(label_columns) + group_names
 
@@ -697,7 +697,7 @@ def translate(
         property_repo = node._dal.PropertyRepository(cursor)
         new_unique_id = check_type(property_repo.get('unique_id'), str)
         new_index_hash = check_type(property_repo.get('index_hash'), str)
-        new_label_names = node._dal.ColumnManager(cursor).get_columns()
+        new_label_names = node._dal.LabelManager(cursor).get_columns()
 
     new_quantity_iter = QuantityIterator(
         unique_id=new_unique_id,

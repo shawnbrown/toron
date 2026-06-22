@@ -170,7 +170,7 @@ class DataConnectorBaseTest(ABC):
         self.assertFalse(connector.transaction_is_active(cursor))
 
 
-class ColumnManagerBaseTest(ABC):
+class LabelManagerBaseTest(ABC):
     @property
     @abstractmethod
     def dal(self):
@@ -185,7 +185,7 @@ class ColumnManagerBaseTest(ABC):
         cursor = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.dal.ColumnManager(cursor)
+        self.manager = self.dal.LabelManager(cursor)
 
 
 class IndexRepositoryBaseTest(ABC):
@@ -202,7 +202,7 @@ class IndexRepositoryBaseTest(ABC):
         self.cursor = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(self.cursor))
 
-        self.manager = self.dal.ColumnManager(self.cursor)
+        self.manager = self.dal.LabelManager(self.cursor)
         self.repository = self.dal.IndexRepository(self.cursor)
 
     def test_inheritance(self):
@@ -444,7 +444,7 @@ class LocationRepositoryBaseTest(ABC):
         cursor = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.dal.ColumnManager(cursor)
+        self.manager = self.dal.LabelManager(cursor)
         self.repository = self.dal.LocationRepository(cursor)
 
     def test_inheritance(self):
@@ -608,7 +608,7 @@ class StructureRepositoryBaseTest(ABC):
         cursor = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.dal.ColumnManager(cursor)
+        self.manager = self.dal.LabelManager(cursor)
         self.repository = self.dal.StructureRepository(cursor)
 
     def test_inheritance(self):
@@ -703,7 +703,7 @@ class WeightRepositoryBaseTest(ABC):
         cursor = connector.acquire_cursor(self.connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.dal.ColumnManager(cursor)
+        self.manager = self.dal.LabelManager(cursor)
         self.index_repo = self.dal.IndexRepository(cursor)
 
         self.manager.add_columns('A', 'B')
@@ -1102,7 +1102,7 @@ class QuantityRepositoryBaseTest(ABC):
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
         # Set-up test values for quantity table to use.
-        manager = self.dal.ColumnManager(cursor)
+        manager = self.dal.LabelManager(cursor)
         manager.add_columns('A', 'B')
 
         location_repo = self.dal.LocationRepository(cursor)
@@ -1223,7 +1223,7 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
         # Set-up test values for quantity table to use.
-        manager = self.dal.ColumnManager(cursor)
+        manager = self.dal.LabelManager(cursor)
         manager.add_columns('A', 'B')
 
         location_repo = self.dal.LocationRepository(cursor)
@@ -1412,7 +1412,7 @@ class RelationRepositoryBaseTest(ABC):
         cursor = connector.acquire_cursor(self.connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.dal.ColumnManager(cursor)
+        self.manager = self.dal.LabelManager(cursor)
         self.index_repo = self.dal.IndexRepository(cursor)
 
         self.manager.add_columns('A', 'B')
@@ -1855,7 +1855,7 @@ class CrossRepositoryRelationsBaseTest(ABC):
         cursor = connector.acquire_cursor(self.connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.dal.ColumnManager(cursor)
+        self.manager = self.dal.LabelManager(cursor)
         self.location_repo = self.dal.LocationRepository(cursor)
         self.attrgroup_repo = self.dal.AttributeGroupRepository(cursor)
         self.quantity_repo = self.dal.QuantityRepository(cursor)
@@ -2067,7 +2067,7 @@ from toron import dal1
 class TestDataConnectorDAL1(DataConnectorBaseTest, unittest.TestCase):
     dal = dal1
 
-class ColumnManagerDAL1(ColumnManagerBaseTest, unittest.TestCase):
+class LabelManagerDAL1(LabelManagerBaseTest, unittest.TestCase):
     dal = dal1
 
 class IndexRepositoryDAL1(IndexRepositoryBaseTest, unittest.TestCase):

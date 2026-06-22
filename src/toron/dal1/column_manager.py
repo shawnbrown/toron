@@ -1,4 +1,4 @@
-"""ColumnManager and related objects using SQLite."""
+"""LabelManager and related objects using SQLite."""
 
 import sqlite3
 from itertools import chain
@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 from . import schema
 from ..data_models import (
     COMMON_RESERVED_IDENTIFIERS,
-    BaseColumnManager,
+    BaseLabelManager,
 )
 
 
-class ColumnManager(BaseColumnManager):
+class LabelManager(BaseLabelManager):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new instance."""
         self._cursor = cursor
@@ -58,7 +58,7 @@ class ColumnManager(BaseColumnManager):
                 f"This feature requires SQLite 3.25.0 or newer. The current running "
                 f"Python is bundled with SQLite {sqlite3.sqlite_version}.\n"
                 f"\n"
-                f"Use the helper function 'toron.dal1.legacy_rename_columns(...)' instead."
+                f"Use the helper function 'toron.dal1.legacy_rename_labels(...)' instead."
             )
             raise Exception(msg)
 
@@ -84,7 +84,7 @@ class ColumnManager(BaseColumnManager):
                 f"This feature requires SQLite 3.35.5 or newer. The current running "
                 f"Python is bundled with SQLite {sqlite3.sqlite_version}.\n"
                 f"\n"
-                f"Use the helper function 'toron.dal1.legacy_drop_columns(...)' instead."
+                f"Use the helper function 'toron.dal1.legacy_drop_labels(...)' instead."
             )
             raise Exception(msg)
 
@@ -108,7 +108,7 @@ class ColumnManager(BaseColumnManager):
         schema.create_schema_constraints(self._cursor)
 
 
-def legacy_rename_columns(node: 'TopoNode', mapping: Dict[str, str]) -> None:
+def legacy_rename_labels(node: 'TopoNode', mapping: Dict[str, str]) -> None:
     """Rename label columns (for legacy SQLite versions).
 
     RENAME COLUMN support was added in SQLite 3.25.0 (2018-09-15).
@@ -128,14 +128,14 @@ def legacy_rename_columns(node: 'TopoNode', mapping: Dict[str, str]) -> None:
             msg = 'cannot rename columns inside an existing transaction'
             raise RuntimeError(msg)
 
-        column_manager = ColumnManager(cursor)
+        label_manager = LabelManager(cursor)
         property_repo = node._dal.PropertyRepository(cursor)
 
         # Check new column names for conflicts.
         validate_new_index_columns(
             new_column_names=mapping.values(),
             reserved_identifiers=node._dal.reserved_identifiers,
-            column_manager=column_manager,
+            label_manager=label_manager,
             property_repo=property_repo,
             attribute_repo=node._dal.AttributeGroupRepository(cursor),
         )
@@ -150,7 +150,7 @@ def legacy_rename_columns(node: 'TopoNode', mapping: Dict[str, str]) -> None:
 
         # Build a list of new column names.
         new_columns = []
-        for old_col in column_manager.get_columns():
+        for old_col in label_manager.get_columns():
             new_col = mapping.get(old_col, old_col)  # Get new name or default to old.
             if new_col in new_columns:
                 raise ValueError(f'cannot create duplicate columns: {new_col}')
@@ -206,7 +206,7 @@ def legacy_rename_columns(node: 'TopoNode', mapping: Dict[str, str]) -> None:
             schema.create_schema_constraints(cursor)
 
             # Rename discrete categories to match new column names.
-            rename_discrete_categories(mapping, column_manager, property_repo)
+            rename_discrete_categories(mapping, label_manager, property_repo)
 
             cursor.execute('COMMIT TRANSACTION')
 
@@ -218,7 +218,7 @@ def legacy_rename_columns(node: 'TopoNode', mapping: Dict[str, str]) -> None:
             cursor.execute('PRAGMA foreign_keys=ON')  # <- Must be outside transaction.
 
 
-def legacy_drop_columns(node: 'TopoNode', column: str, *columns: str) -> None:
+def legacy_drop_labels(node: 'TopoNode', column: str, *columns: str) -> None:
     """Remove columns (for legacy SQLite versions).
 
     DROP COLUMN support was first added in SQLite 3.35.0 and important
@@ -232,7 +232,7 @@ def legacy_drop_columns(node: 'TopoNode', column: str, *columns: str) -> None:
         raise TypeError(msg)
 
     with node._managed_cursor() as cursor:
-        manager = ColumnManager(cursor)
+        manager = LabelManager(cursor)
 
         if cursor.connection.in_transaction:
             msg = 'cannot delete columns inside an existing transaction'

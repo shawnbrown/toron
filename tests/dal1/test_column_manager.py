@@ -1,22 +1,22 @@
-"""Tests for ColumnManager class."""
+"""Tests for LabelManager class."""
 
 import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
-from toron.data_models import BaseColumnManager
+from toron.data_models import BaseLabelManager
 from toron.dal1.column_manager import (
-    ColumnManager,
-    legacy_rename_columns,
-    legacy_drop_columns,
+    LabelManager,
+    legacy_rename_labels,
+    legacy_drop_labels,
 )
 from toron.node import TopoNode
 
 
-class TestColumnManager(unittest.TestCase):
+class TestLabelManager(unittest.TestCase):
     @property
     def concrete_class(self):
-        return ColumnManager
+        return LabelManager
 
     def setUp(self):
         connector = DataConnector()
@@ -28,8 +28,8 @@ class TestColumnManager(unittest.TestCase):
 
     def test_inheritance(self):
         """Should subclass from appropriate abstract base class."""
-        manager = ColumnManager(self.cursor)
-        self.assertTrue(isinstance(manager, BaseColumnManager))
+        manager = LabelManager(self.cursor)
+        self.assertTrue(isinstance(manager, BaseLabelManager))
 
     def assertColumnsEqual(self, table_name, expected_columns, msg=None):
         self.cursor.execute(f"PRAGMA main.table_info('{table_name}')")
@@ -42,7 +42,7 @@ class TestColumnManager(unittest.TestCase):
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def test_add_columns(self):
-        manager = ColumnManager(self.cursor)
+        manager = LabelManager(self.cursor)
 
         manager.add_columns('foo', 'bar')
 
@@ -51,7 +51,7 @@ class TestColumnManager(unittest.TestCase):
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'bar'])
 
     def test_add_columns_special_chars(self):
-        manager = ColumnManager(self.cursor)
+        manager = LabelManager(self.cursor)
 
         manager.add_columns('x "y"')  # <- Check special characters (space and quotes).
 
@@ -63,14 +63,14 @@ class TestColumnManager(unittest.TestCase):
         # Only add to node_index for testing.
         self.cursor.execute('ALTER TABLE node_index ADD COLUMN "foo"')
         self.cursor.execute('ALTER TABLE node_index ADD COLUMN "bar"')
-        manager = ColumnManager(self.cursor)
+        manager = LabelManager(self.cursor)
 
         actual = manager.get_columns()
 
         self.assertEqual(actual, ('foo', 'bar'), msg='should be label columns only, no index_id')
 
     def test_get_columns_empty(self):
-        manager = ColumnManager(self.cursor)
+        manager = LabelManager(self.cursor)
 
         actual = manager.get_columns()
 
@@ -78,7 +78,7 @@ class TestColumnManager(unittest.TestCase):
 
     @unittest.skipIf(sqlite3.sqlite_version_info < (3, 25, 0), 'requires 3.25.0 or newer')
     def test_rename_columns(self):
-        manager = ColumnManager(self.cursor)
+        manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar')
         self.cursor.executescript("""
             INSERT INTO node_index VALUES (NULL, 'a', 'x');
@@ -98,7 +98,7 @@ class TestColumnManager(unittest.TestCase):
 
     @unittest.skipIf(sqlite3.sqlite_version_info < (3, 35, 5), 'requires 3.35.5 or newer')
     def test_drop_columns(self):
-        manager = ColumnManager(self.cursor)
+        manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar', 'baz', 'qux')
         self.cursor.executescript("""
             INSERT INTO node_index VALUES (NULL, 'a', 'x', '111', 'one');
@@ -131,7 +131,7 @@ class TestColumnManager(unittest.TestCase):
         if sqlite3.sqlite_version_info >= (3, 35, 5):
             return  # <- EXIT!
 
-        manager = ColumnManager(self.cursor)
+        manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar')
 
         regex = 'requires SQLite 3.35.5 or newer'
@@ -139,7 +139,7 @@ class TestColumnManager(unittest.TestCase):
             manager.drop_columns('bar')
 
 
-class TestLegacyUpdateColumns(unittest.TestCase):
+class TestLegacyLabelFunctions(unittest.TestCase):
     def assertColumnsEqual(self, table_name, expected_columns, msg=None):
         self.cursor.execute(f"PRAGMA main.table_info('{table_name}')")
         actual_columns = [row[1] for row in self.cursor.fetchall()]
@@ -157,8 +157,8 @@ class TestLegacyUpdateColumns(unittest.TestCase):
         self.cursor = connection.cursor()
         self.addCleanup(self.cursor.close)
 
-    def test_rename_columns(self):
-        manager = ColumnManager(self.cursor)
+    def test_rename_labels(self):
+        manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar')
         self.cursor.executescript("""
             INSERT INTO node_index VALUES (NULL, 'a', 'x');
@@ -166,7 +166,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             INSERT INTO node_index VALUES (NULL, 'c', 'z');
         """)
 
-        legacy_rename_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
+        legacy_rename_labels(self.node, {'foo': 'qux', 'bar': 'quux'})
 
         self.assertColumnsEqual('node_index', ['index_id', 'qux', 'quux'])
         self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
@@ -176,8 +176,8 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')],
         )
 
-    def test_rename_columns_bad_transaction_state(self):
-        manager = ColumnManager(self.cursor)
+    def test_rename_labels_bad_transaction_state(self):
+        manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar')
 
         self.cursor.execute('BEGIN TRANSACTION')
@@ -185,10 +185,10 @@ class TestLegacyUpdateColumns(unittest.TestCase):
 
         regex = 'existing transaction'
         with self.assertRaisesRegex(RuntimeError, regex):
-            legacy_rename_columns(self.node, {'foo': 'qux', 'bar': 'quux'})
+            legacy_rename_labels(self.node, {'foo': 'qux', 'bar': 'quux'})
 
-    def test_legacy_drop_columns(self):
-        manager = ColumnManager(self.cursor)
+    def test_legacy_drop_labels(self):
+        manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar', 'baz', 'qux')
         self.cursor.executescript("""
             INSERT INTO node_index VALUES (NULL, 'a', 'x', '111', 'one');
@@ -196,7 +196,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             INSERT INTO node_index VALUES (NULL, 'c', 'z', '333', 'three');
         """)
 
-        legacy_drop_columns(self.node, 'bar')  # <- Delete 1 column.
+        legacy_drop_labels(self.node, 'bar')  # <- Delete 1 column.
 
         self.assertColumnsEqual('node_index', ['index_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
@@ -206,7 +206,7 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             [(0, '-', '-', '-'), (1, 'a', '111', 'one'), (2, 'b', '222', 'two'), (3, 'c', '333', 'three')],
         )
 
-        legacy_drop_columns(self.node, 'baz', 'qux')  # <- Delete 2 more columns at the same time.
+        legacy_drop_labels(self.node, 'baz', 'qux')  # <- Delete 2 more columns at the same time.
 
         self.assertColumnsEqual('node_index', ['index_id', 'foo'])
         self.assertColumnsEqual('location', ['_location_id', 'foo'])
@@ -216,10 +216,10 @@ class TestLegacyUpdateColumns(unittest.TestCase):
             [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
         )
 
-    def test_legacy_drop_columns_all(self):
-        manager = ColumnManager(self.cursor)
+    def test_legacy_drop_labels_all(self):
+        manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar')
 
         regex = 'cannot delete all columns'
         with self.assertRaisesRegex(RuntimeError, regex):
-            legacy_drop_columns(self.node, 'foo', 'bar')
+            legacy_drop_labels(self.node, 'foo', 'bar')

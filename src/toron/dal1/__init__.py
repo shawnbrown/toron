@@ -12,9 +12,9 @@ if __import__('sqlite3').sqlite_version_info < (3, 21, 0):
 
 from .data_connector import DataConnector
 from .column_manager import (
-    ColumnManager,
-    legacy_rename_columns,
-    legacy_drop_columns,
+    LabelManager,
+    legacy_rename_labels,
+    legacy_drop_labels,
 )
 from .repositories import (
     IndexRepository,

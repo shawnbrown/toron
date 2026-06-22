@@ -16,7 +16,7 @@ from .data_models import (
     TORON_MAGIC_NUMBER,
     COMMON_RESERVED_IDENTIFIERS,
     BaseDataConnector,
-    BaseColumnManager,
+    BaseLabelManager,
     BaseIndexRepository,
     BaseLocationRepository,
     BaseStructureRepository,
@@ -41,7 +41,7 @@ class DataAccessLayer(object):
     backend: str
     reserved_identifiers: Set[str]
     DataConnector: Type[BaseDataConnector]
-    ColumnManager: Type[BaseColumnManager]
+    LabelManager: Type[BaseLabelManager]
     IndexRepository: Type[BaseIndexRepository]
     LocationRepository: Type[BaseLocationRepository]
     StructureRepository: Type[BaseStructureRepository]
@@ -81,7 +81,7 @@ def get_data_access_layer(backend: Optional[str] = None) -> DataAccessLayer:
             backend=backend,
             reserved_identifiers=mod.RESERVED_IDENTIFIERS,
             DataConnector=mod.DataConnector,
-            ColumnManager=mod.ColumnManager,
+            LabelManager=mod.LabelManager,
             IndexRepository=mod.IndexRepository,
             LocationRepository=mod.LocationRepository,
             StructureRepository=mod.StructureRepository,

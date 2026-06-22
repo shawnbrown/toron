@@ -45,7 +45,7 @@ from toron.data_service import (
 )
 
 
-class TestValidateNewIndexColumns(unittest.TestCase):
+class TestValidateNewLabelColumns(unittest.TestCase):
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -56,7 +56,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         self.addCleanup(lambda: connector.release_cursor(cur))
 
         self.reserved_identifiers = dal.reserved_identifiers
-        self.column_manager = dal.ColumnManager(cur)
+        self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
         self.attribute_repo = dal.AttributeGroupRepository(cur)
 
@@ -64,7 +64,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
         validate_new_index_columns(
             new_column_names=iter(['baz', 'qux']),
             reserved_identifiers=self.reserved_identifiers,
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             property_repo=self.property_repo,
             attribute_repo=self.attribute_repo,
         )
@@ -75,7 +75,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
             validate_new_index_columns(
                 new_column_names=iter(['foo', 'bar', 'value']),
                 reserved_identifiers=self.reserved_identifiers,
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
             )
@@ -85,20 +85,20 @@ class TestValidateNewIndexColumns(unittest.TestCase):
             validate_new_index_columns(
                 new_column_names=iter(['foo', 'bar', 'domain']),
                 reserved_identifiers=self.reserved_identifiers,
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
             )
 
     def test_column_collision(self):
-        self.column_manager.add_columns('foo', 'bar', 'baz')
+        self.label_manager.add_columns('foo', 'bar', 'baz')
 
         regex = "index label column 'baz' already exists"
         with self.assertRaisesRegex(ToronError, regex):
             validate_new_index_columns(
                 new_column_names=iter(['baz', 'qux']),
                 reserved_identifiers=self.reserved_identifiers,
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
             )
@@ -111,7 +111,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
             validate_new_index_columns(
                 new_column_names=iter(['baz', 'qux', 'domain']),
                 reserved_identifiers=self.reserved_identifiers,
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
             )
@@ -124,7 +124,7 @@ class TestValidateNewIndexColumns(unittest.TestCase):
             validate_new_index_columns(
                 new_column_names=iter(['qux', 'corge']),
                 reserved_identifiers=self.reserved_identifiers,
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
                 attribute_repo=self.attribute_repo,
             )
@@ -140,7 +140,7 @@ class TestDeleteIndexRecord(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        dal.ColumnManager(cur).add_columns('A', 'B')
+        dal.LabelManager(cur).add_columns('A', 'B')
         self.index_repo = dal.IndexRepository(cur)
         self.index_repo.add('foo', 'qux')
         self.index_repo.add('bar', 'quux')
@@ -204,7 +204,7 @@ class TestFindLocationFunctions(unittest.TestCase):
         cursor2 = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor2))
 
-        self.manager = dal.ColumnManager(cursor1)
+        self.manager = dal.LabelManager(cursor1)
         self.location_repo = dal.LocationRepository(cursor1)
         self.structure_repo = dal.StructureRepository(cursor1)
         self.index_repo = dal.IndexRepository(cursor2)
@@ -311,7 +311,7 @@ class TestFind_X_WithoutQuantity(unittest.TestCase):
         cursor2 = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor2))
 
-        self.manager = dal.ColumnManager(cursor1)
+        self.manager = dal.LabelManager(cursor1)
         self.location_repo = dal.LocationRepository(cursor1)
         self.attribute_repo = dal.AttributeGroupRepository(cursor1)
         self.quantity_repo = dal.QuantityRepository(cursor2)
@@ -364,7 +364,7 @@ class TestGetQuantityValueSum(unittest.TestCase):
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
         # Set-up test values.
-        manager = dal.ColumnManager(cursor)
+        manager = dal.LabelManager(cursor)
         manager.add_columns('A', 'B')
 
         location_repo = dal.LocationRepository(cursor)
@@ -417,7 +417,7 @@ class TestDisaggregateValue(unittest.TestCase):
         # Set-up test values.
         try:
             cursor = connector.acquire_cursor(connection)
-            manager = dal.ColumnManager(cursor)
+            manager = dal.LabelManager(cursor)
             weight_group_repo = dal.WeightGroupRepository(cursor)
 
             manager.add_columns('A', 'B')
@@ -594,11 +594,11 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        col_manager = dal.ColumnManager(cur)
+        label_manager = dal.LabelManager(cur)
         index_repo = dal.IndexRepository(cur)
         crosswalk_repo = dal.CrosswalkRepository(cur)
 
-        col_manager.add_columns('A', 'B')
+        label_manager.add_columns('A', 'B')
         index_repo.add('foo', 'x')
         index_repo.add('bar', 'y')
         index_repo.add('bar', 'z')
@@ -952,7 +952,7 @@ class TestFindMatchingWeightGroups(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        column_manager = dal.ColumnManager(cur)
+        label_manager = dal.LabelManager(cur)
         index_repo = dal.IndexRepository(cur)
 
         self.attribute_repo = dal.AttributeGroupRepository(cur)
@@ -1045,15 +1045,15 @@ class TestRenameDiscreteCategories(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        self.column_manager = dal.ColumnManager(cur)
-        self.column_manager.add_columns('A', 'B', 'C')
+        self.label_manager = dal.LabelManager(cur)
+        self.label_manager.add_columns('A', 'B', 'C')
 
         self.property_repo = dal.PropertyRepository(cur)
 
     def test_rename(self):
         self.property_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
 
-        rename_discrete_categories({'B': 'X', 'C': 'Z'}, self.column_manager, self.property_repo)
+        rename_discrete_categories({'B': 'X', 'C': 'Z'}, self.label_manager, self.property_repo)
 
         categories = self.property_repo.get('discrete_categories')
         self.assertEqual(
@@ -1074,14 +1074,14 @@ class TestRebuildStructureTable(unittest.TestCase):
         alt_cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(alt_cur))
 
-        self.column_manager = dal.ColumnManager(cur)
+        self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
         self.structure_repo = dal.StructureRepository(cur)
         self.index_repo = dal.IndexRepository(cur)
         self.alt_index_repo = dal.IndexRepository(alt_cur)
         self.optimizations = dal.optimizations
 
-        self.column_manager.add_columns('A', 'B', 'C')
+        self.label_manager.add_columns('A', 'B', 'C')
         self.property_repo.add('discrete_categories', [['A', 'B', 'C']])
         self.index_repo.add('a1', 'b1', 'c1')
         self.index_repo.add('a1', 'b1', 'c2')
@@ -1107,7 +1107,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         # Using standard granularity function.
         with self.assertLogs('app-toron', level='DEBUG') as cm:
             rebuild_structure_table(
-                self.column_manager,
+                self.label_manager,
                 self.property_repo,
                 self.structure_repo,
                 self.index_repo,
@@ -1123,7 +1123,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         # Using optimized granularity function.
         with self.assertLogs('app-toron', level='DEBUG') as cm:
             rebuild_structure_table(
-                self.column_manager,
+                self.label_manager,
                 self.property_repo,
                 self.structure_repo,
                 self.index_repo,
@@ -1158,7 +1158,7 @@ class TestRebuildStructureTable(unittest.TestCase):
 
         # Using standard granularity function.
         rebuild_structure_table(
-            self.column_manager,
+            self.label_manager,
             self.property_repo,
             self.structure_repo,
             self.index_repo,
@@ -1169,7 +1169,7 @@ class TestRebuildStructureTable(unittest.TestCase):
 
         # Using optimized granularity function.
         rebuild_structure_table(
-            self.column_manager,
+            self.label_manager,
             self.property_repo,
             self.structure_repo,
             self.index_repo,
@@ -1188,7 +1188,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         regex = "node has columns but no 'discrete_categories'"
         with self.assertRaisesRegex(RuntimeError, regex):
             rebuild_structure_table(
-                self.column_manager,
+                self.label_manager,
                 self.property_repo,
                 self.structure_repo,
                 self.index_repo,
@@ -1207,7 +1207,7 @@ class TestAddDiscreteCategories(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        self.column_manager = dal.ColumnManager(cur)
+        self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
 
     def get_categories_helper(self):
@@ -1216,11 +1216,11 @@ class TestAddDiscreteCategories(unittest.TestCase):
 
     def test_create_new_categories(self):
         """Test creating new categories when none previously exist."""
-        self.column_manager.add_columns('A', 'B')
+        self.label_manager.add_columns('A', 'B')
 
         add_discrete_categories(
             categories=[{'A', 'B'}, {'A'}],
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
@@ -1228,12 +1228,12 @@ class TestAddDiscreteCategories(unittest.TestCase):
 
     def test_add_to_existing(self):
         """Test adding new categories to previously existing categories."""
-        self.column_manager.add_columns('A', 'B')
-        add_discrete_categories([{'A', 'B'}], self.column_manager, self.property_repo)
+        self.label_manager.add_columns('A', 'B')
+        add_discrete_categories([{'A', 'B'}], self.label_manager, self.property_repo)
 
         add_discrete_categories(
             categories=[{'A'}],  # <- Adds {'A'} to list of existing columns.
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
@@ -1241,11 +1241,11 @@ class TestAddDiscreteCategories(unittest.TestCase):
 
     def test_add_whole_space_if_missing(self):
         """The whole space ({'A', 'B'}) should be included when necessary."""
-        self.column_manager.add_columns('A', 'B')
+        self.label_manager.add_columns('A', 'B')
 
         add_discrete_categories(
             categories=[{'A'}],
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
@@ -1253,13 +1253,13 @@ class TestAddDiscreteCategories(unittest.TestCase):
 
     def test_warn_on_redundent_categories(self):
         """Check that a warning is raised on redundant categories."""
-        self.column_manager.add_columns('A', 'B')
-        add_discrete_categories([{'A'}, {'B'}], self.column_manager, self.property_repo)
+        self.label_manager.add_columns('A', 'B')
+        add_discrete_categories([{'A'}, {'B'}], self.label_manager, self.property_repo)
 
         with self.assertWarns(ToronWarning) as cm:
             add_discrete_categories(
                 categories=[{'A', 'B'}],  # <- Category already covered by existing categories.
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
@@ -1272,18 +1272,18 @@ class TestAddDiscreteCategories(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, regex):
             add_discrete_categories(
                 categories=[{'A', 'B'}, {'A'}],
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
     def test_bad_column_name(self):
-        self.column_manager.add_columns('A', 'B')
+        self.label_manager.add_columns('A', 'B')
 
         regex = "invalid category value 'C', values must be present in index columns"
         with self.assertRaisesRegex(ValueError, regex):
             add_discrete_categories(
                 categories=[{'A', 'B'}, {'C'}],
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
@@ -1298,7 +1298,7 @@ class TestAddDiscreteCategory(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        self.column_manager = dal.ColumnManager(cur)
+        self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
 
     def get_categories_helper(self):
@@ -1311,11 +1311,11 @@ class TestAddDiscreteCategory(unittest.TestCase):
 
     def test_create_new_category(self):
         """Test creating a new category when none previously exist."""
-        self.column_manager.add_columns('A', 'B')
+        self.label_manager.add_columns('A', 'B')
 
         add_discrete_category(  # <- Method under test.
             category={'A'},
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
@@ -1325,18 +1325,18 @@ class TestAddDiscreteCategory(unittest.TestCase):
 
     def test_add_to_existing(self):
         """Test adding new categories to previously existing categories."""
-        self.column_manager.add_columns('A', 'B')
+        self.label_manager.add_columns('A', 'B')
 
         add_discrete_category(  # <- Method under test.
             category={'A'},
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
         self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
 
         add_discrete_category(  # <- Method under test.
             category={'B'},
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
         self.assertEqual(
@@ -1346,14 +1346,14 @@ class TestAddDiscreteCategory(unittest.TestCase):
 
     def test_redundent_category(self):
         """Should raise error if category is redundant."""
-        self.column_manager.add_columns('A', 'B')
-        add_discrete_categories([{'A'}, {'B'}], self.column_manager, self.property_repo)
+        self.label_manager.add_columns('A', 'B')
+        add_discrete_categories([{'A'}, {'B'}], self.label_manager, self.property_repo)
 
         regex = r"category \{'A', 'B'\} is already covered by a union of existing categories"
         with self.assertRaisesRegex(RuntimeError, regex):
             add_discrete_category(  # <- Method under test.
                 category={'A', 'B'},  # <- Already covered by existing categories.
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
@@ -1362,18 +1362,18 @@ class TestAddDiscreteCategory(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, regex):
             add_discrete_category(  # <- Method under test.
                 category={'A', 'B', 'C'},
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
     def test_bad_column_name(self):
-        self.column_manager.add_columns('A', 'B')
+        self.label_manager.add_columns('A', 'B')
 
         regex = "invalid category, no index label 'C'"
         with self.assertRaisesRegex(ValueError, regex):
             add_discrete_category(  # <- Method under test.
                 category={'A', 'C'},
-                column_manager=self.column_manager,
+                label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
@@ -1390,14 +1390,14 @@ class TestRefreshStructureGranularity(unittest.TestCase):
         alt_cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(alt_cur))
 
-        self.column_manager = dal.ColumnManager(cur)
+        self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
         self.structure_repo = dal.StructureRepository(cur)
         self.index_repo = dal.IndexRepository(cur)
         self.alt_index_repo = dal.IndexRepository(alt_cur)
         self.optimizations = dal.optimizations
 
-        self.column_manager.add_columns('A', 'B', 'C', 'D')
+        self.label_manager.add_columns('A', 'B', 'C', 'D')
         self.index_repo.add('a1', 'b1', 'c1', 'd1')
         self.index_repo.add('a1', 'b1', 'c1', 'd2')
         self.index_repo.add('a1', 'b1', 'c2', 'd3')
@@ -1429,7 +1429,7 @@ class TestRefreshStructureGranularity(unittest.TestCase):
 
         # Calculate and assign granularity (standard function).
         refresh_structure_granularity(
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             structure_repo=self.structure_repo,
             index_repo=self.index_repo,
             aux_index_repo=self.alt_index_repo,
@@ -1439,7 +1439,7 @@ class TestRefreshStructureGranularity(unittest.TestCase):
 
         # Calculate and assign granularity (using optimizations).
         refresh_structure_granularity(
-            column_manager=self.column_manager,
+            label_manager=self.label_manager,
             structure_repo=self.structure_repo,
             index_repo=self.index_repo,
             aux_index_repo=self.alt_index_repo,
@@ -1458,7 +1458,7 @@ class TestDomainMethods(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        self.column_manager = dal.ColumnManager(cur)
+        self.label_manager = dal.LabelManager(cur)
         self.attribute_repo = dal.AttributeGroupRepository(cur)
         self.property_repo = dal.PropertyRepository(cur)
 
@@ -1495,7 +1495,7 @@ class TestRegisteredAttributeFunctions(unittest.TestCase):
 
         self.index_repo = self.dal.IndexRepository(cur)
         self.property_repo = self.dal.PropertyRepository(cur)
-        self.column_manager = self.dal.ColumnManager(cur)
+        self.label_manager = self.dal.LabelManager(cur)
 
     def test_set_and_get_registered_attributes(self):
         """Should assign 'registered_attributes' to property repository."""
@@ -1539,7 +1539,7 @@ class TestRegisteredAttributeFunctions(unittest.TestCase):
                 property_repo=self.property_repo,
             )
 
-        self.column_manager.add_columns('A', 'B', 'baz')
+        self.label_manager.add_columns('A', 'B', 'baz')
         regex = r"'baz' is already used as an index label"
         with self.assertRaisesRegex(ValueError, regex):
             set_registered_attributes(
@@ -1609,12 +1609,12 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
         cur = connector.acquire_cursor(con)
         self.addCleanup(lambda: connector.release_cursor(cur))
 
-        self.column_manager = self.dal.ColumnManager(cur)
+        self.label_manager = self.dal.LabelManager(cur)
         self.index_repo = self.dal.IndexRepository(cur)
         self.property_repo = self.dal.PropertyRepository(cur)
 
     def test_simple_set_and_get(self):
-        self.column_manager.add_columns('D', 'C', 'B', 'A')
+        self.label_manager.add_columns('D', 'C', 'B', 'A')
 
         set_labels_in_display_order(
             labels=['A', 'B', 'C', 'D'],
@@ -1628,7 +1628,7 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
         )
 
     def test_default_to_storage_order(self):
-        self.column_manager.add_columns('D', 'C', 'B', 'A')
+        self.label_manager.add_columns('D', 'C', 'B', 'A')
 
         self.assertEqual(
             get_labels_in_display_order(self.index_repo, self.property_repo),
@@ -1637,7 +1637,7 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
         )
 
     def test_display_order_and_storage_order(self):
-        self.column_manager.add_columns('D', 'C', 'B', 'A')
+        self.label_manager.add_columns('D', 'C', 'B', 'A')
 
         set_labels_in_display_order(
             labels=['A', 'B'],  # <- Set order of columns 'A' and 'B' only.
@@ -1652,7 +1652,7 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
         )
 
     def test_unknown_column(self):
-        self.column_manager.add_columns('C', 'B', 'A')
+        self.label_manager.add_columns('C', 'B', 'A')
 
         regex = r"cannot set display order for unknown labels: 'D', 'E'"
         with self.assertRaisesRegex(ValueError, regex):

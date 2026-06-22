@@ -667,7 +667,7 @@ class Mapper_OLD(object):
             ordered_level_pairs = self._get_level_pairs(
                 left_or_right_columns=match_columns,
                 left_or_right_levels=all_match_levels,
-                node_columns=node._dal.ColumnManager(node_cur).get_columns(),
+                node_columns=node._dal.LabelManager(node_cur).get_columns(),
                 node_structures=node._dal.StructureRepository(node_cur).get_all(),
             )
 
