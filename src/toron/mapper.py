@@ -366,6 +366,34 @@ class Mapper(object):
                 f"matched to one or more records that have no associated weight"
             )
 
+    def is_fully_matched(self) -> bool:
+        """Return True if all index_id records are matched."""
+        with self.node1._managed_cursor() as node1_cur:
+            index_repo = self.node1._dal.IndexRepository(node1_cur)
+            node1_cardinality = index_repo.get_cardinality(include_undefined=False)
+
+        with self.node2._managed_cursor() as node2_cur:
+            index_repo = self.node2._dal.IndexRepository(node2_cur)
+            node2_cardinality = index_repo.get_cardinality(include_undefined=False)
+
+        with closing(self.con.cursor()) as cur:
+            cur.execute("""
+                SELECT COUNT(DISTINCT index_id)
+                FROM node1_matches
+                WHERE index_id != 0
+            """)
+            node1_match_count = cur.fetchone()[0]
+
+            cur.execute("""
+                SELECT COUNT(DISTINCT index_id)
+                FROM node2_matches
+                WHERE index_id != 0
+            """)
+            node2_match_count = cur.fetchone()[0]
+
+        return (node1_cardinality == node1_match_count
+                and node2_cardinality == node2_match_count)
+
     @eagerly_initialize
     def get_relations(
         self, target_node: Literal['node1', 'node2']

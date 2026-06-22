@@ -516,6 +516,35 @@ class TestMatchNodeRecords(TopoNodeFixtures, unittest.TestCase):
         )
 
 
+class TestMapperIsFullyMatched(TopoNodeFixtures, unittest.TestCase):
+    def test_fully_matched(self):
+        complete_mapping = [
+            [1, [], BitFlags(1), 1, [], BitFlags(1, 1), 10],
+            [1, [], BitFlags(1), 2, [], BitFlags(1, 1), 70],
+            [2, [], BitFlags(1), 3, [], BitFlags(1, 1), 20],
+            [2, [], BitFlags(1), 4, [], BitFlags(1, 1), 60],
+            [3, [], BitFlags(1), 5, [], BitFlags(1, 1), 30],
+            [3, [], BitFlags(1), 6, [], BitFlags(1, 1), 50],
+        ]
+
+        mapper = Mapper(self.node_c, self.node_d, data=complete_mapping)
+        mapper.match_node_records('node1')
+        mapper.match_node_records('node2')
+        self.assertTrue(mapper.is_fully_matched())
+
+    def test_not_fully_matched(self):
+        incomplete_mapping = [
+            [1, [], BitFlags(1), 1, [], BitFlags(1, 1), 10],
+            [1, [], BitFlags(1), 2, [], BitFlags(1, 1), 70],
+            [2, [], BitFlags(1), 3, [], BitFlags(1, 1), 20],
+        ]
+
+        mapper = Mapper(self.node_c, self.node_d, data=incomplete_mapping)
+        mapper.match_node_records('node1')
+        mapper.match_node_records('node2')
+        self.assertFalse(mapper.is_fully_matched())
+
+
 class TestMapperGetRelations(TopoNodeFixtures, unittest.TestCase):
     def test_exact_matches(self):
         mapper = Mapper(
