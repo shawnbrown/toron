@@ -348,6 +348,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_crosswalk.add_argument('--allow-overlapping',
                                   action='store_true',
                                   help='allow ambiguous matches to overlap')
+    parser_crosswalk.add_argument('--allow-incomplete',
+                                  action='store_true',
+                                  help='allow loading even when matches are incomplete')
     parser_crosswalk.add_argument('--no-backup', action='store_false',
                                   dest='backup',
                                   help='do not make a backup file')

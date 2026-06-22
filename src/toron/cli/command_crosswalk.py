@@ -391,7 +391,7 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
                               allow_overlapping=args.allow_overlapping)
 
     # Check if all records are matched on both sides.
-    if not mapper.is_fully_matched():
+    if not args.allow_incomplete and not mapper.is_fully_matched():
         raise ToronError('crosswalk is incomplete, no records loaded')
 
     # Insert relations into FILE2.

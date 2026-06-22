@@ -357,6 +357,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             direction='both',
             match_limit=1,
             allow_overlapping=False,
+            allow_incomplete=False,
             stdin=DummyRedirection(
                 'index_code,population,index_code\n'
                 '0X27B3B62D,0.0,0X7054347B\n'

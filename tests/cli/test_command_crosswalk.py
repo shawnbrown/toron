@@ -553,6 +553,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             direction='both',
             match_limit=1,
             allow_overlapping=False,
+            allow_incomplete=False,
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
                 '0XF4264876,0,0XDF9B30D7\n'
@@ -627,6 +628,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             direction='both',
             match_limit=1,
             allow_overlapping=False,
+            allow_incomplete=False,
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
                 '0XF4264876,0,0XDF9B30D7\n'   # <- From undefined, to undefined.
@@ -699,6 +701,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             direction='both',  # <- Direction indicates both, but left-side is missing.
             match_limit=1,
             allow_overlapping=False,
+            allow_incomplete=False,
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
                 '1X73808335,10,1X583DFB94\n'
@@ -777,6 +780,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             direction='right',
             match_limit=2,  # <- Allow up to one-to-two matches.
             allow_overlapping=False,  # <- Default (no overlapping allowed).
+            allow_incomplete=False,
             stdin=DummyRedirection(
                 'index_c,population,index_d,lbl1,lbl2\n'
                 '1X73808335,90,,A,\n'             # <- Matched to 2 right-side records.
@@ -828,6 +832,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             direction='right',
             match_limit=2,  # <- Allow up to one-to-two matches.
             allow_overlapping=True,  # <- Allowing overlaps.
+            allow_incomplete=False,
             stdin=DummyRedirection(
                 'index_c,population,index_d,lbl1,lbl2\n'
                 '1X73808335,90,,A,\n'             # <- Matched to 2 right-side records.
@@ -881,6 +886,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             direction='right',
             match_limit=1,
             allow_overlapping=False,
+            allow_incomplete=False,  # <- Default (incomplete not allowed).
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
                 '0XF4264876,0,0XDF9B30D7\n'
@@ -893,6 +899,53 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         regex = r'crosswalk is incomplete, no records loaded'
         with self.assertRaisesRegex(ToronError, regex):
             command_crosswalk.read_from_stdin(args)  # <- Function under test.
+
+    def test_incomplete_match_allowed(self):
+        """Incomplete matches can be loaded with ``--allow-incomplete``."""
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='right',
+            match_limit=1,
+            allow_overlapping=False,
+            allow_incomplete=True,  # <- Allowing incomplete matches.
+            stdin=DummyRedirection(
+                'index_c,population,index_d\n'
+                '0XF4264876,0,0XDF9B30D7\n'
+                '1X73808335,50,1X583DFB94\n'
+                '1X73808335,50,2X0BA7A010\n'
+                '3XA7BC13F2,50,6X78AF87DF\n'
+            ),
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+
+        msg = 'when using --allow-incomplete, process should load partial matches'
+        self.assertEqual(exit_code, ExitCode.OK, msg=msg)
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'INFO:app-toron:loading relations: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 3 relations',
+             'WARNING:app-toron:crosswalk is incomplete'],
+        )
+
+        self.assertEqual(
+            self.get_relations(self.node_c, self.node_d, 'population'),
+            {(1, 1, 1, 1, b'\xc0', 50.0, 0.5),
+             (2, 1, 1, 2, b'\xc0', 50.0, 0.5),
+             (3, 1, 3, 6, b'\xc0', 50.0, 1.0)},
+        )
 
 
 class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
