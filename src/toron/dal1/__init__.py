@@ -11,7 +11,7 @@ if __import__('sqlite3').sqlite_version_info < (3, 21, 0):
 
 
 from .data_connector import DataConnector
-from .column_manager import (
+from .label_manager import (
     LabelManager,
     legacy_rename_labels,
     legacy_drop_labels,

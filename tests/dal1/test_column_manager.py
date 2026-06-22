@@ -5,7 +5,7 @@ import unittest
 
 from toron.dal1.data_connector import DataConnector
 from toron.data_models import BaseLabelManager
-from toron.dal1.column_manager import (
+from toron.dal1.label_manager import (
     LabelManager,
     legacy_rename_labels,
     legacy_drop_labels,
