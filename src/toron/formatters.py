@@ -45,7 +45,7 @@ def format_granularity(
     granularity_values: Sequence[Union[float, None]]
 ) -> List[str]:
     """Return rounded representations that preserve value distinctness.
-    Values are represented with two or more decimal places of precision.
+    Values are represented with 3 or more decimal places of precision.
 
     Output uses the number of decimal places necessary to prevent unique
     input values from being rounded to the same representation. Output
@@ -54,19 +54,19 @@ def format_granularity(
     .. code-block::
 
         >>> format_granularity([12.650378635397704,
-        ...                     12.647267731680174,
+        ...                     12.650325958503286,
         ...                     8.297246124988996,
         ...                     5.303016085958896,
         ...                     5.303016085958896])
-        ['12.650',
-         '12.647',
-         ' 8.297',
-         ' 5.303',
-         ' 5.303']
+        ['12.6504',
+         '12.6503',
+         ' 8.2972',
+         ' 5.3030',
+         ' 5.3030']
 
-    In the example above, three decimal places are used because two
-    decimal places are not sufficient to differentiate between the first
-    and second values. The last two values are exactly the same so their
+    In the example above, 4 decimal places are used because 3 decimal
+    places are not sufficient to differentiate between the first and
+    second values. The last two values are exactly the same so their
     rounded representations are also the same.
     """
     # Get unique values and include 0.0 so that selected rounding precision
@@ -75,7 +75,7 @@ def format_granularity(
 
     unique_len = len(unique_vals)
 
-    for precision in range(2, 18):
+    for precision in range(3, 18):
         rounded_vals = {
             f'{x:.{precision}f}' if x is not None else 'None'
             for x in unique_vals

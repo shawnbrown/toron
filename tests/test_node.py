@@ -5959,7 +5959,7 @@ class TestTopoNodeRepr(unittest.TestCase):
             domain:
               None
             categories:
-              None  foo, bar, baz
+               None  foo, bar, baz
             weights:
               None
             attributes:
@@ -5985,7 +5985,7 @@ class TestTopoNodeRepr(unittest.TestCase):
             domain:
               None
             categories:
-              2.75  A, B, C
+              2.750  A, B, C
             weights:
               None
             attributes:
@@ -6010,7 +6010,7 @@ class TestTopoNodeRepr(unittest.TestCase):
             domain:
               None
             categories:
-              None  A, B, C
+               None  A, B, C
             weights:
               bar, baz (default, incomplete), foo (incomplete)
             attributes:
