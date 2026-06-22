@@ -390,6 +390,10 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
                               match_limit=args.match_limit,
                               allow_overlapping=args.allow_overlapping)
 
+    # Check if all records are matched on both sides.
+    if not mapper.is_fully_matched():
+        raise ToronError('crosswalk is incomplete, no records loaded')
+
     # Insert relations into FILE2.
     if args.direction in {'both', 'right'}:
         applogger.info(f'loading relations: FILE1 -> FILE2')

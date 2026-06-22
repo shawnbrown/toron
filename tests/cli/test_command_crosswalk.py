@@ -866,6 +866,34 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              'INFO:app-toron:crosswalk is complete'],
         )
 
+    def test_incomplete_match_error(self):
+        """Default behavior is for incomplete matches to trigger an error."""
+        self.node_d.add_crosswalk(node=self.node_c,
+                                  crosswalk_name='population',
+                                  other_filename_hint='node_c',
+                                  is_default=True)
+
+        args = argparse.Namespace(
+            command='crosswalk',
+            node1=self.node_c,
+            node2=self.node_d,
+            crosswalk='population',
+            direction='right',
+            match_limit=1,
+            allow_overlapping=False,
+            stdin=DummyRedirection(
+                'index_c,population,index_d\n'
+                '0XF4264876,0,0XDF9B30D7\n'
+                '1X73808335,50,1X583DFB94\n'
+                '1X73808335,50,2X0BA7A010\n'
+                '3XA7BC13F2,50,6X78AF87DF\n'
+            ),
+        )
+
+        regex = r'crosswalk is incomplete, no records loaded'
+        with self.assertRaisesRegex(ToronError, regex):
+            command_crosswalk.read_from_stdin(args)  # <- Function under test.
+
 
 class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
     def test_full_mapping(self):
