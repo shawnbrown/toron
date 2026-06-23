@@ -70,6 +70,10 @@ from ._utils import (
 applogger = logging.getLogger('app-toron')
 
 
+class IntegrityError(Exception):
+    """Toron data model integrity error."""
+
+
 def validate_new_index_columns(
     new_column_names: Iterable[str],
     reserved_identifiers: Set[str],
@@ -801,6 +805,29 @@ def add_discrete_category(
 
     category_lists = cast(JsonTypes, [list(cat) for cat in minimized_cats])
     property_repo.add_or_update('discrete_categories', category_lists)
+
+
+def remove_discrete_category(
+    category: Collection[str],
+    label_manager: BaseLabelManager,
+    property_repo: BasePropertyRepository,
+) -> None:
+    """Remove a discrete category."""
+    columns = label_manager.get_columns()
+    whole_space = set(columns)
+
+    if category == whole_space:
+        formatted_category = f"{{{', '.join(repr(x) for x in sorted(whole_space))}}}"
+        raise IntegrityError(f"cannot drop whole space: {formatted_category}")
+
+    existing_cats = get_all_discrete_categories(property_repo)
+    cats_to_keep = [x for x in existing_cats if x != category]
+
+    category_sets = minimize_discrete_categories(
+        cats_to_keep, [whole_space]
+    )
+    category_lists: JsonTypes = [list(cat) for cat in category_sets]
+    property_repo.update('discrete_categories', category_lists)
 
 
 def refresh_structure_granularity(

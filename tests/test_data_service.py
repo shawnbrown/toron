@@ -15,6 +15,7 @@ from toron.data_models import (
 from toron import data_access, ToronError
 from toron._utils import ToronWarning, BitFlags
 from toron.data_service import (
+    IntegrityError,
     validate_new_index_columns,
     delete_index_record,
     find_locations_without_index,
@@ -34,6 +35,7 @@ from toron.data_service import (
     rebuild_structure_table,
     add_discrete_categories,
     add_discrete_category,
+    remove_discrete_category,
     refresh_structure_granularity,
     set_domain,
     get_domain,
@@ -1288,7 +1290,7 @@ class TestAddDiscreteCategories(unittest.TestCase):
             )
 
 
-class TestAddDiscreteCategory(unittest.TestCase):
+class TestAddAndRemoveDiscreteCategory(unittest.TestCase):
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -1309,11 +1311,11 @@ class TestAddDiscreteCategory(unittest.TestCase):
             return None
         return [set(x) for x in categories_json]
 
-    def test_create_new_category(self):
+    def test_add_category_create_new(self):
         """Test creating a new category when none previously exist."""
         self.label_manager.add_columns('A', 'B')
 
-        add_discrete_category(  # <- Method under test.
+        add_discrete_category(  # <- Function under test.
             category={'A'},
             label_manager=self.label_manager,
             property_repo=self.property_repo,
@@ -1327,14 +1329,14 @@ class TestAddDiscreteCategory(unittest.TestCase):
         """Test adding new categories to previously existing categories."""
         self.label_manager.add_columns('A', 'B')
 
-        add_discrete_category(  # <- Method under test.
+        add_discrete_category(  # <- Function under test.
             category={'A'},
             label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
         self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
 
-        add_discrete_category(  # <- Method under test.
+        add_discrete_category(  # <- Function under test.
             category={'B'},
             label_manager=self.label_manager,
             property_repo=self.property_repo,
@@ -1344,35 +1346,63 @@ class TestAddDiscreteCategory(unittest.TestCase):
             {frozenset(['A']), frozenset(['B'])}
         )
 
-    def test_redundent_category(self):
+    def test_add_redundant_category(self):
         """Should raise error if category is redundant."""
         self.label_manager.add_columns('A', 'B')
         add_discrete_categories([{'A'}, {'B'}], self.label_manager, self.property_repo)
 
         regex = r"category \{'A', 'B'\} is already covered by a union of existing categories"
         with self.assertRaisesRegex(RuntimeError, regex):
-            add_discrete_category(  # <- Method under test.
+            add_discrete_category(  # <- Function under test.
                 category={'A', 'B'},  # <- Already covered by existing categories.
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
-    def test_no_columns_defined(self):
+    def test_add_when_no_columns_defined(self):
         regex = 'must add index labels before defining a category'
         with self.assertRaisesRegex(RuntimeError, regex):
-            add_discrete_category(  # <- Method under test.
+            add_discrete_category(  # <- Function under test.
                 category={'A', 'B', 'C'},
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
-    def test_bad_column_name(self):
+    def test_add_bad_column_name(self):
         self.label_manager.add_columns('A', 'B')
 
         regex = "invalid category, no index label 'C'"
         with self.assertRaisesRegex(ValueError, regex):
-            add_discrete_category(  # <- Method under test.
+            add_discrete_category(  # <- Function under test.
                 category={'A', 'C'},
+                label_manager=self.label_manager,
+                property_repo=self.property_repo,
+            )
+
+    def test_remove_category(self):
+        self.label_manager.add_columns('A', 'B', 'C')
+        self.property_repo.add_or_update(
+            'discrete_categories', [['A'], ['A', 'B'], ['A', 'B', 'C']]
+        )
+
+        remove_discrete_category(  # <- Function under test.
+            category={'A', 'B'},
+            label_manager=self.label_manager,
+            property_repo=self.property_repo,
+        )
+
+        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B', 'C'}])
+
+    def test_remove_category_whole_space_error(self):
+        self.label_manager.add_columns('A', 'B', 'C')
+        self.property_repo.add_or_update(
+            'discrete_categories', [['A', 'B'], ['A', 'C']]  # <- Whole space is a union of these categories.
+        )
+
+        regex = r"cannot drop whole space: {'A', 'B', 'C'}"
+        with self.assertRaisesRegex(IntegrityError, regex):
+            remove_discrete_category(  # <- Function under test.
+                category={'A', 'B', 'C'},
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
