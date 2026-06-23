@@ -424,18 +424,21 @@ class TopoNode(object):
             old_whole_structure = structure_repo.get_by_labels(old_whole_space)
 
             is_unused_by_quantity = not next(
-                self._dal.QuantityRepository(cursor).find_by_structure(old_whole_structure
-            ), None)
+                self._dal.QuantityRepository(cursor).find_by_structure(old_whole_structure),
+                None,
+            )
 
             crosswalks = self._dal.CrosswalkRepository(cursor).get_all()
 
             relation_repo = self._dal.RelationRepository(cursor)
-            all_levels = set()
+            all_mapping_levels = set()
             for crosswalk in crosswalks:
-                all_levels.update(
+                all_mapping_levels.update(
                     relation_repo.get_distinct_mapping_levels(crosswalk.id)
                 )
-            is_unused_by_relation = not(all_levels)
+
+            is_unused_by_relation = \
+                bytes(BitFlags(old_whole_space)) not in all_mapping_levels
 
         if is_unused_by_quantity and is_unused_by_relation:
             self.drop_discrete_categories(old_whole_space)  # <- TODO: Make a data service func.

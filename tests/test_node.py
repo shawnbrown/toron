@@ -764,7 +764,8 @@ class TestIndexColumnMethods(unittest.TestCase):
         with self.assertRaisesRegex(ToronError, regex):
             node.add_index_columns('value')
 
-    def test_add_index_columns_interaction_with_categories(self):
+    def test_add_index_columns_remove_unused_whole_space(self):
+        """Should remove old whole space if unused."""
         node = TopoNode()
 
         self.assertEqual(node.discrete_categories, [], msg='should start empty')
@@ -776,6 +777,69 @@ class TestIndexColumnMethods(unittest.TestCase):
         node.add_index_columns('C')
         self.assertEqual(node.discrete_categories, [{'A', 'B', 'C'}],
                          msg='should remove previous whole space if unused')
+
+    def test_add_index_columns_retain_whole_space_if_quantities(self):
+        """Should remove old whole space if used by quantities."""
+        node = TopoNode()
+        node.add_index_columns('A', 'B')
+
+        with node._managed_cursor() as cursor:
+            index_repo = node._dal.IndexRepository(cursor)
+            location_repo = node._dal.LocationRepository(cursor)
+            attribute_repo = node._dal.AttributeGroupRepository(cursor)
+            quantity_repo = node._dal.QuantityRepository(cursor)
+
+            index_repo.add('aaa', 'bbb')
+            location_repo.add('aaa', 'bbb')  # <- Location 1 uses whole structure (all fields).
+            attribute_repo.add({'foo': 'bar'})
+            quantity_repo.add(1, 1, 100.0)  # <- Quantity uses location 1.
+
+        self.assertEqual(node.discrete_categories, [{'A', 'B'}])  # Verify existing categories.
+
+        node.add_index_columns('C')
+        self.assertEqual(
+            node.discrete_categories,
+            [{'A', 'B'}, {'A', 'B', 'C'}],
+            msg="should retain previous whole space because it's used by a quantity",
+        )
+
+        node.add_index_columns('D')
+        self.assertEqual(
+            node.discrete_categories,
+            [{'A', 'B'}, {'A', 'B', 'C', 'D'}],
+            msg="should drop unused whole space `A B C` but keep used space `A B`.",
+        )
+
+    def test_add_index_columns_retain_whole_space_if_relations(self):
+        """Should remove old whole space if used by relations."""
+        node = TopoNode()
+        node.add_index_columns('A', 'B')
+
+        with node._managed_cursor() as cursor:
+            index_repo = node._dal.IndexRepository(cursor)
+            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            relation_repo = node._dal.RelationRepository(cursor)
+
+            index_repo.add('aaa', 'bbb')
+            crosswalk_repo.add('000-00-0000-0000', 'other_file', 'population')
+            relation_repo.add(1, 1, 1, mapping_level=b'\xc0', value=100.0)  # <- Mapping level for bit flags `1, 1`.
+
+        self.assertEqual(node.discrete_categories, [{'A', 'B'}])  # Verify existing categories.
+
+        node.add_index_columns('C')
+
+        self.assertEqual(
+            node.discrete_categories,
+            [{'A', 'B'}, {'A', 'B', 'C'}],
+            msg="should retain previous whole space because it's used by a relation",
+        )
+
+        node.add_index_columns('D')
+        self.assertEqual(
+            node.discrete_categories,
+            [{'A', 'B'}, {'A', 'B', 'C', 'D'}],
+            msg="should drop unused whole space `A B C` but keep used space `A B`.",
+        )
 
     def test_index_columns_property(self):
         node = TopoNode()
