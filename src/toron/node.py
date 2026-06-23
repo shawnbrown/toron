@@ -64,6 +64,7 @@ from .data_service import (
     refresh_or_rebuild_structure_granularity,
     add_discrete_categories,
     add_discrete_category,
+    remove_discrete_category,
     refresh_structure_granularity,
     set_domain,
     get_domain,
@@ -391,6 +392,8 @@ class TopoNode(object):
             label_manager = self._dal.LabelManager(cursor)
             property_repo = self._dal.PropertyRepository(cursor)
             structure_repo = self._dal.StructureRepository(cursor)
+            index_repo = self._dal.IndexRepository(cursor)
+            aux_index_repo = self._dal.IndexRepository(aux_cursor)
 
             validate_new_index_columns(
                 new_column_names=chain([column], columns),
@@ -410,17 +413,16 @@ class TopoNode(object):
                 property_repo=property_repo,
             )
 
-            # TODO: Move to after call to drop_discrete_categories().
             rebuild_structure_table(
                 label_manager=label_manager,
                 property_repo=property_repo,
                 structure_repo=structure_repo,
-                index_repo=self._dal.IndexRepository(cursor),
-                aux_index_repo=self._dal.IndexRepository(aux_cursor),
+                index_repo=index_repo,
+                aux_index_repo=aux_index_repo,
                 optimizations=self._dal.optimizations,
             )
 
-            # TODO: Make a data service remove_category_if_unused().
+            # Check if old "whole space" was used for relations or quantities.
             old_whole_structure = structure_repo.get_by_labels(old_whole_space)
 
             is_unused_by_quantity = not next(
@@ -429,19 +431,30 @@ class TopoNode(object):
             )
 
             crosswalks = self._dal.CrosswalkRepository(cursor).get_all()
-
             relation_repo = self._dal.RelationRepository(cursor)
             all_mapping_levels = set()
             for crosswalk in crosswalks:
                 all_mapping_levels.update(
                     relation_repo.get_distinct_mapping_levels(crosswalk.id)
                 )
-
             is_unused_by_relation = \
                 bytes(BitFlags(old_whole_space)) not in all_mapping_levels
 
-        if is_unused_by_quantity and is_unused_by_relation:
-            self.drop_discrete_categories(old_whole_space)  # <- TODO: Make a data service func.
+            if is_unused_by_quantity and is_unused_by_relation:
+                # Remove old whole space if it is not used.
+                remove_discrete_category(
+                    old_whole_space,
+                    label_manager,
+                    property_repo,
+                )
+                rebuild_structure_table(
+                    label_manager=label_manager,
+                    property_repo=property_repo,
+                    structure_repo=structure_repo,
+                    index_repo=index_repo,
+                    aux_index_repo=aux_index_repo,
+                    optimizations=self._dal.optimizations,
+                )
 
     def rename_index_columns(self, mapping: Dict[str, str]) -> None:
         with self._managed_transaction() as cursor:
