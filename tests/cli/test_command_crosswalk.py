@@ -329,6 +329,10 @@ class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
         index_ids = [node_get_index_id(row) for row in data_list]
         self.assertEqual(index_ids, [1, 2, 3])
 
+        # Should raise ToronError if index code is malformed or fails checksum.
+        with self.assertRaises(ToronError):
+            node_get_index_id(['1XBADVALUE', '', '', '', 100.0, '2XA468A4BC', '', ''])
+
         # Missing index_code position.
         node_get_index_id, _, _ = command_crosswalk.make_getter_functions(
             node=self.node_a,

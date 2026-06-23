@@ -279,7 +279,10 @@ def make_getter_functions(
             index_code = row[index_code_pos]
             if not index_code:
                 return None
-            return index_code_to_id(index_code, node_unique_id_bytes)
+            try:
+                return index_code_to_id(index_code, node_unique_id_bytes)
+            except ValueError as e:
+                raise ToronError(e)
     else:
         def node_get_index_id(row: Sequence) -> Optional[int]:
             return None
