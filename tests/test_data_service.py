@@ -44,6 +44,7 @@ from toron.data_service import (
     get_loaded_attributes,
     set_labels_in_display_order,
     get_labels_in_display_order,
+    change_label_order,
 )
 
 
@@ -1698,3 +1699,34 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
             [],
             msg='should return empty list',
         )
+
+
+class TestChangeLabelOrder(unittest.TestCase):
+    def test_reordering_labels(self):
+        self.assertEqual(
+            change_label_order(['A', 'C', 'B', 'D'], 'C', offset=1),
+            ['A', 'B', 'C', 'D'],
+            msg='should move C one position to the right',
+        )
+        self.assertEqual(
+            change_label_order(['A', 'C', 'D', 'B'], 'B', offset=-2),
+            ['A', 'B', 'C', 'D'],
+            msg='should move B two positions to the left',
+        )
+
+    def test_bounds_enforcement(self):
+        self.assertEqual(
+            change_label_order(['D', 'A', 'B', 'C'], 'D', offset=999),
+            ['A', 'B', 'C', 'D'],
+            msg='should not try to move after maximum index',
+        )
+        self.assertEqual(
+            change_label_order(['B', 'C', 'D', 'A'], 'A', offset=-999),
+            ['A', 'B', 'C', 'D'],
+            msg='should not try to move before minimum index',
+        )
+
+    def test_bad_value(self):
+        regex = r"no label named 'X'"
+        with self.assertRaisesRegex(ToronError, regex):
+            change_label_order(['A', 'B', 'C', 'D'], 'X', offset=1)

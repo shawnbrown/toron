@@ -1014,6 +1014,40 @@ def get_labels_in_display_order(
     return display_order
 
 
+def change_label_order(
+    ordered_labels: Sequence[str], label: str, *, offset: int
+) -> List[str]:
+    """Move *label* by given *offset*, return reordered labels.
+
+    Move label "B" one position to the right::
+
+        >>> change_label_order(['B', 'A', 'C'], 'B', offset=1)
+        ['A', 'B', 'C']
+
+    Move label "A" two positions to the left::
+
+        >>> change_label_order(['B', 'C', 'A'], 'A', offset=-2)
+        ['A', 'B', 'C']
+    """
+    reordered_labels = list(ordered_labels)
+    try:
+        current_pos = reordered_labels.index(label)
+    except ValueError:
+        raise ToronError(f'no label named {label!r}')
+
+    # Get target index position (keeping within valid bounds).
+    new_pos = current_pos + offset
+    new_pos = max(0, new_pos)
+    new_pos = min(new_pos, len(reordered_labels) - 1)
+
+    # Change position of label and save new display order.
+    reordered_labels.insert(
+        new_pos,
+        reordered_labels.pop(current_pos),
+    )
+    return reordered_labels
+
+
 def get_node_info_text(
     property_repo: BasePropertyRepository,
     index_repo: BaseIndexRepository,
