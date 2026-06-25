@@ -988,7 +988,7 @@ def set_labels_in_display_order(
             f"cannot set display order for unknown labels: "
             f"{', '.join(repr(x) for x in unknown_labels)}"
         )
-    property_repo.add('label_display_order', labels)
+    property_repo.add_or_update('label_display_order', labels)
 
 
 def get_labels_in_display_order(

@@ -705,6 +705,34 @@ class TestRegisteredAttributesMethods(unittest.TestCase):
         self.assertEqual(node.get_registered_attributes(), ['foo', 'bar'])
 
 
+class TestGetAndReorderLabelsMethods(unittest.TestCase):
+    def test_get_label_columns(self):
+        self.node = TopoNode()
+        self.node.add_index_columns('A', 'B', 'C')
+
+        label_columns = self.node.get_label_columns()  # Method under test.
+        self.assertEqual(label_columns, ['A', 'B', 'C'])
+
+    def test_change_label_order(self):
+        self.node = TopoNode()
+        self.node.add_index_columns('C', 'B', 'A')
+
+        offset = -2  # Negative offset to move left.
+        self.node.change_label_order('A', offset=offset)  # Method under test.
+        self.assertEqual(
+            self.node.get_label_columns(),
+            ['A', 'C', 'B'],
+            msg='should move A to the left 2 places',
+        )
+
+        self.node.change_label_order('C', offset=1)  # Method under test.
+        self.assertEqual(
+            self.node.get_label_columns(),
+            ['A', 'B', 'C'],
+            msg='should move C to the right 1 place',
+        )
+
+
 class TestIndexColumnMethods(unittest.TestCase):
     @staticmethod
     def get_cols_helper(node):  # <- Helper function.

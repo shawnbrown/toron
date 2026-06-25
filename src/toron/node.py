@@ -70,6 +70,9 @@ from .data_service import (
     get_domain,
     set_registered_attributes,
     get_registered_attributes,
+    set_labels_in_display_order,
+    get_labels_in_display_order,
+    change_label_order,
     get_node_info_text,
 )
 from toron.reader import (
@@ -380,8 +383,27 @@ class TopoNode(object):
         with self._managed_cursor() as cursor:
             return self._dal.IndexRepository(cursor).get_max_index_id()
 
+    def get_label_columns(self) -> List[str]:
+        """Return label columns in display order."""
+        with self._managed_cursor() as cursor:
+            return get_labels_in_display_order(
+                index_repo=self._dal.IndexRepository(cursor),
+                property_repo=self._dal.PropertyRepository(cursor),
+            )
+
+    def change_label_order(self, label: str, offset: int) -> None:
+        """Change display order of *label* column by given *offset*."""
+        with self._managed_transaction() as cursor:
+            index_repo = self._dal.IndexRepository(cursor)
+            property_repo = self._dal.PropertyRepository(cursor)
+
+            ordered_labels = get_labels_in_display_order(index_repo, property_repo)
+            reordered_labels = change_label_order(ordered_labels, label, offset=offset)
+            set_labels_in_display_order(reordered_labels, index_repo, property_repo)
+
     @property
     def index_columns(self) -> List[str]:
+        """Return label columns in storage order."""
         with self._managed_cursor() as cursor:
             return self._dal.IndexRepository(cursor).get_label_names()
 
