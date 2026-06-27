@@ -8,9 +8,34 @@ from toron import TopoNode
 
 from toron.cli.common import ExitCode
 from toron.cli.main import (
+    get_parser,
     get_parser_old,
     main,
 )
+
+
+class TestToronArgumentParser(StreamWrapperTestCase):
+    def setUp(self):
+        self.parser = get_parser()  # Get ToronArgumentParser instance.
+        super().setUp()
+
+    def test_explicit_help(self):
+        """When calling help explicitly, should write to stdout and exit with OK."""
+        with self.assertRaises(SystemExit) as cm:
+            self.parser.parse_args(['-h'])
+
+        self.assertEqual(cm.exception.code, ExitCode.OK)
+        self.assertEqual(self.stdout_capture.getvalue(), self.parser.format_help())
+        self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
+
+    def test_no_args_help(self):
+        """Using no args, should print full help to stderr and exit with USAGE error."""
+        with self.assertRaises(SystemExit) as cm:
+            self.parser.parse_args([])
+
+        self.assertEqual(cm.exception.code, ExitCode.USAGE)
+        self.assertFalse(self.stdout_capture.getvalue(), msg='should not write to stdout')
+        self.assertEqual(self.stderr_capture.getvalue(), self.parser.format_help())
 
 
 class TestToronArgumentParserOld(StreamWrapperTestCase):

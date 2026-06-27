@@ -33,6 +33,36 @@ from .common import (
 )
 
 
+def get_parser() -> argparse.ArgumentParser:
+    """Get argument parser for Toron command line interface."""
+
+    class ToronArgumentParser(argparse.ArgumentParser):
+        def parse_args(self, args=None, namespace=None):
+            """Parse ``args`` into a ``argparse.Namespace`` object."""
+            if args is None:
+                args = sys.argv[1:]  # Default to system args.
+
+            if not args:
+                self.print_help(sys.stderr)  # Print full help.
+                self.exit(ExitCode.USAGE)  # <- EXIT!
+
+            return super().parse_args(args, namespace)
+
+    # Define main parser.
+    parser = ToronArgumentParser(
+        description='Show and edit Toron node file properties.',
+    )
+    parser.add_argument('--version',
+                        action='version',
+                        version=f'%(prog)s {__version__}')
+    parser.add_argument('filepath',
+                        type=str,
+                        help='name of node file',
+                        metavar='FILE')
+
+    return parser
+
+
 class TopoNodeType(object):
     """Factory for creating TopoNode object types.
 
