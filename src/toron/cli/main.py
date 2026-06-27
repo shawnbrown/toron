@@ -67,7 +67,7 @@ class TopoNodeType(object):
         return node
 
 
-def get_parser() -> argparse.ArgumentParser:
+def get_parser_old() -> argparse.ArgumentParser:
     """Get argument parser for Toron command line interface."""
 
     # Local variable to hold subparser choices (once parser is defined).
@@ -422,7 +422,7 @@ def main(
     stdout_style, stderr_style = get_stream_styles(stdout=stdout, stderr=stderr)
     configure_applogger(applogger, stderr_style, stream=stderr)
 
-    parser = get_parser()
+    parser = get_parser_old()
     if argv is None:
         argv = sys.argv[1:]  # Default to command line arguments.
     args = parser.parse_args(argv)

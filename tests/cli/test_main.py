@@ -8,14 +8,14 @@ from toron import TopoNode
 
 from toron.cli.common import ExitCode
 from toron.cli.main import (
-    get_parser,
+    get_parser_old,
     main,
 )
 
 
-class TestToronArgumentParser(StreamWrapperTestCase):
+class TestToronArgumentParserOld(StreamWrapperTestCase):
     def setUp(self):
-        self.parser = get_parser()  # Get ToronArgumentParser instance.
+        self.parser = get_parser_old()  # Get ToronArgumentParser instance.
         super().setUp()
 
     def test_help_flag(self):
