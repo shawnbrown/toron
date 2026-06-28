@@ -1,4 +1,4 @@
-"""Tests for toron/cli/command_new.py module."""
+"""Tests for toron/cli/command_add.py module."""
 import argparse
 from .. import _unittest as unittest
 from toron import TopoNode, ToronError
