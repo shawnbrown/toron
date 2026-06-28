@@ -1,11 +1,11 @@
-"""Tests for toron/cli/command_new.py module."""
+"""Tests for toron/cli/command_init.py module."""
 import argparse
 import os
 import sys
 import tempfile
 from .. import _unittest as unittest
 
-from toron.cli import command_new
+from toron.cli import command_init
 
 
 class TestNew(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestNew(unittest.TestCase):
 
             self.assertFalse(os.path.exists(node_path))
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
-                command_new.create_file(args)  # <- Function under test.
+                command_init.create_file(args)  # <- Function under test.
             self.assertTrue(os.path.exists(node_path))
 
             self.assertRegex(
@@ -35,7 +35,7 @@ class TestNew(unittest.TestCase):
             self.assertFalse(os.path.exists(node_path))
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
-                command_new.create_file(args)  # <- Function under test.
+                command_init.create_file(args)  # <- Function under test.
 
             self.assertTrue(os.path.exists(node_path))
 
@@ -51,7 +51,7 @@ class TestNew(unittest.TestCase):
             args = argparse.Namespace(command='new', node_path=node_path, domain=None)
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
-                command_new.create_file(args)  # <- Function under test.
+                command_init.create_file(args)  # <- Function under test.
 
             self.assertRegex(logs_cm.output[0], r'cancelled: cannot write to directory .+')
 
@@ -62,7 +62,7 @@ class TestNew(unittest.TestCase):
             args = argparse.Namespace(command='new', node_path=node_path)
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
-                command_new.create_file(args)  # <- Function under test.
+                command_init.create_file(args)  # <- Function under test.
 
             self.assertRegex(logs_cm.output[0], r'filename cannot be whitespace')
 
@@ -80,6 +80,6 @@ class TestNew(unittest.TestCase):
             open(node_path, 'w').close()  # Create a file at the given path.
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
-                command_new.create_file(args)  # <- Function under test.
+                command_init.create_file(args)  # <- Function under test.
 
             self.assertRegex(logs_cm.output[0], r'cancelled: .+ already exists')

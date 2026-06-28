@@ -100,13 +100,13 @@ class TestMainNewCommand(StreamWrapperTestCase):
     def setUp(self):
         super().setUp()
 
-        # Patch the `command_new` module with a mock object.
-        mock_cm = unittest.mock.patch(target='toron.cli.main.command_new')
+        # Patch the `command_init` module with a mock object.
+        mock_cm = unittest.mock.patch(target='toron.cli.main.command_init')
         self.mock = mock_cm.__enter__()
         self.addCleanup(lambda: mock_cm.__exit__(None, None, None))
 
     def test_create_file(self):
-        """Check call to command_new.create_file()."""
+        """Check call to command_init.create_file()."""
         file_path = self.get_tempfile_path()
 
         main(['new', file_path])  # Function under test.

@@ -23,7 +23,7 @@ from . import (
     command_update,
     command_quantity,
     command_crosswalk,
-    command_new,
+    command_init,
 )
 from .common import (
     ExitCode,
@@ -149,7 +149,7 @@ def get_parser_old() -> argparse.ArgumentParser:
                             help='name of file to create', metavar='FILE')
     parser_new.add_argument('--domain',
                             help='define a domain (defaults to FILE without extension)')
-    parser_new.set_defaults(func=command_new.create_file)
+    parser_new.set_defaults(func=command_init.create_file)
 
     # Add command.
     parser_add = subparsers.add_parser(
