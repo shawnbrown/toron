@@ -145,7 +145,7 @@ def get_parser_old() -> argparse.ArgumentParser:
         help='create a new node file',
         description='Create a new node file.',
     )
-    parser_new.add_argument('node_path', type=str,
+    parser_new.add_argument('filepath', type=str,
                             help='name of file to create', metavar='FILE')
     parser_new.add_argument('--domain',
                             help='define a domain (defaults to FILE without extension)')

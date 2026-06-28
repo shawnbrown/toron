@@ -107,16 +107,16 @@ class TestMainNewCommand(StreamWrapperTestCase):
 
     def test_create_file(self):
         """Check call to command_init.create_file()."""
-        file_path = self.get_tempfile_path()
+        filepath = self.get_tempfile_path()
 
-        main(['new', file_path])  # Function under test.
+        main(['new', filepath])  # Function under test.
 
         self.mock.create_file.assert_called()
 
         args, kwds = self.mock.create_file.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'new')
-        self.assertEqual(args[0].node_path, file_path)
+        self.assertEqual(args[0].filepath, filepath)
 
 
 class TestMainIndexCommand(StreamWrapperTestCase):

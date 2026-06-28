@@ -8,78 +8,96 @@ from .. import _unittest as unittest
 from toron.cli import command_init
 
 
-class TestNew(unittest.TestCase):
+class TestInit(unittest.TestCase):
     def test_create_new_file_implicit_domain(self):
         """Should create new file at given path location."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
-            node_path = os.path.join(tmpdir, 'blerg.toron')
-            args = argparse.Namespace(command='new', node_path=node_path, domain=None)
+            filepath = os.path.join(tmpdir, 'blerg.toron')
+            args = argparse.Namespace(command='init', filepath=filepath, domain=None)
 
-            self.assertFalse(os.path.exists(node_path))
+            self.assertFalse(os.path.exists(filepath))
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
                 command_init.create_file(args)  # <- Function under test.
-            self.assertTrue(os.path.exists(node_path))
+            self.assertTrue(os.path.exists(filepath))
 
-            self.assertRegex(
-                '\n'.join(logs_cm.output),
-                (r"INFO:app-toron:domain set to 'blerg'\n"  # <- Because domain was not specified.
-                 r"INFO:app-toron:created file: '.*blerg.toron'"),
-            )
+        self.assertEqual(len(logs_cm.output), 2)
+        self.assertRegex(
+            logs_cm.output[0],
+            r"INFO:app-toron:created file '.*blerg.toron'",
+        )
+        self.assertRegex(
+            logs_cm.output[1],
+            r"INFO:app-toron:domain set to 'blerg'",
+            msg='domain not given by user, defaults to file stem',
+        )
 
     def test_create_new_file_explicit_domain(self):
         """Create a new file with an explicitly given domain."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
-            node_path = os.path.join(tmpdir, 'blerg.toron')
-            args = argparse.Namespace(command='new', node_path=node_path, domain='dorp')
+            filepath = os.path.join(tmpdir, 'blerg.toron')
+            args = argparse.Namespace(command='new', filepath=filepath, domain='dorp')
 
-            self.assertFalse(os.path.exists(node_path))
+            self.assertFalse(os.path.exists(filepath))
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
                 command_init.create_file(args)  # <- Function under test.
 
-            self.assertTrue(os.path.exists(node_path))
+            self.assertTrue(os.path.exists(filepath))
 
-            self.assertRegex(
-                '\n'.join(logs_cm.output),
-                 r"INFO:app-toron:created file: '.*blerg.toron'",
-            )
+        self.assertEqual(len(logs_cm.output), 1)
+        self.assertRegex(
+            logs_cm.output[0],
+            r"INFO:app-toron:created file '.*blerg.toron'",
+        )
 
     def test_missing_directory(self):
         """Should give "cancelled" error if target dir doesn't exist."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
-            node_path = os.path.join(tmpdir, 'does_not_exist', 'blerg.toron')
-            args = argparse.Namespace(command='new', node_path=node_path, domain=None)
+            filepath = os.path.join(tmpdir, 'does_not_exist', 'blerg.toron')
+            args = argparse.Namespace(command='new', filepath=filepath, domain=None)
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
                 command_init.create_file(args)  # <- Function under test.
 
-            self.assertRegex(logs_cm.output[0], r'cancelled: cannot write to directory .+')
+        self.assertEqual(len(logs_cm.output), 1)
+        self.assertRegex(
+            logs_cm.output[0],
+            r'cancelled: cannot write to directory .+',
+        )
 
     def test_basename_is_whitespace(self):
         """Should cancel if filename is whitespace."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
-            node_path = os.path.join(tmpdir, '    ')  # <- Path basename is whitespace.
-            args = argparse.Namespace(command='new', node_path=node_path)
+            filepath = os.path.join(tmpdir, '    ')  # <- Path basename is whitespace.
+            args = argparse.Namespace(command='new', filepath=filepath)
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
                 command_init.create_file(args)  # <- Function under test.
 
-            self.assertRegex(logs_cm.output[0], r'filename cannot be whitespace')
-
             if sys.platform != 'win32':
-                self.assertFalse(os.path.exists(node_path), f'path: {node_path!r}')
+                self.assertFalse(os.path.exists(filepath), f'path: {filepath!r}')
             else:
                 # On win32, `exists()` ignores whitepsace and matches the directory.
-                self.assertFalse(os.path.isfile(node_path), f'path: {node_path!r}')
+                self.assertFalse(os.path.isfile(filepath), f'path: {filepath!r}')
+
+        self.assertEqual(len(logs_cm.output), 1)
+        self.assertRegex(
+            logs_cm.output[0],
+            r'filename cannot be whitespace',
+        )
 
     def test_file_already_exists(self):
         """Should give "cancelled" error if file already exists."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
-            node_path = os.path.join(tmpdir, 'blerg.toron')
-            args = argparse.Namespace(command='new', node_path=node_path)
-            open(node_path, 'w').close()  # Create a file at the given path.
+            filepath = os.path.join(tmpdir, 'blerg.toron')
+            args = argparse.Namespace(command='new', filepath=filepath)
+            open(filepath, 'w').close()  # Create a file at the given path.
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
                 command_init.create_file(args)  # <- Function under test.
 
-            self.assertRegex(logs_cm.output[0], r'cancelled: .+ already exists')
+        self.assertEqual(len(logs_cm.output), 1)
+        self.assertRegex(
+            logs_cm.output[0],
+            r'cancelled: .+ already exists',
+        )
