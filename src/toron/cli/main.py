@@ -46,6 +46,10 @@ def get_parser() -> argparse.ArgumentParser:
                 self.print_help(sys.stderr)  # Print full help.
                 self.exit(ExitCode.USAGE)  # <- EXIT!
 
+            # If FILE is given but COMMAND is missing, default to "info".
+            if len(args) == 1 and args[0] not in ('-h', '--help'):
+                args = args + ['info']
+
             return super().parse_args(args, namespace)
 
     # Main parser
@@ -78,7 +82,7 @@ def get_parser() -> argparse.ArgumentParser:
     # Subcommand: info
     parser_info = subparsers.add_parser(
         'info',
-        help='show file info',
+        help='show file info (default if COMMAND omitted)',
         description='Show file information.',
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)

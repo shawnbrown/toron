@@ -82,6 +82,28 @@ class TestToronArgumentParser(StreamWrapperTestCase):
             ),
         )
 
+    def test_subcommand_default(self):
+        """When no COMMAND is given, should default to 'info'."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',  # <- FILE only (no COMMAND).
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='info',
+                func=command_info.write_to_stdout,
+            ),
+        )
+
+        # Check when invoking help with a single argument.
+        with self.assertRaises(SystemExit):
+            args = self.parser.parse_args(['-h'])
+
+        self.assertEqual(
+            self.stdout_capture.getvalue(),
+            self.parser.format_help(),
+        )
+
 
 class TestToronArgumentParserOld(StreamWrapperTestCase):
     def setUp(self):
