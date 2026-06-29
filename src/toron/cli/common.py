@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from dataclasses import astuple, dataclass
 from enum import IntEnum
 from struct import Struct
+from .. import bind_node, ToronError
 from .._typing import (
     Any,
     Dict,
@@ -33,6 +34,7 @@ from .._typing import (
 
 if TYPE_CHECKING:
     from _csv import _writer as WriterType
+    from .. import TopoNode
 
 
 class ExitCode(IntEnum):
@@ -69,6 +71,16 @@ def csv_stdout_writer(
             stdout_wrapper.detach()  # Keep `stdout.buffer` open.
         except Exception:
             pass
+
+
+def open_node_file(
+    filepath: str, *, mode: Literal['ro', 'rw', 'rwc']
+) -> 'TopoNode':
+    """Open file directly from drive (bind) or raise ``ToronError``."""
+    try:
+        return bind_node(filepath, mode=mode)
+    except (PermissionError, FileNotFoundError) as e:
+        raise ToronError(e)
 
 
 def process_backup_option(
