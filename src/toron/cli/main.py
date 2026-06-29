@@ -75,6 +75,14 @@ def get_parser() -> argparse.ArgumentParser:
                              help='define a domain (defaults to FILE without extension)')
     parser_init.set_defaults(func=command_init.create_file)
 
+    # Subcommand: info
+    parser_info = subparsers.add_parser(
+        'info',
+        help='show file info',
+        description='Show file information.',
+    )
+    parser_info.set_defaults(func=command_info.write_to_stdout)
+
     return parser
 
 
@@ -446,8 +454,10 @@ def get_parser_old() -> argparse.ArgumentParser:
         help='show file info (default if filename given)',
         description='Show file information.',
     )
-    parser_info.add_argument('node', type=TopoNodeType(mode='ro'),
-                             help='Toron node file', metavar='FILE')
+    parser_info.add_argument('filepath',
+                             type=str,
+                             help='name of node file',
+                             metavar='FILE')
     parser_info.set_defaults(func=command_info.write_to_stdout)
 
     # Add subparser choices to local variable.

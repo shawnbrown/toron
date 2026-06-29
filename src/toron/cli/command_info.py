@@ -10,12 +10,16 @@ from ..data_service import (
     get_loaded_attributes,
     get_node_info_text,
 )
-from .common import ExitCode, StyleCodes
+from .common import (
+    ExitCode,
+    StyleCodes,
+    open_node_file,
+)
 
 
 def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     """Show information for Toron node file."""
-    node = args.node
+    node = open_node_file(args.filepath, mode='ro')
 
     # Get dictionary of node info values.
     with node._managed_cursor() as cursor:
@@ -40,7 +44,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     reset = args.stdout_style.reset
 
     # Get file name only, no parent directory text.
-    filename = Path(node.path_hint).name
+    filename = Path(args.filepath).name
 
     # Define horizontal rule `hr` made from "Box Drawings" character.
     hr = '─' * min(len(filename), (get_terminal_size()[0] - 1))

@@ -10,6 +10,7 @@ from toron.cli.common import ExitCode
 from toron.cli.main import (
     get_parser,
     command_init,
+    command_info,
     get_parser_old,
     main,
 )
@@ -64,6 +65,20 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 command='init',
                 domain='mydomain',
                 func=command_init.create_file,
+            ),
+        )
+
+    def test_subcommand_info(self):
+        """Check "info" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'info',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='info',
+                func=command_info.write_to_stdout,
             ),
         )
 
@@ -123,7 +138,7 @@ class TestToronArgumentParserOld(StreamWrapperTestCase):
         # Contents of `args1` and `args2` should be the same.
         self.assertEqual(list(vars(args1)), list(vars(args2)))
         self.assertEqual(args1.command, args2.command)
-        self.assertEqual(args1.node.path_hint, args2.node.path_hint)
+        self.assertEqual(args1.filepath, args2.filepath)
 
 
 class TestMainNewCommand(StreamWrapperTestCase):
