@@ -48,7 +48,7 @@ def get_parser() -> argparse.ArgumentParser:
 
             return super().parse_args(args, namespace)
 
-    # Define main parser.
+    # Main parser
     parser = ToronArgumentParser(
         description='Show and edit Toron node file properties.',
     )
@@ -59,6 +59,21 @@ def get_parser() -> argparse.ArgumentParser:
                         type=str,
                         help='name of node file',
                         metavar='FILE')
+    subparsers = parser.add_subparsers(
+        dest='command',
+        required=True,
+        metavar='COMMAND',
+    )
+
+    # Subcommand: init
+    parser_init = subparsers.add_parser(
+        'init',
+        help='create a new node file',
+        description='Create a new node file.',
+    )
+    parser_init.add_argument('--domain',
+                             help='define a domain (defaults to FILE without extension)')
+    parser_init.set_defaults(func=command_init.create_file)
 
     return parser
 

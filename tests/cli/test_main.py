@@ -9,6 +9,7 @@ from toron import TopoNode
 from toron.cli.common import ExitCode
 from toron.cli.main import (
     get_parser,
+    command_init,
     get_parser_old,
     main,
 )
@@ -36,6 +37,35 @@ class TestToronArgumentParser(StreamWrapperTestCase):
         self.assertEqual(cm.exception.code, ExitCode.USAGE)
         self.assertFalse(self.stdout_capture.getvalue(), msg='should not write to stdout')
         self.assertEqual(self.stderr_capture.getvalue(), self.parser.format_help())
+
+    def test_subcommand_init(self):
+        """Check "init" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'init',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='init',
+                domain=None,
+                func=command_init.create_file,
+            ),
+        )
+
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'init',
+                '--domain', 'mydomain',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='init',
+                domain='mydomain',
+                func=command_init.create_file,
+            ),
+        )
 
 
 class TestToronArgumentParserOld(StreamWrapperTestCase):
