@@ -11,6 +11,7 @@ from toron.cli.main import (
     get_parser,
     command_init,
     command_add,
+    command_update,
     command_info,
     get_parser_old,
     main,
@@ -200,6 +201,39 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 func=command_add.add_link,
             )
         )
+
+    def test_subcommand_update_label(self):
+        """Check "update label" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'label',
+                'foo',
+                '--move-left',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='update',
+                element='label',
+                label='foo',
+                move_left=1,
+                move_right=0,
+                backup=True,
+                func=command_update.update_label,
+            ),
+        )
+
+        msg = 'argparse should forbid left and right at the same time'
+        with self.assertRaises(SystemExit, msg=msg):
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'label',
+                'foo',
+                '--move-left',   # <- Should only allow one direction.
+                '--move-right',  # <- Should only allow one direction.
+            ]),
 
     def test_subcommand_info(self):
         """Check "info" subparser."""
