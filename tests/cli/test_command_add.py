@@ -72,47 +72,54 @@ class TestAddLabels(TempNodeMixin, unittest.TestCase):
         )
 
 
-class TestAddWeight(unittest.TestCase):
+class TestAddWeight(TempNodeMixin, unittest.TestCase):
     def test_add_weight(self):
-        node = TopoNode()
-
-        args = argparse.Namespace(
+        command_add.add_weight(argparse.Namespace(
+            filepath=self.filepath,
             command='add',
             element='weight',
-            node=node,
             weight='population',
-            description='Population count.',
+            description='Census 2020 Population',
             selectors=['[foo]', '[bar="baz"]'],
             make_default=True,
-        )
-        command_add.add_weight(args)  # Function under test.
+            backup=False,
+        ))
 
-        actual = node.get_weight_group('population')
-        expected = WeightGroup(
-            id=1,
-            name='population',
-            description='Population count.',
-            selectors=['[foo]', '[bar="baz"]'],
-            is_complete=0,
+        self.assertEqual(
+            read_file(self.filepath).get_weight_group('population'),
+            WeightGroup(
+                id=1,
+                name='population',
+                description='Census 2020 Population',
+                selectors=['[foo]', '[bar="baz"]'],
+                is_complete=0,
+            )
         )
-        self.assertEqual(actual, expected)
 
     def test_weight_already_exists(self):
-        node = TopoNode()
-        args = argparse.Namespace(
+        command_add.add_weight(argparse.Namespace(
+            filepath=self.filepath,
             command='add',
             element='weight',
-            node=node,
             weight='population',
             description=None,
             selectors=None,
             make_default=True,
-        )
-        command_add.add_weight(args)
+            backup=False,
+        ))
 
         regex = r"index weight group 'population' already exists"
         with self.assertRaisesRegex(ToronError, regex):
-            command_add.add_weight(args)
+            command_add.add_weight(argparse.Namespace(
+                filepath=self.filepath,
+                command='add',
+                element='weight',
+                weight='population',
+                description=None,
+                selectors=None,
+                make_default=True,
+                backup=False,
+            ))
 
 
 class TestAddCategory(unittest.TestCase):

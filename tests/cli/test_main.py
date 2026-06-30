@@ -88,6 +88,52 @@ class TestToronArgumentParser(StreamWrapperTestCase):
             ),
         )
 
+    def test_subcommand_add_weight(self):
+        """Check "add weight" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'add',
+                'weight',
+                '--description', 'Census 2020 Population',
+                '--selectors', '[foo="bar"]', '[baz]',
+                '--default',
+                'population',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='add',
+                element='weight',
+                weight='population',
+                description='Census 2020 Population',
+                selectors=['[foo="bar"]', '[baz]'],
+                make_default=True,
+                backup=True,
+                func=command_add.add_weight,
+            ),
+        )
+
+        # Check minimal invocation (no description or selectors).
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'add',
+                'weight',
+                'population',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='add',
+                element='weight',
+                weight='population',
+                description=None,
+                selectors=None,
+                make_default=False,
+                backup=True,
+                func=command_add.add_weight,
+            ),
+        )
+
     def test_subcommand_info(self):
         """Check "info" subparser."""
         self.assertEqual(

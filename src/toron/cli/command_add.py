@@ -33,16 +33,17 @@ def add_label(args: argparse.Namespace) -> ExitCode:
 
 def add_weight(args: argparse.Namespace) -> ExitCode:
     """Add index weight groups to the given node file."""
-    process_backup_option(args)
+    node = open_node_file(args.filepath, mode='rw')
+    process_backup_option2(args, node)
 
-    args.node.add_weight_group(
+    node.add_weight_group(
         name=args.weight,
         description=args.description,
         selectors=args.selectors,
         make_default=args.make_default or None,  # Use `None` instead of `False`.
     )
 
-    msg = f'added index weight group {args.weight!r} to {args.node.path_hint}'
+    msg = f'added index weight group {args.weight!r} to {node.path_hint}'
     applogger.info(msg)
 
     return ExitCode.OK
