@@ -90,13 +90,15 @@ def add_attribute(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
-def add_crosswalk(args: argparse.Namespace) -> ExitCode:
-    """Add crosswalks between two node files."""
-    process_backup_option(args, node_args=['node1', 'node2'])
+def add_link(args: argparse.Namespace) -> ExitCode:
+    """Add crosswalk link between two node files."""
+    node1 = open_node_file(args.filepath, mode='rw')
+    node2 = open_node_file(args.filepath2, mode='rw')
+    process_backup_option2(args, node1, node2)
 
     do_add = lambda tail, head, args: head.add_crosswalk(
         node=tail,
-        crosswalk_name=args.crosswalk,
+        crosswalk_name=args.link,
         other_filename_hint=tail.path_hint,
         description=args.description,
         selectors=args.selectors,
@@ -104,12 +106,12 @@ def add_crosswalk(args: argparse.Namespace) -> ExitCode:
     )
 
     if args.direction == 'both':
-        do_add(args.node1, args.node2, args)  # node1 -> node2
-        do_add(args.node2, args.node1, args)  # node1 <- node2
+        do_add(node1, node2, args)  # node1 -> node2
+        do_add(node2, node1, args)  # node1 <- node2
     elif args.direction == 'right':
-        do_add(args.node1, args.node2, args)  # node1 -> node2
+        do_add(node1, node2, args)  # node1 -> node2
     elif args.direction == 'left':
-        do_add(args.node2, args.node1, args)  # node1 <- node2
+        do_add(node2, node1, args)  # node1 <- node2
     else:
         raise RuntimeError(f'unhandled direction: {args.direction!r}')
 

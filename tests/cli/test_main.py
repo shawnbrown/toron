@@ -172,6 +172,35 @@ class TestToronArgumentParser(StreamWrapperTestCase):
             ),
         )
 
+    def test_subcommand_add_link(self):
+        """Check "add link" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile1.toron',
+                'add',
+                'link',
+                'myfile2.toron',
+                'mylink',
+                '--description', 'Description of this link.',
+                '--selectors', '[foo="bar"]', '[baz]',
+                '--default',
+                '--no-backup',
+            ]),
+            argparse.Namespace(
+                filepath='myfile1.toron',
+                command='add',
+                element='link',
+                filepath2='myfile2.toron',
+                link='mylink',
+                direction='both',
+                description='Description of this link.',
+                selectors=['[foo="bar"]', '[baz]'],
+                make_default=True,
+                backup=False,
+                func=command_add.add_link,
+            )
+        )
+
     def test_subcommand_info(self):
         """Check "info" subparser."""
         self.assertEqual(

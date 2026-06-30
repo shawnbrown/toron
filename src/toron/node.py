@@ -1627,7 +1627,7 @@ class TopoNode(object):
             for crosswalk in other_crosswalks:
                 if crosswalk.name == crosswalk_name:
                     raise ToronError(
-                        f'a crosswalk named {crosswalk_name!r} already exists '
+                        f'a link named {crosswalk_name!r} already exists '
                         f'between these two nodes'
                     )
 

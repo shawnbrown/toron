@@ -199,6 +199,49 @@ def get_parser() -> argparse.ArgumentParser:
                                       help='do not make a backup file')
     parser_add_attribute.set_defaults(func=command_add.add_attribute)
 
+    # Subcommand: add link
+    parser_add_link = parser_add_subparsers.add_parser(
+        'link',
+        help='add crosswalk link between two node files',
+        description='Add crosswalk link between two existing node files.',
+        prog='toron FILE1 add link',  # <- Replaces "FILE" with "FILE1".
+    )
+    parser_add_link.add_argument('filepath2',
+                                 help='name of second (right) node file',
+                                 metavar='FILE2')
+    parser_add_link.add_argument('link',
+                                 help='name of crosswalk link to add',
+                                 metavar='LINK')
+    parser_add_link_group = parser_add_link.add_mutually_exclusive_group()
+    parser_add_link_group.add_argument(
+        '--right',
+        action='store_const',
+        const='right',
+        dest='direction',
+        help='add single direction: FILE1 -> FILE2',
+    )
+    parser_add_link_group.add_argument(
+        '--left',
+        action='store_const',
+        const='left',
+        dest='direction',
+        help='add single direction: FILE1 <- FILE2',
+    )
+    parser_add_link.add_argument('--description',
+                                 help='description of crosswalk')
+    parser_add_link.add_argument('--selectors', nargs='+',
+                                 help='attribute selectors')
+    parser_add_link.add_argument('--default', action='store_true',
+                                 dest='make_default',
+                                 help='set as the default crosswalk')
+    parser_add_link.add_argument('--no-backup', action='store_false',
+                                 dest='backup',
+                                 help='do not make backup files')
+    parser_add_link.set_defaults(
+        func=command_add.add_link,
+        direction='both',
+    )
+
     # Subcommand: info
     parser_info = subparsers.add_parser(
         'info',
@@ -391,19 +434,19 @@ def get_parser_old() -> argparse.ArgumentParser:
 
     # Add crosswalk command.
     parser_add_crosswalk = parser_add_subparsers.add_parser(
-        'crosswalk',
+        'link',
         help='add crosswalks between two node files',
         description='Add crosswalks between two existing node files.',
     )
-    parser_add_crosswalk.add_argument('node1', type=TopoNodeType(mode='rw'),
+    parser_add_crosswalk.add_argument('filepath',
                                       help='first (left) filename',
                                       metavar='FILE1')
-    parser_add_crosswalk.add_argument('node2', type=TopoNodeType(mode='rw'),
+    parser_add_crosswalk.add_argument('filepath2',
                                       help='second (right) filename',
                                       metavar='FILE2')
-    parser_add_crosswalk.add_argument('crosswalk',
+    parser_add_crosswalk.add_argument('link',
                                       help='name of crosswalk to add',
-                                      metavar='CROSSWALK')
+                                      metavar='LINK')
     parser_add_crosswalk_group = parser_add_crosswalk.add_mutually_exclusive_group()
     parser_add_crosswalk_group.add_argument(
         '--right',
@@ -430,7 +473,7 @@ def get_parser_old() -> argparse.ArgumentParser:
                                       dest='backup',
                                       help='do not make backup files')
     parser_add_crosswalk.set_defaults(
-        func=command_add.add_crosswalk,
+        func=command_add.add_link,
         direction='both',
     )
 

@@ -250,104 +250,124 @@ class TestAddAttributes(TempNodeMixin, unittest.TestCase):
         )
 
 
-class TestAddCrosswalk(unittest.TestCase):
+class TestAddLink(unittest.TestCase):
     def setUp(self):
-        self.node1 = TopoNode()
-        self.node1._connector._unique_id = '11111111-1111-1111-1111-111111111111'
-        self.node1.path_hint = 'node1.toron'
+        with tempfile.NamedTemporaryFile(delete=False) as tmp1:
+            self.filepath1 = tmp1.name
+        self.addCleanup(lambda: os.remove(self.filepath1))
+        node1 = TopoNode()
+        with node1._managed_transaction() as cur:
+            property_repo = node1._dal.PropertyRepository(cur)
+            property_repo.add_or_update(
+                'unique_id', '11111111-1111-1111-1111-111111111111'
+            )
+        node1.to_file(self.filepath1)
 
-        self.node2 = TopoNode()
-        self.node2._connector._unique_id = '22222222-2222-2222-2222-222222222222'
-        self.node2.path_hint = 'node2.toron'
+        with tempfile.NamedTemporaryFile(delete=False) as tmp2:
+            self.filepath2 = tmp2.name
+        self.addCleanup(lambda: os.remove(self.filepath2))
+        node2 = TopoNode()
+        with node2._managed_transaction() as cur:
+            property_repo = node2._dal.PropertyRepository(cur)
+            property_repo.add_or_update(
+                'unique_id', '22222222-2222-2222-2222-222222222222'
+            )
+        node2.to_file(self.filepath2)
 
-    def test_add_crosswalk(self):
-        """Add crosswalk in both directions (default behavior)."""
+    def test_add_link(self):
+        """Add crosswalk link in both directions (default behavior)."""
         args = argparse.Namespace(
+            filepath=self.filepath1,
             command='add',
-            element='crosswalk',
-            node1=self.node1,
-            node2=self.node2,
-            crosswalk='population',
+            element='link',
+            filepath2=self.filepath2,
+            link='population',
             direction='both',
             description=None,
             selectors=None,
             make_default=True,
         )
-        command_add.add_crosswalk(args)
+        command_add.add_link(args)
 
         # Check right-side crosswalk (node1 -> node2).
-        actual = self.node2.get_crosswalk(self.node1, 'population')
-        expected = Crosswalk(
-            id=1,
-            other_unique_id='11111111-1111-1111-1111-111111111111',
-            other_filename_hint='node1.toron',
-            name='population',
-            is_default=True,
+        self.assertEqual(
+            read_file(self.filepath2).get_crosswalk(self.filepath1, 'population'),
+            Crosswalk(
+                id=1,
+                other_unique_id='11111111-1111-1111-1111-111111111111',
+                other_filename_hint=self.filepath1,
+                name='population',
+                is_default=True,
+            ),
         )
-        self.assertEqual(actual, expected)
 
         # Check left-side crosswalk (node1 <- node2).
-        actual = self.node1.get_crosswalk(self.node2, 'population')
-        expected = Crosswalk(
-            id=1,
-            other_unique_id='22222222-2222-2222-2222-222222222222',
-            other_filename_hint='node2.toron',
-            name='population',
-            is_default=True,
+        self.assertEqual(
+            read_file(self.filepath1).get_crosswalk(self.filepath2, 'population'),
+            Crosswalk(
+                id=1,
+                other_unique_id='22222222-2222-2222-2222-222222222222',
+                other_filename_hint=self.filepath2,
+                name='population',
+                is_default=True,
+            ),
         )
-        self.assertEqual(actual, expected)
 
     def test_with_direction(self):
         args = argparse.Namespace(
+            filepath=self.filepath1,
             command='add',
             element='crosswalk',
-            node1=self.node1,
-            node2=self.node2,
-            crosswalk='population',
-            direction='right',  # <- Right-side crosswalk only.
+            filepath2=self.filepath2,
+            link='population',
+            direction='right',  # <- Right-side link only.
             description=None,
             selectors=None,
             make_default=True,
         )
-        command_add.add_crosswalk(args)
+        command_add.add_link(args)
 
         # Check right-side crosswalk (node1 -> node2).
-        actual = self.node2.get_crosswalk(self.node1, 'population')
-        expected = Crosswalk(
-            id=1,
-            other_unique_id='11111111-1111-1111-1111-111111111111',
-            other_filename_hint='node1.toron',
-            name='population',
-            is_default=True,
+        self.assertEqual(
+            read_file(self.filepath2).get_crosswalk(self.filepath1, 'population'),
+            Crosswalk(
+                id=1,
+                other_unique_id='11111111-1111-1111-1111-111111111111',
+                other_filename_hint=self.filepath1,
+                name='population',
+                is_default=True,
+            ),
         )
-        self.assertEqual(actual, expected)
 
         # Check that left-side crosswalk (node1 <- node2) does not exist.
-        actual = self.node1.get_crosswalk(self.node2, 'population')
-        self.assertIsNone(actual)
+        self.assertIsNone(
+            read_file(self.filepath1).get_crosswalk(self.filepath2, 'population')
+        )
 
     def test_crosswalk_already_exists(self):
-        self.node1.add_crosswalk(
-            node=self.node2,
+        node1 = bind_node(self.filepath1, mode='rw')
+        node2 = bind_node(self.filepath2, mode='rw')
+        node1.add_crosswalk(
+            node=node2,
             crosswalk_name='population',
-            other_filename_hint=self.node2.path_hint,
+            other_filename_hint=node2.path_hint,
             description=None,
             selectors=None,
             is_default=True,
         )
 
         args = argparse.Namespace(
+            filepath=self.filepath1,
             command='add',
-            element='crosswalk',
-            node1=self.node1,
-            node2=self.node2,
-            crosswalk='population',
+            element='link',
+            filepath2=self.filepath2,
+            link='population',
             direction='both',
             description=None,
             selectors=None,
             make_default=True,
         )
 
-        regex = r"a crosswalk named 'population' already exists"
+        regex = r"a link named 'population' already exists"
         with self.assertRaisesRegex(ToronError, regex):
-            command_add.add_crosswalk(args)
+            command_add.add_link(args)
