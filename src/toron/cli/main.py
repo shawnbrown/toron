@@ -168,6 +168,22 @@ def get_parser() -> argparse.ArgumentParser:
                                    help='do not make a backup file')
     parser_add_weight.set_defaults(func=command_add.add_weight)
 
+    # Subcommand: add category
+    parser_add_category = parser_add_subparsers.add_parser(
+        'category',
+        help='add a discrete category to node file',
+        description=('Add a discrete category to an existing node file. '
+                     'Labels may be provided as separate arguments or as '
+                     'a comma-separated list.'),
+    )
+    parser_add_category.add_argument('labels', nargs='+',
+                                     help='index labels that define a category',
+                                     metavar='LABEL')
+    parser_add_category.add_argument('--no-backup', action='store_false',
+                                     dest='backup',
+                                     help='do not make a backup file')
+    parser_add_category.set_defaults(func=command_add.add_category)
+
     # Subcommand: info
     parser_info = subparsers.add_parser(
         'info',
@@ -330,7 +346,7 @@ def get_parser_old() -> argparse.ArgumentParser:
                      'Labels may be provided as separate arguments or as '
                      'a comma-separated list.'),
     )
-    parser_add_category.add_argument('node', type=TopoNodeType(mode='rw'),
+    parser_add_category.add_argument('filepath',
                                      help='name of file to modify',
                                      metavar='FILE')
     parser_add_category.add_argument('labels', nargs='+',

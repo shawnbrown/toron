@@ -3,7 +3,7 @@ import argparse
 import os
 import tempfile
 from .. import _unittest as unittest
-from toron import TopoNode, ToronError, read_file
+from toron import TopoNode, ToronError, read_file, bind_node
 from toron.data_models import Crosswalk, WeightGroup
 
 from toron.cli import command_add
@@ -122,53 +122,48 @@ class TestAddWeight(TempNodeMixin, unittest.TestCase):
             ))
 
 
-class TestAddCategory(unittest.TestCase):
-    def test_add_category(self):
-        node = TopoNode()
+class TestAddCategory(TempNodeMixin, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        node = bind_node(self.filepath, mode='rw')
         node.add_index_columns('A', 'B', 'C')
 
-        args = argparse.Namespace(
+    def test_add_category(self):
+        command_add.add_category(argparse.Namespace(
+            filepath=self.filepath,
             command='add',
             element='category',
-            node=node,
             labels=['A', 'B'],
-        )
-
-        command_add.add_category(args)  # <- Method under test.
+        ))
 
         self.assertEqual(
-            node.discrete_categories,
+            read_file(self.filepath).discrete_categories,
             [{'A', 'B'}, {'A', 'B', 'C'}],
         )
 
     def test_error_case(self):
         """Failures should raise a ``ToronError``."""
-        node = TopoNode()
-        node.add_index_columns('A', 'B', 'C')
-
-        args = argparse.Namespace(
-            command='add',
-            element='category',
-            node=node,
-            labels=['C', 'D', 'E'],
-        )
-
         regex = r"invalid category, no index labels 'D', 'E'"
         with self.assertRaisesRegex(ToronError, regex):
-            command_add.add_category(args)  # <- Method under test.
+            command_add.add_category(argparse.Namespace(
+                filepath=self.filepath,
+                command='add',
+                element='category',
+                labels=['C', 'D', 'E'],
+            ))
 
     def test_add_category_comma_separated_value(self):
-        node = TopoNode()
-        node.add_index_columns('A', 'B', 'C')
-
         command_add.add_category(argparse.Namespace(
+            filepath=self.filepath,
             command='add',
             element='category',
-            node=node,
             labels=['A,B'],  # <- Comma-separated value.
         ))
 
-        self.assertEqual(node.discrete_categories, [{'A', 'B'}, {'A', 'B', 'C'}])
+        self.assertEqual(
+            read_file(self.filepath).discrete_categories,
+            [{'A', 'B'}, {'A', 'B', 'C'}],
+        )
 
 
 class TestAddAttributes(unittest.TestCase):

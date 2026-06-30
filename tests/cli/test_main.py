@@ -134,6 +134,25 @@ class TestToronArgumentParser(StreamWrapperTestCase):
             ),
         )
 
+    def test_subcommand_add_category(self):
+        """Check "add category" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'add',
+                'category',
+                'foo', 'bar', 'baz',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='add',
+                element='category',
+                labels=['foo', 'bar', 'baz'],
+                backup=True,
+                func=command_add.add_category,
+            ),
+        )
+
     def test_subcommand_info(self):
         """Check "info" subparser."""
         self.assertEqual(
