@@ -166,17 +166,15 @@ class TestAddCategory(TempNodeMixin, unittest.TestCase):
         )
 
 
-class TestAddAttributes(unittest.TestCase):
+class TestAddAttributes(TempNodeMixin, unittest.TestCase):
     def test_add_attributes(self):
-        node = TopoNode()
-
-        self.assertEqual(node.get_registered_attributes(), [])
-
         args = argparse.Namespace(
+            filepath=self.filepath,
             command='add',
-            element='attributes',
-            node=node,
+            element='attribute',
             attributes=['foo', 'bar', 'baz'],
+            backup=False,
+            func=command_add.add_attribute,
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
@@ -187,61 +185,69 @@ class TestAddAttributes(unittest.TestCase):
             cm.output,
             ["INFO:app-toron:added attribute columns: 'foo', 'bar', 'baz'"],
         )
-        self.assertEqual(node.get_registered_attributes(), ['foo', 'bar', 'baz'])
-
-    def test_attribute_already_exists(self):
-        node = TopoNode()
-        node.set_registered_attributes(['baz'])
-
-        args = argparse.Namespace(
-            command='add',
-            element='attributes',
-            node=node,
-            attributes=['foo', 'bar', 'baz'],
+        self.assertEqual(
+            read_file(self.filepath).get_registered_attributes(),
+            ['foo', 'bar', 'baz'],
         )
 
+    def test_attribute_already_exists(self):
+        command_add.add_attribute(argparse.Namespace(
+            filepath=self.filepath,
+            command='add',
+            element='attribute',
+            attributes=['baz'],
+            backup=False,
+            func=command_add.add_attribute,
+        ))
+
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_add.add_attribute(args)  # Function under test.
+            exit_code = command_add.add_attribute(argparse.Namespace(
+                filepath=self.filepath,
+                command='add',
+                element='attribute',
+                attributes=['foo', 'bar', 'baz'],
+                backup=False,
+                func=command_add.add_attribute,
+            ))
 
         self.assertEqual(exit_code, ExitCode.OK)
-
         self.assertEqual(
             cm.output,
             ["WARNING:app-toron:skipping 'baz' (already registered)",
              "INFO:app-toron:added attribute columns: 'foo', 'bar'"],
         )
-
         self.assertEqual(
-            node.get_registered_attributes(),
+            read_file(self.filepath).get_registered_attributes(),
             ['baz', 'foo', 'bar'],  # <- First item is 'baz'.
             msg="since 'baz' already existed, it retains its original position",
         )
 
     def test_bad_attribute_name(self):
-        node = TopoNode()
-
-        args = argparse.Namespace(
-            command='add',
-            element='attributes',
-            node=node,
-            attributes=['foo', 'bar', 'domain'],
-        )
-
         regex = r"'domain' is a reserved name"
         with self.assertRaisesRegex(ToronError, regex):
-            command_add.add_attribute(args)  # Function under test.
+            command_add.add_attribute(argparse.Namespace(
+                filepath=self.filepath,
+                command='add',
+                element='attribute',
+                attributes=['foo', 'bar', 'domain'],
+                backup=False,
+                func=command_add.add_attribute,
+            ))
 
     def test_add_attributes_comma_separated_value(self):
-        node = TopoNode()
-
         command_add.add_attribute(argparse.Namespace(
+            filepath=self.filepath,
             command='add',
-            element='attributes',
-            node=node,
+            element='attribute',
             attributes=['foo,bar,baz'],  # <- Comma-separated value.
+            backup=False,
+            func=command_add.add_attribute,
         ))
 
-        self.assertEqual(node.get_registered_attributes(), ['foo', 'bar', 'baz'])
+        self.assertEqual(
+            read_file(self.filepath).get_registered_attributes(),
+            ['foo', 'bar', 'baz'],
+        )
 
 
 class TestAddCrosswalk(unittest.TestCase):

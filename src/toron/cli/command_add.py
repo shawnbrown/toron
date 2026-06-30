@@ -65,9 +65,10 @@ def add_category(args: argparse.Namespace) -> ExitCode:
 
 def add_attribute(args: argparse.Namespace) -> ExitCode:
     """Add attribute columns to the given node file."""
-    process_backup_option(args)
+    node = open_node_file(args.filepath, mode='rw')
+    process_backup_option2(args, node)
 
-    attribute_columns = args.node.get_registered_attributes()
+    attribute_columns = node.get_registered_attributes()
 
     new_attributes = []
     for attr in normalize_arg_list(args.attributes):
@@ -78,7 +79,7 @@ def add_attribute(args: argparse.Namespace) -> ExitCode:
 
     if new_attributes:
         try:
-            args.node.set_registered_attributes(attribute_columns + new_attributes)
+            node.set_registered_attributes(attribute_columns + new_attributes)
         except ValueError as e:
             raise ToronError(str(e))
         formatted_attrs = ', '.join(repr(x) for x in new_attributes)
