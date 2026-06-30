@@ -83,6 +83,34 @@ def open_node_file(
         raise ToronError(e)
 
 
+def process_backup_option2(
+    args: argparse.Namespace, *nodes: 'TopoNode'
+) -> None:
+    """If `args.backup` is True, make backup copies of *nodes*.
+
+    The backup file name is the same as the node's `path_hint` but
+    with the prefix 'backup-'. When a backup file of the same name
+    already exists, it is overwritten. If the path hint is None, a
+    FileNotFoundError is raised.
+
+    .. code-block:: python
+
+        process_backup_option(args, node1, node2)
+    """
+    if not getattr(args, 'backup', False):
+        return  # Exit immediately if `args.backup` is not True.
+
+    for node in nodes:
+        if node.path_hint is None:
+            raise FileNotFoundError(
+                f'{object.__repr__(node)} is not associated with a file path '
+                f'(has no `path_hint`)'
+            )
+        dir_name, base_name = os.path.split(node.path_hint)
+        backup_path = os.path.join(dir_name, f'backup-{base_name}')
+        node.to_file(backup_path)
+
+
 def process_backup_option(
     args: argparse.Namespace,
     node_args: Union[str, List[str]] = 'node',
