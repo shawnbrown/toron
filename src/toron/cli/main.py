@@ -242,6 +242,38 @@ def get_parser() -> argparse.ArgumentParser:
         direction='both',
     )
 
+    # Subcommand: update
+    parser_update = subparsers.add_parser(
+        'update',
+        help='update properties in node file',
+        description='Update properties in an existing node file.',
+    )
+    parser_update_subparsers = parser_update.add_subparsers(
+        dest='element',
+        required=True,
+        metavar='ELEMENT',
+    )
+
+    # Subcommand: update label
+    parser_update_label = parser_update_subparsers.add_parser(
+        'label',
+        help='update index label in node file',
+        description='Update an index label in an existing node file.',
+    )
+    parser_update_label.add_argument('label',
+                                     help='index label to update', metavar='LABEL')
+    parser_update_label_group = parser_update_label.add_mutually_exclusive_group(required=True)
+    parser_update_label_group.add_argument('--move-left', action='count',
+                                           default=0,
+                                           help='move label to the left one position')
+    parser_update_label_group.add_argument('--move-right', action='count',
+                                           default=0,
+                                           help='move label to the right one position')
+    parser_update_label.add_argument('--no-backup', action='store_false',
+                                     dest='backup',
+                                     help='do not make a backup file')
+    parser_update_label.set_defaults(func=command_update.update_label)
+
     # Subcommand: info
     parser_info = subparsers.add_parser(
         'info',
