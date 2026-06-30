@@ -120,6 +120,33 @@ def get_parser() -> argparse.ArgumentParser:
                              help='define a domain (defaults to FILE without extension)')
     parser_init.set_defaults(func=command_init.create_file)
 
+    # Subcommand: add
+    parser_add = subparsers.add_parser(
+        'add',
+        help='add properties to node file',
+        description='Add properties to an existing node file.',
+    )
+    parser_add_subparsers = parser_add.add_subparsers(
+        dest='element',
+        required=True,
+        metavar='ELEMENT',
+    )
+
+    # Subcommand: add label
+    parser_add_label = parser_add_subparsers.add_parser(
+        'label',
+        help='add index label to node file',
+        description=('Add index label to an existing node file. Labels may be '
+                     'provided as separate arguments or as a comma-separated '
+                     'list.'),
+    )
+    parser_add_label.add_argument('labels', nargs='+',
+                                  help='index label to add', metavar='LABEL')
+    parser_add_label.add_argument('--no-backup', action='store_false',
+                                  dest='backup',
+                                  help='do not make a backup file')
+    parser_add_label.set_defaults(func=command_add.add_label)
+
     # Subcommand: info
     parser_info = subparsers.add_parser(
         'info',
@@ -240,8 +267,9 @@ def get_parser_old() -> argparse.ArgumentParser:
                      'provided as separate arguments or as a comma-separated '
                      'list.'),
     )
-    parser_add_label.add_argument('node', type=TopoNodeType(mode='rw'),
-                                  help='name of file to modify', metavar='FILE')
+    parser_add_label.add_argument('filepath',
+                                  help='name of file to modify',
+                                  metavar='FILE')
     parser_add_label.add_argument('labels', nargs='+',
                                   help='index label to add', metavar='LABEL')
     parser_add_label.add_argument('--no-backup', action='store_false',
@@ -373,8 +401,8 @@ def get_parser_old() -> argparse.ArgumentParser:
         help='update index label in node file',
         description='Update an index label in an existing node file.',
     )
-    parser_update_label.add_argument('node', type=TopoNodeType(mode='rw'),
-                                     help='name of file to modify', metavar='FILE')
+    parser_update_label.add_argument('filepath',
+                                     help='name of node file', metavar='FILE')
     parser_update_label.add_argument('label',
                                      help='index label to update', metavar='LABEL')
     parser_update_label_group = parser_update_label.add_mutually_exclusive_group(required=True)

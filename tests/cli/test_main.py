@@ -10,6 +10,7 @@ from toron.cli.common import ExitCode
 from toron.cli.main import (
     get_parser,
     command_init,
+    command_add,
     command_info,
     get_parser_old,
     main,
@@ -65,6 +66,25 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 command='init',
                 domain='mydomain',
                 func=command_init.create_file,
+            ),
+        )
+
+    def test_subcommand_add_label(self):
+        """Check "add label" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'add',
+                'label',
+                'foo', 'bar', 'baz',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='add',
+                element='label',
+                labels=['foo', 'bar', 'baz'],
+                backup=True,
+                func=command_add.add_label,
             ),
         )
 

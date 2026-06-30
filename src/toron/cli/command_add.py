@@ -4,6 +4,8 @@ import logging
 
 from .common import (
     process_backup_option,
+    open_node_file,
+    process_backup_option2,
     normalize_arg_list,
     ExitCode,
 )
@@ -17,10 +19,11 @@ applogger = logging.getLogger('app-toron')
 
 def add_label(args: argparse.Namespace) -> ExitCode:
     """Add index label columns to the given node file."""
-    process_backup_option(args)
+    node = open_node_file(args.filepath, mode='rw')
+    process_backup_option2(args, node)
     normalized = normalize_arg_list(args.labels)
 
-    args.node.add_index_columns(*normalized)
+    node.add_index_columns(*normalized)
 
     formatted_labels = ', '.join(repr(x) for x in normalized)
     applogger.info(f'added index label columns: {formatted_labels}')

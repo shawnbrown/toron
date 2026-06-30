@@ -1,49 +1,75 @@
 """Tests for toron/cli/command_add.py module."""
 import argparse
+import os
+import tempfile
 from .. import _unittest as unittest
-from toron import TopoNode, ToronError
+from toron import TopoNode, ToronError, read_file
 from toron.data_models import Crosswalk, WeightGroup
 
 from toron.cli import command_add
 from toron.cli.common import ExitCode
 
+from ..common import StreamWrapperTestCase
 
-class TestAddLabels(unittest.TestCase):
-    def test_add_label(self):
+
+class TempNodeMixin(object):
+    """A mixin helper with setUp() that creats a tempoary node file."""
+    def setUp(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            self.filepath = tmp.name
+        self.addCleanup(lambda: os.remove(self.filepath))
+
         node = TopoNode()
+        node.to_file(self.filepath)
 
-        self.assertEqual(node.index_columns, [])
 
-        args = argparse.Namespace(
-            command='add', element='label', node=node, labels=['A', 'B', 'C']
+class TestAddLabels(TempNodeMixin, unittest.TestCase):
+    def test_add_label(self):
+        command_add.add_label(argparse.Namespace(
+            filepath=self.filepath,
+            command='add',
+            element='label',
+            labels=['A', 'B', 'C'],
+            backup=False,
+        ))
+
+        self.assertEqual(
+            read_file(self.filepath).index_columns,
+            ['A', 'B', 'C'],
         )
-        command_add.add_label(args)  # Function under test.
-
-        self.assertEqual(node.index_columns, ['A', 'B', 'C'])
 
     def test_label_already_exists(self):
-        node = TopoNode()
         command_add.add_label(argparse.Namespace(
-            command='add', element='label', node=node, labels=['A', 'B', 'C']
+            filepath=self.filepath,
+            command='add',
+            element='label',
+            labels=['A', 'B', 'C'],
+            backup=False,
         ))
 
         regex = r"index label column 'B' already exists"
         with self.assertRaisesRegex(ToronError, regex):
             command_add.add_label(argparse.Namespace(
-                command='add', element='label', node=node, labels=['B']
+                filepath=self.filepath,
+                command='add',
+                element='label',
+                labels=['B'],
+                backup=False,
             ))
 
     def test_add_label_comma_separated_value(self):
-        node = TopoNode()
-
         command_add.add_label(argparse.Namespace(
+            filepath=self.filepath,
             command='add',
             element='label',
-            node=node,
             labels=['A,B,C'],  # <- Comma-separated value.
+            backup=False,
         ))
 
-        self.assertEqual(node.index_columns, ['A', 'B', 'C'])
+        self.assertEqual(
+            read_file(self.filepath).index_columns,
+            ['A', 'B', 'C'],
+        )
 
 
 class TestAddWeight(unittest.TestCase):
