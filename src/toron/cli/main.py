@@ -36,6 +36,9 @@ from .common import (
 def get_parser() -> argparse.ArgumentParser:
     """Get argument parser for Toron command line interface."""
 
+    # Local variable to hold subparser choices (once parser is defined).
+    valid_choices: Set[str] = set()  # Closed-over by parser instance.
+
     class ToronArgumentParser(argparse.ArgumentParser):
         def parse_args(self, args=None, namespace=None):
             """Parse ``args`` into a ``argparse.Namespace`` object."""
@@ -46,14 +49,20 @@ def get_parser() -> argparse.ArgumentParser:
                 self.print_help(sys.stderr)  # Print full help.
                 self.exit(ExitCode.USAGE)  # <- EXIT!
 
+            if '-h' in args or '--help' in args:
+                # Parser expects FILE before COMMAND. To assist with help
+                # action, insert a dummy value if FILE is missing.
+                if len(args) > 1 and args[1] not in valid_choices:
+                    args = ['<dummy-filename>'] + args
             # If FILE is given but COMMAND is missing, default to "info".
-            if len(args) == 1 and args[0] not in ('-h', '--help'):
+            elif len(args) == 1:
                 args = args + ['info']
 
             return super().parse_args(args, namespace)
 
     # Main parser
     parser = ToronArgumentParser(
+        prog='toron',
         description='Show and edit Toron node file properties.',
     )
     parser.add_argument('--version',
@@ -86,6 +95,9 @@ def get_parser() -> argparse.ArgumentParser:
         description='Show file information.',
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)
+
+    # Add subparser choices to local variable.
+    valid_choices.update(subparsers.choices)
 
     return parser
 

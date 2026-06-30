@@ -104,6 +104,34 @@ class TestToronArgumentParser(StreamWrapperTestCase):
             self.parser.format_help(),
         )
 
+    def test_help_for_subcommand(self):
+        """Should support subcommand help without FILE argument."""
+        # Check "init" subcommand.
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(['init', '--help'])
+
+        self.assertRegex(
+            self.stdout_capture.getvalue(),
+            (r'^usage: toron FILE init \[-h\] \[--domain DOMAIN\]\n'
+             r'\n'
+             r'Create a new node file.'),
+        )
+
+        # Clear stdout buffer for next check.
+        self.stdout_capture.seek(0)
+        self.stdout_capture.truncate()
+
+        # Check "info" subcommand.
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(['info', '--help'])
+
+        self.assertRegex(
+            self.stdout_capture.getvalue(),
+            (r'^usage: toron FILE info \[-h\]\n'
+             r'\n'
+             r'Show file information.'),
+        )
+
 
 class TestToronArgumentParserOld(StreamWrapperTestCase):
     def setUp(self):
