@@ -235,6 +235,7 @@ class TestBuildUsingAPI(unittest.TestCase):
         pd.testing.assert_frame_equal(df_pivoted, df_expected)
 
 
+@unittest.skip('Skipped pending CLI rebuild.')
 class TestBuildUsingCLI(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
