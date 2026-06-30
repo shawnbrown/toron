@@ -36,28 +36,60 @@ from .common import (
 def get_parser() -> argparse.ArgumentParser:
     """Get argument parser for Toron command line interface."""
 
-    # Local variable to hold subparser choices (once parser is defined).
-    valid_choices: Set[str] = set()  # Closed-over by parser instance.
-
     class ToronArgumentParser(argparse.ArgumentParser):
+        def __init__(self, *args, **kwds):
+            super().__init__(*args, **kwds)
+            self._choices_ref: Mapping[str, argparse.ArgumentParser] = {}
+
+        def add_subparsers(self, *args, **kwds):
+            subparsers = super().add_subparsers(*args, **kwds)
+            self._choices_ref = subparsers.choices  # Assign ref to dict.
+            return subparsers
+
+        def _preprocess_args(self, args: List[str]) -> List[str]:
+            """Preprocess arguments to support custom behavior.
+
+            This method modifies the *args* list to support two
+            user-friendly shorthands:
+
+            1. Allows subcommand help invocation without requiring a
+               FILE argument (e.g., "toron init -h").
+            2. Defaults to the "info" command when FILE is provided
+               but COMMAND is omitted (e.g., 'toron myfile.toron').
+            """
+            if '-h' in args or '--help' in args:
+                # Get first two positional args before help flag.
+                help_index = next(i for i, arg in enumerate(args)
+                                  if arg in ('-h', '--help'))
+                positionals = (a for a in args[:help_index] if not a.startswith('-'))
+                first = next(positionals, None)
+                second = next(positionals, None)
+
+                # Parser expects FILE before COMMAND. But we want to support
+                # calling help with COMMAND alone, so we insert a dummy value
+                # if FILE is missing.
+                if first in self._choices_ref and second not in self._choices_ref:
+                    return ['<dummy-filename>'] + args
+                return args
+
+            # If FILE is given but COMMAND is missing, default to "info".
+            if len(args) == 1:
+                return args + ['info']
+
+            return args
+
         def parse_args(self, args=None, namespace=None):
             """Parse ``args`` into a ``argparse.Namespace`` object."""
             if args is None:
                 args = sys.argv[1:]  # Default to system args.
+            else:
+                args = list(args)
 
             if not args:
                 self.print_help(sys.stderr)  # Print full help.
                 self.exit(ExitCode.USAGE)  # <- EXIT!
 
-            if '-h' in args or '--help' in args:
-                # Parser expects FILE before COMMAND. To assist with help
-                # action, insert a dummy value if FILE is missing.
-                if len(args) > 1 and args[1] not in valid_choices:
-                    args = ['<dummy-filename>'] + args
-            # If FILE is given but COMMAND is missing, default to "info".
-            elif len(args) == 1:
-                args = args + ['info']
-
+            args = self._preprocess_args(args)
             return super().parse_args(args, namespace)
 
     # Main parser
@@ -95,9 +127,6 @@ def get_parser() -> argparse.ArgumentParser:
         description='Show file information.',
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)
-
-    # Add subparser choices to local variable.
-    valid_choices.update(subparsers.choices)
 
     return parser
 
