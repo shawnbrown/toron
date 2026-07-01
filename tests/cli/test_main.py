@@ -26,7 +26,7 @@ class TestToronArgumentParser(StreamWrapperTestCase):
         self.parser = get_parser()  # Get ToronArgumentParser instance.
         super().setUp()
 
-    def test_explicit_help(self):
+    def test_help_explicit(self):
         """When calling help explicitly, should write to stdout and exit with OK."""
         with self.assertRaises(SystemExit) as cm:
             self.parser.parse_args(['-h'])
@@ -35,7 +35,7 @@ class TestToronArgumentParser(StreamWrapperTestCase):
         self.assertEqual(self.stdout_capture.getvalue(), self.parser.format_help())
         self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
-    def test_no_args_help(self):
+    def test_help_no_args(self):
         """Using no args, should print full help to stderr and exit with USAGE error."""
         with self.assertRaises(SystemExit) as cm:
             self.parser.parse_args([])
@@ -43,6 +43,27 @@ class TestToronArgumentParser(StreamWrapperTestCase):
         self.assertEqual(cm.exception.code, ExitCode.USAGE)
         self.assertFalse(self.stdout_capture.getvalue(), msg='should not write to stdout')
         self.assertEqual(self.stderr_capture.getvalue(), self.parser.format_help())
+
+    def test_help_with_invalid_choice(self):
+        """Using '-h' with unknown command should give "invalid choice" error."""
+        with self.assertRaises(SystemExit) as cm:
+            self.parser.parse_args(['blerg', '--help'])
+
+        self.assertEqual(cm.exception.code, ExitCode.USAGE)
+        self.assertFalse(self.stdout_capture.getvalue(), msg='should not write to stdout')
+        self.assertIn("invalid choice: 'blerg'", self.stderr_capture.getvalue())
+
+    def test_help_with_filename(self):
+        """Using '-h' with a filename should give the main help message."""
+        file_path = self.get_tempfile_path()
+        TopoNode().to_file(file_path)
+
+        with self.assertRaises(SystemExit) as cm:
+            self.parser.parse_args([file_path, '-h'])
+
+        self.assertEqual(cm.exception.code, ExitCode.OK)
+        self.assertEqual(self.stdout_capture.getvalue(), self.parser.format_help())
+        self.assertFalse(self.stderr_capture.getvalue(), msg='should not write to stderr')
 
     def test_subcommand_init(self):
         """Check "init" subparser."""

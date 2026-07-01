@@ -68,7 +68,9 @@ def get_parser() -> argparse.ArgumentParser:
                 # Parser expects FILE before COMMAND. But we want to support
                 # calling help with COMMAND alone, so we insert a dummy value
                 # if FILE is missing.
-                if first in self._choices_ref and second not in self._choices_ref:
+                if second not in self._choices_ref and (
+                    first in self._choices_ref or (first and not isfile(first))
+                ):
                     return ['<dummy-filename>'] + args
                 return args
 
