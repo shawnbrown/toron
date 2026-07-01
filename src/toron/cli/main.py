@@ -27,7 +27,6 @@ from . import (
 )
 from .common import (
     ExitCode,
-    process_backup_option,
     configure_applogger,
     get_stream_styles,
 )

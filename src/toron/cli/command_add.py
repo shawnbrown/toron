@@ -3,7 +3,6 @@ import argparse
 import logging
 
 from .common import (
-    process_backup_option,
     open_node_file,
     process_backup_option2,
     normalize_arg_list,

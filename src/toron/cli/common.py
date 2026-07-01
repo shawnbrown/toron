@@ -111,44 +111,6 @@ def process_backup_option2(
         node.to_file(backup_path)
 
 
-def process_backup_option(
-    args: argparse.Namespace,
-    node_args: Union[str, List[str]] = 'node',
-) -> None:
-    """Make a backup copy of node args if `args.backup` is True.
-
-    The backup file name is the same as the node's `path_hint` but
-    with the prefix 'backup-'. When a backup file of the same name
-    already exists, it is overwritten. If the path hint is None, a
-    FileNotFoundError is raised.
-
-    Multiple files can be backed up by providing a list of argument
-    names as *node_args*::
-
-        process_backup_option(args, node_args=['node1', 'node2'])
-    """
-    if not getattr(args, 'backup', False):
-        return  # Exit without making backups if `args.backup` is not True.
-
-    if isinstance(node_args, str):
-        node_args = [node_args]  # Single-item list.
-
-    nodes = []
-    for node_arg in node_args:
-        node = getattr(args, node_arg)
-        if node.path_hint is None:
-            raise FileNotFoundError(
-                f'{node_arg} is not associated with a file path '
-                f'(has no `path_hint`)'
-            )
-        nodes.append(node)
-
-    for node in nodes:
-        dir_name, base_name = os.path.split(node.path_hint)
-        backup_path = os.path.join(dir_name, f'backup-{base_name}')
-        node.to_file(backup_path)
-
-
 def normalize_arg_list(arg_list: List[str]) -> List[str]:
     """Normalize arg list converting CSV syntax into individual items.
 
