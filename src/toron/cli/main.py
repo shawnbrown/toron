@@ -396,8 +396,6 @@ def main(
     configure_applogger(applogger, stderr_style, stream=stderr)
 
     parser = get_parser()
-    if argv is None:
-        argv = sys.argv[1:]  # Default to command line arguments.
     args = parser.parse_args(argv)
 
     args.stdin = stdin or sys.stdin
