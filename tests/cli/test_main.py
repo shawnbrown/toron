@@ -454,13 +454,13 @@ class TestMainNewCommand(StreamWrapperTestCase):
         """Check call to command_init.create_file()."""
         filepath = self.get_tempfile_path()
 
-        main(['new', filepath])  # Function under test.
+        main([filepath, 'init'])  # Function under test.
 
         self.mock.create_file.assert_called()
 
         args, kwds = self.mock.create_file.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
-        self.assertEqual(args[0].command, 'new')
+        self.assertEqual(args[0].command, 'init')
         self.assertEqual(args[0].filepath, filepath)
 
 
@@ -483,7 +483,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         file_path = self.get_tempfile_path()
         TopoNode().to_file(file_path)
 
-        main(['index', file_path], stdin=DummyTTY())  # Function under test.
+        main([file_path, 'index'], stdin=DummyTTY())  # Function under test.
 
         self.mock_write_to_stdout.assert_called()
 
@@ -507,7 +507,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         TopoNode().to_file(file_path)
 
         with self.patched_stdin('A,B\nfoo,bar\n'):  # Dummy input not ingested,
-            main(['index', file_path])              # only used for redirection.
+            main([file_path, 'index'])              # only used for redirection.
 
         self.mock_read_from_stdin.assert_called()
 
@@ -530,7 +530,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         TopoNode().to_file(file_path)
 
         with self.patched_stdin('A,B\nfoo,bar\n'):     # Dummy input not ingested,
-            main(['index', file_path, '--no-backup'])  # only used for redirection.
+            main([file_path, 'index', '--no-backup'])  # only used for redirection.
 
         self.mock_read_from_stdin.assert_called()
 
