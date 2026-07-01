@@ -12,7 +12,7 @@ from .common import (
     ExitCode,
     is_streamed,
     csv_stdout_writer,
-    open_node_file,
+    cli_bind_node,
     process_backup_option,
     index_id_to_code,
     get_index_code_position,
@@ -124,12 +124,12 @@ def write_to_stdout(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
 def process_index_action(args: argparse.Namespace) -> ExitCode:
     """Write index to ``args.stdout`` or read from ``args.stdin``."""
     if is_streamed(args.stdin):
-        node = open_node_file(args.filepath, mode='rw')
+        node = cli_bind_node(args.filepath, mode='rw')
         process_backup_option(args, node)
         return read_from_stdin(args, node)
     else:
         # Open in read-only mode and skip processing the backup option.
-        node = open_node_file(args.filepath, mode='ro')
+        node = cli_bind_node(args.filepath, mode='ro')
         try:
             return write_to_stdout(args, node)
         except BrokenPipeError:

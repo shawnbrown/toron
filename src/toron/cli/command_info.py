@@ -13,13 +13,13 @@ from ..data_service import (
 from .common import (
     ExitCode,
     StyleCodes,
-    open_node_file,
+    cli_bind_node,
 )
 
 
 def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     """Show information for Toron node file."""
-    node = open_node_file(args.filepath, mode='ro')
+    node = cli_bind_node(args.filepath, mode='ro')
 
     # Get dictionary of node info values.
     with node._managed_cursor() as cursor:

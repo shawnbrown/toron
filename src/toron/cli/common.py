@@ -73,7 +73,7 @@ def csv_stdout_writer(
             pass
 
 
-def open_node_file(
+def cli_bind_node(
     filepath: str, *, mode: Literal['ro', 'rw', 'rwc']
 ) -> 'TopoNode':
     """Open file directly from drive (bind) or raise ``ToronError``."""

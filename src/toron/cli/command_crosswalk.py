@@ -46,7 +46,7 @@ from .common import (
     index_code_to_id,
     index_id_to_code,
     get_index_code_position,
-    open_node_file,
+    cli_bind_node,
     process_backup_option,
     make_index_code_header,
 )
@@ -600,14 +600,14 @@ def write_to_stdout(
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
     """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
     if is_streamed(args.stdin):
-        node1 = open_node_file(args.filepath, mode='rw')
-        node2 = open_node_file(args.filepath2, mode='rw')
+        node1 = cli_bind_node(args.filepath, mode='rw')
+        node2 = cli_bind_node(args.filepath2, mode='rw')
         process_backup_option(args, node1, node2)
         return read_from_stdin(args, node1, node2)
     else:
         # Open in read-only mode and skip processing the backup option.
-        node1 = open_node_file(args.filepath, mode='ro')
-        node2 = open_node_file(args.filepath2, mode='ro')
+        node1 = cli_bind_node(args.filepath, mode='ro')
+        node2 = cli_bind_node(args.filepath2, mode='ro')
         try:
             return write_to_stdout(args, node1, node2)
         except BrokenPipeError:

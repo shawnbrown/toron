@@ -3,7 +3,7 @@ import argparse
 import logging
 
 from .common import (
-    open_node_file,
+    cli_bind_node,
     process_backup_option,
     ExitCode,
 )
@@ -14,7 +14,7 @@ applogger = logging.getLogger('app-toron')
 
 def update_label(args: argparse.Namespace) -> ExitCode:
     """Update index label column in the given node file."""
-    node = open_node_file(args.filepath, mode='rw')
+    node = cli_bind_node(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     if args.move_left and not args.move_right:
