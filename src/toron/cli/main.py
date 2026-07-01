@@ -324,6 +324,54 @@ def get_parser() -> argparse.ArgumentParser:
                                  help='do not make a backup file')
     parser_quantity.set_defaults(func=command_quantity.process_quantity_action)
 
+    # Subcommand: crosswalk
+    parser_crosswalk = subparsers.add_parser(
+        name='crosswalk',
+        help='write relations to stdout or load relations from stdin',
+        description=('Write crosswalk relations to stdout or load crosswalk '
+                     'relations from stdin (CSV format).'),
+        prog='toron FILE1 crosswalk',  # <- Replaces "FILE" with "FILE1".
+    )
+    parser_crosswalk.add_argument('filepath2',
+                                  help='second (right) filename',
+                                  metavar='FILE2')
+    parser_crosswalk.add_argument('link',
+                                  help='name of crosswalk link',
+                                  metavar='LINK')
+    parser_crosswalk_group = parser_crosswalk.add_mutually_exclusive_group()
+    parser_crosswalk_group.add_argument(
+        '--right',
+        action='store_const',
+        const='right',
+        dest='direction',
+        help='add single direction: FILE1 -> FILE2',
+    )
+    parser_crosswalk_group.add_argument(
+        '--left',
+        action='store_const',
+        const='left',
+        dest='direction',
+        help='add single direction: FILE1 <- FILE2',
+    )
+    parser_crosswalk.add_argument('--match-limit',
+                                  default=1,
+                                  type=int,
+                                  help='exclude matches exceeding one-to-LIMIT (default 1)',
+                                  metavar='LIMIT')
+    parser_crosswalk.add_argument('--allow-overlapping',
+                                  action='store_true',
+                                  help='allow ambiguous matches to overlap')
+    parser_crosswalk.add_argument('--allow-incomplete',
+                                  action='store_true',
+                                  help='allow loading even when matches are incomplete')
+    parser_crosswalk.add_argument('--no-backup', action='store_false',
+                                  dest='backup',
+                                  help='do not make a backup file')
+    parser_crosswalk.set_defaults(
+        func=command_crosswalk.process_crosswalk_action,
+        direction='both',
+    )
+
     # Subcommand: info
     parser_info = subparsers.add_parser(
         'info',
@@ -655,15 +703,15 @@ def get_parser_old() -> argparse.ArgumentParser:
         description=('Write crosswalk relations to stdout or load crosswalk '
                      'relations from stdin (CSV format).'),
     )
-    parser_crosswalk.add_argument('node1', type=TopoNodeType(mode='rw'),
+    parser_crosswalk.add_argument('filepath',
                                   help='first (left) filename',
                                   metavar='FILE1')
-    parser_crosswalk.add_argument('node2', type=TopoNodeType(mode='rw'),
+    parser_crosswalk.add_argument('filepath2',
                                   help='second (right) filename',
                                   metavar='FILE2')
-    parser_crosswalk.add_argument('crosswalk',
-                                  help='name of crosswalk',
-                                  metavar='CROSSWALK')
+    parser_crosswalk.add_argument('link',
+                                  help='name of crosswalk link',
+                                  metavar='LINK')
     parser_crosswalk_group = parser_crosswalk.add_mutually_exclusive_group()
     parser_crosswalk_group.add_argument(
         '--right',

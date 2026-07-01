@@ -550,10 +550,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                                   is_default=True)
 
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='both',
             match_limit=1,
             allow_overlapping=False,
@@ -573,7 +570,11 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d
+            )
 
         self.assertEqual(exit_code, ExitCode.OK)
 
@@ -625,10 +626,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                                   is_default=True)
 
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='both',
             match_limit=1,
             allow_overlapping=False,
@@ -649,7 +647,11 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         self.assertEqual(exit_code, ExitCode.OK)
 
@@ -698,10 +700,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                                   is_default=True)
 
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='both',  # <- Direction indicates both, but left-side is missing.
             match_limit=1,
             allow_overlapping=False,
@@ -718,18 +717,22 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         self.assertEqual(exit_code, ExitCode.OK)
 
         self.assertEqual(
             cm.output,
-            ["WARNING:app-toron:no 'population' crosswalk in FILE1",
-             'INFO:app-toron:matching FILE1 index records',
-             'INFO:app-toron:matching FILE2 index records',
-             'INFO:app-toron:loading relations: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 6 relations',
-             'INFO:app-toron:crosswalk is complete'],
+            ["WARNING:app-toron:no 'population' link from FILE2 to FILE1",
+             "INFO:app-toron:matching FILE1 index records",
+             "INFO:app-toron:matching FILE2 index records",
+             "INFO:app-toron:loading relations: FILE1 -> FILE2",
+             "INFO:app-toron.node:loaded 6 relations",
+             "INFO:app-toron:crosswalk is complete"],
         )
 
         self.assertEqual(
@@ -744,10 +747,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
 
     def test_missing_both_sides(self):
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='both',
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
@@ -761,13 +761,18 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         self.assertEqual(exit_code, ExitCode.ERR)
 
         self.assertEqual(
             cm.output,
-            ["ERROR:app-toron:no 'population' crosswalk in FILE1 or FILE2"],
+            ["ERROR:app-toron:no 'population' link exists between FILE1 "
+                 "and FILE2 in either direction"],
         )
 
     def test_match_limit_without_overlapping(self):
@@ -777,10 +782,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                                   is_default=True)
 
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='right',
             match_limit=2,  # <- Allow up to one-to-two matches.
             allow_overlapping=False,  # <- Default (no overlapping allowed).
@@ -796,7 +798,11 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         self.assertEqual(exit_code, ExitCode.OK)
 
@@ -829,10 +835,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                                   is_default=True)
 
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='right',
             match_limit=2,  # <- Allow up to one-to-two matches.
             allow_overlapping=True,  # <- Allowing overlaps.
@@ -848,7 +851,11 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         self.assertEqual(exit_code, ExitCode.OK)
 
@@ -883,10 +890,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                                   is_default=True)
 
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='right',
             match_limit=1,
             allow_overlapping=False,
@@ -902,7 +906,11 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
 
         regex = r'crosswalk is incomplete, no records loaded'
         with self.assertRaisesRegex(ToronError, regex):
-            command_crosswalk.read_from_stdin(args)  # <- Function under test.
+            command_crosswalk.read_from_stdin(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
     def test_incomplete_match_allowed(self):
         """Incomplete matches can be loaded with ``--allow-incomplete``."""
@@ -912,10 +920,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                                   is_default=True)
 
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='right',
             match_limit=1,
             allow_overlapping=False,
@@ -930,7 +935,11 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(args)  # <- Function under test.
+            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         msg = 'when using --allow-incomplete, process should load partial matches'
         self.assertEqual(exit_code, ExitCode.OK, msg=msg)
@@ -973,16 +982,17 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
 
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='both',
             stdout=dummy_stdout,
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.write_to_stdout(args)  # <- Function under test.
+            exit_code = command_crosswalk.write_to_stdout(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         self.assertEqual(exit_code, ExitCode.OK)
 
@@ -1018,16 +1028,17 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
 
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='both',
             stdout=dummy_stdout,
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.write_to_stdout(args)  # <- Function under test.
+            exit_code = command_crosswalk.write_to_stdout(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         self.assertEqual(exit_code, ExitCode.OK)
 
@@ -1052,16 +1063,17 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
 
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(
-            command='crosswalk',
-            node1=self.node_c,
-            node2=self.node_d,
-            crosswalk='population',
+            link='population',
             direction='both',
             stdout=dummy_stdout,
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.write_to_stdout(args)  # <- Function under test.
+            exit_code = command_crosswalk.write_to_stdout(  # <- Function under test.
+                args,
+                self.node_c,
+                self.node_d,
+            )
 
         self.assertEqual(exit_code, ExitCode.OK)
 

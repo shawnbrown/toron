@@ -23,9 +23,11 @@ from .._typing import (
     Sequence,
     Tuple,
     Union,
+    cast,
 )
 
 from .. import TopoNode
+from ..data_models import Crosswalk
 from ..data_service import generate_mapping_elements
 from ..mapper import (
     get_mapping_value_position,
@@ -44,7 +46,8 @@ from .common import (
     index_code_to_id,
     index_id_to_code,
     get_index_code_position,
-    process_backup_option,
+    open_node_file,
+    process_backup_option2,
     make_index_code_header,
 )
 
@@ -355,33 +358,36 @@ def normalize_mapping_data(
         ]
 
 
-def read_from_stdin(args: argparse.Namespace) -> ExitCode:
+def read_from_stdin(
+    args: argparse.Namespace, node1: TopoNode, node2: TopoNode
+) -> ExitCode:
     """Insert crosswalk relations read from stdin stream."""
     # Check that crosswalk is defined in nodes.
-    left_crosswalk = args.node1.get_crosswalk(args.node2, args.crosswalk)
-    right_crosswalk = args.node2.get_crosswalk(args.node1, args.crosswalk)
+    left_crosswalk = node1.get_crosswalk(node2, args.link)
+    right_crosswalk = node2.get_crosswalk(node1, args.link)
     if args.direction == 'both':
         if right_crosswalk and not left_crosswalk:
-            applogger.warning(f'no {args.crosswalk!r} crosswalk in FILE1')
+            applogger.warning(f'no {args.link!r} link from FILE2 to FILE1')
             args.direction = 'right'
         elif left_crosswalk and not right_crosswalk:
-            applogger.warning(f'no {args.crosswalk!r} crosswalk in FILE2')
+            applogger.warning(f'no {args.link!r} link from FILE1 to FILE2')
             args.direction = 'left'
         elif not left_crosswalk and not right_crosswalk:
-            applogger.error(f'no {args.crosswalk!r} crosswalk in FILE1 or FILE2')
+            applogger.error(f'no {args.link!r} link exists between FILE1 '
+                            f'and FILE2 in either direction')
             return ExitCode.ERR  # <- EXIT!
     elif args.direction == 'left' and not left_crosswalk:
-        applogger.error(f'no {args.crosswalk!r} crosswalk in FILE1')
+        applogger.error(f'no {args.link!r} link from FILE2 to FILE1')
         return ExitCode.ERR  # <- EXIT!
     elif args.direction == 'right' and not right_crosswalk:
-        applogger.error(f'no {args.crosswalk!r} crosswalk in FILE2')
+        applogger.error(f'no {args.link!r} link from FILE1 to FILE2')
         return ExitCode.ERR  # <- EXIT!
 
     # Normalize and load mapping data.
     data = normalize_mapping_data(
-        args.node1, args.node2, args.crosswalk, csv.reader(args.stdin)
+        node1, node2, args.link, csv.reader(args.stdin)
     )
-    mapper = Mapper(args.node1, args.node2, data)
+    mapper = Mapper(node1, node2, data)
 
     # Match mapping to node labels.
     applogger.info(f'matching FILE1 index records')
@@ -401,13 +407,13 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     if args.direction in {'both', 'right'}:
         applogger.info(f'loading relations: FILE1 -> FILE2')
         relations = mapper.iter_relations('node2')
-        args.node2.insert_relations2(
-            args.node1,
-            args.crosswalk,
+        node2.insert_relations2(
+            node1,
+            args.link,
             data=relations,
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
-        crosswalk = args.node2.get_crosswalk(args.node1, args.crosswalk)
+        crosswalk = cast(Crosswalk, node2.get_crosswalk(node1, args.link))
         if crosswalk.is_locally_complete:
             applogger.info(f'crosswalk is complete')
         else:
@@ -417,13 +423,13 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     if args.direction in {'both', 'left'}:
         applogger.info(f'loading relations: FILE1 <- FILE2')
         relations = mapper.iter_relations('node1')
-        args.node1.insert_relations2(
-            args.node2,
-            args.crosswalk,
+        node1.insert_relations2(
+            node2,
+            args.link,
             data=relations,
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
-        crosswalk = args.node1.get_crosswalk(args.node2, args.crosswalk)
+        crosswalk = cast(Crosswalk, node1.get_crosswalk(node2, args.link))
         if crosswalk.is_locally_complete:
             applogger.info(f'crosswalk is complete')
         else:
@@ -456,10 +462,12 @@ def get_ambiguous_field_text(
     return ', '.join(ambiguous_fields) or None
 
 
-def write_to_stdout(args: argparse.Namespace) -> ExitCode:
+def write_to_stdout(
+    args: argparse.Namespace, node1: TopoNode, node2: TopoNode
+) -> ExitCode:
     """Print crosswalk in CSV format to stdout stream."""
-    source_node = args.node1
-    target_node = args.node2
+    source_node = node1
+    target_node = node2
 
     src_unique_id = source_node.unique_id
     trg_unique_id = target_node.unique_id
@@ -485,7 +493,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 
         # Check if crosswalk has ambiguous mappings.
         crosswalk = trg_crosswalk_repo.get_by_unique_id_and_name(
-            other_unique_id=src_unique_id, name=args.crosswalk,
+            other_unique_id=src_unique_id, name=args.link,
         )
         mapping_levels = trg_relation_repo.get_distinct_mapping_levels(crosswalk.id)
         whole_space_bytes = bytes(BitFlags(trg_label_names))
@@ -505,14 +513,14 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
             writer.writerow(chain(
                 (src_index_header,),
                 src_label_names,
-                (args.crosswalk,
+                (args.link,
                  trg_index_header),
                 trg_label_names,
                 ambiguous_header,
             ))
 
             generator = generate_mapping_elements(
-                crosswalk_name=args.crosswalk,
+                crosswalk_name=args.link,
                 trg_index_repo=trg_index_repo,
                 trg_crosswalk_repo=trg_crosswalk_repo,
                 trg_relation_repo=trg_relation_repo,
@@ -526,6 +534,8 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
             trg_id_bytes = uuid.UUID(trg_unique_id).bytes
 
             # Write data rows.
+            src_labels: Tuple[Optional[str], ...]
+            trg_labels: Tuple[Optional[str], ...]
             for src_index, trg_index, level, value in generator:
                 # Since source labels come from a separate node, it's possible
                 # to have orphan references. A `KeyError` indicates that an
@@ -590,10 +600,15 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
     """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
     if is_streamed(args.stdin):
-        process_backup_option(args, node_args=['node1', 'node2'])
-        return read_from_stdin(args)
+        node1 = open_node_file(args.filepath, mode='rw')
+        node2 = open_node_file(args.filepath2, mode='rw')
+        process_backup_option2(args, node1, node2)
+        return read_from_stdin(args, node1, node2)
     else:
+        # Open in read-only mode and skip processing the backup option.
+        node1 = open_node_file(args.filepath, mode='ro')
+        node2 = open_node_file(args.filepath2, mode='ro')
         try:
-            return write_to_stdout(args)
+            return write_to_stdout(args, node1, node2)
         except BrokenPipeError:
             os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.

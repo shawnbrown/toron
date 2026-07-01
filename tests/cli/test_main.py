@@ -14,6 +14,7 @@ from toron.cli.main import (
     command_update,
     command_index,
     command_quantity,
+    command_crosswalk,
     command_info,
     get_parser_old,
     main,
@@ -270,6 +271,29 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 on_existing='abort',
                 backup=True,
                 func=command_quantity.process_quantity_action,
+            ),
+        )
+
+    def test_subcommand_crosswalk(self):
+        """Check "crosswalk" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'file1.toron',
+                'crosswalk',
+                'file2.toron',
+                'linkname',
+            ]),
+            argparse.Namespace(
+                filepath='file1.toron',
+                command='crosswalk',
+                filepath2='file2.toron',
+                link='linkname',
+                direction='both',
+                match_limit=1,
+                allow_overlapping=False,
+                allow_incomplete=False,
+                backup=True,
+                func=command_crosswalk.process_crosswalk_action,
             ),
         )
 
