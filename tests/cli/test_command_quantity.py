@@ -36,8 +36,8 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
         self.node.set_registered_attributes(['category', 'sex'])
 
         args = argparse.Namespace(
+            filepath='file1.toron',
             command='quantity',
-            node=self.node,
             value_column='quantity',  # <- This is the default column name.
             allow_invalid_label='abort',
             allow_invalid_category='abort',
@@ -52,7 +52,7 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_quantity.read_from_stdin(args)  # <- Function under test.
+            command_quantity.read_from_stdin(args, self.node)  # <- Function under test.
 
         self.assertEqual(
             logs_cm.output,
@@ -73,8 +73,8 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
         self.node.set_registered_attributes(['category', 'sex'])
 
         args = argparse.Namespace(
+            filepath='file1.toron',
             command='quantity',
-            node=self.node,
             value_column='counts',  # <- Non-default value column.
             allow_invalid_label='abort',
             allow_invalid_category='abort',
@@ -88,7 +88,7 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
             ),
         )
 
-        command_quantity.read_from_stdin(args)  # <- Function under test.
+        command_quantity.read_from_stdin(args, self.node)  # <- Function under test.
 
         self.assertEqual(
             list(self.node.select_quantities(header=True)),
@@ -123,7 +123,7 @@ class TestWriteToStdout(QuantityMixin, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_quantity.write_to_stdout(args)  # <- Function under test.
+            command_quantity.write_to_stdout(args, self.node)  # <- Function under test.
 
         self.assertEqual(logs_cm.output, ['INFO:app-toron:written 4 records'])
 

@@ -296,6 +296,34 @@ def get_parser() -> argparse.ArgumentParser:
                               help='do not make a backup file')
     parser_index.set_defaults(func=command_index.process_index_action)
 
+    # Subcommand: quantity
+    parser_quantity = subparsers.add_parser(
+        name='quantity',
+        help='write quantities to stdout or load quantities from stdin',
+        description=('Write quantity records to stdout or load quantity '
+                     'records from stdin (CSV format).'),
+    )
+    parser_quantity.add_argument('--column',
+                                 default='quantity',
+                                 dest='value_column',
+                                 help='name of column containing values (default: %(default)s)',
+                                 metavar='NAME')
+    parser_quantity.add_argument('--allow-invalid-label', action='store_true',
+                                 dest='allow_invalid_label',
+                                 help='allow quantities without matching index labels')
+    parser_quantity.add_argument('--allow-invalid-category', action='store_true',
+                                 dest='allow_invalid_category',
+                                 help='allow quantities without matching categories')
+    parser_quantity.add_argument('--on-existing',
+                                 default='abort',
+                                 choices=['ignore', 'replace', 'sum', 'abort'],
+                                 dest='on_existing',
+                                 help='strategy for existing quantities (default: %(default)s)')
+    parser_quantity.add_argument('--no-backup', action='store_false',
+                                 dest='backup',
+                                 help='do not make a backup file')
+    parser_quantity.set_defaults(func=command_quantity.process_quantity_action)
+
     # Subcommand: info
     parser_info = subparsers.add_parser(
         'info',
@@ -597,7 +625,7 @@ def get_parser_old() -> argparse.ArgumentParser:
         description=('Write quantity records to stdout or load quantity '
                      'records from stdin (CSV format).'),
     )
-    parser_quantity.add_argument('node', type=TopoNodeType(),
+    parser_quantity.add_argument('filepath',
                                  help='Toron node file', metavar='FILE')
     parser_quantity.add_argument('--column',
                                  default='quantity',

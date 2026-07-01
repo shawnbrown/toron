@@ -13,6 +13,7 @@ from toron.cli.main import (
     command_add,
     command_update,
     command_index,
+    command_quantity,
     command_info,
     get_parser_old,
     main,
@@ -250,6 +251,25 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 on_weight_conflict='abort',
                 backup=True,
                 func=command_index.process_index_action,
+            ),
+        )
+
+    def test_subcommand_quantity(self):
+        """Check "quantity" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'quantity',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='quantity',
+                value_column='quantity',
+                allow_invalid_label=False,
+                allow_invalid_category=False,
+                on_existing='abort',
+                backup=True,
+                func=command_quantity.process_quantity_action,
             ),
         )
 
