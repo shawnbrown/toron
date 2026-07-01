@@ -13,7 +13,7 @@ from .common import (
     is_streamed,
     csv_stdout_writer,
     open_node_file,
-    process_backup_option2,
+    process_backup_option,
     index_id_to_code,
     get_index_code_position,
     remap_index_codes_to_index_ids,
@@ -125,7 +125,7 @@ def process_index_action(args: argparse.Namespace) -> ExitCode:
     """Write index to ``args.stdout`` or read from ``args.stdin``."""
     if is_streamed(args.stdin):
         node = open_node_file(args.filepath, mode='rw')
-        process_backup_option2(args, node)
+        process_backup_option(args, node)
         return read_from_stdin(args, node)
     else:
         # Open in read-only mode and skip processing the backup option.

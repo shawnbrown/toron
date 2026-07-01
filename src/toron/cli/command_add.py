@@ -4,7 +4,7 @@ import logging
 
 from .common import (
     open_node_file,
-    process_backup_option2,
+    process_backup_option,
     normalize_arg_list,
     ExitCode,
 )
@@ -19,7 +19,7 @@ applogger = logging.getLogger('app-toron')
 def add_label(args: argparse.Namespace) -> ExitCode:
     """Add index label columns to the given node file."""
     node = open_node_file(args.filepath, mode='rw')
-    process_backup_option2(args, node)
+    process_backup_option(args, node)
     normalized = normalize_arg_list(args.labels)
 
     node.add_index_columns(*normalized)
@@ -33,7 +33,7 @@ def add_label(args: argparse.Namespace) -> ExitCode:
 def add_weight(args: argparse.Namespace) -> ExitCode:
     """Add index weight groups to the given node file."""
     node = open_node_file(args.filepath, mode='rw')
-    process_backup_option2(args, node)
+    process_backup_option(args, node)
 
     node.add_weight_group(
         name=args.weight,
@@ -51,7 +51,7 @@ def add_weight(args: argparse.Namespace) -> ExitCode:
 def add_category(args: argparse.Namespace) -> ExitCode:
     """Add a discrete category to an existing node file."""
     node = open_node_file(args.filepath, mode='rw')
-    process_backup_option2(args, node)
+    process_backup_option(args, node)
 
     normalized = normalize_arg_list(args.labels)
     try:
@@ -65,7 +65,7 @@ def add_category(args: argparse.Namespace) -> ExitCode:
 def add_attribute(args: argparse.Namespace) -> ExitCode:
     """Add attribute columns to the given node file."""
     node = open_node_file(args.filepath, mode='rw')
-    process_backup_option2(args, node)
+    process_backup_option(args, node)
 
     attribute_columns = node.get_registered_attributes()
 
@@ -93,7 +93,7 @@ def add_link(args: argparse.Namespace) -> ExitCode:
     """Add crosswalk link between two node files."""
     node1 = open_node_file(args.filepath, mode='rw')
     node2 = open_node_file(args.filepath2, mode='rw')
-    process_backup_option2(args, node1, node2)
+    process_backup_option(args, node1, node2)
 
     do_add = lambda tail, head, args: head.add_crosswalk(
         node=tail,

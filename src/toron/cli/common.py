@@ -83,7 +83,7 @@ def open_node_file(
         raise ToronError(e)
 
 
-def process_backup_option2(
+def process_backup_option(
     args: argparse.Namespace, *nodes: 'TopoNode'
 ) -> None:
     """If `args.backup` is True, make backup copies of *nodes*.

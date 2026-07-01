@@ -47,7 +47,7 @@ from .common import (
     index_id_to_code,
     get_index_code_position,
     open_node_file,
-    process_backup_option2,
+    process_backup_option,
     make_index_code_header,
 )
 
@@ -602,7 +602,7 @@ def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
     if is_streamed(args.stdin):
         node1 = open_node_file(args.filepath, mode='rw')
         node2 = open_node_file(args.filepath2, mode='rw')
-        process_backup_option2(args, node1, node2)
+        process_backup_option(args, node1, node2)
         return read_from_stdin(args, node1, node2)
     else:
         # Open in read-only mode and skip processing the backup option.
