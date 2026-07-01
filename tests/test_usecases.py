@@ -4,6 +4,9 @@ that we want make sure are as convinient as possible for users.
 
 import argparse
 import logging
+import os
+import shutil
+import tempfile
 import unittest
 from io import StringIO
 
@@ -15,7 +18,7 @@ except ImportError:
 from .common import DummyRedirection
 from toron.node import TopoNode
 from toron.graph import load_mapping
-from toron import cli
+from toron import cli, bind_node
 
 
 class TestBuildUsingAPI(unittest.TestCase):
@@ -235,31 +238,51 @@ class TestBuildUsingAPI(unittest.TestCase):
         pd.testing.assert_frame_equal(df_pivoted, df_expected)
 
 
-@unittest.skip('Skipped pending CLI rebuild.')
 class TestBuildUsingCLI(unittest.TestCase):
+    @staticmethod
+    def unsafe_set_unique_id(node, unique_id):
+        """Helper function to set unique_id values for testing."""
+        node._connector._unique_id = unique_id
+        with node._managed_transaction() as cur:
+            property_repo = node._dal.PropertyRepository(cur)
+            property_repo.add_or_update('unique_id', unique_id)
+
     def setUp(self):
         self.maxDiff = None
 
-        self.node1 = TopoNode()
-        self.node1._connector._unique_id = '11111111-1111-1111-1111-111111111111'
+        # TODO: Use following code when dropping support for Python 3.11.
+        #tmpdir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
+        #self.addCleanup(tmpdir.cleanup)
+        #dirpath = os.path.realpath(tmpdir.name)
+
+        # Using `mkdtemp()` to support Python 3.11 and older.
+        dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
+        self.addCleanup(shutil.rmtree, dirpath)
+
+        self.filepath1 = os.path.join(dirpath, 'node1.toron')
+        self.filepath2 = os.path.join(dirpath, 'node2.toron')
+
+        node1 = TopoNode()
+        self.unsafe_set_unique_id(node1, '11111111-1111-1111-1111-111111111111')
+        node1.to_file(self.filepath1)
         cli.command_add.add_label(argparse.Namespace(
+            filepath=self.filepath1,
             command='add',
             element='label',
-            node=self.node1,
             labels=['idx1,idx2,idx3'],
         ))
         cli.command_add.add_weight(argparse.Namespace(
+            filepath=self.filepath1,
             command='add',
             element='weight',
-            node=self.node1,
             weight='wght',
             description=None,
             selectors=None,
             make_default=True,
         ))
         cli.command_index.process_index_action(argparse.Namespace(
+            filepath=self.filepath1,
             command='index',
-            node=self.node1,
             on_label_conflict='abort',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
@@ -276,14 +299,14 @@ class TestBuildUsingCLI(unittest.TestCase):
             ),
         ))
         cli.command_add.add_attribute(argparse.Namespace(
+            filepath=self.filepath1,
             command='add',
             element='attribute',
-            node=self.node1,
             attributes=['variable'],
         ))
         cli.command_quantity.process_quantity_action(argparse.Namespace(
+            filepath=self.filepath1,
             command='quantity',
-            node=self.node1,
             value_column='quantity',
             allow_invalid_label='abort',
             allow_invalid_category='abort',
@@ -303,26 +326,27 @@ class TestBuildUsingCLI(unittest.TestCase):
             ),
         ))
 
-        self.node2 = TopoNode()
-        self.node2._connector._unique_id = '22222222-2222-2222-2222-222222222222'
+        node2 = TopoNode()
+        self.unsafe_set_unique_id(node2, '22222222-2222-2222-2222-222222222222')
+        node2.to_file(self.filepath2)
         cli.command_add.add_label(argparse.Namespace(
+            filepath=self.filepath2,
             command='add',
             element='label',
-            node=self.node2,
             labels=['idx1', 'idx2']
         ))
         cli.command_add.add_weight(argparse.Namespace(
+            filepath=self.filepath2,
             command='add',
             element='weight',
-            node=self.node2,
             weight='wght',
             description=None,
             selectors=None,
             make_default=True,
         ))
         cli.command_index.process_index_action(argparse.Namespace(
+            filepath=self.filepath2,
             command='index',
-            node=self.node2,
             on_label_conflict='abort',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
@@ -339,22 +363,22 @@ class TestBuildUsingCLI(unittest.TestCase):
             ),
         ))
 
-        cli.command_add.add_crosswalk(argparse.Namespace(
+        cli.command_add.add_link(argparse.Namespace(
+            filepath=self.filepath1,
             command='add',
-            element='crosswalk',
-            node1=self.node1,
-            node2=self.node2,
-            crosswalk='population',
+            element='link',
+            filepath2=self.filepath2,
+            link='population',
             direction='both',
             description=None,
             selectors=None,
             make_default=True,
         ))
         cli.command_crosswalk.process_crosswalk_action(argparse.Namespace(
+            filepath=self.filepath1,
             command='crosswalk',
-            node1=self.node1,
-            node2=self.node2,
-            crosswalk='population',
+            filepath2=self.filepath2,
+            link='population',
             direction='both',
             match_limit=1,
             allow_overlapping=False,
@@ -378,7 +402,10 @@ class TestBuildUsingCLI(unittest.TestCase):
         ))
 
     def test_disaggregate_translate(self):
-        result_iter = self.node1() >> self.node2
+        node1 = bind_node(self.filepath1, mode='ro')
+        node2 = bind_node(self.filepath2, mode='ro')
+
+        result_iter = node1() >> node2  # <- Disaggregate and translate.
 
         self.assertEqual(
             result_iter.columns,
