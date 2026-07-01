@@ -79,7 +79,7 @@ def cli_bind_node(
     """Open file directly from drive (bind) or raise ``ToronError``."""
     try:
         return bind_node(filepath, mode=mode)
-    except (PermissionError, FileNotFoundError) as e:
+    except (PermissionError, FileNotFoundError, ValueError) as e:
         raise ToronError(e)
 
 
