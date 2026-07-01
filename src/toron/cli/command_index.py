@@ -6,29 +6,33 @@ import os
 import re
 import uuid
 from itertools import chain, islice
-from .._typing import Iterator, List
+from .._typing import Iterator, List, TYPE_CHECKING
 
 from .common import (
     ExitCode,
     is_streamed,
     csv_stdout_writer,
-    process_backup_option,
+    open_node_file,
+    process_backup_option2,
     index_id_to_code,
     get_index_code_position,
     remap_index_codes_to_index_ids,
 )
 
+if TYPE_CHECKING:
+    from .. import TopoNode
+
 
 applogger = logging.getLogger('app-toron')
 
 
-def read_from_stdin(args: argparse.Namespace) -> ExitCode:
+def read_from_stdin(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
     """Insert index records read from stdin stream."""
     reader = csv.reader(args.stdin)
     sample_rows = list(islice(reader, 10))
     iterator: Iterator[List] = chain(sample_rows, reader)
 
-    unique_id_bytes = uuid.UUID(args.node.unique_id).bytes
+    unique_id_bytes = uuid.UUID(node.unique_id).bytes
     try:
         position = get_index_code_position(sample_rows, unique_id_bytes)
         iterator = remap_index_codes_to_index_ids(iterator, unique_id_bytes, position)
@@ -42,7 +46,7 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
             raise RuntimeError(msg) from None
 
     try:
-        args.node.insert_index(
+        node.insert_index(
             iterator,
             on_label_conflict=args.on_label_conflict,
             on_weight_conflict=args.on_weight_conflict,
@@ -64,10 +68,8 @@ def read_from_stdin(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
-def write_to_stdout(args: argparse.Namespace) -> ExitCode:
+def write_to_stdout(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
     """Print node index in CSV format to stdout stream."""
-    node = args.node
-
     domain_value = node.domain
     unique_id_bytes = uuid.UUID(node.unique_id).bytes
 
@@ -122,10 +124,13 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 def process_index_action(args: argparse.Namespace) -> ExitCode:
     """Write index to ``args.stdout`` or read from ``args.stdin``."""
     if is_streamed(args.stdin):
-        process_backup_option(args)
-        return read_from_stdin(args)
+        node = open_node_file(args.filepath, mode='rw')
+        process_backup_option2(args, node)
+        return read_from_stdin(args, node)
     else:
+        # Open in read-only mode and skip processing the backup option.
+        node = open_node_file(args.filepath, mode='ro')
         try:
-            return write_to_stdout(args)
+            return write_to_stdout(args, node)
         except BrokenPipeError:
             os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.

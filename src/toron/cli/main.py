@@ -274,6 +274,28 @@ def get_parser() -> argparse.ArgumentParser:
                                      help='do not make a backup file')
     parser_update_label.set_defaults(func=command_update.update_label)
 
+    # Subcommand: index
+    parser_index = subparsers.add_parser(
+        name='index',
+        help='write index to stdout or load index from stdin',
+        description=('Write index records to stdout or load index records '
+                     'from stdin (CSV format).'),
+    )
+    parser_index.add_argument('--on-label-conflict',
+                              default='abort',
+                              choices=['ignore', 'replace', 'abort'],
+                              dest='on_label_conflict',
+                              help='strategy for label conflicts (default: %(default)s)')
+    parser_index.add_argument('--on-weight-conflict',
+                              default='abort',
+                              choices=['ignore', 'replace', 'abort'],
+                              dest='on_weight_conflict',
+                              help='strategy for weight conflicts (default: %(default)s)')
+    parser_index.add_argument('--no-backup', action='store_false',
+                              dest='backup',
+                              help='do not make a backup file')
+    parser_index.set_defaults(func=command_index.process_index_action)
+
     # Subcommand: info
     parser_info = subparsers.add_parser(
         'info',
@@ -551,7 +573,7 @@ def get_parser_old() -> argparse.ArgumentParser:
         description=('Write index records to stdout or load index records '
                      'from stdin (CSV format).'),
     )
-    parser_index.add_argument('node', type=TopoNodeType(),
+    parser_index.add_argument('filepath',
                               help='Toron node file', metavar='FILE')
     parser_index.add_argument('--on-label-conflict',
                               default='abort',

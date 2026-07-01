@@ -12,6 +12,7 @@ from toron.cli.main import (
     command_init,
     command_add,
     command_update,
+    command_index,
     command_info,
     get_parser_old,
     main,
@@ -235,6 +236,23 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 '--move-right',  # <- Should only allow one direction.
             ]),
 
+    def test_subcommand_index(self):
+        """Check "index" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'index',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='index',
+                on_label_conflict='abort',
+                on_weight_conflict='abort',
+                backup=True,
+                func=command_index.process_index_action,
+            ),
+        )
+
     def test_subcommand_info(self):
         """Check "info" subparser."""
         self.assertEqual(
@@ -407,7 +425,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         args, kwds = self.mock_write_to_stdout.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
-        self.assertIsInstance(args[0].node, TopoNode)
+        self.assertIsInstance(args[0].filepath, str)
 
         self.assertFalse(self.stdout_capture.getvalue())
         self.assertFalse(self.stderr_capture.getvalue())
@@ -431,7 +449,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         args, kwds = self.mock_read_from_stdin.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
-        self.assertIsInstance(args[0].node, TopoNode)
+        self.assertIsInstance(args[0].filepath, str)
 
         self.assertFalse(self.stdout_capture.getvalue())
         self.assertFalse(self.stderr_capture.getvalue())
@@ -454,7 +472,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         args, kwds = self.mock_read_from_stdin.call_args
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'index')
-        self.assertIsInstance(args[0].node, TopoNode)
+        self.assertIsInstance(args[0].filepath, str)
 
         self.assertFalse(self.stdout_capture.getvalue())
         self.assertFalse(self.stderr_capture.getvalue())

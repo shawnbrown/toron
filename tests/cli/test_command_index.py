@@ -14,8 +14,6 @@ class TestIndexReadFromStdin(unittest.TestCase):
         node.add_weight_group('population', make_default=True)
 
         args = argparse.Namespace(
-            command='index',
-            node=node,
             on_label_conflict='abort',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
@@ -27,7 +25,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.read_from_stdin(args)  # <- Function under test.
+            command_index.read_from_stdin(args, node)  # <- Function under test.
 
         index_values = list(node.select_index(header=True))
         expected_values = [
@@ -55,8 +53,6 @@ class TestIndexReadFromStdin(unittest.TestCase):
                            ['Michigan', 'Cass']])
 
         args = argparse.Namespace(
-            command='index',
-            node=node,
             on_label_conflict='abort',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
@@ -68,7 +64,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.read_from_stdin(args)  # <- Function under test.
+            command_index.read_from_stdin(args, node)  # <- Function under test.
 
         self.assertEqual(
             logs_cm.output,
@@ -89,8 +85,6 @@ class TestIndexReadFromStdin(unittest.TestCase):
                            ['Michigan', 'Cass']])
 
         args = argparse.Namespace(
-            command='index',
-            node=node,
             on_label_conflict='ignore',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
@@ -102,7 +96,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.read_from_stdin(args)  # <- Function under test.
+            command_index.read_from_stdin(args, node)  # <- Function under test.
 
         self.assertEqual(
             logs_cm.output,
@@ -121,8 +115,6 @@ class TestIndexReadFromStdin(unittest.TestCase):
                            ['Michigan', 'Cass']])
 
         args = argparse.Namespace(
-            command='index',
-            node=node,
             on_label_conflict='replace',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
@@ -134,7 +126,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.read_from_stdin(args)  # <- Function under test.
+            command_index.read_from_stdin(args, node)  # <- Function under test.
 
         self.assertEqual(
             logs_cm.output,
@@ -148,8 +140,6 @@ class TestIndexReadFromStdin(unittest.TestCase):
         node.add_weight_group('population', make_default=True)
 
         args = argparse.Namespace(
-            command='index',
-            node=node,
             on_label_conflict='abort',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
@@ -162,7 +152,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.read_from_stdin(args)  # <- Function under test.
+            command_index.read_from_stdin(args, node)  # <- Function under test.
 
         index_values = list(node.select_index(header=True))
         expected_values = [('index_id', 'state', 'county'), (0, '-', '-')]
@@ -181,8 +171,6 @@ class TestIndexReadFromStdin(unittest.TestCase):
         node.add_weight_group('population', make_default=True)
 
         args = argparse.Namespace(
-            command='index',
-            node=node,
             on_label_conflict='abort',
             on_weight_conflict='replace',
             stdin=DummyRedirection(
@@ -195,7 +183,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.read_from_stdin(args)  # <- Function under test.
+            command_index.read_from_stdin(args, node)  # <- Function under test.
 
         index_values = list(node.select_index(header=True))
         expected_values = [
@@ -233,7 +221,7 @@ class TestIndexWriteToStdout(unittest.TestCase):
         args = argparse.Namespace(command='index', node=node, stdout=dummy_stdout)
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_index.write_to_stdout(args)  # <- Function under test.
+            command_index.write_to_stdout(args, node)  # <- Function under test.
 
         expected_values = (
             'index_code,state,county,wght2,wght1,wght3\n'
