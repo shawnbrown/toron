@@ -40,7 +40,7 @@ from .data_models import (
     AttributeGroup,
     WeightGroup,
     BaseCrosswalkRepository,
-    Crosswalk,
+    Link,
     JsonTypes,
     QuantityIterator,
 )
@@ -1537,7 +1537,7 @@ class TopoNode(object):
             applogger.warning(f"skipped {counter['no_weight']} rows with no matching weight record")
 
     @property
-    def crosswalks(self) -> List[Crosswalk]:
+    def crosswalks(self) -> List[Link]:
         with self._managed_cursor() as cursor:
             return self._dal.CrosswalkRepository(cursor).get_all()
 
@@ -1546,7 +1546,7 @@ class TopoNode(object):
         node_or_ref: Union['TopoNode', str],
         crosswalk_name: Optional[str],
         crosswalk_repo: BaseCrosswalkRepository,
-    ) -> Optional[Crosswalk]:
+    ) -> Optional[Link]:
         """Get crosswalk by node reference and name."""
         if isinstance(node_or_ref, TopoNode):  # If TopoNode, find by 'unique_id' only.
             matches = list(crosswalk_repo.find_by_other_unique_id(node_or_ref.unique_id))
@@ -1592,7 +1592,7 @@ class TopoNode(object):
         self,
         node_or_ref: Union['TopoNode', str],
         crosswalk_name: Optional[str] = None,
-    ) -> Optional[Crosswalk]:
+    ) -> Optional[Link]:
         with self._managed_cursor() as cursor:
             crosswalk = self._get_crosswalk(
                 node_or_ref,

@@ -29,7 +29,7 @@ from .common import normalize_structures
 
 from toron._utils import ToronError, ToronWarning, BitFlags
 from toron.data_models import (
-    Crosswalk,
+    Link,
     Relation,
     Index,
     Location,
@@ -3236,7 +3236,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
 
         actual = self.node.crosswalks
         expected = [
-            Crosswalk(
+            Link(
                 id=1,
                 other_unique_id='111-11-1111',
                 other_filename_hint=None,
@@ -3248,7 +3248,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
                 other_index_hash=None,
                 is_locally_complete=False,
             ),
-            Crosswalk(
+            Link(
                 id=2,
                 other_unique_id='222-22-2222',
                 other_filename_hint=None,
@@ -3345,7 +3345,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
 
         self.assertEqual(
             self.get_crosswalk_helper(node),
-            [Crosswalk(id=1,
+            [Link(id=1,
                        other_unique_id='111-111-1111',
                        other_filename_hint=None,
                        name='name1',
@@ -3355,7 +3355,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
                        user_properties=None,
                        other_index_hash=None,
                        is_locally_complete=False),
-             Crosswalk(id=2,
+             Link(id=2,
                        other_unique_id='111-111-1111',
                        other_filename_hint='mocked_file',
                        name='name2',
@@ -3384,11 +3384,11 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         self.node.edit_crosswalk('222-222-2222', 'name1', name='NAME_A')
 
         expected = [
-            Crosswalk(1, '111-111-1111', 'somefile', 'name1',
+            Link(1, '111-111-1111', 'somefile', 'name1',
                       is_default=False, user_properties={'foo': 'bar'}),
-            Crosswalk(2, '111-111-1111', 'somefile', 'name2',
+            Link(2, '111-111-1111', 'somefile', 'name2',
                       is_default=True, description='My description.'),
-            Crosswalk(3, '222-222-2222', 'otherfile', 'NAME_A',
+            Link(3, '222-222-2222', 'otherfile', 'NAME_A',
                       is_default=True),
         ]
         self.assertEqual(self.get_crosswalk_helper(self.node), expected)
@@ -3397,11 +3397,11 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         # should have their `is_default` values set to False.
         self.node.edit_crosswalk('111-111-1111', 'name1', is_default=True)
         expected = [
-            Crosswalk(1, '111-111-1111', 'somefile', 'name1',
+            Link(1, '111-111-1111', 'somefile', 'name1',
                       is_default=True, user_properties={'foo': 'bar'}),  # <- is_default=True
-            Crosswalk(2, '111-111-1111', 'somefile', 'name2',
+            Link(2, '111-111-1111', 'somefile', 'name2',
                       is_default=False, description='My description.'),  # <- is_default=False
-            Crosswalk(3, '222-222-2222', 'otherfile', 'NAME_A',
+            Link(3, '222-222-2222', 'otherfile', 'NAME_A',
                       is_default=True),                                  # <- unchanged
         ]
         self.assertEqual(self.get_crosswalk_helper(self.node), expected)
@@ -3421,8 +3421,8 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
         self.node.drop_crosswalk('somefile', 'name1')
 
         expected = [
-            Crosswalk(2, '111-111-1111', 'somefile', 'name2', is_default=False),
-            Crosswalk(3, '222-222-2222', 'otherfile', 'name1', is_default=True),
+            Link(2, '111-111-1111', 'somefile', 'name2', is_default=False),
+            Link(3, '222-222-2222', 'otherfile', 'name1', is_default=True),
         ]
         self.assertEqual(self.get_crosswalk_helper(self.node), expected)
 

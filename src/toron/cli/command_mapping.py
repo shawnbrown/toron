@@ -27,7 +27,7 @@ from .._typing import (
 )
 
 from .. import TopoNode
-from ..data_models import Crosswalk
+from ..data_models import Link
 from ..data_service import generate_mapping_elements
 from ..mapper import (
     get_mapping_value_position,
@@ -413,7 +413,7 @@ def read_from_stdin(
             data=relations,
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
-        crosswalk = cast(Crosswalk, node2.get_crosswalk(node1, args.link))
+        crosswalk = cast(Link, node2.get_crosswalk(node1, args.link))
         if crosswalk.is_locally_complete:
             applogger.info(f'mapping is complete')
         else:
@@ -429,7 +429,7 @@ def read_from_stdin(
             data=relations,
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
-        crosswalk = cast(Crosswalk, node1.get_crosswalk(node2, args.link))
+        crosswalk = cast(Link, node1.get_crosswalk(node2, args.link))
         if crosswalk.is_locally_complete:
             applogger.info(f'mapping is complete')
         else:

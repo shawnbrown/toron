@@ -41,7 +41,7 @@ from .data_models import (
     Index,
     AttributesDict,
     QuantityIterator,
-    Crosswalk,
+    Link,
 )
 from .data_service import (
     find_crosswalks_by_ref,
@@ -149,7 +149,7 @@ def normalize_filename_hints(
 def _get_mapping_stats(
     source_node: TopoNode,
     target_node: TopoNode,
-    crosswalk: Crosswalk,
+    crosswalk: Link,
 ) -> Dict[str, int]:
     """Return a summary of mapping statistics for a given crosswalk.
 
@@ -244,7 +244,7 @@ def _log_load_mapping_stats(
 
     crosswalk = target_node.get_crosswalk(source_node, crosswalk_name)
     mapping_stats = _get_mapping_stats(
-        source_node, target_node, cast(Crosswalk, crosswalk)
+        source_node, target_node, cast(Link, crosswalk)
     )
     if not any([mapping_stats['src_index_missing'],
                 mapping_stats['src_index_stale'],

@@ -4,7 +4,7 @@ import os
 import tempfile
 from .. import _unittest as unittest
 from toron import TopoNode, ToronError, read_file, bind_node
-from toron.data_models import Crosswalk, WeightGroup
+from toron.data_models import Link, WeightGroup
 
 from toron.cli import command_add
 from toron.cli.common import ExitCode
@@ -292,7 +292,7 @@ class TestAddLink(unittest.TestCase):
         # Check right-side crosswalk (node1 -> node2).
         self.assertEqual(
             read_file(self.filepath2).get_crosswalk(self.filepath1, 'population'),
-            Crosswalk(
+            Link(
                 id=1,
                 other_unique_id='11111111-1111-1111-1111-111111111111',
                 other_filename_hint=self.filepath1,
@@ -304,7 +304,7 @@ class TestAddLink(unittest.TestCase):
         # Check left-side crosswalk (node1 <- node2).
         self.assertEqual(
             read_file(self.filepath1).get_crosswalk(self.filepath2, 'population'),
-            Crosswalk(
+            Link(
                 id=1,
                 other_unique_id='22222222-2222-2222-2222-222222222222',
                 other_filename_hint=self.filepath2,
@@ -330,7 +330,7 @@ class TestAddLink(unittest.TestCase):
         # Check right-side crosswalk (node1 -> node2).
         self.assertEqual(
             read_file(self.filepath2).get_crosswalk(self.filepath1, 'population'),
-            Crosswalk(
+            Link(
                 id=1,
                 other_unique_id='11111111-1111-1111-1111-111111111111',
                 other_filename_hint=self.filepath1,

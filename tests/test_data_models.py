@@ -31,7 +31,7 @@ from toron.data_models import (
     Weight, BaseWeightRepository,
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
-    Crosswalk, BaseCrosswalkRepository,
+    Link, BaseCrosswalkRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
     QuantityIterator,
@@ -1378,11 +1378,11 @@ class CrosswalkRepositoryBaseTest(ABC):
 
         self.assertEqual(
             self.repository.get(1),
-            Crosswalk(1, '111-11-1111', None, 'other1', is_locally_complete=True),
+            Link(1, '111-11-1111', None, 'other1', is_locally_complete=True),
         )
         self.assertEqual(
             self.repository.get(2),
-            Crosswalk(2, '222-22-2222', None, 'other2', is_locally_complete=False),
+            Link(2, '222-22-2222', None, 'other2', is_locally_complete=False),
         )
 
     def test_get_by_unique_id_and_name(self):
@@ -1390,7 +1390,7 @@ class CrosswalkRepositoryBaseTest(ABC):
 
         self.assertEqual(
             self.repository.get_by_unique_id_and_name('111-11-1111', 'other1'),
-            Crosswalk(1, '111-11-1111', None, 'other1', is_locally_complete=False),
+            Link(1, '111-11-1111', None, 'other1', is_locally_complete=False),
         )
 
         regex = r"no crosswalk exists with other_unique_id 111-11-1111 and name 'blerg'"

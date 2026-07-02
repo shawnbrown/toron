@@ -30,7 +30,7 @@ from ..data_models import (
     Weight, BaseWeightRepository,
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
-    Crosswalk, BaseCrosswalkRepository,
+    Link, BaseCrosswalkRepository,
     Relation, BaseRelationRepository,
     JsonTypes, BasePropertyRepository,
 )
@@ -845,10 +845,10 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         self._cursor.execute(sql, parameters)
 
     @staticmethod
-    def _make_crosswalk(values: Iterable[Any]) -> Crosswalk:
-        """Normalize row of 'crosswalk' values and return Crosswalk."""
+    def _make_crosswalk(values: Iterable[Any]) -> Link:
+        """Normalize row of 'crosswalk' values and return Link."""
         a, b, c, d, e, f, g, h, i, j = values  # Faster to unpack all than to slice.
-        return Crosswalk(
+        return Link(
             id=a,
             other_unique_id=b,
             other_filename_hint=c,
@@ -861,10 +861,10 @@ class CrosswalkRepository(BaseCrosswalkRepository):
             is_locally_complete=bool(j),
         )
 
-    def get(self, id: int) -> Crosswalk:
+    def get(self, id: int) -> Link:
         """Get a record from the repository.
 
-        If no crosswalk matches the given *id*, a ``KeyError`` is
+        If no link matches the given *id*, a ``KeyError`` is
         raised.
         """
         sql = """
@@ -888,12 +888,12 @@ class CrosswalkRepository(BaseCrosswalkRepository):
             raise KeyError(f'no crosswalk with id of {id}')
         return self._make_crosswalk(record)
 
-    def get_all(self) -> List[Crosswalk]:
+    def get_all(self) -> List[Link]:
         """Get all records from the repository."""
         self._cursor.execute('SELECT * FROM main.crosswalk')
         return [self._make_crosswalk(row) for row in self._cursor]
 
-    def update(self, record: Crosswalk) -> None:
+    def update(self, record: Link) -> None:
         """Update a record in the repository."""
         sql = f"""
             UPDATE main.crosswalk
@@ -924,7 +924,7 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         self._cursor.execute(sql, parameters)
 
     def delete_and_cascade(self, id: int) -> None:
-        """Delete a Crosswalk and any associated Relation records."""
+        """Delete a Link and any associated Relation records."""
         self._cursor.execute(
             'DELETE FROM main.crosswalk WHERE crosswalk_id=?', (id,)
         )
@@ -933,7 +933,7 @@ class CrosswalkRepository(BaseCrosswalkRepository):
         self,
         other_unique_id: str,
         name: str,
-    ) -> Crosswalk:
+    ) -> Link:
         """Get record with matching *other_unique_id* and *name*.
 
         If no crosswalk matches the given id values, a ``KeyError`` is
@@ -955,7 +955,7 @@ class CrosswalkRepository(BaseCrosswalkRepository):
 
     def find_by_other_unique_id(
         self, other_unique_id: str
-    ) -> Iterator[Crosswalk]:
+    ) -> Iterator[Link]:
         """Find all records with matching other_unique_id."""
         self._cursor.execute(
             'SELECT * FROM main.crosswalk WHERE other_unique_id=?',
@@ -966,7 +966,7 @@ class CrosswalkRepository(BaseCrosswalkRepository):
 
     def find_by_other_filename_hint(
         self, other_filename_hint: str
-    ) -> Iterator[Crosswalk]:
+    ) -> Iterator[Link]:
         """Find all records with matching other_filename_hint."""
         self._cursor.execute(
             'SELECT * FROM main.crosswalk WHERE other_filename_hint=?',

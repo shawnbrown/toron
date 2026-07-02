@@ -4,7 +4,7 @@ import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
-from toron.data_models import Crosswalk
+from toron.data_models import Link
 from toron.dal1.repositories import CrosswalkRepository
 
 
@@ -40,7 +40,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         )
 
         # Note: The item forth from the end (`is_default`) is True/False in
-        # the user-facing object (the Crosswalk record class) but it's 1/None
+        # the user-facing object (the Link record class) but it's 1/None
         # on the database side to facilitate the SQLite constraint that
         # enforces one default crosswalk per `other_unique_id`.
         self.assertRecords([
@@ -81,49 +81,49 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         self.assertEqual(
             repository.get(1),
-            Crosswalk(
+            Link(
                 id=1,
                 other_unique_id='111-unique-id-1111',
                 other_filename_hint=None,
                 name='name1',
                 description=None,
                 selectors=None,
-                is_default=True,  # <- Crosswalk value True, database value 1.
+                is_default=True,  # <- Link value True, database value 1.
                 user_properties=None,
                 other_index_hash=None,
-                is_locally_complete=False,  # <- Crosswalk value False, database value 0.
+                is_locally_complete=False,  # <- Link value False, database value 0.
             ),
         )
 
         self.assertEqual(
             repository.get(2),
-            Crosswalk(
+            Link(
                 id=2,
                 other_unique_id='111-unique-id-1111',
                 other_filename_hint=None,
                 name='name2',
                 description=None,
                 selectors=None,
-                is_default=False,  # <- Crosswalk value False, database value NULL.
+                is_default=False,  # <- Link value False, database value NULL.
                 user_properties=None,
                 other_index_hash=None,
-                is_locally_complete=False,  # <- Crosswalk value False, database value 0.
+                is_locally_complete=False,  # <- Link value False, database value 0.
             ),
         )
 
         self.assertEqual(
             repository.get(3),
-            Crosswalk(
+            Link(
                 id=3,
                 other_unique_id='222-unique-id-2222',
                 other_filename_hint='somefile.toron',
                 name='name1',
                 description='A crosswalk to some other node.',
                 selectors=['[foo]', '[bar]'],
-                is_default=True,  # <- Crosswalk value True, database value 1.
+                is_default=True,  # <- Link value True, database value 1.
                 user_properties={'prop1': 111},
                 other_index_hash='78b320d6dbbb48c8',
-                is_locally_complete=True,  # <- Crosswalk value True, database value 1.
+                is_locally_complete=True,  # <- Link value True, database value 1.
             ),
         )
 
@@ -142,7 +142,7 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         actual = repository.get_all()
         expected = [
-            Crosswalk(
+            Link(
                 id=1,
                 other_unique_id='111-unique-id-1111',
                 other_filename_hint=None,
@@ -154,7 +154,7 @@ class TestCrosswalkRepository(unittest.TestCase):
                 other_index_hash=None,
                 is_locally_complete=False,
             ),
-            Crosswalk(
+            Link(
                 id=2,
                 other_unique_id='111-unique-id-1111',
                 other_filename_hint=None,
@@ -166,7 +166,7 @@ class TestCrosswalkRepository(unittest.TestCase):
                 other_index_hash=None,
                 is_locally_complete=False,
             ),
-            Crosswalk(
+            Link(
                 id=3,
                 other_unique_id='222-unique-id-2222',
                 other_filename_hint='somefile.toron',
@@ -192,7 +192,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         repository = CrosswalkRepository(self.cursor)
 
         # Change name (matched WHERE crosswalk_id=2, all other values are SET).
-        repository.update(Crosswalk(2, '111-unique-id-1111', None, 'name-two'))
+        repository.update(Link(2, '111-unique-id-1111', None, 'name-two'))
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, 1, None, None, 0),
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),  # <- Name changed!
@@ -201,7 +201,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         ])
 
         # Check coersion from False to None for `is_default` column.
-        repository.update(Crosswalk(1, '111-unique-id-1111', None, 'name1', is_default=False))
+        repository.update(Link(1, '111-unique-id-1111', None, 'name1', is_default=False))
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),  # <- 4th from end should be None!
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
@@ -210,7 +210,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         ])
 
         # Check selectors JSON.
-        repository.update(Crosswalk(3, '222-unique-id-2222', None, 'name1', selectors=['[baz]']))  # <- Set selector.
+        repository.update(Link(3, '222-unique-id-2222', None, 'name1', selectors=['[baz]']))  # <- Set selector.
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
@@ -218,7 +218,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         ])
 
         # Check user_properties JSON.
-        repository.update(Crosswalk(3, '222-unique-id-2222', None, 'name1', user_properties={'alt-prop': 42}))  # <- Set user_properties.
+        repository.update(Link(3, '222-unique-id-2222', None, 'name1', user_properties={'alt-prop': 42}))  # <- Set user_properties.
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
@@ -227,11 +227,11 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         msg = "should fail, 'name' values must be unique per other_index_id"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
-            repository.update(Crosswalk(2, '111-unique-id-1111', None, 'name1'))
+            repository.update(Link(2, '111-unique-id-1111', None, 'name1'))
 
         # No record exists with crosswalk_id=4.
         try:
-            repository.update(Crosswalk(4, '444-unique-id-4444', None, 'name1'))
+            repository.update(Link(4, '444-unique-id-4444', None, 'name1'))
         except Exception as err:
             self.fail(f'updating non-existant records should not raise error, got {err!r}')
 
@@ -264,14 +264,14 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         actual = repository.find_by_other_unique_id('111-unique-id-1111')
         expected = [
-            Crosswalk(1, '111-unique-id-1111', None, 'name1'),
-            Crosswalk(2, '111-unique-id-1111', None, 'name2'),
+            Link(1, '111-unique-id-1111', None, 'name1'),
+            Link(2, '111-unique-id-1111', None, 'name2'),
         ]
         self.assertEqual(list(actual), expected)
 
         actual = repository.find_by_other_unique_id('222-unique-id-2222')
         expected = [
-            Crosswalk(3, '222-unique-id-2222', None, 'name1'),
+            Link(3, '222-unique-id-2222', None, 'name1'),
         ]
         self.assertEqual(list(actual), expected)
 
@@ -288,8 +288,8 @@ class TestCrosswalkRepository(unittest.TestCase):
 
         actual = repository.find_by_other_filename_hint('fileone.toron')
         expected = [
-            Crosswalk(1, '111-unique-id-1111', 'fileone.toron', 'name1'),
-            Crosswalk(2, '111-unique-id-1111', 'fileone.toron', 'name2'),
+            Link(1, '111-unique-id-1111', 'fileone.toron', 'name1'),
+            Link(2, '111-unique-id-1111', 'fileone.toron', 'name2'),
         ]
         self.assertEqual(list(actual), expected)
 

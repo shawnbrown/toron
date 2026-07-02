@@ -9,7 +9,7 @@ from toron.data_models import (
     Location,
     WeightGroup,
     Structure,
-    Crosswalk,
+    Link,
     AttributeGroup,
 )
 from toron import data_access, ToronError

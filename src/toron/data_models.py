@@ -996,8 +996,8 @@ class BaseQuantityRepository(ABC):
 
 
 @dataclass
-class Crosswalk(object):
-    """Crosswalk record."""
+class Link(object):
+    """Link record."""
     id: int
     other_unique_id: str
     other_filename_hint: Union[str, None]
@@ -1032,47 +1032,47 @@ class BaseCrosswalkRepository(ABC):
         """Add a record to the repository."""
 
     @abstractmethod
-    def get(self, id: int) -> Crosswalk:
+    def get(self, id: int) -> Link:
         """Get a record from the repository.
 
-        If no crosswalk matches the given *id*, a ``KeyError`` is
+        If no link matches the given *id*, a ``KeyError`` is
         raised.
         """
 
     @abstractmethod
-    def get_all(self) -> List[Crosswalk]:
+    def get_all(self) -> List[Link]:
         """Get all records from the repository."""
 
     @abstractmethod
-    def update(self, record: Crosswalk) -> None:
+    def update(self, record: Link) -> None:
         """Update a record in the repository."""
 
     @abstractmethod
     def delete_and_cascade(self, id: int) -> None:
-        """Delete a Crosswalk and any associated Relation records."""
+        """Delete a Link and any associated Relation records."""
 
     @abstractmethod
     def get_by_unique_id_and_name(
         self,
         other_unique_id: str,
         name: str,
-    ) -> Crosswalk:
+    ) -> Link:
         """Get record with matching *other_unique_id* and *name*.
 
-        If no crosswalk matches the given id values, a ``KeyError`` is
+        If no link matches the given id values, a ``KeyError`` is
         raised.
         """
 
     @abstractmethod
     def find_by_other_unique_id(
         self, other_unique_id: str
-    ) -> Iterator[Crosswalk]:
+    ) -> Iterator[Link]:
         """Find all records with matching other_unique_id."""
 
     @abstractmethod
     def find_by_other_filename_hint(
         self, other_filename_hint: str
-    ) -> Iterator[Crosswalk]:
+    ) -> Iterator[Link]:
         """Find all records with matching other_filename_hint."""
 
 

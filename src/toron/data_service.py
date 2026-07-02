@@ -47,7 +47,7 @@ from .data_models import (
     AttributeGroup,
     Weight,
     WeightGroup,
-    Crosswalk,
+    Link,
     JsonTypes,
 )
 from .formatters import (
@@ -381,7 +381,7 @@ def disaggregate_value(
 def find_crosswalks_by_ref(
     ref: str,
     crosswalk_repo: BaseCrosswalkRepository,
-) -> List[Crosswalk]:
+) -> List[Link]:
     """Find crosswalks that match the given node reference."""
     # Try to match by exact 'other_unique_id'.
     matches = list(crosswalk_repo.find_by_other_unique_id(ref))
