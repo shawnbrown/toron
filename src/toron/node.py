@@ -2252,15 +2252,15 @@ class TopoNode(object):
         crosswalk_name: str,
         **criteria: str,
     ) -> None:
-        """Reclassify a crosswalk's ambiguous relations as precise.
+        """Reclassify a link's ambiguous mappings as precise.
 
-        This method updates a crosswalk by reclassifying its ambiguous
-        relations so that they are treated as exact relations. The
+        This method updates a link by reclassifying its ambiguous
+        mappings so that they are treated as exact mappings. The
         associated labels and weights remain unchanged--only the
         "mapping level" values are altered.
 
-        After reification, relations that were originally inferred with
-        uncertainty are now treated as definitive, and the crosswalk is
+        After reification, mappings that were originally inferred with
+        uncertainty are now treated as definitive, and the mappings are
         interpreted as a direct and unambiguous correspondence between
         nodes.
 
@@ -2271,10 +2271,10 @@ class TopoNode(object):
         Parameters
         ----------
         node_or_ref : Union[TopoNode, str]
-            The node from which the crosswalk is coming.
+            The node from which the link is coming.
         crosswalk_name : str
-            The name of the crosswalk. This is needed because multiple
-            crosswalks can come from the same node.
+            The name of the link. This is needed because multiple
+            links can come from the same node.
         **criteria : str
             Additional keyword arguments to select only those relations
             associated the given index labels for reification.
@@ -2287,7 +2287,7 @@ class TopoNode(object):
             crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
                 raise ValueError(
-                    f'no crosswalk matching node reference {node_or_ref!r} '
+                    f'no link matching node reference {node_or_ref!r} '
                     f'and name {crosswalk_name!r}'
                 )
 

@@ -294,18 +294,18 @@ class TestToronArgumentParser(StreamWrapperTestCase):
             ),
         )
 
-    def test_subcommand_crosswalk(self):
-        """Check "crosswalk" subparser."""
+    def test_subcommand_mapping(self):
+        """Check "mapping" subparser."""
         self.assertEqual(
             self.parser.parse_args([
                 'file1.toron',
-                'crosswalk',
+                'mapping',
                 'file2.toron',
                 'linkname',
             ]),
             argparse.Namespace(
                 filepath='file1.toron',
-                command='crosswalk',
+                command='mapping',
                 filepath2='file2.toron',
                 link='linkname',
                 direction='both',

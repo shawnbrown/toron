@@ -1,4 +1,4 @@
-"""Implementation for "crosswalk" command."""
+"""Implementation for "mapping" command."""
 import argparse
 import csv
 import logging
@@ -69,7 +69,7 @@ def get_column_positions(
         value_position = get_mapping_value_position(columns, crosswalk_name)
     except ValueError:
         raise ToronError(
-            f"crosswalk {crosswalk_name!r} not found in columns: "
+            f"required column {crosswalk_name!r} not found in: "
             f"{', '.join(repr(x) for x in columns)}"
         )
 
@@ -109,12 +109,12 @@ def get_column_positions(
         and (max(node1_index_pos, node2_index_pos) < value_position
              or min(node1_index_pos, node2_index_pos) > value_position)):
         raise RuntimeError(
-            f'Invalid column order in mapping data. The crosswalk column '
+            f'Invalid column order in mapping data. The link column '
             f'must appear between the two groups of node columns.\n\n'
             f'Expected layout:\n'
-            f'  <first node columns> <crosswalk name> <second node columns>\n\n'
-            f'Found index code columns at positions {node1_index_pos} and '
-            f'{node2_index_pos}, but the crosswalk column is at position '
+            f'  <first node columns> <link name> <second node columns>\n\n'
+            f'Found index code columns at positions {node1_index_pos} '
+            f'and {node2_index_pos}, but the link column is at position '
             f'{value_position} -- it does not separate them.'
         )
 
@@ -361,7 +361,7 @@ def normalize_mapping_data(
 def read_from_stdin(
     args: argparse.Namespace, node1: TopoNode, node2: TopoNode
 ) -> ExitCode:
-    """Insert crosswalk relations read from stdin stream."""
+    """Insert mapping relations read from stdin stream."""
     # Check that crosswalk is defined in nodes.
     left_crosswalk = node1.get_crosswalk(node2, args.link)
     right_crosswalk = node2.get_crosswalk(node1, args.link)
@@ -401,7 +401,7 @@ def read_from_stdin(
 
     # Check if all records are matched on both sides.
     if not args.allow_incomplete and not mapper.is_fully_matched():
-        raise ToronError('crosswalk is incomplete, no records loaded')
+        raise ToronError('mapping is incomplete, no records loaded')
 
     # Insert relations into FILE2.
     if args.direction in {'both', 'right'}:
@@ -415,9 +415,9 @@ def read_from_stdin(
         )
         crosswalk = cast(Crosswalk, node2.get_crosswalk(node1, args.link))
         if crosswalk.is_locally_complete:
-            applogger.info(f'crosswalk is complete')
+            applogger.info(f'mapping is complete')
         else:
-            applogger.warning(f'crosswalk is incomplete')
+            applogger.warning(f'mapping is incomplete')
 
     # Insert relations into FILE1.
     if args.direction in {'both', 'left'}:
@@ -431,9 +431,9 @@ def read_from_stdin(
         )
         crosswalk = cast(Crosswalk, node1.get_crosswalk(node2, args.link))
         if crosswalk.is_locally_complete:
-            applogger.info(f'crosswalk is complete')
+            applogger.info(f'mapping is complete')
         else:
-            applogger.warning(f'crosswalk is incomplete')
+            applogger.warning(f'mapping is incomplete')
 
     return ExitCode.OK
 
@@ -465,7 +465,7 @@ def get_ambiguous_field_text(
 def write_to_stdout(
     args: argparse.Namespace, node1: TopoNode, node2: TopoNode
 ) -> ExitCode:
-    """Print crosswalk in CSV format to stdout stream."""
+    """Print mapping in CSV format to stdout stream."""
     source_node = node1
     target_node = node2
 
@@ -491,7 +491,7 @@ def write_to_stdout(
         src_label_no_values = (None,) * len(src_label_names)
         trg_label_no_values = (None,) * len(trg_label_names)
 
-        # Check if crosswalk has ambiguous mappings.
+        # Check if any mappings are ambiguous.
         crosswalk = trg_crosswalk_repo.get_by_unique_id_and_name(
             other_unique_id=src_unique_id, name=args.link,
         )
@@ -539,9 +539,9 @@ def write_to_stdout(
             for src_index, trg_index, level, value in generator:
                 # Since source labels come from a separate node, it's possible
                 # to have orphan references. A `KeyError` indicates that an
-                # index in the source node has been deleted after the crosswalk
-                # was created (the crosswalk is now "stale") which results in
-                # some missing labels.
+                # index in the source node has been deleted after the mapping
+                # was created (the mapping is now "stale") which results in
+                # some missing records.
                 if src_index is not None:
                     try:
                         src_labels = aux_src_index_repo.get(src_index).labels
@@ -554,9 +554,9 @@ def write_to_stdout(
                     src_index_code = None
                     counter['unmatched_source_index'] += 1
 
-                # Target labels come from the same node as a crosswalk's
-                # relations (unlike source labels). So it's not possible to
-                # have orphan references.
+                # Target labels come from the same node that holds the
+                # mapping records (unlike source labels). So it's not
+                # possible to have orphan references.
                 if trg_index is not None:
                     trg_labels = aux_trg_index_repo.get(trg_index).labels
                     trg_index_code = index_id_to_code(trg_index, trg_id_bytes)
@@ -598,7 +598,7 @@ def write_to_stdout(
 
 
 def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
-    """Write crosswalk to ``args.stdout`` or read from ``args.stdin``."""
+    """Write mapping to ``args.stdout`` or read from ``args.stdin``."""
     if is_streamed(args.stdin):
         node1 = cli_bind_node(args.filepath, mode='rw')
         node2 = cli_bind_node(args.filepath2, mode='rw')

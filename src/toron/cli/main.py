@@ -325,13 +325,13 @@ def get_parser() -> argparse.ArgumentParser:
                                  help='do not make a backup file')
     parser_quantity.set_defaults(func=command_quantity.process_quantity_action)
 
-    # Subcommand: crosswalk
+    # Subcommand: mapping
     parser_crosswalk = subparsers.add_parser(
-        name='crosswalk',
-        help='write relations to stdout or load relations from stdin',
-        description=('Write crosswalk relations to stdout or load crosswalk '
+        name='mapping',
+        help='write mapping to stdout or load mapping from stdin',
+        description=('Write mapping relations to stdout or load mapping '
                      'relations from stdin (CSV format).'),
-        prog='toron FILE1 crosswalk',  # <- Replaces "FILE" with "FILE1".
+        prog='toron FILE1 mapping',  # <- Replaces "FILE" with "FILE1".
     )
     parser_crosswalk.add_argument('filepath2',
                                   help='second (right) filename',

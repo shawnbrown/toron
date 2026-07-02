@@ -128,12 +128,12 @@ class TestRelationRepository(unittest.TestCase):
 
         self.assertFalse(
             repository.crosswalk_is_complete(crosswalk_id=5),
-            msg='Crosswalk is not complete, no relation matches index_id 2.'
+            msg='Mapping is not complete, no relation matches index_id 2.'
         )
 
         # Add a relation that matches to index_id 2.
         self.cursor.execute("INSERT INTO relation VALUES (2, 5, 1, 2, X'80', 375.0, NULL)")
         self.assertTrue(
             repository.crosswalk_is_complete(crosswalk_id=5),
-            msg='Crosswalk is complete, should return True.'
+            msg='Mapping is complete, should return True.'
         )

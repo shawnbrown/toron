@@ -210,7 +210,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
             )
 
     def test_missing_crosswalk_column(self):
-        regex = r"crosswalk 'blerg' not found in columns: 'index_code', 'corge', 'index_code'"
+        regex = r"required column 'blerg' not found in: 'index_code', 'corge', 'index_code'"
         with self.assertRaisesRegex(ToronError, regex):
             command_crosswalk.get_column_positions(
                 node1=self.node_a,
@@ -508,7 +508,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
 
     def test_immediate_error(self):
         """Should raise errors immediately, rather than waiting for iteration."""
-        regex = r"crosswalk 'blerg' not found"
+        regex = r"required column 'blerg' not found"
         with self.assertRaisesRegex(ToronError, regex):
             command_crosswalk.normalize_mapping_data(
                 node1=self.node_a,
@@ -584,10 +584,10 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              'INFO:app-toron:matching FILE2 index records',
              'INFO:app-toron:loading relations: FILE1 -> FILE2',
              'INFO:app-toron.node:loaded 8 relations',
-             'INFO:app-toron:crosswalk is complete',
+             'INFO:app-toron:mapping is complete',
              'INFO:app-toron:loading relations: FILE1 <- FILE2',
              'INFO:app-toron.node:loaded 8 relations',
-             'INFO:app-toron:crosswalk is complete'],
+             'INFO:app-toron:mapping is complete'],
         )
 
         self.assertEqual(
@@ -661,10 +661,10 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              'INFO:app-toron:matching FILE2 index records',
              'INFO:app-toron:loading relations: FILE1 -> FILE2',
              'INFO:app-toron.node:loaded 9 relations',
-             'INFO:app-toron:crosswalk is complete',
+             'INFO:app-toron:mapping is complete',
              'INFO:app-toron:loading relations: FILE1 <- FILE2',
              'INFO:app-toron.node:loaded 9 relations',
-             'INFO:app-toron:crosswalk is complete'],
+             'INFO:app-toron:mapping is complete'],
         )
 
         self.assertEqual(
@@ -732,7 +732,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              "INFO:app-toron:matching FILE2 index records",
              "INFO:app-toron:loading relations: FILE1 -> FILE2",
              "INFO:app-toron.node:loaded 6 relations",
-             "INFO:app-toron:crosswalk is complete"],
+             "INFO:app-toron:mapping is complete"],
         )
 
         self.assertEqual(
@@ -825,7 +825,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                 'level of granularity',
              'INFO:app-toron:loading relations: FILE1 -> FILE2',
              'INFO:app-toron.node:loaded 6 relations',
-             'INFO:app-toron:crosswalk is complete'],
+             'INFO:app-toron:mapping is complete'],
         )
 
     def test_match_limit_with_allow_overlapping(self):
@@ -879,7 +879,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
                 'level of granularity',
              'INFO:app-toron:loading relations: FILE1 -> FILE2',
              'INFO:app-toron.node:loaded 7 relations',
-             'INFO:app-toron:crosswalk is complete'],
+             'INFO:app-toron:mapping is complete'],
         )
 
     def test_incomplete_match_error(self):
@@ -904,7 +904,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             ),
         )
 
-        regex = r'crosswalk is incomplete, no records loaded'
+        regex = r'mapping is incomplete, no records loaded'
         with self.assertRaisesRegex(ToronError, regex):
             command_crosswalk.read_from_stdin(  # <- Function under test.
                 args,
@@ -950,7 +950,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              'INFO:app-toron:matching FILE2 index records',
              'INFO:app-toron:loading relations: FILE1 -> FILE2',
              'INFO:app-toron.node:loaded 3 relations',
-             'WARNING:app-toron:crosswalk is incomplete'],
+             'WARNING:app-toron:mapping is incomplete'],
         )
 
         self.assertEqual(

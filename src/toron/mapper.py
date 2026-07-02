@@ -1,4 +1,4 @@
-"""Tools for building weighted crosswalks between sets of labels."""
+"""Tools for matching records and building weighted mappings."""
 
 import logging
 import sqlite3
@@ -60,7 +60,7 @@ def get_mapping_value_position(
 
 
 class Mapper(object):
-    """A class to build crosswalk relations between two nodes."""
+    """A class to build mapping relations between two nodes."""
     def __init__(
         self,
         node1: 'TopoNode',
