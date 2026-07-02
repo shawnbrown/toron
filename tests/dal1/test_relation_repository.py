@@ -45,7 +45,7 @@ class TestMappingRepository(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.add(9, 1, 2, b'\xf0', 17.0)  # <- Pair id `1, 2` already exists for edge 9.
 
-        # Add relations for a second edge.
+        # Add mappings for a second edge.
         repository.add(10, 1, 1, b'\xf0', 4.0)
         repository.add(10, 1, 2, b'\xf0', 6.0)
         repository.add(10, 2, 3, b'\xf0', 5.0)
@@ -73,7 +73,7 @@ class TestMappingRepository(unittest.TestCase):
         self.assertEqual(repository.get(1), MappingRecord(1, 9, 1, 1, b'\xf0', 5.0))
         self.assertEqual(repository.get(2), MappingRecord(2, 9, 2, 3, b'\xf0', 3.0, 1.0))
         self.assertEqual(repository.get(3), MappingRecord(3, 9, 3, 5, b'\x10', 7.0))
-        with self.assertRaisesRegex(KeyError, 'no relation with id of 4'):
+        with self.assertRaisesRegex(KeyError, 'no mapping with id of 4'):
             repository.get(4)
 
     def test_update(self):
@@ -128,10 +128,10 @@ class TestMappingRepository(unittest.TestCase):
 
         self.assertFalse(
             repository.mapping_is_complete(link_id=5),
-            msg='Mapping is not complete, no relation matches index_id 2.'
+            msg='Mapping is not complete, no mapping matches index_id 2.'
         )
 
-        # Add a relation that matches to index_id 2.
+        # Add a mapping that matches to index_id 2.
         self.cursor.execute("INSERT INTO relation VALUES (2, 5, 1, 2, X'80', 375.0, NULL)")
         self.assertTrue(
             repository.mapping_is_complete(link_id=5),

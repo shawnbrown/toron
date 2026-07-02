@@ -838,19 +838,19 @@ class TestIndexColumnMethods(unittest.TestCase):
             msg="should drop unused whole space `A B C` but keep used space `A B`.",
         )
 
-    def test_add_index_columns_retain_whole_space_if_relations(self):
-        """Should remove old whole space if used by relations."""
+    def test_add_index_columns_retain_whole_space_if_mappings(self):
+        """Should remove old whole space if used by mappings."""
         node = TopoNode()
         node.add_index_columns('A', 'B')
 
         with node._managed_cursor() as cursor:
             index_repo = node._dal.IndexRepository(cursor)
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.MappingRepository(cursor)
+            mapping_repo = node._dal.MappingRepository(cursor)
 
             index_repo.add('aaa', 'bbb')
             link_repo.add('000-00-0000-0000', 'other_file', 'population')
-            relation_repo.add(1, 1, 1, mapping_level=b'\xc0', value=100.0)  # <- Mapping level for bit flags `1, 1`.
+            mapping_repo.add(1, 1, 1, mapping_level=b'\xc0', value=100.0)  # <- Mapping level for bit flags `1, 1`.
 
         self.assertEqual(node.discrete_categories, [{'A', 'B'}])  # Verify existing categories.
 
@@ -859,7 +859,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         self.assertEqual(
             node.discrete_categories,
             [{'A', 'B'}, {'A', 'B', 'C'}],
-            msg="should retain previous whole space because it's used by a relation",
+            msg="should retain previous whole space because it's used by a mapping",
         )
 
         node.add_index_columns('D')
@@ -1182,17 +1182,17 @@ class TestIndexMethods(unittest.TestCase):
 
         with node._managed_cursor() as cursor:
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.MappingRepository(cursor)
+            mapping_repo = node._dal.MappingRepository(cursor)
 
             # Add link_id 1 and weight records.
             link_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=True)
-            relation_repo.add(1, 1, 1, b'\xc0', 6000)
-            relation_repo.add(1, 2, 2, b'\xc0', 4000)
+            mapping_repo.add(1, 1, 1, b'\xc0', 6000)
+            mapping_repo.add(1, 2, 2, b'\xc0', 4000)
 
             # Add link_id 2 and weight records.
             link_repo.add('222-222-2222', 'anothernode.toron', 'edge2', is_locally_complete=False)
-            relation_repo.add(2, 1, 1, b'\xc0', 4000)
-            relation_repo.add(2, 2, 1, b'\xc0', 2000)  # <- Maps to local index_id 1 (no relation goes to index_id 2)
+            mapping_repo.add(2, 1, 1, b'\xc0', 4000)
+            mapping_repo.add(2, 2, 1, b'\xc0', 2000)  # <- Maps to local index_id 1 (no mapping goes to index_id 2)
 
             # Insert new index record!
             node.insert_index_OLD([('A', 'B'), ('baz', 'z')])
@@ -1561,17 +1561,17 @@ class TestInsertIndex(unittest.TestCase):
 
         with node._managed_cursor() as cursor:
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.MappingRepository(cursor)
+            mapping_repo = node._dal.MappingRepository(cursor)
 
             # Add link_id 1 and weight records.
             link_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=True)
-            relation_repo.add(1, 1, 1, b'\xc0', 6000)
-            relation_repo.add(1, 2, 2, b'\xc0', 4000)
+            mapping_repo.add(1, 1, 1, b'\xc0', 6000)
+            mapping_repo.add(1, 2, 2, b'\xc0', 4000)
 
             # Add link_id 2 and weight records.
             link_repo.add('222-222-2222', 'anothernode.toron', 'edge2', is_locally_complete=False)
-            relation_repo.add(2, 1, 1, b'\xc0', 4000)
-            relation_repo.add(2, 2, 1, b'\xc0', 2000)  # <- Maps to local index_id 1 (no relation goes to index_id 2)
+            mapping_repo.add(2, 1, 1, b'\xc0', 4000)
+            mapping_repo.add(2, 2, 1, b'\xc0', 2000)  # <- Maps to local index_id 1 (no mapping goes to index_id 2)
 
             # Insert new index record!
             node.insert_index([('A', 'B'), ('baz', 'z')])
@@ -1834,7 +1834,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
             return cursor.fetchall()
 
     @staticmethod
-    def get_relation_helper(node):  # <- Helper function.
+    def get_mapping_helper(node):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with node._managed_cursor() as cursor:
             cursor.execute('SELECT * FROM relation')
@@ -1861,10 +1861,10 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
 
             link_repo = node._dal.LinkRepository(cursor)
             link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
-            relation_repo = node._dal.MappingRepository(cursor)
-            relation_repo.add(1, 1, 1, b'\xc0', 16350, 0.75)
-            relation_repo.add(1, 1, 2, b'\xc0', 5450,  0.25)
-            relation_repo.add(1, 2, 2, b'\xc0', 13050, 1.00)
+            mapping_repo = node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, 1, 1, b'\xc0', 16350, 0.75)
+            mapping_repo.add(1, 1, 2, b'\xc0', 5450,  0.25)
+            mapping_repo.add(1, 2, 2, b'\xc0', 13050, 1.00)
 
         self.node = node
 
@@ -1991,9 +1991,9 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
         expected = [(1, 1, 1, 200000.0)]
         self.assertEqual(self.get_weight_helper(self.node), expected, msg=msg)
 
-        msg = 'Three relations merged into two, remaining relations have index_id 1.'
+        msg = 'Three mappings merged into two, remaining mappings have index_id 1.'
         expected = [(1, 1, 1, 1, b'\xc0', 21800.0, 1.0), (2, 1, 2, 1, b'\xc0', 13050.0, 1.0)]
-        self.assertEqual(self.get_relation_helper(self.node), expected, msg=msg)
+        self.assertEqual(self.get_mapping_helper(self.node), expected, msg=msg)
 
     def test_merge_resulting_in_missing_index_id(self):
         """Should raise error if attempting to update a record that was merged."""
@@ -2062,12 +2062,12 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
     def test_merging_and_is_locally_complete_status(self):
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
-            relation_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
 
             # Add link_id 1 and weight records.
             link_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=False)
-            relation_repo.add(2, 1, 1, b'\xc0', 4000)
-            relation_repo.add(2, 2, 1, b'\xc0', 2000)  # <- Maps to local index_id 1 (no relation goes to index_id 2)
+            mapping_repo.add(2, 1, 1, b'\xc0', 4000)
+            mapping_repo.add(2, 2, 1, b'\xc0', 2000)  # <- Maps to local index_id 1 (no mapping goes to index_id 2)
 
             # Apply update which triggers a merge of existing records.
             data = [('index_id', 'A', 'B'), (1, 'bar', 'y')]
@@ -2124,7 +2124,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             return cursor.fetchall()
 
     @staticmethod
-    def get_relation_helper(node):  # <- Helper function.
+    def get_mapping_helper(node):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with node._managed_cursor() as cursor:
             cursor.execute('SELECT * FROM relation')
@@ -2217,17 +2217,17 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
                   'it should make the weight group complete'
             self.assertTrue(group.is_complete, msg=msg)
 
-    def test_delete_with_relations(self):
-        """Should delete relation records associated with index_id."""
+    def test_delete_with_mappings(self):
+        """Should delete mapping records associated with index_id."""
         fully_specified_level = bytes(BitFlags(1, 1))
 
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
             link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
-            relation_repo.add(1, 1, 2, fully_specified_level, 5450,  0.25)
-            relation_repo.add(1, 2, 2, fully_specified_level, 13050, 1.00)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
+            mapping_repo.add(1, 1, 2, fully_specified_level, 5450,  0.25)
+            mapping_repo.add(1, 2, 2, fully_specified_level, 13050, 1.00)
 
         data = [
             ('index_id', 'A', 'B'),
@@ -2239,21 +2239,21 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         self.assertEqual(self.get_index_helper(self.node), expected)
 
         expected = [(1, 1, 1, 1, fully_specified_level, 16350.0, 1.0)]  # <- Proportion is updated, too (was 0.75).
-        self.assertEqual(self.get_relation_helper(self.node), expected)
+        self.assertEqual(self.get_mapping_helper(self.node), expected)
 
-    def test_delete_with_ambiguous_relations(self):
-        """Should not delete records linked to ambiguous relations.
+    def test_delete_with_ambiguous_mappings(self):
+        """Should not delete records linked to ambiguous mappings.
 
         NOTE: Ideally, this limitation should be removed in the future
-        by re-mapping relations using their associated labels.
+        by re-mapping mappings using their associated labels.
         """
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
             link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(1, 1, 1, bytes(BitFlags(1, 0)), 16350, 0.75)  # <- Ambiguous relations.
-            relation_repo.add(1, 1, 2, bytes(BitFlags(1, 0)), 5450,  0.25)  # <- Ambiguous relations.
-            relation_repo.add(1, 2, 2, bytes(BitFlags(1, 1)), 13050, 1.00)  # <- Fully specified.
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, 1, 1, bytes(BitFlags(1, 0)), 16350, 0.75)  # <- Ambiguous mappings.
+            mapping_repo.add(1, 1, 2, bytes(BitFlags(1, 0)), 5450,  0.25)  # <- Ambiguous mappings.
+            mapping_repo.add(1, 2, 2, bytes(BitFlags(1, 1)), 13050, 1.00)  # <- Fully specified.
 
         data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
 
@@ -2265,12 +2265,12 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
             link_repo.add('111-11-1111', None, 'other1', is_locally_complete=False)  # Adds link_id 1.
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 16350, 0.75)
-            relation_repo.add(1, 2, 1, bytes(BitFlags(1, 1)), 5450,  0.25)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 16350, 0.75)
+            mapping_repo.add(1, 2, 1, bytes(BitFlags(1, 1)), 5450,  0.25)
 
             data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
-            self.node.delete_index(data)  # Deletes index without a relation (index_id 2).
+            self.node.delete_index(data)  # Deletes index without a mapping (index_id 2).
 
             # Check that is_locally_complete has been changed to True.
             link = link_repo.get(1)
@@ -2284,18 +2284,18 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             link_repo.add('111-11-1111', None, 'other1',
                                other_index_hash='5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
                                is_locally_complete=True)  # Adds link_id 1.
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
-            relation_repo.add(1, 1, 2, fully_specified_level,  5450, 0.25)
-            relation_repo.add(1, 2, 2, fully_specified_level,  7500, 1.00)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
+            mapping_repo.add(1, 1, 2, fully_specified_level,  5450, 0.25)
+            mapping_repo.add(1, 2, 2, fully_specified_level,  7500, 1.00)
 
             link_repo.add('222-22-2222', None, 'other2',
                                other_index_hash='e3caec9886aebd933cf3f095e9ce6312744090daea159425654c09b593d6cc66',
                                is_locally_complete=False)  # Adds link_id 2.
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(2, 7, 1, fully_specified_level, 6000, 1.00)
-            relation_repo.add(2, 8, 1, fully_specified_level, 9000, 0.5625)
-            relation_repo.add(2, 8, 2, fully_specified_level, 7000, 0.4375)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(2, 7, 1, fully_specified_level, 6000, 1.00)
+            mapping_repo.add(2, 8, 1, fully_specified_level, 9000, 0.5625)
+            mapping_repo.add(2, 8, 2, fully_specified_level, 7000, 0.4375)
 
             data = [('index_id', 'A', 'B'), (2, 'bar', 'y')]
             self.node.delete_index(data)  # Deletes index_id 2.
@@ -3448,14 +3448,14 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         node.add_discrete_categories({'A', 'B'}, {'A'})
         self.node = node
 
-    def get_relations_helper(self):  # <- Helper function.
+    def get_mappings_helper(self):  # <- Helper function.
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
-            relation_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
 
-            func = lambda x: relation_repo.find(link_id=x)
-            relation_iters = (func(x.id) for x in link_repo.get_all())
-            return list(chain.from_iterable(relation_iters))
+            func = lambda x: mapping_repo.find(link_id=x)
+            mapping_iters = (func(x.id) for x in link_repo.get_all())
+            return list(chain.from_iterable(mapping_iters))
 
     def test_insert(self):
         data = [
@@ -3465,10 +3465,10 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
             (3, 2, b'\xc0',  5.0),
             (3, 3, b'\xc0', 15.0),
         ]
-        self.node.insert_relations2('myfile', 'rel1', data)
+        self.node.insert_mappings2('myfile', 'rel1', data)
 
         self.assertEqual(
-            self.get_relations_helper(),
+            self.get_mappings_helper(),
             [
                 MappingRecord(1, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
                 MappingRecord(2, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
@@ -3487,10 +3487,10 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
             (2, 1, b'\xc0', 20.0),
             (3, 3, b'\xc0', 15.0),
         ]
-        self.node.insert_relations2('myfile', 'rel1', data)
+        self.node.insert_mappings2('myfile', 'rel1', data)
 
         self.assertEqual(
-            self.get_relations_helper(),
+            self.get_mappings_helper(),
             [
                 #MappingRecord(1, 1, 0, 0, mapping_level=b'\xc0', value=0.0,  proportion=1.0),  # <- 100%
                 MappingRecord(1, 1, 0, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.0),  # <- 0%
@@ -3523,10 +3523,10 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
             ('3', '2', b'\xc0',  '5.0'),
             ('3', '3', b'\xc0', '15.0'),
         ]
-        self.node.insert_relations2('myfile', 'rel1', data)
+        self.node.insert_mappings2('myfile', 'rel1', data)
 
         self.assertEqual(
-            self.get_relations_helper(),
+            self.get_mappings_helper(),
             [
                 MappingRecord(1, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
                 MappingRecord(2, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
@@ -3538,7 +3538,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
     def test_ignore_proportion_in_data(self):
         """If 'proportion' is given as one of the columns in *data*,
         it's treated as an extra column and is ignored. This is done
-        because other relations may already be present in the node that
+        because other mappings may already be present in the node that
         would affect the final proportion. So the proportion values are
         automatically recalculated after records are inserted.
         """
@@ -3547,10 +3547,10 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
             (3, 2, b'\xc0',  5.0, 0.375),
             (3, 3, b'\xc0', 15.0, 0.625),
         ]
-        self.node.insert_relations2('myfile', 'rel1', data)
+        self.node.insert_mappings2('myfile', 'rel1', data)
 
         self.assertEqual(
-            self.get_relations_helper(),
+            self.get_mappings_helper(),
             [
                 MappingRecord(1, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
                 MappingRecord(2, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
@@ -3582,16 +3582,16 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         ]
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            self.node.insert_relations2('myfile', 'rel1', data)
+            self.node.insert_mappings2('myfile', 'rel1', data)
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 2 relations',
-             'WARNING:app-toron.node:skipped 2 relations with invalid mapping levels'],
+            ['INFO:app-toron.node:loaded 2 mappings',
+             'WARNING:app-toron.node:skipped 2 mappings with invalid mapping levels'],
         )
 
         self.assertEqual(
-            self.get_relations_helper(),
+            self.get_mappings_helper(),
             [
                 MappingRecord(1, 1, 3, 2, mapping_level=b'\x80', value=5.0,  proportion=0.25),
                 MappingRecord(2, 1, 3, 3, mapping_level=b'\x80', value=15.0, proportion=0.75),
@@ -3609,7 +3609,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
                 (3, 2, b'\xc0',  5.0),
                 # No record matching to index_id 3.
             ]
-            self.node.insert_relations2('myfile', 'rel1', data)
+            self.node.insert_mappings2('myfile', 'rel1', data)
 
             link = link_repo.get(1)
             self.assertFalse(link.is_locally_complete)
@@ -3623,7 +3623,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
                 ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
                 (4, 3, b'\xc0', 15.0),  # index_id 3 completes the link
             ]
-            self.node.insert_relations2('myfile', 'rel1', data)
+            self.node.insert_mappings2('myfile', 'rel1', data)
 
             link = link_repo.get(1)  # re-fetch the link
             self.assertTrue(link.is_locally_complete)
@@ -3657,7 +3657,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
 
         self.node = node
 
-    def get_relations_helper(self):  # <- Helper function.
+    def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
             cursor.execute('SELECT * FROM relation')
@@ -3666,13 +3666,13 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
     def test_select(self):
         with self.node._managed_cursor() as cursor:
             # mapping_level b'\xc0' corresponds to BitFlags(1, 1).
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
-            relation_repo.add(1, other_index_id=2, index_id=2, mapping_level=b'\xc0', value=20.0)
-            relation_repo.add(1, other_index_id=3, index_id=2, mapping_level=b'\xc0', value=5.0)
-            relation_repo.add(1, other_index_id=3, index_id=3, mapping_level=b'\xc0', value=15.0)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
+            mapping_repo.add(1, other_index_id=2, index_id=2, mapping_level=b'\xc0', value=20.0)
+            mapping_repo.add(1, other_index_id=3, index_id=2, mapping_level=b'\xc0', value=5.0)
+            mapping_repo.add(1, other_index_id=3, index_id=3, mapping_level=b'\xc0', value=15.0)
 
-        relations = self.node.select_relations('myfile', 'rel1', header=True)
+        mappings = self.node.select_mappings('myfile', 'rel1', header=True)
         expected = [
             #('other_index_id', 'rel1: myfile -> ???', 'index_id', 'A', 'B')
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'ambiguous_fields'),
@@ -3681,42 +3681,42 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             (3,  5.0, 2, 'bar', 'y', None),
             (3, 15.0, 3, 'bar', 'z', None),
         ]
-        self.assertEqual(list(relations), expected)
+        self.assertEqual(list(mappings), expected)
 
         # Test with selection `header=False` and `A='bar'`.
-        relations = self.node.select_relations('myfile', 'rel1', header=False, A='bar')
+        mappings = self.node.select_mappings('myfile', 'rel1', header=False, A='bar')
         expected = [
             (2, 20.0, 2, 'bar', 'y', None),
             (3,  5.0, 2, 'bar', 'y', None),
             (3, 15.0, 3, 'bar', 'z', None),
         ]
-        self.assertEqual(list(relations), expected)
+        self.assertEqual(list(mappings), expected)
 
         # Test with selection `header=True` and `A='NOMATCH'`.
-        relations = self.node.select_relations('myfile', 'rel1', header=True, A='NOMATCH')
+        mappings = self.node.select_mappings('myfile', 'rel1', header=True, A='NOMATCH')
         expected = [('other_index_id', 'rel1', 'index_id', 'A', 'B', 'ambiguous_fields')]
         msg = 'header row only, when there are no matches'
-        self.assertEqual(list(relations), expected, msg=msg)
+        self.assertEqual(list(mappings), expected, msg=msg)
 
         # Test with selection `header=False` and `A='NOMATCH'`.
-        relations = self.node.select_relations('myfile', 'rel1', header=False, A='NOMATCH')
-        self.assertEqual(list(relations), [], msg='iterator should be empty')
+        mappings = self.node.select_mappings('myfile', 'rel1', header=False, A='NOMATCH')
+        self.assertEqual(list(mappings), [], msg='iterator should be empty')
 
     def test_select_with_ambiguous_mappings(self):
         with self.node._managed_cursor() as cursor:
             label_manager = self.node._dal.LabelManager(cursor)
-            relation_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
 
-            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
-            relation_repo.add(1, other_index_id=2, index_id=2, mapping_level=b'\xc0', value=20.0)
-            relation_repo.add(1, other_index_id=3, index_id=2, mapping_level=b'\x80', value=5.0)
-            relation_repo.add(1, other_index_id=3, index_id=3, mapping_level=b'\x80', value=15.0)
+            mapping_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
+            mapping_repo.add(1, other_index_id=2, index_id=2, mapping_level=b'\xc0', value=20.0)
+            mapping_repo.add(1, other_index_id=3, index_id=2, mapping_level=b'\x80', value=5.0)
+            mapping_repo.add(1, other_index_id=3, index_id=3, mapping_level=b'\x80', value=15.0)
 
-            # Adding another column makes existing relations ambiguous
+            # Adding another column makes existing mappings ambiguous
             # because they were mapped without knowledge of the new column.
             label_manager.add_columns('C')
 
-        relations = self.node.select_relations('myfile', 'rel1', header=True)
+        mappings = self.node.select_mappings('myfile', 'rel1', header=True)
         expected = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'C', 'ambiguous_fields'),
             (1, 10.0, 1, 'foo', 'x', '-', 'C'),
@@ -3724,24 +3724,24 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             (3,  5.0, 2, 'bar', 'y', '-', 'B, C'),
             (3, 15.0, 3, 'bar', 'z', '-', 'B, C'),
         ]
-        self.assertEqual(list(relations), expected)
+        self.assertEqual(list(mappings), expected)
 
-    def test_select_with_missing_relations(self):
+    def test_select_with_missing_mappings(self):
         """Should return unmapped records with ``None`` vals for origin."""
 
-        # Add relations for index_id values 0 and 1, but not for 2 or 3.
+        # Add mappings for index_id values 0 and 1, but not for 2 or 3.
         with self.node._managed_cursor() as cursor:
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
 
-        relations = self.node.select_relations('myfile', 'rel1', header=True)
+        mappings = self.node.select_mappings('myfile', 'rel1', header=True)
         expected = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'ambiguous_fields'),
             (1,    10.0, 1, 'foo', 'x', None),
             (None, None, 2, 'bar', 'y', None),  # <- Left-side not mapped.
             (None, None, 3, 'bar', 'z', None),  # <- Left-side not mapped.
         ]
-        self.assertEqual(list(relations), expected)
+        self.assertEqual(list(mappings), expected)
 
     def test_insert(self):
         data = [
@@ -3751,7 +3751,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             (3,  5.0, 2, b'\xc0', 'bar', 'y'),
             (3, 15.0, 3, b'\xc0', 'bar', 'z'),
         ]
-        self.node.insert_relations('myfile', 'rel1', data)
+        self.node.insert_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.00),
@@ -3759,7 +3759,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             (3, 1, 3, 2, b'\xc0',  5.0, 0.25),
             (4, 1, 3, 3, b'\xc0', 15.0, 0.75),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_insert_normalization(self):
         """The first three columns can be given as their numeric types
@@ -3793,7 +3793,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             ('3',  '5.0', '2', 'bar', 'y', b'\x80', None),
             ('3', '15.0', '3', 'bar', 'z', b'\x80', None),
         ]
-        self.node.insert_relations('myfile', 'rel1', data)
+        self.node.insert_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.0),
@@ -3803,12 +3803,12 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
         ]
         msg = 'other_index_id and index_id should be int; rel1 should be ' \
               'float; proportions should be auto-calculated'
-        self.assertEqual(self.get_relations_helper(), expected, msg=msg)
+        self.assertEqual(self.get_mappings_helper(), expected, msg=msg)
 
     def test_insert_proportion_ignored(self):
         """If 'proportion' is given as one of the columns in *data*,
         it's treated as an extra column and is ignored. This is done
-        because other relations may already be present in the node that
+        because other mappings may already be present in the node that
         would affect the final proportion. So the proportion values are
         automatically recalculated after records are inserted.
         """
@@ -3816,10 +3816,10 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion', 'mapping_level'),
             (1, 10.0, 1, 'foo', 'x', '<ignored>', b'\xc0'),  # <- Value in 'proportion' column should be ignored.
         ]
-        self.node.insert_relations('myfile', 'rel1', data)
+        self.node.insert_mappings('myfile', 'rel1', data)
 
         expected = [(1, 1, 1, 1, b'\xc0', 10.0, 1.0)]  # <- Proportion should be 1.0 (auto-calculated).
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_insert_skip_bad_mapping_level(self):
         with self.node._managed_cursor() as cursor:
@@ -3837,7 +3837,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
 
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.insert_relations('myfile', 'rel1', data)
+            self.node.insert_mappings('myfile', 'rel1', data)
 
         # Check the warning's message.
         self.assertEqual(
@@ -3852,7 +3852,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             (3, 1, 3, 3, b'\xc0', 15.0, 0.75),
         ]
         msg = 'other_index_id and index_id should be int, rel1 should be float'
-        self.assertEqual(self.get_relations_helper(), expected, msg=msg)
+        self.assertEqual(self.get_mappings_helper(), expected, msg=msg)
 
     def test_insert_different_order_and_extra(self):
         """Label columns in different order and extra column."""
@@ -3863,7 +3863,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             (3,  5.0, 2, b'\xc0', 'y', 'x4', 'bar'),
             (3, 15.0, 3, b'\xc0', 'z', 'x5', 'bar'),
         ]
-        self.node.insert_relations('myfile', 'rel1', data)
+        self.node.insert_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.0),
@@ -3871,7 +3871,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             (3, 1, 3, 2, b'\xc0',  5.0, 0.25),
             (4, 1, 3, 3, b'\xc0', 15.0, 0.75),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_insert_invalid_columns(self):
         data = [
@@ -3881,7 +3881,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
         ]
         regex = r"columns should be start with \('other_index_id', 'rel1', 'index_id', ...\)"
         with self.assertRaisesRegex(ValueError, regex):
-            self.node.insert_relations('myfile', 'rel1', data)
+            self.node.insert_mappings('myfile', 'rel1', data)
 
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A'),
@@ -3890,7 +3890,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
         ]
         regex = r"missing required columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
-            self.node.insert_relations('myfile', 'rel1', data)
+            self.node.insert_mappings('myfile', 'rel1', data)
 
     def test_insert_is_complete_status_and_hash(self):
         with self.node._managed_cursor() as cursor:
@@ -3903,7 +3903,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
                 (3,  5.0, 2, b'\xc0', 'bar', 'y'),
                 # No record matching to index_id 3 ('bar', 'z').
             ]
-            self.node.insert_relations('myfile', 'rel1', data)
+            self.node.insert_mappings('myfile', 'rel1', data)
 
             link = link_repo.get(1)
             self.assertFalse(link.is_locally_complete)
@@ -3917,7 +3917,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
                 ('other_index_id', 'rel1', 'index_id', 'mapping_level', 'A', 'B'),
                 (4, 15.0, 3, b'\xc0', 'bar', 'z'),  # index_id 3 completes the mapping
             ]
-            self.node.insert_relations('myfile', 'rel1', data)
+            self.node.insert_mappings('myfile', 'rel1', data)
 
             link = link_repo.get(1)  # re-fetch the link
             self.assertTrue(link.is_locally_complete)
@@ -3929,7 +3929,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
 
 
 class TestTopoNodeUpdateRelations(unittest.TestCase):
-    def get_relations_helper(self):  # <- Helper function.
+    def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
             cursor.execute('SELECT * FROM relation')
@@ -3941,7 +3941,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.MappingRepository(cursor)
+            mapping_repo = node._dal.MappingRepository(cursor)
 
             # Add index columns and records.
             label_manager.add_columns('A', 'B')
@@ -3949,12 +3949,12 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
 
-            # Add link and relations.
+            # Add link and mappings.
             link_repo.add('111-111-1111', 'myfile.toron', 'rel1',
                 other_index_hash='c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079')  # link_id 1
-            relation_repo.add(1, 1, 1, b'\xc0', 10.0, 1.00)  # relation_id 1 (foo, x)
-            relation_repo.add(1, 2, 2, b'\xc0', 20.0, 1.00)  # relation_id 2 (bar, y)
-            relation_repo.add(1, 3, 3, b'\xc0', 15.0, 1.00)  # relation_id 3 (bar, z)
+            mapping_repo.add(1, 1, 1, b'\xc0', 10.0, 1.00)  # mapping_id 1 (foo, x)
+            mapping_repo.add(1, 2, 2, b'\xc0', 20.0, 1.00)  # mapping_id 2 (bar, y)
+            mapping_repo.add(1, 3, 3, b'\xc0', 15.0, 1.00)  # mapping_id 3 (bar, z)
 
             # Add needed structure records.
             structure_repo = node._dal.StructureRepository(cursor)
@@ -3968,28 +3968,28 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             ('other_index_id', 'rel1', 'index_id', 'mapping_level', 'A', 'B'),
             (2, 60.0, 2, b'\xc0', 'bar', 'y'),
         ]
-        self.node.update_relations('myfile', 'rel1', data)
+        self.node.update_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.00),
             (2, 1, 2, 2, b'\xc0', 60.0, 1.00),  # <- Updated from 20 to 60.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.00),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_update_normalization(self):
         data = [
             ('other_index_id', 'rel1', 'index_id', 'mapping_level', 'A', 'B'),
             ('2', '60.0', '2', b'\xc0', 'bar', 'y'),  # <- All values given as strings.
         ]
-        self.node.update_relations('myfile', 'rel1', data)
+        self.node.update_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.00),
             (2, 1, 2, 2, b'\xc0', 60.0, 1.00),  # <- Updated from 20 to 60.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.00),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_update_non_existant_record(self):
         data = [
@@ -3999,7 +3999,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
         ]
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.update_relations('myfile', 'rel1', data)
+            self.node.update_mappings('myfile', 'rel1', data)
 
         # Check the warning's message.
         self.assertEqual(
@@ -4014,7 +4014,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             (3, 1, 3, 3, b'\xc0', 10.0, 0.625),  # <- Weight updated from 15 to 10, proportion recalculated.
             (4, 1, 3, 2, b'\xc0',  6.0, 0.375),  # <- Non-existant record inserted, proportion added.
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_update_proportion_ignored(self):
         """If 'proportion' is given as one of the columns in *data*,
@@ -4025,14 +4025,14 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             ('other_index_id', 'rel1', 'index_id', 'mapping_level', 'A', 'B', 'proportion'),
             (2, 60.0, 2, b'\xc0', 'bar', 'y', 0.75),  # <- Proportion (0.75) gets ignored.
         ]
-        self.node.update_relations('myfile', 'rel1', data)
+        self.node.update_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.00),
             (2, 1, 2, 2, b'\xc0', 60.0, 1.00),  # <- Proportion auto-calculated (1.0), value updated from 20 to 60.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.00),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_update_skip_bad_mapping_level(self):
         with self.node._managed_cursor() as cursor:
@@ -4047,7 +4047,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
         ]
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.update_relations('myfile', 'rel1', data)
+            self.node.update_mappings('myfile', 'rel1', data)
 
         # Check the warning's message.
         self.assertEqual(
@@ -4063,7 +4063,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             (3, 1, 3, 3, b'\x80', 15.0, 0.75),  # <- Mapping level updated.
             (4, 1, 3, 2, b'\x80',  5.0, 0.25),  # <- Mapping level updated.
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_update_different_order_and_extra(self):
         """Label columns in different order and extra column."""
@@ -4072,14 +4072,14 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             (1, 99.0, 1, b'\xc0', 'x', 'EXTRA', 'foo'),
             (2, 99.0, 2, b'\xc0', 'y', 'EXTRA', 'bar'),
         ]
-        self.node.update_relations('myfile', 'rel1', data)
+        self.node.update_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 99.0, 1.0),  # <- Updated from 10 to 99.
             (2, 1, 2, 2, b'\xc0', 99.0, 1.0),  # <- Updated from 20 to 99.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.0),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_update_invalid_columns(self):
         data = [
@@ -4088,7 +4088,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
         ]
         regex = r"columns should be start with \('other_index_id', 'rel1', 'index_id', ...\)"
         with self.assertRaisesRegex(ValueError, regex):
-            self.node.update_relations('myfile', 'rel1', data)
+            self.node.update_mappings('myfile', 'rel1', data)
 
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A'),
@@ -4096,7 +4096,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
         ]
         regex = r"missing required columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
-            self.node.update_relations('myfile', 'rel1', data)
+            self.node.update_mappings('myfile', 'rel1', data)
 
     def test_update_is_complete_status_and_hash(self):
         with self.node._managed_cursor() as cursor:
@@ -4116,7 +4116,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
                 (4, 5.0, 2, b'\xc0', 'bar', 'y'),
             ]
             with self.assertWarns(ToronWarning) as cm:
-                self.node.update_relations('myfile', 'rel1', data)
+                self.node.update_mappings('myfile', 'rel1', data)
 
             # Check updated status status.
             link = link_repo.get(1)
@@ -4129,7 +4129,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
 
 
 class TestTopoNodeDeleteRelations(unittest.TestCase):
-    def get_relations_helper(self):  # <- Helper function.
+    def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
             cursor.execute('SELECT * FROM relation')
@@ -4141,7 +4141,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.MappingRepository(cursor)
+            mapping_repo = node._dal.MappingRepository(cursor)
 
             # Add index columns and records.
             label_manager.add_columns('A', 'B')
@@ -4149,7 +4149,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             index_repo.add('bar', 'y')
             index_repo.add('bar', 'z')
 
-            # Add link (link_id 1) and relations.
+            # Add link (link_id 1) and mappings.
             link_repo.add(
                 other_unique_id='111-111-1111',
                 other_filename_hint='myfile.toron',
@@ -4157,63 +4157,63 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
                 other_index_hash='c4c96cd71102046c61ec8326b2566d9e48ef2ba26d4252ba84db28ba352a0079',
                 is_locally_complete=True
             )
-            relation_repo.add(1, 1, 1, b'\xc0', 10.0, 1.00)  # relation_id 1 (foo, x)
-            relation_repo.add(1, 2, 2, b'\xc0', 20.0, 1.00)  # relation_id 2 (bar, y)
-            relation_repo.add(1, 3, 3, b'\xc0', 15.0, 1.00)  # relation_id 3 (bar, z)
+            mapping_repo.add(1, 1, 1, b'\xc0', 10.0, 1.00)  # mapping_id 1 (foo, x)
+            mapping_repo.add(1, 2, 2, b'\xc0', 20.0, 1.00)  # mapping_id 2 (bar, y)
+            mapping_repo.add(1, 3, 3, b'\xc0', 15.0, 1.00)  # mapping_id 3 (bar, z)
 
         self.node = node
 
     def test_delete(self):
         data = [
             ('other_index_id', 'rel1', 'index_id', 'mapping_level', 'A', 'B'),
-            (2, 20.0, 2, b'\xc0', 'bar', 'y'),  # <- Matches relation_id 2.
+            (2, 20.0, 2, b'\xc0', 'bar', 'y'),  # <- Matches mapping_id 2.
         ]
-        self.node.delete_relations('myfile', 'rel1', data)
+        self.node.delete_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.0),
-            # Record with relation_id 2 is deleted.
+            # Record with mapping_id 2 is deleted.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.0),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_delete_normalization(self):
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
             ('2', '20', '2', 'bar', 'y'),  # <- All values given as strings.
         ]
-        self.node.delete_relations('myfile', 'rel1', data)
+        self.node.delete_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.00),
-            # Record with relation_id 2 is deleted.
+            # Record with mapping_id 2 is deleted.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.00),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_delete_non_existant_record(self):
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
             (9, 20.0, 2, 'bar', 'y'),  # <- No match (other_index_id 9 not present).
-            (2, 20.0, 2, 'bar', 'y'),  # <- Matches relation_id 2.
+            (2, 20.0, 2, 'bar', 'y'),  # <- Matches mapping_id 2.
         ]
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.delete_relations('myfile', 'rel1', data)
+            self.node.delete_mappings('myfile', 'rel1', data)
 
         # Check the warning's message.
         self.assertEqual(
             str(cm.warning),
-            'skipped 1 rows with no matching relations, deleted 1 rows',
+            'skipped 1 rows with no matching mappings, deleted 1 rows',
         )
 
         # Verify final records.
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.00),
-            # Record with relation_id 2 is deleted.
+            # Record with mapping_id 2 is deleted.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.00),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_delete_proportion_ignored(self):
         """If 'proportion' is given as one of the columns in *data*,
@@ -4225,14 +4225,14 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             ('other_index_id', 'rel1', 'index_id', 'A', 'B', 'proportion'),
             (2, 20.0, 2, 'bar', 'y', 0.75),  # <- Proportion (0.75) gets ignored.
         ]
-        self.node.delete_relations('myfile', 'rel1', data)
+        self.node.delete_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.00),
-            # Record with relation_id 2 is deleted.
+            # Record with mapping_id 2 is deleted.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.00),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_delete_with_mapping_level(self):
         with self.node._managed_cursor() as cursor:
@@ -4241,9 +4241,9 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             structure_repo.add(0.9140625, 1, 0)
             structure_repo.add(1.5859375, 1, 1)
 
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(1, 1, 2, b'\x80', 30.0, 1.00)  # relation_id 3 (bar, y)
-            relation_repo.add(1, 1, 3, b'\x80', 10.0, 1.00)  # relation_id 4 (bar, z)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, 1, 2, b'\x80', 30.0, 1.00)  # mapping_id 3 (bar, y)
+            mapping_repo.add(1, 1, 3, b'\x80', 10.0, 1.00)  # mapping_id 4 (bar, z)
 
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
@@ -4253,23 +4253,23 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
         ]
         # Check that a warning is raised.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.delete_relations('myfile', 'rel1', data)
+            self.node.delete_mappings('myfile', 'rel1', data)
 
         # Check the warning's message.
         self.assertEqual(
             str(cm.warning),
-            'skipped 2 approximate relations (reify to delete), deleted 1 rows',
+            'skipped 2 approximate mappings (reify to delete), deleted 1 rows',
         )
 
         # Verify final records.
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 0.2),
-            # relation_id 2 is deleted (not approximate)
+            # mapping_id 2 is deleted (not approximate)
             (3, 1, 3, 3, b'\xc0', 15.0, 1.0),
             (4, 1, 1, 2, b'\x80', 30.0, 0.6),  # <- Not removed (approximate rel)
             (5, 1, 1, 3, b'\x80', 10.0, 0.2),  # <- Not removed (approximate rel)
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_delete_different_order_and_extra(self):
         """Label columns in different order and extra column."""
@@ -4277,14 +4277,14 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             ('other_index_id', 'rel1', 'index_id', 'B', 'EXTRACOL', 'A'),
             (2, 20.0, 2, 'y', 'EXTRA', 'bar'),  # <- Matches index_id 2.
         ]
-        self.node.delete_relations('myfile', 'rel1', data)
+        self.node.delete_mappings('myfile', 'rel1', data)
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 1.00),
-            # Record with relation_id 2 is deleted.
+            # Record with mapping_id 2 is deleted.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.00),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_delete_invalid_columns(self):
         data = [
@@ -4293,7 +4293,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
         ]
         regex = r"columns should be start with \('other_index_id', 'rel1', 'index_id', ...\)"
         with self.assertRaisesRegex(ValueError, regex):
-            self.node.delete_relations('myfile', 'rel1', data)
+            self.node.delete_mappings('myfile', 'rel1', data)
 
         data = [
             ('other_index_id', 'rel1', 'index_id', 'A'),
@@ -4301,7 +4301,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
         ]
         regex = r"missing required columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
-            self.node.delete_relations('myfile', 'rel1', data)
+            self.node.delete_mappings('myfile', 'rel1', data)
 
         # Check that data is not changed.
         expected = [
@@ -4309,7 +4309,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             (2, 1, 2, 2, b'\xc0', 20.0, 1.00),  # <- Not removed.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.00),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_delete_is_complete_status_and_hash(self):
         with self.node._managed_cursor() as cursor:
@@ -4326,9 +4326,9 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
 
             data = [
                 ('other_index_id', 'rel1', 'index_id', 'A', 'B'),
-                (2, 20.0, 2, 'bar', 'y'),  # <- Matches relation_id 3 (other_index_id 2)
+                (2, 20.0, 2, 'bar', 'y'),  # <- Matches mapping_id 3 (other_index_id 2)
             ]
-            self.node.delete_relations('myfile', 'rel1', data)
+            self.node.delete_mappings('myfile', 'rel1', data)
 
             # Check updated status status.
             link = link_repo.get(1)
@@ -4340,14 +4340,14 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             )
 
     def test_delete_criteria_multiple(self):
-        self.node.delete_relations('myfile', 'rel1', A='bar', B='y')
+        self.node.delete_mappings('myfile', 'rel1', A='bar', B='y')
 
         expected = [
-            (1, 1, 1, 1, b'\xc0', 10.0, 1.0),  # relation_id 1 (foo, x)
-            # relation_id 2 (bar, y) should be deleted
-            (3, 1, 3, 3, b'\xc0', 15.0, 1.0),  # relation_id 3 (bar, z)
+            (1, 1, 1, 1, b'\xc0', 10.0, 1.0),  # mapping_id 1 (foo, x)
+            # mapping_id 2 (bar, y) should be deleted
+            (3, 1, 3, 3, b'\xc0', 15.0, 1.0),  # mapping_id 3 (bar, z)
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_delete_criteria_single(self):
         with self.node._managed_cursor() as cursor:
@@ -4356,23 +4356,23 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             structure_repo.add(0.9140625, 1, 0)
             structure_repo.add(1.5859375, 1, 1)
 
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.add(1, 2, 1, b'\x80', 10.0, None)  # relation_id 4 (foo, x)
-            relation_repo.add(1, 1, 2, b'\x80', 30.0, None)  # relation_id 5 (bar, y)
-            relation_repo.add(1, 1, 3, b'\x80', 10.0, None)  # relation_id 6 (bar, z)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.add(1, 2, 1, b'\x80', 10.0, None)  # mapping_id 4 (foo, x)
+            mapping_repo.add(1, 1, 2, b'\x80', 30.0, None)  # mapping_id 5 (bar, y)
+            mapping_repo.add(1, 1, 3, b'\x80', 10.0, None)  # mapping_id 6 (bar, z)
 
         # Since mapping_level for 4 uses `(1, 0)`, we can delete using `A='foo'`.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.delete_relations('myfile', 'rel1', A='foo')
+            self.node.delete_mappings('myfile', 'rel1', A='foo')
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 0.2),
             (2, 1, 2, 2, b'\xc0', 20.0, 1.0),
             (3, 1, 3, 3, b'\xc0', 15.0, 1.0),
-            # Deleted relation_id 4 (foo, x)
+            # Deleted mapping_id 4 (foo, x)
             (5, 1, 1, 2, b'\x80', 30.0, 0.6),
             (6, 1, 1, 3, b'\x80', 10.0, 0.2),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
         self.assertEqual(
             str(cm.warning),
             'skipped 1 rows with mismatched mapping levels, deleted 1 rows',
@@ -4380,11 +4380,11 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
 
         # Check deletion using criteria column not used in a mapping level.
         with self.node._managed_cursor() as cursor:
-            relation_repo = self.node._dal.MappingRepository(cursor)
-            relation_repo.update(MappingRecord(2, 1, 2, 2, b'\x40', 20.0, 1.0))  # <- Change mapping level to `(0, 1)`.
+            mapping_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo.update(MappingRecord(2, 1, 2, 2, b'\x40', 20.0, 1.0))  # <- Change mapping level to `(0, 1)`.
 
         with self.assertWarns(ToronWarning) as cm:
-            self.node.delete_relations('myfile', 'rel1', B='y')
+            self.node.delete_mappings('myfile', 'rel1', B='y')
 
         # Check the warning's message.
         self.assertEqual(
@@ -4394,13 +4394,13 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
 
         expected = [
             (1, 1, 1, 1, b'\xc0', 10.0, 0.2),
-            # Deleted relation_id 2 (bar, y) because mapping level was `(0, 1)`.
+            # Deleted mapping_id 2 (bar, y) because mapping level was `(0, 1)`.
             (3, 1, 3, 3, b'\xc0', 15.0, 1.0),
-            # relation_id 4 was deleted earlier in this same test case.
+            # mapping_id 4 was deleted earlier in this same test case.
             (5, 1, 1, 2, b'\x80', 30.0, 0.6),  # <- Not deleted because of mapping level `(1, 0)` is not a subset of `(0, 1)`.
             (6, 1, 1, 3, b'\x80', 10.0, 0.2),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
 
 class TestTopoNodeRefiyRelations(unittest.TestCase):
@@ -4410,7 +4410,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.MappingRepository(cursor)
+            mapping_repo = node._dal.MappingRepository(cursor)
             structure_repo = node._dal.StructureRepository(cursor)
 
             # Add index columns and records.
@@ -4425,7 +4425,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             structure_repo.add(1.5859375, 0, 1)
             structure_repo.add(1.5859375, 1, 1)
 
-            # Add link (link_id 1) and relations.
+            # Add link (link_id 1) and mappings.
             link_repo.add(
                 other_unique_id='111-111-1111',
                 other_filename_hint='myfile.toron',
@@ -4442,28 +4442,28 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             # | BitFlags(1, 0) | b'\x80'     |
             # | BitFlags(0, 1) | b'\x40'     |
 
-            relation_repo.add(1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.00)  # relation_id 1 (foo, x)
-            relation_repo.add(1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.00)  # relation_id 2 (bar, y)
-            relation_repo.add(1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.00)  # relation_id 3 (bar, y)
-            relation_repo.add(1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.00)  # relation_id 4 (bar, z)
-            relation_repo.add(1, 3, 1, bytes(BitFlags(1, 0)), 15.0, 1.00)  # relation_id 5 (foo, x)
-            relation_repo.add(1, 3, 2, bytes(BitFlags(1, 0)), 15.0, 1.00)  # relation_id 6 (bar, y)
-            relation_repo.add(1, 3, 3, bytes(BitFlags(1, 0)), 15.0, 1.00)  # relation_id 7 (bar, z)
+            mapping_repo.add(1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.00)  # mapping_id 1 (foo, x)
+            mapping_repo.add(1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.00)  # mapping_id 2 (bar, y)
+            mapping_repo.add(1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.00)  # mapping_id 3 (bar, y)
+            mapping_repo.add(1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.00)  # mapping_id 4 (bar, z)
+            mapping_repo.add(1, 3, 1, bytes(BitFlags(1, 0)), 15.0, 1.00)  # mapping_id 5 (foo, x)
+            mapping_repo.add(1, 3, 2, bytes(BitFlags(1, 0)), 15.0, 1.00)  # mapping_id 6 (bar, y)
+            mapping_repo.add(1, 3, 3, bytes(BitFlags(1, 0)), 15.0, 1.00)  # mapping_id 7 (bar, z)
 
         self.node = node
 
-    def get_relations_helper(self):
-        """Helper function to return list of all relation records."""
+    def get_mappings_helper(self):
+        """Helper function to return list of all mapping records."""
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
-            relation_repo = self.node._dal.MappingRepository(cursor)
+            mapping_repo = self.node._dal.MappingRepository(cursor)
             links = link_repo.get_all()
-            get_rels = lambda id: relation_repo.find(link_id=id)
+            get_rels = lambda id: mapping_repo.find(link_id=id)
             rels = (get_rels(link.id) for link in links)
             return list(chain.from_iterable(rels))
 
     def test_reify_all_records(self):
-        self.node.reify_relations('myfile', 'rel1')
+        self.node.reify_mappings('myfile', 'rel1')
         expected = [
             MappingRecord(1, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),
             MappingRecord(2, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),
@@ -4473,11 +4473,11 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             MappingRecord(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),
             MappingRecord(7, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_reify_selected_records(self):
-        self.node.reify_relations('myfile', 'rel1', A='foo', B='x')
-        self.node.reify_relations('myfile', 'rel1', A='bar', B='y')
+        self.node.reify_mappings('myfile', 'rel1', A='foo', B='x')
+        self.node.reify_mappings('myfile', 'rel1', A='bar', B='y')
 
         expected = [
             MappingRecord(1, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (foo, x)
@@ -4488,12 +4488,12 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             MappingRecord(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed (bar, y)
             MappingRecord(7, 1, 3, 3, bytes(BitFlags(1, 0)), 15.0, 1.0),
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_reify_selected_records_with_warning(self):
         # Check deletion using criteria column not used in a mapping level.
         with self.assertWarns(ToronWarning) as cm:
-            self.node.reify_relations('myfile', 'rel1', A='bar')
+            self.node.reify_mappings('myfile', 'rel1', A='bar')
 
         # Check the warning's message.
         self.assertEqual(
@@ -4510,13 +4510,13 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             MappingRecord(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
             MappingRecord(7, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
         ]
-        self.assertEqual(self.get_relations_helper(), expected)
-        # * Note regarding relation 2: This relation maps a portion of
+        self.assertEqual(self.get_mappings_helper(), expected)
+        # * Note regarding mapping 2: This mapping maps a portion of
         #   other_index_id 1 to index_id 2. The labels associated with
-        #   index_id 2 are `bar, y`. And even though `reify_relations()`
+        #   index_id 2 are `bar, y`. And even though `reify_mappings()`
         #   is selecting records using A='bar' (which matches the first
         #   item associated with index_id 2), it is not altered because
-        #   this relation has a mapping_level that corresponds to
+        #   this mapping has a mapping_level that corresponds to
         #   `(0, 1)`. This means that it was only matched by the `y`
         #   portion of its labels. This record's association with the
         #   label `bar` is probabilistic and selections should only

@@ -60,7 +60,7 @@ def get_mapping_value_position(
 
 
 class Mapper(object):
-    """A class to build mapping relations between two nodes."""
+    """A class to build mapping records between two nodes."""
     def __init__(
         self,
         node1: 'TopoNode',
@@ -395,10 +395,10 @@ class Mapper(object):
                 and node2_cardinality == node2_match_count)
 
     @eagerly_initialize
-    def iter_relations(
+    def iter_mappings(
         self, target_node: Literal['node1', 'node2']
     ) -> Generator[Tuple[int, int, float, BitFlags], None, None]:
-        """Return an iterator of relations for the given target node."""
+        """Return an iterator of mappings for the given target node."""
         if target_node == 'node1':
             source_node = 'node2'
         elif target_node == 'node2':
@@ -424,7 +424,7 @@ class Mapper(object):
                     other_index_id,
                     index_id,
                     mapping_level,
-                    SUM(mapping_value * proportion) AS relation_value
+                    SUM(mapping_value * proportion) AS mapping_value
                 FROM mapping_source
                 JOIN joint_probability USING (run_id)
                 GROUP BY other_index_id, index_id, mapping_level
@@ -800,16 +800,16 @@ class Mapper_OLD(object):
             )
 
     @eagerly_initialize
-    def get_relations(
+    def get_mappings(
         self, direction: Literal['<-', '->']
     ) -> Generator[Tuple[int, int, float, Union[BitFlags, None]], None, None]:
-        """Returns an iterator of relations for the direction given.
+        """Returns an iterator of mappings for the direction given.
         The *direction* can be ``'->'`` (left-to-right) or ``'<-'``
         (right-to-left):
 
         .. code-block:: python
 
-            >>> relations = mapper.get_relations('->')
+            >>> mappings = mapper.get_mappings('->')
         """
         if direction == '<-':
             side = 'left'
@@ -838,7 +838,7 @@ class Mapper_OLD(object):
                     other_index_id,
                     index_id,
                     mapping_level,
-                    SUM(mapping_value * proportion) AS relation_value
+                    SUM(mapping_value * proportion) AS mapping_value
                 FROM mapping_data
                 JOIN joint_probability USING (run_id)
                 GROUP BY other_index_id, index_id, mapping_level

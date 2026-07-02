@@ -363,12 +363,12 @@ class IndexRepositoryBaseTest(ABC):
         self.repository.add('baz', 'z')
 
         link_repo = self.dal.LinkRepository(self.cursor)
-        relation_repo = self.dal.MappingRepository(self.cursor)
+        mapping_repo = self.dal.MappingRepository(self.cursor)
 
         # Test some missing records.
         link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
-        relation_repo.add(1, 1, 1, b'\xc0', 131250, 1.0)
-        relation_repo.add(1, 2, 1, b'\x40',  40960, 0.625)
+        mapping_repo.add(1, 1, 1, b'\xc0', 131250, 1.0)
+        mapping_repo.add(1, 2, 1, b'\x40',  40960, 0.625)
         results = self.repository.find_unmatched_index_ids(link_id=1)
         self.assertEqual(set(results), {2, 3})
 
@@ -379,10 +379,10 @@ class IndexRepositoryBaseTest(ABC):
 
         # Test no missing records.
         link_repo.add('111-11-1111', None, 'other3')  # Adds link_id 3.
-        relation_repo.add(3, 1, 1, b'\xc0', 131250, 1.0)
-        relation_repo.add(3, 2, 1, b'\x40',  40960, 0.625)
-        relation_repo.add(3, 2, 2, b'\x40',  24576, 0.375)
-        relation_repo.add(3, 3, 3, b'\xc0', 100000, 1.0)
+        mapping_repo.add(3, 1, 1, b'\xc0', 131250, 1.0)
+        mapping_repo.add(3, 2, 1, b'\x40',  40960, 0.625)
+        mapping_repo.add(3, 2, 2, b'\x40',  24576, 0.375)
+        mapping_repo.add(3, 3, 3, b'\xc0', 100000, 1.0)
         results = self.repository.find_unmatched_index_ids(link_id=3)
         self.assertEqual(set(results), set())
 
@@ -1437,12 +1437,12 @@ class MappingRepositoryBaseTest(ABC):
         self.repository.add(2, 3, 2, b'\xc0', 112.00, 0.109375)
         self.repository.add(2, 3, 3, b'\xc0', 576.00, 0.5625)
 
-    def get_relations_helper(self):  # <- Helper function.
+    def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         cur = self.connection.execute('SELECT * FROM main.relation')
         return set(cur.fetchall())
 
-    def test_relation_post_init(self):
+    def test_mapping_post_init(self):
         """Should raise errors for bad types and values."""
         # Normal init should raise no errors.
         MappingRecord(1, 1, 1, 2, b'\xc0', 50.0, None)
@@ -1459,18 +1459,18 @@ class MappingRepositoryBaseTest(ABC):
             MappingRecord(1, 1, '1', 2, b'\xc0', 50.0, None)
 
         # From undefined to undefined (0 -> 0) should raise ValueError.
-        regex = r"undefined-to-undefined relation \(0 -> 0\) not allowed"
+        regex = r"undefined-to-undefined mapping \(0 -> 0\) not allowed"
         with self.assertRaisesRegex(ValueError, regex):
             MappingRecord(1, 1, 0, 0, b'\xc0', 50.0, None)
 
-    def test_relation_assign_value(self):
+    def test_mapping_assign_value(self):
         """Should raise an error when assigning to fields."""
         rel = MappingRecord(1, 1, 1, 2, b'\xc0', 100.0, None)
 
         with self.assertRaises(FrozenInstanceError):
             rel.index_id = 3
 
-    def test_relation_assign_bad_value(self):
+    def test_mapping_assign_bad_value(self):
         """One of the reasons for not allowing assignment is so that
         `__post_init__()` checks can't be bypassed by assigning bad
         values after creation.
@@ -1508,7 +1508,7 @@ class MappingRepositoryBaseTest(ABC):
             (9,  2, 3, 3, b'\xc0',    576.00, 0.5625),
             (10, 2, 2, 3, b'\xc0',    9393.0, 1.0),  # <- Values coerced to proper types.
         }
-        self.assertEqual(self.get_relations_helper(), expected)
+        self.assertEqual(self.get_mappings_helper(), expected)
 
     def test_add_bad_types(self):
         """String values that cannot be coerced should raise an error."""
@@ -1530,12 +1530,12 @@ class MappingRepositoryBaseTest(ABC):
         with self.assertRaises(Exception):
             self.repository.add(1, 4, 1, b'\xc0', 4242, 'foo')
 
-    def test_add_undefined_relations(self):
-        """Test relations involving the "undefined" record."""
-        # Check defined-to-undefined relation.
+    def test_add_undefined_mappings(self):
+        """Test mappings involving the "undefined" record."""
+        # Check defined-to-undefined mapping.
         self.repository.add(1, 1, 0, b'\xc0', 100.0, 1.0)
 
-        # Check undefined-to-defined relation.
+        # Check undefined-to-defined mapping.
         self.repository.add(1, 0, 1, b'\xc0', 100.0, 1.0)
 
         # Check undefined-to-undefined.
@@ -1546,7 +1546,7 @@ class MappingRepositoryBaseTest(ABC):
 
     def test_merge_one_and_two(self):
         self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
-        results = self.get_relations_helper()
+        results = self.get_mappings_helper()
         expected = {
             # First link.
             (10, 1, 1, 1, b'\xc0', 131250.0,  1.0),
@@ -1562,7 +1562,7 @@ class MappingRepositoryBaseTest(ABC):
 
     def test_merge_two_and_three(self):
         self.repository.merge_by_index_id(index_ids=(2, 3), target=2)
-        results = self.get_relations_helper()
+        results = self.get_mappings_helper()
         expected = {
             # First link.
             (1,  1, 1, 1, b'\xc0', 131250.0,  1.0),
@@ -1579,7 +1579,7 @@ class MappingRepositoryBaseTest(ABC):
 
     def test_merge_one_two_and_three(self):
         self.repository.merge_by_index_id(index_ids=(1, 2, 3), target=1)
-        results = self.get_relations_helper()
+        results = self.get_mappings_helper()
         expected = {
             # First link.
             (1, 1, 1, 1, b'\xc0', 131250.0,  1.0),
@@ -1596,7 +1596,7 @@ class MappingRepositoryBaseTest(ABC):
         """Target id must be auto-added to index_ids if not included."""
         # The target (1) is not in index_ids (but should be included internally).
         self.repository.merge_by_index_id(index_ids=(2, 3), target=1)
-        results = self.get_relations_helper()
+        results = self.get_mappings_helper()
         expected = {
             # First link.
             (1, 1, 1, 1, b'\xc0', 131250.0,  1.0),
@@ -1614,12 +1614,12 @@ class MappingRepositoryBaseTest(ABC):
         not raise an error.
         """
         # Set one of the original proportions to None.
-        relation = self.repository.get(3)
-        self.repository.update(replace(relation, proportion=None))
+        mapping = self.repository.get(3)
+        self.repository.update(replace(mapping, proportion=None))
 
         # Merge index_ids 1, 2, and 3 into index_id 1.
         self.repository.merge_by_index_id(index_ids=(1, 2, 3), target=1)
-        results = self.get_relations_helper()
+        results = self.get_mappings_helper()
         expected = {
             # First link.
             (1, 1, 1, 1, b'\xc0', 131250.00, 1.0),
@@ -1706,7 +1706,7 @@ class MappingRepositoryBaseTest(ABC):
         self.assertEqual(result, 3)
 
     def test_refresh_proportions(self):
-        # Delete some relations to introduce inconsistent proportions.
+        # Delete some mappings to introduce inconsistent proportions.
         self.repository.delete(2)
         self.repository.delete(9)
 
@@ -1716,7 +1716,7 @@ class MappingRepositoryBaseTest(ABC):
         self.repository.refresh_proportions(link_id=2, other_index_id=2)
         self.repository.refresh_proportions(link_id=2, other_index_id=3)
 
-        results = self.get_relations_helper()
+        results = self.get_mappings_helper()
         expected = {
             # First link.
             (1, 1, 1, 1, b'\xc0', 131250.00, 1.00),
@@ -1841,7 +1841,7 @@ class PropertyRepositoryBaseTest(ABC):
 
 
 class CrossRepositoryRelationsBaseTest(ABC):
-    """Check that relations across repositories match expected behavior."""
+    """Check that mappings across repositories match expected behavior."""
     @property
     @abstractmethod
     def dal(self):

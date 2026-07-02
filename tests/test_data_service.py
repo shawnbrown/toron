@@ -155,27 +155,27 @@ class TestDeleteIndexRecord(unittest.TestCase):
 
         self.link_repo = dal.LinkRepository(cur)
         self.link_repo.add('111-11-1111', None, 'other1')  # link_id 1
-        self.relation_repo = dal.MappingRepository(cur)
-        # Individual relations added in test cases.
+        self.mapping_repo = dal.MappingRepository(cur)
+        # Individual mappings added in test cases.
 
     def test_successful_delete(self):
-        self.relation_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 131250, 1.0)  # <- Fully specified.
-        self.relation_repo.add(1, 2, 1, bytes(BitFlags(1, 1)),  40960, 1.0)  # <- Fully specified.
+        self.mapping_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 131250, 1.0)  # <- Fully specified.
+        self.mapping_repo.add(1, 2, 1, bytes(BitFlags(1, 1)),  40960, 1.0)  # <- Fully specified.
 
         delete_index_record(
             index_id=1,
             index_repo=self.index_repo,
             weight_repo=self.weight_repo,
             link_repo=self.link_repo,
-            relation_repo=self.relation_repo,
+            mapping_repo=self.mapping_repo,
         )
 
         with self.assertRaises(KeyError, msg='index should no longer exist'):
             self.index_repo.get(1)
 
     def test_failed_delete(self):
-        self.relation_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 131250, 1.0)  # <- Fully specified.
-        self.relation_repo.add(1, 2, 1, bytes(BitFlags(1, 0)),  40960, 1.0)  # <- Ambiguous.
+        self.mapping_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 131250, 1.0)  # <- Fully specified.
+        self.mapping_repo.add(1, 2, 1, bytes(BitFlags(1, 0)),  40960, 1.0)  # <- Ambiguous.
 
         msg = 'index should no longer exist'
         regex = 'cannot delete index_id 1, some associated mappings are ambiguous'
@@ -185,7 +185,7 @@ class TestDeleteIndexRecord(unittest.TestCase):
                 index_repo=self.index_repo,
                 weight_repo=self.weight_repo,
                 link_repo=self.link_repo,
-                relation_repo=self.relation_repo,
+                mapping_repo=self.mapping_repo,
             )
 
         msg = 'index should still exist'
@@ -660,7 +660,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
 
         self.trg_index_repo = self.node_f._dal.IndexRepository(trg_cur)
         self.trg_link_repo = self.node_f._dal.LinkRepository(trg_cur)
-        self.trg_relation_repo = self.node_f._dal.MappingRepository(trg_cur)
+        self.trg_mapping_repo = self.node_f._dal.MappingRepository(trg_cur)
 
         src_cm = self.node_e._managed_cursor()
         src_cur = src_cm.__enter__()
@@ -672,11 +672,11 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
     def make_population_croswalk(self, data):
         """Helper to make "population" link from node_e to node_f."""
         self.node_f.add_link(self.node_e, 'population', is_default=True)
-        self.node_f.insert_relations2(
+        self.node_f.insert_mappings2(
             node_or_ref=self.node_e,
             link_name='population',
             data=data,
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
 
     def test_fully_joined(self):
@@ -698,7 +698,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
             'population',
             self.trg_index_repo,
             self.trg_link_repo,
-            self.trg_relation_repo,
+            self.trg_mapping_repo,
             self.src_index_repo,
             self.src_prop_repo,
         )
@@ -737,7 +737,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
             'population',
             self.trg_index_repo,
             self.trg_link_repo,
-            self.trg_relation_repo,
+            self.trg_mapping_repo,
             self.src_index_repo,
             self.src_prop_repo,
         )
@@ -780,7 +780,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
             'population',
             self.trg_index_repo,
             self.trg_link_repo,
-            self.trg_relation_repo,
+            self.trg_mapping_repo,
             self.src_index_repo,
             self.src_prop_repo,
         )
@@ -819,7 +819,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
             'population',
             self.trg_index_repo,
             self.trg_link_repo,
-            self.trg_relation_repo,
+            self.trg_mapping_repo,
             self.src_index_repo,
             self.src_prop_repo,
         )
@@ -845,14 +845,14 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
 
     def test_missing_all_left_and_all_right(self):
         """Check fully-disjoint left-side and right-side elements."""
-        # Add link, but don't load any relations.
+        # Add link, but don't load any mappings.
         self.node_f.add_link(self.node_e, 'population', is_default=True)
 
         actual = generate_mapping_elements(
             'population',
             self.trg_index_repo,
             self.trg_link_repo,
-            self.trg_relation_repo,
+            self.trg_mapping_repo,
             self.src_index_repo,
             self.src_prop_repo,
         )

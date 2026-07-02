@@ -560,9 +560,9 @@ class TestMapperIterRelations(TopoNodeFixtures, unittest.TestCase):
         mapper.match_records('node1')
         mapper.match_records('node2')
 
-        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
+        mappings = mapper.iter_mappings(target_node='node2')  # <- Method under test.
 
-        self.assertEqual(set(relations), {(1, 1, b'\xc0', 10.0),
+        self.assertEqual(set(mappings), {(1, 1, b'\xc0', 10.0),
                                           (1, 2, b'\xc0', 70.0),
                                           (2, 3, b'\xc0', 20.0),
                                           (2, 4, b'\xc0', 60.0),
@@ -586,9 +586,9 @@ class TestMapperIterRelations(TopoNodeFixtures, unittest.TestCase):
         mapper.match_records('node1')
         mapper.match_records('node2')
 
-        relations = mapper.iter_relations(target_node='node1')  # <- Method under test.
+        mappings = mapper.iter_mappings(target_node='node1')  # <- Method under test.
 
-        self.assertEqual(set(relations), {(0, 1, b'\x80',  5.0),
+        self.assertEqual(set(mappings), {(0, 1, b'\x80',  5.0),
                                           (1, 1, b'\x80', 10.0),
                                           (2, 1, b'\x80', 65.0),
                                           (3, 2, b'\x80', 20.0),
@@ -597,9 +597,9 @@ class TestMapperIterRelations(TopoNodeFixtures, unittest.TestCase):
                                           (5, 3, b'\x80', 30.0),
                                           (6, 3, b'\x80', 50.0)})
 
-        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
+        mappings = mapper.iter_mappings(target_node='node2')  # <- Method under test.
 
-        self.assertEqual(set(relations), {(0, 4, b'\xc0',  4.0),
+        self.assertEqual(set(mappings), {(0, 4, b'\xc0',  4.0),
                                           (1, 0, b'\xc0',  5.0),
                                           (1, 1, b'\xc0', 10.0),
                                           (1, 2, b'\xc0', 65.0),
@@ -621,10 +621,10 @@ class TestMapperIterRelations(TopoNodeFixtures, unittest.TestCase):
         mapper.match_records('node1')
         mapper.match_records('node2', match_limit=2)
 
-        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
+        mappings = mapper.iter_mappings(target_node='node2')  # <- Method under test.
 
         self.assertEqual(
-            set(relations),
+            set(mappings),
             {(1, 1, b'\x80', 22.5),   # <- 25% of 90
              (1, 2, b'\x80', 67.5),   # <- 75% of 90
              (2, 3, b'\xc0', 20.0),   # <- 100% of 20
@@ -646,10 +646,10 @@ class TestMapperIterRelations(TopoNodeFixtures, unittest.TestCase):
         mapper.match_records('node1')
         mapper.match_records('node2', match_limit=2, allow_overlapping=True)
 
-        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
+        mappings = mapper.iter_mappings(target_node='node2')  # <- Method under test.
 
         self.assertEqual(
-            set(relations),
+            set(mappings),
             {(1, 1, b'\x80', 22.5),    # <- 25% of 90
              (1, 2, b'\x80', 67.5),    # <- 75% of 90
              (2, 3, b'\xc0', 20.0),    # <- 100% of 20
@@ -679,10 +679,10 @@ class TestMapperIterRelations(TopoNodeFixtures, unittest.TestCase):
         mapper.match_records('node1')
         mapper.match_records('node2', match_limit=2, allow_overlapping=True)
 
-        relations = mapper.iter_relations(target_node='node2')  # <- Method under test.
+        mappings = mapper.iter_mappings(target_node='node2')  # <- Method under test.
 
         self.assertEqual(
-            set(relations),
+            set(mappings),
             {
                 # Total of 78 (30 + 48) distributed across two records using
                 # proportions derived from target node's default weights.
@@ -1277,9 +1277,9 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right')
 
-        relations = mapper.get_relations(direction='->')  # <- Method under test.
+        mappings = mapper.get_mappings(direction='->')  # <- Method under test.
 
-        self.assertEqual(list(relations), [(1, 1, b'\xc0', 10.0),
+        self.assertEqual(list(mappings), [(1, 1, b'\xc0', 10.0),
                                            (1, 2, b'\xc0', 70.0),
                                            (2, 3, b'\xc0', 20.0),
                                            (2, 4, b'\xc0', 60.0),
@@ -1299,7 +1299,7 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right', match_limit=2)
 
-        relations = mapper.get_relations(direction='->')  # <- Method under test.
+        mappings = mapper.get_mappings(direction='->')  # <- Method under test.
 
         expected = [
             (1, 1, b'\x80', 22.5),
@@ -1309,7 +1309,7 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
             (3, 5, b'\x80', 28.0),  # <- Gets full weight, `3, 6` overlap omitted.
             (3, 6, b'\xc0',  7.0),  # <- `3, 6` already matched at finer granularity.
         ]
-        self.assertEqual(list(relations), expected)
+        self.assertEqual(list(mappings), expected)
 
     def test_ambiguous_with_overlaps(self):
         mapper = Mapper_OLD(
@@ -1324,7 +1324,7 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right', match_limit=2, allow_overlapping=True)
 
-        relations = mapper.get_relations(direction='->')  # <- Method under test.
+        mappings = mapper.get_mappings(direction='->')  # <- Method under test.
 
         expected = [
             (1, 1, b'\x80', 22.5),
@@ -1335,7 +1335,7 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
             (3, 6, b'\x80', 17.6),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
             (3, 6, b'\xc0',  7.0),  # <- Exact match overlapped by ambiguous match.
         ]
-        self.assertEqual(list(relations), expected)
+        self.assertEqual(list(mappings), expected)
 
     def test_ambiguous_duplicate_mapping_labels(self):
         """Duplicate records should not count as overlaps if they
@@ -1357,7 +1357,7 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
         mapper.match_records(self.node1, 'left')
         mapper.match_records(self.node2, 'right', match_limit=2)
 
-        relations = mapper.get_relations(direction='->')  # <- Method under test.
+        mappings = mapper.get_mappings(direction='->')  # <- Method under test.
 
         expected = [
             (1, 1, b'\x80', 20.0),
@@ -1365,4 +1365,4 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
             (2, 3, b'\x80', 22.5),
             (2, 4, b'\x80', 37.5),
         ]
-        self.assertEqual(list(relations), expected)
+        self.assertEqual(list(mappings), expected)

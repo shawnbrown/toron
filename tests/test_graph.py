@@ -220,7 +220,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
 class TestdGetMappingStats(TwoNodesBaseTestCase):
     def test_all_matched(self):
         self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -253,7 +253,7 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
 
     def test_source_missing(self):
         self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -286,7 +286,7 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
 
     def test_target_missing(self):
         self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -319,7 +319,7 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
 
     def test_source_stale(self):
         self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -378,7 +378,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             self.log_stream.getvalue(),
             ("INFO: loading mapping from left to right\n"
              "WARNING: setting default link: 'population'\n"
-             "INFO: loaded 10 relations\n"
+             "INFO: loaded 10 mappings\n"
              "INFO: mapping verified, cleanly matches both sides\n")
         )
 
@@ -426,7 +426,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             ('WARNING: omitted 1 ambiguous matches that overlap with records that were already matched at a finer level of granularity\n'
              'WARNING: omitted 1 ambiguous matches that overlap with records that were already matched at a finer level of granularity\n'
              'INFO: loading mapping from left to right\n'
-             'INFO: loaded 18 relations\n'
+             'INFO: loaded 18 mappings\n'
              'INFO: mapping verified, cleanly matches both sides\n'),
         )
 
@@ -476,16 +476,16 @@ class TestLoadMapping(TwoNodesBaseTestCase):
         self.assertEqual(
             self.log_stream.getvalue(),
             ('INFO: loading mapping from left to right\n'
-             'INFO: loaded 6 relations\n'
+             'INFO: loaded 6 mappings\n'
              'WARNING: missing 4 indexes on left-side\n'
              'WARNING: missing 4 indexes on right-side\n'
              'INFO: loading mapping from right to left\n'
-             'INFO: loaded 6 relations\n'
+             'INFO: loaded 6 mappings\n'
              'WARNING: missing 4 indexes on right-side\n'
              'WARNING: missing 4 indexes on left-side\n'),
         )
 
-        # Check left-to-right relations (node2 -> node1).
+        # Check left-to-right mappings (node2 -> node1).
         with self.node1._managed_cursor() as cur:
             results = cur.execute('SELECT * FROM relation').fetchall()
             expected = [
@@ -498,7 +498,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             ]
             self.assertEqual(results, expected)
 
-        # Check right-to-left relations (node1 -> node2).
+        # Check right-to-left mappings (node1 -> node2).
         with self.node2._managed_cursor() as cur:
             results = cur.execute('SELECT * FROM relation').fetchall()
             expected = [
@@ -540,7 +540,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             self.log_stream.getvalue(),
             ("INFO: loading mapping from left to right\n"
              "WARNING: setting default link: 'population'\n"
-             "INFO: loaded 10 relations\n"
+             "INFO: loaded 10 mappings\n"
              "INFO: mapping verified, cleanly matches both sides\n")
         )
 
@@ -565,7 +565,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
     def test_fully_joined_no_domain_some_ambiguous(self):
         """Check fully mapped link."""
         self.node2.add_link(self.node1, 'population', is_default=True)
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -580,7 +580,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
                 (8, 8, b'\xe0', 100.0),  # b'\xe0' (1, 1, 1)
                 (9, 9, b'\xe0', 100.0),  # b'\xe0' (1, 1, 1)
             ],
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
 
         actual = get_mapping(self.node1, self.node2, 'population')
@@ -606,7 +606,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         self.node2.set_domain('BBB')
 
         self.node2.add_link(self.node1, 'population', is_default=True)
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -621,7 +621,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
                 (8, 8, b'\xe0', 100.0),
                 (9, 9, b'\xe0', 100.0),
             ],
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
 
         actual = get_mapping(self.node1, self.node2, 'population')
@@ -644,7 +644,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
     def test_missing_left(self):
         """Check unmapped left-side elemenets."""
         self.node2.add_link(self.node1, 'population', is_default=True)
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -659,7 +659,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
                 (5, 8, b'\xe0', 100.0),
                 (5, 9, b'\xe0', 100.0),
             ],
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
 
         actual = get_mapping(self.node1, self.node2, 'population')
@@ -686,7 +686,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
     def test_missing_right(self):
         """Check unmapped right-side elemenets."""
         self.node2.add_link(self.node1, 'population', is_default=True)
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -701,7 +701,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
                 (8, 5, b'\xe0', 100.0),
                 (9, 5, b'\xe0', 100.0),
             ],
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
 
         actual = get_mapping(self.node1, self.node2, 'population')
@@ -731,7 +731,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         self.node2.set_domain('BBB')
 
         self.node2.add_link(self.node1, 'population', is_default=True)
-        self.node2.insert_relations2(
+        self.node2.insert_mappings2(
             node_or_ref=self.node1,
             link_name='population',
             data=[
@@ -878,7 +878,7 @@ class TestTranslate(unittest.TestCase):
             selectors=['[foo="bar"]'],
             is_default=True,
         )
-        self.node.insert_relations(
+        self.node.insert_mappings(
             node_or_ref='other-file',
             link_name='edge 1',
             data=[
@@ -901,7 +901,7 @@ class TestTranslate(unittest.TestCase):
             description='Edge two description.',
             selectors=['[foo]'],
         )
-        self.node.insert_relations(
+        self.node.insert_mappings(
             node_or_ref='other-file',
             link_name='edge 2',
             data=[

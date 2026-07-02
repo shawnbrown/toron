@@ -121,10 +121,10 @@ def warn_if_issues(
         'value_mismatch': 'skipped {value_mismatch} rows with mismatched values',
         'mapping_level_mismatch': 'skipped {mapping_level_mismatch} rows with mismatched mapping levels',
         'bad_mapping_level': 'skipped {bad_mapping_level} rows with invalid mapping levels',
-        'approximate_relations': 'skipped {approximate_relations} approximate relations (reify to delete)',
+        'approximate_mappings': 'skipped {approximate_mappings} approximate mappings (reify to delete)',
         'no_match': 'skipped {no_match} rows with labels that match no index',
         'no_weight': 'skipped {no_weight} rows with no matching weights',
-        'no_relation': 'skipped {no_relation} rows with no matching relations',
+        'no_mapping': 'skipped {no_mapping} rows with no matching mappings',
         'merged': 'merged {merged} existing records with duplicate label values',
         'inserted': 'loaded {inserted} rows',
         'updated': 'updated {updated} rows',
@@ -444,7 +444,7 @@ class TopoNode(object):
                 optimizations=self._dal.optimizations,
             )
 
-            # Check if old "whole space" was used for relations or quantities.
+            # Check if old "whole space" was used for mappings or quantities.
             old_whole_structure = structure_repo.get_by_labels(old_whole_space)
 
             is_unused_by_quantity = not next(
@@ -453,16 +453,16 @@ class TopoNode(object):
             )
 
             links = self._dal.LinkRepository(cursor).get_all()
-            relation_repo = self._dal.MappingRepository(cursor)
+            mapping_repo = self._dal.MappingRepository(cursor)
             all_mapping_levels = set()
             for link in links:
                 all_mapping_levels.update(
-                    relation_repo.get_distinct_mapping_levels(link.id)
+                    mapping_repo.get_distinct_mapping_levels(link.id)
                 )
-            is_unused_by_relation = \
+            is_unused_by_mapping = \
                 bytes(BitFlags(old_whole_space)) not in all_mapping_levels
 
-            if is_unused_by_quantity and is_unused_by_relation:
+            if is_unused_by_quantity and is_unused_by_mapping:
                 # Remove old whole space if it is not used.
                 remove_discrete_category(
                     old_whole_space,
@@ -524,7 +524,7 @@ class TopoNode(object):
                     'cannot remove all index columns\n'
                     '\n'
                     'Without at least one index column, a node cannot represent '
-                    'any weights, quantities, or relations it might contain.'
+                    'any weights, quantities, or mappings it might contain.'
                 )
                 raise RuntimeError(msg)
 
@@ -862,7 +862,7 @@ class TopoNode(object):
 
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
-            relation_repo = self._dal.MappingRepository(cursor)
+            mapping_repo = self._dal.MappingRepository(cursor)
             label_manager = self._dal.LabelManager(cursor)
 
             label_columns = label_manager.get_columns()
@@ -906,7 +906,7 @@ class TopoNode(object):
                             f"merge_on_conflict=True)'."
                         )
                     weight_repo.merge_by_index_id(matching.id, index_record.id)
-                    relation_repo.merge_by_index_id(matching.id, index_record.id)
+                    mapping_repo.merge_by_index_id(matching.id, index_record.id)
                     index_repo.delete(matching.id)
                     counter['merged'] += 1
                     previously_merged.add(matching.id)
@@ -942,7 +942,7 @@ class TopoNode(object):
                 link_repo = self._dal.LinkRepository(cursor)
                 for link in link_repo.get_all():
                     if (not link.is_locally_complete
-                            and relation_repo.mapping_is_complete(link.id)):
+                            and mapping_repo.mapping_is_complete(link.id)):
                         link_repo.update(replace(link, is_locally_complete=True))
 
         warn_if_issues(counter, expected='updated')
@@ -971,7 +971,7 @@ class TopoNode(object):
             index_repo = self._dal.IndexRepository(cursor)
             aux_index_repo = self._dal.IndexRepository(aux_cursor)
             weight_repo = self._dal.WeightRepository(cursor)
-            relation_repo = self._dal.MappingRepository(cursor)
+            mapping_repo = self._dal.MappingRepository(cursor)
             link_repo = self._dal.LinkRepository(cursor)
             label_manager = self._dal.LabelManager(cursor)
 
@@ -1003,7 +1003,7 @@ class TopoNode(object):
                         index_repo,
                         weight_repo,
                         link_repo,
-                        relation_repo,
+                        mapping_repo,
                     )
                     counter['deleted'] += 1
 
@@ -1014,7 +1014,7 @@ class TopoNode(object):
                         index_repo,
                         weight_repo,
                         link_repo,
-                        relation_repo,
+                        mapping_repo,
                     )
                     counter['deleted'] += 1
 
@@ -1042,13 +1042,13 @@ class TopoNode(object):
                             and weight_repo.weight_group_is_complete(group.id)):
                         group_repo.update(replace(group, is_complete=True))
 
-                aux_relation_repo = self._dal.MappingRepository(aux_cursor)
+                aux_mapping_repo = self._dal.MappingRepository(aux_cursor)
                 for link in link_repo.get_all():
                     # Rebuild 'other_index_hash'. When all occurances of an
                     # 'other_index_id' are associated with 'index_id' values
                     # that are deleted, this hash will change.
                     other_index_hash = SequenceHash(
-                        aux_relation_repo.find_distinct_other_index_ids(
+                        aux_mapping_repo.find_distinct_other_index_ids(
                             link.id,
                             ordered=True,
                         )
@@ -1059,7 +1059,7 @@ class TopoNode(object):
                     # are deleted.
                     is_locally_complete = (
                         link.is_locally_complete
-                        or relation_repo.mapping_is_complete(link.id)
+                        or mapping_repo.mapping_is_complete(link.id)
                     )
 
                     # Assign new values and update link record.
@@ -1704,7 +1704,7 @@ class TopoNode(object):
 
             link_repo.delete_and_cascade(link.id)
 
-    def select_relations(
+    def select_mappings(
         self,
         node_or_ref: Union['TopoNode', str],
         link_name: Optional[str] = None,
@@ -1733,13 +1733,13 @@ class TopoNode(object):
 
             for index in index_repo.filter_by_label(criteria, include_undefined=False):
                 index_id = index.id
-                relations = self._dal.MappingRepository(aux_cursor).find(
+                mappings = self._dal.MappingRepository(aux_cursor).find(
                     link_id=link.id,
                     index_id=index_id,
                 )
                 try:
-                    # Loop over relations (or raise StopIteration if empty).
-                    for rel in chain([next(relations)], relations):
+                    # Loop over mappings (or raise StopIteration if empty).
+                    for rel in chain([next(mappings)], mappings):
                         if rel.mapping_level:
                             # Build a description of any columns that were
                             # left unspecified in the original mapping.
@@ -1755,10 +1755,10 @@ class TopoNode(object):
                                      + (ambiguous_desc,))
                         yield row_tuple
                 except StopIteration:
-                    # Yield disjoint record (no incoming relation for this index).
+                    # Yield disjoint record (no incoming mapping for this index).
                     yield (None, None, index_id) + index.labels + (None,)
 
-    def insert_relations2(
+    def insert_mappings2(
         self,
         node_or_ref: Union['TopoNode', str],
         link_name: Optional[str],
@@ -1769,7 +1769,7 @@ class TopoNode(object):
 
         .. code-block:: python
 
-            >>> node.insert_relations2(
+            >>> node.insert_mappings2(
             ...     node_or_ref='myfile',
             ...     link_name='pop2000',
             ...     data=[
@@ -1785,7 +1785,7 @@ class TopoNode(object):
         .. note::
 
             This is a new implementation to use with the Mapper_OLD
-            class. Once the use cases for relation handling are better
+            class. Once the use cases for mapping handling are better
             defined, the existing methods should be revisited and
             finalized.
         """
@@ -1796,7 +1796,7 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
             link_repo = self._dal.LinkRepository(cursor)
-            relation_repo = self._dal.MappingRepository(cursor)
+            mapping_repo = self._dal.MappingRepository(cursor)
 
             # Get link id.
             link = self._get_link(node_or_ref, link_name,
@@ -1827,7 +1827,7 @@ class TopoNode(object):
                     counter['undefined_to_undefined'] += 1
                     continue  # <- Skip to next item.
 
-                relation_repo.add(
+                mapping_repo.add(
                     link_id=link_id,
                     other_index_id=other_index_id,
                     index_id=index_id,
@@ -1837,11 +1837,11 @@ class TopoNode(object):
                 counter['inserted'] += 1
 
             if counter['inserted'] and link:
-                applogger.info(f"loaded {counter['inserted']} relations")
+                applogger.info(f"loaded {counter['inserted']} mappings")
 
                 # Get ordered sequence of other_index_id values.
-                aux_relation_repo = self._dal.MappingRepository(aux_cursor)
-                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
+                aux_mapping_repo = self._dal.MappingRepository(aux_cursor)
+                other_index_ids = aux_mapping_repo.find_distinct_other_index_ids(
                     link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
@@ -1850,30 +1850,30 @@ class TopoNode(object):
                 sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
                     sequence_hash.add_value(other_index_id)
-                    relation_repo.refresh_proportions(link_id, other_index_id)
+                    mapping_repo.refresh_proportions(link_id, other_index_id)
 
                 # Assign new values and update link record.
                 link_repo.update(replace(
                     link,
                     other_index_hash=sequence_hash.get_hexdigest(),
-                    is_locally_complete=relation_repo.mapping_is_complete(link_id),
+                    is_locally_complete=mapping_repo.mapping_is_complete(link_id),
                 ))
             else:
-                applogger.warning('no relations loaded')
+                applogger.warning('no mappings loaded')
 
             if counter['undefined_to_undefined']:
                 applogger.debug(
                     f"skipped {counter['undefined_to_undefined']} "
-                    f"undefined-to-undefined relations"
+                    f"undefined-to-undefined mappings"
                 )
 
             if counter['bad_mapping_level']:
                 applogger.warning(
-                    f"skipped {counter['bad_mapping_level']} relations with "
+                    f"skipped {counter['bad_mapping_level']} mappings with "
                     f"invalid mapping levels"
                 )
 
-    def insert_relations(
+    def insert_mappings(
         self,
         node_or_ref: Union['TopoNode', str],
         link_name: Optional[str],
@@ -1894,7 +1894,7 @@ class TopoNode(object):
                 self._managed_transaction(cursor):
             label_manager = self._dal.LabelManager(cursor)
             link_repo = self._dal.LinkRepository(cursor)
-            relation_repo = self._dal.MappingRepository(cursor)
+            mapping_repo = self._dal.MappingRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
 
@@ -1912,7 +1912,7 @@ class TopoNode(object):
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
             for row in data:
-                # Get values for relation record.
+                # Get values for mapping record.
                 other_index_id, value, index_id = row[:3]
                 row_dict = dict(zip(columns[3:], row[3:]))
 
@@ -1936,8 +1936,8 @@ class TopoNode(object):
                     continue  # <- Skip to next item.
 
                 try:
-                    # Add relation record.
-                    relation_repo.add(
+                    # Add mapping record.
+                    mapping_repo.add(
                         link_id=link_id,
                         other_index_id=other_index_id,
                         index_id=index_id,
@@ -1950,8 +1950,8 @@ class TopoNode(object):
 
             if counter['inserted'] and link:
                 # Get ordered sequence of other_index_id values.
-                aux_relation_repo = self._dal.MappingRepository(aux_cursor)
-                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
+                aux_mapping_repo = self._dal.MappingRepository(aux_cursor)
+                other_index_ids = aux_mapping_repo.find_distinct_other_index_ids(
                     link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
@@ -1960,18 +1960,18 @@ class TopoNode(object):
                 sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
                     sequence_hash.add_value(other_index_id)
-                    relation_repo.refresh_proportions(link_id, other_index_id)
+                    mapping_repo.refresh_proportions(link_id, other_index_id)
 
                 # Assign new values and update link record.
                 link_repo.update(replace(
                     link,
                     other_index_hash=sequence_hash.get_hexdigest(),
-                    is_locally_complete=relation_repo.mapping_is_complete(link_id),
+                    is_locally_complete=mapping_repo.mapping_is_complete(link_id),
                 ))
 
         warn_if_issues(counter, expected='inserted')
 
-    def update_relations(
+    def update_mappings(
         self,
         node_or_ref: Union['TopoNode', str],
         link_name: Optional[str],
@@ -1992,7 +1992,7 @@ class TopoNode(object):
                 self._managed_transaction(cursor):
             label_manager = self._dal.LabelManager(cursor)
             link_repo = self._dal.LinkRepository(cursor)
-            relation_repo = self._dal.MappingRepository(cursor)
+            mapping_repo = self._dal.MappingRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
 
@@ -2010,7 +2010,7 @@ class TopoNode(object):
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
             for row in data:
-                # Get values for relation record.
+                # Get values for mapping record.
                 other_index_id, value, index_id = row[:3]
                 row_dict = dict(zip(columns[3:], row[3:]))
 
@@ -2033,25 +2033,25 @@ class TopoNode(object):
                     counter['bad_mapping_level'] += 1
                     continue  # <- Skip to next item.
 
-                # Find matching relation record (can only match one record).
-                relation_match = relation_repo.find(
+                # Find matching mapping record (can only match one record).
+                mapping_match = mapping_repo.find(
                     link_id=link_id,
                     other_index_id=other_index_id,
                     index_id=index_id,
                 )
-                relation_record = next(relation_match, None)
+                mapping_record = next(mapping_match, None)
 
-                if relation_record:
-                    # Update relation record if it exists.
-                    relation_repo.update(replace(
-                        relation_record,
+                if mapping_record:
+                    # Update mapping record if it exists.
+                    mapping_repo.update(replace(
+                        mapping_record,
                         value=value,
                         mapping_level=mapping_level,
                     ))
                     counter['updated'] += 1
                 else:
-                    # Add new relation if it does not exist.
-                    relation_repo.add(
+                    # Add new mapping if it does not exist.
+                    mapping_repo.add(
                         link_id=link_id,
                         other_index_id=other_index_id,
                         index_id=index_id,
@@ -2060,10 +2060,10 @@ class TopoNode(object):
                     )
                     counter['inserted'] += 1
 
-            aux_relation_repo = self._dal.MappingRepository(aux_cursor)
+            aux_mapping_repo = self._dal.MappingRepository(aux_cursor)
             if counter['inserted']:
                 # Get ordered sequence of other_index_id values.
-                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
+                other_index_ids = aux_mapping_repo.find_distinct_other_index_ids(
                     link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
@@ -2072,22 +2072,22 @@ class TopoNode(object):
                 sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
                     sequence_hash.add_value(other_index_id)
-                    relation_repo.refresh_proportions(link_id, other_index_id)
+                    mapping_repo.refresh_proportions(link_id, other_index_id)
 
                 # Update link's hash and is-complete status.
                 link_repo.update(replace(
                     link,
                     other_index_hash=sequence_hash.get_hexdigest(),
-                    is_locally_complete=relation_repo.mapping_is_complete(link_id),
+                    is_locally_complete=mapping_repo.mapping_is_complete(link_id),
                 ))
 
             elif counter['updated']:
                 # Get iterator of other_index_id values.
-                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(link_id)
+                other_index_ids = aux_mapping_repo.find_distinct_other_index_ids(link_id)
 
                 # Refresh proportion values.
                 for other_index_id in other_index_ids:
-                    relation_repo.refresh_proportions(link_id, other_index_id)
+                    mapping_repo.refresh_proportions(link_id, other_index_id)
 
         warn_if_issues(
             counter,
@@ -2096,7 +2096,7 @@ class TopoNode(object):
         )
 
     @overload
-    def delete_relations(
+    def delete_mappings(
         self,
         node_or_ref: Union['TopoNode', str],
         link_name: Optional[str],
@@ -2105,14 +2105,14 @@ class TopoNode(object):
     ) -> None:
         ...
     @overload
-    def delete_relations(
+    def delete_mappings(
         self,
         node_or_ref: Union['TopoNode', str],
         link_name: Optional[str],
         **criteria: str,
     ) -> None:
         ...
-    def delete_relations(
+    def delete_mappings(
         self,
         node_or_ref,
         link_name=None,
@@ -2129,8 +2129,8 @@ class TopoNode(object):
 
             label_manager = self._dal.LabelManager(cursor)
             link_repo = self._dal.LinkRepository(cursor)
-            relation_repo = self._dal.MappingRepository(cursor)
-            aux_relation_repo = self._dal.MappingRepository(aux_cursor)
+            mapping_repo = self._dal.MappingRepository(cursor)
+            aux_mapping_repo = self._dal.MappingRepository(aux_cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
             link = self._get_link(node_or_ref, link_name, link_repo)
@@ -2157,7 +2157,7 @@ class TopoNode(object):
                     )
 
                 for row in data:
-                    # Get values for relation record.
+                    # Get values for mapping record.
                     other_index_id, value, index_id = row[:3]
                     row_dict = dict(zip(columns[3:], row[3:]))
 
@@ -2174,29 +2174,29 @@ class TopoNode(object):
                         counter['mismatch'] += 1
                         continue  # <- Skip to next item.
 
-                    # Find matching relation record (can only match one record).
-                    relation_match = relation_repo.find(
+                    # Find matching mapping record (can only match one record).
+                    mapping_match = mapping_repo.find(
                         link_id=link_id,
                         other_index_id=other_index_id,
                         index_id=index_id,
                     )
-                    relation_record = next(relation_match, None)
+                    mapping_record = next(mapping_match, None)
 
-                    if relation_record:
+                    if mapping_record:
                         # Check for matching value.
-                        if relation_record.value != float(value):
+                        if mapping_record.value != float(value):
                             counter['value_mismatch'] += 1
                             continue  # <- Skip to next item.
 
                         # Check for mapping level, skip if present.
-                        if relation_record.mapping_level != whole_space_mapping_level:
-                            counter['approximate_relations'] += 1
+                        if mapping_record.mapping_level != whole_space_mapping_level:
+                            counter['approximate_mappings'] += 1
                             continue  # <- Skip to next item.
 
-                        relation_repo.delete(relation_record.id)
+                        mapping_repo.delete(mapping_record.id)
                         counter['deleted'] += 1
                     else:
-                        counter['no_relation'] += 1
+                        counter['no_mapping'] += 1
 
             elif criteria:
                 label_columns = label_manager.get_columns()
@@ -2204,20 +2204,20 @@ class TopoNode(object):
                 criteria_level = BitFlags(x in criteria_keys for x in label_columns)
 
                 for index in index_repo.filter_by_label(criteria):
-                    # Eagerly fetch relations, using `list()`, so the cursor
+                    # Eagerly fetch mappings, using `list()`, so the cursor
                     # is free to `delete()` items in the nested loop.
-                    relations = list(aux_relation_repo.find(
+                    mappings = list(aux_mapping_repo.find(
                         link_id=link_id, index_id=index.id
                     ))
-                    for rel in relations:
+                    for rel in mappings:
                         bitwise_or = criteria_level | BitFlags(rel.mapping_level)
                         if criteria_level == bitwise_or:
                             # If criteria uses the same or more columns than
-                            # the relation's mapping level, then delete it.
-                            aux_relation_repo.delete(rel.id)
+                            # the mapping's mapping level, then delete it.
+                            aux_mapping_repo.delete(rel.id)
                             counter['deleted'] += 1
                         else:
-                            # If the relation's mapping level uses columns that
+                            # If the mapping's mapping level uses columns that
                             # aren't used in the criteria, then don't delete it.
                             counter['mapping_level_mismatch'] += 1
 
@@ -2226,7 +2226,7 @@ class TopoNode(object):
 
             if counter['deleted']:
                 # Get ordered sequence of other_index_id values.
-                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
+                other_index_ids = aux_mapping_repo.find_distinct_other_index_ids(
                     link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
@@ -2235,18 +2235,18 @@ class TopoNode(object):
                 sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
                     sequence_hash.add_value(other_index_id)
-                    relation_repo.refresh_proportions(link_id, other_index_id)
+                    mapping_repo.refresh_proportions(link_id, other_index_id)
 
                 # Update link's hash and is-complete status.
                 link_repo.update(replace(
                     link,
                     other_index_hash=sequence_hash.get_hexdigest(),
-                    is_locally_complete=relation_repo.mapping_is_complete(link_id),
+                    is_locally_complete=mapping_repo.mapping_is_complete(link_id),
                 ))
 
         warn_if_issues(counter, expected='deleted')
 
-    def reify_relations(
+    def reify_mappings(
         self,
         node_or_ref: Union['TopoNode', str],
         link_name: str,
@@ -2265,7 +2265,7 @@ class TopoNode(object):
         nodes.
 
         Use this when a mapping was loaded without certain labels but
-        is known to be accurate, or when ambiguous relations have been
+        is known to be accurate, or when ambiguous mappings have been
         reviewed and deemed authoritative.
 
         Parameters
@@ -2276,7 +2276,7 @@ class TopoNode(object):
             The name of the link. This is needed because multiple
             links can come from the same node.
         **criteria : str
-            Additional keyword arguments to select only those relations
+            Additional keyword arguments to select only those mappings
             associated the given index labels for reification.
         """
         counter: Counter = Counter()
@@ -2295,43 +2295,43 @@ class TopoNode(object):
             fully_specified_level = bytes(BitFlags([1] * len(label_names)))
 
             if criteria:
-                # Reify selected ambiguous relations in link.
+                # Reify selected ambiguous mappings in link.
                 criteria_keys = set(criteria.keys())
                 criteria_flags = BitFlags(x in criteria_keys for x in label_names)
 
                 index_records = index_repo.filter_by_label(criteria)
 
-                relation_repo = self._dal.MappingRepository(aux_cursor)
+                mapping_repo = self._dal.MappingRepository(aux_cursor)
                 link_id = link.id
                 for index in index_records:
-                    # Eagerly fetch relations, using `list()`, so the cursor
+                    # Eagerly fetch mappings, using `list()`, so the cursor
                     # is free to `update()` items in the nested loop.
-                    relations = list(relation_repo.find(
+                    mappings = list(mapping_repo.find(
                         link_id=link_id, index_id=index.id
                     ))
-                    for rel in relations:
+                    for rel in mappings:
                         if rel.other_index_id == 0 and rel.index_id == 0:
                             continue  # The undefined-to-undefined level should stay `None`.
 
                         if rel.mapping_level != fully_specified_level:
                             bitwise_or = criteria_flags | BitFlags(rel.mapping_level)
                             if bitwise_or == criteria_flags:
-                                relation_repo.update(replace(rel, mapping_level=fully_specified_level))
+                                mapping_repo.update(replace(rel, mapping_level=fully_specified_level))
                                 counter['reified'] += 1
                             else:
                                 counter['mapping_level_mismatch'] += 1
 
             else:
-                # Reify ALL ambiguous relations in link.
-                relation_repo = self._dal.MappingRepository(cursor)
-                aux_relation_repo = self._dal.MappingRepository(aux_cursor)
+                # Reify ALL ambiguous mappings in link.
+                mapping_repo = self._dal.MappingRepository(cursor)
+                aux_mapping_repo = self._dal.MappingRepository(aux_cursor)
 
-                for rel in relation_repo.find(link_id=link.id):
+                for rel in mapping_repo.find(link_id=link.id):
                     if rel.other_index_id == 0 and rel.index_id == 0:
                         continue  # The undefined-to-undefined level should stay `None`.
 
                     if rel.mapping_level != fully_specified_level:
-                        aux_relation_repo.update(replace(rel, mapping_level=fully_specified_level))
+                        aux_mapping_repo.update(replace(rel, mapping_level=fully_specified_level))
                         counter['reified'] += 1
 
         warn_if_issues(counter, expected='reified')

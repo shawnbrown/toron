@@ -329,8 +329,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser_mapping = subparsers.add_parser(
         name='mapping',
         help='write mapping to stdout or load mapping from stdin',
-        description=('Write mapping relations to stdout or load mapping '
-                     'relations from stdin (CSV format).'),
+        description=('Write mapping records to stdout or load mapping '
+                     'records from stdin (CSV format).'),
         prog='toron FILE1 mapping',  # <- Replaces "FILE" with "FILE1".
     )
     parser_mapping.add_argument('filepath2',

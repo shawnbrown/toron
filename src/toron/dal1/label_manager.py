@@ -256,7 +256,7 @@ def legacy_drop_labels(node: 'TopoNode', column: str, *columns: str) -> None:
                 'cannot delete all columns\n'
                 '\n'
                 'Without at least one index column, a node cannot represent '
-                'any weights, quantities, or relations it might contain.'
+                'any weights, quantities, or mappings it might contain.'
             )
             raise RuntimeError(msg)
 

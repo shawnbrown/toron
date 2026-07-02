@@ -822,7 +822,6 @@ class BaseWeightRepository(ABC):
             )
 
 
-
 AttributesDict: TypeAlias = Dict[str, str]
 
 
@@ -1097,7 +1096,7 @@ class MappingRecord(object):
         if self.other_index_id == 0:  # <- From undefined.
             if self.index_id == 0:  # <- To undefined.
                 raise ValueError(
-                    'undefined-to-undefined relation (0 -> 0) not allowed'
+                    'undefined-to-undefined mapping (0 -> 0) not allowed'
                 )
             else:  # <- To defined.
                 if self.proportion:
@@ -1124,7 +1123,7 @@ class BaseMappingRepository(ABC):
     ) -> None:
         """Add a record to the repository.
 
-        If *other_index_id* ``0`` and *index_id* ``0`` (the relation
+        If *other_index_id* ``0`` and *index_id* ``0`` (the mapping
         undefined-to-undefined), a ``ValueError`` is raised.
         """
 
@@ -1132,7 +1131,7 @@ class BaseMappingRepository(ABC):
     def get(self, id: int) -> MappingRecord:
         """Get a record from the repository.
 
-        If no relation matches the given *id*, a ``KeyError`` is raised.
+        If no mapping matches the given *id*, a ``KeyError`` is raised.
         """
 
     @abstractmethod
@@ -1173,7 +1172,7 @@ class BaseMappingRepository(ABC):
 
     @abstractmethod
     def mapping_is_complete(self, link_id: int) -> bool:
-        """Return True if there's a relation for every index record."""
+        """Return True if there's a mapping for every index record."""
 
     @abstractmethod
     def get_distinct_mapping_levels(self, link_id: int) -> List[bytes]:
@@ -1191,28 +1190,28 @@ class BaseMappingRepository(ABC):
     def merge_by_index_id(
         self, index_ids: Union[Iterable[int], int], target: int
     ) -> None:
-        """Merge relation records by given index_id values."""
+        """Merge mapping records by given index_id values."""
         if not isinstance(index_ids, Iterable):
             index_ids = [index_ids]
         index_ids = {target}.union(index_ids)  # Always include target in ids.
 
-        relation_ids = set()
-        relation_sums: defaultdict = defaultdict(lambda: (0.0, 0.0))
+        mapping_ids = set()
+        mapping_sums: defaultdict = defaultdict(lambda: (0.0, 0.0))
         for index_id in index_ids:
             for rel in self.find(index_id=index_id):
-                relation_ids.add(rel.id)
+                mapping_ids.add(rel.id)
                 key = (rel.link_id, rel.other_index_id, rel.mapping_level)
-                v, p = relation_sums[key]  # Unpack value and proportion.
+                v, p = mapping_sums[key]  # Unpack value and proportion.
                 try:
                     proportion = p + rel.proportion
                 except TypeError:
                     proportion = None
-                relation_sums[key] = ((v + rel.value), proportion)
+                mapping_sums[key] = ((v + rel.value), proportion)
 
-        for relation_id in relation_ids:
-            self.delete(relation_id)
+        for mapping_id in mapping_ids:
+            self.delete(mapping_id)
 
-        for key, (value, proportion) in relation_sums.items():
+        for key, (value, proportion) in mapping_sums.items():
             link_id, other_index_id, mapping_level = key
             self.add(
                 link_id=link_id,
@@ -1229,26 +1228,26 @@ class BaseMappingRepository(ABC):
         """Refresh proportions for records with matching link_id
         and other_index_id.
         """
-        relations = list(self.find(
+        mappings = list(self.find(
             link_id=link_id, other_index_id=other_index_id
         ))
 
         if other_index_id == 0:
             # Handle records from "undefined".
-            for relation in relations:
-                if relation.index_id == 0:
-                    raise ValueError('undefined-to-undefined relation is invalid')
-                self.update(replace(relation, proportion=0.0))
+            for mapping in mappings:
+                if mapping.index_id == 0:
+                    raise ValueError('undefined-to-undefined mapping is invalid')
+                self.update(replace(mapping, proportion=0.0))
         else:
-            # Handle fully-defined relations.
-            values_sum = sum(rel.value for rel in relations)
-            for relation in relations:
+            # Handle fully-defined mappings.
+            values_sum = sum(rel.value for rel in mappings)
+            for mapping in mappings:
                 try:
-                    proportion = relation.value / values_sum
+                    proportion = mapping.value / values_sum
                 except ZeroDivisionError:
-                    proportion = 1 / len(relations)
+                    proportion = 1 / len(mappings)
 
-                self.update(replace(relation, proportion=proportion))
+                self.update(replace(mapping, proportion=proportion))
 
 
 class BasePropertyRepository(ABC):

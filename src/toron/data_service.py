@@ -127,24 +127,24 @@ def delete_index_record(
     index_repo: BaseIndexRepository,
     weight_repo: BaseWeightRepository,
     link_repo: BaseLinkRepository,
-    relation_repo: BaseMappingRepository,
+    mapping_repo: BaseMappingRepository,
 ) -> None:
-    """Delete index record and associated weights and relations."""
+    """Delete index record and associated weights and mappings."""
     # Remove associated weight records.
     weights = weight_repo.find_by_index_id(index_id)
     for weight in list(weights):
         weight_repo.delete(weight.id)
 
-    # Remove associated relation records.
-    relations = relation_repo.find(index_id=index_id)
+    # Remove associated mapping records.
+    mappings = mapping_repo.find(index_id=index_id)
     fully_specified_level = bytes(BitFlags([1] * len(index_repo.get_label_names())))
     other_index_ids = set()
-    for relation in list(relations):
-        if relation.mapping_level != fully_specified_level:
+    for mapping in list(mappings):
+        if mapping.mapping_level != fully_specified_level:
             # For now, prevent index deletion when there
-            # are ambiguous relations. In the future, this
+            # are ambiguous mappings. In the future, this
             # restriction should be removed by re-mapping
-            # these relations using matching labels.
+            # these mappings using matching labels.
             raise ValueError(
                 f'cannot delete index_id {index_id}, some associated '
                 f'mappings are ambiguous\n'
@@ -154,13 +154,13 @@ def delete_index_record(
                 f'links can be re-added.'
             )
 
-        other_index_ids.add(relation.other_index_id)
-        relation_repo.delete(relation.id)
+        other_index_ids.add(mapping.other_index_id)
+        mapping_repo.delete(mapping.id)
 
-    # Rebuild proportions for remaining relations.
+    # Rebuild proportions for remaining mappings.
     for other_index_id in other_index_ids:
         for link in link_repo.get_all():
-            relation_repo.refresh_proportions(link.id, other_index_id)
+            mapping_repo.refresh_proportions(link.id, other_index_id)
 
     # Remove existing Index record.
     index_repo.delete(index_id)
@@ -469,7 +469,7 @@ def generate_mapping_elements(
     link_name: Optional[str],
     trg_index_repo: BaseIndexRepository,
     trg_link_repo: BaseLinkRepository,
-    trg_relation_repo: BaseMappingRepository,
+    trg_mapping_repo: BaseMappingRepository,
     src_index_repo: BaseIndexRepository,
     src_prop_repo: BasePropertyRepository,
 ) -> Generator[MappingElement, None, None]:
@@ -500,8 +500,8 @@ def generate_mapping_elements(
     yield (0, 0, None, 0.0)
 
     # Yield matched records.
-    relations = trg_relation_repo.find(link_id=link.id)
-    for rel in relations:
+    mappings = trg_mapping_repo.find(link_id=link.id)
+    for rel in mappings:
         yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
 
     # If target is not complete, yield unmatched right-side elements.
@@ -518,7 +518,7 @@ def generate_mapping_elements(
             if other_index_id == 0:
                 continue
 
-            matches = trg_relation_repo.find(
+            matches = trg_mapping_repo.find(
                 link_id=link.id,
                 other_index_id=other_index_id,
             )

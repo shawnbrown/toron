@@ -361,7 +361,7 @@ def normalize_mapping_data(
 def read_from_stdin(
     args: argparse.Namespace, node1: TopoNode, node2: TopoNode
 ) -> ExitCode:
-    """Insert mapping relations read from stdin stream."""
+    """Insert mapping records read from stdin stream."""
     # Check that link is defined in nodes.
     left_link = node1.get_link(node2, args.link)
     right_link = node2.get_link(node1, args.link)
@@ -403,15 +403,15 @@ def read_from_stdin(
     if not args.allow_incomplete and not mapper.is_fully_matched():
         raise ToronError('mapping is incomplete, no records loaded')
 
-    # Insert relations into FILE2.
+    # Insert mappings into FILE2.
     if args.direction in {'both', 'right'}:
-        applogger.info(f'loading relations: FILE1 -> FILE2')
-        relations = mapper.iter_relations('node2')
-        node2.insert_relations2(
+        applogger.info(f'loading mappings: FILE1 -> FILE2')
+        mappings = mapper.iter_mappings('node2')
+        node2.insert_mappings2(
             node1,
             args.link,
-            data=relations,
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            data=mappings,
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
         link = cast(Link, node2.get_link(node1, args.link))
         if link.is_locally_complete:
@@ -419,15 +419,15 @@ def read_from_stdin(
         else:
             applogger.warning(f'mapping is incomplete')
 
-    # Insert relations into FILE1.
+    # Insert mappings into FILE1.
     if args.direction in {'both', 'left'}:
-        applogger.info(f'loading relations: FILE1 <- FILE2')
-        relations = mapper.iter_relations('node1')
-        node1.insert_relations2(
+        applogger.info(f'loading mappings: FILE1 <- FILE2')
+        mappings = mapper.iter_mappings('node1')
+        node1.insert_mappings2(
             node2,
             args.link,
-            data=relations,
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            data=mappings,
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
         link = cast(Link, node1.get_link(node2, args.link))
         if link.is_locally_complete:
@@ -483,7 +483,7 @@ def write_to_stdout(
         src_prop_repo = source_node._dal.PropertyRepository(src_cur1)
         trg_index_repo = target_node._dal.IndexRepository(trg_cur1)
         trg_link_repo = target_node._dal.LinkRepository(trg_cur1)
-        trg_relation_repo = target_node._dal.MappingRepository(trg_cur1)
+        trg_mapping_repo = target_node._dal.MappingRepository(trg_cur1)
 
         src_label_names = src_index_repo.get_label_names()
         trg_label_names = trg_index_repo.get_label_names()
@@ -495,7 +495,7 @@ def write_to_stdout(
         link = trg_link_repo.get_by_unique_id_and_name(
             other_unique_id=src_unique_id, name=args.link,
         )
-        mapping_levels = trg_relation_repo.get_distinct_mapping_levels(link.id)
+        mapping_levels = trg_mapping_repo.get_distinct_mapping_levels(link.id)
         whole_space_bytes = bytes(BitFlags(trg_label_names))
         ambiguous_header: Tuple[str, ...]
         get_ambiguous: Callable[[Union[bytes, None], Sequence[str]],
@@ -523,7 +523,7 @@ def write_to_stdout(
                 link_name=args.link,
                 trg_index_repo=trg_index_repo,
                 trg_link_repo=trg_link_repo,
-                trg_relation_repo=trg_relation_repo,
+                trg_mapping_repo=trg_mapping_repo,
                 src_index_repo=src_index_repo,
                 src_prop_repo=src_prop_repo,
             )

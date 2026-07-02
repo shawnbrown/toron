@@ -3937,7 +3937,7 @@ class TestAddEdgeRelations(unittest.TestCase):
         ]
         self.assertEqual(results, expected)
 
-    def test_update_relations(self):
+    def test_update_mappings(self):
         self.dal._add_edge_relations(
             cursor=self.cur,
             edge_id=self.edge_id,

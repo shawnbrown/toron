@@ -311,10 +311,10 @@ def load_mapping(
             selectors=selectors,
             is_default=is_default,
         )
-        right_node.insert_relations2(
+        right_node.insert_mappings2(
             node_or_ref=left_node,
             link_name=link_name,
-            data=mapper.get_relations('->'),
+            data=mapper.get_mappings('->'),
             columns=['other_index_id', link_name, 'index_id', 'mapping_level'],
         )
 
@@ -336,10 +336,10 @@ def load_mapping(
             selectors=selectors,
             is_default=is_default,
         )
-        left_node.insert_relations2(
+        left_node.insert_mappings2(
             node_or_ref=right_node,
             link_name=link_name,
-            data=mapper.get_relations('<-'),
+            data=mapper.get_mappings('<-'),
             columns=['other_index_id', link_name, 'index_id', 'mapping_level'],
         )
 
@@ -371,7 +371,7 @@ def _get_mapping_elements(
             link_name=link_name,
             trg_index_repo=target_node._dal.IndexRepository(trg_cur),
             trg_link_repo=target_node._dal.LinkRepository(trg_cur),
-            trg_relation_repo=target_node._dal.MappingRepository(trg_cur),
+            trg_mapping_repo=target_node._dal.MappingRepository(trg_cur),
             src_index_repo=source_node._dal.IndexRepository(src_cur),
             src_prop_repo=source_node._dal.PropertyRepository(src_cur),
         )
@@ -633,7 +633,7 @@ def _translate(
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
         link_repo = node._dal.LinkRepository(cursor)
-        relation_repo = node._dal.MappingRepository(cursor)
+        mapping_repo = node._dal.MappingRepository(cursor)
         index_repo = node._dal.IndexRepository(cursor)
 
         # Get all links.
@@ -664,7 +664,7 @@ def _translate(
 
         for index, attributes, quantity_value in quantity_iterator.data:
             if quantity_value is None:
-                continue  # Skip to next relation.
+                continue  # Skip to next record.
 
             # Find link that matches with greated unique specificity.
             link_id = get_greatest_unique_specificity(
@@ -673,18 +673,18 @@ def _translate(
                 default=default_link_id,
             )
 
-            # Get relations for matching link and other_index_id
+            # Get mappings for matching link and other_index_id
             # (assign as a tuple to consume the iterator and free-up
             # the underlying cursor obj for the following yield-loop).
-            relations = tuple(relation_repo.find(
+            mappings = tuple(mapping_repo.find(
                 link_id=link_id,
                 other_index_id=index.id,
             ))
 
-            # Yield translated results for each relation.
-            for relation in relations:
-                new_proportion = check_type(relation.proportion, float)
-                new_index = index_repo.get(relation.index_id)
+            # Yield translated results for each mapping.
+            for mapping in mappings:
+                new_proportion = check_type(mapping.proportion, float)
+                new_index = index_repo.get(mapping.index_id)
                 new_quantity_value = quantity_value * new_proportion
                 yield (new_index, attributes, new_quantity_value)
 

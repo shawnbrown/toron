@@ -525,9 +525,9 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
 
 class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
     @staticmethod
-    def get_relations(source_node, target_node, link_name):
+    def get_mappings(source_node, target_node, link_name):
         with target_node._managed_cursor() as cur:
-            relation_repository = target_node._dal.MappingRepository(cur)
+            mapping_repo = target_node._dal.MappingRepository(cur)
             link = target_node._get_link(
                 source_node,
                 link_name,
@@ -535,8 +535,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             )
             if not link:
                 raise Exception
-            relations = relation_repository.find(link_id=link.id)
-            return set(astuple(rel) for rel in relations)
+            mappings = mapping_repo.find(link_id=link.id)
+            return set(astuple(rel) for rel in mappings)
 
     def test_insert_both_directions(self):
         self.node_c.add_link(node=self.node_d,
@@ -582,16 +582,16 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             cm.output,
             ['INFO:app-toron:matching FILE1 index records',
              'INFO:app-toron:matching FILE2 index records',
-             'INFO:app-toron:loading relations: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 8 relations',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 8 mappings',
              'INFO:app-toron:mapping is complete',
-             'INFO:app-toron:loading relations: FILE1 <- FILE2',
-             'INFO:app-toron.node:loaded 8 relations',
+             'INFO:app-toron:loading mappings: FILE1 <- FILE2',
+             'INFO:app-toron.node:loaded 8 mappings',
              'INFO:app-toron:mapping is complete'],
         )
 
         self.assertEqual(
-            self.get_relations(self.node_c, self.node_d, 'population'),
+            self.get_mappings(self.node_c, self.node_d, 'population'),
             {(1, 1, 0, 2, b'\xc0', 34.0, 0.00000),
              (2, 1, 1, 1, b'\xc0', 18.0, 0.28125),
              (3, 1, 1, 2, b'\xc0', 46.0, 0.71875),
@@ -603,7 +603,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         self.assertEqual(
-            self.get_relations(self.node_d, self.node_c, 'population'),
+            self.get_mappings(self.node_d, self.node_c, 'population'),
             {(1, 1, 0, 2, b'\x80', 10.0, 0.000),
              (2, 1, 1, 1, b'\x80', 18.0, 1.000),
              (3, 1, 2, 0, b'\x80', 34.0, 0.425),
@@ -659,16 +659,16 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             cm.output,
             ['INFO:app-toron:matching FILE1 index records',
              'INFO:app-toron:matching FILE2 index records',
-             'INFO:app-toron:loading relations: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 9 relations',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 9 mappings',
              'INFO:app-toron:mapping is complete',
-             'INFO:app-toron:loading relations: FILE1 <- FILE2',
-             'INFO:app-toron.node:loaded 9 relations',
+             'INFO:app-toron:loading mappings: FILE1 <- FILE2',
+             'INFO:app-toron.node:loaded 9 mappings',
              'INFO:app-toron:mapping is complete'],
         )
 
         self.assertEqual(
-            self.get_relations(self.node_c, self.node_d, 'population'),
+            self.get_mappings(self.node_c, self.node_d, 'population'),
             {(1, 1, 0, 1, b'\xc0', 18.0, 0.000),   # <- From undefined, to defined.
              (2, 1, 0, 2, b'\xc0', 10.0, 0.000),   # <- From undefined, to defined.
              (3, 1, 0, 4, b'\xc0', 45.0, 0.000),   # <- From undefined, to defined.
@@ -681,7 +681,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         self.assertEqual(
-            self.get_relations(self.node_d, self.node_c, 'population'),
+            self.get_mappings(self.node_d, self.node_c, 'population'),
             {(1, 1, 0, 1, b'\x80', 18.0, 0.000),   # <- From undefined, to defined.
              (2, 1, 0, 3, b'\x80', 12.0, 0.000),   # <- From undefined, to defined.
              (3, 1, 1, 0, b'\x80', 18.0, 1.000),   # <- From defined, to undefined.
@@ -730,13 +730,13 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             ["WARNING:app-toron:no 'population' link from FILE2 to FILE1",
              "INFO:app-toron:matching FILE1 index records",
              "INFO:app-toron:matching FILE2 index records",
-             "INFO:app-toron:loading relations: FILE1 -> FILE2",
-             "INFO:app-toron.node:loaded 6 relations",
+             "INFO:app-toron:loading mappings: FILE1 -> FILE2",
+             "INFO:app-toron.node:loaded 6 mappings",
              "INFO:app-toron:mapping is complete"],
         )
 
         self.assertEqual(
-            self.get_relations(self.node_c, self.node_d, 'population'),
+            self.get_mappings(self.node_c, self.node_d, 'population'),
             {(1, 1, 1, 1, b'\xc0', 10.0, 0.125),
              (2, 1, 1, 2, b'\xc0', 70.0, 0.875),
              (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
@@ -807,7 +807,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(exit_code, ExitCode.OK)
 
         self.assertEqual(
-            self.get_relations(self.node_c, self.node_d, 'population'),
+            self.get_mappings(self.node_c, self.node_d, 'population'),
             {(1, 1, 1, 1, b'\x80', 22.5, 0.25),  # <- Gets proportion of weight.
              (2, 1, 1, 2, b'\x80', 67.5, 0.75),  # <- Gets proportion of weight.
              (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
@@ -823,8 +823,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              'WARNING:app-toron.mapper:omitted 1 ambiguous matches that ' \
                 'overlap with records that were already matched at a finer ' \
                 'level of granularity',
-             'INFO:app-toron:loading relations: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 6 relations',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 6 mappings',
              'INFO:app-toron:mapping is complete'],
         )
 
@@ -860,7 +860,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(exit_code, ExitCode.OK)
 
         self.assertEqual(
-            self.get_relations(self.node_c, self.node_d, 'population'),
+            self.get_mappings(self.node_c, self.node_d, 'population'),
             {(1, 1, 1, 1, b'\x80', 22.5,   0.25),   # <- Gets proportion of weight.
              (2, 1, 1, 2, b'\x80', 67.5,   0.75),   # <- Gets proportion of weight.
              (3, 1, 2, 3, b'\xc0', 20.0,   0.25),
@@ -877,8 +877,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
              'INFO:app-toron.mapper:included 1 ambiguous matches that ' \
                 'overlap with records that were also matched at a finer ' \
                 'level of granularity',
-             'INFO:app-toron:loading relations: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 7 relations',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 7 mappings',
              'INFO:app-toron:mapping is complete'],
         )
 
@@ -948,13 +948,13 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             cm.output,
             ['INFO:app-toron:matching FILE1 index records',
              'INFO:app-toron:matching FILE2 index records',
-             'INFO:app-toron:loading relations: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 3 relations',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.node:loaded 3 mappings',
              'WARNING:app-toron:mapping is incomplete'],
         )
 
         self.assertEqual(
-            self.get_relations(self.node_c, self.node_d, 'population'),
+            self.get_mappings(self.node_c, self.node_d, 'population'),
             {(1, 1, 1, 1, b'\xc0', 50.0, 0.5),
              (2, 1, 1, 2, b'\xc0', 50.0, 0.5),
              (3, 1, 3, 6, b'\xc0', 50.0, 1.0)},
@@ -968,7 +968,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
                                   other_filename_hint='node_c',
                                   is_default=True)
 
-        self.node_d.insert_relations2(
+        self.node_d.insert_mappings2(
             self.node_c,
             'population',
             data=[(1, 1, b'\xc0', 10.0),
@@ -977,7 +977,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
                   (2, 4, b'\xc0', 60.0),
                   (3, 5, b'\xc0', 30.0),
                   (3, 6, b'\xc0', 50.0)],
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
 
         dummy_stdout = DummyRedirection()
@@ -1014,7 +1014,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
                                   other_filename_hint='node_c',
                                   is_default=True)
 
-        self.node_d.insert_relations2(
+        self.node_d.insert_mappings2(
             self.node_c,
             'population',
             data=[(1, 1, b'\xc0', 10.0),
@@ -1023,7 +1023,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
                   (2, 4, b'\x80', 60.0)],
                   # Omitting 3 -> 5
                   # Omitting 3 -> 6
-            columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
 
         dummy_stdout = DummyRedirection()

@@ -993,11 +993,11 @@ class MappingRepository(BaseMappingRepository):
         ) -> None:
             """Add a record to the repository.
 
-            If *other_index_id* ``0`` and *index_id* ``0`` (the relation
+            If *other_index_id* ``0`` and *index_id* ``0`` (the mapping
             undefined-to-undefined), a ``ValueError`` is raised.
             """
             if int(other_index_id) == 0 and int(index_id) == 0:
-                raise ValueError(f'cannot add relation for undefined-to-undefined record')
+                raise ValueError(f'cannot add mapping for undefined-to-undefined record')
 
             if not isinstance(mapping_level, bytes):
                 raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
@@ -1037,11 +1037,11 @@ class MappingRepository(BaseMappingRepository):
         ) -> None:
             """Add a record to the repository.
 
-            If *other_index_id* ``0`` and *index_id* ``0`` (the relation
+            If *other_index_id* ``0`` and *index_id* ``0`` (the mapping
             undefined-to-undefined), a ``ValueError`` is raised.
             """
             if int(other_index_id) == 0 and int(index_id) == 0:
-                raise ValueError(f'cannot add relation for undefined-to-undefined record')
+                raise ValueError(f'cannot add mapping for undefined-to-undefined record')
 
             if not isinstance(mapping_level, bytes):
                 raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
@@ -1070,14 +1070,14 @@ class MappingRepository(BaseMappingRepository):
     def get(self, id: int) -> MappingRecord:
         """Get a record from the repository.
 
-        If no relation matches the given *id*, a ``KeyError`` is raised.
+        If no mapping matches the given *id*, a ``KeyError`` is raised.
         """
         self._cursor.execute(
             'SELECT * FROM main.relation WHERE relation_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record is None:
-            raise KeyError(f'no relation with id of {id}')
+            raise KeyError(f'no mapping with id of {id}')
         return MappingRecord(*record)
 
     if sqlite3.sqlite_version_info >= (3, 32, 0):
@@ -1208,7 +1208,7 @@ class MappingRepository(BaseMappingRepository):
         return result
 
     def mapping_is_complete(self, link_id: int) -> bool:
-        """Return True if there's a relation for every index record."""
+        """Return True if there's a mapping for every index record."""
         # In the following SQL, the `EXISTS` operator stops the nested query
         # early (confirmed by Richard Hipp on a mailing list 2016-03-05).
         self._cursor.execute(

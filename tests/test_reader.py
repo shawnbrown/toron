@@ -212,7 +212,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
             selectors=['[foo="bar"]'],
             is_default=True,
         )
-        self.node.insert_relations(
+        self.node.insert_mappings(
             node_or_ref='other-file',
             link_name='edge 1',
             data=[
@@ -235,7 +235,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
             description='Edge two description.',
             selectors=['[foo]'],
         )
-        self.node.insert_relations(
+        self.node.insert_mappings(
             node_or_ref='other-file.toron',
             link_name='edge 2',
             data=[
