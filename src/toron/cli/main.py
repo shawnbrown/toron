@@ -203,15 +203,15 @@ def get_parser() -> argparse.ArgumentParser:
     # Subcommand: add link
     parser_add_link = parser_add_subparsers.add_parser(
         'link',
-        help='add crosswalk link between two node files',
-        description='Add crosswalk link between two existing node files.',
+        help='add a link between two node files',
+        description='Add a link between two existing node files.',
         prog='toron FILE1 add link',  # <- Replaces "FILE" with "FILE1".
     )
     parser_add_link.add_argument('filepath2',
                                  help='name of second (right) node file',
                                  metavar='FILE2')
     parser_add_link.add_argument('link',
-                                 help='name of crosswalk link to add',
+                                 help='name of the link to add',
                                  metavar='LINK')
     parser_add_link_group = parser_add_link.add_mutually_exclusive_group()
     parser_add_link_group.add_argument(
@@ -229,12 +229,12 @@ def get_parser() -> argparse.ArgumentParser:
         help='add single direction: FILE1 <- FILE2',
     )
     parser_add_link.add_argument('--description',
-                                 help='description of crosswalk')
+                                 help='description of the link')
     parser_add_link.add_argument('--selectors', nargs='+',
                                  help='attribute selectors')
     parser_add_link.add_argument('--default', action='store_true',
                                  dest='make_default',
-                                 help='set as the default crosswalk')
+                                 help='set as the default link')
     parser_add_link.add_argument('--no-backup', action='store_false',
                                  dest='backup',
                                  help='do not make backup files')
@@ -337,7 +337,7 @@ def get_parser() -> argparse.ArgumentParser:
                                   help='second (right) filename',
                                   metavar='FILE2')
     parser_crosswalk.add_argument('link',
-                                  help='name of crosswalk link',
+                                  help='name of the link associated with the mapping',
                                   metavar='LINK')
     parser_crosswalk_group = parser_crosswalk.add_mutually_exclusive_group()
     parser_crosswalk_group.add_argument(
