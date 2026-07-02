@@ -2420,7 +2420,10 @@ class TopoNode(object):
                     if allow_invalid_label:
                         counter['invalid_label'] += 1
                     else:
-                        raise ValueError(f'invalid label: {list(criteria.values())!r}')
+                        raise ValueError(
+                            f'invalid labels, not present in index:\n'
+                            f'  record: {list(criteria.values())!r}'
+                        )
 
                 # Get `location` and `attribute_group` instances.
                 location = location_repo.get_by_labels_add_if_missing(labels_dict)

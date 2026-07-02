@@ -4976,7 +4976,8 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
 
     def test_invalid_label(self):
         """Should fail when labels don't appear in index."""
-        regex = r"invalid label: \['OH', 'NULL ISLAND'\]"
+        regex = (r"invalid labels, not present in index:\n"
+                 r"  record: \['OH', 'NULL ISLAND'\]")
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities2(
                 value_column='counts',
@@ -5044,7 +5045,8 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
                 data=data,
             )
 
-        regex = r"invalid label: \['NULL ISLAND'\]"
+        regex = (r"invalid labels, not present in index:\n"
+                 r"  record: \['NULL ISLAND'\]")
         msg = 'second: should check labels (if invalid category is allowed)'
         with self.assertRaisesRegex(ValueError, regex, msg=msg):
             self.node.insert_quantities2(
