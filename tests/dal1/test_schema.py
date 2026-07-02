@@ -541,7 +541,7 @@ class TestCreateTriggersSelectors(BaseSelectorsTestCase):
         create_node_schema(self.cur)
         create_triggers_selectors(self.cur)
 
-    def test_insert_valid_crosswalk_selectors(self):
+    def test_insert_valid_link_selectors(self):
         cur = self.cur.executemany(
             'INSERT INTO crosswalk (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
             [(val, 'name', str(i)) for i, val in enumerate(self.valid_selector_json)],
@@ -555,7 +555,7 @@ class TestCreateTriggersSelectors(BaseSelectorsTestCase):
         )
         self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
 
-    def test_insert_invalid_crosswalk_selectors(self):
+    def test_insert_invalid_link_selectors(self):
         regex = 'crosswalk.selectors must be a JSON array with text values'
 
         for value, desc in self.invalid_selector_json:

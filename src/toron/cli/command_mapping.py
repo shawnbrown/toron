@@ -58,7 +58,7 @@ applogger = logging.getLogger('app-toron')
 def get_column_positions(
     node1: TopoNode,
     node2: TopoNode,
-    crosswalk_name: str,
+    link_name: str,
     data: Iterable[Sequence],
     columns: Sequence[str],
 ) -> Tuple[Dict[str, Optional[int]], Iterator[Sequence]]:
@@ -66,10 +66,10 @@ def get_column_positions(
     data_iter = iter(data)  # Must be iterator.
 
     try:
-        value_position = get_mapping_value_position(columns, crosswalk_name)
+        value_position = get_mapping_value_position(columns, link_name)
     except ValueError:
         raise ToronError(
-            f"required column {crosswalk_name!r} not found in: "
+            f"required column {link_name!r} not found in: "
             f"{', '.join(repr(x) for x in columns)}"
         )
 
@@ -311,15 +311,15 @@ def make_getter_functions(
 def normalize_mapping_data(
     node1: TopoNode,
     node2: TopoNode,
-    crosswalk_name: str,
+    link_name: str,
     data: Union[Iterable[Sequence], Iterable[Dict]],
     columns: Optional[Sequence[str]] = None,
 ) -> Generator[Sequence, None, None]:
     """Normalize mapping data to yield lists to load into Mapper."""
     data, columns = normalize_tabular(data, columns)
-    positions, data_iter = get_column_positions(node1, node2, crosswalk_name, data, columns)
+    positions, data_iter = get_column_positions(node1, node2, link_name, data, columns)
 
-    value_position = get_mapping_value_position(columns, crosswalk_name)
+    value_position = get_mapping_value_position(columns, link_name)
     get_mapping_value = lambda row: row[value_position]
 
     (node1_get_index_id,
@@ -362,24 +362,24 @@ def read_from_stdin(
     args: argparse.Namespace, node1: TopoNode, node2: TopoNode
 ) -> ExitCode:
     """Insert mapping relations read from stdin stream."""
-    # Check that crosswalk is defined in nodes.
-    left_crosswalk = node1.get_crosswalk(node2, args.link)
-    right_crosswalk = node2.get_crosswalk(node1, args.link)
+    # Check that link is defined in nodes.
+    left_link = node1.get_link(node2, args.link)
+    right_link = node2.get_link(node1, args.link)
     if args.direction == 'both':
-        if right_crosswalk and not left_crosswalk:
+        if right_link and not left_link:
             applogger.warning(f'no {args.link!r} link from FILE2 to FILE1')
             args.direction = 'right'
-        elif left_crosswalk and not right_crosswalk:
+        elif left_link and not right_link:
             applogger.warning(f'no {args.link!r} link from FILE1 to FILE2')
             args.direction = 'left'
-        elif not left_crosswalk and not right_crosswalk:
+        elif not left_link and not right_link:
             applogger.error(f'no {args.link!r} link exists between FILE1 '
                             f'and FILE2 in either direction')
             return ExitCode.ERR  # <- EXIT!
-    elif args.direction == 'left' and not left_crosswalk:
+    elif args.direction == 'left' and not left_link:
         applogger.error(f'no {args.link!r} link from FILE2 to FILE1')
         return ExitCode.ERR  # <- EXIT!
-    elif args.direction == 'right' and not right_crosswalk:
+    elif args.direction == 'right' and not right_link:
         applogger.error(f'no {args.link!r} link from FILE1 to FILE2')
         return ExitCode.ERR  # <- EXIT!
 
@@ -413,8 +413,8 @@ def read_from_stdin(
             data=relations,
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
-        crosswalk = cast(Link, node2.get_crosswalk(node1, args.link))
-        if crosswalk.is_locally_complete:
+        link = cast(Link, node2.get_link(node1, args.link))
+        if link.is_locally_complete:
             applogger.info(f'mapping is complete')
         else:
             applogger.warning(f'mapping is incomplete')
@@ -429,8 +429,8 @@ def read_from_stdin(
             data=relations,
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
-        crosswalk = cast(Link, node1.get_crosswalk(node2, args.link))
-        if crosswalk.is_locally_complete:
+        link = cast(Link, node1.get_link(node2, args.link))
+        if link.is_locally_complete:
             applogger.info(f'mapping is complete')
         else:
             applogger.warning(f'mapping is incomplete')
@@ -482,7 +482,7 @@ def write_to_stdout(
         src_index_repo = source_node._dal.IndexRepository(src_cur1)
         src_prop_repo = source_node._dal.PropertyRepository(src_cur1)
         trg_index_repo = target_node._dal.IndexRepository(trg_cur1)
-        trg_crosswalk_repo = target_node._dal.LinkRepository(trg_cur1)
+        trg_link_repo = target_node._dal.LinkRepository(trg_cur1)
         trg_relation_repo = target_node._dal.RelationRepository(trg_cur1)
 
         src_label_names = src_index_repo.get_label_names()
@@ -492,10 +492,10 @@ def write_to_stdout(
         trg_label_no_values = (None,) * len(trg_label_names)
 
         # Check if any mappings are ambiguous.
-        crosswalk = trg_crosswalk_repo.get_by_unique_id_and_name(
+        link = trg_link_repo.get_by_unique_id_and_name(
             other_unique_id=src_unique_id, name=args.link,
         )
-        mapping_levels = trg_relation_repo.get_distinct_mapping_levels(crosswalk.id)
+        mapping_levels = trg_relation_repo.get_distinct_mapping_levels(link.id)
         whole_space_bytes = bytes(BitFlags(trg_label_names))
         ambiguous_header: Tuple[str, ...]
         get_ambiguous: Callable[[Union[bytes, None], Sequence[str]],
@@ -520,9 +520,9 @@ def write_to_stdout(
             ))
 
             generator = generate_mapping_elements(
-                crosswalk_name=args.link,
+                link_name=args.link,
                 trg_index_repo=trg_index_repo,
-                trg_crosswalk_repo=trg_crosswalk_repo,
+                trg_link_repo=trg_link_repo,
                 trg_relation_repo=trg_relation_repo,
                 src_index_repo=src_index_repo,
                 src_prop_repo=src_prop_repo,

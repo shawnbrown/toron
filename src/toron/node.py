@@ -54,7 +54,7 @@ from .data_service import (
     find_attribute_groups_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
-    find_crosswalks_by_ref,
+    find_links_by_ref,
     set_default_weight_group,
     get_default_weight_group,
     find_matching_weight_groups,
@@ -452,12 +452,12 @@ class TopoNode(object):
                 None,
             )
 
-            crosswalks = self._dal.LinkRepository(cursor).get_all()
+            links = self._dal.LinkRepository(cursor).get_all()
             relation_repo = self._dal.RelationRepository(cursor)
             all_mapping_levels = set()
-            for crosswalk in crosswalks:
+            for link in links:
                 all_mapping_levels.update(
-                    relation_repo.get_distinct_mapping_levels(crosswalk.id)
+                    relation_repo.get_distinct_mapping_levels(link.id)
                 )
             is_unused_by_relation = \
                 bytes(BitFlags(old_whole_space)) not in all_mapping_levels
@@ -711,11 +711,11 @@ class TopoNode(object):
                     optimizations=self._dal.optimizations,
                 )
 
-                # Existing crosswalks will not include newly inserted indexes.
-                crosswalk_repo = self._dal.LinkRepository(cursor)
-                for crosswalk in crosswalk_repo.get_all():
-                    if crosswalk.is_locally_complete:
-                        crosswalk_repo.update(replace(crosswalk, is_locally_complete=False))
+                # Existing links will not include newly inserted indexes.
+                link_repo = self._dal.LinkRepository(cursor)
+                for link in link_repo.get_all():
+                    if link.is_locally_complete:
+                        link_repo.update(replace(link, is_locally_complete=False))
 
             if counter['label_inserted'] or counter['weight_inserted']:
                 # Update `is_complete` status for all weight groups.
@@ -811,11 +811,11 @@ class TopoNode(object):
                     if group.is_complete:
                         group_repo.update(replace(group, is_complete=False))
 
-                # Existing crosswalks will not include newly inserted indexes.
-                crosswalk_repo = self._dal.LinkRepository(cursor)
-                for crosswalk in crosswalk_repo.get_all():
-                    if crosswalk.is_locally_complete:
-                        crosswalk_repo.update(replace(crosswalk, is_locally_complete=False))
+                # Existing links will not include newly inserted indexes.
+                link_repo = self._dal.LinkRepository(cursor)
+                for link in link_repo.get_all():
+                    if link.is_locally_complete:
+                        link_repo.update(replace(link, is_locally_complete=False))
 
         if counter['inserted']:
             applogger.info(f"loaded {counter['inserted']} index records")
@@ -939,11 +939,11 @@ class TopoNode(object):
                         group_repo.update(replace(group, is_complete=True))
 
                 # Merges may have eliminated all unrelated indexes.
-                crosswalk_repo = self._dal.LinkRepository(cursor)
-                for crosswalk in crosswalk_repo.get_all():
-                    if (not crosswalk.is_locally_complete
-                            and relation_repo.crosswalk_is_complete(crosswalk.id)):
-                        crosswalk_repo.update(replace(crosswalk, is_locally_complete=True))
+                link_repo = self._dal.LinkRepository(cursor)
+                for link in link_repo.get_all():
+                    if (not link.is_locally_complete
+                            and relation_repo.mapping_is_complete(link.id)):
+                        link_repo.update(replace(link, is_locally_complete=True))
 
         warn_if_issues(counter, expected='updated')
 
@@ -972,7 +972,7 @@ class TopoNode(object):
             aux_index_repo = self._dal.IndexRepository(aux_cursor)
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
-            crosswalk_repo = self._dal.LinkRepository(cursor)
+            link_repo = self._dal.LinkRepository(cursor)
             label_manager = self._dal.LabelManager(cursor)
 
             if data:
@@ -1002,7 +1002,7 @@ class TopoNode(object):
                         existing_record.id,
                         index_repo,
                         weight_repo,
-                        crosswalk_repo,
+                        link_repo,
                         relation_repo,
                     )
                     counter['deleted'] += 1
@@ -1013,7 +1013,7 @@ class TopoNode(object):
                         index_record.id,
                         index_repo,
                         weight_repo,
-                        crosswalk_repo,
+                        link_repo,
                         relation_repo,
                     )
                     counter['deleted'] += 1
@@ -1043,28 +1043,28 @@ class TopoNode(object):
                         group_repo.update(replace(group, is_complete=True))
 
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
-                for crosswalk in crosswalk_repo.get_all():
+                for link in link_repo.get_all():
                     # Rebuild 'other_index_hash'. When all occurances of an
                     # 'other_index_id' are associated with 'index_id' values
                     # that are deleted, this hash will change.
                     other_index_hash = SequenceHash(
                         aux_relation_repo.find_distinct_other_index_ids(
-                            crosswalk.id,
+                            link.id,
                             ordered=True,
                         )
                     ).get_hexdigest()
 
-                    # Check 'is_locally_complete' status. A crosswalk can
+                    # Check 'is_locally_complete' status. A link can
                     # become complete if all of the unmapped index_id values
                     # are deleted.
                     is_locally_complete = (
-                        crosswalk.is_locally_complete
-                        or relation_repo.crosswalk_is_complete(crosswalk.id)
+                        link.is_locally_complete
+                        or relation_repo.mapping_is_complete(link.id)
                     )
 
-                    # Assign new values and update crosswalk record.
-                    crosswalk_repo.update(replace(
-                        crosswalk,
+                    # Assign new values and update link record.
+                    link_repo.update(replace(
+                        link,
                         other_index_hash=other_index_hash,
                         is_locally_complete=is_locally_complete,
                     ))
@@ -1537,21 +1537,21 @@ class TopoNode(object):
             applogger.warning(f"skipped {counter['no_weight']} rows with no matching weight record")
 
     @property
-    def crosswalks(self) -> List[Link]:
+    def links(self) -> List[Link]:
         with self._managed_cursor() as cursor:
             return self._dal.LinkRepository(cursor).get_all()
 
     @staticmethod
-    def _get_crosswalk(
+    def _get_link(
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str],
-        crosswalk_repo: BaseLinkRepository,
+        link_name: Optional[str],
+        link_repo: BaseLinkRepository,
     ) -> Optional[Link]:
-        """Get crosswalk by node reference and name."""
+        """Get link by node reference and name."""
         if isinstance(node_or_ref, TopoNode):  # If TopoNode, find by 'unique_id' only.
-            matches = list(crosswalk_repo.find_by_other_unique_id(node_or_ref.unique_id))
+            matches = list(link_repo.find_by_other_unique_id(node_or_ref.unique_id))
         else:
-            matches = find_crosswalks_by_ref(node_or_ref, crosswalk_repo)
+            matches = find_links_by_ref(node_or_ref, link_repo)
 
         if len({x.other_unique_id for x in matches}) > 1:
             node_info = {x.other_unique_id: x.other_filename_hint for x in matches}
@@ -1560,12 +1560,12 @@ class TopoNode(object):
             msg = f'node reference matches more than one node:\n  {formatted}'
             raise ValueError(msg)
 
-        if crosswalk_name:
-            filtered = [x for x in matches if x.name == crosswalk_name]
+        if link_name:
+            filtered = [x for x in matches if x.name == link_name]
             if not filtered and matches:
                 names = ', '.join(repr(x.name) for x in matches)
                 applogger.warning(
-                    f'crosswalk {crosswalk_name!r} not found, can be: {names}'
+                    f'link {link_name!r} not found, can be: {names}'
                 )
         else:
             filtered = matches
@@ -1573,14 +1573,14 @@ class TopoNode(object):
         if len(filtered) > 1:
             defaults = [x for x in filtered if x.is_default]
             if len(defaults) == 1:
-                crosswalk = defaults[0]
+                link = defaults[0]
                 applogger.warning(
-                    f'found multiple crosswalks, using default: {crosswalk.name!r}'
+                    f'found multiple links, using default: {link.name!r}'
                 )
-                return crosswalk
+                return link
             else:
                 names = ', '.join(repr(x.name) for x in filtered)
-                msg = f'found multiple crosswalks, must specify name: {names}'
+                msg = f'found multiple links, must specify name: {names}'
                 raise ValueError(msg)
 
         if len(filtered) == 1:
@@ -1588,23 +1588,23 @@ class TopoNode(object):
 
         return None
 
-    def get_crosswalk(
+    def get_link(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str] = None,
+        link_name: Optional[str] = None,
     ) -> Optional[Link]:
         with self._managed_cursor() as cursor:
-            crosswalk = self._get_crosswalk(
+            link = self._get_link(
                 node_or_ref,
-                crosswalk_name,
+                link_name,
                 self._dal.LinkRepository(cursor),
             )
-            return crosswalk
+            return link
 
-    def add_crosswalk(
+    def add_link(
         self,
         node: 'TopoNode',
-        crosswalk_name: str,
+        link_name: str,
         *,
         other_filename_hint: Optional[str] = None,
         description: Optional[str] = None,
@@ -1617,41 +1617,41 @@ class TopoNode(object):
         other_unique_id = node.unique_id
 
         with self._managed_transaction() as cursor:
-            crosswalk_repo = self._dal.LinkRepository(cursor)
+            link_repo = self._dal.LinkRepository(cursor)
 
-            other_crosswalks = \
-                list(crosswalk_repo.find_by_other_unique_id(other_unique_id))
+            other_links = \
+                list(link_repo.find_by_other_unique_id(other_unique_id))
 
             # Check if name already exists (ToronError assures consistent
             # error message).
-            for crosswalk in other_crosswalks:
-                if crosswalk.name == crosswalk_name:
+            for link in other_links:
+                if link.name == link_name:
                     raise ToronError(
-                        f'a link named {crosswalk_name!r} already exists '
+                        f'a link named {link_name!r} already exists '
                         f'between these two nodes'
                     )
 
             if is_default is None:
-                if not other_crosswalks:
-                    # If *is_default* is None and this is the first crosswalk
-                    # from *other_unique_id*, then log a warning and make this
-                    # crosswalk the default.
-                    applogger.warning(f'setting default crosswalk: {crosswalk_name!r}')
+                if not other_links:
+                    # If *is_default* is None and this is the first link from
+                    # *other_unique_id*, then log a warning and make this link
+                    # the default.
+                    applogger.warning(f'setting default link: {link_name!r}')
                     is_default = True
                 else:
                     is_default = False
 
             if is_default:
-                # If *is_default* is True, all other crosswalks coming from
+                # If *is_default* is True, all other links coming from
                 # the same node should be set to False.
-                for crosswalk in other_crosswalks:
-                    if crosswalk.is_default:
-                        crosswalk_repo.update(replace(crosswalk, is_default=False))
+                for link in other_links:
+                    if link.is_default:
+                        link_repo.update(replace(link, is_default=False))
 
-            crosswalk_repo.add(
+            link_repo.add(
                 other_unique_id=other_unique_id,
                 other_filename_hint=other_filename_hint,
-                name=crosswalk_name,
+                name=link_name,
                 description=description,
                 selectors=selectors,
                 is_default=is_default,
@@ -1660,73 +1660,73 @@ class TopoNode(object):
                 is_locally_complete=is_locally_complete,
             )
 
-    def edit_crosswalk(
+    def edit_link(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: str,
+        link_name: str,
         **changes: Any,
     ) -> None:
         with self._managed_transaction() as cursor:
-            crosswalk_repo = self._dal.LinkRepository(cursor)
-            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
+            link_repo = self._dal.LinkRepository(cursor)
+            link = self._get_link(node_or_ref, link_name, link_repo)
 
-            if not crosswalk:
+            if not link:
                 applogger.warning(
-                    f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {crosswalk_name!r}'
+                    f'no link matching node reference {node_or_ref!r} '
+                    f'and name {link_name!r}'
                 )
                 return  # <- EXIT!
 
-            # If setting is_default=True, all other crosswalks coming from
+            # If setting is_default=True, all other links coming from
             # the same node should be set to False.
             if changes.get('is_default') == True:
-                matches = crosswalk_repo.find_by_other_unique_id(crosswalk.other_unique_id)
+                matches = link_repo.find_by_other_unique_id(link.other_unique_id)
                 for match in list(matches):  # Use list() to eagerly fetch all matches.
-                    crosswalk_repo.update(replace(match, is_default=False))
+                    link_repo.update(replace(match, is_default=False))
 
-            crosswalk = replace(crosswalk, **changes)
-            crosswalk_repo.update(crosswalk)
+            link = replace(link, **changes)
+            link_repo.update(link)
 
-    def drop_crosswalk(
+    def drop_link(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: str,
+        link_name: str,
     ) -> None:
         with self._managed_transaction() as cursor:
-            crosswalk_repo = self._dal.LinkRepository(cursor)
-            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
-            if not crosswalk:
+            link_repo = self._dal.LinkRepository(cursor)
+            link = self._get_link(node_or_ref, link_name, link_repo)
+            if not link:
                 applogger.warning(
-                    f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {crosswalk_name!r}'
+                    f'no link matching node reference {node_or_ref!r} '
+                    f'and name {link_name!r}'
                 )
                 return  # <- EXIT!
 
-            crosswalk_repo.delete_and_cascade(crosswalk.id)
+            link_repo.delete_and_cascade(link.id)
 
     def select_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str] = None,
+        link_name: Optional[str] = None,
         header: bool = False,
         **criteria: str,
     ) -> Iterator[Sequence]:
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
             label_manager = self._dal.LabelManager(cursor)
             index_repo = self._dal.IndexRepository(cursor)
-            crosswalk_repo = self._dal.LinkRepository(cursor)
+            link_repo = self._dal.LinkRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
-            if not crosswalk:
+            link = self._get_link(node_or_ref, link_name, link_repo)
+            if not link:
                 raise ValueError(
-                    f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {crosswalk_name!r}'
+                    f'no link matching node reference {node_or_ref!r} '
+                    f'and name {link_name!r}'
                 )
 
             label_columns = label_manager.get_columns()
 
             if header:
-                header_row = (('other_index_id', crosswalk.name, 'index_id')
+                header_row = (('other_index_id', link.name, 'index_id')
                               + label_columns
                               + ('ambiguous_fields',))
                 yield header_row
@@ -1734,7 +1734,7 @@ class TopoNode(object):
             for index in index_repo.filter_by_label(criteria, include_undefined=False):
                 index_id = index.id
                 relations = self._dal.RelationRepository(aux_cursor).find(
-                    crosswalk_id=crosswalk.id,
+                    link_id=link.id,
                     index_id=index_id,
                 )
                 try:
@@ -1761,17 +1761,17 @@ class TopoNode(object):
     def insert_relations2(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str],
+        link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
-        r"""Insert relations for specified crosswalk.
+        r"""Insert mappings for specified link.
 
         .. code-block:: python
 
             >>> node.insert_relations2(
             ...     node_or_ref='myfile',
-            ...     crosswalk_name='pop2000',
+            ...     link_name='pop2000',
             ...     data=[
             ...         ('other_index_id', 'index_id', 'mapping_level', 'pop2000'),
             ...         (0, 0, b'\xe0',  0.0),
@@ -1795,18 +1795,18 @@ class TopoNode(object):
         counter: Dict[str, int] = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
-            crosswalk_repo = self._dal.LinkRepository(cursor)
+            link_repo = self._dal.LinkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
 
-            # Get crosswalk id.
-            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name,
-                                            crosswalk_repo)
-            if not crosswalk:
+            # Get link id.
+            link = self._get_link(node_or_ref, link_name,
+                                            link_repo)
+            if not link:
                 raise ValueError(
-                    f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {crosswalk_name!r}'
+                    f'no link matching node reference {node_or_ref!r} '
+                    f'and name {link_name!r}'
                 )
-            crosswalk_id = crosswalk.id
+            link_id = link.id
 
             # Get allowed structure values.
             structure = {bytes(BitFlags(x.bits)) if any(x.bits) else None
@@ -1828,7 +1828,7 @@ class TopoNode(object):
                     continue  # <- Skip to next item.
 
                 relation_repo.add(
-                    crosswalk_id=crosswalk_id,
+                    link_id=link_id,
                     other_index_id=other_index_id,
                     index_id=index_id,
                     mapping_level=mapping_level,
@@ -1836,13 +1836,13 @@ class TopoNode(object):
                 )
                 counter['inserted'] += 1
 
-            if counter['inserted'] and crosswalk:
+            if counter['inserted'] and link:
                 applogger.info(f"loaded {counter['inserted']} relations")
 
                 # Get ordered sequence of other_index_id values.
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
                 other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
-                    crosswalk_id,
+                    link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
 
@@ -1850,13 +1850,13 @@ class TopoNode(object):
                 sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
                     sequence_hash.add_value(other_index_id)
-                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+                    relation_repo.refresh_proportions(link_id, other_index_id)
 
-                # Assign new values and update crosswalk record.
-                crosswalk_repo.update(replace(
-                    crosswalk,
+                # Assign new values and update link record.
+                link_repo.update(replace(
+                    link,
                     other_index_hash=sequence_hash.get_hexdigest(),
-                    is_locally_complete=relation_repo.crosswalk_is_complete(crosswalk_id),
+                    is_locally_complete=relation_repo.mapping_is_complete(link_id),
                 ))
             else:
                 applogger.warning('no relations loaded')
@@ -1876,16 +1876,16 @@ class TopoNode(object):
     def insert_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str],
+        link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
         data, columns = normalize_tabular(data, columns)
 
-        if tuple(columns[:3]) != ('other_index_id', crosswalk_name, 'index_id'):
+        if tuple(columns[:3]) != ('other_index_id', link_name, 'index_id'):
             raise ValueError(
                 f"columns should be start with "
-                f"('other_index_id', {crosswalk_name!r}, 'index_id', ...); "
+                f"('other_index_id', {link_name!r}, 'index_id', ...); "
                 f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
             )
 
@@ -1893,7 +1893,7 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
             label_manager = self._dal.LabelManager(cursor)
-            crosswalk_repo = self._dal.LinkRepository(cursor)
+            link_repo = self._dal.LinkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
@@ -1901,13 +1901,13 @@ class TopoNode(object):
             label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
-            if not crosswalk:
+            link = self._get_link(node_or_ref, link_name, link_repo)
+            if not link:
                 raise ValueError(
-                    f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {crosswalk_name!r}'
+                    f'no link matching node reference {node_or_ref!r} '
+                    f'and name {link_name!r}'
                 )
-            crosswalk_id = crosswalk.id
+            link_id = link.id
 
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
@@ -1938,7 +1938,7 @@ class TopoNode(object):
                 try:
                     # Add relation record.
                     relation_repo.add(
-                        crosswalk_id=crosswalk_id,
+                        link_id=link_id,
                         other_index_id=other_index_id,
                         index_id=index_id,
                         mapping_level=mapping_level,
@@ -1946,13 +1946,13 @@ class TopoNode(object):
                     )
                     counter['inserted'] += 1
                 except Exception as e:
-                    raise Exception(f'{e}; {crosswalk_id} {other_index_id} {index_id} {mapping_level} {value}')
+                    raise Exception(f'{e}; {link_id} {other_index_id} {index_id} {mapping_level} {value}')
 
-            if counter['inserted'] and crosswalk:
+            if counter['inserted'] and link:
                 # Get ordered sequence of other_index_id values.
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
                 other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
-                    crosswalk_id,
+                    link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
 
@@ -1960,13 +1960,13 @@ class TopoNode(object):
                 sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
                     sequence_hash.add_value(other_index_id)
-                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+                    relation_repo.refresh_proportions(link_id, other_index_id)
 
-                # Assign new values and update crosswalk record.
-                crosswalk_repo.update(replace(
-                    crosswalk,
+                # Assign new values and update link record.
+                link_repo.update(replace(
+                    link,
                     other_index_hash=sequence_hash.get_hexdigest(),
-                    is_locally_complete=relation_repo.crosswalk_is_complete(crosswalk_id),
+                    is_locally_complete=relation_repo.mapping_is_complete(link_id),
                 ))
 
         warn_if_issues(counter, expected='inserted')
@@ -1974,16 +1974,16 @@ class TopoNode(object):
     def update_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str],
+        link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
         data, columns = normalize_tabular(data, columns)
 
-        if tuple(columns[:3]) != ('other_index_id', crosswalk_name, 'index_id'):
+        if tuple(columns[:3]) != ('other_index_id', link_name, 'index_id'):
             raise ValueError(
                 f"columns should be start with "
-                f"('other_index_id', {crosswalk_name!r}, 'index_id', ...); "
+                f"('other_index_id', {link_name!r}, 'index_id', ...); "
                 f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
             )
 
@@ -1991,7 +1991,7 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
             label_manager = self._dal.LabelManager(cursor)
-            crosswalk_repo = self._dal.LinkRepository(cursor)
+            link_repo = self._dal.LinkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
@@ -1999,13 +1999,13 @@ class TopoNode(object):
             label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
-            if not crosswalk:
+            link = self._get_link(node_or_ref, link_name, link_repo)
+            if not link:
                 raise ValueError(
-                    f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {crosswalk_name!r}'
+                    f'no link matching node reference {node_or_ref!r} '
+                    f'and name {link_name!r}'
                 )
-            crosswalk_id = crosswalk.id
+            link_id = link.id
 
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
@@ -2035,7 +2035,7 @@ class TopoNode(object):
 
                 # Find matching relation record (can only match one record).
                 relation_match = relation_repo.find(
-                    crosswalk_id=crosswalk_id,
+                    link_id=link_id,
                     other_index_id=other_index_id,
                     index_id=index_id,
                 )
@@ -2052,7 +2052,7 @@ class TopoNode(object):
                 else:
                     # Add new relation if it does not exist.
                     relation_repo.add(
-                        crosswalk_id=crosswalk_id,
+                        link_id=link_id,
                         other_index_id=other_index_id,
                         index_id=index_id,
                         mapping_level=mapping_level,
@@ -2064,7 +2064,7 @@ class TopoNode(object):
             if counter['inserted']:
                 # Get ordered sequence of other_index_id values.
                 other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
-                    crosswalk_id,
+                    link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
 
@@ -2072,22 +2072,22 @@ class TopoNode(object):
                 sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
                     sequence_hash.add_value(other_index_id)
-                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+                    relation_repo.refresh_proportions(link_id, other_index_id)
 
-                # Update crosswalk's hash and is-complete status.
-                crosswalk_repo.update(replace(
-                    crosswalk,
+                # Update link's hash and is-complete status.
+                link_repo.update(replace(
+                    link,
                     other_index_hash=sequence_hash.get_hexdigest(),
-                    is_locally_complete=relation_repo.crosswalk_is_complete(crosswalk_id),
+                    is_locally_complete=relation_repo.mapping_is_complete(link_id),
                 ))
 
             elif counter['updated']:
                 # Get iterator of other_index_id values.
-                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(crosswalk_id)
+                other_index_ids = aux_relation_repo.find_distinct_other_index_ids(link_id)
 
                 # Refresh proportion values.
                 for other_index_id in other_index_ids:
-                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+                    relation_repo.refresh_proportions(link_id, other_index_id)
 
         warn_if_issues(
             counter,
@@ -2099,7 +2099,7 @@ class TopoNode(object):
     def delete_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str],
+        link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
@@ -2108,14 +2108,14 @@ class TopoNode(object):
     def delete_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: Optional[str],
+        link_name: Optional[str],
         **criteria: str,
     ) -> None:
         ...
     def delete_relations(
         self,
         node_or_ref,
-        crosswalk_name=None,
+        link_name=None,
         data=None,
         columns=None,
         **criteria,
@@ -2128,18 +2128,18 @@ class TopoNode(object):
                 self._managed_transaction(cursor):
 
             label_manager = self._dal.LabelManager(cursor)
-            crosswalk_repo = self._dal.LinkRepository(cursor)
+            link_repo = self._dal.LinkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             aux_relation_repo = self._dal.RelationRepository(aux_cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
-            if not crosswalk:
+            link = self._get_link(node_or_ref, link_name, link_repo)
+            if not link:
                 raise ValueError(
-                    f'no crosswalk matching node reference {node_or_ref!r} '
-                    f'and name {crosswalk_name!r}'
+                    f'no link matching node reference {node_or_ref!r} '
+                    f'and name {link_name!r}'
                 )
-            crosswalk_id = crosswalk.id
+            link_id = link.id
 
             if data:
                 data, columns = normalize_tabular(data, columns)
@@ -2149,10 +2149,10 @@ class TopoNode(object):
 
                 whole_space_mapping_level = bytes(BitFlags(label_columns))
 
-                if tuple(columns[:3]) != ('other_index_id', crosswalk_name, 'index_id'):
+                if tuple(columns[:3]) != ('other_index_id', link_name, 'index_id'):
                     raise ValueError(
                         f"columns should be start with "
-                        f"('other_index_id', {crosswalk_name!r}, 'index_id', ...); "
+                        f"('other_index_id', {link_name!r}, 'index_id', ...); "
                         f"got ({columns[0]!r}, {columns[1]!r}, {columns[2]!r}, ...)"
                     )
 
@@ -2176,7 +2176,7 @@ class TopoNode(object):
 
                     # Find matching relation record (can only match one record).
                     relation_match = relation_repo.find(
-                        crosswalk_id=crosswalk_id,
+                        link_id=link_id,
                         other_index_id=other_index_id,
                         index_id=index_id,
                     )
@@ -2207,7 +2207,7 @@ class TopoNode(object):
                     # Eagerly fetch relations, using `list()`, so the cursor
                     # is free to `delete()` items in the nested loop.
                     relations = list(aux_relation_repo.find(
-                        crosswalk_id=crosswalk_id, index_id=index.id
+                        link_id=link_id, index_id=index.id
                     ))
                     for rel in relations:
                         bitwise_or = criteria_level | BitFlags(rel.mapping_level)
@@ -2227,7 +2227,7 @@ class TopoNode(object):
             if counter['deleted']:
                 # Get ordered sequence of other_index_id values.
                 other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
-                    crosswalk_id,
+                    link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
                 )
 
@@ -2235,13 +2235,13 @@ class TopoNode(object):
                 sequence_hash = SequenceHash()
                 for other_index_id in other_index_ids:
                     sequence_hash.add_value(other_index_id)
-                    relation_repo.refresh_proportions(crosswalk_id, other_index_id)
+                    relation_repo.refresh_proportions(link_id, other_index_id)
 
-                # Update crosswalk's hash and is-complete status.
-                crosswalk_repo.update(replace(
-                    crosswalk,
+                # Update link's hash and is-complete status.
+                link_repo.update(replace(
+                    link,
                     other_index_hash=sequence_hash.get_hexdigest(),
-                    is_locally_complete=relation_repo.crosswalk_is_complete(crosswalk_id),
+                    is_locally_complete=relation_repo.mapping_is_complete(link_id),
                 ))
 
         warn_if_issues(counter, expected='deleted')
@@ -2249,7 +2249,7 @@ class TopoNode(object):
     def reify_relations(
         self,
         node_or_ref: Union['TopoNode', str],
-        crosswalk_name: str,
+        link_name: str,
         **criteria: str,
     ) -> None:
         """Reclassify a link's ambiguous mappings as precise.
@@ -2272,7 +2272,7 @@ class TopoNode(object):
         ----------
         node_or_ref : Union[TopoNode, str]
             The node from which the link is coming.
-        crosswalk_name : str
+        link_name : str
             The name of the link. This is needed because multiple
             links can come from the same node.
         **criteria : str
@@ -2282,32 +2282,32 @@ class TopoNode(object):
         counter: Counter = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
             index_repo = self._dal.IndexRepository(cursor)
-            crosswalk_repo = self._dal.LinkRepository(cursor)
+            link_repo = self._dal.LinkRepository(cursor)
 
-            crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
-            if not crosswalk:
+            link = self._get_link(node_or_ref, link_name, link_repo)
+            if not link:
                 raise ValueError(
                     f'no link matching node reference {node_or_ref!r} '
-                    f'and name {crosswalk_name!r}'
+                    f'and name {link_name!r}'
                 )
 
             label_names = index_repo.get_label_names()
             fully_specified_level = bytes(BitFlags([1] * len(label_names)))
 
             if criteria:
-                # Reify selected ambiguous relations in crosswalk.
+                # Reify selected ambiguous relations in link.
                 criteria_keys = set(criteria.keys())
                 criteria_flags = BitFlags(x in criteria_keys for x in label_names)
 
                 index_records = index_repo.filter_by_label(criteria)
 
                 relation_repo = self._dal.RelationRepository(aux_cursor)
-                crosswalk_id = crosswalk.id
+                link_id = link.id
                 for index in index_records:
                     # Eagerly fetch relations, using `list()`, so the cursor
                     # is free to `update()` items in the nested loop.
                     relations = list(relation_repo.find(
-                        crosswalk_id=crosswalk_id, index_id=index.id
+                        link_id=link_id, index_id=index.id
                     ))
                     for rel in relations:
                         if rel.other_index_id == 0 and rel.index_id == 0:
@@ -2322,11 +2322,11 @@ class TopoNode(object):
                                 counter['mapping_level_mismatch'] += 1
 
             else:
-                # Reify ALL ambiguous relations in crosswalk.
+                # Reify ALL ambiguous relations in link.
                 relation_repo = self._dal.RelationRepository(cursor)
                 aux_relation_repo = self._dal.RelationRepository(aux_cursor)
 
-                for rel in relation_repo.find(crosswalk_id=crosswalk.id):
+                for rel in relation_repo.find(link_id=link.id):
                     if rel.other_index_id == 0 and rel.index_id == 0:
                         continue  # The undefined-to-undefined level should stay `None`.
 
@@ -3012,14 +3012,14 @@ class TopoNode(object):
                 structure_repo=self._dal.StructureRepository(cursor),
                 weight_group_repo=self._dal.WeightGroupRepository(cursor),
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
-                crosswalk_repo=self._dal.LinkRepository(cursor),
+                link_repo=self._dal.LinkRepository(cursor),
             )
 
             registered_attributes = get_registered_attributes(property_repo)
 
         # When dropping support for Python 3.11, move these into f-string.
         categories_formatted = '\n  '.join(info['category_list'])
-        crosswalks_str = '\n  '.join(info['crosswalks_list'])
+        links_str = '\n  '.join(info['links_list'])
 
         return (
             f"{super().__repr__()}\n"  # Use default repr as a first line.
@@ -3031,8 +3031,8 @@ class TopoNode(object):
             f"  {', '.join(info['weights_list'])}\n"
             f"attributes:\n"
             f"  {', '.join(registered_attributes) or 'None'}\n"
-            f"incoming crosswalks:\n"
-            f"  {crosswalks_str}"
+            f"incoming links:\n"
+            f"  {links_str}"
         )
 
 

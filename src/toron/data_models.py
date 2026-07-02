@@ -344,10 +344,10 @@ class BaseIndexRepository(ABC):
         """
 
     @abstractmethod
-    def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
-        """Find index_id values missing from the specified crosswalk.
+    def find_unmatched_index_ids(self, link_id: int) -> Iterator[int]:
+        """Find index_id values missing from the specified link.
 
-        It should raise an exception if the given *crosswalk_id* does
+        It should raise an exception if the given *link_id* does
         not exist.
         """
 
@@ -1080,7 +1080,7 @@ class BaseLinkRepository(ABC):
 class Relation(object):
     """Relation record."""
     id: int
-    crosswalk_id: int
+    link_id: int
     other_index_id: int
     index_id: int
     mapping_level: bytes
@@ -1115,7 +1115,7 @@ class BaseRelationRepository(ABC):
     @abstractmethod
     def add(
         self,
-        crosswalk_id: int,
+        link_id: int,
         other_index_id: int,
         index_id: int,
         mapping_level: bytes,
@@ -1145,9 +1145,9 @@ class BaseRelationRepository(ABC):
 
     @abstractmethod
     def find_distinct_other_index_ids(
-        self, crosswalk_id: int, ordered: bool = False
+        self, link_id: int, ordered: bool = False
     ) -> Iterator[int]:
-        """Find distinct other_index_id values for the given crosswalk.
+        """Find distinct other_index_id values for the given link.
         When *ordered* is True, must return values in ascending order.
         """
 
@@ -1155,7 +1155,7 @@ class BaseRelationRepository(ABC):
     def find(
         self,
         *,
-        crosswalk_id: Optional[int] = None,
+        link_id: Optional[int] = None,
         other_index_id: Optional[int] = None,
         index_id: Optional[int] = None,
     ) -> Iterator[Relation]:
@@ -1167,24 +1167,24 @@ class BaseRelationRepository(ABC):
 
     @abstractmethod
     def get_index_id_cardinality(
-        self, crosswalk_id: int, include_undefined: bool = True
+        self, link_id: int, include_undefined: bool = True
     ) -> int:
-        """Return the number of unique index_id values in the crosswalk."""
+        """Return the number of unique index_id values in the link."""
 
     @abstractmethod
-    def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
+    def mapping_is_complete(self, link_id: int) -> bool:
         """Return True if there's a relation for every index record."""
 
     @abstractmethod
-    def get_distinct_mapping_levels(self, crosswalk_id: int) -> List[bytes]:
-        """Return a list of distinct mapping levels used by a crosswalk.
+    def get_distinct_mapping_levels(self, link_id: int) -> List[bytes]:
+        """Return a list of distinct levels used in a set of mappings.
 
         A concrete DAL should implement an optimized version of this
         method. But as a stop-gap, this unoptimized base implementation
         can be called with ``super().get_distinct_mapping_levels()``.
         """
         distinct_mapping_levels = set(
-            rel.mapping_level for rel in self.find(crosswalk_id=crosswalk_id)
+            rel.mapping_level for rel in self.find(link_id=link_id)
         )
         return [x for x in distinct_mapping_levels if x is not None]
 
@@ -1201,7 +1201,7 @@ class BaseRelationRepository(ABC):
         for index_id in index_ids:
             for rel in self.find(index_id=index_id):
                 relation_ids.add(rel.id)
-                key = (rel.crosswalk_id, rel.other_index_id, rel.mapping_level)
+                key = (rel.link_id, rel.other_index_id, rel.mapping_level)
                 v, p = relation_sums[key]  # Unpack value and proportion.
                 try:
                     proportion = p + rel.proportion
@@ -1213,9 +1213,9 @@ class BaseRelationRepository(ABC):
             self.delete(relation_id)
 
         for key, (value, proportion) in relation_sums.items():
-            crosswalk_id, other_index_id, mapping_level = key
+            link_id, other_index_id, mapping_level = key
             self.add(
-                crosswalk_id=crosswalk_id,
+                link_id=link_id,
                 other_index_id=other_index_id,
                 index_id=target,  # <- Target index_id.
                 value=value,
@@ -1224,13 +1224,13 @@ class BaseRelationRepository(ABC):
             )
 
     def refresh_proportions(
-        self, crosswalk_id: int, other_index_id: int
+        self, link_id: int, other_index_id: int
     ) -> None:
-        """Refresh proportions for records with matching crosswalk_id
+        """Refresh proportions for records with matching link_id
         and other_index_id.
         """
         relations = list(self.find(
-            crosswalk_id=crosswalk_id, other_index_id=other_index_id
+            link_id=link_id, other_index_id=other_index_id
         ))
 
         if other_index_id == 0:

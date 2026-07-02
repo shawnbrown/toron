@@ -362,34 +362,34 @@ class IndexRepositoryBaseTest(ABC):
         self.repository.add('bar', 'y')
         self.repository.add('baz', 'z')
 
-        crosswalk_repo = self.dal.LinkRepository(self.cursor)
+        link_repo = self.dal.LinkRepository(self.cursor)
         relation_repo = self.dal.RelationRepository(self.cursor)
 
         # Test some missing records.
-        crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
+        link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
         relation_repo.add(1, 1, 1, b'\xc0', 131250, 1.0)
         relation_repo.add(1, 2, 1, b'\x40',  40960, 0.625)
-        results = self.repository.find_unmatched_index_ids(crosswalk_id=1)
+        results = self.repository.find_unmatched_index_ids(link_id=1)
         self.assertEqual(set(results), {2, 3})
 
         # Test all missing records.
-        crosswalk_repo.add('111-11-1111', None, 'other2')  # Adds crosswalk_id 2.
-        results = self.repository.find_unmatched_index_ids(crosswalk_id=2)
+        link_repo.add('111-11-1111', None, 'other2')  # Adds link_id 2.
+        results = self.repository.find_unmatched_index_ids(link_id=2)
         self.assertEqual(set(results), {1, 2, 3})
 
         # Test no missing records.
-        crosswalk_repo.add('111-11-1111', None, 'other3')  # Adds crosswalk_id 3.
+        link_repo.add('111-11-1111', None, 'other3')  # Adds link_id 3.
         relation_repo.add(3, 1, 1, b'\xc0', 131250, 1.0)
         relation_repo.add(3, 2, 1, b'\x40',  40960, 0.625)
         relation_repo.add(3, 2, 2, b'\x40',  24576, 0.375)
         relation_repo.add(3, 3, 3, b'\xc0', 100000, 1.0)
-        results = self.repository.find_unmatched_index_ids(crosswalk_id=3)
+        results = self.repository.find_unmatched_index_ids(link_id=3)
         self.assertEqual(set(results), set())
 
-        # Test no matching `crosswalk_id`.
-        regex = 'crosswalk_id 999 does not exist'
+        # Test no matching `link_id`.
+        regex = 'link_id 999 does not exist'
         with self.assertRaisesRegex(Exception, regex):
-            results = self.repository.find_unmatched_index_ids(crosswalk_id=999)
+            results = self.repository.find_unmatched_index_ids(link_id=999)
 
     def test_find_distinct_labels(self):
         self.manager.add_columns('A', 'B', 'C')
@@ -1373,8 +1373,8 @@ class LinkRepositoryBaseTest(ABC):
 
     def test_add_get(self):
         """Check ``add()`` and ``get()`` methods."""
-        self.repository.add('111-11-1111', None, 'other1', is_locally_complete=True)  # Adds crosswalk_id 1.
-        self.repository.add('222-22-2222', None, 'other2')  # Adds crosswalk_id 2.
+        self.repository.add('111-11-1111', None, 'other1', is_locally_complete=True)  # Adds link_id 1.
+        self.repository.add('222-22-2222', None, 'other2')  # Adds link_id 2.
 
         self.assertEqual(
             self.repository.get(1),
@@ -1393,7 +1393,7 @@ class LinkRepositoryBaseTest(ABC):
             Link(1, '111-11-1111', None, 'other1', is_locally_complete=False),
         )
 
-        regex = r"no crosswalk exists with other_unique_id 111-11-1111 and name 'blerg'"
+        regex = r"no link exists with other_unique_id 111-11-1111 and name 'blerg'"
         with self.assertRaisesRegex(KeyError, regex):
             self.repository.get_by_unique_id_and_name('111-11-1111', 'blerg')
 
@@ -1420,11 +1420,11 @@ class RelationRepositoryBaseTest(ABC):
         self.index_repo.add('bar', 'y')
         self.index_repo.add('baz', 'z')
 
-        self.crosswalk = self.dal.LinkRepository(cursor)
+        self.link = self.dal.LinkRepository(cursor)
         self.repository = self.dal.RelationRepository(cursor)
 
-        self.crosswalk.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
-        self.crosswalk.add('222-22-2222', None, 'other2')  # Adds crosswalk_id 2.
+        self.link.add('111-11-1111', None, 'other1')  # Adds link_id 1.
+        self.link.add('222-22-2222', None, 'other2')  # Adds link_id 2.
 
         self.repository.add(1, 1, 1, b'\xc0', 131250, 1.0)
         self.repository.add(1, 2, 1, b'\x40',  40960, 0.625)
@@ -1495,12 +1495,12 @@ class RelationRepositoryBaseTest(ABC):
         """String values should get converted to proper types."""
         self.repository.add('2', '2', '3', b'\xc0', '9393', '1.0')  # <- String values (except for bytes)
         expected = {
-            # First crosswalk.
+            # First link.
             (1,  1, 1, 1, b'\xc0', 131250.00, 1.0),
             (2,  1, 2, 1, b'\x40',  40960.00, 0.625),
             (3,  1, 2, 2, b'\x40',  24576.00, 0.375),
             (4,  1, 3, 3, b'\xc0', 100000.00, 1.0),
-            # Second crosswalk.
+            # Second link.
             (5,  2, 1, 1, b'\xc0',    583.75, 1.0),
             (6,  2, 2, 2, b'\xc0',    416.25, 1.0),
             (7,  2, 3, 1, b'\xc0',    336.00, 0.328125),
@@ -1548,11 +1548,11 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.merge_by_index_id(index_ids=(1, 2), target=1)
         results = self.get_relations_helper()
         expected = {
-            # First crosswalk.
+            # First link.
             (10, 1, 1, 1, b'\xc0', 131250.0,  1.0),
             (11, 1, 2, 1, b'\x40',  65536.0,  1.0),
             (4,  1, 3, 3, b'\xc0', 100000.0,  1.0),
-            # Second crosswalk.
+            # Second link.
             (12, 2, 1, 1, b'\xc0',    583.75, 1.0),
             (14, 2, 2, 1, b'\xc0',    416.25, 1.0),
             (13, 2, 3, 1, b'\xc0',    448.0,  0.4375),
@@ -1564,12 +1564,12 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.merge_by_index_id(index_ids=(2, 3), target=2)
         results = self.get_relations_helper()
         expected = {
-            # First crosswalk.
+            # First link.
             (1,  1, 1, 1, b'\xc0', 131250.0,  1.0),
             (2,  1, 2, 1, b'\x40',  40960.0,  0.625),
             (8,  1, 2, 2, b'\x40',  24576.0,  0.375),
             (11, 1, 3, 2, b'\xc0', 100000.0,  1.0),
-            # Second crosswalk.
+            # Second link.
             (5,  2, 1, 1, b'\xc0',    583.75, 1.0),
             (9,  2, 2, 2, b'\xc0',    416.25, 1.0),
             (7,  2, 3, 1, b'\xc0',    336.0,  0.328125),
@@ -1581,11 +1581,11 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.merge_by_index_id(index_ids=(1, 2, 3), target=1)
         results = self.get_relations_helper()
         expected = {
-            # First crosswalk.
+            # First link.
             (1, 1, 1, 1, b'\xc0', 131250.0,  1.0),
             (2, 1, 2, 1, b'\x40',  65536.0,  1.0),
             (6, 1, 3, 1, b'\xc0', 100000.0,  1.0),
-            # Second crosswalk.
+            # Second link.
             (3, 2, 1, 1, b'\xc0',    583.75, 1.0),
             (5, 2, 2, 1, b'\xc0',    416.25, 1.0),
             (4, 2, 3, 1, b'\xc0',   1024.0,  1.0),
@@ -1598,11 +1598,11 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.merge_by_index_id(index_ids=(2, 3), target=1)
         results = self.get_relations_helper()
         expected = {
-            # First crosswalk.
+            # First link.
             (1, 1, 1, 1, b'\xc0', 131250.0,  1.0),
             (2, 1, 2, 1, b'\x40',  65536.0,  1.0),
             (6, 1, 3, 1, b'\xc0', 100000.0,  1.0),
-            # Second crosswalk.
+            # Second link.
             (3, 2, 1, 1, b'\xc0',    583.75, 1.0),
             (5, 2, 2, 1, b'\xc0',    416.25, 1.0),
             (4, 2, 3, 1, b'\xc0',   1024.0,  1.0),
@@ -1621,11 +1621,11 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.merge_by_index_id(index_ids=(1, 2, 3), target=1)
         results = self.get_relations_helper()
         expected = {
-            # First crosswalk.
+            # First link.
             (1, 1, 1, 1, b'\xc0', 131250.00, 1.0),
             (2, 1, 2, 1, b'\x40',  65536.00, None),  # <- Proportion should be None.
             (6, 1, 3, 1, b'\xc0', 100000.00, 1.0),
-            # Second crosswalk.
+            # Second link.
             (3, 2, 1, 1, b'\xc0',    583.75, 1.0),
             (5, 2, 2, 1, b'\xc0',    416.25, 1.0),
             (4, 2, 3, 1, b'\xc0',   1024.00, 1.0),
@@ -1641,12 +1641,12 @@ class RelationRepositoryBaseTest(ABC):
 
     def test_find(self):
         self.assertEqual(
-            list(self.repository.find(crosswalk_id=1)),
+            list(self.repository.find(link_id=1)),
             [Relation(1, 1, 1, 1, b'\xc0', 131250.0, 1.0),
              Relation(2, 1, 2, 1, b'\x40', 40960.0, 0.625),
              Relation(3, 1, 2, 2, b'\x40', 24576.0, 0.375),
              Relation(4, 1, 3, 3, b'\xc0', 100000.0, 1.0)],
-            msg='matches crosswalk_id 1',
+            msg='matches link_id 1',
         )
 
         self.assertEqual(
@@ -1654,7 +1654,7 @@ class RelationRepositoryBaseTest(ABC):
             [Relation(2, 1, 2, 1, b'\x40', 40960.00, 0.625),
              Relation(3, 1, 2, 2, b'\x40', 24576.00, 0.375),
              Relation(6, 2, 2, 2, b'\xc0',   416.25, 1.0)],
-            msg='matches other_index_id 2 (includes records from crosswalks 1 and 2)',
+            msg='matches other_index_id 2 (includes records from links 1 and 2)',
         )
 
         self.assertEqual(
@@ -1663,27 +1663,27 @@ class RelationRepositoryBaseTest(ABC):
              Relation(2, 1, 2, 1, b'\x40',  40960.00, 0.625),
              Relation(5, 2, 1, 1, b'\xc0',    583.75, 1.0),
              Relation(7, 2, 3, 1, b'\xc0',    336.00, 0.328125)],
-            msg='matches index_id 1 (includes records from crosswalks 1 and 2)',
+            msg='matches index_id 1 (includes records from links 1 and 2)',
         )
 
         self.assertEqual(
             list(self.repository.find(other_index_id=1, index_id=1)),
             [Relation(1, 1, 1, 1, b'\xc0', 131250.00, 1.0),
              Relation(5, 2, 1, 1, b'\xc0',    583.75, 1.0)],
-            msg='matches other_index_id 1 and index_id 1 (includes records from crosswalks 1 and 2)',
+            msg='matches other_index_id 1 and index_id 1 (includes records from links 1 and 2)',
         )
 
         self.assertEqual(
-            list(self.repository.find(crosswalk_id=1, other_index_id=2)),
+            list(self.repository.find(link_id=1, other_index_id=2)),
             [Relation(2, 1, 2, 1, b'\x40', 40960.0, 0.625),
              Relation(3, 1, 2, 2, b'\x40', 24576.0, 0.375)],
-            msg='matches crosswalk_id 1 and other_index_id 2',
+            msg='matches link_id 1 and other_index_id 2',
         )
 
         self.assertEqual(
-            list(self.repository.find(crosswalk_id=2, other_index_id=2, index_id=2)),
+            list(self.repository.find(link_id=2, other_index_id=2, index_id=2)),
             [Relation(6, 2, 2, 2, b'\xc0', 416.25, 1.0)],
-            msg='matches crosswalk_id 2 and other_index_id 2 and index_id 2',
+            msg='matches link_id 2 and other_index_id 2 and index_id 2',
         )
 
         self.assertEqual(
@@ -1711,18 +1711,18 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.delete(9)
 
         # Fix inconsistencies with refresh_proportions().
-        self.repository.refresh_proportions(crosswalk_id=1, other_index_id=2)
-        self.repository.refresh_proportions(crosswalk_id=1, other_index_id=3)
-        self.repository.refresh_proportions(crosswalk_id=2, other_index_id=2)
-        self.repository.refresh_proportions(crosswalk_id=2, other_index_id=3)
+        self.repository.refresh_proportions(link_id=1, other_index_id=2)
+        self.repository.refresh_proportions(link_id=1, other_index_id=3)
+        self.repository.refresh_proportions(link_id=2, other_index_id=2)
+        self.repository.refresh_proportions(link_id=2, other_index_id=3)
 
         results = self.get_relations_helper()
         expected = {
-            # First crosswalk.
+            # First link.
             (1, 1, 1, 1, b'\xc0', 131250.00, 1.00),
             (3, 1, 2, 2, b'\x40',  24576.00, 1.00),  # <- Proportion was 0.375
             (4, 1, 3, 3, b'\xc0', 100000.00, 1.00),
-            # Second crosswalk.
+            # Second link.
             (5, 2, 1, 1, b'\xc0',    583.75, 1.00),
             (6, 2, 2, 2, b'\xc0',    416.25, 1.00),
             (7, 2, 3, 1, b'\xc0',    336.00, 0.75),  # <- Proportion was 0.328125
@@ -1737,7 +1737,7 @@ class RelationRepositoryBaseTest(ABC):
         * undefined-to-defined (0 -> non-zero) should be 0%
         * defined-to-undefined (non-zero -> 0) is calculated normally.
         """
-        self.crosswalk.add('333-33-3333', None, 'other3')  # Adds crosswalk_id 3.
+        self.link.add('333-33-3333', None, 'other3')  # Adds link_id 3.
         self.repository.add(3, 0, 2, b'\xc0', 100.0, None)
         self.repository.add(3, 1, 0, b'\xc0', 100.0, None)
         self.repository.add(3, 1, 1, b'\xc0', 100.0, None)
@@ -1746,13 +1746,13 @@ class RelationRepositoryBaseTest(ABC):
         self.repository.add(3, 3, 1, b'\xc0', 100.0, None)
         self.repository.add(3, 3, 3, b'\xc0',  90.0, None)
 
-        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=0)
-        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=1)
-        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=2)
-        self.repository.refresh_proportions(crosswalk_id=3, other_index_id=3)
+        self.repository.refresh_proportions(link_id=3, other_index_id=0)
+        self.repository.refresh_proportions(link_id=3, other_index_id=1)
+        self.repository.refresh_proportions(link_id=3, other_index_id=2)
+        self.repository.refresh_proportions(link_id=3, other_index_id=3)
 
         self.assertEqual(
-            list(self.repository.find(crosswalk_id=3)),
+            list(self.repository.find(link_id=3)),
             [Relation(10, 3, 0, 2, b'\xc0', 100.0, 0.00),
              Relation(11, 3, 1, 0, b'\xc0', 100.0, 0.50),
              Relation(12, 3, 1, 1, b'\xc0', 100.0, 0.50),
@@ -1763,7 +1763,7 @@ class RelationRepositoryBaseTest(ABC):
         )
 
     def test_get_distinct_mapping_levels(self):
-        self.crosswalk.add('333-33-3333', None, 'other3')
+        self.link.add('333-33-3333', None, 'other3')
         self.repository.add(3, 1, 1, b'\xc0', 131250, 1.0)
         self.repository.add(3, 2, 1, b'\x40',  40960, 0.625)
         self.repository.add(3, 2, 2, b'\x40',  24576, 0.375)

@@ -95,9 +95,9 @@ def add_link(args: argparse.Namespace) -> ExitCode:
     node2 = cli_bind_node(args.filepath2, mode='rw')
     process_backup_option(args, node1, node2)
 
-    do_add = lambda tail, head, args: head.add_crosswalk(
+    do_add = lambda tail, head, args: head.add_link(
         node=tail,
-        crosswalk_name=args.link,
+        link_name=args.link,
         other_filename_hint=tail.path_hint,
         description=args.description,
         selectors=args.selectors,

@@ -47,15 +47,15 @@ applogger = logging.getLogger(f'app-{__name__}')
 
 
 def get_mapping_value_position(
-    columns: Sequence[str], crosswalk_name: str
+    columns: Sequence[str], link_name: str
 ) -> int:
     """Return the position of the mapping value column."""
     for i, col in enumerate(columns):
-        if (crosswalk_name == col or
-                crosswalk_name == parse_edge_shorthand(col).get('edge_name')):
+        if (link_name == col or
+                link_name == parse_edge_shorthand(col).get('edge_name')):
             return i  # Get index position of value column
 
-    msg = f'{crosswalk_name!r} is not in data, got header: {columns!r}'
+    msg = f'{link_name!r} is not in data, got header: {columns!r}'
     raise ValueError(msg)
 
 
@@ -442,7 +442,7 @@ class Mapper(object):
 
 
 class Mapper_OLD(object):
-    """Class to build a weighted crosswalk between sets of labels.
+    """Class to build a weighted mapping between sets of labels.
 
     This class create a temporary database--when an instance is garbage
     collected, its database is deleted. It uses the following schema:
@@ -462,7 +462,7 @@ class Mapper_OLD(object):
     """
     def __init__(
         self,
-        crosswalk_name: str,
+        link_name: str,
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
     ) -> None:
@@ -496,7 +496,7 @@ class Mapper_OLD(object):
 
             data, columns = normalize_tabular(data, columns)
 
-            value_pos = get_mapping_value_position(columns, crosswalk_name)
+            value_pos = get_mapping_value_position(columns, link_name)
             self.left_columns = columns[:value_pos]
             self.right_columns = columns[value_pos+1:]
 

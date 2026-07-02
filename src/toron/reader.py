@@ -34,7 +34,7 @@ from toron._typing import (
     TYPE_CHECKING,
 )
 from toron.data_models import Index
-from toron.data_service import make_get_crosswalk_id_func
+from toron.data_service import make_get_link_id_func
 from toron._utils import (
     check_type,
     eagerly_initialize,
@@ -75,7 +75,7 @@ class NodeReader(object):
         #    | index_id     |    +--------------+
         #    | attr_data_id |<---| attr_data_id |
         #    | quant_value  |    | attributes   |
-        #    +--------------+    | crosswalk_id |
+        #    +--------------+    | link_id |
         #                        +--------------+
 
         connection_cm: ContextManager[sqlite3.Connection]
@@ -100,7 +100,7 @@ class NodeReader(object):
                     CREATE TABLE main.attr_data (
                         attr_data_id INTEGER PRIMARY KEY,
                         attributes TEXT NOT NULL,
-                        crosswalk_id INTEGER DEFAULT NULL,
+                        link_id INTEGER DEFAULT NULL,
                         UNIQUE (attributes)
                     );
 
@@ -286,9 +286,9 @@ class NodeReader(object):
         with node._managed_cursor() as node_cur:
             relation_repo = node._dal.RelationRepository(node_cur)
 
-            get_crosswalk_id = make_get_crosswalk_id_func(
+            get_link_id = make_get_link_id_func(
                 ref=self._node.unique_id,
-                crosswalk_repo=node._dal.LinkRepository(node_cur),
+                link_repo=node._dal.LinkRepository(node_cur),
                 other_index_hash=old_index_hash,
             )
 
@@ -296,14 +296,14 @@ class NodeReader(object):
                 cur1 = con.cursor()
                 cur2 = con.cursor()
 
-                # Update 'crosswalk_id' to use ids from new node.
+                # Update 'link_id' to use ids from new node.
                 cur1.execute('SELECT attr_data_id, attributes FROM main.attr_data')
                 for attr_data_id, attributes in cur1:
                     attributes_obj = loads(attributes)
-                    crosswalk_id = get_crosswalk_id(attributes_obj)
+                    link_id = get_link_id(attributes_obj)
                     cur2.execute(
-                        'UPDATE main.attr_data SET crosswalk_id=? WHERE attr_data_id=?',
-                        (crosswalk_id, attr_data_id),
+                        'UPDATE main.attr_data SET link_id=? WHERE attr_data_id=?',
+                        (link_id, attr_data_id),
                     )
 
                 # Create and populate 'new_quant_data' table.
@@ -316,11 +316,11 @@ class NodeReader(object):
                     )
                 """)
                 cur1.execute("""
-                    SELECT index_id, attr_data_id, quant_value, crosswalk_id
+                    SELECT index_id, attr_data_id, quant_value, link_id
                     FROM main.quant_data
                     JOIN main.attr_data USING (attr_data_id)
                 """)
-                for index_id, attr_data_id, quant_value, crosswalk_id in cur1:
+                for index_id, attr_data_id, quant_value, link_id in cur1:
                         # If undefined record, quantities remain undefined.
                         if index_id == 0:
                             cur2.execute(
@@ -331,7 +331,7 @@ class NodeReader(object):
 
                         # All other quantities are translated using relations.
                         rels = relation_repo.find(
-                            crosswalk_id=crosswalk_id,
+                            link_id=link_id,
                             other_index_id=index_id,
                         )
 

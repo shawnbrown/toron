@@ -275,7 +275,7 @@ class TestAddLink(unittest.TestCase):
         node2.to_file(self.filepath2)
 
     def test_add_link(self):
-        """Add crosswalk link in both directions (default behavior)."""
+        """Add link link in both directions (default behavior)."""
         args = argparse.Namespace(
             filepath=self.filepath1,
             command='add',
@@ -289,9 +289,9 @@ class TestAddLink(unittest.TestCase):
         )
         command_add.add_link(args)
 
-        # Check right-side crosswalk (node1 -> node2).
+        # Check right-side link (node1 -> node2).
         self.assertEqual(
-            read_file(self.filepath2).get_crosswalk(self.filepath1, 'population'),
+            read_file(self.filepath2).get_link(self.filepath1, 'population'),
             Link(
                 id=1,
                 other_unique_id='11111111-1111-1111-1111-111111111111',
@@ -301,9 +301,9 @@ class TestAddLink(unittest.TestCase):
             ),
         )
 
-        # Check left-side crosswalk (node1 <- node2).
+        # Check left-side link (node1 <- node2).
         self.assertEqual(
-            read_file(self.filepath1).get_crosswalk(self.filepath2, 'population'),
+            read_file(self.filepath1).get_link(self.filepath2, 'population'),
             Link(
                 id=1,
                 other_unique_id='22222222-2222-2222-2222-222222222222',
@@ -317,7 +317,7 @@ class TestAddLink(unittest.TestCase):
         args = argparse.Namespace(
             filepath=self.filepath1,
             command='add',
-            element='crosswalk',
+            element='link',
             filepath2=self.filepath2,
             link='population',
             direction='right',  # <- Right-side link only.
@@ -327,9 +327,9 @@ class TestAddLink(unittest.TestCase):
         )
         command_add.add_link(args)
 
-        # Check right-side crosswalk (node1 -> node2).
+        # Check right-side link (node1 -> node2).
         self.assertEqual(
-            read_file(self.filepath2).get_crosswalk(self.filepath1, 'population'),
+            read_file(self.filepath2).get_link(self.filepath1, 'population'),
             Link(
                 id=1,
                 other_unique_id='11111111-1111-1111-1111-111111111111',
@@ -339,17 +339,17 @@ class TestAddLink(unittest.TestCase):
             ),
         )
 
-        # Check that left-side crosswalk (node1 <- node2) does not exist.
+        # Check that left-side link (node1 <- node2) does not exist.
         self.assertIsNone(
-            read_file(self.filepath1).get_crosswalk(self.filepath2, 'population')
+            read_file(self.filepath1).get_link(self.filepath2, 'population')
         )
 
-    def test_crosswalk_already_exists(self):
+    def test_link_already_exists(self):
         node1 = bind_node(self.filepath1, mode='rw')
         node2 = bind_node(self.filepath2, mode='rw')
-        node1.add_crosswalk(
+        node1.add_link(
             node=node2,
-            crosswalk_name='population',
+            link_name='population',
             other_filename_hint=node2.path_hint,
             description=None,
             selectors=None,

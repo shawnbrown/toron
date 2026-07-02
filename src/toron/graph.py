@@ -44,7 +44,7 @@ from .data_models import (
     Link,
 )
 from .data_service import (
-    find_crosswalks_by_ref,
+    find_links_by_ref,
     generate_mapping_elements,
     get_domain,
 )
@@ -71,12 +71,12 @@ Direction: TypeAlias = Literal['->', '-->', '<->', '<-->', '<-', '<--']
 def normalize_mapping_data(
     data: Iterator[Sequence],
     columns: Sequence[str],
-    crosswalk_name: str,
+    link_name: str,
     left_domain: str,
     right_domain: str,
 ) -> Tuple[Iterator[Sequence], Sequence]:
     """Validate domain and format *data* stream and *columns*."""
-    value_pos = get_mapping_value_position(columns, crosswalk_name)
+    value_pos = get_mapping_value_position(columns, link_name)
 
     domain_indexes: Dict[int, Tuple[str, str]] = {}
 
@@ -149,13 +149,13 @@ def normalize_filename_hints(
 def _get_mapping_stats(
     source_node: TopoNode,
     target_node: TopoNode,
-    crosswalk: Link,
+    link: Link,
 ) -> Dict[str, int]:
-    """Return a summary of mapping statistics for a given crosswalk.
+    """Return a summary of mapping statistics for a given link.
 
     .. code-block::
 
-        >>> _get_mapping_stats(node1, node2, crosswalk)
+        >>> _get_mapping_stats(node1, node2, link)
         {'src_cardinality': 10,
          'src_index_matched': 10,
          'src_index_missing': 0,
@@ -172,8 +172,8 @@ def _get_mapping_stats(
         trg_index_repo = target_node._dal.IndexRepository(trg_cur)
         trg_rel_repo = target_node._dal.RelationRepository(trg_cur)
 
-        if crosswalk.other_unique_id != src_prop_repo.get('unique_id'):
-            msg = 'crosswalk does not match source node'
+        if link.other_unique_id != src_prop_repo.get('unique_id'):
+            msg = 'link does not match source node'
             raise Exception(msg)
 
         # Get source-side counts. If the hashes match, we know that all
@@ -185,11 +185,11 @@ def _get_mapping_stats(
         src_index_missing = 0
         src_index_stale = 0
 
-        if crosswalk.other_index_hash == src_prop_repo.get('index_hash'):
+        if link.other_index_hash == src_prop_repo.get('index_hash'):
             src_index_matched = src_cardinality
         else:
             other_index_ids = trg_rel_repo.find_distinct_other_index_ids(
-                crosswalk.id,
+                link.id,
             )
             for other_index_id in other_index_ids:
                 try:
@@ -203,10 +203,10 @@ def _get_mapping_stats(
         # Get target-side counts. Note: There is no 'trg_index_stale'
         # because target index references should never go stale. They
         # are managed locally--the target node holds data for incoming
-        # crosswalks so if an index is deleted from the target node,
-        # it should also be deleted from crosswalks in that node.
+        # mappings so if an index is deleted from the target node,
+        # it should also be deleted from mappings in that node.
         trg_cardinality = trg_index_repo.get_cardinality()
-        trg_index_matched = trg_rel_repo.get_index_id_cardinality(crosswalk.id)
+        trg_index_matched = trg_rel_repo.get_index_id_cardinality(link.id)
         trg_index_missing = trg_cardinality - trg_index_matched
 
         return {
@@ -225,9 +225,9 @@ def _log_load_mapping_stats(
     left_node : TopoNode,
     direction: Literal['<-', '->'],
     right_node : TopoNode,
-    crosswalk_name: str,
+    link_name: str,
 ) -> None:
-    """Log mapping stats using given *logger* for specified crosswalk."""
+    """Log mapping stats using given *logger* for specified link."""
     if direction == '<-':
         source_node = right_node
         target_node = left_node
@@ -242,9 +242,9 @@ def _log_load_mapping_stats(
         msg = f"direction must be '<-' or '->', got {direction!r}"
         raise ValueError(msg)
 
-    crosswalk = target_node.get_crosswalk(source_node, crosswalk_name)
+    link = target_node.get_link(source_node, link_name)
     mapping_stats = _get_mapping_stats(
-        source_node, target_node, cast(Link, crosswalk)
+        source_node, target_node, cast(Link, link)
     )
     if not any([mapping_stats['src_index_missing'],
                 mapping_stats['src_index_stale'],
@@ -274,7 +274,7 @@ def load_mapping(
     left_node : TopoNode,
     direction : Direction,
     right_node : TopoNode,
-    crosswalk_name: str,
+    link_name: str,
     data: Union[Iterable[Sequence], Iterable[Dict]],
     columns: Optional[Sequence[str]] = None,
     selectors: Optional[Union[List[str], str]] = None,
@@ -282,17 +282,17 @@ def load_mapping(
     match_limit: int = 1,
     allow_overlapping: bool = False,
 ) -> None:
-    """Use mapping data to build a crosswalk between two nodes."""
+    """Use mapping data to build a link between two nodes."""
     data, columns = normalize_tabular(data, columns)
     data, columns = normalize_mapping_data(
         data=data,
         columns=columns,
-        crosswalk_name=crosswalk_name,
+        link_name=link_name,
         left_domain=left_node.domain,
         right_domain=right_node.domain,
     )
 
-    mapper = Mapper_OLD(crosswalk_name, data, columns)
+    mapper = Mapper_OLD(link_name, data, columns)
     mapper.match_records(left_node, 'left', match_limit, allow_overlapping)
     mapper.match_records(right_node, 'right', match_limit, allow_overlapping)
 
@@ -304,18 +304,18 @@ def load_mapping(
     if '->' in direction:
         applogger.info('loading mapping from left to right')
 
-        right_node.add_crosswalk(
+        right_node.add_link(
             node=left_node,
-            crosswalk_name=crosswalk_name,
+            link_name=link_name,
             other_filename_hint=left_filename_hint,
             selectors=selectors,
             is_default=is_default,
         )
         right_node.insert_relations2(
             node_or_ref=left_node,
-            crosswalk_name=crosswalk_name,
+            link_name=link_name,
             data=mapper.get_relations('->'),
-            columns=['other_index_id', crosswalk_name, 'index_id', 'mapping_level'],
+            columns=['other_index_id', link_name, 'index_id', 'mapping_level'],
         )
 
         _log_load_mapping_stats(
@@ -323,24 +323,24 @@ def load_mapping(
             left_node=left_node,
             direction='->',
             right_node=right_node,
-            crosswalk_name=crosswalk_name,
+            link_name=link_name,
         )
 
     if '<-' in direction:
         applogger.info('loading mapping from right to left')
 
-        left_node.add_crosswalk(
+        left_node.add_link(
             node=right_node,
-            crosswalk_name=crosswalk_name,
+            link_name=link_name,
             other_filename_hint=right_filename_hint,
             selectors=selectors,
             is_default=is_default,
         )
         left_node.insert_relations2(
             node_or_ref=right_node,
-            crosswalk_name=crosswalk_name,
+            link_name=link_name,
             data=mapper.get_relations('<-'),
-            columns=['other_index_id', crosswalk_name, 'index_id', 'mapping_level'],
+            columns=['other_index_id', link_name, 'index_id', 'mapping_level'],
         )
 
         _log_load_mapping_stats(
@@ -348,7 +348,7 @@ def load_mapping(
             left_node=left_node,
             direction='<-',
             right_node=right_node,
-            crosswalk_name=crosswalk_name,
+            link_name=link_name,
         )
 
 
@@ -361,16 +361,16 @@ _MappingElementsTuple : TypeAlias = Union[
 def _get_mapping_elements(
     source_node: TopoNode,
     target_node: TopoNode,
-    crosswalk_name: Optional[str] = None,
+    link_name: Optional[str] = None,
 ) -> Generator[_MappingElementsTuple, None, None]:
     """See ``data_service.generate_mapping_elements()`` for details."""
     with source_node._managed_cursor() as src_cur, \
             target_node._managed_cursor() as trg_cur:
 
         generator = generate_mapping_elements(
-            crosswalk_name=crosswalk_name,
+            link_name=link_name,
             trg_index_repo=target_node._dal.IndexRepository(trg_cur),
-            trg_crosswalk_repo=target_node._dal.LinkRepository(trg_cur),
+            trg_link_repo=target_node._dal.LinkRepository(trg_cur),
             trg_relation_repo=target_node._dal.RelationRepository(trg_cur),
             src_index_repo=source_node._dal.IndexRepository(src_cur),
             src_prop_repo=source_node._dal.PropertyRepository(src_cur),
@@ -418,11 +418,11 @@ def _get_ambiguous_fields(
 def get_mapping(
     source_node: TopoNode,
     target_node: TopoNode,
-    crosswalk_name: Optional[str] = None,
+    link_name: Optional[str] = None,
     header: bool = True,
 ) -> Iterator[Tuple]:
     """Yield an index mapping from *source_node* to *target_node*
-    for a particular crosswalk.
+    for a particular link.
     """
     src_index_cols = tuple(source_node.index_columns)
     trg_index_cols = tuple(target_node.index_columns)
@@ -446,7 +446,7 @@ def get_mapping(
     mapping_elements = _get_mapping_elements(
         source_node=source_node,
         target_node=target_node,
-        crosswalk_name=crosswalk_name,
+        link_name=link_name,
     )
 
     with source_node._managed_cursor() as src_cur, \
@@ -459,7 +459,7 @@ def get_mapping(
                 ('index_id',)
                 + src_domain_keys
                 + src_index_cols
-                + (crosswalk_name,)
+                + (link_name,)
                 + ('index_id',)
                 + trg_domain_keys
                 + trg_index_cols
@@ -513,25 +513,25 @@ def get_mapping(
 def get_mapping_info_str(
     source_node: TopoNode,
     target_node: TopoNode,
-    crosswalk_name: Optional[str] = None,
+    link_name: Optional[str] = None,
 ) -> str:
     """Return a text description of information about a mapping."""
-    crosswalk = target_node.get_crosswalk(
+    link = target_node.get_link(
         node_or_ref=source_node,
-        crosswalk_name=crosswalk_name,
+        link_name=link_name,
     )
 
-    if crosswalk is None:
-        msg = f'no crosswalk named {crosswalk_name!r}'
+    if link is None:
+        msg = f'no link named {link_name!r}'
         raise Exception(msg)
 
-    if not crosswalk_name:
-        crosswalk_name = crosswalk.name
+    if not link_name:
+        link_name = link.name
 
     stats = _get_mapping_stats(
         source_node=source_node,
         target_node=target_node,
-        crosswalk=crosswalk,
+        link=link,
     )
 
     source_short_hint = source_node.path_hint
@@ -547,7 +547,7 @@ def get_mapping_info_str(
         target_short_hint = f'[{target_node.unique_id[:7]}]'
 
     info = [
-        f'{crosswalk_name}: {source_short_hint} -> {target_short_hint}',
+        f'{link_name}: {source_short_hint} -> {target_short_hint}',
         f'',
         f'  {source_short_hint}: matched {stats["src_index_matched"]} ' \
             f'of {stats["src_cardinality"]} indexes',
@@ -632,52 +632,52 @@ def _translate(
 ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
-        crosswalk_repo = node._dal.LinkRepository(cursor)
+        link_repo = node._dal.LinkRepository(cursor)
         relation_repo = node._dal.RelationRepository(cursor)
         index_repo = node._dal.IndexRepository(cursor)
 
-        # Get all crosswalks.
-        crosswalks: List = find_crosswalks_by_ref(
+        # Get all links.
+        links: List = find_links_by_ref(
             ref=quantity_iterator.unique_id,
-            crosswalk_repo=crosswalk_repo,
+            link_repo=link_repo,
         )
 
-        # Get the default crosswalk and make sure it's locally complete.
-        default_crosswalk_id = None
-        for crosswalk in crosswalks:
-            if crosswalk.is_default:
-                if crosswalk.other_index_hash != quantity_iterator.index_hash \
-                        or not crosswalk.is_locally_complete:
-                    msg = f'default crosswalk {crosswalk.name!r} is not complete'
+        # Get the default link and make sure it's locally complete.
+        default_link_id = None
+        for link in links:
+            if link.is_default:
+                if link.other_index_hash != quantity_iterator.index_hash \
+                        or not link.is_locally_complete:
+                    msg = f'default link {link.name!r} is not complete'
                     raise RuntimeError(msg)
 
-                default_crosswalk_id = crosswalk.id
+                default_link_id = link.id
                 break
         else:  # IF NO BREAK!
-            msg = f'no default crosswalk found for node {node}'
+            msg = f'no default link found for node {node}'
             raise RuntimeError(msg)
 
         # Build dict of index id values and attribute selector objects.
-        crosswalks = [x for x in crosswalks if x.is_locally_complete and x.selectors]
+        links = [x for x in links if x.is_locally_complete and x.selectors]
         func = lambda selectors: [parse_selector(s) for s in selectors]
-        selector_dict = {x.id: func(x.selectors) for x in crosswalks}
+        selector_dict = {x.id: func(x.selectors) for x in links}
 
         for index, attributes, quantity_value in quantity_iterator.data:
             if quantity_value is None:
                 continue  # Skip to next relation.
 
-            # Find crosswalk that matches with greated unique specificity.
-            crosswalk_id = get_greatest_unique_specificity(
+            # Find link that matches with greated unique specificity.
+            link_id = get_greatest_unique_specificity(
                 row_dict=attributes,
                 selector_dict=selector_dict,
-                default=default_crosswalk_id,
+                default=default_link_id,
             )
 
-            # Get relations for matching crosswalk and other_index_id
+            # Get relations for matching link and other_index_id
             # (assign as a tuple to consume the iterator and free-up
             # the underlying cursor obj for the following yield-loop).
             relations = tuple(relation_repo.find(
-                crosswalk_id=crosswalk_id,
+                link_id=link_id,
                 other_index_id=index.id,
             ))
 

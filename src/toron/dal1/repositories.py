@@ -108,15 +108,15 @@ class IndexRepository(BaseIndexRepository):
         self._cursor.execute(sql)
         return (row[0] for row in self._cursor)
 
-    def find_unmatched_index_ids(self, crosswalk_id: int) -> Iterator[int]:
-        """Find index_id values missing from the specified crosswalk."""
+    def find_unmatched_index_ids(self, link_id: int) -> Iterator[int]:
+        """Find index_id values missing from the specified link."""
         # TODO: Decide if this method should be moved to RelationRepository.
-        #       Compare it to RelationRepository.crosswalk_is_complete().
+        #       Compare it to RelationRepository.mapping_is_complete().
         sql = 'SELECT EXISTS (SELECT 1 FROM main.crosswalk WHERE crosswalk_id=?)'
-        self._cursor.execute(sql, (crosswalk_id,))
-        crosswalk_exists = self._cursor.fetchone()[0]
-        if not crosswalk_exists:
-            msg = f'crosswalk_id {crosswalk_id} does not exist'
+        self._cursor.execute(sql, (link_id,))
+        link_exists = self._cursor.fetchone()[0]
+        if not link_exists:
+            msg = f'link_id {link_id} does not exist'
             raise Exception(msg)
 
         sql = """
@@ -124,7 +124,7 @@ class IndexRepository(BaseIndexRepository):
             EXCEPT
             SELECT index_id FROM main.relation WHERE crosswalk_id = ?
         """
-        self._cursor.execute(sql, (crosswalk_id,))
+        self._cursor.execute(sql, (link_id,))
         return (row[0] for row in self._cursor)
 
     def find_distinct_labels(
@@ -845,8 +845,8 @@ class LinkRepository(BaseLinkRepository):
         self._cursor.execute(sql, parameters)
 
     @staticmethod
-    def _make_crosswalk(values: Iterable[Any]) -> Link:
-        """Normalize row of 'crosswalk' values and return Link."""
+    def _make_link(values: Iterable[Any]) -> Link:
+        """Normalize row of 'link' values and return Link."""
         a, b, c, d, e, f, g, h, i, j = values  # Faster to unpack all than to slice.
         return Link(
             id=a,
@@ -885,13 +885,13 @@ class LinkRepository(BaseLinkRepository):
         self._cursor.execute(sql, (id,))
         record = self._cursor.fetchone()
         if record is None:
-            raise KeyError(f'no crosswalk with id of {id}')
-        return self._make_crosswalk(record)
+            raise KeyError(f'no link with id of {id}')
+        return self._make_link(record)
 
     def get_all(self) -> List[Link]:
         """Get all records from the repository."""
         self._cursor.execute('SELECT * FROM main.crosswalk')
-        return [self._make_crosswalk(row) for row in self._cursor]
+        return [self._make_link(row) for row in self._cursor]
 
     def update(self, record: Link) -> None:
         """Update a record in the repository."""
@@ -936,7 +936,7 @@ class LinkRepository(BaseLinkRepository):
     ) -> Link:
         """Get record with matching *other_unique_id* and *name*.
 
-        If no crosswalk matches the given id values, a ``KeyError`` is
+        If no link matches the given id values, a ``KeyError`` is
         raised.
         """
         self._cursor.execute(
@@ -947,11 +947,11 @@ class LinkRepository(BaseLinkRepository):
         record = self._cursor.fetchone()
         if not record:
             raise KeyError(
-                f'no crosswalk exists with other_unique_id {other_unique_id} '
+                f'no link exists with other_unique_id {other_unique_id} '
                 f'and name {name!r}'
             )
 
-        return self._make_crosswalk(record)
+        return self._make_link(record)
 
     def find_by_other_unique_id(
         self, other_unique_id: str
@@ -962,7 +962,7 @@ class LinkRepository(BaseLinkRepository):
             (other_unique_id,),
         )
         for record in self._cursor:
-            yield self._make_crosswalk(record)
+            yield self._make_link(record)
 
     def find_by_other_filename_hint(
         self, other_filename_hint: str
@@ -973,7 +973,7 @@ class LinkRepository(BaseLinkRepository):
             (other_filename_hint,),
         )
         for record in self._cursor:
-            yield self._make_crosswalk(record)
+            yield self._make_link(record)
 
 
 class RelationRepository(BaseRelationRepository):
@@ -984,7 +984,7 @@ class RelationRepository(BaseRelationRepository):
     if sqlite3.sqlite_version_info >= (3, 32, 0):
         def add(
             self,
-            crosswalk_id: int,
+            link_id: int,
             other_index_id: int,
             index_id: int,
             mapping_level: bytes,
@@ -1014,7 +1014,7 @@ class RelationRepository(BaseRelationRepository):
                 VALUES (?, ?, ?, ?, ?, ?)
             """
             parameters = (
-                crosswalk_id,
+                link_id,
                 other_index_id,
                 index_id,
                 value,
@@ -1028,7 +1028,7 @@ class RelationRepository(BaseRelationRepository):
         # and 'value' need to be converted *before* inserting or updating.
         def add(
             self,
-            crosswalk_id: int,
+            link_id: int,
             other_index_id: int,
             index_id: int,
             mapping_level: bytes,
@@ -1058,7 +1058,7 @@ class RelationRepository(BaseRelationRepository):
                 VALUES (?, ?, ?, ?, ?, ?)
             """
             parameters = (
-                crosswalk_id,
+                link_id,
                 int(other_index_id),  # <- Convert to int before loading.
                 index_id,
                 float(value),  # <- Convert to float before loading.
@@ -1094,7 +1094,7 @@ class RelationRepository(BaseRelationRepository):
                 WHERE relation_id=?
             """
             parameters = (
-                record.crosswalk_id,
+                record.link_id,
                 record.other_index_id,
                 record.index_id,
                 record.mapping_level,
@@ -1120,7 +1120,7 @@ class RelationRepository(BaseRelationRepository):
                 WHERE relation_id=?
             """
             parameters = (
-                record.crosswalk_id,
+                record.link_id,
                 int(record.other_index_id),  # <- Convert to int before loading.
                 record.index_id,
                 record.mapping_level,
@@ -1137,11 +1137,12 @@ class RelationRepository(BaseRelationRepository):
         )
 
     def find_distinct_other_index_ids(
-        self, crosswalk_id: int,
+        self,
+        link_id: int,
         ordered: bool = False,
         include_undefined: bool = True,
     ) -> Iterator[int]:
-        """Get distinct other_index_id values for the given crosswalk.
+        """Get distinct other_index_id values for the given link.
         When *ordered* is True, must return values in ascending order.
         """
         sql = f"""
@@ -1150,7 +1151,7 @@ class RelationRepository(BaseRelationRepository):
             WHERE crosswalk_id=? AND other_index_id > 0
             {'ORDER BY other_index_id' if ordered else ''}
         """
-        self._cursor.execute(sql, (crosswalk_id,))
+        self._cursor.execute(sql, (link_id,))
 
         if include_undefined:
             yield 0  # Yield undefined other_index_id.
@@ -1161,7 +1162,7 @@ class RelationRepository(BaseRelationRepository):
     def find(
         self,
         *,
-        crosswalk_id: Optional[int] = None,
+        link_id: Optional[int] = None,
         other_index_id: Optional[int] = None,
         index_id: Optional[int] = None,
     ) -> Iterator[Relation]:
@@ -1171,8 +1172,8 @@ class RelationRepository(BaseRelationRepository):
         no items.
         """
         criteria = []
-        if crosswalk_id is not None:
-            criteria.append('crosswalk_id=:crosswalk_id')
+        if link_id is not None:
+            criteria.append('crosswalk_id=:link_id')
         if other_index_id is not None:
             criteria.append('other_index_id=:other_index_id')
         if index_id is not None:
@@ -1181,7 +1182,7 @@ class RelationRepository(BaseRelationRepository):
         if criteria:
             sql = f'SELECT * FROM main.relation WHERE {" AND ".join(criteria)}'
             parameters = {
-                'crosswalk_id': crosswalk_id,
+                'link_id': link_id,
                 'other_index_id': other_index_id,
                 'index_id': index_id,
             }
@@ -1191,22 +1192,22 @@ class RelationRepository(BaseRelationRepository):
                 yield Relation(*record)
 
     def get_index_id_cardinality(
-        self, crosswalk_id: int, include_undefined: bool = True
+        self, link_id: int, include_undefined: bool = True
     ) -> int:
-        """Return the count of unique index_id values in the crosswalk."""
+        """Return the count of unique index_id values in the link."""
         sql = (
             'SELECT COUNT(DISTINCT index_id)\n'
             'FROM main.relation\n'
             'WHERE crosswalk_id=? AND index_id != 0'
         )
 
-        self._cursor.execute(sql, (crosswalk_id,))
+        self._cursor.execute(sql, (link_id,))
         result = self._cursor.fetchone()[0]
         if include_undefined:
             result += 1
         return result
 
-    def crosswalk_is_complete(self, crosswalk_id: int) -> bool:
+    def mapping_is_complete(self, link_id: int) -> bool:
         """Return True if there's a relation for every index record."""
         # In the following SQL, the `EXISTS` operator stops the nested query
         # early (confirmed by Richard Hipp on a mailing list 2016-03-05).
@@ -1220,19 +1221,19 @@ class RelationRepository(BaseRelationRepository):
                     SELECT index_id FROM main.relation WHERE crosswalk_id = ?
                 )
             """,
-            (crosswalk_id,),
+            (link_id,),
         )
         is_complete = self._cursor.fetchone()[0]
         return bool(is_complete)
 
-    def get_distinct_mapping_levels(self, crosswalk_id: int) -> List[bytes]:
-        """Return a list of distinct mapping levels used by a crosswalk."""
+    def get_distinct_mapping_levels(self, link_id: int) -> List[bytes]:
+        """Return a list of distinct mapping levels used by a link."""
         sql = """
             SELECT DISTINCT mapping_level
             FROM main.relation
             WHERE crosswalk_id=? AND mapping_level IS NOT NULL
         """
-        self._cursor.execute(sql, (crosswalk_id,))
+        self._cursor.execute(sql, (link_id,))
         return [row[0] for row in self._cursor]
 
 

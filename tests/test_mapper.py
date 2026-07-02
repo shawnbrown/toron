@@ -708,8 +708,8 @@ class TestMapper_OLD_Init(unittest.TestCase):
             cur.execute('SELECT * FROM mapping_data')
             return set(cur.fetchall())
 
-    def test_exact_crosswalk_name(self):
-        """Test crosswalk name matches value column exactly."""
+    def test_exact_link_name(self):
+        """Test link name matches value column exactly."""
         data = [
             ['idx1', 'population', 'idx1', 'idx2'],
             ['A', 70, 'A', 'x'],
@@ -718,7 +718,7 @@ class TestMapper_OLD_Init(unittest.TestCase):
             ['B', 8, '', 'y'],
         ]
         mapper = Mapper_OLD(
-            crosswalk_name='population',  # <- Matches name of column exactly.
+            link_name='population',  # <- Matches name of column exactly.
             data=data,
         )
 
@@ -732,15 +732,15 @@ class TestMapper_OLD_Init(unittest.TestCase):
              (4, '["B"]', b'\x80', '["", "y"]',  b'\x40', 8.0)},
         )
 
-    def test_parsed_crosswalk_name(self):
-        """Test crosswalk name parsed from shorthand-syntax."""
+    def test_parsed_link_name(self):
+        """Test link name parsed from shorthand-syntax."""
         data = [
             ['idx1', 'population: node1 --> node2', 'idx1', 'idx2'],
             ['A', 70, 'A', 'x'],
             ['B', 80, 'B', 'y'],
         ]
         mapper = Mapper_OLD(
-            crosswalk_name='population',  # <- Matches name in shorthand syntax.
+            link_name='population',  # <- Matches name in shorthand syntax.
             data=data,
         )
 
@@ -1003,7 +1003,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
 
     def test_exact_matches(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['B', 80, 'B', 'y'],
@@ -1021,7 +1021,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
 
     def test_ambiguous_matches_over_limit(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['A', 40, 'A', 'y'],
@@ -1047,7 +1047,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
 
     def test_ambiguous_matches_within_limit(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['A', 40, 'A', 'y'],
@@ -1066,7 +1066,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
 
     def test_invalid_categories(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['A', 40, 'A', 'y'],
@@ -1096,7 +1096,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
         need to be informed why the match failed.
         """
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2', 'idx3'],
                   ['A', 70, 'A', 'x', 'z'],
                   ['B', 80, 'B', 'y', 'z'],
@@ -1120,7 +1120,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
     def test_missing_weight_exact_match(self):
         """Exact matches are OK even when weight is missing."""
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['A', 40, 'A', 'y'],
@@ -1147,7 +1147,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
         distribution.
         """
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],  # <- exact match
                   ['A', 30, 'A', 'y'],  # <- exact match
@@ -1182,7 +1182,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
 
     def test_overlapping_not_allowed(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['A', 40, 'A', 'y'],
@@ -1209,7 +1209,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
 
     def test_overlapping_allowed(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['A', 40, 'A', 'y'],
@@ -1241,7 +1241,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
         level--they should not count as being overlapped.
         """
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['A', 40, 'A', 'y'],
@@ -1265,7 +1265,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
 class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
     def test_exact_matches(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 10, 'A', 'x'],
                   ['A', 70, 'A', 'y'],
@@ -1288,7 +1288,7 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
 
     def test_ambiguous_no_overlaps(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 90, 'A',  ''],   # <- Matched to 2 right-side records.
                   ['B', 20, 'B', 'x'],   # <- Exact match.
@@ -1313,7 +1313,7 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
 
     def test_ambiguous_with_overlaps(self):
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 90, 'A',  ''],   # <- Matched to 2 right-side records.
                   ['B', 20, 'B', 'x'],   # <- Exact match.
@@ -1346,7 +1346,7 @@ class TestMapper_OLD_GetRelations(TwoNodesBaseTest):
         sum them internally.
         """
         mapper = Mapper_OLD(
-            crosswalk_name='population',
+            link_name='population',
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 30, 'A', ''],   # <- Duplicate labels using same mapping level.
                   ['A', 50, 'A', ''],   # <- Duplicate labels using same mapping level.

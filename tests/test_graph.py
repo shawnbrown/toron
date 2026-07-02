@@ -44,7 +44,7 @@ class TestNormalizeMappingData(unittest.TestCase):
         data, columns = normalize_mapping_data(
             data=self.data,
             columns=self.columns,
-            crosswalk_name='value',
+            link_name='value',
             left_domain='foo',
             right_domain='bar',
         )
@@ -62,7 +62,7 @@ class TestNormalizeMappingData(unittest.TestCase):
         data, columns = normalize_mapping_data(
             data=self.data,
             columns=self.columns,
-            crosswalk_name='value',
+            link_name='value',
             left_domain='',
             right_domain='',
         )
@@ -83,7 +83,7 @@ class TestNormalizeMappingData(unittest.TestCase):
         data, columns = normalize_mapping_data(
             data=data,
             columns=columns,
-            crosswalk_name='value',
+            link_name='value',
             left_domain='foo',
             right_domain='qux',
         )
@@ -106,7 +106,7 @@ class TestNormalizeMappingData(unittest.TestCase):
         data, columns = normalize_mapping_data(
             data=self.data,
             columns=self.columns,
-            crosswalk_name='value',
+            link_name='value',
             left_domain='foo',
             right_domain='bar',
         )
@@ -219,10 +219,10 @@ class TwoNodesBaseTestCase(unittest.TestCase):
 
 class TestdGetMappingStats(TwoNodesBaseTestCase):
     def test_all_matched(self):
-        self.node2.add_crosswalk(self.node1, 'population', other_filename_hint='file1')
+        self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
                 (1, 2, b'\xe0',  25.0),
@@ -237,9 +237,9 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
             ],
             columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
-        crosswalk = self.node2.get_crosswalk(self.node1, 'population')
+        link = self.node2.get_link(self.node1, 'population')
 
-        stats = _get_mapping_stats(self.node1, self.node2, crosswalk)
+        stats = _get_mapping_stats(self.node1, self.node2, link)
         expected = {
             'src_cardinality': 10,
             'src_index_matched': 10,
@@ -252,10 +252,10 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
         self.assertEqual(stats, expected)
 
     def test_source_missing(self):
-        self.node2.add_crosswalk(self.node1, 'population', other_filename_hint='file1')
+        self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
                 (1, 2, b'\xe0',  25.0),
@@ -270,9 +270,9 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
             ],
             columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
-        crosswalk = self.node2.get_crosswalk(self.node1, 'population')
+        link = self.node2.get_link(self.node1, 'population')
 
-        stats = _get_mapping_stats(self.node1, self.node2, crosswalk)
+        stats = _get_mapping_stats(self.node1, self.node2, link)
         expected = {
             'src_cardinality': 10,
             'src_index_matched': 9,
@@ -285,10 +285,10 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
         self.assertEqual(stats, expected)
 
     def test_target_missing(self):
-        self.node2.add_crosswalk(self.node1, 'population', other_filename_hint='file1')
+        self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 # Target element 1 is omitted.
                 (1, 2, b'\xe0',  25.0),
@@ -303,9 +303,9 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
             ],
             columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
-        crosswalk = self.node2.get_crosswalk(self.node1, 'population')
+        link = self.node2.get_link(self.node1, 'population')
 
-        stats = _get_mapping_stats(self.node1, self.node2, crosswalk)
+        stats = _get_mapping_stats(self.node1, self.node2, link)
         expected = {
             'src_cardinality': 10,
             'src_index_matched': 10,
@@ -318,10 +318,10 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
         self.assertEqual(stats, expected)
 
     def test_source_stale(self):
-        self.node2.add_crosswalk(self.node1, 'population', other_filename_hint='file1')
+        self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 (99, 1, b'\xe0', 25.0),  # <- Element 99 is stale (not in current source).
                 (1, 2, b'\xe0',  25.0),
@@ -336,9 +336,9 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
             ],
             columns=['other_index_id', 'index_id', 'mapping_level', 'population'],
         )
-        crosswalk = self.node2.get_crosswalk(self.node1, 'population')
+        link = self.node2.get_link(self.node1, 'population')
 
-        stats = _get_mapping_stats(self.node1, self.node2, crosswalk)
+        stats = _get_mapping_stats(self.node1, self.node2, link)
         expected = {
             'src_cardinality': 10,
             'src_index_matched': 10,
@@ -370,14 +370,14 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             left_node=self.node1,
             direction='->',
             right_node=self.node2,
-            crosswalk_name='population',
+            link_name='population',
             data=mapping_data,
         )
 
         self.assertEqual(
             self.log_stream.getvalue(),
             ("INFO: loading mapping from left to right\n"
-             "WARNING: setting default crosswalk: 'population'\n"
+             "WARNING: setting default link: 'population'\n"
              "INFO: loaded 10 relations\n"
              "INFO: mapping verified, cleanly matches both sides\n")
         )
@@ -415,7 +415,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             left_node=self.node1,
             direction='->',
             right_node=self.node2,
-            crosswalk_name='population',
+            link_name='population',
             data=mapping_data,
             is_default=True,
             match_limit=4,
@@ -465,9 +465,9 @@ class TestLoadMapping(TwoNodesBaseTestCase):
 
         load_mapping(  # <- The method under test.
             left_node=self.node1,
-            direction='<-->',  # <- Makes crosswalks in both directions!
+            direction='<-->',  # <- Makes links in both directions!
             right_node=self.node2,
-            crosswalk_name='population',
+            link_name='population',
             data=mapping_data,
             match_limit=2,
             is_default=True,
@@ -532,14 +532,14 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             left_node=self.node1,
             direction='->',
             right_node=self.node2,
-            crosswalk_name='population',
+            link_name='population',
             data=mapping_data,
         )
 
         self.assertEqual(
             self.log_stream.getvalue(),
             ("INFO: loading mapping from left to right\n"
-             "WARNING: setting default crosswalk: 'population'\n"
+             "WARNING: setting default link: 'population'\n"
              "INFO: loaded 10 relations\n"
              "INFO: mapping verified, cleanly matches both sides\n")
         )
@@ -563,11 +563,11 @@ class TestLoadMapping(TwoNodesBaseTestCase):
 
 class TestGetMapping(TwoNodesBaseTestCase):
     def test_fully_joined_no_domain_some_ambiguous(self):
-        """Check fully mapped crosswalk."""
-        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        """Check fully mapped link."""
+        self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 (1, 1, b'\x80',  25.0),  # ambiguous: b'\x80' -> 1, 0, 0
                 (1, 2, b'\x80',  25.0),  # ambiguous: b'\x80' -> 1, 0, 0
@@ -601,14 +601,14 @@ class TestGetMapping(TwoNodesBaseTestCase):
         self.assertEqual(list(actual), expected)
 
     def test_fully_joined_with_domain(self):
-        """Check fully mapped crosswalk."""
+        """Check fully mapped link."""
         self.node1.set_domain('AAA')
         self.node2.set_domain('BBB')
 
-        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
                 (1, 2, b'\xe0',  25.0),
@@ -643,10 +643,10 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
     def test_missing_left(self):
         """Check unmapped left-side elemenets."""
-        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
                 (1, 2, b'\xe0',  25.0),
@@ -685,10 +685,10 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
     def test_missing_right(self):
         """Check unmapped right-side elemenets."""
-        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
                 (1, 2, b'\xe0',  25.0),
@@ -730,10 +730,10 @@ class TestGetMapping(TwoNodesBaseTestCase):
         self.node1.set_domain('AAA')
         self.node2.set_domain('BBB')
 
-        self.node2.add_crosswalk(self.node1, 'population', is_default=True)
+        self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_relations2(
             node_or_ref=self.node1,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
                 (1, 2, b'\xe0',  25.0),
@@ -870,9 +870,9 @@ class TestTranslate(unittest.TestCase):
             ['a1', 'b2', 'c3'],  # <- index_id=3
             ['a1', 'b2', 'c4'],  # <- index_id=4
         ])
-        self.node.add_crosswalk(
+        self.node.add_link(
             node=mock_node,
-            crosswalk_name='edge 1',
+            link_name='edge 1',
             other_filename_hint='other-file',
             description='Edge one description.',
             selectors=['[foo="bar"]'],
@@ -880,7 +880,7 @@ class TestTranslate(unittest.TestCase):
         )
         self.node.insert_relations(
             node_or_ref='other-file',
-            crosswalk_name='edge 1',
+            link_name='edge 1',
             data=[
                 ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C', 'mapping_level'),
                 (1,  39.0, 1, 'a1', 'b1', 'c1', b'\xe0'),  # proportion: 0.6
@@ -894,16 +894,16 @@ class TestTranslate(unittest.TestCase):
                 (5,  31.0, 4, 'a1', 'b2', 'c4', b'\xe0'),  # proportion: 0.62
             ],
         )
-        self.node.add_crosswalk(
+        self.node.add_link(
             node=mock_node,
-            crosswalk_name='edge 2',
+            link_name='edge 2',
             other_filename_hint='other-file',
             description='Edge two description.',
             selectors=['[foo]'],
         )
         self.node.insert_relations(
             node_or_ref='other-file',
-            crosswalk_name='edge 2',
+            link_name='edge 2',
             data=[
                 ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C', 'mapping_level'),
                 (1, 32.0,  1, 'a1', 'b1', 'c1', b'\xe0'),  # proportion: 0.5

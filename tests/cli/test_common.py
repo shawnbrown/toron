@@ -317,13 +317,13 @@ class TestIndexCodeHandling(unittest.TestCase):
         ]
         self.assertEqual(list(remapped), expected)
 
-        crosswalk_rows = [
+        mapping_rows = [
             ['index_code1', 'weight', 'index_code2'],
             ['1XA0157D6E', '150', '5X84FAD8F7'],
             ['2XF38F26EA', '120', '8X96447BE5'],
             ['3X7429EDA9', '180', '4X035C13B4'],
         ]
-        remapped1 = remap_index_codes_to_index_ids(crosswalk_rows, self.node_id1.bytes, position=0)
+        remapped1 = remap_index_codes_to_index_ids(mapping_rows, self.node_id1.bytes, position=0)
         remapped2 = remap_index_codes_to_index_ids(remapped1, self.node_id2.bytes, position=2)
         expected = [
             ['index_id', 'weight', 'index_id'],

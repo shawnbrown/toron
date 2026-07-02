@@ -326,49 +326,49 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity.set_defaults(func=command_quantity.process_quantity_action)
 
     # Subcommand: mapping
-    parser_crosswalk = subparsers.add_parser(
+    parser_mapping = subparsers.add_parser(
         name='mapping',
         help='write mapping to stdout or load mapping from stdin',
         description=('Write mapping relations to stdout or load mapping '
                      'relations from stdin (CSV format).'),
         prog='toron FILE1 mapping',  # <- Replaces "FILE" with "FILE1".
     )
-    parser_crosswalk.add_argument('filepath2',
+    parser_mapping.add_argument('filepath2',
                                   help='second (right) filename',
                                   metavar='FILE2')
-    parser_crosswalk.add_argument('link',
+    parser_mapping.add_argument('link',
                                   help='name of the link associated with the mapping',
                                   metavar='LINK')
-    parser_crosswalk_group = parser_crosswalk.add_mutually_exclusive_group()
-    parser_crosswalk_group.add_argument(
+    parser_mapping_group = parser_mapping.add_mutually_exclusive_group()
+    parser_mapping_group.add_argument(
         '--right',
         action='store_const',
         const='right',
         dest='direction',
         help='add single direction: FILE1 -> FILE2',
     )
-    parser_crosswalk_group.add_argument(
+    parser_mapping_group.add_argument(
         '--left',
         action='store_const',
         const='left',
         dest='direction',
         help='add single direction: FILE1 <- FILE2',
     )
-    parser_crosswalk.add_argument('--match-limit',
+    parser_mapping.add_argument('--match-limit',
                                   default=1,
                                   type=int,
                                   help='exclude matches exceeding one-to-LIMIT (default 1)',
                                   metavar='LIMIT')
-    parser_crosswalk.add_argument('--allow-overlapping',
+    parser_mapping.add_argument('--allow-overlapping',
                                   action='store_true',
                                   help='allow ambiguous matches to overlap')
-    parser_crosswalk.add_argument('--allow-incomplete',
+    parser_mapping.add_argument('--allow-incomplete',
                                   action='store_true',
                                   help='allow loading even when matches are incomplete')
-    parser_crosswalk.add_argument('--no-backup', action='store_false',
+    parser_mapping.add_argument('--no-backup', action='store_false',
                                   dest='backup',
                                   help='do not make a backup file')
-    parser_crosswalk.set_defaults(
+    parser_mapping.set_defaults(
         func=command_mapping.process_mapping_action,
         direction='both',
     )

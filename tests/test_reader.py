@@ -204,9 +204,9 @@ class TestNodeReaderTranslate(unittest.TestCase):
             ['a1', 'b2', 'c3'],  # <- index_id=3
             ['a1', 'b2', 'c4'],  # <- index_id=4
         ])
-        self.node.add_crosswalk(
+        self.node.add_link(
             node=mock_node,
-            crosswalk_name='edge 1',
+            link_name='edge 1',
             other_filename_hint='other-file',
             description='Edge one description.',
             selectors=['[foo="bar"]'],
@@ -214,7 +214,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         )
         self.node.insert_relations(
             node_or_ref='other-file',
-            crosswalk_name='edge 1',
+            link_name='edge 1',
             data=[
                 ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C', 'mapping_level'),
                 (1,  39.0, 1, 'a1', 'b1', 'c1', b'\xe0'),  # proportion: 0.6
@@ -228,16 +228,16 @@ class TestNodeReaderTranslate(unittest.TestCase):
                 (5,  31.0, 4, 'a1', 'b2', 'c4', b'\xe0'),  # proportion: 0.62
             ],
         )
-        self.node.add_crosswalk(
+        self.node.add_link(
             node=mock_node,
             other_filename_hint='other-file',
-            crosswalk_name='edge 2',
+            link_name='edge 2',
             description='Edge two description.',
             selectors=['[foo]'],
         )
         self.node.insert_relations(
             node_or_ref='other-file.toron',
-            crosswalk_name='edge 2',
+            link_name='edge 2',
             data=[
                 ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C', 'mapping_level'),
                 (1, 32.0,  1, 'a1', 'b1', 'c1', b'\xe0'),  # proportion: 0.5

@@ -26,7 +26,7 @@ from toron.data_service import (
     find_locations_without_quantity,
     get_quantity_value_sum,
     disaggregate_value,
-    find_crosswalks_by_ref,
+    find_links_by_ref,
     generate_mapping_elements,
     set_default_weight_group,
     get_default_weight_group,
@@ -153,8 +153,8 @@ class TestDeleteIndexRecord(unittest.TestCase):
         self.weight_repo.add(weight_group_id=1, index_id=1, value=1000)
         self.weight_repo.add(weight_group_id=1, index_id=2, value=2000)
 
-        self.crosswalk_repo = dal.LinkRepository(cur)
-        self.crosswalk_repo.add('111-11-1111', None, 'other1')  # crosswalk_id 1
+        self.link_repo = dal.LinkRepository(cur)
+        self.link_repo.add('111-11-1111', None, 'other1')  # link_id 1
         self.relation_repo = dal.RelationRepository(cur)
         # Individual relations added in test cases.
 
@@ -166,7 +166,7 @@ class TestDeleteIndexRecord(unittest.TestCase):
             index_id=1,
             index_repo=self.index_repo,
             weight_repo=self.weight_repo,
-            crosswalk_repo=self.crosswalk_repo,
+            link_repo=self.link_repo,
             relation_repo=self.relation_repo,
         )
 
@@ -178,13 +178,13 @@ class TestDeleteIndexRecord(unittest.TestCase):
         self.relation_repo.add(1, 2, 1, bytes(BitFlags(1, 0)),  40960, 1.0)  # <- Ambiguous.
 
         msg = 'index should no longer exist'
-        regex = 'cannot delete index_id 1, some associated crosswalk relations are ambiguous'
+        regex = 'cannot delete index_id 1, some associated mappings are ambiguous'
         with self.assertRaisesRegex(ValueError, regex, msg=msg):
             delete_index_record(
                 index_id=1,
                 index_repo=self.index_repo,
                 weight_repo=self.weight_repo,
-                crosswalk_repo=self.crosswalk_repo,
+                link_repo=self.link_repo,
                 relation_repo=self.relation_repo,
             )
 
@@ -587,7 +587,7 @@ class TestDisaggregateValue(unittest.TestCase):
             list(results)  # Consume iterator.
 
 
-class TestFindCrosswalksByNodeReference(unittest.TestCase):
+class TestFindLinksByNodeReference(unittest.TestCase):
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -599,55 +599,55 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
 
         label_manager = dal.LabelManager(cur)
         index_repo = dal.IndexRepository(cur)
-        crosswalk_repo = dal.LinkRepository(cur)
+        link_repo = dal.LinkRepository(cur)
 
         label_manager.add_columns('A', 'B')
         index_repo.add('foo', 'x')
         index_repo.add('bar', 'y')
         index_repo.add('bar', 'z')
-        crosswalk_repo.add('111-111-1111', 'file1.toron', 'crosswalk1')  # Add crosswalk_id 1.
-        crosswalk_repo.add('111-111-1111', 'file1', 'crosswalk2')  # Add crosswalk_id 2 (no toron extension).
-        crosswalk_repo.add('222-222-2222', 'file2.toron', 'crosswalk2')  # Add crosswalk_id 3.
+        link_repo.add('111-111-1111', 'file1.toron', 'link1')  # Add link_id 1.
+        link_repo.add('111-111-1111', 'file1', 'link2')  # Add link_id 2 (no toron extension).
+        link_repo.add('222-222-2222', 'file2.toron', 'link2')  # Add link_id 3.
 
-        self.crosswalk_repo = crosswalk_repo
+        self.link_repo = link_repo
 
     def test_other_unique_id(self):
         """Should return exact match on 'other_unique_id' value."""
-        crosswalks = find_crosswalks_by_ref('111-111-1111', self.crosswalk_repo)
-        self.assertEqual(set([x.id for x in crosswalks]), {1, 2})
+        links = find_links_by_ref('111-111-1111', self.link_repo)
+        self.assertEqual(set([x.id for x in links]), {1, 2})
 
-        crosswalks = find_crosswalks_by_ref('222-222-2222', self.crosswalk_repo)
-        self.assertEqual([x.id for x in crosswalks], [3])
+        links = find_links_by_ref('222-222-2222', self.link_repo)
+        self.assertEqual([x.id for x in links], [3])
 
     def test_other_filename_hint(self):
         """Should return exact match on 'other_filename_hint' value."""
-        crosswalks = find_crosswalks_by_ref('file1.toron', self.crosswalk_repo)
-        self.assertEqual(set([x.id for x in crosswalks]), {1, 2})
+        links = find_links_by_ref('file1.toron', self.link_repo)
+        self.assertEqual(set([x.id for x in links]), {1, 2})
 
     def test_other_filename_hint_stem_only(self):
         """Should return match on filename stem of 'other_filename_hint'
         value (matches name without ".toron" extension).
         """
-        crosswalks = find_crosswalks_by_ref('file1', self.crosswalk_repo)  # <- Stem 'file1'.
-        self.assertEqual(set([x.id for x in crosswalks]), {1, 2})
+        links = find_links_by_ref('file1', self.link_repo)  # <- Stem 'file1'.
+        self.assertEqual(set([x.id for x in links]), {1, 2})
 
     def test_other_unique_id_shortcode(self):
         """If node reference is 7 characters or more, try to match the
         start of 'other_unique_id' values.
         """
-        crosswalks = find_crosswalks_by_ref('111-111', self.crosswalk_repo)  # <- Short code.
-        self.assertEqual(set([x.id for x in crosswalks]), {1, 2})
+        links = find_links_by_ref('111-111', self.link_repo)  # <- Short code.
+        self.assertEqual(set([x.id for x in links]), {1, 2})
 
     def test_no_match(self):
-        crosswalks = find_crosswalks_by_ref('unknown-reference', self.crosswalk_repo)
-        self.assertEqual(crosswalks, [])
+        links = find_links_by_ref('unknown-reference', self.link_repo)
+        self.assertEqual(links, [])
 
     def test_empty(self):
-        crosswalks = find_crosswalks_by_ref('', self.crosswalk_repo)
-        self.assertEqual(crosswalks, [])
+        links = find_links_by_ref('', self.link_repo)
+        self.assertEqual(links, [])
 
-        crosswalks = find_crosswalks_by_ref(None, self.crosswalk_repo)
-        self.assertEqual(crosswalks, [])
+        links = find_links_by_ref(None, self.link_repo)
+        self.assertEqual(links, [])
 
 
 class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
@@ -659,7 +659,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
         self.addCleanup(lambda: trg_cm.__exit__(None, None, None))
 
         self.trg_index_repo = self.node_f._dal.IndexRepository(trg_cur)
-        self.trg_crosswalk_repo = self.node_f._dal.LinkRepository(trg_cur)
+        self.trg_link_repo = self.node_f._dal.LinkRepository(trg_cur)
         self.trg_relation_repo = self.node_f._dal.RelationRepository(trg_cur)
 
         src_cm = self.node_e._managed_cursor()
@@ -670,17 +670,17 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
         self.src_index_repo = self.node_e._dal.IndexRepository(src_cur)
 
     def make_population_croswalk(self, data):
-        """Helper to make "population" crosswalk from node_e to node_f."""
-        self.node_f.add_crosswalk(self.node_e, 'population', is_default=True)
+        """Helper to make "population" link from node_e to node_f."""
+        self.node_f.add_link(self.node_e, 'population', is_default=True)
         self.node_f.insert_relations2(
             node_or_ref=self.node_e,
-            crosswalk_name='population',
+            link_name='population',
             data=data,
             columns=['other_index_id', 'index_id', 'mapping_level', 'relation_value'],
         )
 
     def test_fully_joined(self):
-        """Check fully mapped crosswalk."""
+        """Check fully mapped link."""
         self.make_population_croswalk([
             (1, 1, b'\xe0',  25.0),
             (1, 2, b'\xe0',  25.0),
@@ -697,7 +697,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
         actual = generate_mapping_elements(
             'population',
             self.trg_index_repo,
-            self.trg_crosswalk_repo,
+            self.trg_link_repo,
             self.trg_relation_repo,
             self.src_index_repo,
             self.src_prop_repo,
@@ -736,7 +736,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
         actual = generate_mapping_elements(
             'population',
             self.trg_index_repo,
-            self.trg_crosswalk_repo,
+            self.trg_link_repo,
             self.trg_relation_repo,
             self.src_index_repo,
             self.src_prop_repo,
@@ -779,7 +779,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
         actual = generate_mapping_elements(
             'population',
             self.trg_index_repo,
-            self.trg_crosswalk_repo,
+            self.trg_link_repo,
             self.trg_relation_repo,
             self.src_index_repo,
             self.src_prop_repo,
@@ -818,7 +818,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
         actual = generate_mapping_elements(
             'population',
             self.trg_index_repo,
-            self.trg_crosswalk_repo,
+            self.trg_link_repo,
             self.trg_relation_repo,
             self.src_index_repo,
             self.src_prop_repo,
@@ -845,13 +845,13 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
 
     def test_missing_all_left_and_all_right(self):
         """Check fully-disjoint left-side and right-side elements."""
-        # Add crosswalk, but don't load any relations.
-        self.node_f.add_crosswalk(self.node_e, 'population', is_default=True)
+        # Add link, but don't load any relations.
+        self.node_f.add_link(self.node_e, 'population', is_default=True)
 
         actual = generate_mapping_elements(
             'population',
             self.trg_index_repo,
-            self.trg_crosswalk_repo,
+            self.trg_link_repo,
             self.trg_relation_repo,
             self.src_index_repo,
             self.src_prop_repo,

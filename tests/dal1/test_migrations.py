@@ -218,7 +218,7 @@ class TestApplyMigrations(unittest.TestCase):
             },
         )
 
-    def test_v020_to_v030_relation(self):
+    def test_v020_to_v030_quantity(self):
         self.cur.executescript("""
             /* Create old style (version 0.2.0) 'quantity' table. */
             CREATE TABLE quantity(

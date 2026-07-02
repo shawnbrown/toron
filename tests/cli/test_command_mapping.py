@@ -21,7 +21,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         result = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=data_list,
             columns=header,
         )
@@ -46,7 +46,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         positions, _ = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=[
                 ['1XA0157D6E', 100.0, '1XF7F2FF38'],
                 ['2XF38F26EA', 200.0, '2XA468A4BC'],
@@ -71,7 +71,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         positions, _ = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=[
                 ['1XA0157D6E', 'A-1', 'X-1', '1-1', 100.0, 'A-2', 'X-2'],
                 ['2XF38F26EA', 'B-1', 'Y-1', '2-1', 200.0, 'B-2', 'Y-2'],
@@ -93,7 +93,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         positions, _ = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=[
                 ['A-1', 'X-1', '1-1', 100.0, '1XF7F2FF38', 'A-2', 'X-2'],
                 ['B-1', 'Y-1', '2-1', 200.0, '2XA468A4BC', 'B-2', 'Y-2'],
@@ -119,7 +119,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
             positions, _ = command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
-                crosswalk_name='corge',
+                link_name='corge',
                 data=[
                     ['1XA0157D6E', 'A-1', 'X-1', '1-1', 100.0, 'A-2', 'X-2'],
                     ['2XF38F26EA', 'B-1', 'Y-1', '2-1', 200.0, 'B-2', 'Y-2'],
@@ -133,7 +133,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
             positions, _ = command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
-                crosswalk_name='corge',
+                link_name='corge',
                 data=[
                     ['A-1', 'X-1', '1-1', 100.0, '1XF7F2FF38', 'A-2', 'X-2'],
                     ['B-1', 'Y-1', '2-1', 200.0, '2XA468A4BC', 'B-2', 'Y-2'],
@@ -149,7 +149,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         positions, _ = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=[
                 ['A-1', 'X-1', '1-1', 100.0, 'A-2', 'X-2'],
                 ['B-1', 'Y-1', '2-1', 200.0, 'B-2', 'Y-2'],
@@ -185,7 +185,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
             command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
-                crosswalk_name='corge',
+                link_name='corge',
                 data=[
                     ['A-2', 'X-2', 100.0, 'A-1', 'X-1', '1-1'],
                     ['B-2', 'Y-2', 200.0, 'B-1', 'Y-1', '2-1'],
@@ -200,7 +200,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
             command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
-                crosswalk_name='corge',
+                link_name='corge',
                 data=[
                     ['1XA0157D6E', '1XF7F2FF38', 100.0],
                     ['2XF38F26EA', '2XA468A4BC', 200.0],
@@ -209,13 +209,13 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
                 columns=['index_code1', 'index_code2', 'corge'],
             )
 
-    def test_missing_crosswalk_column(self):
+    def test_missing_link_column(self):
         regex = r"required column 'blerg' not found in: 'index_code', 'corge', 'index_code'"
         with self.assertRaisesRegex(ToronError, regex):
             command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
-                crosswalk_name='blerg',
+                link_name='blerg',
                 data=[
                     ['1XA0157D6E', 100.0, '1XF7F2FF38'],
                     ['2XF38F26EA', 200.0, '2XA468A4BC'],
@@ -428,7 +428,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
         actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=[
                 ['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar'],
                 ['1XA0157D6E', 'A-1', 'X-1', '1-1',   100.0, '1XF7F2FF38', 'A-2', 'X-2'],
@@ -455,7 +455,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
         actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=flipped_input_data,  # <- Flipped left-to-right.
         )
 
@@ -464,13 +464,13 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
             [2, ['B-1', 'Y-1', '2-1'], BitFlags(1, 1, 1), 2, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
             [3, ['C-1', 'Z-1', '3-1'], BitFlags(1, 1, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
         ]
-        self.assertEqual(list(actual), expected, msg='order should be: <node1> <node2> <crosswalk>')
+        self.assertEqual(list(actual), expected, msg='order should be: <node1> <node2> <link>')
 
     def test_index_codes_only(self):
         actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=[
                 ['index_code', 'corge', 'index_code'],
                 ['1XA0157D6E',   100.0, '1XF7F2FF38'],
@@ -490,7 +490,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
         actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
             node2=self.node_b,
-            crosswalk_name='corge',
+            link_name='corge',
             data=[
                 ['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar'],
                 [        None, 'A-1',    '',    '',   100.0, '1XF7F2FF38',    '',    ''],
@@ -513,7 +513,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
             command_mapping.normalize_mapping_data(
                 node1=self.node_a,
                 node2=self.node_b,
-                crosswalk_name='blerg',
+                link_name='blerg',
                 data=[
                     ['index_code', 'corge', 'index_code'],
                     ['1XA0157D6E',   100.0, '1XF7F2FF38'],
@@ -525,29 +525,29 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
 
 class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
     @staticmethod
-    def get_relations(source_node, target_node, crosswalk_name):
+    def get_relations(source_node, target_node, link_name):
         with target_node._managed_cursor() as cur:
             relation_repository = target_node._dal.RelationRepository(cur)
-            crosswalk = target_node._get_crosswalk(
+            link = target_node._get_link(
                 source_node,
-                crosswalk_name,
+                link_name,
                 target_node._dal.LinkRepository(cur),
             )
-            if not crosswalk:
+            if not link:
                 raise Exception
-            relations = relation_repository.find(crosswalk_id=crosswalk.id)
+            relations = relation_repository.find(link_id=link.id)
             return set(astuple(rel) for rel in relations)
 
     def test_insert_both_directions(self):
-        self.node_c.add_crosswalk(node=self.node_d,
-                                  crosswalk_name='population',
-                                  other_filename_hint='node_d',
-                                  is_default=True)
+        self.node_c.add_link(node=self.node_d,
+                             link_name='population',
+                             other_filename_hint='node_d',
+                             is_default=True)
 
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(node=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         args = argparse.Namespace(
             link='population',
@@ -615,13 +615,13 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
     def test_insert_both_directions_with_undefined_cases(self):
-        self.node_c.add_crosswalk(node=self.node_d,
-                                  crosswalk_name='population',
+        self.node_c.add_link(node=self.node_d,
+                                  link_name='population',
                                   other_filename_hint='node_d',
                                   is_default=True)
 
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 
@@ -694,8 +694,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
     def test_missing_one_side(self):
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 
@@ -776,8 +776,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
     def test_match_limit_without_overlapping(self):
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 
@@ -829,8 +829,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
     def test_match_limit_with_allow_overlapping(self):
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 
@@ -884,8 +884,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
 
     def test_incomplete_match_error(self):
         """Default behavior is for incomplete matches to trigger an error."""
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 
@@ -914,8 +914,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
 
     def test_incomplete_match_allowed(self):
         """Incomplete matches can be loaded with ``--allow-incomplete``."""
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 
@@ -963,8 +963,8 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
 
 class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
     def test_full_mapping(self):
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 
@@ -1009,8 +1009,8 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
         )
 
     def test_some_ambiguous_some_disjoint(self):
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 
@@ -1056,8 +1056,8 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
         )
 
     def test_full_disjoint(self):
-        self.node_d.add_crosswalk(node=self.node_c,
-                                  crosswalk_name='population',
+        self.node_d.add_link(node=self.node_c,
+                                  link_name='population',
                                   other_filename_hint='node_c',
                                   is_default=True)
 

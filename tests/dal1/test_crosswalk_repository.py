@@ -31,7 +31,7 @@ class TestLinkRepository(unittest.TestCase):
             '222-unique-id-2222',  # <- Different `other_unique_id`.
             'somefile.toron',
             'name1',
-            description='A crosswalk to some other node.',
+            description='A link to some other node.',
             selectors=['[foo]', '[bar]'],
             is_default=True,
             user_properties={'prop1': 111},
@@ -42,14 +42,14 @@ class TestLinkRepository(unittest.TestCase):
         # Note: The item forth from the end (`is_default`) is True/False in
         # the user-facing object (the Link record class) but it's 1/None
         # on the database side to facilitate the SQLite constraint that
-        # enforces one default crosswalk per `other_unique_id`.
+        # enforces one default link per `other_unique_id`.
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, 1, None, None, 0),
             (2, '111-unique-id-1111', None, 'name2', None, None, None, None, None, 0),
             (3, '222-unique-id-2222',
                 'somefile.toron',
                 'name1',
-                'A crosswalk to some other node.',
+                'A link to some other node.',
                 ['[foo]', '[bar]'],
                 1,
                 {'prop1': 111},
@@ -74,7 +74,7 @@ class TestLinkRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
-                                          'A crosswalk to some other node.', '["[foo]", "[bar]"]',
+                                          'A link to some other node.', '["[foo]", "[bar]"]',
                                           1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
         repository = LinkRepository(self.cursor)
@@ -118,7 +118,7 @@ class TestLinkRepository(unittest.TestCase):
                 other_unique_id='222-unique-id-2222',
                 other_filename_hint='somefile.toron',
                 name='name1',
-                description='A crosswalk to some other node.',
+                description='A link to some other node.',
                 selectors=['[foo]', '[bar]'],
                 is_default=True,  # <- Link value True, database value 1.
                 user_properties={'prop1': 111},
@@ -127,7 +127,7 @@ class TestLinkRepository(unittest.TestCase):
             ),
         )
 
-        with self.assertRaisesRegex(KeyError, 'no crosswalk with id of 4'):
+        with self.assertRaisesRegex(KeyError, 'no link with id of 4'):
             repository.get(4)
 
     def test_get_all(self):
@@ -135,7 +135,7 @@ class TestLinkRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
-                                          'A crosswalk to some other node.', '["[foo]", "[bar]"]',
+                                          'A link to some other node.', '["[foo]", "[bar]"]',
                                           1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
         repository = LinkRepository(self.cursor)
@@ -171,7 +171,7 @@ class TestLinkRepository(unittest.TestCase):
                 other_unique_id='222-unique-id-2222',
                 other_filename_hint='somefile.toron',
                 name='name1',
-                description='A crosswalk to some other node.',
+                description='A link to some other node.',
                 selectors=['[foo]', '[bar]'],
                 is_default=True,
                 user_properties={'prop1': 111},
@@ -186,17 +186,17 @@ class TestLinkRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
-                                          'A crosswalk to some other node.', '["[foo]", "[bar]"]',
+                                          'A link to some other node.', '["[foo]", "[bar]"]',
                                           1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
         repository = LinkRepository(self.cursor)
 
-        # Change name (matched WHERE crosswalk_id=2, all other values are SET).
+        # Change name (matched WHERE link_id=2, all other values are SET).
         repository.update(Link(2, '111-unique-id-1111', None, 'name-two'))
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, 1, None, None, 0),
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),  # <- Name changed!
-            (3, '222-unique-id-2222', 'somefile.toron', 'name1', 'A crosswalk to some other node.',
+            (3, '222-unique-id-2222', 'somefile.toron', 'name1', 'A link to some other node.',
              ['[foo]', '[bar]'], 1, {'prop1': 111}, '78b320d6dbbb48c8', 1),
         ])
 
@@ -205,7 +205,7 @@ class TestLinkRepository(unittest.TestCase):
         self.assertRecords([
             (1, '111-unique-id-1111', None, 'name1', None, None, None, None, None, 0),  # <- 4th from end should be None!
             (2, '111-unique-id-1111', None, 'name-two', None, None, None, None, None, 0),
-            (3, '222-unique-id-2222', 'somefile.toron', 'name1', 'A crosswalk to some other node.',
+            (3, '222-unique-id-2222', 'somefile.toron', 'name1', 'A link to some other node.',
              ['[foo]', '[bar]'], 1, {'prop1': 111}, '78b320d6dbbb48c8', 1),
         ])
 
@@ -229,7 +229,7 @@ class TestLinkRepository(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.update(Link(2, '111-unique-id-1111', None, 'name1'))
 
-        # No record exists with crosswalk_id=4.
+        # No record exists with link_id=4.
         try:
             repository.update(Link(4, '444-unique-id-4444', None, 'name1'))
         except Exception as err:

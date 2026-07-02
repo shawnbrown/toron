@@ -92,7 +92,7 @@ class TestBuildUsingAPI(unittest.TestCase):
             left_node=self.node1,
             direction='->',
             right_node=self.node2,
-            crosswalk_name='population',
+            link_name='population',
             data=[
                 ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2'],
                 ['A', 'z', 'a',  25, 'A', 'Athens'],
@@ -376,7 +376,7 @@ class TestBuildUsingCLI(unittest.TestCase):
         ))
         cli.command_mapping.process_mapping_action(argparse.Namespace(
             filepath=self.filepath1,
-            command='crosswalk',
+            command='mapping',
             filepath2=self.filepath2,
             link='population',
             direction='both',

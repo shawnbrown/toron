@@ -32,7 +32,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
             structure_repo=node._dal.StructureRepository(cursor),
             weight_group_repo=node._dal.WeightGroupRepository(cursor),
             attribute_repo=attribute_repo,
-            crosswalk_repo=node._dal.LinkRepository(cursor),
+            link_repo=node._dal.LinkRepository(cursor),
         )
         registered_attributes = get_registered_attributes(property_repo)
         loaded_attributes = \
@@ -57,7 +57,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
 
     # When dropping support for Python 3.11, move these into f-string.
     categories_formatted = '\n  '.join(info_dict['category_list'])
-    crosswalks_str = '\n  '.join(info_dict['crosswalks_list'])
+    links_str = '\n  '.join(info_dict['links_list'])
 
     # Prepare and write output.
     sys.stdout.write(
@@ -70,7 +70,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
         f"  {', '.join(info_dict['weights_list'])}\n"
         f"{bright}attributes:{reset}\n"
         f"  {', '.join(formatted_attributes) or 'None'}\n"
-        f"{bright}incoming crosswalks:{reset}\n"
-        f"  {crosswalks_str}\n"
+        f"{bright}incoming links:{reset}\n"
+        f"  {links_str}\n"
     )
     return ExitCode.OK

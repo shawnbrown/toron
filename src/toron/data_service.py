@@ -126,7 +126,7 @@ def delete_index_record(
     index_id: int,
     index_repo: BaseIndexRepository,
     weight_repo: BaseWeightRepository,
-    crosswalk_repo: BaseLinkRepository,
+    link_repo: BaseLinkRepository,
     relation_repo: BaseRelationRepository,
 ) -> None:
     """Delete index record and associated weights and relations."""
@@ -147,11 +147,11 @@ def delete_index_record(
             # these relations using matching labels.
             raise ValueError(
                 f'cannot delete index_id {index_id}, some associated '
-                f'crosswalk relations are ambiguous\n'
+                f'mappings are ambiguous\n'
                 f'\n'
-                f'Crosswalks with ambiguous relations must be removed '
+                f'Links with ambiguous mappings must be removed '
                 f'before deleting index records. Afterwards, these '
-                f'crosswalks can be re-added.'
+                f'links can be re-added.'
             )
 
         other_index_ids.add(relation.other_index_id)
@@ -159,8 +159,8 @@ def delete_index_record(
 
     # Rebuild proportions for remaining relations.
     for other_index_id in other_index_ids:
-        for crosswalk in crosswalk_repo.get_all():
-            relation_repo.refresh_proportions(crosswalk.id, other_index_id)
+        for link in link_repo.get_all():
+            relation_repo.refresh_proportions(link.id, other_index_id)
 
     # Remove existing Index record.
     index_repo.delete(index_id)
@@ -378,85 +378,85 @@ def disaggregate_value(
             )
 
 
-def find_crosswalks_by_ref(
+def find_links_by_ref(
     ref: str,
-    crosswalk_repo: BaseLinkRepository,
+    link_repo: BaseLinkRepository,
 ) -> List[Link]:
-    """Find crosswalks that match the given node reference."""
+    """Find links that match the given node reference."""
     # Try to match by exact 'other_unique_id'.
-    matches = list(crosswalk_repo.find_by_other_unique_id(ref))
+    matches = list(link_repo.find_by_other_unique_id(ref))
     if matches:
         return matches
 
     # Try to match by filename hints.
     matches = []
-    matches.extend(crosswalk_repo.find_by_other_filename_hint(ref))  # Exact match.
+    matches.extend(link_repo.find_by_other_filename_hint(ref))  # Exact match.
     if isinstance(ref, str) and ref.endswith('.toron'):  # Without '.toron' extension.
         ref_truncated = ref[:-6]
-        matches.extend(crosswalk_repo.find_by_other_filename_hint(ref_truncated))
+        matches.extend(link_repo.find_by_other_filename_hint(ref_truncated))
     else:  # With '.toron' extension.
-        matches.extend(crosswalk_repo.find_by_other_filename_hint(f'{ref}.toron'))
+        matches.extend(link_repo.find_by_other_filename_hint(f'{ref}.toron'))
     if matches:
         return matches
 
     # Try to match by short code of 'other_unique_id'.
     if isinstance(ref, str) and len(ref) >= 7:
-        matches = crosswalk_repo.get_all()
+        matches = link_repo.get_all()
         return [x for x in matches if x.other_unique_id.startswith(ref)]
 
     return []  # Return empty list if no match.
 
 
-def make_get_crosswalk_id_func(
+def make_get_link_id_func(
     ref: str,
-    crosswalk_repo: BaseLinkRepository,
+    link_repo: BaseLinkRepository,
     other_index_hash: str,
 ) -> Callable[[Dict[str, str]], int]:
-    """Build a ``get_crosswalk_id()`` function that returns
-    'crosswalk_id' values matched by the selector with the
+    """Build a ``get_link_id()`` function that returns
+    'link_id' values matched by the selector with the
     greatest unique specificity. When no match is found or
     when no unique match is found, the function will return
-    the default ``crosswalk_id``.
+    the default ``link_id``.
     """
-    # Get crosswalks with matching node.
-    crosswalks = find_crosswalks_by_ref(
+    # Get links with matching node.
+    links = find_links_by_ref(
         ref=ref,
-        crosswalk_repo=crosswalk_repo,
+        link_repo=link_repo,
     )
-    if not crosswalks:
-        raise RuntimeError('no crosswalk found connecting nodes')
+    if not links:
+        raise RuntimeError('no link found connecting nodes')
 
-    # Verify that crosswalks are current.
-    crosswalks = [x for x in crosswalks if x.other_index_hash == other_index_hash]
-    if not crosswalks:
-        raise RuntimeError('crosswalks are out of date, need to relink')
+    # Verify that links are current.
+    links = [x for x in links if x.other_index_hash == other_index_hash]
+    if not links:
+        raise RuntimeError('links are out of date, need to relink')
 
-    # Get the default crosswalk and make sure it's locally complete.
-    default_crosswalk_id = None
-    for crosswalk in crosswalks:
-        if crosswalk.is_default:
-            default_crosswalk_id = crosswalk.id
+    # Get the default link and make sure it's locally complete.
+    default_link_id = None
+    for link in links:
+        if link.is_default:
+            default_link_id = link.id
             break
     else:  # IF NO BREAK!
-        raise RuntimeError('no default crosswalk found for node')
+        raise RuntimeError('no default link found for node')
 
     # Build dict of index id values and attribute selector objects.
-    crosswalks = [x for x in crosswalks if x.is_locally_complete and x.selectors]
+    links = [x for x in links if x.is_locally_complete and x.selectors]
     func = lambda selectors: [parse_selector(s) for s in selectors]
-    selector_dict = {x.id: func(x.selectors) for x in crosswalks}
+    selector_dict = {x.id: func(x.selectors) for x in links}
 
-    # Define function to match the crosswalk with the greatest unique
-    # specificity (closes over selector_dict and default_crosswalk_id).
-    def get_crosswalk_id_func(attributes: Dict[str, str]) -> int:
-        """Return crosswalk_id that matches with the greatest unique specificity."""
-        crosswalk_id = get_greatest_unique_specificity(
+    # Define function to match the link with the greatest unique
+    # specificity (closes over selector_dict and default_link_id).
+    def get_link_id_func(attributes: Dict[str, str]) -> int:
+        """Return link_id that matches with the greatest unique specificity."""
+        link_id = get_greatest_unique_specificity(
             row_dict=attributes,
             selector_dict=selector_dict,
-            default=default_crosswalk_id,
+            default=default_link_id,
         )
-        return crosswalk_id
+        return link_id
 
-    return get_crosswalk_id_func
+    return get_link_id_func
 
 
 MappingElement : TypeAlias = Union[
@@ -466,9 +466,9 @@ MappingElement : TypeAlias = Union[
 ]
 
 def generate_mapping_elements(
-    crosswalk_name: Optional[str],
+    link_name: Optional[str],
     trg_index_repo: BaseIndexRepository,
-    trg_crosswalk_repo: BaseLinkRepository,
+    trg_link_repo: BaseLinkRepository,
     trg_relation_repo: BaseRelationRepository,
     src_index_repo: BaseIndexRepository,
     src_prop_repo: BasePropertyRepository,
@@ -487,31 +487,31 @@ def generate_mapping_elements(
     easy for users to overlook them when working on a mapping.
     """
     unique_id = cast(str, src_prop_repo.get('unique_id'))
-    crosswalk = None
-    for cw in trg_crosswalk_repo.find_by_other_unique_id(unique_id):
-        if cw.name == crosswalk_name:
-            crosswalk = cw
+    link = None
+    for cw in trg_link_repo.find_by_other_unique_id(unique_id):
+        if cw.name == link_name:
+            link = cw
 
-    if not crosswalk:
-        msg = f'no crosswalk named {crosswalk_name!r}'
+    if not link:
+        msg = f'no link named {link_name!r}'
         raise Exception(msg)
 
     # Yield undefined-to-undefined record (always considered matched).
     yield (0, 0, None, 0.0)
 
     # Yield matched records.
-    relations = trg_relation_repo.find(crosswalk_id=crosswalk.id)
+    relations = trg_relation_repo.find(link_id=link.id)
     for rel in relations:
         yield (rel.other_index_id, rel.index_id, rel.mapping_level, rel.value)
 
     # If target is not complete, yield unmatched right-side elements.
-    if not crosswalk.is_locally_complete:
-        unmatched_index_ids = trg_index_repo.find_unmatched_index_ids(crosswalk.id)
+    if not link.is_locally_complete:
+        unmatched_index_ids = trg_index_repo.find_unmatched_index_ids(link.id)
         for index_id in unmatched_index_ids:
             yield (None, index_id, None, None)
 
     # If source index is different, yield unmatched left-side elements.
-    if src_prop_repo.get('index_hash') != crosswalk.other_index_hash:
+    if src_prop_repo.get('index_hash') != link.other_index_hash:
         for other_index_id in src_index_repo.find_all_index_ids():
             # In a mapping, an undefined record is always considered matched
             # to the other node's undefined record (can never be unmatched).
@@ -519,7 +519,7 @@ def generate_mapping_elements(
                 continue
 
             matches = trg_relation_repo.find(
-                crosswalk_id=crosswalk.id,
+                link_id=link.id,
                 other_index_id=other_index_id,
             )
             if not any(matches):  # Yield only if unmatched.
@@ -1054,7 +1054,7 @@ def get_node_info_text(
     structure_repo: BaseStructureRepository,
     weight_group_repo: BaseWeightGroupRepository,
     attribute_repo: BaseAttributeGroupRepository,
-    crosswalk_repo: BaseLinkRepository,
+    link_repo: BaseLinkRepository,
 ) -> Dict[str, Union[List[str], str]]:
     """Return dictionary of node information appropriate for repr."""
     # Get domain string.
@@ -1103,34 +1103,34 @@ def get_node_info_text(
     else:
         weights_list = ['None']
 
-    # Get list of crosswalk nodes and names.
-    crosswalks = crosswalk_repo.get_all()
-    if crosswalks:
-        def make_note(crosswalk):
-            if crosswalk.is_default:
-                if crosswalk.is_locally_complete:
+    # Get list of link nodes and names.
+    links = link_repo.get_all()
+    if links:
+        def make_note(link):
+            if link.is_default:
+                if link.is_locally_complete:
                     return ' (default)'
                 return ' (default, locally incomplete)'
-            if crosswalk.is_locally_complete:
+            if link.is_locally_complete:
                 return ''
             return ' (locally incomplete)'
 
-        crosswalks = sorted(crosswalks, key=lambda x: (x.other_unique_id, x.id))
-        crosswalks_list = []
-        for key, grp in groupby(crosswalks, key=lambda x: x.other_unique_id):
-            first_crosswalk = next(grp)
-            node_ref = (first_crosswalk.other_filename_hint
-                            or f'[{first_crosswalk.other_unique_id[:7]}]')
+        links = sorted(links, key=lambda x: (x.other_unique_id, x.id))
+        links_list = []
+        for key, grp in groupby(links, key=lambda x: x.other_unique_id):
+            first_link = next(grp)
+            node_ref = (first_link.other_filename_hint
+                            or f'[{first_link.other_unique_id[:7]}]')
             sub_list = sorted(
-                f'{x.name}{make_note(x)}' for x in chain([first_crosswalk], grp)
+                f'{x.name}{make_note(x)}' for x in chain([first_link], grp)
             )
-            crosswalks_list.append(f'{node_ref}: {", ".join(sub_list)}')
+            links_list.append(f'{node_ref}: {", ".join(sub_list)}')
     else:
-        crosswalks_list = ['None']
+        links_list = ['None']
 
     return {
         'domain_str': domain_str,
         'category_list': category_list,
         'weights_list': weights_list,
-        'crosswalks_list': crosswalks_list,
+        'links_list': links_list,
     }
