@@ -38,7 +38,7 @@ from .data_models import (
     BaseWeightGroupRepository,
     BaseWeightRepository,
     BaseQuantityRepository,
-    BaseRelationRepository,
+    BaseMappingRepository,
     BaseLinkRepository,
     BasePropertyRepository,
     BaseStructureRepository,
@@ -127,7 +127,7 @@ def delete_index_record(
     index_repo: BaseIndexRepository,
     weight_repo: BaseWeightRepository,
     link_repo: BaseLinkRepository,
-    relation_repo: BaseRelationRepository,
+    relation_repo: BaseMappingRepository,
 ) -> None:
     """Delete index record and associated weights and relations."""
     # Remove associated weight records.
@@ -469,7 +469,7 @@ def generate_mapping_elements(
     link_name: Optional[str],
     trg_index_repo: BaseIndexRepository,
     trg_link_repo: BaseLinkRepository,
-    trg_relation_repo: BaseRelationRepository,
+    trg_relation_repo: BaseMappingRepository,
     src_index_repo: BaseIndexRepository,
     src_prop_repo: BasePropertyRepository,
 ) -> Generator[MappingElement, None, None]:

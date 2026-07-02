@@ -31,7 +31,7 @@ from ..data_models import (
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
     Link, BaseLinkRepository,
-    MappingRecord, BaseRelationRepository,
+    MappingRecord, BaseMappingRepository,
     JsonTypes, BasePropertyRepository,
 )
 
@@ -976,7 +976,7 @@ class LinkRepository(BaseLinkRepository):
             yield self._make_link(record)
 
 
-class RelationRepository(BaseRelationRepository):
+class RelationRepository(BaseMappingRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
         self._cursor = cursor

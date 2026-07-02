@@ -1107,7 +1107,7 @@ class MappingRecord(object):
                     )
 
 
-class BaseRelationRepository(ABC):
+class BaseMappingRepository(ABC):
     @abstractmethod
     def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""

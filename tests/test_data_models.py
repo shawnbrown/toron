@@ -32,7 +32,7 @@ from toron.data_models import (
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
     Link, BaseLinkRepository,
-    MappingRecord, BaseRelationRepository,
+    MappingRecord, BaseMappingRepository,
     BasePropertyRepository,
     QuantityIterator,
 )
@@ -1489,7 +1489,7 @@ class RelationRepositoryBaseTest(ABC):
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
-        self.assertTrue(issubclass(self.dal.RelationRepository, BaseRelationRepository))
+        self.assertTrue(issubclass(self.dal.RelationRepository, BaseMappingRepository))
 
     def test_add_type_coersion(self):
         """String values should get converted to proper types."""
