@@ -1010,7 +1010,7 @@ class Link(object):
     is_locally_complete: bool = False
 
 
-class BaseCrosswalkRepository(ABC):
+class BaseLinkRepository(ABC):
     @abstractmethod
     def __init__(self, cursor: Any) -> None:
         """Initialize a new repository instance."""

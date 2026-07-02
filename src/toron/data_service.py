@@ -39,7 +39,7 @@ from .data_models import (
     BaseWeightRepository,
     BaseQuantityRepository,
     BaseRelationRepository,
-    BaseCrosswalkRepository,
+    BaseLinkRepository,
     BasePropertyRepository,
     BaseStructureRepository,
     Index,
@@ -126,7 +126,7 @@ def delete_index_record(
     index_id: int,
     index_repo: BaseIndexRepository,
     weight_repo: BaseWeightRepository,
-    crosswalk_repo: BaseCrosswalkRepository,
+    crosswalk_repo: BaseLinkRepository,
     relation_repo: BaseRelationRepository,
 ) -> None:
     """Delete index record and associated weights and relations."""
@@ -380,7 +380,7 @@ def disaggregate_value(
 
 def find_crosswalks_by_ref(
     ref: str,
-    crosswalk_repo: BaseCrosswalkRepository,
+    crosswalk_repo: BaseLinkRepository,
 ) -> List[Link]:
     """Find crosswalks that match the given node reference."""
     # Try to match by exact 'other_unique_id'.
@@ -409,7 +409,7 @@ def find_crosswalks_by_ref(
 
 def make_get_crosswalk_id_func(
     ref: str,
-    crosswalk_repo: BaseCrosswalkRepository,
+    crosswalk_repo: BaseLinkRepository,
     other_index_hash: str,
 ) -> Callable[[Dict[str, str]], int]:
     """Build a ``get_crosswalk_id()`` function that returns
@@ -468,7 +468,7 @@ MappingElement : TypeAlias = Union[
 def generate_mapping_elements(
     crosswalk_name: Optional[str],
     trg_index_repo: BaseIndexRepository,
-    trg_crosswalk_repo: BaseCrosswalkRepository,
+    trg_crosswalk_repo: BaseLinkRepository,
     trg_relation_repo: BaseRelationRepository,
     src_index_repo: BaseIndexRepository,
     src_prop_repo: BasePropertyRepository,
@@ -1054,7 +1054,7 @@ def get_node_info_text(
     structure_repo: BaseStructureRepository,
     weight_group_repo: BaseWeightGroupRepository,
     attribute_repo: BaseAttributeGroupRepository,
-    crosswalk_repo: BaseCrosswalkRepository,
+    crosswalk_repo: BaseLinkRepository,
 ) -> Dict[str, Union[List[str], str]]:
     """Return dictionary of node information appropriate for repr."""
     # Get domain string.

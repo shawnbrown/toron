@@ -39,7 +39,7 @@ from .data_models import (
     AttributesDict,
     AttributeGroup,
     WeightGroup,
-    BaseCrosswalkRepository,
+    BaseLinkRepository,
     Link,
     JsonTypes,
     QuantityIterator,
@@ -1545,7 +1545,7 @@ class TopoNode(object):
     def _get_crosswalk(
         node_or_ref: Union['TopoNode', str],
         crosswalk_name: Optional[str],
-        crosswalk_repo: BaseCrosswalkRepository,
+        crosswalk_repo: BaseLinkRepository,
     ) -> Optional[Link]:
         """Get crosswalk by node reference and name."""
         if isinstance(node_or_ref, TopoNode):  # If TopoNode, find by 'unique_id' only.

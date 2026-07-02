@@ -30,7 +30,7 @@ from ..data_models import (
     Weight, BaseWeightRepository,
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
-    Link, BaseCrosswalkRepository,
+    Link, BaseLinkRepository,
     Relation, BaseRelationRepository,
     JsonTypes, BasePropertyRepository,
 )
@@ -795,7 +795,7 @@ class QuantityRepository(BaseQuantityRepository):
             yield Quantity(quant_id, loc_id, attr_id, float(val))
 
 
-class CrosswalkRepository(BaseCrosswalkRepository):
+class CrosswalkRepository(BaseLinkRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
         self._cursor = cursor

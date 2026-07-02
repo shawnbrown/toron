@@ -31,7 +31,7 @@ from toron.data_models import (
     Weight, BaseWeightRepository,
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
-    Link, BaseCrosswalkRepository,
+    Link, BaseLinkRepository,
     Relation, BaseRelationRepository,
     BasePropertyRepository,
     QuantityIterator,
@@ -1369,7 +1369,7 @@ class CrosswalkRepositoryBaseTest(ABC):
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
-        self.assertTrue(issubclass(self.dal.CrosswalkRepository, BaseCrosswalkRepository))
+        self.assertTrue(issubclass(self.dal.CrosswalkRepository, BaseLinkRepository))
 
     def test_add_get(self):
         """Check ``add()`` and ``get()`` methods."""

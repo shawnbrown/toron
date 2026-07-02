@@ -24,7 +24,7 @@ from .data_models import (
     BaseWeightRepository,
     BaseAttributeGroupRepository,
     BaseQuantityRepository,
-    BaseCrosswalkRepository,
+    BaseLinkRepository,
     BaseRelationRepository,
     BasePropertyRepository,
 )
@@ -49,7 +49,7 @@ class DataAccessLayer(object):
     WeightRepository: Type[BaseWeightRepository]
     AttributeGroupRepository: Type[BaseAttributeGroupRepository]
     QuantityRepository: Type[BaseQuantityRepository]
-    CrosswalkRepository: Type[BaseCrosswalkRepository]
+    CrosswalkRepository: Type[BaseLinkRepository]
     RelationRepository: Type[BaseRelationRepository]
     PropertyRepository: Type[BasePropertyRepository]
     optimizations: Dict[str, Callable]
