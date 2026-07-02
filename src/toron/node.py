@@ -2360,7 +2360,7 @@ class TopoNode(object):
             quantity_repo = self._dal.QuantityRepository(cur)
             struct_repo = self._dal.StructureRepository(cur)
 
-            label_names = location_repo.get_label_names()
+            label_names = location_repo.get_label_names()  # In storage order.
 
             registered_attributes = self.get_registered_attributes()
             if not registered_attributes:
@@ -2401,7 +2401,18 @@ class TopoNode(object):
                     if allow_invalid_category:
                         counter['invalid_category'] += 1
                     else:
-                        raise ValueError(f'invalid category: {list(labels_dict.values())!r}')
+                        # This error message can be user facing so it
+                        # includes more context that it otherwise might.
+                        category_text = ', '.join(
+                            repr(x)
+                            for x in compress(label_names,
+                                              BitFlags(labels_dict.values()))
+                        )
+                        raise ValueError(
+                            f'invalid category:\n'
+                            f'  category: {{{category_text}}}\n'
+                            f'    record: {list(labels_dict.values())!r}'
+                        )
 
                 # Check for valid labels.
                 criteria = {k: v for k, v in labels_dict.items() if v}

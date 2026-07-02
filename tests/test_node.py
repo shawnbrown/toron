@@ -4909,7 +4909,9 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         # The location `['OH', '']`, includes a state value but does not
         # include a county value. And since {'state'} is not one of the
         # valid categories, this should raise an error.
-        regex = r"invalid category: \['OH', ''\]"
+        regex = (r"invalid category:\n"
+                 r"  category: \{'state'\}\n"
+                 r"    record: \['OH', ''\]")
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities2(value_column='counts', data=data)
 
@@ -5032,7 +5034,9 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             ('',      'NULL ISLAND', 'TOTAL',    None,     111111),
         ]
 
-        regex = r"invalid category: \['', 'NULL ISLAND'\]"
+        regex = (r"invalid category:\n"
+                 r"  category: \{'county'\}\n"
+                 r"    record: \['', 'NULL ISLAND'\]")
         msg = 'first: should check categories'
         with self.assertRaisesRegex(ValueError, regex, msg=msg):
             self.node.insert_quantities2(
