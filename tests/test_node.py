@@ -30,7 +30,7 @@ from .common import normalize_structures
 from toron._utils import ToronError, ToronWarning, BitFlags
 from toron.data_models import (
     Link,
-    Relation,
+    MappingRecord,
     Index,
     Location,
     Structure,
@@ -3470,10 +3470,10 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(1, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
-                Relation(2, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
-                Relation(3, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
-                Relation(4, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
+                MappingRecord(1, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
+                MappingRecord(2, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
+                MappingRecord(3, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
+                MappingRecord(4, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
             ],
         )
 
@@ -3492,12 +3492,12 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         self.assertEqual(
             self.get_relations_helper(),
             [
-                #Relation(1, 1, 0, 0, mapping_level=b'\xc0', value=0.0,  proportion=1.0),  # <- 100%
-                Relation(1, 1, 0, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.0),  # <- 0%
-                Relation(2, 1, 1, 0, mapping_level=b'\xc0', value=10.0, proportion=0.5),  # <- Calculated normally.
-                Relation(3, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=0.5),
-                Relation(4, 1, 2, 1, mapping_level=b'\xc0', value=20.0, proportion=1.0),
-                Relation(5, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=1.0),
+                #MappingRecord(1, 1, 0, 0, mapping_level=b'\xc0', value=0.0,  proportion=1.0),  # <- 100%
+                MappingRecord(1, 1, 0, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.0),  # <- 0%
+                MappingRecord(2, 1, 1, 0, mapping_level=b'\xc0', value=10.0, proportion=0.5),  # <- Calculated normally.
+                MappingRecord(3, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=0.5),
+                MappingRecord(4, 1, 2, 1, mapping_level=b'\xc0', value=20.0, proportion=1.0),
+                MappingRecord(5, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=1.0),
             ],
         )
 
@@ -3528,10 +3528,10 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(1, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
-                Relation(2, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
-                Relation(3, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
-                Relation(4, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
+                MappingRecord(1, 1, 1, 1, mapping_level=b'\xc0', value=10.0, proportion=1.00),
+                MappingRecord(2, 1, 2, 2, mapping_level=b'\xc0', value=20.0, proportion=1.00),
+                MappingRecord(3, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
+                MappingRecord(4, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
             ],
         )
 
@@ -3552,8 +3552,8 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(1, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
-                Relation(2, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
+                MappingRecord(1, 1, 3, 2, mapping_level=b'\xc0', value=5.0,  proportion=0.25),
+                MappingRecord(2, 1, 3, 3, mapping_level=b'\xc0', value=15.0, proportion=0.75),
             ],
             msg='should ignore proportion from data and calculate it using values'
         )
@@ -3593,8 +3593,8 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         self.assertEqual(
             self.get_relations_helper(),
             [
-                Relation(1, 1, 3, 2, mapping_level=b'\x80', value=5.0,  proportion=0.25),
-                Relation(2, 1, 3, 3, mapping_level=b'\x80', value=15.0, proportion=0.75),
+                MappingRecord(1, 1, 3, 2, mapping_level=b'\x80', value=5.0,  proportion=0.25),
+                MappingRecord(2, 1, 3, 3, mapping_level=b'\x80', value=15.0, proportion=0.75),
             ],
         )
 
@@ -4381,7 +4381,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
         # Check deletion using criteria column not used in a mapping level.
         with self.node._managed_cursor() as cursor:
             relation_repo = self.node._dal.RelationRepository(cursor)
-            relation_repo.update(Relation(2, 1, 2, 2, b'\x40', 20.0, 1.0))  # <- Change mapping level to `(0, 1)`.
+            relation_repo.update(MappingRecord(2, 1, 2, 2, b'\x40', 20.0, 1.0))  # <- Change mapping level to `(0, 1)`.
 
         with self.assertWarns(ToronWarning) as cm:
             self.node.delete_relations('myfile', 'rel1', B='y')
@@ -4465,13 +4465,13 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
     def test_reify_all_records(self):
         self.node.reify_relations('myfile', 'rel1')
         expected = [
-            Relation(1, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),
-            Relation(2, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),
-            Relation(3, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
-            Relation(4, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
-            Relation(5, 1, 3, 1, bytes(BitFlags(1, 1)), 15.0, 1.0),
-            Relation(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),
-            Relation(7, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),
+            MappingRecord(1, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),
+            MappingRecord(2, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),
+            MappingRecord(3, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            MappingRecord(4, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            MappingRecord(5, 1, 3, 1, bytes(BitFlags(1, 1)), 15.0, 1.0),
+            MappingRecord(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),
+            MappingRecord(7, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -4480,13 +4480,13 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         self.node.reify_relations('myfile', 'rel1', A='bar', B='y')
 
         expected = [
-            Relation(1, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (foo, x)
-            Relation(2, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (bar, y)
-            Relation(3, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
-            Relation(4, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
-            Relation(5, 1, 3, 1, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed (foo, x)
-            Relation(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed (bar, y)
-            Relation(7, 1, 3, 3, bytes(BitFlags(1, 0)), 15.0, 1.0),
+            MappingRecord(1, 1, 1, 1, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (foo, x)
+            MappingRecord(2, 1, 1, 2, bytes(BitFlags(1, 1)), 10.0, 1.0),  # <- mapping_level changed (bar, y)
+            MappingRecord(3, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            MappingRecord(4, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            MappingRecord(5, 1, 3, 1, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed (foo, x)
+            MappingRecord(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed (bar, y)
+            MappingRecord(7, 1, 3, 3, bytes(BitFlags(1, 0)), 15.0, 1.0),
         ]
         self.assertEqual(self.get_relations_helper(), expected)
 
@@ -4502,13 +4502,13 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         )
 
         expected = [
-            Relation(1, 1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.0),
-            Relation(2, 1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.0),  # <- not changed* (see note below)
-            Relation(3, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
-            Relation(4, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
-            Relation(5, 1, 3, 1, bytes(BitFlags(1, 0)), 15.0, 1.0),
-            Relation(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
-            Relation(7, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
+            MappingRecord(1, 1, 1, 1, bytes(BitFlags(0, 1)), 10.0, 1.0),
+            MappingRecord(2, 1, 1, 2, bytes(BitFlags(0, 1)), 10.0, 1.0),  # <- not changed* (see note below)
+            MappingRecord(3, 1, 2, 2, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            MappingRecord(4, 1, 2, 3, bytes(BitFlags(1, 1)), 20.0, 1.0),
+            MappingRecord(5, 1, 3, 1, bytes(BitFlags(1, 0)), 15.0, 1.0),
+            MappingRecord(6, 1, 3, 2, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
+            MappingRecord(7, 1, 3, 3, bytes(BitFlags(1, 1)), 15.0, 1.0),  # <- mapping_level changed
         ]
         self.assertEqual(self.get_relations_helper(), expected)
         # * Note regarding relation 2: This relation maps a portion of

@@ -32,7 +32,7 @@ from toron.data_models import (
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
     Link, BaseLinkRepository,
-    Relation, BaseRelationRepository,
+    MappingRecord, BaseRelationRepository,
     BasePropertyRepository,
     QuantityIterator,
 )
@@ -1445,27 +1445,27 @@ class RelationRepositoryBaseTest(ABC):
     def test_relation_post_init(self):
         """Should raise errors for bad types and values."""
         # Normal init should raise no errors.
-        Relation(1, 1, 1, 2, b'\xc0', 50.0, None)
+        MappingRecord(1, 1, 1, 2, b'\xc0', 50.0, None)
 
         # From undefined to defined (0 -> 2) should raise no errors.
-        Relation(1, 1, 0, 2, b'\xc0', 50.0, None)
+        MappingRecord(1, 1, 0, 2, b'\xc0', 50.0, None)
 
         # From defined to undefined (2 -> 0) should raise no errors.
-        Relation(1, 1, 2, 0, b'\xc0', 50.0, None)
+        MappingRecord(1, 1, 2, 0, b'\xc0', 50.0, None)
 
         # Non-int value in `other_index_id` should raise TypeError.
         regex = r"other_index_id must be an int, got str: '1'"
         with self.assertRaisesRegex(TypeError, regex):
-            Relation(1, 1, '1', 2, b'\xc0', 50.0, None)
+            MappingRecord(1, 1, '1', 2, b'\xc0', 50.0, None)
 
         # From undefined to undefined (0 -> 0) should raise ValueError.
         regex = r"undefined-to-undefined relation \(0 -> 0\) not allowed"
         with self.assertRaisesRegex(ValueError, regex):
-            Relation(1, 1, 0, 0, b'\xc0', 50.0, None)
+            MappingRecord(1, 1, 0, 0, b'\xc0', 50.0, None)
 
     def test_relation_assign_value(self):
         """Should raise an error when assigning to fields."""
-        rel = Relation(1, 1, 1, 2, b'\xc0', 100.0, None)
+        rel = MappingRecord(1, 1, 1, 2, b'\xc0', 100.0, None)
 
         with self.assertRaises(FrozenInstanceError):
             rel.index_id = 3
@@ -1478,7 +1478,7 @@ class RelationRepositoryBaseTest(ABC):
         However, if the class is ever changed to allow assignment, bad
         values should *still* raise an exception.
         """
-        rel = Relation(1, 1, 1, 2, b'\xc0', 100.0, None)
+        rel = MappingRecord(1, 1, 1, 2, b'\xc0', 100.0, None)
 
         with self.assertRaises((TypeError, FrozenInstanceError)):
             rel.other_index_id = '1'
@@ -1642,47 +1642,47 @@ class RelationRepositoryBaseTest(ABC):
     def test_find(self):
         self.assertEqual(
             list(self.repository.find(link_id=1)),
-            [Relation(1, 1, 1, 1, b'\xc0', 131250.0, 1.0),
-             Relation(2, 1, 2, 1, b'\x40', 40960.0, 0.625),
-             Relation(3, 1, 2, 2, b'\x40', 24576.0, 0.375),
-             Relation(4, 1, 3, 3, b'\xc0', 100000.0, 1.0)],
+            [MappingRecord(1, 1, 1, 1, b'\xc0', 131250.0, 1.0),
+             MappingRecord(2, 1, 2, 1, b'\x40', 40960.0, 0.625),
+             MappingRecord(3, 1, 2, 2, b'\x40', 24576.0, 0.375),
+             MappingRecord(4, 1, 3, 3, b'\xc0', 100000.0, 1.0)],
             msg='matches link_id 1',
         )
 
         self.assertEqual(
             list(self.repository.find(other_index_id=2)),
-            [Relation(2, 1, 2, 1, b'\x40', 40960.00, 0.625),
-             Relation(3, 1, 2, 2, b'\x40', 24576.00, 0.375),
-             Relation(6, 2, 2, 2, b'\xc0',   416.25, 1.0)],
+            [MappingRecord(2, 1, 2, 1, b'\x40', 40960.00, 0.625),
+             MappingRecord(3, 1, 2, 2, b'\x40', 24576.00, 0.375),
+             MappingRecord(6, 2, 2, 2, b'\xc0',   416.25, 1.0)],
             msg='matches other_index_id 2 (includes records from links 1 and 2)',
         )
 
         self.assertEqual(
             list(self.repository.find(index_id=1)),
-            [Relation(1, 1, 1, 1, b'\xc0', 131250.00, 1.0),
-             Relation(2, 1, 2, 1, b'\x40',  40960.00, 0.625),
-             Relation(5, 2, 1, 1, b'\xc0',    583.75, 1.0),
-             Relation(7, 2, 3, 1, b'\xc0',    336.00, 0.328125)],
+            [MappingRecord(1, 1, 1, 1, b'\xc0', 131250.00, 1.0),
+             MappingRecord(2, 1, 2, 1, b'\x40',  40960.00, 0.625),
+             MappingRecord(5, 2, 1, 1, b'\xc0',    583.75, 1.0),
+             MappingRecord(7, 2, 3, 1, b'\xc0',    336.00, 0.328125)],
             msg='matches index_id 1 (includes records from links 1 and 2)',
         )
 
         self.assertEqual(
             list(self.repository.find(other_index_id=1, index_id=1)),
-            [Relation(1, 1, 1, 1, b'\xc0', 131250.00, 1.0),
-             Relation(5, 2, 1, 1, b'\xc0',    583.75, 1.0)],
+            [MappingRecord(1, 1, 1, 1, b'\xc0', 131250.00, 1.0),
+             MappingRecord(5, 2, 1, 1, b'\xc0',    583.75, 1.0)],
             msg='matches other_index_id 1 and index_id 1 (includes records from links 1 and 2)',
         )
 
         self.assertEqual(
             list(self.repository.find(link_id=1, other_index_id=2)),
-            [Relation(2, 1, 2, 1, b'\x40', 40960.0, 0.625),
-             Relation(3, 1, 2, 2, b'\x40', 24576.0, 0.375)],
+            [MappingRecord(2, 1, 2, 1, b'\x40', 40960.0, 0.625),
+             MappingRecord(3, 1, 2, 2, b'\x40', 24576.0, 0.375)],
             msg='matches link_id 1 and other_index_id 2',
         )
 
         self.assertEqual(
             list(self.repository.find(link_id=2, other_index_id=2, index_id=2)),
-            [Relation(6, 2, 2, 2, b'\xc0', 416.25, 1.0)],
+            [MappingRecord(6, 2, 2, 2, b'\xc0', 416.25, 1.0)],
             msg='matches link_id 2 and other_index_id 2 and index_id 2',
         )
 
@@ -1753,13 +1753,13 @@ class RelationRepositoryBaseTest(ABC):
 
         self.assertEqual(
             list(self.repository.find(link_id=3)),
-            [Relation(10, 3, 0, 2, b'\xc0', 100.0, 0.00),
-             Relation(11, 3, 1, 0, b'\xc0', 100.0, 0.50),
-             Relation(12, 3, 1, 1, b'\xc0', 100.0, 0.50),
-             Relation(13, 3, 2, 0, b'\xc0', 100.0, 1.00),
-             Relation(14, 3, 3, 0, b'\xc0',  10.0, 0.05),
-             Relation(15, 3, 3, 1, b'\xc0', 100.0, 0.50),
-             Relation(16, 3, 3, 3, b'\xc0',  90.0, 0.45)],
+            [MappingRecord(10, 3, 0, 2, b'\xc0', 100.0, 0.00),
+             MappingRecord(11, 3, 1, 0, b'\xc0', 100.0, 0.50),
+             MappingRecord(12, 3, 1, 1, b'\xc0', 100.0, 0.50),
+             MappingRecord(13, 3, 2, 0, b'\xc0', 100.0, 1.00),
+             MappingRecord(14, 3, 3, 0, b'\xc0',  10.0, 0.05),
+             MappingRecord(15, 3, 3, 1, b'\xc0', 100.0, 0.50),
+             MappingRecord(16, 3, 3, 3, b'\xc0',  90.0, 0.45)],
         )
 
     def test_get_distinct_mapping_levels(self):

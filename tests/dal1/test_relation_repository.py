@@ -4,7 +4,7 @@ import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
-from toron.data_models import Relation
+from toron.data_models import MappingRecord
 from toron.dal1.repositories import RelationRepository
 
 
@@ -70,9 +70,9 @@ class TestRelationRepository(unittest.TestCase):
         """)
         repository = RelationRepository(self.cursor)
 
-        self.assertEqual(repository.get(1), Relation(1, 9, 1, 1, b'\xf0', 5.0))
-        self.assertEqual(repository.get(2), Relation(2, 9, 2, 3, b'\xf0', 3.0, 1.0))
-        self.assertEqual(repository.get(3), Relation(3, 9, 3, 5, b'\x10', 7.0))
+        self.assertEqual(repository.get(1), MappingRecord(1, 9, 1, 1, b'\xf0', 5.0))
+        self.assertEqual(repository.get(2), MappingRecord(2, 9, 2, 3, b'\xf0', 3.0, 1.0))
+        self.assertEqual(repository.get(3), MappingRecord(3, 9, 3, 5, b'\x10', 7.0))
         with self.assertRaisesRegex(KeyError, 'no relation with id of 4'):
             repository.get(4)
 
@@ -84,9 +84,9 @@ class TestRelationRepository(unittest.TestCase):
         """)
         repository = RelationRepository(self.cursor)
 
-        repository.update(Relation(1, 5, 1, 1, b'\xf0', 125.0, 0.25))
-        repository.update(Relation(2, 5, 1, 2, b'\xf0', 375.0, 0.75))
-        repository.update(Relation(3, 5, 2, 3, b'\x10', 620.0, 1.00))
+        repository.update(MappingRecord(1, 5, 1, 1, b'\xf0', 125.0, 0.25))
+        repository.update(MappingRecord(2, 5, 1, 2, b'\xf0', 375.0, 0.75))
+        repository.update(MappingRecord(3, 5, 2, 3, b'\x10', 620.0, 1.00))
 
         expected = [
             (1, 5, 1, 1, b'\xf0', 125.0, 0.25),
@@ -95,7 +95,7 @@ class TestRelationRepository(unittest.TestCase):
         ]
         self.assertRecords(expected)
 
-        repository.update(Relation(4, 5, 3, 4, b'\xf0', 570.0, 1.0))
+        repository.update(MappingRecord(4, 5, 3, 4, b'\xf0', 570.0, 1.0))
         self.assertRecords(expected, msg='should be unchanged, no relation_id=4')
 
     def test_delete(self):

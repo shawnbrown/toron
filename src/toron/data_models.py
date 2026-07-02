@@ -1049,7 +1049,7 @@ class BaseLinkRepository(ABC):
 
     @abstractmethod
     def delete_and_cascade(self, id: int) -> None:
-        """Delete a Link and any associated Relation records."""
+        """Delete a Link and any associated MappingRecord records."""
 
     @abstractmethod
     def get_by_unique_id_and_name(
@@ -1077,8 +1077,8 @@ class BaseLinkRepository(ABC):
 
 
 @dataclass(frozen=True)
-class Relation(object):
-    """Relation record."""
+class MappingRecord(object):
+    """MappingRecord record."""
     id: int
     link_id: int
     other_index_id: int
@@ -1129,14 +1129,14 @@ class BaseRelationRepository(ABC):
         """
 
     @abstractmethod
-    def get(self, id: int) -> Relation:
+    def get(self, id: int) -> MappingRecord:
         """Get a record from the repository.
 
         If no relation matches the given *id*, a ``KeyError`` is raised.
         """
 
     @abstractmethod
-    def update(self, record: Relation) -> None:
+    def update(self, record: MappingRecord) -> None:
         """Update a record in the repository."""
 
     @abstractmethod
@@ -1158,7 +1158,7 @@ class BaseRelationRepository(ABC):
         link_id: Optional[int] = None,
         other_index_id: Optional[int] = None,
         index_id: Optional[int] = None,
-    ) -> Iterator[Relation]:
+    ) -> Iterator[MappingRecord]:
         """Find records matching given id values.
 
         If no id values are given, the returned iterator should contain

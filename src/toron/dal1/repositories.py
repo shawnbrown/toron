@@ -31,7 +31,7 @@ from ..data_models import (
     AttributeGroup, BaseAttributeGroupRepository,
     Quantity, BaseQuantityRepository,
     Link, BaseLinkRepository,
-    Relation, BaseRelationRepository,
+    MappingRecord, BaseRelationRepository,
     JsonTypes, BasePropertyRepository,
 )
 
@@ -924,7 +924,7 @@ class LinkRepository(BaseLinkRepository):
         self._cursor.execute(sql, parameters)
 
     def delete_and_cascade(self, id: int) -> None:
-        """Delete a Link and any associated Relation records."""
+        """Delete a Link and any associated MappingRecord records."""
         self._cursor.execute(
             'DELETE FROM main.crosswalk WHERE crosswalk_id=?', (id,)
         )
@@ -1067,7 +1067,7 @@ class RelationRepository(BaseRelationRepository):
             )
             self._cursor.execute(sql, parameters)
 
-    def get(self, id: int) -> Relation:
+    def get(self, id: int) -> MappingRecord:
         """Get a record from the repository.
 
         If no relation matches the given *id*, a ``KeyError`` is raised.
@@ -1078,10 +1078,10 @@ class RelationRepository(BaseRelationRepository):
         record = self._cursor.fetchone()
         if record is None:
             raise KeyError(f'no relation with id of {id}')
-        return Relation(*record)
+        return MappingRecord(*record)
 
     if sqlite3.sqlite_version_info >= (3, 32, 0):
-        def update(self, record: Relation) -> None:
+        def update(self, record: MappingRecord) -> None:
             """Update a record in the repository."""
             sql = f"""
                 UPDATE main.relation
@@ -1107,7 +1107,7 @@ class RelationRepository(BaseRelationRepository):
         # Prior to SQLite 3.32.0, column affinity was not always applied before
         # computing CHECK constraints. For proper behavior, 'other_index_id'
         # and 'value' need to be converted *before* inserting or updating.
-        def update(self, record: Relation) -> None:
+        def update(self, record: MappingRecord) -> None:
             """Update a record in the repository."""
             sql = f"""
                 UPDATE main.relation
@@ -1165,7 +1165,7 @@ class RelationRepository(BaseRelationRepository):
         link_id: Optional[int] = None,
         other_index_id: Optional[int] = None,
         index_id: Optional[int] = None,
-    ) -> Iterator[Relation]:
+    ) -> Iterator[MappingRecord]:
         """Find records matching given id values.
 
         If no id values are given, the returned iterator should contain
@@ -1189,7 +1189,7 @@ class RelationRepository(BaseRelationRepository):
             self._cursor.execute(sql, parameters)
 
             for record in self._cursor:
-                yield Relation(*record)
+                yield MappingRecord(*record)
 
     def get_index_id_cardinality(
         self, link_id: int, include_undefined: bool = True
