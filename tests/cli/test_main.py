@@ -14,7 +14,7 @@ from toron.cli.main import (
     command_update,
     command_index,
     command_quantity,
-    command_crosswalk,
+    command_mapping,
     command_info,
     main,
 )
@@ -313,7 +313,7 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 allow_overlapping=False,
                 allow_incomplete=False,
                 backup=True,
-                func=command_crosswalk.process_crosswalk_action,
+                func=command_mapping.process_mapping_action,
             ),
         )
 

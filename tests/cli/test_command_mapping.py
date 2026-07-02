@@ -1,11 +1,11 @@
-"""Tests for toron/cli/command_crosswalk.py module."""
+"""Tests for toron/cli/command_mapping.py module."""
 import argparse
 from dataclasses import astuple
 from .. import _unittest as unittest
 from ..common import DummyRedirection, TopoNodeFixtures
 from toron._utils import ToronError, BitFlags
 
-from toron.cli import command_crosswalk
+from toron.cli import command_mapping
 from toron.cli.common import ExitCode
 
 
@@ -18,7 +18,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
             ['3X7429EDA9', 'C-1', 'Z-1', '3-1', 300.0, '3X23CE6FFF', 'C-2', 'Z-2'],
         ]
 
-        result = command_crosswalk.get_column_positions(
+        result = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -43,7 +43,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(list(data_iter), data_list)
 
     def test_index_codes_only(self):
-        positions, _ = command_crosswalk.get_column_positions(
+        positions, _ = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -68,7 +68,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
 
     def test_one_missing_index(self):
         """When only one index is found, check other side for header match."""
-        positions, _ = command_crosswalk.get_column_positions(
+        positions, _ = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -90,7 +90,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
              'value_position': 4},
         )
 
-        positions, _ = command_crosswalk.get_column_positions(
+        positions, _ = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -116,7 +116,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         """Raise an error if index is missing and header does not match."""
         regex = r"unable to find FILE2 columns;\s+Expected: 'foo', 'bar'\s+Found: 'XXX', 'YYY'"
         with self.assertRaisesRegex(ToronError, regex):
-            positions, _ = command_crosswalk.get_column_positions(
+            positions, _ = command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
                 crosswalk_name='corge',
@@ -130,7 +130,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
 
         regex = r"unable to find FILE1 columns;\s+Expected: 'foo', 'bar', 'baz'\s+Found: 'XXX', 'YYY', 'ZZZ'"
         with self.assertRaisesRegex(ToronError, regex):
-            positions, _ = command_crosswalk.get_column_positions(
+            positions, _ = command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
                 crosswalk_name='corge',
@@ -146,7 +146,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         """If no indexes are given, label columns must match exactly
         (with node1 on the left and node2 on the right).
         """
-        positions, _ = command_crosswalk.get_column_positions(
+        positions, _ = command_mapping.get_column_positions(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -182,7 +182,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertRaisesRegex(ToronError, regex):
-            command_crosswalk.get_column_positions(
+            command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
                 crosswalk_name='corge',
@@ -197,7 +197,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
     def test_bad_column_order(self):
         regex = r'Invalid column order in mapping data.'
         with self.assertRaisesRegex(RuntimeError, regex):
-            command_crosswalk.get_column_positions(
+            command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
                 crosswalk_name='corge',
@@ -212,7 +212,7 @@ class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
     def test_missing_crosswalk_column(self):
         regex = r"required column 'blerg' not found in: 'index_code', 'corge', 'index_code'"
         with self.assertRaisesRegex(ToronError, regex):
-            command_crosswalk.get_column_positions(
+            command_mapping.get_column_positions(
                 node1=self.node_a,
                 node2=self.node_b,
                 crosswalk_name='blerg',
@@ -236,7 +236,7 @@ class TestGetLocationFactory(unittest.TestCase):
 
     def test_for_slice_0_to_3(self):
         """Check the left-side of the source data, slice(0, 3)."""
-        get_location = command_crosswalk.get_location_factory(
+        get_location = command_mapping.get_location_factory(
             self.header,
             label_columns=['foo', 'bar', 'baz'],
             start=0,
@@ -253,7 +253,7 @@ class TestGetLocationFactory(unittest.TestCase):
 
     def test_for_slice_0_to_3_different_order(self):
         """Values should be output in `label_columns` order."""
-        get_location = command_crosswalk.get_location_factory(
+        get_location = command_mapping.get_location_factory(
             self.header,
             label_columns=['baz', 'foo', 'bar'],
             start=0,
@@ -271,7 +271,7 @@ class TestGetLocationFactory(unittest.TestCase):
 
     def test_for_slice_3_to_6(self):
         """Check the right-side of the source data, slice(3, 6)."""
-        get_location = command_crosswalk.get_location_factory(
+        get_location = command_mapping.get_location_factory(
             self.header,
             label_columns=['foo', 'bar', 'baz'],
             start=3,
@@ -290,7 +290,7 @@ class TestGetLocationFactory(unittest.TestCase):
         """The values of 'foo' and 'bar' appear twice in slice(0, 6)."""
         regex = r'found duplicate values in header'
         with self.assertRaisesRegex(ValueError, regex):
-            get_location = command_crosswalk.get_location_factory(
+            get_location = command_mapping.get_location_factory(
                 self.header,
                 label_columns=['foo', 'bar', 'baz'],
                 start=0,
@@ -300,7 +300,7 @@ class TestGetLocationFactory(unittest.TestCase):
 
 class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
     def test_return_types(self):
-        result = command_crosswalk.make_getter_functions(
+        result = command_mapping.make_getter_functions(
             node=self.node_a,
             index_code_pos=0,
             sample_header=['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar'],
@@ -314,7 +314,7 @@ class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
         self.assertTrue(callable(result[2]))
 
     def test_node_get_index_id(self):
-        node_get_index_id, _, _ = command_crosswalk.make_getter_functions(
+        node_get_index_id, _, _ = command_mapping.make_getter_functions(
             node=self.node_a,
             index_code_pos=0,
             sample_header=['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar'],
@@ -334,7 +334,7 @@ class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
             node_get_index_id(['1XBADVALUE', '', '', '', 100.0, '2XA468A4BC', '', ''])
 
         # Missing index_code position.
-        node_get_index_id, _, _ = command_crosswalk.make_getter_functions(
+        node_get_index_id, _, _ = command_mapping.make_getter_functions(
             node=self.node_a,
             index_code_pos=None,  # <- Position is None!
             sample_header=['foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar'],
@@ -350,7 +350,7 @@ class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(actual, [None, None, None])
 
     def test_node_get_location(self):
-        _, node_get_location, _ = command_crosswalk.make_getter_functions(
+        _, node_get_location, _ = command_mapping.make_getter_functions(
             node=self.node_a,
             index_code_pos=0,
             sample_header=['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code'],
@@ -371,7 +371,7 @@ class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(actual, expected)
 
         # No label columns.
-        _, node_get_location, _ = command_crosswalk.make_getter_functions(
+        _, node_get_location, _ = command_mapping.make_getter_functions(
             node=self.node_a,
             index_code_pos=0,
             sample_header=['index_code', 'corge', 'index_code'],
@@ -392,7 +392,7 @@ class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_node_get_level(self):
-        _, _, node_get_level = command_crosswalk.make_getter_functions(
+        _, _, node_get_level = command_mapping.make_getter_functions(
             node=self.node_a,
             index_code_pos=0,
             sample_header=['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code'],
@@ -425,7 +425,7 @@ class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
 
 class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
     def test_index_codes_and_labels(self):
-        actual = command_crosswalk.normalize_mapping_data(
+        actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -452,7 +452,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
             ['2XA468A4BC', 'B-2', 'Y-2',   200.0, '2XF38F26EA', 'B-1', 'Y-1', '2-1'],
             ['3X23CE6FFF', 'C-2', 'Z-2',   300.0, '3X7429EDA9', 'C-1', 'Z-1', '3-1'],
         ]
-        actual = command_crosswalk.normalize_mapping_data(
+        actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -467,7 +467,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(list(actual), expected, msg='order should be: <node1> <node2> <crosswalk>')
 
     def test_index_codes_only(self):
-        actual = command_crosswalk.normalize_mapping_data(
+        actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -487,7 +487,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(list(actual), expected)
 
     def test_partial_index_codes_and_partial_labels(self):
-        actual = command_crosswalk.normalize_mapping_data(
+        actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
             node2=self.node_b,
             crosswalk_name='corge',
@@ -510,7 +510,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
         """Should raise errors immediately, rather than waiting for iteration."""
         regex = r"required column 'blerg' not found"
         with self.assertRaisesRegex(ToronError, regex):
-            command_crosswalk.normalize_mapping_data(
+            command_mapping.normalize_mapping_data(
                 node1=self.node_a,
                 node2=self.node_b,
                 crosswalk_name='blerg',
@@ -570,7 +570,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+            exit_code = command_mapping.read_from_stdin(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d
@@ -647,7 +647,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+            exit_code = command_mapping.read_from_stdin(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -717,7 +717,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+            exit_code = command_mapping.read_from_stdin(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -761,7 +761,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+            exit_code = command_mapping.read_from_stdin(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -798,7 +798,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+            exit_code = command_mapping.read_from_stdin(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -851,7 +851,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+            exit_code = command_mapping.read_from_stdin(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -906,7 +906,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
 
         regex = r'mapping is incomplete, no records loaded'
         with self.assertRaisesRegex(ToronError, regex):
-            command_crosswalk.read_from_stdin(  # <- Function under test.
+            command_mapping.read_from_stdin(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -935,7 +935,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.read_from_stdin(  # <- Function under test.
+            exit_code = command_mapping.read_from_stdin(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -988,7 +988,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.write_to_stdout(  # <- Function under test.
+            exit_code = command_mapping.write_to_stdout(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -1034,7 +1034,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.write_to_stdout(  # <- Function under test.
+            exit_code = command_mapping.write_to_stdout(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,
@@ -1069,7 +1069,7 @@ class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
-            exit_code = command_crosswalk.write_to_stdout(  # <- Function under test.
+            exit_code = command_mapping.write_to_stdout(  # <- Function under test.
                 args,
                 self.node_c,
                 self.node_d,

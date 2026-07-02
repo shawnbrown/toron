@@ -22,7 +22,7 @@ from . import (
     command_index,
     command_update,
     command_quantity,
-    command_crosswalk,
+    command_mapping,
     command_init,
 )
 from .common import (
@@ -369,7 +369,7 @@ def get_parser() -> argparse.ArgumentParser:
                                   dest='backup',
                                   help='do not make a backup file')
     parser_crosswalk.set_defaults(
-        func=command_crosswalk.process_crosswalk_action,
+        func=command_mapping.process_mapping_action,
         direction='both',
     )
 

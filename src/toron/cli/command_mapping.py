@@ -597,7 +597,7 @@ def write_to_stdout(
     return ExitCode.OK
 
 
-def process_crosswalk_action(args: argparse.Namespace) -> ExitCode:
+def process_mapping_action(args: argparse.Namespace) -> ExitCode:
     """Write mapping to ``args.stdout`` or read from ``args.stdin``."""
     if is_streamed(args.stdin):
         node1 = cli_bind_node(args.filepath, mode='rw')

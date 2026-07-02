@@ -374,7 +374,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             selectors=None,
             make_default=True,
         ))
-        cli.command_crosswalk.process_crosswalk_action(argparse.Namespace(
+        cli.command_mapping.process_mapping_action(argparse.Namespace(
             filepath=self.filepath1,
             command='crosswalk',
             filepath2=self.filepath2,
