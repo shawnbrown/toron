@@ -14,9 +14,9 @@ the application layer:
                                                            •  +--------------------+
                                     +----------------+     •  | attribute_group    |
     +----------------------+        | relation       |     •  +--------------------+
-    | crosswalk            |        +----------------+     •  | attribute_group_id |--+
+    | link                 |        +----------------+     •  | attribute_group_id |--+
     +----------------------+        | relation_id    |     •  | attributes         |  |
-    | crosswalk_id         |------->| crosswalk_id   |     •  +--------------------+  |
+    | link_id              |------->| link_id        |     •  +--------------------+  |
     | other_unique_id      |  ••••••| other_index_id |<•••••                          |
     | other_filename_hint  |  •  •••| index_id       |<-+     +--------------------+  |
     | name                 |  •  •  | mapping_level* |  |     | quantity           |  |
@@ -179,8 +179,8 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
            default record but allow for multiple non-default records
            (this works because a NULL value does not test as equal to
            other NULL values). */
-        CREATE TABLE main.crosswalk(
-            crosswalk_id INTEGER PRIMARY KEY,
+        CREATE TABLE main.link(
+            link_id INTEGER PRIMARY KEY,
             other_unique_id TEXT NOT NULL,
             other_filename_hint TEXT,
             name TEXT NOT NULL,
@@ -196,16 +196,16 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
 
         CREATE TABLE main.relation(
             relation_id INTEGER PRIMARY KEY,
-            crosswalk_id INTEGER NOT NULL,
+            link_id INTEGER NOT NULL,
             other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = 'integer'),
             index_id INTEGER NOT NULL,
             mapping_level BLOB_BITFLAGS NOT NULL,
             relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) IN ('real', 'integer') AND relation_value >= 0.0),
             proportion REAL CHECK (proportion BETWEEN 0.0 AND 1.0 OR proportion IS NULL),
             CHECK (other_index_id != 0 OR index_id != 0),
-            FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,
+            FOREIGN KEY(link_id) REFERENCES link(link_id) ON DELETE CASCADE,
             FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
-            UNIQUE (crosswalk_id, other_index_id, index_id, mapping_level)
+            UNIQUE (link_id, other_index_id, index_id, mapping_level)
         );
 
         CREATE TABLE main.property(
@@ -408,7 +408,7 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
         tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
         node_tables = {
             'attribute_group',
-            'crosswalk',
+            'link',
             'location',
             'node_index',
             'property',
@@ -480,7 +480,7 @@ def create_toron_check_selectors(connection: sqlite3.Connection) -> None:
 
 
 def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
-    """Add temp triggers to validate ``crosswalk.selectors`` and
+    """Add temp triggers to validate ``link.selectors`` and
     ``weight_group.selectors`` columns.
 
     The trigger will pass without error when the value is a wellformed
@@ -514,8 +514,8 @@ def create_triggers_selectors(cur: sqlite3.Cursor) -> None:
     """
     cur.execute(sql.format(event='INSERT', table='weight_group'))
     cur.execute(sql.format(event='UPDATE', table='weight_group'))
-    cur.execute(sql.format(event='INSERT', table='crosswalk'))
-    cur.execute(sql.format(event='UPDATE', table='crosswalk'))
+    cur.execute(sql.format(event='INSERT', table='link'))
+    cur.execute(sql.format(event='UPDATE', table='link'))
 
 
 def create_toron_check_attributes(connection: sqlite3.Connection) -> None:
@@ -604,7 +604,7 @@ def create_toron_check_user_properties(connection: sqlite3.Connection) -> None:
 
 
 def create_triggers_user_properties(cur: sqlite3.Cursor) -> None:
-    """Add temp triggers to validate ``crosswalk.user_properties`` column.
+    """Add temp triggers to validate ``link.user_properties`` column.
 
     A well-formed TEXT_USERPROPERTIES value is a string containing
     a JSON object type.
@@ -618,13 +618,13 @@ def create_triggers_user_properties(cur: sqlite3.Cursor) -> None:
         userproperties_are_invalid = f'toron_check_user_properties(NEW.user_properties) = 0'
 
     sql = f"""
-        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_crosswalk_user_properties
-        BEFORE {{event}} ON main.crosswalk FOR EACH ROW
+        CREATE TEMPORARY TRIGGER IF NOT EXISTS trigger_check_{{event}}_link_user_properties
+        BEFORE {{event}} ON main.link FOR EACH ROW
         WHEN
             NEW.user_properties IS NOT NULL
             AND {userproperties_are_invalid}
         BEGIN
-            SELECT RAISE(ABORT, 'crosswalk.user_properties must be well-formed JSON object type');
+            SELECT RAISE(ABORT, 'link.user_properties must be well-formed JSON object type');
         END;
     """
     cur.execute(sql.format(event='INSERT'))

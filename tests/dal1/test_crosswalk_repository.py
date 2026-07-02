@@ -18,7 +18,7 @@ class TestLinkRepository(unittest.TestCase):
         self.addCleanup(self.cursor.close)
 
     def assertRecords(self, expected_records, msg=None):
-        self.cursor.execute(f'SELECT * FROM crosswalk')
+        self.cursor.execute(f'SELECT * FROM link')
         actual_records = self.cursor.fetchall()
         self.assertEqual(actual_records, expected_records, msg=msg)
 
@@ -71,11 +71,11 @@ class TestLinkRepository(unittest.TestCase):
 
     def test_get(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
-                                          'A link to some other node.', '["[foo]", "[bar]"]',
-                                          1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
+            INSERT INTO link VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
+            INSERT INTO link VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
+                                     'A link to some other node.', '["[foo]", "[bar]"]',
+                                     1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
         repository = LinkRepository(self.cursor)
 
@@ -132,11 +132,11 @@ class TestLinkRepository(unittest.TestCase):
 
     def test_get_all(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
-                                          'A link to some other node.', '["[foo]", "[bar]"]',
-                                          1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
+            INSERT INTO link VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
+            INSERT INTO link VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
+                                     'A link to some other node.', '["[foo]", "[bar]"]',
+                                     1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
         repository = LinkRepository(self.cursor)
 
@@ -183,11 +183,11 @@ class TestLinkRepository(unittest.TestCase):
 
     def test_update(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
-                                          'A link to some other node.', '["[foo]", "[bar]"]',
-                                          1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
+            INSERT INTO link VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, 1, NULL, NULL, 0);
+            INSERT INTO link VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (3, '222-unique-id-2222', 'somefile.toron', 'name1',
+                                     'A link to some other node.', '["[foo]", "[bar]"]',
+                                     1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
         repository = LinkRepository(self.cursor)
 
@@ -237,8 +237,8 @@ class TestLinkRepository(unittest.TestCase):
 
     def test_delete_and_cascade(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
         """)
         repository = LinkRepository(self.cursor)
 
@@ -256,9 +256,9 @@ class TestLinkRepository(unittest.TestCase):
 
     def test_find_by_other_unique_id(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (3, '222-unique-id-2222', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
         """)
         repository = LinkRepository(self.cursor)
 
@@ -280,9 +280,9 @@ class TestLinkRepository(unittest.TestCase):
 
     def test_find_by_other_filename_hint(self):
         self.cursor.executescript("""
-            INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', 'fileone.toron', 'name1', NULL, NULL, NULL, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', 'fileone.toron', 'name2', NULL, NULL, NULL, NULL, NULL, 0);
-            INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (1, '111-unique-id-1111', 'fileone.toron', 'name1', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (2, '111-unique-id-1111', 'fileone.toron', 'name2', NULL, NULL, NULL, NULL, NULL, 0);
+            INSERT INTO link VALUES (3, '222-unique-id-2222', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
         """)
         repository = LinkRepository(self.cursor)
 

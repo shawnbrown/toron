@@ -383,7 +383,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
         )
 
         with self.node2._managed_cursor() as cur:
-            results = cur.execute('SELECT other_filename_hint FROM crosswalk').fetchone()
+            results = cur.execute('SELECT other_filename_hint FROM link').fetchone()
             self.assertEqual(results, ('file1',))
 
             results = cur.execute('SELECT * FROM relation').fetchall()

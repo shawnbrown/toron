@@ -181,6 +181,32 @@ class TestApplyMigrations(unittest.TestCase):
 
     def test_v020_to_v030_relation(self):
         self.cur.executescript("""
+            /* Create old style (version 0.2.0) 'crosswalk' table. */
+            CREATE TABLE crosswalk(
+                crosswalk_id INTEGER PRIMARY KEY,
+                other_unique_id TEXT NOT NULL,
+                other_filename_hint TEXT,
+                name TEXT NOT NULL,
+                description TEXT,
+                selectors TEXT_SELECTORS,
+                is_default INTEGER CHECK (is_default IS NULL OR is_default=1) DEFAULT NULL,
+                user_properties TEXT_USERPROPERTIES,
+                other_index_hash TEXT,
+                is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
+                UNIQUE (name, other_unique_id),
+                UNIQUE (is_default, other_unique_id)
+            );
+            INSERT INTO "crosswalk" VALUES(
+                1, '1111-11-11-11111111', 'node1.toron', 'weight', NULL, NULL, 1, NULL,
+                '6fc1368a85e830f9d285a64863017119b458007a5d460cc3d86480c4a58ebb78',
+                1
+            );
+            INSERT INTO "crosswalk" VALUES(
+                2, '2222-22-22-22222222', 'node2.toron', 'weight', NULL, NULL, 1, NULL,
+                'b78d268304863017119b485a6f58007a5df9c1368a85e460cc3d86480c4a58eb',
+                1
+            );
+
             /* Create old style (version 0.2.0) 'relation' table. */
             CREATE TABLE relation(
                 relation_id INTEGER PRIMARY KEY,
@@ -205,7 +231,41 @@ class TestApplyMigrations(unittest.TestCase):
 
         v020_to_v030_relation_table(self.cur, whole_space_level=b'\xe0')  # <- Function under test.
 
-        self.cur.execute('SELECT * FROM relation')
+        self.cur.execute("""
+            SELECT
+                link_id,  /* <- New column name (was crosswalk_id). */
+                other_unique_id,
+                other_filename_hint,
+                name,
+                description,
+                selectors,
+                is_default,
+                user_properties,
+                other_index_hash,
+                is_locally_complete
+            FROM main.link  /* <- New table name (was main.crosswalk). */
+        """)
+        self.assertEqual(
+            set(self.cur.fetchall()),
+            {
+                (1, '1111-11-11-11111111', 'node1.toron', 'weight', None, None, 1, None,
+                     '6fc1368a85e830f9d285a64863017119b458007a5d460cc3d86480c4a58ebb78', 1),
+                (2, '2222-22-22-22222222', 'node2.toron', 'weight', None, None, 1, None,
+                     'b78d268304863017119b485a6f58007a5df9c1368a85e460cc3d86480c4a58eb', 1),
+            },
+        )
+
+        self.cur.execute("""
+            SELECT
+                relation_id,
+                link_id,  /* <- New column name (was crosswalk_id). */
+                other_index_id,
+                index_id,
+                mapping_level,
+                relation_value,
+                proportion REAL
+            FROM main.relation
+        """)
         self.assertEqual(
             set(self.cur.fetchall()),
             {                                      # <- removed undefined-to-undefined.

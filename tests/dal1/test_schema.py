@@ -59,7 +59,7 @@ class TestCreateNodeSchema(unittest.TestCase):
         tables = self.get_tables(self.cur)
         expected = {
             'attribute_group',
-            'crosswalk',
+            'link',
             'location',
             'node_index',
             'property',
@@ -464,20 +464,20 @@ class TestCreateTriggersUserProperties(BaseUserPropertiesTestCase):
 
     def test_insert_valid_userproperties(self):
         cur = self.cur.executemany(
-            'INSERT INTO crosswalk (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
+            'INSERT INTO link (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
             [(val, 'name', str(i)) for i, val in enumerate(self.valid_userproperties)],
         )
         self.assertEqual(cur.rowcount, 3, msg='should insert all three records')
 
     def test_insert_invalid_userproperties(self):
-        regex = 'crosswalk.user_properties must be well-formed JSON object type'
+        regex = 'link.user_properties must be well-formed JSON object type'
 
         for value, desc in self.invalid_userproperties:
             with self.subTest(value=value):
                 msg = f'should raise IntegrityError, TEXT_USERPROPERTIES {value!r} {desc}'
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
                     self.cur.execute(
-                        "INSERT INTO crosswalk (user_properties, name, other_unique_id) VALUES (?, ?, ?)",
+                        "INSERT INTO link (user_properties, name, other_unique_id) VALUES (?, ?, ?)",
                         (value, 'foo', '1'),
                     )
 
@@ -543,7 +543,7 @@ class TestCreateTriggersSelectors(BaseSelectorsTestCase):
 
     def test_insert_valid_link_selectors(self):
         cur = self.cur.executemany(
-            'INSERT INTO crosswalk (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
+            'INSERT INTO link (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
             [(val, 'name', str(i)) for i, val in enumerate(self.valid_selector_json)],
         )
         self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
@@ -556,14 +556,14 @@ class TestCreateTriggersSelectors(BaseSelectorsTestCase):
         self.assertEqual(cur.rowcount, 2, msg='should insert all two records')
 
     def test_insert_invalid_link_selectors(self):
-        regex = 'crosswalk.selectors must be a JSON array with text values'
+        regex = 'link.selectors must be a JSON array with text values'
 
         for value, desc in self.invalid_selector_json:
             with self.subTest(value=value):
                 msg = f'should raise IntegrityError, TEXT_SELECTORS {value!r} {desc}'
                 with self.assertRaisesRegex(sqlite3.IntegrityError, regex, msg=msg):
                     self.cur.execute(
-                        'INSERT INTO crosswalk (selectors, name, other_unique_id) VALUES (?, ?, ?)',
+                        'INSERT INTO link (selectors, name, other_unique_id) VALUES (?, ?, ?)',
                         (value, 'foo', '1'),
                     )
 
@@ -734,10 +734,10 @@ class TestRegisteredConverters(unittest.TestCase):
 
     def test_converter_text_userproperties(self):
         cur = self.cur.execute(
-            'INSERT INTO crosswalk (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
+            'INSERT INTO link (user_properties, name, other_unique_id) VALUES (?, ?, ?)',
             ('{"a": [1, 2], "b": {"three": 3}}', 'name', '1111-111-1111'),
         )
-        cur.execute('SELECT user_properties FROM crosswalk')
+        cur.execute('SELECT user_properties FROM link')
         self.assertEqual(cur.fetchall(), [({'a': [1, 2], 'b': {'three': 3}},)])
 
     def test_converter_text_selectors(self):
@@ -754,9 +754,9 @@ class TestRegisteredConverters(unittest.TestCase):
         cur = self.cur.executescript("""
             INSERT INTO node_index (index_id)
                 VALUES (1);
-            INSERT INTO crosswalk (crosswalk_id, name, other_unique_id)
+            INSERT INTO link (link_id, name, other_unique_id)
                 VALUES (1, 'name', '11-1-11');
-            INSERT INTO relation (crosswalk_id, other_index_id, index_id, relation_value, mapping_level)
+            INSERT INTO relation (link_id, other_index_id, index_id, relation_value, mapping_level)
                 VALUES (1, 1, 1, 25.0, X'A0');
         """)
         cur.execute('SELECT mapping_level FROM relation')

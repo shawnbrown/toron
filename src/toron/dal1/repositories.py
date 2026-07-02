@@ -112,7 +112,7 @@ class IndexRepository(BaseIndexRepository):
         """Find index_id values missing from the specified link."""
         # TODO: Decide if this method should be moved to MappingRepository.
         #       Compare it to MappingRepository.mapping_is_complete().
-        sql = 'SELECT EXISTS (SELECT 1 FROM main.crosswalk WHERE crosswalk_id=?)'
+        sql = 'SELECT EXISTS (SELECT 1 FROM main.link WHERE link_id=?)'
         self._cursor.execute(sql, (link_id,))
         link_exists = self._cursor.fetchone()[0]
         if not link_exists:
@@ -122,7 +122,7 @@ class IndexRepository(BaseIndexRepository):
         sql = """
             SELECT index_id FROM main.node_index WHERE index_id != 0
             EXCEPT
-            SELECT index_id FROM main.relation WHERE crosswalk_id = ?
+            SELECT index_id FROM main.relation WHERE link_id = ?
         """
         self._cursor.execute(sql, (link_id,))
         return (row[0] for row in self._cursor)
@@ -818,7 +818,7 @@ class LinkRepository(BaseLinkRepository):
             selectors = [selectors]
 
         sql = """
-            INSERT INTO main.crosswalk (
+            INSERT INTO main.link (
                 other_unique_id,
                 other_filename_hint,
                 name,
@@ -869,7 +869,7 @@ class LinkRepository(BaseLinkRepository):
         """
         sql = """
             SELECT
-                crosswalk_id,
+                link_id,
                 other_unique_id,
                 other_filename_hint,
                 name,
@@ -879,8 +879,8 @@ class LinkRepository(BaseLinkRepository):
                 user_properties,
                 other_index_hash,
                 is_locally_complete
-            FROM main.crosswalk
-            WHERE crosswalk_id=?
+            FROM main.link
+            WHERE link_id=?
         """
         self._cursor.execute(sql, (id,))
         record = self._cursor.fetchone()
@@ -890,13 +890,13 @@ class LinkRepository(BaseLinkRepository):
 
     def get_all(self) -> List[Link]:
         """Get all records from the repository."""
-        self._cursor.execute('SELECT * FROM main.crosswalk')
+        self._cursor.execute('SELECT * FROM main.link')
         return [self._make_link(row) for row in self._cursor]
 
     def update(self, record: Link) -> None:
         """Update a record in the repository."""
         sql = f"""
-            UPDATE main.crosswalk
+            UPDATE main.link
             SET
                 other_unique_id=?,
                 other_filename_hint=?,
@@ -907,7 +907,7 @@ class LinkRepository(BaseLinkRepository):
                 user_properties=?,
                 other_index_hash=?,
                 is_locally_complete=?
-            WHERE crosswalk_id=?
+            WHERE link_id=?
         """
         parameters = [
                 record.other_unique_id,
@@ -926,7 +926,7 @@ class LinkRepository(BaseLinkRepository):
     def delete_and_cascade(self, id: int) -> None:
         """Delete a Link and any associated MappingRecord records."""
         self._cursor.execute(
-            'DELETE FROM main.crosswalk WHERE crosswalk_id=?', (id,)
+            'DELETE FROM main.link WHERE link_id=?', (id,)
         )
 
     def get_by_unique_id_and_name(
@@ -940,7 +940,7 @@ class LinkRepository(BaseLinkRepository):
         raised.
         """
         self._cursor.execute(
-            'SELECT * FROM main.crosswalk WHERE other_unique_id=? AND name=?',
+            'SELECT * FROM main.link WHERE other_unique_id=? AND name=?',
             (other_unique_id, name),
         )
 
@@ -958,7 +958,7 @@ class LinkRepository(BaseLinkRepository):
     ) -> Iterator[Link]:
         """Find all records with matching other_unique_id."""
         self._cursor.execute(
-            'SELECT * FROM main.crosswalk WHERE other_unique_id=?',
+            'SELECT * FROM main.link WHERE other_unique_id=?',
             (other_unique_id,),
         )
         for record in self._cursor:
@@ -969,7 +969,7 @@ class LinkRepository(BaseLinkRepository):
     ) -> Iterator[Link]:
         """Find all records with matching other_filename_hint."""
         self._cursor.execute(
-            'SELECT * FROM main.crosswalk WHERE other_filename_hint=?',
+            'SELECT * FROM main.link WHERE other_filename_hint=?',
             (other_filename_hint,),
         )
         for record in self._cursor:
@@ -1004,7 +1004,7 @@ class MappingRepository(BaseMappingRepository):
 
             sql = """
                 INSERT INTO main.relation (
-                    crosswalk_id,
+                    link_id,
                     other_index_id,
                     index_id,
                     relation_value,
@@ -1048,7 +1048,7 @@ class MappingRepository(BaseMappingRepository):
 
             sql = """
                 INSERT INTO main.relation (
-                    crosswalk_id,
+                    link_id,
                     other_index_id,
                     index_id,
                     relation_value,
@@ -1085,7 +1085,7 @@ class MappingRepository(BaseMappingRepository):
             """Update a record in the repository."""
             sql = f"""
                 UPDATE main.relation
-                SET crosswalk_id=?,
+                SET link_id=?,
                     other_index_id=?,
                     index_id=?,
                     mapping_level=?,
@@ -1111,7 +1111,7 @@ class MappingRepository(BaseMappingRepository):
             """Update a record in the repository."""
             sql = f"""
                 UPDATE main.relation
-                SET crosswalk_id=?,
+                SET link_id=?,
                     other_index_id=?,
                     index_id=?,
                     mapping_level=?,
@@ -1148,7 +1148,7 @@ class MappingRepository(BaseMappingRepository):
         sql = f"""
             SELECT DISTINCT other_index_id
             FROM main.relation
-            WHERE crosswalk_id=? AND other_index_id > 0
+            WHERE link_id=? AND other_index_id > 0
             {'ORDER BY other_index_id' if ordered else ''}
         """
         self._cursor.execute(sql, (link_id,))
@@ -1173,7 +1173,7 @@ class MappingRepository(BaseMappingRepository):
         """
         criteria = []
         if link_id is not None:
-            criteria.append('crosswalk_id=:link_id')
+            criteria.append('link_id=:link_id')
         if other_index_id is not None:
             criteria.append('other_index_id=:other_index_id')
         if index_id is not None:
@@ -1198,7 +1198,7 @@ class MappingRepository(BaseMappingRepository):
         sql = (
             'SELECT COUNT(DISTINCT index_id)\n'
             'FROM main.relation\n'
-            'WHERE crosswalk_id=? AND index_id != 0'
+            'WHERE link_id=? AND index_id != 0'
         )
 
         self._cursor.execute(sql, (link_id,))
@@ -1215,10 +1215,10 @@ class MappingRepository(BaseMappingRepository):
             """
                 -- Determine if index_id set is complete (no missing records).
                 SELECT NOT EXISTS (
-                    -- Select index_id values not in crosswalk's relations.
+                    -- Select index_id values not in link's relations.
                     SELECT index_id FROM main.node_index WHERE index_id != 0
                     EXCEPT
-                    SELECT index_id FROM main.relation WHERE crosswalk_id = ?
+                    SELECT index_id FROM main.relation WHERE link_id = ?
                 )
             """,
             (link_id,),
@@ -1231,7 +1231,7 @@ class MappingRepository(BaseMappingRepository):
         sql = """
             SELECT DISTINCT mapping_level
             FROM main.relation
-            WHERE crosswalk_id=? AND mapping_level IS NOT NULL
+            WHERE link_id=? AND mapping_level IS NOT NULL
         """
         self._cursor.execute(sql, (link_id,))
         return [row[0] for row in self._cursor]

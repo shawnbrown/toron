@@ -14,20 +14,58 @@ def v020_to_v030_relation_table(
     cursor: sqlite3.Cursor, whole_space_level: bytes
 ) -> None:
     """Update 'relation' constraints for 0.2.0 to 0.3.0 migration."""
+    # Create new 'link' table (renaming 'crosswalk' -> 'link').
+    cursor.execute("""
+        CREATE TABLE main.new_link(
+            link_id INTEGER PRIMARY KEY,
+            other_unique_id TEXT NOT NULL,
+            other_filename_hint TEXT,
+            name TEXT NOT NULL,
+            description TEXT,
+            selectors TEXT_SELECTORS,
+            is_default INTEGER CHECK (is_default IS NULL OR is_default=1) DEFAULT NULL,
+            user_properties TEXT_USERPROPERTIES,
+            other_index_hash TEXT,
+            is_locally_complete INTEGER NOT NULL CHECK (is_locally_complete IN (0, 1)) DEFAULT 0,
+            UNIQUE (name, other_unique_id),
+            UNIQUE (is_default, other_unique_id)
+        );
+    """)
+    # Transfer contents from old 'crosswalk' table into new 'link' table.
+    cursor.execute("""
+        INSERT INTO main.new_link
+        SELECT
+            crosswalk_id,  /* <- link_id in new table */
+            other_unique_id,
+            other_filename_hint,
+            name,
+            description,
+            selectors,
+            is_default,
+            user_properties,
+            other_index_hash,
+            is_locally_complete
+        FROM main.crosswalk
+    """)
+
+    # Drop old 'crosswalk' table and rename new 'link' table.
+    cursor.execute('DROP TABLE main.crosswalk')
+    cursor.execute('ALTER TABLE main.new_link RENAME TO link')
+
     # Create new 'relation' table with updated constraints.
     cursor.execute("""
         CREATE TABLE main.new_relation(
             relation_id INTEGER PRIMARY KEY,
-            crosswalk_id INTEGER NOT NULL,
+            link_id INTEGER NOT NULL,
             other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = 'integer'),
             index_id INTEGER NOT NULL,
             mapping_level BLOB_BITFLAGS NOT NULL,
             relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) IN ('real', 'integer') AND relation_value >= 0.0),
             proportion REAL CHECK (proportion BETWEEN 0.0 AND 1.0 OR proportion IS NULL),
             CHECK (other_index_id != 0 OR index_id != 0),
-            FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,
+            FOREIGN KEY(link_id) REFERENCES link(link_id) ON DELETE CASCADE,
             FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
-            UNIQUE (crosswalk_id, other_index_id, index_id, mapping_level)
+            UNIQUE (link_id, other_index_id, index_id, mapping_level)
         );
     """)
 
@@ -38,7 +76,7 @@ def v020_to_v030_relation_table(
         INSERT INTO main.new_relation
         SELECT
             relation_id,
-            crosswalk_id,
+            crosswalk_id,  /* <- link_id in new table */
             other_index_id,
             index_id,
             COALESCE(mapping_level, ?),
