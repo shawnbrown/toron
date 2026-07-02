@@ -24,13 +24,24 @@ def read_from_stdin(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
     """Load quantity records read from stdin stream."""
     reader = csv.reader(args.stdin)
 
-    node.insert_quantities2(
-        value_column=args.value_column,
-        data=reader,
-        allow_invalid_label=args.allow_invalid_label,
-        allow_invalid_category=args.allow_invalid_category,
-        on_existing=args.on_existing,
-    )
+    try:
+        node.insert_quantities2(
+            value_column=args.value_column,
+            data=reader,
+            allow_invalid_label=args.allow_invalid_label,
+            allow_invalid_category=args.allow_invalid_category,
+            on_existing=args.on_existing,
+        )
+    except ValueError as err:
+        with node._managed_cursor() as (cur):
+            index_repo = node._dal.IndexRepository(cur)
+            cardinality = index_repo.get_cardinality(include_undefined=False)
+
+        if cardinality == 0:
+            applogger.warning(f'node contains no index records')
+
+        applogger.error(f'operation cancelled, {err}')
+        return ExitCode.ERR
 
     return ExitCode.OK
 
