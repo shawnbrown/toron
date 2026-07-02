@@ -90,7 +90,7 @@ def add_attribute(args: argparse.Namespace) -> ExitCode:
 
 
 def add_link(args: argparse.Namespace) -> ExitCode:
-    """Add crosswalk link between two node files."""
+    """Add link between two node files."""
     node1 = cli_bind_node(args.filepath, mode='rw')
     node2 = cli_bind_node(args.filepath2, mode='rw')
     process_backup_option(args, node1, node2)
