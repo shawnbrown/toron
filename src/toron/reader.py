@@ -75,7 +75,7 @@ class NodeReader(object):
         #    | index_id     |    +--------------+
         #    | attr_data_id |<---| attr_data_id |
         #    | quant_value  |    | attributes   |
-        #    +--------------+    | link_id |
+        #    +--------------+    | link_id      |
         #                        +--------------+
 
         connection_cm: ContextManager[sqlite3.Connection]
