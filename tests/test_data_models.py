@@ -362,7 +362,7 @@ class IndexRepositoryBaseTest(ABC):
         self.repository.add('bar', 'y')
         self.repository.add('baz', 'z')
 
-        crosswalk_repo = self.dal.CrosswalkRepository(self.cursor)
+        crosswalk_repo = self.dal.LinkRepository(self.cursor)
         relation_repo = self.dal.RelationRepository(self.cursor)
 
         # Test some missing records.
@@ -1351,7 +1351,7 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
         )
 
 
-class CrosswalkRepositoryBaseTest(ABC):
+class LinkRepositoryBaseTest(ABC):
     @property
     @abstractmethod
     def dal(self):
@@ -1365,11 +1365,11 @@ class CrosswalkRepositoryBaseTest(ABC):
         cursor = connector.acquire_cursor(self.connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.repository = self.dal.CrosswalkRepository(cursor)
+        self.repository = self.dal.LinkRepository(cursor)
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
-        self.assertTrue(issubclass(self.dal.CrosswalkRepository, BaseLinkRepository))
+        self.assertTrue(issubclass(self.dal.LinkRepository, BaseLinkRepository))
 
     def test_add_get(self):
         """Check ``add()`` and ``get()`` methods."""
@@ -1420,7 +1420,7 @@ class RelationRepositoryBaseTest(ABC):
         self.index_repo.add('bar', 'y')
         self.index_repo.add('baz', 'z')
 
-        self.crosswalk = self.dal.CrosswalkRepository(cursor)
+        self.crosswalk = self.dal.LinkRepository(cursor)
         self.repository = self.dal.RelationRepository(cursor)
 
         self.crosswalk.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
@@ -2091,7 +2091,7 @@ class QuantityRepositoryDAL1(QuantityRepositoryBaseTest, unittest.TestCase):
 class QuantityRepositoryFindByStructureBaseTest(QuantityRepositoryFindByStructureBaseTest, unittest.TestCase):
     dal = dal1
 
-class CrosswalkRepositoryDAL1(CrosswalkRepositoryBaseTest, unittest.TestCase):
+class LinkRepositoryDAL1(LinkRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class RelationRepositoryDAL1(RelationRepositoryBaseTest, unittest.TestCase):

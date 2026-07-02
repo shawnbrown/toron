@@ -153,7 +153,7 @@ class TestDeleteIndexRecord(unittest.TestCase):
         self.weight_repo.add(weight_group_id=1, index_id=1, value=1000)
         self.weight_repo.add(weight_group_id=1, index_id=2, value=2000)
 
-        self.crosswalk_repo = dal.CrosswalkRepository(cur)
+        self.crosswalk_repo = dal.LinkRepository(cur)
         self.crosswalk_repo.add('111-11-1111', None, 'other1')  # crosswalk_id 1
         self.relation_repo = dal.RelationRepository(cur)
         # Individual relations added in test cases.
@@ -599,7 +599,7 @@ class TestFindCrosswalksByNodeReference(unittest.TestCase):
 
         label_manager = dal.LabelManager(cur)
         index_repo = dal.IndexRepository(cur)
-        crosswalk_repo = dal.CrosswalkRepository(cur)
+        crosswalk_repo = dal.LinkRepository(cur)
 
         label_manager.add_columns('A', 'B')
         index_repo.add('foo', 'x')
@@ -659,7 +659,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
         self.addCleanup(lambda: trg_cm.__exit__(None, None, None))
 
         self.trg_index_repo = self.node_f._dal.IndexRepository(trg_cur)
-        self.trg_crosswalk_repo = self.node_f._dal.CrosswalkRepository(trg_cur)
+        self.trg_crosswalk_repo = self.node_f._dal.LinkRepository(trg_cur)
         self.trg_relation_repo = self.node_f._dal.RelationRepository(trg_cur)
 
         src_cm = self.node_e._managed_cursor()

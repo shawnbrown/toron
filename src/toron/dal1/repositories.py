@@ -795,7 +795,7 @@ class QuantityRepository(BaseQuantityRepository):
             yield Quantity(quant_id, loc_id, attr_id, float(val))
 
 
-class CrosswalkRepository(BaseLinkRepository):
+class LinkRepository(BaseLinkRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
         self._cursor = cursor

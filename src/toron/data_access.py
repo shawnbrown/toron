@@ -49,7 +49,7 @@ class DataAccessLayer(object):
     WeightRepository: Type[BaseWeightRepository]
     AttributeGroupRepository: Type[BaseAttributeGroupRepository]
     QuantityRepository: Type[BaseQuantityRepository]
-    CrosswalkRepository: Type[BaseLinkRepository]
+    LinkRepository: Type[BaseLinkRepository]
     RelationRepository: Type[BaseRelationRepository]
     PropertyRepository: Type[BasePropertyRepository]
     optimizations: Dict[str, Callable]
@@ -89,7 +89,7 @@ def get_data_access_layer(backend: Optional[str] = None) -> DataAccessLayer:
             WeightRepository=mod.WeightRepository,
             AttributeGroupRepository=mod.AttributeGroupRepository,
             QuantityRepository=mod.QuantityRepository,
-            CrosswalkRepository=mod.CrosswalkRepository,
+            LinkRepository=mod.LinkRepository,
             RelationRepository=mod.RelationRepository,
             PropertyRepository=mod.PropertyRepository,
             optimizations=mod.optimizations,

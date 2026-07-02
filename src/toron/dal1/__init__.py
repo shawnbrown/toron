@@ -24,7 +24,7 @@ from .repositories import (
     WeightRepository,
     AttributeGroupRepository,
     QuantityRepository,
-    CrosswalkRepository,
+    LinkRepository,
     RelationRepository,
     PropertyRepository,
 )

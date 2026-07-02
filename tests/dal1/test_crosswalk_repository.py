@@ -1,14 +1,14 @@
-"""Tests for CrosswalkRepository class."""
+"""Tests for LinkRepository class."""
 
 import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
 from toron.data_models import Link
-from toron.dal1.repositories import CrosswalkRepository
+from toron.dal1.repositories import LinkRepository
 
 
-class TestCrosswalkRepository(unittest.TestCase):
+class TestLinkRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
@@ -23,7 +23,7 @@ class TestCrosswalkRepository(unittest.TestCase):
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def test_add(self):
-        repository = CrosswalkRepository(self.cursor)
+        repository = LinkRepository(self.cursor)
 
         repository.add('111-unique-id-1111', None, 'name1', is_default=True)
         repository.add('111-unique-id-1111', None, 'name2')  # <- Same `other_unique_id`, different name.
@@ -77,7 +77,7 @@ class TestCrosswalkRepository(unittest.TestCase):
                                           'A crosswalk to some other node.', '["[foo]", "[bar]"]',
                                           1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
-        repository = CrosswalkRepository(self.cursor)
+        repository = LinkRepository(self.cursor)
 
         self.assertEqual(
             repository.get(1),
@@ -138,7 +138,7 @@ class TestCrosswalkRepository(unittest.TestCase):
                                           'A crosswalk to some other node.', '["[foo]", "[bar]"]',
                                           1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
-        repository = CrosswalkRepository(self.cursor)
+        repository = LinkRepository(self.cursor)
 
         actual = repository.get_all()
         expected = [
@@ -189,7 +189,7 @@ class TestCrosswalkRepository(unittest.TestCase):
                                           'A crosswalk to some other node.', '["[foo]", "[bar]"]',
                                           1, '{"prop1": 111}', '78b320d6dbbb48c8', 1);
         """)
-        repository = CrosswalkRepository(self.cursor)
+        repository = LinkRepository(self.cursor)
 
         # Change name (matched WHERE crosswalk_id=2, all other values are SET).
         repository.update(Link(2, '111-unique-id-1111', None, 'name-two'))
@@ -240,7 +240,7 @@ class TestCrosswalkRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (1, '111-unique-id-1111', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
         """)
-        repository = CrosswalkRepository(self.cursor)
+        repository = LinkRepository(self.cursor)
 
         repository.delete_and_cascade(1)
         self.assertRecords([(2, '111-unique-id-1111', None, 'name2', None, None, None, None, None, 0)])
@@ -260,7 +260,7 @@ class TestCrosswalkRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', NULL, 'name2', NULL, NULL, NULL, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
         """)
-        repository = CrosswalkRepository(self.cursor)
+        repository = LinkRepository(self.cursor)
 
         actual = repository.find_by_other_unique_id('111-unique-id-1111')
         expected = [
@@ -284,7 +284,7 @@ class TestCrosswalkRepository(unittest.TestCase):
             INSERT INTO crosswalk VALUES (2, '111-unique-id-1111', 'fileone.toron', 'name2', NULL, NULL, NULL, NULL, NULL, 0);
             INSERT INTO crosswalk VALUES (3, '222-unique-id-2222', NULL, 'name1', NULL, NULL, NULL, NULL, NULL, 0);
         """)
-        repository = CrosswalkRepository(self.cursor)
+        repository = LinkRepository(self.cursor)
 
         actual = repository.find_by_other_filename_hint('fileone.toron')
         expected = [

@@ -531,7 +531,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
             crosswalk = target_node._get_crosswalk(
                 source_node,
                 crosswalk_name,
-                target_node._dal.CrosswalkRepository(cur),
+                target_node._dal.LinkRepository(cur),
             )
             if not crosswalk:
                 raise Exception

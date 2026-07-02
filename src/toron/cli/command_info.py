@@ -32,7 +32,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
             structure_repo=node._dal.StructureRepository(cursor),
             weight_group_repo=node._dal.WeightGroupRepository(cursor),
             attribute_repo=attribute_repo,
-            crosswalk_repo=node._dal.CrosswalkRepository(cursor),
+            crosswalk_repo=node._dal.LinkRepository(cursor),
         )
         registered_attributes = get_registered_attributes(property_repo)
         loaded_attributes = \

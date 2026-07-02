@@ -370,7 +370,7 @@ def _get_mapping_elements(
         generator = generate_mapping_elements(
             crosswalk_name=crosswalk_name,
             trg_index_repo=target_node._dal.IndexRepository(trg_cur),
-            trg_crosswalk_repo=target_node._dal.CrosswalkRepository(trg_cur),
+            trg_crosswalk_repo=target_node._dal.LinkRepository(trg_cur),
             trg_relation_repo=target_node._dal.RelationRepository(trg_cur),
             src_index_repo=source_node._dal.IndexRepository(src_cur),
             src_prop_repo=source_node._dal.PropertyRepository(src_cur),
@@ -632,7 +632,7 @@ def _translate(
 ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
-        crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+        crosswalk_repo = node._dal.LinkRepository(cursor)
         relation_repo = node._dal.RelationRepository(cursor)
         index_repo = node._dal.IndexRepository(cursor)
 

@@ -845,7 +845,7 @@ class TestIndexColumnMethods(unittest.TestCase):
 
         with node._managed_cursor() as cursor:
             index_repo = node._dal.IndexRepository(cursor)
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
 
             index_repo.add('aaa', 'bbb')
@@ -1181,7 +1181,7 @@ class TestIndexMethods(unittest.TestCase):
         self.add_index_helper(node, data)
 
         with node._managed_cursor() as cursor:
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
 
             # Add crosswalk_id 1 and weight records.
@@ -1560,7 +1560,7 @@ class TestInsertIndex(unittest.TestCase):
         self.add_index_helper(node, data)
 
         with node._managed_cursor() as cursor:
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
 
             # Add crosswalk_id 1 and weight records.
@@ -1859,7 +1859,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
             weight_repo.add(1, 1, 175000)
             weight_repo.add(1, 2,  25000)
 
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = node._dal.RelationRepository(cursor)
             relation_repo.add(1, 1, 1, b'\xc0', 16350, 0.75)
@@ -2061,7 +2061,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
 
     def test_merging_and_is_locally_complete_status(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             relation_repo = self.node._dal.RelationRepository(cursor)
 
             # Add crosswalk_id 1 and weight records.
@@ -2222,7 +2222,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         fully_specified_level = bytes(BitFlags(1, 1))
 
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
             relation_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
@@ -2248,7 +2248,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         by re-mapping relations using their associated labels.
         """
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1')  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
             relation_repo.add(1, 1, 1, bytes(BitFlags(1, 0)), 16350, 0.75)  # <- Ambiguous relations.
@@ -2263,7 +2263,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
 
     def test_delete_and_is_locally_complete_status(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1', is_locally_complete=False)  # Adds crosswalk_id 1.
             relation_repo = self.node._dal.RelationRepository(cursor)
             relation_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 16350, 0.75)
@@ -2280,7 +2280,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         fully_specified_level = bytes(BitFlags(1, 1))
 
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'other1',
                                other_index_hash='5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
                                is_locally_complete=True)  # Adds crosswalk_id 1.
@@ -3225,12 +3225,12 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
     @staticmethod
     def get_crosswalk_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
-            repository = node._dal.CrosswalkRepository(cursor)
+            repository = node._dal.LinkRepository(cursor)
             return list(repository.get_all())
 
     def test_crosswalks_property(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-11-1111', None, 'crosswalk1')  # Add crosswalk_id 1.
             crosswalk_repo.add('222-22-2222', None, 'crosswalk2')  # Add crosswalk_id 2.
 
@@ -3265,7 +3265,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
 
     def test_get_crosswalk(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-111-1111', 'somefile', 'name1')  # Add crosswalk_id 1.
             crosswalk_repo.add('111-111-2222', 'otherfile', 'name1', is_default=True)  # Add crosswalk_id 2.
             crosswalk_repo.add('111-111-2222', 'otherfile', 'name2')  # Add crosswalk_id 3.
@@ -3369,7 +3369,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
 
     def test_edit_crosswalk(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-111-1111', 'somefile', 'name1')  # Add crosswalk_id 1.
             crosswalk_repo.add('111-111-1111', 'somefile', 'name2', is_default=True)  # Add crosswalk_id 2.
             crosswalk_repo.add('222-222-2222', 'otherfile', 'name1', is_default=True)  # Add crosswalk_id 3.
@@ -3408,7 +3408,7 @@ class TestTopoNodeCrosswalkMethods(unittest.TestCase):
 
     def test_drop_crosswalk(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             crosswalk_repo.add('111-111-1111', 'somefile', 'name1', is_default=True)  # Add crosswalk_id 1.
             crosswalk_repo.add('111-111-1111', 'somefile', 'name2', is_default=False)  # Add crosswalk_id 2.
             crosswalk_repo.add('222-222-2222', 'otherfile', 'name1', is_default=True)  # Add crosswalk_id 3.
@@ -3434,7 +3434,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
 
             # Add index columns and records.
             label_manager.add_columns('A', 'B')
@@ -3450,7 +3450,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
 
     def get_relations_helper(self):  # <- Helper function.
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             relation_repo = self.node._dal.RelationRepository(cursor)
 
             func = lambda x: relation_repo.find(crosswalk_id=x)
@@ -3600,7 +3600,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
 
     def test_insert_is_complete_status_and_hash(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
 
             data = [
                 ('other_index_id', 'index_id', 'mapping_level', 'rel1'),
@@ -3640,7 +3640,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             structure_repo = node._dal.StructureRepository(cursor)
 
             # Add index columns and records.
@@ -3894,7 +3894,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
 
     def test_insert_is_complete_status_and_hash(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
 
             data = [
                 ('other_index_id', 'rel1', 'index_id', 'mapping_level', 'A', 'B'),
@@ -3940,7 +3940,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
 
             # Add index columns and records.
@@ -4100,7 +4100,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
 
     def test_update_is_complete_status_and_hash(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
 
             # Check initial status.
             crosswalk = crosswalk_repo.get(1)
@@ -4140,7 +4140,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
 
             # Add index columns and records.
@@ -4313,7 +4313,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
 
     def test_delete_is_complete_status_and_hash(self):
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
 
             # Check initial status.
             crosswalk = crosswalk_repo.get(1)
@@ -4409,7 +4409,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             relation_repo = node._dal.RelationRepository(cursor)
             structure_repo = node._dal.StructureRepository(cursor)
 
@@ -4455,7 +4455,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
     def get_relations_helper(self):
         """Helper function to return list of all relation records."""
         with self.node._managed_cursor() as cursor:
-            crosswalk_repo = self.node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self.node._dal.LinkRepository(cursor)
             relation_repo = self.node._dal.RelationRepository(cursor)
             crosswalks = crosswalk_repo.get_all()
             get_rels = lambda id: relation_repo.find(crosswalk_id=id)
@@ -6143,7 +6143,7 @@ class TestTopoNodeRepr(unittest.TestCase):
     def test_crosswalks(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
-            crosswalk_repo = node._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = node._dal.LinkRepository(cursor)
             crosswalk_repo.add(
                 other_unique_id='111-111-1111',
                 other_filename_hint='node1.toron',

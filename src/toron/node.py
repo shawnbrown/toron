@@ -452,7 +452,7 @@ class TopoNode(object):
                 None,
             )
 
-            crosswalks = self._dal.CrosswalkRepository(cursor).get_all()
+            crosswalks = self._dal.LinkRepository(cursor).get_all()
             relation_repo = self._dal.RelationRepository(cursor)
             all_mapping_levels = set()
             for crosswalk in crosswalks:
@@ -712,7 +712,7 @@ class TopoNode(object):
                 )
 
                 # Existing crosswalks will not include newly inserted indexes.
-                crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+                crosswalk_repo = self._dal.LinkRepository(cursor)
                 for crosswalk in crosswalk_repo.get_all():
                     if crosswalk.is_locally_complete:
                         crosswalk_repo.update(replace(crosswalk, is_locally_complete=False))
@@ -812,7 +812,7 @@ class TopoNode(object):
                         group_repo.update(replace(group, is_complete=False))
 
                 # Existing crosswalks will not include newly inserted indexes.
-                crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+                crosswalk_repo = self._dal.LinkRepository(cursor)
                 for crosswalk in crosswalk_repo.get_all():
                     if crosswalk.is_locally_complete:
                         crosswalk_repo.update(replace(crosswalk, is_locally_complete=False))
@@ -939,7 +939,7 @@ class TopoNode(object):
                         group_repo.update(replace(group, is_complete=True))
 
                 # Merges may have eliminated all unrelated indexes.
-                crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+                crosswalk_repo = self._dal.LinkRepository(cursor)
                 for crosswalk in crosswalk_repo.get_all():
                     if (not crosswalk.is_locally_complete
                             and relation_repo.crosswalk_is_complete(crosswalk.id)):
@@ -972,7 +972,7 @@ class TopoNode(object):
             aux_index_repo = self._dal.IndexRepository(aux_cursor)
             weight_repo = self._dal.WeightRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
             label_manager = self._dal.LabelManager(cursor)
 
             if data:
@@ -1539,7 +1539,7 @@ class TopoNode(object):
     @property
     def crosswalks(self) -> List[Link]:
         with self._managed_cursor() as cursor:
-            return self._dal.CrosswalkRepository(cursor).get_all()
+            return self._dal.LinkRepository(cursor).get_all()
 
     @staticmethod
     def _get_crosswalk(
@@ -1597,7 +1597,7 @@ class TopoNode(object):
             crosswalk = self._get_crosswalk(
                 node_or_ref,
                 crosswalk_name,
-                self._dal.CrosswalkRepository(cursor),
+                self._dal.LinkRepository(cursor),
             )
             return crosswalk
 
@@ -1617,7 +1617,7 @@ class TopoNode(object):
         other_unique_id = node.unique_id
 
         with self._managed_transaction() as cursor:
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
 
             other_crosswalks = \
                 list(crosswalk_repo.find_by_other_unique_id(other_unique_id))
@@ -1667,7 +1667,7 @@ class TopoNode(object):
         **changes: Any,
     ) -> None:
         with self._managed_transaction() as cursor:
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
             crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
 
             if not crosswalk:
@@ -1693,7 +1693,7 @@ class TopoNode(object):
         crosswalk_name: str,
     ) -> None:
         with self._managed_transaction() as cursor:
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
             crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
                 applogger.warning(
@@ -1714,7 +1714,7 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
             label_manager = self._dal.LabelManager(cursor)
             index_repo = self._dal.IndexRepository(cursor)
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
 
             crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
@@ -1795,7 +1795,7 @@ class TopoNode(object):
         counter: Dict[str, int] = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
 
             # Get crosswalk id.
@@ -1893,7 +1893,7 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
             label_manager = self._dal.LabelManager(cursor)
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
@@ -1991,7 +1991,7 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
             label_manager = self._dal.LabelManager(cursor)
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
@@ -2128,7 +2128,7 @@ class TopoNode(object):
                 self._managed_transaction(cursor):
 
             label_manager = self._dal.LabelManager(cursor)
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
             relation_repo = self._dal.RelationRepository(cursor)
             aux_relation_repo = self._dal.RelationRepository(aux_cursor)
             index_repo = self._dal.IndexRepository(cursor)
@@ -2282,7 +2282,7 @@ class TopoNode(object):
         counter: Counter = Counter()
         with self._managed_cursor(n=2) as (cursor, aux_cursor):
             index_repo = self._dal.IndexRepository(cursor)
-            crosswalk_repo = self._dal.CrosswalkRepository(cursor)
+            crosswalk_repo = self._dal.LinkRepository(cursor)
 
             crosswalk = self._get_crosswalk(node_or_ref, crosswalk_name, crosswalk_repo)
             if not crosswalk:
@@ -3012,7 +3012,7 @@ class TopoNode(object):
                 structure_repo=self._dal.StructureRepository(cursor),
                 weight_group_repo=self._dal.WeightGroupRepository(cursor),
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
-                crosswalk_repo=self._dal.CrosswalkRepository(cursor),
+                crosswalk_repo=self._dal.LinkRepository(cursor),
             )
 
             registered_attributes = get_registered_attributes(property_repo)
