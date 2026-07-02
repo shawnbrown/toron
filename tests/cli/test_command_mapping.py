@@ -527,7 +527,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
     @staticmethod
     def get_relations(source_node, target_node, link_name):
         with target_node._managed_cursor() as cur:
-            relation_repository = target_node._dal.RelationRepository(cur)
+            relation_repository = target_node._dal.MappingRepository(cur)
             link = target_node._get_link(
                 source_node,
                 link_name,

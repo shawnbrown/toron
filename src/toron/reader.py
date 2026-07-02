@@ -284,7 +284,7 @@ class NodeReader(object):
 
         # Translate "quant_data" table to use the index of the new *node*.
         with node._managed_cursor() as node_cur:
-            relation_repo = node._dal.RelationRepository(node_cur)
+            relation_repo = node._dal.MappingRepository(node_cur)
 
             get_link_id = make_get_link_id_func(
                 ref=self._node.unique_id,

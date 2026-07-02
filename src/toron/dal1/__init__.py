@@ -25,7 +25,7 @@ from .repositories import (
     AttributeGroupRepository,
     QuantityRepository,
     LinkRepository,
-    RelationRepository,
+    MappingRepository,
     PropertyRepository,
 )
 from .optimizations import optimizations

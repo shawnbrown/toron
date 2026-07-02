@@ -483,7 +483,7 @@ def write_to_stdout(
         src_prop_repo = source_node._dal.PropertyRepository(src_cur1)
         trg_index_repo = target_node._dal.IndexRepository(trg_cur1)
         trg_link_repo = target_node._dal.LinkRepository(trg_cur1)
-        trg_relation_repo = target_node._dal.RelationRepository(trg_cur1)
+        trg_relation_repo = target_node._dal.MappingRepository(trg_cur1)
 
         src_label_names = src_index_repo.get_label_names()
         trg_label_names = trg_index_repo.get_label_names()

@@ -453,7 +453,7 @@ class TopoNode(object):
             )
 
             links = self._dal.LinkRepository(cursor).get_all()
-            relation_repo = self._dal.RelationRepository(cursor)
+            relation_repo = self._dal.MappingRepository(cursor)
             all_mapping_levels = set()
             for link in links:
                 all_mapping_levels.update(
@@ -862,7 +862,7 @@ class TopoNode(object):
 
             index_repo = self._dal.IndexRepository(cursor)
             weight_repo = self._dal.WeightRepository(cursor)
-            relation_repo = self._dal.RelationRepository(cursor)
+            relation_repo = self._dal.MappingRepository(cursor)
             label_manager = self._dal.LabelManager(cursor)
 
             label_columns = label_manager.get_columns()
@@ -971,7 +971,7 @@ class TopoNode(object):
             index_repo = self._dal.IndexRepository(cursor)
             aux_index_repo = self._dal.IndexRepository(aux_cursor)
             weight_repo = self._dal.WeightRepository(cursor)
-            relation_repo = self._dal.RelationRepository(cursor)
+            relation_repo = self._dal.MappingRepository(cursor)
             link_repo = self._dal.LinkRepository(cursor)
             label_manager = self._dal.LabelManager(cursor)
 
@@ -1042,7 +1042,7 @@ class TopoNode(object):
                             and weight_repo.weight_group_is_complete(group.id)):
                         group_repo.update(replace(group, is_complete=True))
 
-                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+                aux_relation_repo = self._dal.MappingRepository(aux_cursor)
                 for link in link_repo.get_all():
                     # Rebuild 'other_index_hash'. When all occurances of an
                     # 'other_index_id' are associated with 'index_id' values
@@ -1733,7 +1733,7 @@ class TopoNode(object):
 
             for index in index_repo.filter_by_label(criteria, include_undefined=False):
                 index_id = index.id
-                relations = self._dal.RelationRepository(aux_cursor).find(
+                relations = self._dal.MappingRepository(aux_cursor).find(
                     link_id=link.id,
                     index_id=index_id,
                 )
@@ -1796,7 +1796,7 @@ class TopoNode(object):
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
             link_repo = self._dal.LinkRepository(cursor)
-            relation_repo = self._dal.RelationRepository(cursor)
+            relation_repo = self._dal.MappingRepository(cursor)
 
             # Get link id.
             link = self._get_link(node_or_ref, link_name,
@@ -1840,7 +1840,7 @@ class TopoNode(object):
                 applogger.info(f"loaded {counter['inserted']} relations")
 
                 # Get ordered sequence of other_index_id values.
-                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+                aux_relation_repo = self._dal.MappingRepository(aux_cursor)
                 other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
                     link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
@@ -1894,7 +1894,7 @@ class TopoNode(object):
                 self._managed_transaction(cursor):
             label_manager = self._dal.LabelManager(cursor)
             link_repo = self._dal.LinkRepository(cursor)
-            relation_repo = self._dal.RelationRepository(cursor)
+            relation_repo = self._dal.MappingRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
 
@@ -1950,7 +1950,7 @@ class TopoNode(object):
 
             if counter['inserted'] and link:
                 # Get ordered sequence of other_index_id values.
-                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+                aux_relation_repo = self._dal.MappingRepository(aux_cursor)
                 other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
                     link_id,
                     ordered=True,  # <- Must be ordered for `sequence_hash`.
@@ -1992,7 +1992,7 @@ class TopoNode(object):
                 self._managed_transaction(cursor):
             label_manager = self._dal.LabelManager(cursor)
             link_repo = self._dal.LinkRepository(cursor)
-            relation_repo = self._dal.RelationRepository(cursor)
+            relation_repo = self._dal.MappingRepository(cursor)
             index_repo = self._dal.IndexRepository(cursor)
             struct_repo = self._dal.StructureRepository(cursor)
 
@@ -2060,7 +2060,7 @@ class TopoNode(object):
                     )
                     counter['inserted'] += 1
 
-            aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+            aux_relation_repo = self._dal.MappingRepository(aux_cursor)
             if counter['inserted']:
                 # Get ordered sequence of other_index_id values.
                 other_index_ids = aux_relation_repo.find_distinct_other_index_ids(
@@ -2129,8 +2129,8 @@ class TopoNode(object):
 
             label_manager = self._dal.LabelManager(cursor)
             link_repo = self._dal.LinkRepository(cursor)
-            relation_repo = self._dal.RelationRepository(cursor)
-            aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+            relation_repo = self._dal.MappingRepository(cursor)
+            aux_relation_repo = self._dal.MappingRepository(aux_cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
             link = self._get_link(node_or_ref, link_name, link_repo)
@@ -2301,7 +2301,7 @@ class TopoNode(object):
 
                 index_records = index_repo.filter_by_label(criteria)
 
-                relation_repo = self._dal.RelationRepository(aux_cursor)
+                relation_repo = self._dal.MappingRepository(aux_cursor)
                 link_id = link.id
                 for index in index_records:
                     # Eagerly fetch relations, using `list()`, so the cursor
@@ -2323,8 +2323,8 @@ class TopoNode(object):
 
             else:
                 # Reify ALL ambiguous relations in link.
-                relation_repo = self._dal.RelationRepository(cursor)
-                aux_relation_repo = self._dal.RelationRepository(aux_cursor)
+                relation_repo = self._dal.MappingRepository(cursor)
+                aux_relation_repo = self._dal.MappingRepository(aux_cursor)
 
                 for rel in relation_repo.find(link_id=link.id):
                     if rel.other_index_id == 0 and rel.index_id == 0:

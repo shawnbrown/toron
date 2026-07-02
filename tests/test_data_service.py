@@ -155,7 +155,7 @@ class TestDeleteIndexRecord(unittest.TestCase):
 
         self.link_repo = dal.LinkRepository(cur)
         self.link_repo.add('111-11-1111', None, 'other1')  # link_id 1
-        self.relation_repo = dal.RelationRepository(cur)
+        self.relation_repo = dal.MappingRepository(cur)
         # Individual relations added in test cases.
 
     def test_successful_delete(self):
@@ -660,7 +660,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
 
         self.trg_index_repo = self.node_f._dal.IndexRepository(trg_cur)
         self.trg_link_repo = self.node_f._dal.LinkRepository(trg_cur)
-        self.trg_relation_repo = self.node_f._dal.RelationRepository(trg_cur)
+        self.trg_relation_repo = self.node_f._dal.MappingRepository(trg_cur)
 
         src_cm = self.node_e._managed_cursor()
         src_cur = src_cm.__enter__()

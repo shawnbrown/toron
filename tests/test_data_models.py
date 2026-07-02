@@ -363,7 +363,7 @@ class IndexRepositoryBaseTest(ABC):
         self.repository.add('baz', 'z')
 
         link_repo = self.dal.LinkRepository(self.cursor)
-        relation_repo = self.dal.RelationRepository(self.cursor)
+        relation_repo = self.dal.MappingRepository(self.cursor)
 
         # Test some missing records.
         link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
@@ -1398,7 +1398,7 @@ class LinkRepositoryBaseTest(ABC):
             self.repository.get_by_unique_id_and_name('111-11-1111', 'blerg')
 
 
-class RelationRepositoryBaseTest(ABC):
+class MappingRepositoryBaseTest(ABC):
     @property
     @abstractmethod
     def dal(self):
@@ -1421,7 +1421,7 @@ class RelationRepositoryBaseTest(ABC):
         self.index_repo.add('baz', 'z')
 
         self.link = self.dal.LinkRepository(cursor)
-        self.repository = self.dal.RelationRepository(cursor)
+        self.repository = self.dal.MappingRepository(cursor)
 
         self.link.add('111-11-1111', None, 'other1')  # Adds link_id 1.
         self.link.add('222-22-2222', None, 'other2')  # Adds link_id 2.
@@ -1489,7 +1489,7 @@ class RelationRepositoryBaseTest(ABC):
 
     def test_inheritance(self):
         """Must inherit from appropriate abstract base class."""
-        self.assertTrue(issubclass(self.dal.RelationRepository, BaseMappingRepository))
+        self.assertTrue(issubclass(self.dal.MappingRepository, BaseMappingRepository))
 
     def test_add_type_coersion(self):
         """String values should get converted to proper types."""
@@ -2094,7 +2094,7 @@ class QuantityRepositoryFindByStructureBaseTest(QuantityRepositoryFindByStructur
 class LinkRepositoryDAL1(LinkRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
-class RelationRepositoryDAL1(RelationRepositoryBaseTest, unittest.TestCase):
+class MappingRepositoryDAL1(MappingRepositoryBaseTest, unittest.TestCase):
     dal = dal1
 
 class PropertyRepositoryDAL1(PropertyRepositoryBaseTest, unittest.TestCase):

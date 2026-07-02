@@ -1,14 +1,14 @@
-"""Tests for RelationRepository class."""
+"""Tests for MappingRepository class."""
 
 import sqlite3
 import unittest
 
 from toron.dal1.data_connector import DataConnector
 from toron.data_models import MappingRecord
-from toron.dal1.repositories import RelationRepository
+from toron.dal1.repositories import MappingRepository
 
 
-class TestRelationRepository(unittest.TestCase):
+class TestMappingRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
@@ -27,7 +27,7 @@ class TestRelationRepository(unittest.TestCase):
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def test_add(self):
-        repository = RelationRepository(self.cursor)
+        repository = MappingRepository(self.cursor)
 
         repository.add(9, 1, 1, b'\xf0',  5.0)
         repository.add(9, 1, 2, b'\xf0',  3.0, None)
@@ -68,7 +68,7 @@ class TestRelationRepository(unittest.TestCase):
             INSERT INTO relation VALUES (2, 9, 2, 3, X'F0', 3.0, 1.0);
             INSERT INTO relation VALUES (3, 9, 3, 5, X'10', 7.0, NULL);
         """)
-        repository = RelationRepository(self.cursor)
+        repository = MappingRepository(self.cursor)
 
         self.assertEqual(repository.get(1), MappingRecord(1, 9, 1, 1, b'\xf0', 5.0))
         self.assertEqual(repository.get(2), MappingRecord(2, 9, 2, 3, b'\xf0', 3.0, 1.0))
@@ -82,7 +82,7 @@ class TestRelationRepository(unittest.TestCase):
             INSERT INTO relation VALUES (2, 5, 1, 2, X'F0', 375.0, NULL);
             INSERT INTO relation VALUES (3, 5, 2, 3, X'10', 620.0, NULL);
         """)
-        repository = RelationRepository(self.cursor)
+        repository = MappingRepository(self.cursor)
 
         repository.update(MappingRecord(1, 5, 1, 1, b'\xf0', 125.0, 0.25))
         repository.update(MappingRecord(2, 5, 1, 2, b'\xf0', 375.0, 0.75))
@@ -103,7 +103,7 @@ class TestRelationRepository(unittest.TestCase):
             INSERT INTO relation VALUES (1, 5, 1, 1, X'F0', 125.0, NULL);
             INSERT INTO relation VALUES (2, 5, 1, 2, X'F0', 375.0, NULL);
         """)
-        repository = RelationRepository(self.cursor)
+        repository = MappingRepository(self.cursor)
 
         repository.delete(1)
         self.assertRecords([(2, 5, 1, 2, b'\xf0', 375.0, None)])
@@ -124,7 +124,7 @@ class TestRelationRepository(unittest.TestCase):
 
             INSERT INTO relation VALUES (1, 5, 1, 1, X'80', 125.0, NULL);
         """)
-        repository = RelationRepository(self.cursor)
+        repository = MappingRepository(self.cursor)
 
         self.assertFalse(
             repository.mapping_is_complete(link_id=5),

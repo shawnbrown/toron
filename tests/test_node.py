@@ -846,7 +846,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         with node._managed_cursor() as cursor:
             index_repo = node._dal.IndexRepository(cursor)
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.RelationRepository(cursor)
+            relation_repo = node._dal.MappingRepository(cursor)
 
             index_repo.add('aaa', 'bbb')
             link_repo.add('000-00-0000-0000', 'other_file', 'population')
@@ -1182,7 +1182,7 @@ class TestIndexMethods(unittest.TestCase):
 
         with node._managed_cursor() as cursor:
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.RelationRepository(cursor)
+            relation_repo = node._dal.MappingRepository(cursor)
 
             # Add link_id 1 and weight records.
             link_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=True)
@@ -1561,7 +1561,7 @@ class TestInsertIndex(unittest.TestCase):
 
         with node._managed_cursor() as cursor:
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.RelationRepository(cursor)
+            relation_repo = node._dal.MappingRepository(cursor)
 
             # Add link_id 1 and weight records.
             link_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=True)
@@ -1861,7 +1861,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
 
             link_repo = node._dal.LinkRepository(cursor)
             link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
-            relation_repo = node._dal.RelationRepository(cursor)
+            relation_repo = node._dal.MappingRepository(cursor)
             relation_repo.add(1, 1, 1, b'\xc0', 16350, 0.75)
             relation_repo.add(1, 1, 2, b'\xc0', 5450,  0.25)
             relation_repo.add(1, 2, 2, b'\xc0', 13050, 1.00)
@@ -2062,7 +2062,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
     def test_merging_and_is_locally_complete_status(self):
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
 
             # Add link_id 1 and weight records.
             link_repo.add('111-111-1111', 'somenode.toron', 'edge1', is_locally_complete=False)
@@ -2224,7 +2224,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
             link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
             relation_repo.add(1, 1, 2, fully_specified_level, 5450,  0.25)
             relation_repo.add(1, 2, 2, fully_specified_level, 13050, 1.00)
@@ -2250,7 +2250,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
             link_repo.add('111-11-1111', None, 'other1')  # Adds link_id 1.
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(1, 1, 1, bytes(BitFlags(1, 0)), 16350, 0.75)  # <- Ambiguous relations.
             relation_repo.add(1, 1, 2, bytes(BitFlags(1, 0)), 5450,  0.25)  # <- Ambiguous relations.
             relation_repo.add(1, 2, 2, bytes(BitFlags(1, 1)), 13050, 1.00)  # <- Fully specified.
@@ -2265,7 +2265,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
             link_repo.add('111-11-1111', None, 'other1', is_locally_complete=False)  # Adds link_id 1.
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(1, 1, 1, bytes(BitFlags(1, 1)), 16350, 0.75)
             relation_repo.add(1, 2, 1, bytes(BitFlags(1, 1)), 5450,  0.25)
 
@@ -2284,7 +2284,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             link_repo.add('111-11-1111', None, 'other1',
                                other_index_hash='5dfadd0e50910f561636c47335ecf8316251cbd85964eadb5c00103502edf177',
                                is_locally_complete=True)  # Adds link_id 1.
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(1, 1, 1, fully_specified_level, 16350, 0.75)
             relation_repo.add(1, 1, 2, fully_specified_level,  5450, 0.25)
             relation_repo.add(1, 2, 2, fully_specified_level,  7500, 1.00)
@@ -2292,7 +2292,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             link_repo.add('222-22-2222', None, 'other2',
                                other_index_hash='e3caec9886aebd933cf3f095e9ce6312744090daea159425654c09b593d6cc66',
                                is_locally_complete=False)  # Adds link_id 2.
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(2, 7, 1, fully_specified_level, 6000, 1.00)
             relation_repo.add(2, 8, 1, fully_specified_level, 9000, 0.5625)
             relation_repo.add(2, 8, 2, fully_specified_level, 7000, 0.4375)
@@ -3451,7 +3451,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
     def get_relations_helper(self):  # <- Helper function.
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
 
             func = lambda x: relation_repo.find(link_id=x)
             relation_iters = (func(x.id) for x in link_repo.get_all())
@@ -3666,7 +3666,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
     def test_select(self):
         with self.node._managed_cursor() as cursor:
             # mapping_level b'\xc0' corresponds to BitFlags(1, 1).
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
             relation_repo.add(1, other_index_id=2, index_id=2, mapping_level=b'\xc0', value=20.0)
             relation_repo.add(1, other_index_id=3, index_id=2, mapping_level=b'\xc0', value=5.0)
@@ -3705,7 +3705,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
     def test_select_with_ambiguous_mappings(self):
         with self.node._managed_cursor() as cursor:
             label_manager = self.node._dal.LabelManager(cursor)
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
 
             relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
             relation_repo.add(1, other_index_id=2, index_id=2, mapping_level=b'\xc0', value=20.0)
@@ -3731,7 +3731,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
 
         # Add relations for index_id values 0 and 1, but not for 2 or 3.
         with self.node._managed_cursor() as cursor:
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(1, other_index_id=1, index_id=1, mapping_level=b'\xc0', value=10.0)
 
         relations = self.node.select_relations('myfile', 'rel1', header=True)
@@ -3941,7 +3941,7 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.RelationRepository(cursor)
+            relation_repo = node._dal.MappingRepository(cursor)
 
             # Add index columns and records.
             label_manager.add_columns('A', 'B')
@@ -4141,7 +4141,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.RelationRepository(cursor)
+            relation_repo = node._dal.MappingRepository(cursor)
 
             # Add index columns and records.
             label_manager.add_columns('A', 'B')
@@ -4241,7 +4241,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             structure_repo.add(0.9140625, 1, 0)
             structure_repo.add(1.5859375, 1, 1)
 
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(1, 1, 2, b'\x80', 30.0, 1.00)  # relation_id 3 (bar, y)
             relation_repo.add(1, 1, 3, b'\x80', 10.0, 1.00)  # relation_id 4 (bar, z)
 
@@ -4356,7 +4356,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
             structure_repo.add(0.9140625, 1, 0)
             structure_repo.add(1.5859375, 1, 1)
 
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.add(1, 2, 1, b'\x80', 10.0, None)  # relation_id 4 (foo, x)
             relation_repo.add(1, 1, 2, b'\x80', 30.0, None)  # relation_id 5 (bar, y)
             relation_repo.add(1, 1, 3, b'\x80', 10.0, None)  # relation_id 6 (bar, z)
@@ -4380,7 +4380,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
 
         # Check deletion using criteria column not used in a mapping level.
         with self.node._managed_cursor() as cursor:
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             relation_repo.update(MappingRecord(2, 1, 2, 2, b'\x40', 20.0, 1.0))  # <- Change mapping level to `(0, 1)`.
 
         with self.assertWarns(ToronWarning) as cm:
@@ -4410,7 +4410,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
             link_repo = node._dal.LinkRepository(cursor)
-            relation_repo = node._dal.RelationRepository(cursor)
+            relation_repo = node._dal.MappingRepository(cursor)
             structure_repo = node._dal.StructureRepository(cursor)
 
             # Add index columns and records.
@@ -4456,7 +4456,7 @@ class TestTopoNodeRefiyRelations(unittest.TestCase):
         """Helper function to return list of all relation records."""
         with self.node._managed_cursor() as cursor:
             link_repo = self.node._dal.LinkRepository(cursor)
-            relation_repo = self.node._dal.RelationRepository(cursor)
+            relation_repo = self.node._dal.MappingRepository(cursor)
             links = link_repo.get_all()
             get_rels = lambda id: relation_repo.find(link_id=id)
             rels = (get_rels(link.id) for link in links)

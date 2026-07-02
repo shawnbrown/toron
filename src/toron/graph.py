@@ -170,7 +170,7 @@ def _get_mapping_stats(
         src_prop_repo = source_node._dal.PropertyRepository(src_cur)
 
         trg_index_repo = target_node._dal.IndexRepository(trg_cur)
-        trg_rel_repo = target_node._dal.RelationRepository(trg_cur)
+        trg_rel_repo = target_node._dal.MappingRepository(trg_cur)
 
         if link.other_unique_id != src_prop_repo.get('unique_id'):
             msg = 'link does not match source node'
@@ -371,7 +371,7 @@ def _get_mapping_elements(
             link_name=link_name,
             trg_index_repo=target_node._dal.IndexRepository(trg_cur),
             trg_link_repo=target_node._dal.LinkRepository(trg_cur),
-            trg_relation_repo=target_node._dal.RelationRepository(trg_cur),
+            trg_relation_repo=target_node._dal.MappingRepository(trg_cur),
             src_index_repo=source_node._dal.IndexRepository(src_cur),
             src_prop_repo=source_node._dal.PropertyRepository(src_cur),
         )
@@ -633,7 +633,7 @@ def _translate(
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
         link_repo = node._dal.LinkRepository(cursor)
-        relation_repo = node._dal.RelationRepository(cursor)
+        relation_repo = node._dal.MappingRepository(cursor)
         index_repo = node._dal.IndexRepository(cursor)
 
         # Get all links.

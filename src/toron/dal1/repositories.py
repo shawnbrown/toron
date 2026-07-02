@@ -110,8 +110,8 @@ class IndexRepository(BaseIndexRepository):
 
     def find_unmatched_index_ids(self, link_id: int) -> Iterator[int]:
         """Find index_id values missing from the specified link."""
-        # TODO: Decide if this method should be moved to RelationRepository.
-        #       Compare it to RelationRepository.mapping_is_complete().
+        # TODO: Decide if this method should be moved to MappingRepository.
+        #       Compare it to MappingRepository.mapping_is_complete().
         sql = 'SELECT EXISTS (SELECT 1 FROM main.crosswalk WHERE crosswalk_id=?)'
         self._cursor.execute(sql, (link_id,))
         link_exists = self._cursor.fetchone()[0]
@@ -976,7 +976,7 @@ class LinkRepository(BaseLinkRepository):
             yield self._make_link(record)
 
 
-class RelationRepository(BaseMappingRepository):
+class MappingRepository(BaseMappingRepository):
     def __init__(self, cursor: sqlite3.Cursor) -> None:
         """Initialize a new repository instance."""
         self._cursor = cursor
