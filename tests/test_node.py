@@ -1837,7 +1837,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
     def get_mapping_helper(node):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM relation')
+            cursor.execute('SELECT * FROM mapping')
             return cursor.fetchall()
 
     def setUp(self):
@@ -2127,7 +2127,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
     def get_mapping_helper(node):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM relation')
+            cursor.execute('SELECT * FROM mapping')
             return cursor.fetchall()
 
     @staticmethod
@@ -3427,7 +3427,7 @@ class TestTopoNodeLinkMethods(unittest.TestCase):
         self.assertEqual(self.get_link_helper(self.node), expected)
 
 
-class TestTopoNodeInsertRelations2(unittest.TestCase):
+class TestTopoNodeInsertMappings2(unittest.TestCase):
     def setUp(self):
         # Build TopoNode fixture to use in test cases.
         node = TopoNode()
@@ -3634,7 +3634,7 @@ class TestTopoNodeInsertRelations2(unittest.TestCase):
             )
 
 
-class TestTopoNodeRelationMethods(unittest.TestCase):
+class TestTopoNodeMappingMethods(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:
@@ -3660,7 +3660,7 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
     def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM relation')
+            cursor.execute('SELECT * FROM mapping')
             return cursor.fetchall()
 
     def test_select(self):
@@ -3928,11 +3928,11 @@ class TestTopoNodeRelationMethods(unittest.TestCase):
             )
 
 
-class TestTopoNodeUpdateRelations(unittest.TestCase):
+class TestTopoNodeUpdateMappings(unittest.TestCase):
     def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM relation')
+            cursor.execute('SELECT * FROM mapping')
             return cursor.fetchall()
 
     def setUp(self):
@@ -4128,11 +4128,11 @@ class TestTopoNodeUpdateRelations(unittest.TestCase):
             )
 
 
-class TestTopoNodeDeleteRelations(unittest.TestCase):
+class TestTopoNodeDeleteMappings(unittest.TestCase):
     def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
-            cursor.execute('SELECT * FROM relation')
+            cursor.execute('SELECT * FROM mapping')
             return cursor.fetchall()
 
     def setUp(self):
@@ -4403,7 +4403,7 @@ class TestTopoNodeDeleteRelations(unittest.TestCase):
         self.assertEqual(self.get_mappings_helper(), expected)
 
 
-class TestTopoNodeRefiyRelations(unittest.TestCase):
+class TestTopoNodeRefiyMappings(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         with node._managed_cursor() as cursor:

@@ -386,7 +386,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             results = cur.execute('SELECT other_filename_hint FROM link').fetchone()
             self.assertEqual(results, ('file1',))
 
-            results = cur.execute('SELECT * FROM relation').fetchall()
+            results = cur.execute('SELECT * FROM mapping').fetchall()
             expected = [
                 (1,  1, 1, 1, b'\xe0',  25.0, 0.5),
                 (2,  1, 1, 2, b'\xe0',  25.0, 0.5),
@@ -431,7 +431,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
         )
 
         with self.node2._managed_cursor() as cur:
-            results = cur.execute('SELECT * FROM relation').fetchall()
+            results = cur.execute('SELECT * FROM mapping').fetchall()
             expected = [
                 (1,  1, 1, 1, b'\xc0', 12.5,    0.25),
                 (2,  1, 1, 2, b'\xc0', 37.5,    0.75),
@@ -487,7 +487,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
 
         # Check left-to-right mappings (node2 -> node1).
         with self.node1._managed_cursor() as cur:
-            results = cur.execute('SELECT * FROM relation').fetchall()
+            results = cur.execute('SELECT * FROM mapping').fetchall()
             expected = [
                 (1, 1, 1, 1, b'\xe0', 12.5, 1.0),
                 (2, 1, 2, 1, b'\xe0', 37.5, 1.0),
@@ -500,7 +500,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
 
         # Check right-to-left mappings (node1 -> node2).
         with self.node2._managed_cursor() as cur:
-            results = cur.execute('SELECT * FROM relation').fetchall()
+            results = cur.execute('SELECT * FROM mapping').fetchall()
             expected = [
                 (1, 1, 1, 1, b'\xc0', 12.5, 0.25),
                 (2, 1, 1, 2, b'\xc0', 37.5, 0.75),
@@ -545,7 +545,7 @@ class TestLoadMapping(TwoNodesBaseTestCase):
         )
 
         with self.node2._managed_cursor() as cur:
-            results = cur.execute('SELECT * FROM relation').fetchall()
+            results = cur.execute('SELECT * FROM mapping').fetchall()
             expected = [
                 (1,  1, 1, 1, b'\xe0',  25.0, 0.5),
                 (2,  1, 1, 2, b'\xe0',  25.0, 0.5),

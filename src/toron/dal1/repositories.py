@@ -122,7 +122,7 @@ class IndexRepository(BaseIndexRepository):
         sql = """
             SELECT index_id FROM main.node_index WHERE index_id != 0
             EXCEPT
-            SELECT index_id FROM main.relation WHERE link_id = ?
+            SELECT index_id FROM main.mapping WHERE link_id = ?
         """
         self._cursor.execute(sql, (link_id,))
         return (row[0] for row in self._cursor)
@@ -1003,11 +1003,11 @@ class MappingRepository(BaseMappingRepository):
                 raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
 
             sql = """
-                INSERT INTO main.relation (
+                INSERT INTO main.mapping (
                     link_id,
                     other_index_id,
                     index_id,
-                    relation_value,
+                    mapping_value,
                     mapping_level,
                     proportion
                 )
@@ -1047,11 +1047,11 @@ class MappingRepository(BaseMappingRepository):
                 raise TypeError(f'mapping_level must be bytes, got {mapping_level!r}')
 
             sql = """
-                INSERT INTO main.relation (
+                INSERT INTO main.mapping (
                     link_id,
                     other_index_id,
                     index_id,
-                    relation_value,
+                    mapping_value,
                     mapping_level,
                     proportion
                 )
@@ -1073,7 +1073,7 @@ class MappingRepository(BaseMappingRepository):
         If no mapping matches the given *id*, a ``KeyError`` is raised.
         """
         self._cursor.execute(
-            'SELECT * FROM main.relation WHERE relation_id=?', (id,)
+            'SELECT * FROM main.mapping WHERE mapping_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record is None:
@@ -1084,14 +1084,14 @@ class MappingRepository(BaseMappingRepository):
         def update(self, record: MappingRecord) -> None:
             """Update a record in the repository."""
             sql = f"""
-                UPDATE main.relation
+                UPDATE main.mapping
                 SET link_id=?,
                     other_index_id=?,
                     index_id=?,
                     mapping_level=?,
-                    relation_value=?,
+                    mapping_value=?,
                     proportion=?
-                WHERE relation_id=?
+                WHERE mapping_id=?
             """
             parameters = (
                 record.link_id,
@@ -1110,14 +1110,14 @@ class MappingRepository(BaseMappingRepository):
         def update(self, record: MappingRecord) -> None:
             """Update a record in the repository."""
             sql = f"""
-                UPDATE main.relation
+                UPDATE main.mapping
                 SET link_id=?,
                     other_index_id=?,
                     index_id=?,
                     mapping_level=?,
-                    relation_value=?,
+                    mapping_value=?,
                     proportion=?
-                WHERE relation_id=?
+                WHERE mapping_id=?
             """
             parameters = (
                 record.link_id,
@@ -1133,7 +1133,7 @@ class MappingRepository(BaseMappingRepository):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
-            'DELETE FROM main.relation WHERE relation_id=?', (id,)
+            'DELETE FROM main.mapping WHERE mapping_id=?', (id,)
         )
 
     def find_distinct_other_index_ids(
@@ -1147,7 +1147,7 @@ class MappingRepository(BaseMappingRepository):
         """
         sql = f"""
             SELECT DISTINCT other_index_id
-            FROM main.relation
+            FROM main.mapping
             WHERE link_id=? AND other_index_id > 0
             {'ORDER BY other_index_id' if ordered else ''}
         """
@@ -1180,7 +1180,7 @@ class MappingRepository(BaseMappingRepository):
             criteria.append('index_id=:index_id')
 
         if criteria:
-            sql = f'SELECT * FROM main.relation WHERE {" AND ".join(criteria)}'
+            sql = f'SELECT * FROM main.mapping WHERE {" AND ".join(criteria)}'
             parameters = {
                 'link_id': link_id,
                 'other_index_id': other_index_id,
@@ -1197,7 +1197,7 @@ class MappingRepository(BaseMappingRepository):
         """Return the count of unique index_id values in the link."""
         sql = (
             'SELECT COUNT(DISTINCT index_id)\n'
-            'FROM main.relation\n'
+            'FROM main.mapping\n'
             'WHERE link_id=? AND index_id != 0'
         )
 
@@ -1215,10 +1215,10 @@ class MappingRepository(BaseMappingRepository):
             """
                 -- Determine if index_id set is complete (no missing records).
                 SELECT NOT EXISTS (
-                    -- Select index_id values not in link's relations.
+                    -- Select index_id values not in link's mappings.
                     SELECT index_id FROM main.node_index WHERE index_id != 0
                     EXCEPT
-                    SELECT index_id FROM main.relation WHERE link_id = ?
+                    SELECT index_id FROM main.mapping WHERE link_id = ?
                 )
             """,
             (link_id,),
@@ -1230,7 +1230,7 @@ class MappingRepository(BaseMappingRepository):
         """Return a list of distinct mapping levels used by a link."""
         sql = """
             SELECT DISTINCT mapping_level
-            FROM main.relation
+            FROM main.mapping
             WHERE link_id=? AND mapping_level IS NOT NULL
         """
         self._cursor.execute(sql, (link_id,))

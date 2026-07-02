@@ -22,7 +22,7 @@ class TestMappingRepository(unittest.TestCase):
         self.addCleanup(lambda: self.cursor.execute('PRAGMA foreign_keys=ON'))
 
     def assertRecords(self, expected_records, msg=None):
-        self.cursor.execute(f'SELECT * FROM relation')
+        self.cursor.execute(f'SELECT * FROM mapping')
         actual_records = self.cursor.fetchall()
         self.assertEqual(actual_records, expected_records, msg=msg)
 
@@ -64,9 +64,9 @@ class TestMappingRepository(unittest.TestCase):
 
     def test_get(self):
         self.cursor.executescript("""
-            INSERT INTO relation VALUES (1, 9, 1, 1, X'F0', 5.0, NULL);
-            INSERT INTO relation VALUES (2, 9, 2, 3, X'F0', 3.0, 1.0);
-            INSERT INTO relation VALUES (3, 9, 3, 5, X'10', 7.0, NULL);
+            INSERT INTO mapping VALUES (1, 9, 1, 1, X'F0', 5.0, NULL);
+            INSERT INTO mapping VALUES (2, 9, 2, 3, X'F0', 3.0, 1.0);
+            INSERT INTO mapping VALUES (3, 9, 3, 5, X'10', 7.0, NULL);
         """)
         repository = MappingRepository(self.cursor)
 
@@ -78,9 +78,9 @@ class TestMappingRepository(unittest.TestCase):
 
     def test_update(self):
         self.cursor.executescript("""
-            INSERT INTO relation VALUES (1, 5, 1, 1, X'F0', 125.0, NULL);
-            INSERT INTO relation VALUES (2, 5, 1, 2, X'F0', 375.0, NULL);
-            INSERT INTO relation VALUES (3, 5, 2, 3, X'10', 620.0, NULL);
+            INSERT INTO mapping VALUES (1, 5, 1, 1, X'F0', 125.0, NULL);
+            INSERT INTO mapping VALUES (2, 5, 1, 2, X'F0', 375.0, NULL);
+            INSERT INTO mapping VALUES (3, 5, 2, 3, X'10', 620.0, NULL);
         """)
         repository = MappingRepository(self.cursor)
 
@@ -96,12 +96,12 @@ class TestMappingRepository(unittest.TestCase):
         self.assertRecords(expected)
 
         repository.update(MappingRecord(4, 5, 3, 4, b'\xf0', 570.0, 1.0))
-        self.assertRecords(expected, msg='should be unchanged, no relation_id=4')
+        self.assertRecords(expected, msg='should be unchanged, no mapping_id=4')
 
     def test_delete(self):
         self.cursor.executescript("""
-            INSERT INTO relation VALUES (1, 5, 1, 1, X'F0', 125.0, NULL);
-            INSERT INTO relation VALUES (2, 5, 1, 2, X'F0', 375.0, NULL);
+            INSERT INTO mapping VALUES (1, 5, 1, 1, X'F0', 125.0, NULL);
+            INSERT INTO mapping VALUES (2, 5, 1, 2, X'F0', 375.0, NULL);
         """)
         repository = MappingRepository(self.cursor)
 
@@ -111,7 +111,7 @@ class TestMappingRepository(unittest.TestCase):
         repository.delete(2)
         self.assertRecords([])
 
-        repository.delete(3)  # No relation_id=3, should pass without error.
+        repository.delete(3)  # No mapping_id=3, should pass without error.
         self.assertRecords([])
 
     def test_mapping_is_complete(self):
@@ -122,7 +122,7 @@ class TestMappingRepository(unittest.TestCase):
             INSERT INTO node_index VALUES (1, 'foo');
             INSERT INTO node_index VALUES (2, 'bar');
 
-            INSERT INTO relation VALUES (1, 5, 1, 1, X'80', 125.0, NULL);
+            INSERT INTO mapping VALUES (1, 5, 1, 1, X'80', 125.0, NULL);
         """)
         repository = MappingRepository(self.cursor)
 
@@ -132,7 +132,7 @@ class TestMappingRepository(unittest.TestCase):
         )
 
         # Add a mapping that matches to index_id 2.
-        self.cursor.execute("INSERT INTO relation VALUES (2, 5, 1, 2, X'80', 375.0, NULL)")
+        self.cursor.execute("INSERT INTO mapping VALUES (2, 5, 1, 2, X'80', 375.0, NULL)")
         self.assertTrue(
             repository.mapping_is_complete(link_id=5),
             msg='Mapping is complete, should return True.'

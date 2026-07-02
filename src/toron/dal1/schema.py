@@ -13,14 +13,14 @@ the application layer:
                                        <Other Node> ••••••••
                                                            •  +--------------------+
                                     +----------------+     •  | attribute_group    |
-    +----------------------+        | relation       |     •  +--------------------+
+    +----------------------+        | mapping        |     •  +--------------------+
     | link                 |        +----------------+     •  | attribute_group_id |--+
-    +----------------------+        | relation_id    |     •  | attributes         |  |
+    +----------------------+        | mapping_id     |     •  | attributes         |  |
     | link_id              |------->| link_id        |     •  +--------------------+  |
     | other_unique_id      |  ••••••| other_index_id |<•••••                          |
     | other_filename_hint  |  •  •••| index_id       |<-+     +--------------------+  |
     | name                 |  •  •  | mapping_level* |  |     | quantity           |  |
-    | description          |  •  •  | relation_value |  |     +--------------------+  |
+    | description          |  •  •  | mapping_value  |  |     +--------------------+  |
     | selectors            |  •  •  | proportion*    |  |     | quantity_id        |  |
     | is_default           |  •  •  +----------------+  |  +->| _location_id       |  |
     | user_properties      |  •  •                      |  |  | attribute_group_id |<-+
@@ -194,13 +194,13 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             UNIQUE (is_default, other_unique_id)
         );
 
-        CREATE TABLE main.relation(
-            relation_id INTEGER PRIMARY KEY,
+        CREATE TABLE main.mapping(
+            mapping_id INTEGER PRIMARY KEY,
             link_id INTEGER NOT NULL,
             other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = 'integer'),
             index_id INTEGER NOT NULL,
             mapping_level BLOB_BITFLAGS NOT NULL,
-            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) IN ('real', 'integer') AND relation_value >= 0.0),
+            mapping_value REAL NOT NULL CHECK (TYPEOF(mapping_value) IN ('real', 'integer') AND mapping_value >= 0.0),
             proportion REAL CHECK (proportion BETWEEN 0.0 AND 1.0 OR proportion IS NULL),
             CHECK (other_index_id != 0 OR index_id != 0),
             FOREIGN KEY(link_id) REFERENCES link(link_id) ON DELETE CASCADE,
@@ -413,7 +413,7 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
             'node_index',
             'property',
             'quantity',
-            'relation',
+            'mapping',
             'structure',
             'weight',
             'weight_group',

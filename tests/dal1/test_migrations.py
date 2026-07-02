@@ -257,14 +257,14 @@ class TestApplyMigrations(unittest.TestCase):
 
         self.cur.execute("""
             SELECT
-                relation_id,
+                mapping_id,  /* <- New column name (was relation_id). */
                 link_id,  /* <- New column name (was crosswalk_id). */
                 other_index_id,
                 index_id,
                 mapping_level,
-                relation_value,
+                mapping_value,  /* <- New column name (was relation_value). */
                 proportion REAL
-            FROM main.relation
+            FROM main.mapping  /* <- New table name (was main.relation). */
         """)
         self.assertEqual(
             set(self.cur.fetchall()),
@@ -353,7 +353,7 @@ class TestApplyMigrations(unittest.TestCase):
         self.cur.execute("SELECT value from property where key='registered_attributes'")
         self.assertEqual(self.cur.fetchone()[0], '["category"]')
 
-        self.cur.execute('SELECT * FROM relation')
+        self.cur.execute('SELECT * FROM mapping')
         self.assertEqual(
             set(self.cur.fetchall()),
             {                                      # <- removed undefined-to-undefined.

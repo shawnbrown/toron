@@ -1439,7 +1439,7 @@ class MappingRepositoryBaseTest(ABC):
 
     def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
-        cur = self.connection.execute('SELECT * FROM main.relation')
+        cur = self.connection.execute('SELECT * FROM main.mapping')
         return set(cur.fetchall())
 
     def test_mapping_post_init(self):

@@ -64,7 +64,7 @@ class TestCreateNodeSchema(unittest.TestCase):
             'node_index',
             'property',
             'quantity',
-            'relation',
+            'mapping',
             'structure',
             'weight',
             'weight_group',
@@ -756,9 +756,9 @@ class TestRegisteredConverters(unittest.TestCase):
                 VALUES (1);
             INSERT INTO link (link_id, name, other_unique_id)
                 VALUES (1, 'name', '11-1-11');
-            INSERT INTO relation (link_id, other_index_id, index_id, relation_value, mapping_level)
+            INSERT INTO mapping (link_id, other_index_id, index_id, mapping_value, mapping_level)
                 VALUES (1, 1, 1, 25.0, X'A0');
         """)
-        cur.execute('SELECT mapping_level FROM relation')
+        cur.execute('SELECT mapping_level FROM mapping')
         #self.assertEqual(cur.fetchall(), [(BitFlags(1, 0, 1),)])
         self.assertEqual(cur.fetchall(), [(b'\xa0',)])

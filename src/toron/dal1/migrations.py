@@ -13,7 +13,12 @@ from toron._utils import BitFlags
 def v020_to_v030_relation_table(
     cursor: sqlite3.Cursor, whole_space_level: bytes
 ) -> None:
-    """Update 'relation' constraints for 0.2.0 to 0.3.0 migration."""
+    """Update 'link' and 'mapping' tables for 0.2.0 to 0.3.0 migration.
+
+    In version 0.3.0, the old 'crosswalk' table is renamed 'link'
+    and 'relation' is renamed 'mapping'. In addition, the 'mapping'
+    (formerly 'relation') constraints and updated.
+    """
     # Create new 'link' table (renaming 'crosswalk' -> 'link').
     cursor.execute("""
         CREATE TABLE main.new_link(
@@ -52,15 +57,15 @@ def v020_to_v030_relation_table(
     cursor.execute('DROP TABLE main.crosswalk')
     cursor.execute('ALTER TABLE main.new_link RENAME TO link')
 
-    # Create new 'relation' table with updated constraints.
+    # Create new 'mapping' table with updated constraints.
     cursor.execute("""
-        CREATE TABLE main.new_relation(
-            relation_id INTEGER PRIMARY KEY,
+        CREATE TABLE main.new_mapping(
+            mapping_id INTEGER PRIMARY KEY,
             link_id INTEGER NOT NULL,
             other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = 'integer'),
             index_id INTEGER NOT NULL,
             mapping_level BLOB_BITFLAGS NOT NULL,
-            relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) IN ('real', 'integer') AND relation_value >= 0.0),
+            mapping_value REAL NOT NULL CHECK (TYPEOF(mapping_value) IN ('real', 'integer') AND mapping_value >= 0.0),
             proportion REAL CHECK (proportion BETWEEN 0.0 AND 1.0 OR proportion IS NULL),
             CHECK (other_index_id != 0 OR index_id != 0),
             FOREIGN KEY(link_id) REFERENCES link(link_id) ON DELETE CASCADE,
@@ -69,27 +74,26 @@ def v020_to_v030_relation_table(
         );
     """)
 
-    # Transfer contents into new 'relation' table making sure to omit
+    # Transfer contents into new 'mapping' table making sure to omit
     # any undefined-to-undefined records (0 -> 0) and also replace NULL
     # mapping_level values with "whole space" bytes.
     cursor.execute("""
-        INSERT INTO main.new_relation
+        INSERT INTO main.new_mapping
         SELECT
-            relation_id,
+            relation_id,  /* <- mapping_id in new table */
             crosswalk_id,  /* <- link_id in new table */
             other_index_id,
             index_id,
             COALESCE(mapping_level, ?),
-            relation_value,
+            relation_value,  /* <- mapping_value in new table */
             proportion
         FROM main.relation
         WHERE NOT (other_index_id = 0 AND index_id = 0);
     """, (whole_space_level,))
 
-    # Drop old 'relation' table and rename new table.
+    # Drop old 'relation' table and rename new 'mapping' table.
     cursor.execute('DROP TABLE main.relation')
-    cursor.execute('ALTER TABLE main.new_relation RENAME TO relation')
-
+    cursor.execute('ALTER TABLE main.new_mapping RENAME TO mapping')
 
 def v020_to_v030_quantity_table(cursor: sqlite3.Cursor) -> None:
     """Update 'quantity' table and values for 0.2.0 to 0.3.0 migration."""
