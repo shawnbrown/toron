@@ -10,16 +10,9 @@ from . import schema
 from toron._utils import BitFlags
 
 
-def v020_to_v030_relation_table(
-    cursor: sqlite3.Cursor, whole_space_level: bytes
-) -> None:
-    """Update 'link' and 'mapping' tables for 0.2.0 to 0.3.0 migration.
-
-    In version 0.3.0, the old 'crosswalk' table is renamed 'link'
-    and 'relation' is renamed 'mapping'. In addition, the 'mapping'
-    (formerly 'relation') constraints and updated.
-    """
-    # Create new 'link' table (renaming 'crosswalk' -> 'link').
+def v020_to_v030_step01_link_table(cursor: sqlite3.Cursor) -> None:
+    """Update 'link' tables for 0.2.0 to 0.3.0 migration."""
+    # Rename table and columns 'crosswalk' -> 'link'.
     cursor.execute("""
         CREATE TABLE main.new_link(
             link_id INTEGER PRIMARY KEY,
@@ -57,7 +50,11 @@ def v020_to_v030_relation_table(
     cursor.execute('DROP TABLE main.crosswalk')
     cursor.execute('ALTER TABLE main.new_link RENAME TO link')
 
-    # Create new 'mapping' table with updated constraints.
+def v020_to_v030_step02_relation_table(
+    cursor: sqlite3.Cursor, whole_space_level: bytes
+) -> None:
+    """Update 'mapping' tables for 0.2.0 to 0.3.0 migration."""
+    # Rename table and columns 'relation' -> 'mapping'.
     cursor.execute("""
         CREATE TABLE main.new_mapping(
             mapping_id INTEGER PRIMARY KEY,
@@ -95,7 +92,8 @@ def v020_to_v030_relation_table(
     cursor.execute('DROP TABLE main.relation')
     cursor.execute('ALTER TABLE main.new_mapping RENAME TO mapping')
 
-def v020_to_v030_quantity_table(cursor: sqlite3.Cursor) -> None:
+
+def v020_to_v030_step03_quantity_table(cursor: sqlite3.Cursor) -> None:
     """Update 'quantity' table and values for 0.2.0 to 0.3.0 migration."""
     # Create new 'quantity' table with a UNIQUE constraint.
     cursor.execute("""
@@ -128,7 +126,7 @@ def v020_to_v030_quantity_table(cursor: sqlite3.Cursor) -> None:
     cursor.execute('ALTER TABLE main.new_quantity RENAME TO quantity')
 
 
-def v020_to_v030_properties(cursor: sqlite3.Cursor) -> None:
+def v020_to_v030_step04_properties(cursor: sqlite3.Cursor) -> None:
     """Update 'property' values for 0.2.0 to 0.3.0 migration."""
     # Update domain (change `dict` to `str`).
     cursor.execute("SELECT value FROM main.property WHERE key='domain'")
@@ -218,9 +216,10 @@ def apply_migrations(
 
         # Apply migrations.
         if toron_schema_version in {'0.2.0', '"0.2.0"'}:
-            v020_to_v030_relation_table(cursor, whole_space_level)
-            v020_to_v030_quantity_table(cursor)
-            v020_to_v030_properties(cursor)
+            v020_to_v030_step01_link_table(cursor)
+            v020_to_v030_step02_relation_table(cursor, whole_space_level)
+            v020_to_v030_step03_quantity_table(cursor)
+            v020_to_v030_step04_properties(cursor)
 
         # Check integrity, re-create constraints, and commit transaction.
         schema.verify_foreign_key_check(cursor)

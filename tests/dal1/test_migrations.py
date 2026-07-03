@@ -3,9 +3,15 @@ import sqlite3
 import unittest
 
 from toron.dal1.migrations import (
-    v020_to_v030_relation_table,
-    v020_to_v030_quantity_table,
-    v020_to_v030_properties,
+    v020_to_v030_step01_link_table,
+    v020_to_v030_step02_relation_table,
+    v020_to_v030_step03_quantity_table,
+    v020_to_v030_step04_properties,
+
+
+    #v020_to_v030_relation_table,
+    #v020_to_v030_quantity_table,
+    #v020_to_v030_properties,
     apply_migrations,
 )
 
@@ -179,7 +185,7 @@ class TestApplyMigrations(unittest.TestCase):
         self.cur.execute('PRAGMA foreign_keys=OFF')
         self.addCleanup(lambda: self.cur.execute('PRAGMA foreign_keys=ON'))
 
-    def test_v020_to_v030_relation(self):
+    def test_v020_to_v030_step01_link_table(self):
         self.cur.executescript("""
             /* Create old style (version 0.2.0) 'crosswalk' table. */
             CREATE TABLE crosswalk(
@@ -206,30 +212,9 @@ class TestApplyMigrations(unittest.TestCase):
                 'b78d268304863017119b485a6f58007a5df9c1368a85e460cc3d86480c4a58eb',
                 1
             );
-
-            /* Create old style (version 0.2.0) 'relation' table. */
-            CREATE TABLE relation(
-                relation_id INTEGER PRIMARY KEY,
-                crosswalk_id INTEGER,
-                other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = "integer"),
-                index_id INTEGER,
-                mapping_level BLOB_BITFLAGS,
-                relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) = "real" AND 0.0 <= relation_value),
-                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
-                FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,
-                FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
-                UNIQUE (crosswalk_id, other_index_id, index_id)
-            );
-            INSERT INTO main.relation VALUES(1, 1, 0, 0,  NULL,  0.0, 1.0);
-            INSERT INTO main.relation VALUES(2, 1, 1, 1, X'E0', 10.0, 1.0);
-            INSERT INTO main.relation VALUES(3, 1, 2, 1,  NULL, 70.0, 1.0);
-            INSERT INTO main.relation VALUES(4, 1, 3, 2,  NULL, 20.0, 1.0);
-            INSERT INTO main.relation VALUES(5, 1, 4, 2, X'C0', 60.0, 1.0);
-            INSERT INTO main.relation VALUES(6, 1, 5, 3, X'C0', 30.0, 1.0);
-            INSERT INTO main.relation VALUES(7, 1, 6, 3, X'80', 50.0, 1.0);
         """)
 
-        v020_to_v030_relation_table(self.cur, whole_space_level=b'\xe0')  # <- Function under test.
+        v020_to_v030_step01_link_table(self.cur)  # <- Function under test.
 
         self.cur.execute("""
             SELECT
@@ -255,6 +240,32 @@ class TestApplyMigrations(unittest.TestCase):
             },
         )
 
+    def test_v020_to_v030_step02_relation_table(self):
+        self.cur.executescript("""
+            /* Create old style (version 0.2.0) 'relation' table. */
+            CREATE TABLE relation(
+                relation_id INTEGER PRIMARY KEY,
+                crosswalk_id INTEGER,
+                other_index_id INTEGER NOT NULL CHECK (TYPEOF(other_index_id) = "integer"),
+                index_id INTEGER,
+                mapping_level BLOB_BITFLAGS,
+                relation_value REAL NOT NULL CHECK (TYPEOF(relation_value) = "real" AND 0.0 <= relation_value),
+                proportion REAL CHECK (0.0 <= proportion AND proportion <= 1.0),
+                FOREIGN KEY(crosswalk_id) REFERENCES crosswalk(crosswalk_id) ON DELETE CASCADE,
+                FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
+                UNIQUE (crosswalk_id, other_index_id, index_id)
+            );
+            INSERT INTO main.relation VALUES(1, 1, 0, 0,  NULL,  0.0, 1.0);
+            INSERT INTO main.relation VALUES(2, 1, 1, 1, X'E0', 10.0, 1.0);
+            INSERT INTO main.relation VALUES(3, 1, 2, 1,  NULL, 70.0, 1.0);
+            INSERT INTO main.relation VALUES(4, 1, 3, 2,  NULL, 20.0, 1.0);
+            INSERT INTO main.relation VALUES(5, 1, 4, 2, X'C0', 60.0, 1.0);
+            INSERT INTO main.relation VALUES(6, 1, 5, 3, X'C0', 30.0, 1.0);
+            INSERT INTO main.relation VALUES(7, 1, 6, 3, X'80', 50.0, 1.0);
+        """)
+
+        v020_to_v030_step02_relation_table(self.cur, whole_space_level=b'\xe0')  # <- Function under test.
+
         self.cur.execute("""
             SELECT
                 mapping_id,  /* <- New column name (was relation_id). */
@@ -278,7 +289,7 @@ class TestApplyMigrations(unittest.TestCase):
             },
         )
 
-    def test_v020_to_v030_quantity(self):
+    def test_v020_to_v030_step03_quantity_table(self):
         self.cur.executescript("""
             /* Create old style (version 0.2.0) 'quantity' table. */
             CREATE TABLE quantity(
@@ -296,7 +307,7 @@ class TestApplyMigrations(unittest.TestCase):
             INSERT INTO "quantity" VALUES(5, 1, 2, 10);
         """)
 
-        v020_to_v030_quantity_table(self.cur)  # <- Function under test.
+        v020_to_v030_step03_quantity_table(self.cur)  # <- Function under test.
 
         self.cur.execute('SELECT * FROM quantity')
         self.assertEqual(
@@ -310,7 +321,7 @@ class TestApplyMigrations(unittest.TestCase):
             },
         )
 
-    def test_v020_to_v030_properties(self):
+    def test_v020_to_v030_step04_properties(self):
         self.cur.executescript("""
             CREATE TABLE attribute_group(
                 attribute_group_id INTEGER PRIMARY KEY,
@@ -328,7 +339,7 @@ class TestApplyMigrations(unittest.TestCase):
             INSERT INTO "property" VALUES('domain', '{"domain": "foo_bar"}');
         """)
 
-        v020_to_v030_properties(self.cur)  # <- Function under test.
+        v020_to_v030_step04_properties(self.cur)  # <- Function under test.
 
         self.cur.execute("SELECT value from property where key='toron_schema_version'")
         self.assertEqual(self.cur.fetchone()[0], '"0.3.0"')
