@@ -116,11 +116,11 @@ class TestMappingRepository(unittest.TestCase):
 
     def test_mapping_is_complete(self):
         self.cursor.executescript("""
-            ALTER TABLE main.node_index ADD COLUMN
+            ALTER TABLE main.label_index ADD COLUMN
                 A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
 
-            INSERT INTO node_index VALUES (1, 'foo');
-            INSERT INTO node_index VALUES (2, 'bar');
+            INSERT INTO label_index VALUES (1, 'foo');
+            INSERT INTO label_index VALUES (2, 'bar');
 
             INSERT INTO mapping VALUES (1, 5, 1, 1, X'80', 125.0, NULL);
         """)

@@ -115,11 +115,11 @@ class TestWeightRepository(unittest.TestCase):
         repository = WeightRepository(self.cursor)
 
         self.cursor.executescript("""
-            ALTER TABLE main.node_index ADD COLUMN
+            ALTER TABLE main.label_index ADD COLUMN
                 A TEXT NOT NULL CHECK (A != '') DEFAULT '-';
 
-            INSERT INTO node_index VALUES (1, 'foo');
-            INSERT INTO node_index VALUES (2, 'bar');
+            INSERT INTO label_index VALUES (1, 'foo');
+            INSERT INTO label_index VALUES (2, 'bar');
 
             INSERT INTO weight VALUES (1, 1, 1, 3.0);
         """)

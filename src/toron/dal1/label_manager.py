@@ -30,8 +30,8 @@ class LabelManager(BaseLabelManager):
 
         for column in chain([column], columns):
             self._cursor.execute(f"""
-                ALTER TABLE main.node_index ADD COLUMN
-                    {schema.column_def_node_index(column)}
+                ALTER TABLE main.label_index ADD COLUMN
+                    {schema.column_def_label_index(column)}
             """)
             self._cursor.execute(f"""
                 ALTER TABLE main.location ADD COLUMN
@@ -46,7 +46,7 @@ class LabelManager(BaseLabelManager):
 
     def get_columns(self) -> Tuple[str, ...]:
         """Get a tuple of label column names."""
-        self._cursor.execute(f"PRAGMA main.table_info('node_index')")
+        self._cursor.execute(f"PRAGMA main.table_info('label_index')")
         columns = tuple(row[1] for row in self._cursor.fetchall())
         return columns[1:]  # Return columns (slicing-off index_id).
 
@@ -64,7 +64,7 @@ class LabelManager(BaseLabelManager):
 
         for name, new_name in mapping.items():
             self._cursor.execute(f"""
-                ALTER TABLE main.node_index
+                ALTER TABLE main.label_index
                     RENAME COLUMN {name} TO {new_name}
             """)
             self._cursor.execute(f"""
@@ -96,7 +96,7 @@ class LabelManager(BaseLabelManager):
         for column in columns_to_delete:
             column = schema.format_identifier(column)
             self._cursor.execute(
-                f'ALTER TABLE main.node_index DROP COLUMN {column}'
+                f'ALTER TABLE main.label_index DROP COLUMN {column}'
             )
             self._cursor.execute(
                 f'ALTER TABLE main.location DROP COLUMN {column}'
@@ -161,18 +161,18 @@ def legacy_rename_labels(node: 'TopoNode', mapping: Dict[str, str]) -> None:
             cursor.execute('BEGIN TRANSACTION')
             schema.drop_schema_constraints(cursor)
 
-            # Rebuild 'node_index' table with new column names.
+            # Rebuild 'label_index' table with new column names.
             cursor.execute(f"""
-                CREATE TABLE main.new_node_index(
+                CREATE TABLE main.new_label_index(
                     index_id INTEGER PRIMARY KEY AUTOINCREMENT,  /* <- Must not reuse id values. */
-                    {', '.join(schema.column_def_node_index(x) for x in new_columns)}
+                    {', '.join(schema.column_def_label_index(x) for x in new_columns)}
                 )
             """)
             cursor.execute(
-                'INSERT INTO main.new_node_index SELECT * FROM main.node_index'
+                'INSERT INTO main.new_label_index SELECT * FROM main.label_index'
             )
-            cursor.execute('DROP TABLE main.node_index')
-            cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
+            cursor.execute('DROP TABLE main.label_index')
+            cursor.execute('ALTER TABLE main.new_label_index RENAME TO label_index')
 
             # Rebuild 'location' table with new column names.
             cursor.execute(f"""
@@ -269,20 +269,20 @@ def legacy_drop_labels(node: 'TopoNode', column: str, *columns: str) -> None:
             cursor.execute('BEGIN TRANSACTION')
             schema.drop_schema_constraints(cursor)
 
-            # Rebuild 'node_index' table with columns_to_keep.
+            # Rebuild 'label_index' table with columns_to_keep.
             cursor.execute(f"""
-                CREATE TABLE main.new_node_index(
+                CREATE TABLE main.new_label_index(
                     index_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    {', '.join(schema.column_def_node_index(x) for x in columns_to_keep)}
+                    {', '.join(schema.column_def_label_index(x) for x in columns_to_keep)}
                 )
             """)
             cursor.execute(f"""
-                INSERT INTO main.new_node_index
+                INSERT INTO main.new_label_index
                 SELECT index_id, {', '.join(formatted_columns_to_keep)}
-                FROM main.node_index
+                FROM main.label_index
             """)
-            cursor.execute('DROP TABLE main.node_index')
-            cursor.execute('ALTER TABLE main.new_node_index RENAME TO node_index')
+            cursor.execute('DROP TABLE main.label_index')
+            cursor.execute('ALTER TABLE main.new_label_index RENAME TO label_index')
 
             # Rebuild 'location' table with columns_to_keep.
             cursor.execute(f"""

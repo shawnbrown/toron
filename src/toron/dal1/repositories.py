@@ -45,7 +45,7 @@ class IndexRepository(BaseIndexRepository):
         """Add a record to the repository and return its ``index_id``."""
         labels = (label,) + labels
         qmarks = ', '.join('?' * len(labels))
-        sql = f'INSERT INTO main.node_index VALUES (NULL, {qmarks})'
+        sql = f'INSERT INTO main.label_index VALUES (NULL, {qmarks})'
         try:
             self._cursor.execute(sql, labels)
         except sqlite3.IntegrityError as err:
@@ -58,7 +58,7 @@ class IndexRepository(BaseIndexRepository):
         If no index matches the given *id*, a ``KeyError`` is raised.
         """
         self._cursor.execute(
-            'SELECT * FROM main.node_index WHERE index_id=?', (id,)
+            'SELECT * FROM main.label_index WHERE index_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record is None:
@@ -67,11 +67,11 @@ class IndexRepository(BaseIndexRepository):
 
     def update(self, record: Index) -> None:
         """Update a record in the repository."""
-        self._cursor.execute(f"PRAGMA main.table_info('node_index')")
+        self._cursor.execute(f"PRAGMA main.table_info('label_index')")
         columns = ', '.join(row[1] for row in self._cursor.fetchall()[1:])
         qmarks = ', '.join('?' * len(record.labels))
         sql = f"""
-            UPDATE main.node_index
+            UPDATE main.label_index
             SET ({columns}) = ({qmarks})
             WHERE index_id=?
         """
@@ -80,18 +80,18 @@ class IndexRepository(BaseIndexRepository):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
-            'DELETE FROM main.node_index WHERE index_id=?', (id,)
+            'DELETE FROM main.label_index WHERE index_id=?', (id,)
         )
 
     def get_label_names(self) -> List[str]:
         """Return a list of label column names."""
-        self._cursor.execute(f"PRAGMA main.table_info('node_index')")
+        self._cursor.execute(f"PRAGMA main.table_info('label_index')")
         column_names = list(row[1] for row in self._cursor)
         return column_names[1:]  # Return label names (slices-off 'index_id').
 
     def find_all(self, include_undefined: bool = True) -> Iterator[Index]:
         """Find all records in the repository."""
-        sql = 'SELECT * FROM main.node_index'
+        sql = 'SELECT * FROM main.label_index'
         if not include_undefined:
             sql += ' WHERE index_id != 0'
 
@@ -102,7 +102,7 @@ class IndexRepository(BaseIndexRepository):
         """Find all index_id values. When *ordered* is True, must
         return values in ascending order.
         """
-        sql = 'SELECT index_id FROM main.node_index'
+        sql = 'SELECT index_id FROM main.label_index'
         if ordered:
             sql += ' ORDER BY index_id'
         self._cursor.execute(sql)
@@ -120,7 +120,7 @@ class IndexRepository(BaseIndexRepository):
             raise Exception(msg)
 
         sql = """
-            SELECT index_id FROM main.node_index WHERE index_id != 0
+            SELECT index_id FROM main.label_index WHERE index_id != 0
             EXCEPT
             SELECT index_id FROM main.mapping WHERE link_id = ?
         """
@@ -133,7 +133,7 @@ class IndexRepository(BaseIndexRepository):
         """Find distinct label values for given column names."""
         columns = (column,) + columns
         formatted_cols = ', '.join(format_identifier(x) for x in columns)
-        sql = f'SELECT DISTINCT {formatted_cols} FROM main.node_index'
+        sql = f'SELECT DISTINCT {formatted_cols} FROM main.label_index'
         if not include_undefined:
             sql += ' WHERE index_id != 0'
         self._cursor.execute(sql)
@@ -153,7 +153,7 @@ class IndexRepository(BaseIndexRepository):
         if not include_undefined:
             where_predicates.append('index_id != 0')
 
-        sql = 'SELECT * FROM main.node_index'
+        sql = 'SELECT * FROM main.label_index'
         if where_predicates:
             sql = f"{sql} WHERE {' AND '.join(where_predicates)}"
 
@@ -175,7 +175,7 @@ class IndexRepository(BaseIndexRepository):
         if not include_undefined:
             where_predicates.append('index_id != 0')
 
-        sql = 'SELECT index_id FROM main.node_index'
+        sql = 'SELECT index_id FROM main.label_index'
         if where_predicates:
             sql = f"{sql} WHERE {' AND '.join(where_predicates)}"
 
@@ -184,7 +184,7 @@ class IndexRepository(BaseIndexRepository):
 
     def get_cardinality(self, include_undefined: bool = True) -> int:
         """Return the number of records in the repository."""
-        sql = 'SELECT COUNT(*) FROM main.node_index'
+        sql = 'SELECT COUNT(*) FROM main.label_index'
         if not include_undefined:
             sql += ' WHERE index_id != 0'
 
@@ -193,7 +193,7 @@ class IndexRepository(BaseIndexRepository):
 
     def get_max_index_id(self) -> int:
         """Return the largest current ``index_id`` value."""
-        sql = 'SELECT MAX(index_id) FROM main.node_index'
+        sql = 'SELECT MAX(index_id) FROM main.label_index'
         self._cursor.execute(sql)
         return self._cursor.fetchone()[0]
 
@@ -537,7 +537,7 @@ class WeightRepository(BaseWeightRepository):
         self._cursor.execute(
             """
                 SELECT 1
-                FROM main.node_index a
+                FROM main.label_index a
                 WHERE NOT EXISTS (
                     SELECT 1
                     FROM main.weight b
@@ -1216,7 +1216,7 @@ class MappingRepository(BaseMappingRepository):
                 -- Determine if index_id set is complete (no missing records).
                 SELECT NOT EXISTS (
                     -- Select index_id values not in link's mappings.
-                    SELECT index_id FROM main.node_index WHERE index_id != 0
+                    SELECT index_id FROM main.label_index WHERE index_id != 0
                     EXCEPT
                     SELECT index_id FROM main.mapping WHERE link_id = ?
                 )

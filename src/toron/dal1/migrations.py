@@ -126,7 +126,13 @@ def v020_to_v030_step03_quantity_table(cursor: sqlite3.Cursor) -> None:
     cursor.execute('ALTER TABLE main.new_quantity RENAME TO quantity')
 
 
-def v020_to_v030_step04_properties(cursor: sqlite3.Cursor) -> None:
+def v020_to_v030_step04_rename_label_tables(cursor: sqlite3.Cursor) -> None:
+    """Rename "label" tables for 0.2.0 to 0.3.0 migration."""
+    cursor.execute('PRAGMA legacy_alter_table = 0')
+    cursor.execute('ALTER TABLE main.node_index RENAME TO label_index')
+
+
+def v020_to_v030_step05_properties(cursor: sqlite3.Cursor) -> None:
     """Update 'property' values for 0.2.0 to 0.3.0 migration."""
     # Update domain (change `dict` to `str`).
     cursor.execute("SELECT value FROM main.property WHERE key='domain'")
@@ -219,7 +225,8 @@ def apply_migrations(
             v020_to_v030_step01_link_table(cursor)
             v020_to_v030_step02_relation_table(cursor, whole_space_level)
             v020_to_v030_step03_quantity_table(cursor)
-            v020_to_v030_step04_properties(cursor)
+            v020_to_v030_step04_rename_label_tables(cursor)
+            v020_to_v030_step05_properties(cursor)
 
         # Check integrity, re-create constraints, and commit transaction.
         schema.verify_foreign_key_check(cursor)

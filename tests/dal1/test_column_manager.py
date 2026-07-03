@@ -46,7 +46,7 @@ class TestLabelManager(unittest.TestCase):
 
         manager.add_columns('foo', 'bar')
 
-        self.assertColumnsEqual('node_index', ['index_id', 'foo', 'bar'])
+        self.assertColumnsEqual('label_index', ['index_id', 'foo', 'bar'])
         self.assertColumnsEqual('location', ['_location_id', 'foo', 'bar'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'bar'])
 
@@ -55,14 +55,14 @@ class TestLabelManager(unittest.TestCase):
 
         manager.add_columns('x "y"')  # <- Check special characters (space and quotes).
 
-        self.assertColumnsEqual('node_index', ['index_id', 'x "y"'])
+        self.assertColumnsEqual('label_index', ['index_id', 'x "y"'])
         self.assertColumnsEqual('location', ['_location_id', 'x "y"'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'x "y"'])
 
     def test_get_columns(self):
-        # Only add to node_index for testing.
-        self.cursor.execute('ALTER TABLE node_index ADD COLUMN "foo"')
-        self.cursor.execute('ALTER TABLE node_index ADD COLUMN "bar"')
+        # Only add to label_index for testing.
+        self.cursor.execute('ALTER TABLE label_index ADD COLUMN "foo"')
+        self.cursor.execute('ALTER TABLE label_index ADD COLUMN "bar"')
         manager = LabelManager(self.cursor)
 
         actual = manager.get_columns()
@@ -81,18 +81,18 @@ class TestLabelManager(unittest.TestCase):
         manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar')
         self.cursor.executescript("""
-            INSERT INTO node_index VALUES (NULL, 'a', 'x');
-            INSERT INTO node_index VALUES (NULL, 'b', 'y');
-            INSERT INTO node_index VALUES (NULL, 'c', 'z');
+            INSERT INTO label_index VALUES (NULL, 'a', 'x');
+            INSERT INTO label_index VALUES (NULL, 'b', 'y');
+            INSERT INTO label_index VALUES (NULL, 'c', 'z');
         """)
 
         manager.rename_columns({'foo': 'qux', 'bar': 'quux'})
 
-        self.assertColumnsEqual('node_index', ['index_id', 'qux', 'quux'])
+        self.assertColumnsEqual('label_index', ['index_id', 'qux', 'quux'])
         self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'qux', 'quux'])
         self.assertRecordsEqual(
-            'node_index',
+            'label_index',
             [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')],
         )
 
@@ -101,28 +101,28 @@ class TestLabelManager(unittest.TestCase):
         manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar', 'baz', 'qux')
         self.cursor.executescript("""
-            INSERT INTO node_index VALUES (NULL, 'a', 'x', '111', 'one');
-            INSERT INTO node_index VALUES (NULL, 'b', 'y', '222', 'two');
-            INSERT INTO node_index VALUES (NULL, 'c', 'z', '333', 'three');
+            INSERT INTO label_index VALUES (NULL, 'a', 'x', '111', 'one');
+            INSERT INTO label_index VALUES (NULL, 'b', 'y', '222', 'two');
+            INSERT INTO label_index VALUES (NULL, 'c', 'z', '333', 'three');
         """)
 
         manager.drop_columns('bar')  # <- Remove 1 column.
 
-        self.assertColumnsEqual('node_index', ['index_id', 'foo', 'baz', 'qux'])
+        self.assertColumnsEqual('label_index', ['index_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'baz', 'qux'])
         self.assertRecordsEqual(
-            'node_index',
+            'label_index',
             [(0, '-', '-', '-'), (1, 'a', '111', 'one'), (2, 'b', '222', 'two'), (3, 'c', '333', 'three')],
         )
 
         manager.drop_columns('baz', 'qux')  # <- Remove 2 more columns at the same time.
 
-        self.assertColumnsEqual('node_index', ['index_id', 'foo'])
+        self.assertColumnsEqual('label_index', ['index_id', 'foo'])
         self.assertColumnsEqual('location', ['_location_id', 'foo'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo'])
         self.assertRecordsEqual(
-            'node_index',
+            'label_index',
             [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
         )
 
@@ -161,18 +161,18 @@ class TestLegacyLabelFunctions(unittest.TestCase):
         manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar')
         self.cursor.executescript("""
-            INSERT INTO node_index VALUES (NULL, 'a', 'x');
-            INSERT INTO node_index VALUES (NULL, 'b', 'y');
-            INSERT INTO node_index VALUES (NULL, 'c', 'z');
+            INSERT INTO label_index VALUES (NULL, 'a', 'x');
+            INSERT INTO label_index VALUES (NULL, 'b', 'y');
+            INSERT INTO label_index VALUES (NULL, 'c', 'z');
         """)
 
         legacy_rename_labels(self.node, {'foo': 'qux', 'bar': 'quux'})
 
-        self.assertColumnsEqual('node_index', ['index_id', 'qux', 'quux'])
+        self.assertColumnsEqual('label_index', ['index_id', 'qux', 'quux'])
         self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'qux', 'quux'])
         self.assertRecordsEqual(
-            'node_index',
+            'label_index',
             [(0, '-', '-'), (1, 'a', 'x'), (2, 'b', 'y'), (3, 'c', 'z')],
         )
 
@@ -191,28 +191,28 @@ class TestLegacyLabelFunctions(unittest.TestCase):
         manager = LabelManager(self.cursor)
         manager.add_columns('foo', 'bar', 'baz', 'qux')
         self.cursor.executescript("""
-            INSERT INTO node_index VALUES (NULL, 'a', 'x', '111', 'one');
-            INSERT INTO node_index VALUES (NULL, 'b', 'y', '222', 'two');
-            INSERT INTO node_index VALUES (NULL, 'c', 'z', '333', 'three');
+            INSERT INTO label_index VALUES (NULL, 'a', 'x', '111', 'one');
+            INSERT INTO label_index VALUES (NULL, 'b', 'y', '222', 'two');
+            INSERT INTO label_index VALUES (NULL, 'c', 'z', '333', 'three');
         """)
 
         legacy_drop_labels(self.node, 'bar')  # <- Delete 1 column.
 
-        self.assertColumnsEqual('node_index', ['index_id', 'foo', 'baz', 'qux'])
+        self.assertColumnsEqual('label_index', ['index_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'baz', 'qux'])
         self.assertRecordsEqual(
-            'node_index',
+            'label_index',
             [(0, '-', '-', '-'), (1, 'a', '111', 'one'), (2, 'b', '222', 'two'), (3, 'c', '333', 'three')],
         )
 
         legacy_drop_labels(self.node, 'baz', 'qux')  # <- Delete 2 more columns at the same time.
 
-        self.assertColumnsEqual('node_index', ['index_id', 'foo'])
+        self.assertColumnsEqual('label_index', ['index_id', 'foo'])
         self.assertColumnsEqual('location', ['_location_id', 'foo'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo'])
         self.assertRecordsEqual(
-            'node_index',
+            'label_index',
             [(0, '-'), (1, 'a'), (2, 'b'), (3, 'c')],
         )
 

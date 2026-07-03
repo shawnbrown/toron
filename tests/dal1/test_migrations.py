@@ -6,12 +6,8 @@ from toron.dal1.migrations import (
     v020_to_v030_step01_link_table,
     v020_to_v030_step02_relation_table,
     v020_to_v030_step03_quantity_table,
-    v020_to_v030_step04_properties,
-
-
-    #v020_to_v030_relation_table,
-    #v020_to_v030_quantity_table,
-    #v020_to_v030_properties,
+    v020_to_v030_step04_rename_label_tables,
+    v020_to_v030_step05_properties,
     apply_migrations,
 )
 
@@ -321,7 +317,33 @@ class TestApplyMigrations(unittest.TestCase):
             },
         )
 
-    def test_v020_to_v030_step04_properties(self):
+    def test_v020_to_v030_step04_rename_label_tables(self):
+        self.cur.executescript("""
+            /* Create old style (version 0.2.0) label tables. */
+            CREATE TABLE node_index(
+                index_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                "label_a" TEXT NOT NULL CHECK ("label_a" != '') DEFAULT '-',
+                "label_b" TEXT NOT NULL CHECK ("label_b" != '') DEFAULT '-',
+                "label_c" TEXT NOT NULL CHECK ("label_c" != '') DEFAULT '-'
+            );
+            INSERT INTO "node_index" VALUES(0,  '-',  '-',  '-');
+            INSERT INTO "node_index" VALUES(1, '1A', '1B', '1C');
+            INSERT INTO "node_index" VALUES(2, '2A', '2B', '2C');
+            INSERT INTO "node_index" VALUES(3, '3A', '3B', '3C');
+        """)
+
+        v020_to_v030_step04_rename_label_tables(self.cur)  # <- Function under test.
+
+        self.cur.execute('SELECT * FROM label_index')
+        self.assertEqual(
+            set(self.cur.fetchall()),
+            {(0, '-', '-', '-'),
+             (1, '1A', '1B', '1C'),
+             (2, '2A', '2B', '2C'),
+             (3, '3A', '3B', '3C')},
+        )
+
+    def test_v020_to_v030_step05_properties(self):
         self.cur.executescript("""
             CREATE TABLE attribute_group(
                 attribute_group_id INTEGER PRIMARY KEY,
@@ -339,7 +361,7 @@ class TestApplyMigrations(unittest.TestCase):
             INSERT INTO "property" VALUES('domain', '{"domain": "foo_bar"}');
         """)
 
-        v020_to_v030_step04_properties(self.cur)  # <- Function under test.
+        v020_to_v030_step05_properties(self.cur)  # <- Function under test.
 
         self.cur.execute("SELECT value from property where key='toron_schema_version'")
         self.assertEqual(self.cur.fetchone()[0], '"0.3.0"')

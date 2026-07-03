@@ -61,7 +61,7 @@ class TestCreateNodeSchema(unittest.TestCase):
             'attribute_group',
             'link',
             'location',
-            'node_index',
+            'label_index',
             'property',
             'quantity',
             'mapping',
@@ -752,7 +752,7 @@ class TestRegisteredConverters(unittest.TestCase):
         # NOTE: Toron used to use a BitFlags converter but not any more.
         # The blob should be returned unchanged (as a bytes object).
         cur = self.cur.executescript("""
-            INSERT INTO node_index (index_id)
+            INSERT INTO label_index (index_id)
                 VALUES (1);
             INSERT INTO link (link_id, name, other_unique_id)
                 VALUES (1, 'name', '11-1-11');

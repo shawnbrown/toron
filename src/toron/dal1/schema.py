@@ -28,15 +28,15 @@ the application layer:
     | is_locally_complete* |<•••••    +-----------------+  |  +--------------------+
     +----------------------+          |                    |
                                       |                    |  +---------------+
-                      +------------+  |  +--------------+  |  | structure     |
-                      | node_index |  |  | location     |  |  +---------------+
-                      +------------+  |  +--------------+  |  | _structure_id |
-              +-------| index_id   |--+  | _location_id |--+  | _granularity* |
-              |       | label_a    |••••>| label_a      |<••••| label_a*      |
-              |       | label_b    |••••>| label_b      |<••••| label_b*      |
-              |       | label_c    |••••>| label_c      |<••••| label_c*      |
-              |       | ...        |••••>| ...          |<••••| ...           |
-              |       +------------+     +--------------+     +---------------+
+                     +-------------+  |  +--------------+  |  | structure     |
+                     | label_index |  |  | location     |  |  +---------------+
+                     +-------------+  |  +--------------+  |  | _structure_id |
+              +------| index_id    |--+  | _location_id |--+  | _granularity* |
+              |      | label_a     |••••>| label_a      |<••••| label_a*      |
+              |      | label_b     |••••>| label_b      |<••••| label_b*      |
+              |      | label_c     |••••>| label_c      |<••••| label_c*      |
+              |      | ...         |••••>| ...          |<••••| ...           |
+              |      +-------------+     +--------------+     +---------------+
               |
               |  +-----------------+                            +----------+
               |  | weight          |     +-----------------+    | property |
@@ -123,7 +123,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
         PRAGMA foreign_keys = ON;
 
         /* Uses AUTOINCREMENT because 'index_id' must not be reused. */
-        CREATE TABLE main.node_index(
+        CREATE TABLE main.label_index(
             index_id INTEGER PRIMARY KEY AUTOINCREMENT
             /* label columns added programmatically */
         );
@@ -154,7 +154,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             index_id INTEGER CHECK (index_id > 0),
             weight_value REAL NOT NULL,
             FOREIGN KEY(weight_group_id) REFERENCES weight_group(weight_group_id) ON DELETE CASCADE,
-            FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
+            FOREIGN KEY(index_id) REFERENCES label_index(index_id) DEFERRABLE INITIALLY DEFERRED,
             UNIQUE (index_id, weight_group_id)
         );
 
@@ -204,7 +204,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             proportion REAL CHECK (proportion BETWEEN 0.0 AND 1.0 OR proportion IS NULL),
             CHECK (other_index_id != 0 OR index_id != 0),
             FOREIGN KEY(link_id) REFERENCES link(link_id) ON DELETE CASCADE,
-            FOREIGN KEY(index_id) REFERENCES node_index(index_id) DEFERRABLE INITIALLY DEFERRED,
+            FOREIGN KEY(index_id) REFERENCES label_index(index_id) DEFERRABLE INITIALLY DEFERRED,
             UNIQUE (link_id, other_index_id, index_id, mapping_level)
         );
 
@@ -214,7 +214,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
         );
 
         /* Reserve index_id 0 for the "undefined" record. */
-        INSERT INTO main.node_index (index_id) VALUES (0);
+        INSERT INTO main.label_index (index_id) VALUES (0);
 
         /* Set properties for Toron schema and application versions. */
         INSERT INTO main.property VALUES ('toron_schema_version', '"0.3.0"');
@@ -258,8 +258,8 @@ def format_identifier(value: str) -> str:
     return f'"{value}"'
 
 
-def column_def_node_index(column: str) -> str:
-    """Get SQL column definition for 'node_index' label column."""
+def column_def_label_index(column: str) -> str:
+    """Get SQL column definition for 'label_index' label column."""
     column = format_identifier(column)
     return f"{column} TEXT NOT NULL CHECK ({column} != '') DEFAULT '-'"
 
@@ -277,7 +277,7 @@ def column_def_structure(column: str) -> str:
 
 
 def create_schema_constraints(cur: sqlite3.Cursor) -> None:
-    """Add indexes and triggers to the 'node_index', 'location',
+    """Add indexes and triggers to the 'label_index', 'location',
     and 'structure' tables.
 
     These constraints are persistent and only need to be re-created
@@ -287,10 +287,10 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
         This function should create all of the constraints removed by
         the ``drop_schema_constraints()`` function.
     """
-    # Label columns in the `node_index`, `location`, and `structure`
+    # Label columns in the `label_index`, `location`, and `structure`
     # tables must all be the same--so we can fetch them from table
     # and trust that they also exist in the others.
-    cur.execute(f"PRAGMA main.table_info('node_index')")
+    cur.execute(f"PRAGMA main.table_info('label_index')")
     label_columns = cur.fetchall()[1:]  # Fetch all but first column.
 
     # Create UNIQUE constraint for label columns.
@@ -298,7 +298,7 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
         columns = ', '.join(format_identifier(row[1]) for row in label_columns)
         cur.execute(f"""
             CREATE UNIQUE INDEX IF NOT EXISTS
-                main.unique_index_label_columns ON node_index({columns})
+                main.unique_index_label_columns ON label_index({columns})
         """)
         cur.execute(f"""
             CREATE UNIQUE INDEX IF NOT EXISTS
@@ -312,7 +312,7 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
     # Create UPDATE trigger to prevent changes to undefined record.
     cur.execute("""
         CREATE TRIGGER IF NOT EXISTS main.trigger_on_update_for_undefined
-        BEFORE UPDATE ON main.node_index FOR EACH ROW WHEN OLD.index_id = 0
+        BEFORE UPDATE ON main.label_index FOR EACH ROW WHEN OLD.index_id = 0
         BEGIN
             SELECT RAISE(FAIL, 'cannot modify undefined record (index_id 0)');
         END
@@ -321,7 +321,7 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
     # Create DELETE trigger to prevent removal of undefined record.
     cur.execute("""
         CREATE TRIGGER IF NOT EXISTS main.trigger_on_delete_for_undefined
-        BEFORE DELETE ON main.node_index FOR EACH ROW WHEN OLD.index_id = 0
+        BEFORE DELETE ON main.label_index FOR EACH ROW WHEN OLD.index_id = 0
         BEGIN
             SELECT RAISE(FAIL, 'cannot delete undefined record (index_id 0)');
         END
@@ -329,7 +329,7 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
 
 
 def drop_schema_constraints(cur: sqlite3.Cursor) -> None:
-    """Remove indexes and triggers from the 'node_index', 'location',
+    """Remove indexes and triggers from the 'label_index', 'location',
     and 'structure' tables.
 
     .. note::
@@ -410,7 +410,7 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
             'attribute_group',
             'link',
             'location',
-            'node_index',
+            'label_index',
             'property',
             'quantity',
             'mapping',

@@ -94,7 +94,7 @@ def calculate_granularity(
         WITH
             block (cardinality) AS (
                 SELECT CAST(COUNT(*) AS REAL)
-                FROM main.node_index
+                FROM main.label_index
                 WHERE index_id > 0{groupby_clause}
             ),
             summand (partition_coarseness) AS (

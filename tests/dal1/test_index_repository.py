@@ -29,15 +29,15 @@ class TestIndexRepository(unittest.TestCase):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
             DROP INDEX IF EXISTS unique_index_label_columns;
-            ALTER TABLE node_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
-            ALTER TABLE node_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
-            CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
+            ALTER TABLE label_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
+            ALTER TABLE label_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_index_label_columns ON label_index("A", "B");
         """)
 
         index_id = repository.add('foo', 'bar')
         self.assertEqual(index_id, 1, msg='should return an index_id of 1')
 
-        self.cursor.execute('SELECT * FROM node_index')
+        self.cursor.execute('SELECT * FROM label_index')
         self.assertEqual(
             self.cursor.fetchall(), [(0, '-', '-'), (1, 'foo', 'bar')],
         )
@@ -54,11 +54,11 @@ class TestIndexRepository(unittest.TestCase):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
             DROP INDEX IF EXISTS unique_index_label_columns;
-            ALTER TABLE node_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
-            ALTER TABLE node_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
-            CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
-            INSERT INTO node_index VALUES (1, 'foo', 'bar');
-            INSERT INTO node_index VALUES (2, 'foo', 'baz');
+            ALTER TABLE label_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
+            ALTER TABLE label_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_index_label_columns ON label_index("A", "B");
+            INSERT INTO label_index VALUES (1, 'foo', 'bar');
+            INSERT INTO label_index VALUES (2, 'foo', 'baz');
         """)
 
         self.assertEqual(repository.get(0), Index(0, '-', '-'))
@@ -71,14 +71,14 @@ class TestIndexRepository(unittest.TestCase):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
             DROP INDEX IF EXISTS unique_index_label_columns;
-            ALTER TABLE node_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
-            ALTER TABLE node_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
-            CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
-            INSERT INTO node_index VALUES (1, 'foo', 'bar');
+            ALTER TABLE label_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
+            ALTER TABLE label_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_index_label_columns ON label_index("A", "B");
+            INSERT INTO label_index VALUES (1, 'foo', 'bar');
         """)
 
         repository.update(Index(1, 'qux', 'quux'))
-        self.cursor.execute('SELECT * FROM node_index')
+        self.cursor.execute('SELECT * FROM label_index')
         records = self.cursor.fetchall()
         self.assertEqual(records, [(0, '-', '-'), (1, 'qux', 'quux')])
 
@@ -86,7 +86,7 @@ class TestIndexRepository(unittest.TestCase):
             repository.update(Index(1, 'corge'))
 
         repository.update(Index(2, 'corge', 'blerg'))  # <- No index_id 2 exists.
-        self.cursor.execute('SELECT * FROM node_index')
+        self.cursor.execute('SELECT * FROM label_index')
         records = self.cursor.fetchall()
         msg = 'there is no index_id 2, records should be unchanged'
         self.assertEqual(records, [(0, '-', '-'), (1, 'qux', 'quux')], msg=msg)
@@ -99,22 +99,22 @@ class TestIndexRepository(unittest.TestCase):
         repository = IndexRepository(self.cursor)
         self.cursor.executescript("""
             DROP INDEX IF EXISTS unique_index_label_columns;
-            ALTER TABLE node_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
-            ALTER TABLE node_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
-            CREATE UNIQUE INDEX unique_index_label_columns ON node_index("A", "B");
-            INSERT INTO node_index VALUES (1, 'foo', 'bar');
-            INSERT INTO node_index VALUES (2, 'foo', 'baz');
+            ALTER TABLE label_index ADD COLUMN "A" TEXT NOT NULL CHECK ("A" != '') DEFAULT '-';
+            ALTER TABLE label_index ADD COLUMN "B" TEXT NOT NULL CHECK ("B" != '') DEFAULT '-';
+            CREATE UNIQUE INDEX unique_index_label_columns ON label_index("A", "B");
+            INSERT INTO label_index VALUES (1, 'foo', 'bar');
+            INSERT INTO label_index VALUES (2, 'foo', 'baz');
         """)
 
         repository.delete(2)
-        self.cursor.execute('SELECT * FROM node_index')
+        self.cursor.execute('SELECT * FROM label_index')
         self.assertEqual(
             self.cursor.fetchall(),
             [(0, '-', '-'), (1, 'foo', 'bar')],
         )
 
         repository.delete(1)
-        self.cursor.execute('SELECT * FROM node_index')
+        self.cursor.execute('SELECT * FROM label_index')
         self.assertEqual(
             self.cursor.fetchall(),
             [(0, '-', '-')],
