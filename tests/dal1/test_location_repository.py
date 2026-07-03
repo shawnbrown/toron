@@ -19,9 +19,9 @@ class TestLocationRepository(unittest.TestCase):
 
         self.cursor.executescript("""
             DROP INDEX IF EXISTS unique_location_label_columns;
-            ALTER TABLE location ADD COLUMN "A" TEXT NOT NULL DEFAULT '';
-            ALTER TABLE location ADD COLUMN "B" TEXT NOT NULL DEFAULT '';
-            CREATE UNIQUE INDEX unique_location_label_columns ON location("A", "B");
+            ALTER TABLE label_location ADD COLUMN "A" TEXT NOT NULL DEFAULT '';
+            ALTER TABLE label_location ADD COLUMN "B" TEXT NOT NULL DEFAULT '';
+            CREATE UNIQUE INDEX unique_location_label_columns ON label_location("A", "B");
         """)
 
     def test_inheritance(self):
@@ -29,7 +29,7 @@ class TestLocationRepository(unittest.TestCase):
         self.assertTrue(issubclass(LocationRepository, BaseLocationRepository))
 
     def assertRecords(self, expected_records, msg=None):
-        self.cursor.execute(f'SELECT * FROM location')
+        self.cursor.execute(f'SELECT * FROM label_location')
         actual_records = self.cursor.fetchall()
         self.assertEqual(actual_records, expected_records, msg=msg)
 
@@ -45,16 +45,16 @@ class TestLocationRepository(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.add('foo', '')
 
-        msg = "NULL values not allowed in location table"
+        msg = "NULL values not allowed in label_location table"
         with self.assertRaises(sqlite3.IntegrityError, msg=msg):
             repository.add('foo', None)
 
     def test_get(self):
         repository = LocationRepository(self.cursor)
         self.cursor.executescript("""
-            INSERT INTO location VALUES (1, 'foo', 'bar');
-            INSERT INTO location VALUES (2, 'foo', 'baz');
-            INSERT INTO location VALUES (3, 'foo', '');
+            INSERT INTO label_location VALUES (1, 'foo', 'bar');
+            INSERT INTO label_location VALUES (2, 'foo', 'baz');
+            INSERT INTO label_location VALUES (3, 'foo', '');
         """)
 
         self.assertEqual(repository.get(1), Location(1, 'foo', 'bar'))
@@ -68,12 +68,12 @@ class TestLocationRepository(unittest.TestCase):
     def test_update(self):
         repository = LocationRepository(self.cursor)
         self.cursor.executescript("""
-            INSERT INTO location VALUES (1, 'foo', 'bar');
-            INSERT INTO location VALUES (2, 'foo', 'baz');
+            INSERT INTO label_location VALUES (1, 'foo', 'bar');
+            INSERT INTO label_location VALUES (2, 'foo', 'baz');
         """)
 
         repository.update(Location(1, 'qux', 'quux'))
-        self.cursor.execute('SELECT * FROM location')
+        self.cursor.execute('SELECT * FROM label_location')
         records = self.cursor.fetchall()
         self.assertEqual(records, [(1, 'qux', 'quux'), (2, 'foo', 'baz')])
 
@@ -81,7 +81,7 @@ class TestLocationRepository(unittest.TestCase):
             repository.update(Location(1, 'corge'))
 
         repository.update(Location(3, 'corge', 'blerg'))  # <- No _location_id 3 exists.
-        self.cursor.execute('SELECT * FROM location')
+        self.cursor.execute('SELECT * FROM label_location')
         records = self.cursor.fetchall()
         msg = 'there is no _location_id 3, records should be unchanged'
         self.assertEqual(records, [(1, 'qux', 'quux'), (2, 'foo', 'baz')], msg=msg)
@@ -89,8 +89,8 @@ class TestLocationRepository(unittest.TestCase):
     def test_delete_and_cascade(self):
         repository = LocationRepository(self.cursor)
         self.cursor.executescript("""
-            INSERT INTO location VALUES (1, 'foo', 'bar');
-            INSERT INTO location VALUES (2, 'foo', 'baz');
+            INSERT INTO label_location VALUES (1, 'foo', 'bar');
+            INSERT INTO label_location VALUES (2, 'foo', 'baz');
         """)
 
         repository.delete_and_cascade(2)

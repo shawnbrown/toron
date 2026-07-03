@@ -130,6 +130,7 @@ def v020_to_v030_step04_rename_label_tables(cursor: sqlite3.Cursor) -> None:
     """Rename "label" tables for 0.2.0 to 0.3.0 migration."""
     cursor.execute('PRAGMA legacy_alter_table = 0')
     cursor.execute('ALTER TABLE main.node_index RENAME TO label_index')
+    cursor.execute('ALTER TABLE main.location RENAME TO label_location')
 
 
 def v020_to_v030_step05_properties(cursor: sqlite3.Cursor) -> None:

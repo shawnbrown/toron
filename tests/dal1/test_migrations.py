@@ -320,6 +320,7 @@ class TestApplyMigrations(unittest.TestCase):
     def test_v020_to_v030_step04_rename_label_tables(self):
         self.cur.executescript("""
             /* Create old style (version 0.2.0) label tables. */
+
             CREATE TABLE node_index(
                 index_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 "label_a" TEXT NOT NULL CHECK ("label_a" != '') DEFAULT '-',
@@ -330,6 +331,16 @@ class TestApplyMigrations(unittest.TestCase):
             INSERT INTO "node_index" VALUES(1, '1A', '1B', '1C');
             INSERT INTO "node_index" VALUES(2, '2A', '2B', '2C');
             INSERT INTO "node_index" VALUES(3, '3A', '3B', '3C');
+
+            CREATE TABLE location(
+                _location_id INTEGER PRIMARY KEY,
+                "label_a" TEXT NOT NULL DEFAULT '',
+                "label_b" TEXT NOT NULL DEFAULT '',
+                "label_c" TEXT NOT NULL DEFAULT ''
+            );
+            INSERT INTO "location" VALUES(1, '1A', '1B', '1C');
+            INSERT INTO "location" VALUES(2, '2A', '2B', '2C');
+            INSERT INTO "location" VALUES(3, '3A', '3B', '3C');
         """)
 
         v020_to_v030_step04_rename_label_tables(self.cur)  # <- Function under test.
@@ -339,6 +350,14 @@ class TestApplyMigrations(unittest.TestCase):
             set(self.cur.fetchall()),
             {(0, '-', '-', '-'),
              (1, '1A', '1B', '1C'),
+             (2, '2A', '2B', '2C'),
+             (3, '3A', '3B', '3C')},
+        )
+
+        self.cur.execute('SELECT * FROM label_location')
+        self.assertEqual(
+            set(self.cur.fetchall()),
+            {(1, '1A', '1B', '1C'),
              (2, '2A', '2B', '2C'),
              (3, '3A', '3B', '3C')},
         )

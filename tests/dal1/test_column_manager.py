@@ -47,7 +47,7 @@ class TestLabelManager(unittest.TestCase):
         manager.add_columns('foo', 'bar')
 
         self.assertColumnsEqual('label_index', ['index_id', 'foo', 'bar'])
-        self.assertColumnsEqual('location', ['_location_id', 'foo', 'bar'])
+        self.assertColumnsEqual('label_location', ['_location_id', 'foo', 'bar'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'bar'])
 
     def test_add_columns_special_chars(self):
@@ -56,7 +56,7 @@ class TestLabelManager(unittest.TestCase):
         manager.add_columns('x "y"')  # <- Check special characters (space and quotes).
 
         self.assertColumnsEqual('label_index', ['index_id', 'x "y"'])
-        self.assertColumnsEqual('location', ['_location_id', 'x "y"'])
+        self.assertColumnsEqual('label_location', ['_location_id', 'x "y"'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'x "y"'])
 
     def test_get_columns(self):
@@ -89,7 +89,7 @@ class TestLabelManager(unittest.TestCase):
         manager.rename_columns({'foo': 'qux', 'bar': 'quux'})
 
         self.assertColumnsEqual('label_index', ['index_id', 'qux', 'quux'])
-        self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
+        self.assertColumnsEqual('label_location', ['_location_id', 'qux', 'quux'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'qux', 'quux'])
         self.assertRecordsEqual(
             'label_index',
@@ -109,7 +109,7 @@ class TestLabelManager(unittest.TestCase):
         manager.drop_columns('bar')  # <- Remove 1 column.
 
         self.assertColumnsEqual('label_index', ['index_id', 'foo', 'baz', 'qux'])
-        self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
+        self.assertColumnsEqual('label_location', ['_location_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'baz', 'qux'])
         self.assertRecordsEqual(
             'label_index',
@@ -119,7 +119,7 @@ class TestLabelManager(unittest.TestCase):
         manager.drop_columns('baz', 'qux')  # <- Remove 2 more columns at the same time.
 
         self.assertColumnsEqual('label_index', ['index_id', 'foo'])
-        self.assertColumnsEqual('location', ['_location_id', 'foo'])
+        self.assertColumnsEqual('label_location', ['_location_id', 'foo'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo'])
         self.assertRecordsEqual(
             'label_index',
@@ -169,7 +169,7 @@ class TestLegacyLabelFunctions(unittest.TestCase):
         legacy_rename_labels(self.node, {'foo': 'qux', 'bar': 'quux'})
 
         self.assertColumnsEqual('label_index', ['index_id', 'qux', 'quux'])
-        self.assertColumnsEqual('location', ['_location_id', 'qux', 'quux'])
+        self.assertColumnsEqual('label_location', ['_location_id', 'qux', 'quux'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'qux', 'quux'])
         self.assertRecordsEqual(
             'label_index',
@@ -199,7 +199,7 @@ class TestLegacyLabelFunctions(unittest.TestCase):
         legacy_drop_labels(self.node, 'bar')  # <- Delete 1 column.
 
         self.assertColumnsEqual('label_index', ['index_id', 'foo', 'baz', 'qux'])
-        self.assertColumnsEqual('location', ['_location_id', 'foo', 'baz', 'qux'])
+        self.assertColumnsEqual('label_location', ['_location_id', 'foo', 'baz', 'qux'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo', 'baz', 'qux'])
         self.assertRecordsEqual(
             'label_index',
@@ -209,7 +209,7 @@ class TestLegacyLabelFunctions(unittest.TestCase):
         legacy_drop_labels(self.node, 'baz', 'qux')  # <- Delete 2 more columns at the same time.
 
         self.assertColumnsEqual('label_index', ['index_id', 'foo'])
-        self.assertColumnsEqual('location', ['_location_id', 'foo'])
+        self.assertColumnsEqual('label_location', ['_location_id', 'foo'])
         self.assertColumnsEqual('structure', ['_structure_id', '_granularity', 'foo'])
         self.assertRecordsEqual(
             'label_index',

@@ -207,16 +207,16 @@ class LocationRepository(BaseLocationRepository):
         """Add a record to the repository."""
         labels = (label,) + labels
         qmarks = ", ".join("?" * len(labels))
-        sql = f'INSERT INTO main.location VALUES (NULL, {qmarks})'
+        sql = f'INSERT INTO main.label_location VALUES (NULL, {qmarks})'
         self._cursor.execute(sql, labels)
 
     def get(self, id: int) -> Location:
         """Get a record from the repository.
 
-        If no location matches the given *id*, a ``KeyError`` is raised.
+        If no label_location matches the given *id*, a ``KeyError`` is raised.
         """
         self._cursor.execute(
-            'SELECT * FROM main.location WHERE _location_id=?', (id,)
+            'SELECT * FROM main.label_location WHERE _location_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record is None:
@@ -225,11 +225,11 @@ class LocationRepository(BaseLocationRepository):
 
     def update(self, record: Location) -> None:
         """Update a record in the repository."""
-        self._cursor.execute(f"PRAGMA main.table_info('location')")
+        self._cursor.execute(f"PRAGMA main.table_info('label_location')")
         columns = ', '.join(row[1] for row in self._cursor.fetchall()[1:])
         qmarks = ', '.join('?' * len(record.labels))
         sql = f"""
-            UPDATE main.location
+            UPDATE main.label_location
             SET ({columns}) = ({qmarks})
             WHERE _location_id=?
         """
@@ -238,18 +238,18 @@ class LocationRepository(BaseLocationRepository):
     def delete_and_cascade(self, id: int) -> None:
         """Delete a Location and any associated Quantity records."""
         self._cursor.execute(
-            'DELETE FROM main.location WHERE _location_id=?', (id,)
+            'DELETE FROM main.label_location WHERE _location_id=?', (id,)
         )
 
     def get_label_names(self) -> List[str]:
         """Get a list of label column names."""
-        self._cursor.execute(f"PRAGMA main.table_info('location')")
+        self._cursor.execute(f"PRAGMA main.table_info('label_location')")
         columns = [row[1] for row in self._cursor.fetchall()]
         return columns[1:]  # Return columns (slicing-off _location_id).
 
     def find_all(self) -> Iterator[Location]:
         """Find all location records."""
-        self._cursor.execute(f'SELECT * FROM main.location')
+        self._cursor.execute(f'SELECT * FROM main.label_location')
         return (Location(*record) for record in self._cursor)
 
     def find_by_label(
@@ -262,7 +262,7 @@ class LocationRepository(BaseLocationRepository):
             raise ValueError(msg)
 
         qmarks = (f'{format_identifier(k)}=?' for k in criteria.keys())
-        sql = f'SELECT * FROM main.location WHERE {" AND ".join(qmarks)}'
+        sql = f'SELECT * FROM main.label_location WHERE {" AND ".join(qmarks)}'
         self._cursor.execute(sql, tuple(criteria.values()))
         return (Location(*record) for record in self._cursor)
 
@@ -272,7 +272,7 @@ class LocationRepository(BaseLocationRepository):
         func = lambda a, b: f"{format_identifier(a)} {'!=' if b else '='} ''"
         conditions = (func(a, b) for a, b in zip(label_names, structure.bits))
         self._cursor.execute(
-            f'SELECT * FROM main.location WHERE {" AND ".join(conditions)}'
+            f'SELECT * FROM main.label_location WHERE {" AND ".join(conditions)}'
         )
         return (Location(*record) for record in self._cursor)
 
@@ -757,7 +757,7 @@ class QuantityRepository(BaseQuantityRepository):
         if attribute_id_filter == []:
             return  # <- EXIT! (stop generator early)
 
-        self._cursor.execute(f"PRAGMA main.table_info('location')")
+        self._cursor.execute(f"PRAGMA main.table_info('label_location')")
         label_cols = tuple(row[1] for row in self._cursor.fetchall())
         label_cols = label_cols[1:]  # Slice-off "_location_id".
 
@@ -784,7 +784,7 @@ class QuantityRepository(BaseQuantityRepository):
                 a.attribute_group_id,
                 a.quantity_value
             FROM main.quantity a
-            JOIN main.location b USING (_location_id)
+            JOIN main.label_location b USING (_location_id)
             WHERE {' AND '.join(where_clause_parts)}
             ORDER BY a._location_id
         """

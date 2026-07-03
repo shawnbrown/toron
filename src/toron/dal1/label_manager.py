@@ -34,7 +34,7 @@ class LabelManager(BaseLabelManager):
                     {schema.column_def_label_index(column)}
             """)
             self._cursor.execute(f"""
-                ALTER TABLE main.location ADD COLUMN
+                ALTER TABLE main.label_location ADD COLUMN
                     {schema.column_def_location(column)}
             """)
             self._cursor.execute(f"""
@@ -68,7 +68,7 @@ class LabelManager(BaseLabelManager):
                     RENAME COLUMN {name} TO {new_name}
             """)
             self._cursor.execute(f"""
-                ALTER TABLE main.location
+                ALTER TABLE main.label_location
                     RENAME COLUMN {name} TO {new_name}
             """)
             self._cursor.execute(f"""
@@ -99,7 +99,7 @@ class LabelManager(BaseLabelManager):
                 f'ALTER TABLE main.label_index DROP COLUMN {column}'
             )
             self._cursor.execute(
-                f'ALTER TABLE main.location DROP COLUMN {column}'
+                f'ALTER TABLE main.label_location DROP COLUMN {column}'
             )
             self._cursor.execute(
                 f'ALTER TABLE main.structure DROP COLUMN {column}'
@@ -174,7 +174,7 @@ def legacy_rename_labels(node: 'TopoNode', mapping: Dict[str, str]) -> None:
             cursor.execute('DROP TABLE main.label_index')
             cursor.execute('ALTER TABLE main.new_label_index RENAME TO label_index')
 
-            # Rebuild 'location' table with new column names.
+            # Rebuild 'label_location' table with new column names.
             cursor.execute(f"""
                 CREATE TABLE main.new_location(
                     _location_id INTEGER PRIMARY KEY,
@@ -182,10 +182,10 @@ def legacy_rename_labels(node: 'TopoNode', mapping: Dict[str, str]) -> None:
                 )
             """)
             cursor.execute(
-                'INSERT INTO main.new_location SELECT * FROM main.location'
+                'INSERT INTO main.new_location SELECT * FROM main.label_location'
             )
-            cursor.execute('DROP TABLE main.location')
-            cursor.execute('ALTER TABLE main.new_location RENAME TO location')
+            cursor.execute('DROP TABLE main.label_location')
+            cursor.execute('ALTER TABLE main.new_location RENAME TO label_location')
 
             # Rebuild 'structure' table with new column names.
             cursor.execute(f"""
@@ -284,7 +284,7 @@ def legacy_drop_labels(node: 'TopoNode', column: str, *columns: str) -> None:
             cursor.execute('DROP TABLE main.label_index')
             cursor.execute('ALTER TABLE main.new_label_index RENAME TO label_index')
 
-            # Rebuild 'location' table with columns_to_keep.
+            # Rebuild 'label_location' table with columns_to_keep.
             cursor.execute(f"""
                 CREATE TABLE main.new_location(
                     _location_id INTEGER PRIMARY KEY,
@@ -294,10 +294,10 @@ def legacy_drop_labels(node: 'TopoNode', column: str, *columns: str) -> None:
             cursor.execute(f"""
                 INSERT INTO main.new_location
                 SELECT _location_id, {', '.join(formatted_columns_to_keep)}
-                FROM main.location
+                FROM main.label_location
             """)
-            cursor.execute('DROP TABLE main.location')
-            cursor.execute('ALTER TABLE main.new_location RENAME TO location')
+            cursor.execute('DROP TABLE main.label_location')
+            cursor.execute('ALTER TABLE main.new_location RENAME TO label_location')
 
             # Rebuild 'structure' table with columns_to_keep.
             cursor.execute(f"""

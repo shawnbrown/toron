@@ -59,9 +59,9 @@ class TestCreateNodeSchema(unittest.TestCase):
         tables = self.get_tables(self.cur)
         expected = {
             'attribute_group',
-            'link',
-            'location',
             'label_index',
+            'label_location',
+            'link',
             'property',
             'quantity',
             'mapping',
