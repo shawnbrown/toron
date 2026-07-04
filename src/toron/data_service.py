@@ -663,9 +663,13 @@ def calculate_granularity(
                   ‾‾‾   |U|
                   i=1
 
-        TeX notation:
+        LaTeX notation:
 
-            \[\log_{2}|U|-\sum_{i=1}^m \frac{|A_i|}{|U|}\log_{2}|A_i|\]
+            \[
+            \log_2 \lvert U \rvert - \sum_{i=1}^m
+            \frac{\lvert A_i \rvert}{\lvert U \rvert} \,
+            \log_2 \lvert A_i \rvert
+            \]
     """
     if not columns:
         return None  # <- EXIT!
