@@ -19,10 +19,10 @@ class TestStructureRepository(unittest.TestCase):
 
         self.cursor.executescript("""
             DROP INDEX IF EXISTS unique_structure_label_columns;
-            ALTER TABLE structure ADD COLUMN "A" INTEGER NOT NULL CHECK ("A" IN (0, 1)) DEFAULT 0;
-            ALTER TABLE structure ADD COLUMN "B" INTEGER NOT NULL CHECK ("B" IN (0, 1)) DEFAULT 0;
-            ALTER TABLE structure ADD COLUMN "C" INTEGER NOT NULL CHECK ("C" IN (0, 1)) DEFAULT 0;
-            CREATE UNIQUE INDEX unique_structure_label_columns ON structure("A", "B", "C");
+            ALTER TABLE label_structure ADD COLUMN "A" INTEGER NOT NULL CHECK ("A" IN (0, 1)) DEFAULT 0;
+            ALTER TABLE label_structure ADD COLUMN "B" INTEGER NOT NULL CHECK ("B" IN (0, 1)) DEFAULT 0;
+            ALTER TABLE label_structure ADD COLUMN "C" INTEGER NOT NULL CHECK ("C" IN (0, 1)) DEFAULT 0;
+            CREATE UNIQUE INDEX unique_structure_label_columns ON label_structure("A", "B", "C");
         """)
 
     def test_inheritance(self):
@@ -30,7 +30,7 @@ class TestStructureRepository(unittest.TestCase):
         self.assertTrue(issubclass(StructureRepository, BaseStructureRepository))
 
     def assertRecords(self, expected_records, msg=None):
-        self.cursor.execute(f'SELECT * FROM structure')
+        self.cursor.execute(f'SELECT * FROM label_structure')
         actual_records = self.cursor.fetchall()
         self.assertEqual(actual_records, expected_records, msg=msg)
 
@@ -54,9 +54,9 @@ class TestStructureRepository(unittest.TestCase):
     def test_get(self):
         repository = StructureRepository(self.cursor)
         self.cursor.executescript("""
-            INSERT INTO structure VALUES (1, NULL, 0, 0, 0);
-            INSERT INTO structure VALUES (2, NULL, 1, 1, 0);
-            INSERT INTO structure VALUES (3, NULL, 1, 1, 1);
+            INSERT INTO label_structure VALUES (1, NULL, 0, 0, 0);
+            INSERT INTO label_structure VALUES (2, NULL, 1, 1, 0);
+            INSERT INTO label_structure VALUES (3, NULL, 1, 1, 1);
         """)
 
         self.assertEqual(repository.get(1), Structure(1, None, 0, 0, 0))
@@ -74,10 +74,10 @@ class TestStructureRepository(unittest.TestCase):
     def test_get_all(self):
         repository = StructureRepository(self.cursor)
         self.cursor.executescript("""
-            INSERT INTO structure VALUES (1, 0.0, 0, 0, 0);
-            INSERT INTO structure VALUES (2, 7.0, 1, 1, 0);
-            INSERT INTO structure VALUES (3, NULL, 1, 0, 0);
-            INSERT INTO structure VALUES (4, 9.0, 1, 1, 1);
+            INSERT INTO label_structure VALUES (1, 0.0, 0, 0, 0);
+            INSERT INTO label_structure VALUES (2, 7.0, 1, 1, 0);
+            INSERT INTO label_structure VALUES (3, NULL, 1, 0, 0);
+            INSERT INTO label_structure VALUES (4, 9.0, 1, 1, 1);
         """)
 
         self.assertEqual(
@@ -91,13 +91,13 @@ class TestStructureRepository(unittest.TestCase):
     def test_update(self):
         repository = StructureRepository(self.cursor)
         self.cursor.executescript("""
-            INSERT INTO structure VALUES (1, NULL, 0, 0, 0);
-            INSERT INTO structure VALUES (2, NULL, 1, 1, 0);
-            INSERT INTO structure VALUES (3, NULL, 1, 1, 1);
+            INSERT INTO label_structure VALUES (1, NULL, 0, 0, 0);
+            INSERT INTO label_structure VALUES (2, NULL, 1, 1, 0);
+            INSERT INTO label_structure VALUES (3, NULL, 1, 1, 1);
         """)
 
         repository.update(Structure(3, 9.25, 1, 1, 1))
-        self.cursor.execute('SELECT * FROM structure')
+        self.cursor.execute('SELECT * FROM label_structure')
         records = self.cursor.fetchall()
         self.assertEqual(records, [(1, None, 0, 0, 0), (2, None, 1, 1, 0), (3, 9.25, 1, 1, 1)])
 
@@ -105,7 +105,7 @@ class TestStructureRepository(unittest.TestCase):
             repository.update(Structure(3, 9.25, 1))
 
         repository.update(Structure(7, 3.5, 0, 0, 1))  # <- No _structure_id 7 exists.
-        self.cursor.execute('SELECT * FROM structure')
+        self.cursor.execute('SELECT * FROM label_structure')
         records = self.cursor.fetchall()
         msg = 'there is no _structure_id 7, records should be unchanged'
         self.assertEqual(records, [(1, None, 0, 0, 0), (2, None, 1, 1, 0), (3, 9.25, 1, 1, 1)], msg=msg)
@@ -113,8 +113,8 @@ class TestStructureRepository(unittest.TestCase):
     def test_delete(self):
         repository = StructureRepository(self.cursor)
         self.cursor.executescript("""
-            INSERT INTO structure VALUES (1, 0.0, 0, 0, 0);
-            INSERT INTO structure VALUES (2, 9.25, 1, 1, 1);
+            INSERT INTO label_structure VALUES (1, 0.0, 0, 0, 0);
+            INSERT INTO label_structure VALUES (2, 9.25, 1, 1, 1);
         """)
 
         repository.delete(1)

@@ -61,11 +61,11 @@ class TestCreateNodeSchema(unittest.TestCase):
             'attribute_group',
             'label_index',
             'label_location',
+            'label_structure',
             'link',
             'property',
             'quantity',
             'mapping',
-            'structure',
             'weight',
             'weight_group',
             'sqlite_sequence',  # <- Table added by SQLite.

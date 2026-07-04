@@ -10,44 +10,44 @@ the application layer:
 
 .. code-block:: text
 
-                                      <Other Node> •••••••
-                                                         •   +--------------------+
-                                   +----------------+    •   | attribute_group    |
-   +----------------------+        | mapping        |    •   +--------------------+
-   | link                 |        +----------------+    •   | attribute_group_id |--+
-   +----------------------+        | mapping_id     |    •   | attributes         |  |
-   | link_id              |------->| link_id        |    •   +--------------------+  |
-   | other_unique_id      |  ••••••| other_index_id |<••••                           |
-   | other_filename_hint  |  •  •••| index_id       |<-+     +--------------------+  |
-   | name                 |  •  •  | mapping_level* |  |     | quantity           |  |
-   | description          |  •  •  | mapping_value  |  |     +--------------------+  |
-   | selectors            |  •  •  | proportion*    |  |     | quantity_id        |  |
-   | is_default           |  •  •  +----------------+  |  +->| _location_id       |  |
-   | user_properties      |  •  •                      |  |  | attribute_group_id |<-+
-   | other_index_hash*    |<••  •                      |  |  | quantity_value     |
-   | is_locally_complete* |<•••••  +-------------------+  |  +--------------------+
-   +----------------------+        |                      |
-                                   |                      |  +---------------+
-                  +-------------+  |  +----------------+  |  | structure     |
-                  | label_index |  |  | label_location |  |  +---------------+
-                  +-------------+  |  +----------------+  |  | _structure_id |
-               +--| index_id    |--+  | _location_id   |--+  | _granularity* |
-               |  | label_a     |••••>| label_a        |<••••| label_a*      |
-               |  | label_b     |••••>| label_b        |<••••| label_b*      |
-               |  | label_c     |••••>| label_c        |<••••| label_c*      |
-               |  | ...         |••••>| ...            |<••••| ...           |
-               |  +-------------+     +----------------+     +---------------+
-               |
-               |  +-----------------+                            +----------+
-               |  | weight          |     +-----------------+    | property |
-               |  +-----------------+     | weight_group    |    +----------+
-               |  | weight_id       |     +-----------------+    | key      |
-               |  | weight_group_id |<----| weight_group_id |    | value    |
-               +->| index_id        |•••  | name            |    +----------+
-                  | weight_value    |  •  | description     |
-                  +-----------------+  •  | selectors       |
-                                       ••>| is_complete*    |
-                                          +-----------------+
+                                     <Other Node> •••••••
+                                                        •   +--------------------+
+                                  +----------------+    •   | attribute_group    |
+  +----------------------+        | mapping        |    •   +--------------------+
+  | link                 |        +----------------+    •   | attribute_group_id |--+
+  +----------------------+        | mapping_id     |    •   | attributes         |  |
+  | link_id              |------->| link_id        |    •   +--------------------+  |
+  | other_unique_id      |  ••••••| other_index_id |<••••                           |
+  | other_filename_hint  |  •  •••| index_id       |<-+     +--------------------+  |
+  | name                 |  •  •  | mapping_level* |  |     | quantity           |  |
+  | description          |  •  •  | mapping_value  |  |     +--------------------+  |
+  | selectors            |  •  •  | proportion*    |  |     | quantity_id        |  |
+  | is_default           |  •  •  +----------------+  |  +->| _location_id       |  |
+  | user_properties      |  •  •                      |  |  | attribute_group_id |<-+
+  | other_index_hash*    |<••  •                      |  |  | quantity_value     |
+  | is_locally_complete* |<•••••  +-------------------+  |  +--------------------+
+  +----------------------+        |                      |
+                                  |                      |  +-----------------+
+                 +-------------+  |  +----------------+  |  | label_structure |
+                 | label_index |  |  | label_location |  |  +-----------------+
+                 +-------------+  |  +----------------+  |  | _structure_id   |
+              +--| index_id    |--+  | _location_id   |--+  | _granularity*   |
+              |  | label_a     |••••>| label_a        |<••••| label_a*        |
+              |  | label_b     |••••>| label_b        |<••••| label_b*        |
+              |  | label_c     |••••>| label_c        |<••••| label_c*        |
+              |  | ...         |••••>| ...            |<••••| ...             |
+              |  +-------------+     +----------------+     +-----------------+
+              |
+              |  +-----------------+                            +----------+
+              |  | weight          |     +-----------------+    | property |
+              |  +-----------------+     | weight_group    |    +----------+
+              |  | weight_id       |     +-----------------+    | key      |
+              |  | weight_group_id |<----| weight_group_id |    | value    |
+              +->| index_id        |•••  | name            |    +----------+
+                 | weight_value    |  •  | description     |
+                 +-----------------+  •  | selectors       |
+                                      ••>| is_complete*    |
+                                         +-----------------+
 
 Asterisks (``*``) denote values that are computed at the application
 layer using data from elsewhere in the schema. Toron may automatically
@@ -133,7 +133,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
             /* label columns added programmatically */
         );
 
-        CREATE TABLE main.structure(
+        CREATE TABLE main.label_structure(
             _structure_id INTEGER PRIMARY KEY,
             _granularity REAL
             /* label columns added programmatically */
@@ -271,14 +271,14 @@ def column_def_location(column: str) -> str:
 
 
 def column_def_structure(column: str) -> str:
-    """Get SQL column definition for 'structure' label column."""
+    """Get SQL column definition for 'label_structure' label column."""
     column = format_identifier(column)
     return f'{column} INTEGER NOT NULL CHECK ({column} IN (0, 1)) DEFAULT 0'
 
 
 def create_schema_constraints(cur: sqlite3.Cursor) -> None:
     """Add indexes and triggers to the 'label_index', 'label_location',
-    and 'structure' tables.
+    and 'label_structure' tables.
 
     These constraints are persistent and only need to be re-created
     if they were explicitly removed.
@@ -287,9 +287,9 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
         This function should create all of the constraints removed by
         the ``drop_schema_constraints()`` function.
     """
-    # Label columns in the `label_index`, `label_location`, and `structure`
-    # tables must all be the same--so we can fetch them from table
-    # and trust that they also exist in the others.
+    # Label columns in the `label_index`, `label_location`, and
+    # `label_structure` tables must all be the same--so we can fetch
+    # them from table and trust that they also exist in the others.
     cur.execute(f"PRAGMA main.table_info('label_index')")
     label_columns = cur.fetchall()[1:]  # Fetch all but first column.
 
@@ -306,7 +306,7 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
         """)
         cur.execute(f"""
             CREATE UNIQUE INDEX IF NOT EXISTS
-                main.unique_structure_label_columns ON structure({columns})
+                main.unique_structure_label_columns ON label_structure({columns})
         """)
 
     # Create UPDATE trigger to prevent changes to undefined record.
@@ -330,7 +330,7 @@ def create_schema_constraints(cur: sqlite3.Cursor) -> None:
 
 def drop_schema_constraints(cur: sqlite3.Cursor) -> None:
     """Remove indexes and triggers from the 'label_index', 'label_location',
-    and 'structure' tables.
+    and 'label_structure' tables.
 
     .. note::
         This function should remove all of the constraints created by
@@ -408,13 +408,13 @@ def verify_node_schema(cur: sqlite3.Cursor) -> None:
         tables = {row[0] for row in cur if not row[0].startswith('sqlite_')}
         node_tables = {
             'attribute_group',
-            'link',
-            'label_location',
             'label_index',
+            'label_location',
+            'label_structure',
+            'link',
+            'mapping',
             'property',
             'quantity',
-            'mapping',
-            'structure',
             'weight',
             'weight_group',
         }

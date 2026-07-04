@@ -44,7 +44,7 @@ FULL_NODE_SCHEMA_V_020 = """
         "label_c" INTEGER NOT NULL CHECK ("label_c" IN (0, 1)) DEFAULT 0
     );
     INSERT INTO "structure" VALUES(1,NULL,0,0,0);
-    INSERT INTO "structure" VALUES(2,1.584962500721156076e+00,1,1,1);
+    INSERT INTO "structure" VALUES(2,1.584962500721156,1,1,1);
 
     CREATE TABLE weight_group(
         weight_group_id INTEGER PRIMARY KEY,
@@ -341,6 +341,16 @@ class TestApplyMigrations(unittest.TestCase):
             INSERT INTO "location" VALUES(1, '1A', '1B', '1C');
             INSERT INTO "location" VALUES(2, '2A', '2B', '2C');
             INSERT INTO "location" VALUES(3, '3A', '3B', '3C');
+
+            CREATE TABLE structure(
+                _structure_id INTEGER PRIMARY KEY,
+                _granularity REAL,
+                "label_a" INTEGER NOT NULL CHECK ("label_a" IN (0, 1)) DEFAULT 0,
+                "label_b" INTEGER NOT NULL CHECK ("label_b" IN (0, 1)) DEFAULT 0,
+                "label_c" INTEGER NOT NULL CHECK ("label_c" IN (0, 1)) DEFAULT 0
+            );
+            INSERT INTO "structure" VALUES(1,NULL,0,0,0);
+            INSERT INTO "structure" VALUES(2,1.584962500721156,1,1,1);
         """)
 
         v020_to_v030_step04_rename_label_tables(self.cur)  # <- Function under test.
@@ -360,6 +370,13 @@ class TestApplyMigrations(unittest.TestCase):
             {(1, '1A', '1B', '1C'),
              (2, '2A', '2B', '2C'),
              (3, '3A', '3B', '3C')},
+        )
+
+        self.cur.execute('SELECT * FROM label_structure')
+        self.assertEqual(
+            set(self.cur.fetchall()),
+            {(1, None, 0, 0, 0),
+             (2, 1.584962500721156, 1, 1, 1)},
         )
 
     def test_v020_to_v030_step05_properties(self):

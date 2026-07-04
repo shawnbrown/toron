@@ -38,7 +38,7 @@ class LabelManager(BaseLabelManager):
                     {schema.column_def_location(column)}
             """)
             self._cursor.execute(f"""
-                ALTER TABLE main.structure ADD COLUMN
+                ALTER TABLE main.label_structure ADD COLUMN
                     {schema.column_def_structure(column)}
             """)
 
@@ -72,7 +72,7 @@ class LabelManager(BaseLabelManager):
                     RENAME COLUMN {name} TO {new_name}
             """)
             self._cursor.execute(f"""
-                ALTER TABLE main.structure
+                ALTER TABLE main.label_structure
                     RENAME COLUMN {name} TO {new_name}
             """)
 
@@ -102,7 +102,7 @@ class LabelManager(BaseLabelManager):
                 f'ALTER TABLE main.label_location DROP COLUMN {column}'
             )
             self._cursor.execute(
-                f'ALTER TABLE main.structure DROP COLUMN {column}'
+                f'ALTER TABLE main.label_structure DROP COLUMN {column}'
             )
 
         schema.create_schema_constraints(self._cursor)
@@ -187,7 +187,7 @@ def legacy_rename_labels(node: 'TopoNode', mapping: Dict[str, str]) -> None:
             cursor.execute('DROP TABLE main.label_location')
             cursor.execute('ALTER TABLE main.new_location RENAME TO label_location')
 
-            # Rebuild 'structure' table with new column names.
+            # Rebuild 'label_structure' table with new column names.
             cursor.execute(f"""
                 CREATE TABLE main.new_structure(
                     _structure_id INTEGER PRIMARY KEY,
@@ -196,10 +196,10 @@ def legacy_rename_labels(node: 'TopoNode', mapping: Dict[str, str]) -> None:
                 )
             """)
             cursor.execute(
-                'INSERT INTO main.new_structure SELECT * FROM main.structure'
+                'INSERT INTO main.new_structure SELECT * FROM main.label_structure'
             )
-            cursor.execute('DROP TABLE main.structure')
-            cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
+            cursor.execute('DROP TABLE main.label_structure')
+            cursor.execute('ALTER TABLE main.new_structure RENAME TO label_structure')
 
             # Check integrity, re-create constraints, and commit transaction.
             schema.verify_foreign_key_check(cursor)
@@ -299,7 +299,7 @@ def legacy_drop_labels(node: 'TopoNode', column: str, *columns: str) -> None:
             cursor.execute('DROP TABLE main.label_location')
             cursor.execute('ALTER TABLE main.new_location RENAME TO label_location')
 
-            # Rebuild 'structure' table with columns_to_keep.
+            # Rebuild 'label_structure' table with columns_to_keep.
             cursor.execute(f"""
                 CREATE TABLE main.new_structure(
                     _structure_id INTEGER PRIMARY KEY,
@@ -310,10 +310,10 @@ def legacy_drop_labels(node: 'TopoNode', column: str, *columns: str) -> None:
             cursor.execute(f"""
                 INSERT INTO main.new_structure
                 SELECT _structure_id, _granularity, {', '.join(formatted_columns_to_keep)}
-                FROM main.structure
+                FROM main.label_structure
             """)
-            cursor.execute('DROP TABLE main.structure')
-            cursor.execute('ALTER TABLE main.new_structure RENAME TO structure')
+            cursor.execute('DROP TABLE main.label_structure')
+            cursor.execute('ALTER TABLE main.new_structure RENAME TO label_structure')
 
             # Check integrity, re-create constraints, and commit transaction.
             schema.verify_foreign_key_check(cursor)

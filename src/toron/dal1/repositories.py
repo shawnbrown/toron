@@ -288,13 +288,13 @@ class StructureRepository(BaseStructureRepository):
         """Add a record to the repository."""
         bits = (bit,) + bits
         qmarks = ', '.join('?' * len(bits))
-        sql = f'INSERT INTO main.structure VALUES (NULL, ?, {qmarks})'
+        sql = f'INSERT INTO main.label_structure VALUES (NULL, ?, {qmarks})'
         self._cursor.execute(sql, (granularity,) + bits)
 
     def get(self, id: int) -> Structure:
         """Get a record from the repository."""
         self._cursor.execute(
-            'SELECT * FROM main.structure WHERE _structure_id=?', (id,)
+            'SELECT * FROM main.label_structure WHERE _structure_id=?', (id,)
         )
         record = self._cursor.fetchone()
         if record is None:
@@ -304,21 +304,21 @@ class StructureRepository(BaseStructureRepository):
     def get_all(self) -> List[Structure]:
         """Get all records sorted from most to least granular."""
         self._cursor.execute(
-            'SELECT * FROM main.structure ORDER BY _granularity DESC'
+            'SELECT * FROM main.label_structure ORDER BY _granularity DESC'
         )
         return [Structure(*record) for record in self._cursor]
 
     def update(self, record: Structure) -> None:
         """Update a record in the repository."""
         # Get index column names (slice off "_structure_id" and "_granularity").
-        self._cursor.execute(f"PRAGMA main.table_info('structure')")
+        self._cursor.execute(f"PRAGMA main.table_info('label_structure')")
         col_names = (row[1] for row in self._cursor.fetchall()[2:])
 
         # Format SQL statement.
         columns = ', '.join(format_identifier(row) for row in col_names)
         qmarks = ', '.join('?' * len(record.bits))
         sql = f"""
-            UPDATE main.structure
+            UPDATE main.label_structure
             SET (_granularity, {columns}) = (?, {qmarks})
             WHERE _structure_id=?
         """
@@ -330,12 +330,12 @@ class StructureRepository(BaseStructureRepository):
     def delete(self, id: int) -> None:
         """Delete a record from the repository."""
         self._cursor.execute(
-            'DELETE FROM main.structure WHERE _structure_id=?', (id,)
+            'DELETE FROM main.label_structure WHERE _structure_id=?', (id,)
         )
 
     def get_label_names(self) -> List[str]:
         """Get a list of label column names."""
-        self._cursor.execute(f"PRAGMA main.table_info('structure')")
+        self._cursor.execute(f"PRAGMA main.table_info('label_structure')")
         column_names = list(row[1] for row in self._cursor)
         return column_names[2:]  # Slice-off '_structure_id' and '_granularity'.
 
