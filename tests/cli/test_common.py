@@ -58,6 +58,24 @@ class TestNormalizeArgList(unittest.TestCase):
             ['A', 'B', 'C'],
         )
 
+    def test_empty_csv_column(self):
+        self.assertEqual(
+            normalize_arg_list(['A,,B,C']),  # <- Column with no value (",,").
+            ['A', 'B', 'C'],
+        )
+
+    def test_trailing_commas(self):
+        self.assertEqual(
+            normalize_arg_list(['A,', 'B,', 'C,']),
+            ['A', 'B', 'C'],
+        )
+
+    def test_comma_only_args(self):
+        self.assertEqual(
+            normalize_arg_list(['A', ',', 'B', ',', ',', 'C', ',']),
+            ['A', 'B', 'C'],
+        )
+
     def test_quoted_comma(self):
         self.assertEqual(
             normalize_arg_list(['A,"B,C"']),
