@@ -401,6 +401,34 @@ class TopoNode(object):
             reordered_labels = change_label_order(ordered_labels, label, offset=offset)
             set_labels_in_display_order(reordered_labels, index_repo, property_repo)
 
+    def rename_label_column(self, old_label: str, new_label: str) -> None:
+        """Rename a label column."""
+        with self._managed_transaction() as cursor:
+            label_manager = self._dal.LabelManager(cursor)
+            property_repo = self._dal.PropertyRepository(cursor)
+
+            # Check old column name.
+            existing_labels = label_manager.get_columns()
+            if old_label not in existing_labels:
+                raise ToronError(f'no label {old_label!r}')
+
+            # Check new column name.
+            validate_new_index_columns(
+                new_column_names=[new_label],
+                reserved_identifiers=self._dal.reserved_identifiers,
+                label_manager=label_manager,
+                property_repo=property_repo,
+                attribute_repo=self._dal.AttributeGroupRepository(cursor),
+            )
+
+            # Rename column and update discrete categories.
+            label_manager.rename_columns({old_label: new_label})
+            rename_discrete_categories(
+                mapping={old_label: new_label},
+                label_manager=label_manager,
+                property_repo=property_repo,
+            )
+
     @property
     def index_columns(self) -> List[str]:
         """Return label columns in storage order."""

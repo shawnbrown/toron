@@ -733,6 +733,103 @@ class TestGetAndReorderLabelsMethods(unittest.TestCase):
         )
 
 
+class TestRenameLabelColumn(unittest.TestCase):
+    @staticmethod
+    def add_cols_helper(node, *columns):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            manager = node._dal.LabelManager(cursor)
+            manager.add_columns(*columns)
+
+    @staticmethod
+    def get_cols_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            return node._dal.LabelManager(cursor).get_columns()
+
+    @staticmethod
+    def add_categories_helper(node, categories):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+            categories = [list(x) for x in categories]
+            prop_repo.add('discrete_categories', categories)
+
+    @staticmethod
+    def get_categories_helper(node):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            prop_repo = node._dal.PropertyRepository(cursor)
+            return [set(x) for x in prop_repo.get('discrete_categories')]
+
+    @staticmethod
+    def add_attributes_helper(node, *attributes):  # <- Helper function.
+        with node._managed_cursor() as cursor:
+            property_repo = node._dal.PropertyRepository(cursor)
+            property_repo.add('registered_attributes', list(attributes))
+
+    def test_rename_columns(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        node.rename_label_column(old_label='B', new_label='E')
+        node.rename_label_column(old_label='D', new_label='F')
+
+        self.assertEqual(self.get_cols_helper(node), ('A', 'E', 'C', 'F'))
+
+    def test_rename_columns_and_categories(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+        self.add_categories_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
+
+        node.rename_label_column('B', 'E')
+        node.rename_label_column('D', 'F')
+
+        self.assertEqual(self.get_cols_helper(node), ('A', 'E', 'C', 'F'))
+        self.assertEqual(
+            self.get_categories_helper(node),
+            [{'A'}, {'A', 'E'}, {'A', 'E', 'C', 'F'}],
+            msg='categories should be automatically renamed, too',
+        )
+
+    def test_domain_conflict(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        regex = "'domain' is a reserved name"
+        with self.assertRaisesRegex(ToronError, regex):
+            node.rename_label_column('A', 'domain')
+
+    def test_attribute_conflict(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+        self.add_attributes_helper(node, 'E','F', 'G')
+
+        regex = "'E' is used as an attribute name"
+        with self.assertRaisesRegex(ToronError, regex):
+            node.rename_label_column('B', 'E')
+
+    def test_reserved_identifier(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        regex = "'value' is a reserved name"
+        with self.assertRaisesRegex(ToronError, regex):
+            node.rename_label_column('A', 'value')
+
+    def test_old_label_missing(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        regex = "no label 'E'"
+        with self.assertRaisesRegex(ToronError, regex):
+            node.rename_label_column('E', 'F')
+
+    def test_new_label_conflict(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        regex = "index label column 'B' already exists"
+        with self.assertRaisesRegex(ToronError, regex):
+            node.rename_label_column('A', 'B')
+
+
 class TestIndexColumnMethods(unittest.TestCase):
     @staticmethod
     def get_cols_helper(node):  # <- Helper function.
