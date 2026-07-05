@@ -185,7 +185,18 @@ class LabelManagerBaseTest(ABC):
         cursor = connector.acquire_cursor(connection)
         self.addCleanup(lambda: connector.release_cursor(cursor))
 
-        self.manager = self.dal.LabelManager(cursor)
+        self.repository = self.dal.LabelManager(cursor)
+
+    def test_add_and_get_columns(self):
+        """Test add_columns() and get_columns() methods."""
+        self.repository.add_columns('A', 'B')
+        self.assertEqual(self.repository.get_columns(), ('A', 'B'))
+
+        self.repository.add_columns('C')
+        self.assertEqual(self.repository.get_columns(), ('A', 'B', 'C'))
+
+        self.repository.add_columns('D*')  # Should escape chars like `*`.
+        self.assertEqual(self.repository.get_columns(), ('A', 'B', 'C', 'D*'))
 
 
 class IndexRepositoryBaseTest(ABC):
