@@ -198,6 +198,16 @@ class LabelManagerBaseTest(ABC):
         self.repository.add_columns('D*')  # Should escape chars like `*`.
         self.assertEqual(self.repository.get_columns(), ('A', 'B', 'C', 'D*'))
 
+    def test_rename_columns(self):
+        """Test rename_columns() method."""
+        self.repository.add_columns('A', 'B', 'C')
+
+        self.repository.rename_columns({'C': 'X'})
+        self.assertEqual(self.repository.get_columns(), ('A', 'B', 'X'))
+
+        self.repository.rename_columns({'X': 'X*'})  # Should escape chars like `*`.
+        self.assertEqual(self.repository.get_columns(), ('A', 'B', 'X*'))
+
 
 class IndexRepositoryBaseTest(ABC):
     @property

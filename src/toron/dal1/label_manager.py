@@ -63,6 +63,9 @@ class LabelManager(BaseLabelManager):
             raise Exception(msg)
 
         for name, new_name in mapping.items():
+            name = schema.format_identifier(name)
+            new_name = schema.format_identifier(new_name)
+
             self._cursor.execute(f"""
                 ALTER TABLE main.label_index
                     RENAME COLUMN {name} TO {new_name}
