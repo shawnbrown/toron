@@ -87,7 +87,7 @@ def validate_new_index_columns(
     all_reserved_identifiers = \
         reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
     existing_columns = set(label_manager.get_columns())
-    attribute_names = set(attribute_repo.get_all_attribute_names())
+    attribute_names = set(get_registered_attributes(property_repo))
 
     for col in new_column_names:
         if col in all_reserved_identifiers:

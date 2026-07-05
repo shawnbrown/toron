@@ -120,7 +120,7 @@ class TestValidateNewLabelColumns(unittest.TestCase):
             )
 
     def test_attribute_collision(self):
-        self.attribute_repo.add({'corge': '555'})
+        self.property_repo.add('registered_attributes', ['corge'])
 
         regex = "'corge' is used as an attribute name"
         with self.assertRaisesRegex(ToronError, regex):
