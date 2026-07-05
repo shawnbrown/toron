@@ -922,7 +922,6 @@ class TestIndexColumnMethods(unittest.TestCase):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
-        # Check target-name conflict.
         regex = "'value' is a reserved name"
         with self.assertRaisesRegex(ToronError, regex):
             if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
@@ -931,14 +930,13 @@ class TestIndexColumnMethods(unittest.TestCase):
                 import toron.dal1
                 toron.dal1.legacy_rename_labels(node, {'B': 'value'})
 
-        # Check source-name conflict.
-        regex = "'index_id' is a reserved name"
+    def test_rename_index_columns_bad_old_label(self):
+        node = TopoNode()
+        self.add_cols_helper(node, 'A', 'B', 'C', 'D')
+
+        regex = "no label 'E'"
         with self.assertRaisesRegex(ToronError, regex):
-            if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
-                node.rename_index_columns({'index_id': 'G'})
-            else:
-                import toron.dal1
-                toron.dal1.legacy_rename_labels(node, {'index_id': 'G'})
+            node.rename_index_columns({'E': 'G'})
 
     def test_drop_index_columns(self):
         node = TopoNode()

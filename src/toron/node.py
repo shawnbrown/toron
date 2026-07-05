@@ -484,12 +484,10 @@ class TopoNode(object):
             property_repo = self._dal.PropertyRepository(cursor)
 
             # Check old column names.
-            all_reserved_identifiers = \
-                self._dal.reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
-            for col in mapping.keys():
-                if col in all_reserved_identifiers:
-                    msg = f'{col!r} is a reserved name'
-                    raise ToronError(msg)
+            existing_labels = label_manager.get_columns()
+            for old_label in mapping.keys():
+                if old_label not in existing_labels:
+                    raise ToronError(f'no label {old_label!r}')
 
             # Check new column names.
             validate_new_index_columns(
