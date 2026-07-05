@@ -12,6 +12,7 @@ from toron.cli.main import (
     command_init,
     command_add,
     command_update,
+    command_rename,
     command_index,
     command_quantity,
     command_mapping,
@@ -257,6 +258,27 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 '--move-left',   # <- Should only allow one direction.
                 '--move-right',  # <- Should only allow one direction.
             ]),
+
+    def test_subcommand_rename_label(self):
+        """Check "rename label" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'rename',
+                'label',
+                'foo',
+                'bar',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='rename',
+                element='label',
+                old_label='foo',
+                new_label='bar',
+                backup=True,
+                func=command_rename.rename_label,
+            ),
+        )
 
     def test_subcommand_index(self):
         """Check "index" subparser."""

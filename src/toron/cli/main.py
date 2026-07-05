@@ -21,6 +21,7 @@ from . import (
     command_info,
     command_index,
     command_update,
+    command_rename,
     command_quantity,
     command_mapping,
     command_init,
@@ -274,6 +275,33 @@ def get_parser() -> argparse.ArgumentParser:
                                      dest='backup',
                                      help='do not make a backup file')
     parser_update_label.set_defaults(func=command_update.update_label)
+
+    # Subcommand: rename
+    parser_rename = subparsers.add_parser(
+        'rename',
+        help='rename properties in node file',
+        description='Rename properties in an existing node file.',
+    )
+    parser_rename_subparsers = parser_rename.add_subparsers(
+        dest='element',
+        required=True,
+        metavar='ELEMENT',
+    )
+
+    # Subcommand: rename label
+    parser_rename_label = parser_rename_subparsers.add_parser(
+        'label',
+        help='rename an index label',
+        description='Rename OLD_LABEL to NEW_LABEL.',
+    )
+    parser_rename_label.add_argument('old_label',
+                                     help='index label to rename', metavar='OLD_LABEL')
+    parser_rename_label.add_argument('new_label',
+                                     help='replacement label name', metavar='NEW_LABEL')
+    parser_rename_label.add_argument('--no-backup', action='store_false',
+                                     dest='backup',
+                                     help='do not make a backup file')
+    parser_rename_label.set_defaults(func=command_rename.rename_label)
 
     # Subcommand: index
     parser_index = subparsers.add_parser(
