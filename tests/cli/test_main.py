@@ -309,7 +309,7 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 command='quantity',
                 value_column='quantity',
                 allow_invalid_label=False,
-                allow_invalid_category=False,
+                allow_invalid_partition=False,
                 on_existing='abort',
                 backup=True,
                 func=command_quantity.process_quantity_action,

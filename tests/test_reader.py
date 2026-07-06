@@ -196,7 +196,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
 
         self.node = TopoNode()
         self.node.add_index_columns('A', 'B', 'C')
-        self.node.add_discrete_categories({'A', 'B', 'C'})
+        self.node.add_partition_definitions({'A', 'B', 'C'})
         self.node.insert_index([
             ['A', 'B', 'C'],
             ['a1', 'b1', 'c1'],  # <- index_id=1

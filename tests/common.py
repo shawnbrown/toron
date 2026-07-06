@@ -90,7 +90,7 @@ class TopoNodeFixtures(object):
         self.node_a = TopoNode()
         self.set_unique_id(self.node_a, '11111111-1111-1111-1111-111111111111')
         self.node_a.add_index_columns('foo', 'bar', 'baz')
-        self.node_a.add_discrete_categories({'foo', 'bar', 'baz'})
+        self.node_a.add_partition_definitions({'foo', 'bar', 'baz'})
         self.node_a.add_weight_group('qux', make_default=True)
         self.node_a.insert_index([
             ['foo', 'bar', 'baz', 'qux'],
@@ -102,7 +102,7 @@ class TopoNodeFixtures(object):
         self.node_b = TopoNode()
         self.set_unique_id(self.node_b, '22222222-2222-2222-2222-222222222222')
         self.node_b.add_index_columns('foo', 'bar')
-        self.node_b.add_discrete_categories({'foo', 'bar'})
+        self.node_b.add_partition_definitions({'foo', 'bar'})
         self.node_b.add_weight_group('quux', make_default=True)
         self.node_b.insert_index([
             ['foo', 'bar', 'quux'],
@@ -114,7 +114,7 @@ class TopoNodeFixtures(object):
         self.node_c = TopoNode()
         self.set_unique_id(self.node_c, '33333333-3333-3333-3333-333333333333')
         self.node_c.add_index_columns('lbl1')
-        self.node_c.add_discrete_categories({'lbl1'})
+        self.node_c.add_partition_definitions({'lbl1'})
         self.node_c.add_weight_group('wght1', make_default=True)
         self.node_c.insert_index([
             ['lbl1', 'wght1'],
@@ -126,7 +126,7 @@ class TopoNodeFixtures(object):
         self.node_d = TopoNode()
         self.set_unique_id(self.node_d, '44444444-4444-4444-4444-444444444444')
         self.node_d.add_index_columns('lbl1', 'lbl2')
-        self.node_d.add_discrete_categories({'lbl1'})
+        self.node_d.add_partition_definitions({'lbl1'})
         self.node_d.add_weight_group('wght1', make_default=True)
         self.node_d.insert_index([
             ['lbl1', 'lbl2', 'wght1'],
@@ -142,7 +142,7 @@ class TopoNodeFixtures(object):
         self.set_unique_id(self.node_e, '55555555-5555-5555-5555-555555555555')
         self.node_e.path_hint = 'node_e.toron'
         self.node_e.add_index_columns('idx1', 'idx2', 'idx3')
-        self.node_e.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
+        self.node_e.add_partition_definitions({'idx1'}, {'idx1', 'idx2'})
         self.node_e.add_weight_group('wght', make_default=True)
         self.node_e.insert_index([
             ['idx1', 'idx2', 'idx3', 'wght'],
@@ -162,7 +162,7 @@ class TopoNodeFixtures(object):
         self.set_unique_id(self.node_f, '66666666-6666-6666-6666-666666666666')
         self.node_f.path_hint = 'node_f.toron'
         self.node_f.add_index_columns('idx1', 'idx2', 'idx3')
-        self.node_f.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
+        self.node_f.add_partition_definitions({'idx1'}, {'idx1', 'idx2'})
         self.node_f.add_weight_group('wght', make_default=True)
         self.node_f.insert_index([
             ['idx1', 'idx2', 'idx3', 'wght'],

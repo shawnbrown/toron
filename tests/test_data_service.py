@@ -31,11 +31,11 @@ from toron.data_service import (
     set_default_weight_group,
     get_default_weight_group,
     find_matching_weight_groups,
-    rename_discrete_categories,
+    rename_partition_definitions,
     rebuild_structure_table,
-    add_discrete_categories,
-    add_discrete_category,
-    remove_discrete_category,
+    add_partition_definitions,
+    add_partition_definition,
+    remove_partition_definition,
     refresh_structure_granularity,
     set_domain,
     get_domain,
@@ -1038,7 +1038,7 @@ class TestFindMatchingWeightGroups(unittest.TestCase):
         self.assertEqual(list(result), expected)
 
 
-class TestRenameDiscreteCategories(unittest.TestCase):
+class TestRenamePartitionDefinitions(unittest.TestCase):
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -1054,13 +1054,13 @@ class TestRenameDiscreteCategories(unittest.TestCase):
         self.property_repo = dal.PropertyRepository(cur)
 
     def test_rename(self):
-        self.property_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+        self.property_repo.add('partition_definitions', [['A'], ['B'], ['A', 'C']])
 
-        rename_discrete_categories({'B': 'X', 'C': 'Z'}, self.label_manager, self.property_repo)
+        rename_partition_definitions({'B': 'X', 'C': 'Z'}, self.label_manager, self.property_repo)
 
-        categories = self.property_repo.get('discrete_categories')
+        definitions = self.property_repo.get('partition_definitions')
         self.assertEqual(
-            [set(cat) for cat in categories],
+            [set(pdef) for pdef in definitions],
             [{'A'}, {'X'}, {'A', 'Z'}],
         )
 
@@ -1085,7 +1085,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         self.optimizations = dal.optimizations
 
         self.label_manager.add_columns('A', 'B', 'C')
-        self.property_repo.add('discrete_categories', [['A', 'B', 'C']])
+        self.property_repo.add('partition_definitions', [['A', 'B', 'C']])
         self.index_repo.add('a1', 'b1', 'c1')
         self.index_repo.add('a1', 'b1', 'c2')
         self.index_repo.add('a1', 'b2', 'c3')
@@ -1097,7 +1097,7 @@ class TestRebuildStructureTable(unittest.TestCase):
 
     def test_rebuild_structure(self):
         self.property_repo.update(
-            'discrete_categories', [['A'], ['A', 'B'], ['A', 'B', 'C']]
+            'partition_definitions', [['A'], ['A', 'B'], ['A', 'B', 'C']]
         )
 
         expected = [
@@ -1140,8 +1140,8 @@ class TestRebuildStructureTable(unittest.TestCase):
         self.assertEqual(normalize_structures(self.structure_repo.get_all()), expected)
 
     def test_rebuild_structure_whole_space_only(self):
-        """When the only category is the "whole space", the function
-        should build the "trivial topology".
+        """When the only partition definition is the "whole space", the
+        function should build the "trivial topology".
 
         The trivial topology (also called the "indiscrete topology")
         is one where the only open sets are the empty set (represented
@@ -1149,9 +1149,9 @@ class TestRebuildStructureTable(unittest.TestCase):
         (represented by all ones, e.g., ``(1, 1, 1)``).
         """
         self.assertEqual(
-            self.property_repo.get('discrete_categories'),
+            self.property_repo.get('partition_definitions'),
             [['A', 'B', 'C']],
-            msg='test should start with single "whole space" category',
+            msg='test should start with single "whole space" definition',
         )
 
         trivial_topology = [
@@ -1184,11 +1184,11 @@ class TestRebuildStructureTable(unittest.TestCase):
             trivial_topology,
         )
 
-    def test_rebuild_structure_no_categories(self):
-        """Should fail if columns exist but discrete_categories are missing."""
-        self.property_repo.delete('discrete_categories')  # <- No categories!
+    def test_rebuild_structure_no_partition_definitions(self):
+        """Should fail if columns exist but partition_definitions are missing."""
+        self.property_repo.delete('partition_definitions')  # <- No definitions!
 
-        regex = "node has columns but no 'discrete_categories'"
+        regex = "node has columns but no partition definitions"
         with self.assertRaisesRegex(RuntimeError, regex):
             rebuild_structure_table(
                 self.label_manager,
@@ -1200,7 +1200,7 @@ class TestRebuildStructureTable(unittest.TestCase):
             )
 
 
-class TestAddDiscreteCategories(unittest.TestCase):
+class TestAddDiscretePartitions(unittest.TestCase):
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -1213,68 +1213,68 @@ class TestAddDiscreteCategories(unittest.TestCase):
         self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
 
-    def get_categories_helper(self):
-        """Helper function to return existing categories."""
-        return [set(x) for x in self.property_repo.get('discrete_categories')]
+    def get_definitions_helper(self):
+        """Helper function to return existing definitions."""
+        return [set(x) for x in self.property_repo.get('partition_definitions')]
 
-    def test_create_new_categories(self):
-        """Test creating new categories when none previously exist."""
+    def test_create_new_definitions(self):
+        """Test creating new definitions when none previously exist."""
         self.label_manager.add_columns('A', 'B')
 
-        add_discrete_categories(
-            categories=[{'A', 'B'}, {'A'}],
+        add_partition_definitions(
+            definitions=[{'A', 'B'}, {'A'}],
             label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
-        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+        self.assertEqual(self.get_definitions_helper(), [{'A'}, {'A', 'B'}])
 
     def test_add_to_existing(self):
-        """Test adding new categories to previously existing categories."""
+        """Test adding new definitions to previously existing definitions."""
         self.label_manager.add_columns('A', 'B')
-        add_discrete_categories([{'A', 'B'}], self.label_manager, self.property_repo)
+        add_partition_definitions([{'A', 'B'}], self.label_manager, self.property_repo)
 
-        add_discrete_categories(
-            categories=[{'A'}],  # <- Adds {'A'} to list of existing columns.
+        add_partition_definitions(
+            definitions=[{'A'}],  # <- Adds {'A'} to list of existing columns.
             label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
-        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+        self.assertEqual(self.get_definitions_helper(), [{'A'}, {'A', 'B'}])
 
     def test_add_whole_space_if_missing(self):
         """The whole space ({'A', 'B'}) should be included when necessary."""
         self.label_manager.add_columns('A', 'B')
 
-        add_discrete_categories(
-            categories=[{'A'}],
+        add_partition_definitions(
+            definitions=[{'A'}],
             label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
-        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+        self.assertEqual(self.get_definitions_helper(), [{'A'}, {'A', 'B'}])
 
-    def test_warn_on_redundent_categories(self):
-        """Check that a warning is raised on redundant categories."""
+    def test_warn_on_redundent_definitions(self):
+        """Check that a warning is raised on redundant definitions."""
         self.label_manager.add_columns('A', 'B')
-        add_discrete_categories([{'A'}, {'B'}], self.label_manager, self.property_repo)
+        add_partition_definitions([{'A'}, {'B'}], self.label_manager, self.property_repo)
 
         with self.assertWarns(ToronWarning) as cm:
-            add_discrete_categories(
-                categories=[{'A', 'B'}],  # <- Category already covered by existing categories.
+            add_partition_definitions(
+                definitions=[{'A', 'B'}],  # <- Already covered by existing definitions.
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
         # Check warning message.
-        regex = r"omitting redundant categories: \{(?:'A', 'B'|'B', 'A')\}"
+        regex = r"omitting redundant definitions: \{(?:'A', 'B'|'B', 'A')\}"
         self.assertRegex(str(cm.warning), regex)
 
     def test_no_columns_defined(self):
-        regex = 'must add index columns before defining categories'
+        regex = 'must add index labels before specifying partitions'
         with self.assertRaisesRegex(RuntimeError, regex):
-            add_discrete_categories(
-                categories=[{'A', 'B'}, {'A'}],
+            add_partition_definitions(
+                definitions=[{'A', 'B'}, {'A'}],
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
@@ -1282,16 +1282,16 @@ class TestAddDiscreteCategories(unittest.TestCase):
     def test_bad_column_name(self):
         self.label_manager.add_columns('A', 'B')
 
-        regex = "invalid category value 'C', values must be present in index columns"
+        regex = "invalid label name 'C', must be present in index"
         with self.assertRaisesRegex(ValueError, regex):
-            add_discrete_categories(
-                categories=[{'A', 'B'}, {'C'}],
+            add_partition_definitions(
+                definitions=[{'A', 'B'}, {'C'}],
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
 
-class TestAddAndRemoveDiscreteCategory(unittest.TestCase):
+class TestAddAndRemovePartitionDefinition(unittest.TestCase):
     def setUp(self):
         dal = data_access.get_data_access_layer()
 
@@ -1304,67 +1304,67 @@ class TestAddAndRemoveDiscreteCategory(unittest.TestCase):
         self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
 
-    def get_categories_helper(self):
-        """Helper function to return existing categories."""
+    def get_definitions_helper(self):
+        """Helper function to return existing partition definitions."""
         try:
-            categories_json = self.property_repo.get('discrete_categories')
+            definitions_json = self.property_repo.get('partition_definitions')
         except:
             return None
-        return [set(x) for x in categories_json]
+        return [set(x) for x in definitions_json]
 
-    def test_add_category_create_new(self):
-        """Test creating a new category when none previously exist."""
+    def test_add_definition_create_new(self):
+        """Test creating a new definition when none previously exist."""
         self.label_manager.add_columns('A', 'B')
 
-        add_discrete_category(  # <- Function under test.
-            category={'A'},
+        add_partition_definition(  # <- Function under test.
+            definition={'A'},
             label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
         # The whole space {'A', 'B'} is also added automatically
         # if it doesn't already exist.
-        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+        self.assertEqual(self.get_definitions_helper(), [{'A'}, {'A', 'B'}])
 
     def test_add_to_existing(self):
-        """Test adding new categories to previously existing categories."""
+        """Test adding new definition to previously existing definition."""
         self.label_manager.add_columns('A', 'B')
 
-        add_discrete_category(  # <- Function under test.
-            category={'A'},
+        add_partition_definition(  # <- Function under test.
+            definition={'A'},
             label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
-        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B'}])
+        self.assertEqual(self.get_definitions_helper(), [{'A'}, {'A', 'B'}])
 
-        add_discrete_category(  # <- Function under test.
-            category={'B'},
+        add_partition_definition(  # <- Function under test.
+            definition={'B'},
             label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
         self.assertEqual(
-            set(frozenset(x) for x in self.get_categories_helper()),
+            set(frozenset(x) for x in self.get_definitions_helper()),
             {frozenset(['A']), frozenset(['B'])}
         )
 
-    def test_add_redundant_category(self):
-        """Should raise error if category is redundant."""
+    def test_add_redundant_definition(self):
+        """Should raise error if definition is redundant."""
         self.label_manager.add_columns('A', 'B')
-        add_discrete_categories([{'A'}, {'B'}], self.label_manager, self.property_repo)
+        add_partition_definitions([{'A'}, {'B'}], self.label_manager, self.property_repo)
 
-        regex = r"category \{'A', 'B'\} is already covered by a union of existing categories"
+        regex = r"\{'A', 'B'\} is already covered by a union of existing partition definitions"
         with self.assertRaisesRegex(RuntimeError, regex):
-            add_discrete_category(  # <- Function under test.
-                category={'A', 'B'},  # <- Already covered by existing categories.
+            add_partition_definition(  # <- Function under test.
+                definition={'A', 'B'},  # <- Already covered by existing definitions.
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
     def test_add_when_no_columns_defined(self):
-        regex = 'must add index labels before defining a category'
+        regex = 'must add index labels before specifying a partition'
         with self.assertRaisesRegex(RuntimeError, regex):
-            add_discrete_category(  # <- Function under test.
-                category={'A', 'B', 'C'},
+            add_partition_definition(  # <- Function under test.
+                definition={'A', 'B', 'C'},
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
@@ -1374,36 +1374,36 @@ class TestAddAndRemoveDiscreteCategory(unittest.TestCase):
 
         regex = "invalid partition, no index label 'C'"
         with self.assertRaisesRegex(ValueError, regex):
-            add_discrete_category(  # <- Function under test.
-                category={'A', 'C'},
+            add_partition_definition(  # <- Function under test.
+                definition={'A', 'C'},
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
 
-    def test_remove_category(self):
+    def test_remove_partition(self):
         self.label_manager.add_columns('A', 'B', 'C')
         self.property_repo.add_or_update(
-            'discrete_categories', [['A'], ['A', 'B'], ['A', 'B', 'C']]
+            'partition_definitions', [['A'], ['A', 'B'], ['A', 'B', 'C']]
         )
 
-        remove_discrete_category(  # <- Function under test.
-            category={'A', 'B'},
+        remove_partition_definition(  # <- Function under test.
+            definition={'A', 'B'},
             label_manager=self.label_manager,
             property_repo=self.property_repo,
         )
 
-        self.assertEqual(self.get_categories_helper(), [{'A'}, {'A', 'B', 'C'}])
+        self.assertEqual(self.get_definitions_helper(), [{'A'}, {'A', 'B', 'C'}])
 
-    def test_remove_category_whole_space_error(self):
+    def test_remove_partition_whole_space_error(self):
         self.label_manager.add_columns('A', 'B', 'C')
         self.property_repo.add_or_update(
-            'discrete_categories', [['A', 'B'], ['A', 'C']]  # <- Whole space is a union of these categories.
+            'partition_definitions', [['A', 'B'], ['A', 'C']]  # <- Whole space is a union of these definitions.
         )
 
         regex = r"cannot drop whole space: {'A', 'B', 'C'}"
         with self.assertRaisesRegex(IntegrityError, regex):
-            remove_discrete_category(  # <- Function under test.
-                category={'A', 'B', 'C'},
+            remove_partition_definition(  # <- Function under test.
+                definition={'A', 'B', 'C'},
                 label_manager=self.label_manager,
                 property_repo=self.property_repo,
             )
@@ -1439,9 +1439,9 @@ class TestRefreshStructureGranularity(unittest.TestCase):
         self.index_repo.add('a1', 'b2', 'c4', 'd8')
 
     def test_refresh_structure_granularity(self):
-        # Define categories and create structure with `None` for granularity.
+        # Define definitions and create structure with `None` for granularity.
         self.property_repo.add(
-            'discrete_categories',
+            'partition_definitions',
             [['A'], ['A', 'B'], ['A', 'B', 'C'], ['A', 'B', 'C', 'D']],
         )
         self.structure_repo.add(None, 0, 0, 0, 0)

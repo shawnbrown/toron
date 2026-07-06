@@ -48,7 +48,7 @@ class TestNodeAddIndexColumns(unittest.TestCase):
         self.assertEqual(actual, expected)
 
 
-class TestNodeAddDiscreteCategories(unittest.TestCase):
+class TestNodeAddPartitionDefinition(unittest.TestCase):
     def setUp(self):
         self.node = xNode()
         self.dal = self.node._dal
@@ -56,14 +56,14 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
 
     def test_add_categories_when_none_exist(self):
         self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
-        self.dal.set_data({'discrete_categories': []})  # <- Erase any existing categories.
+        self.dal.set_data({'partition_definitions': []})  # <- Erase any existing categories.
 
         categories = [{'A'}, {'B'}, {'C'}]
-        self.node.add_discrete_categories(categories)  # <- Method under test.
+        self.node.add_partition_definitions(categories)  # <- Method under test.
 
-        data = self.dal.get_data(['discrete_categories'])
+        data = self.dal.get_data(['partition_definitions'])
         self.assertEqual(
-            data['discrete_categories'],
+            data['partition_definitions'],
             categories,
             msg='should match given categories',
         )
@@ -79,13 +79,13 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         categories = [{'A'}, {'A', 'B'}]
         structure = [set(), {'A'}, {'B', 'A'}]
         self.dal.set_data({'add_index_columns': columns})
-        self.dal.set_data({'discrete_categories': categories})
+        self.dal.set_data({'partition_definitions': categories})
 
-        self.node.add_discrete_categories([{'B'}, {'A', 'B', 'C'}])  # <- Method under test.
+        self.node.add_partition_definitions([{'B'}, {'A', 'B', 'C'}])  # <- Method under test.
 
-        data = self.dal.get_data(['discrete_categories'])
+        data = self.dal.get_data(['partition_definitions'])
         self.assertEqual(
-            data['discrete_categories'],
+            data['partition_definitions'],
             [{'A'}, {'B'}, {'A', 'B', 'C'}],
         )
 
@@ -99,15 +99,15 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         categories = [{'A'}, {'B'}, {'A', 'B', 'C'}]
         structure = [set(), {'A'}, {'B'}, {'A', 'B'}, {'A', 'B', 'C'}]
         self.dal.set_data({'add_index_columns': columns})
-        self.dal.set_data({'discrete_categories': categories})
+        self.dal.set_data({'partition_definitions': categories})
 
         regex = "omitting categories already covered: {('A', 'B'|'B', 'A')}"
         with self.assertWarnsRegex(ToronWarning, regex):
-            self.node.add_discrete_categories([{'A', 'B'}, {'A', 'C'}])  # <- Method under test.
+            self.node.add_partition_definitions([{'A', 'B'}, {'A', 'C'}])  # <- Method under test.
 
-        data = self.dal.get_data(['discrete_categories'])
+        data = self.dal.get_data(['partition_definitions'])
         self.assertEqual(
-            data['discrete_categories'],
+            data['partition_definitions'],
             [{'A'}, {'B'}, {'A', 'C'}],
         )
 
@@ -117,8 +117,8 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
                     (1, 0, 1), (1, 1, 0), (1, 1, 1)}
         self.assertEqual(actual, expected)
 
-    def test_structure_without_discrete_categories(self):
-        """When no discrete categories are defined, the `structure`
+    def test_structure_without_partition_definitions(self):
+        """When no partition definitions are defined, the `structure`
         table should contain the "indiscrete topology".
 
         The indiscrete topology (also called the trivial topology) is
@@ -127,9 +127,9 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         """
         self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
 
-        self.node.add_discrete_categories([])  # <- Method under test.
+        self.node.add_partition_definitions([])  # <- Method under test.
 
-        self.cursor.execute("SELECT value FROM main.property WHERE key='discrete_categories'")
+        self.cursor.execute("SELECT value FROM main.property WHERE key='partition_definitions'")
         actual = [set(x) for x in self.cursor.fetchone()[0]]
         indiscrete_category = [{'A', 'B', 'C'}]
         self.assertEqual(actual, indiscrete_category)
@@ -140,7 +140,7 @@ class TestNodeAddDiscreteCategories(unittest.TestCase):
         self.assertEqual(actual, indiscrete_topology)
 
 
-class TestNodeRemoveDiscreteCategories(unittest.TestCase):
+class TestNodeRemovePartitionDefinition(unittest.TestCase):
     def setUp(self):
         self.node = xNode()
         self.dal = self.node._dal
@@ -149,13 +149,13 @@ class TestNodeRemoveDiscreteCategories(unittest.TestCase):
     def test_remove_categories(self):
         self.node.add_index_columns(['A', 'B', 'C'])
         categories = [{'A'}, {'B'}, {'C'}]
-        self.node.add_discrete_categories(categories)
+        self.node.add_partition_definitions(categories)
 
-        self.node.remove_discrete_categories([{'C'}])  # <- Method under test.
+        self.node.remove_partition_definitions([{'C'}])  # <- Method under test.
 
-        data = self.dal.get_data(['discrete_categories'])
+        data = self.dal.get_data(['partition_definitions'])
         self.assertEqual(
-            data['discrete_categories'],
+            data['partition_definitions'],
             [{'A'}, {'B'}, {'A', 'B', 'C'}],
         )
 

@@ -29,7 +29,7 @@ def read_from_stdin(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
             value_column=args.value_column,
             data=reader,
             allow_invalid_label=args.allow_invalid_label,
-            allow_invalid_category=args.allow_invalid_category,
+            allow_invalid_partition=args.allow_invalid_partition,
             on_existing=args.on_existing,
         )
     except ValueError as err:

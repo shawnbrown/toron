@@ -394,6 +394,7 @@ class TestApplyMigrations(unittest.TestCase):
                 value TEXT_JSON
             );
             INSERT INTO "property" VALUES('toron_schema_version', '"0.2.0"');
+            INSERT INTO "property" VALUES('discrete_categories','[["label_b", "label_c", "label_a"]]');
             INSERT INTO "property" VALUES('domain', '{"domain": "foo_bar"}');
         """)
 
@@ -407,6 +408,12 @@ class TestApplyMigrations(unittest.TestCase):
 
         self.cur.execute("SELECT value from property where key='registered_attributes'")
         self.assertEqual(self.cur.fetchone()[0], '["A", "B", "C"]')
+
+        self.cur.execute("SELECT value from property where key='discrete_categories'")
+        self.assertEqual(self.cur.fetchall(), [], msg='should not be present')
+
+        self.cur.execute("SELECT value from property where key='partition_definitions'")
+        self.assertEqual(self.cur.fetchone()[0], '[["label_b", "label_c", "label_a"]]')
 
     def test_apply_migrations(self):
         self.cur.executescript(FULL_NODE_SCHEMA_V_020)

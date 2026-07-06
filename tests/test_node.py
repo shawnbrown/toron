@@ -565,7 +565,7 @@ class TestDomainMethods(unittest.TestCase):
             self.assertEqual(prop_repo.get('domain'), 'baz')
 
 
-class TestDiscreteCategoriesMethods(unittest.TestCase):
+class TestPartitionDefinitionMethods(unittest.TestCase):
     def setUp(self):
         self.node = TopoNode()
         with self.node._managed_cursor() as cur:
@@ -589,20 +589,20 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
             structures = sorted(resutls, key=lambda structure: structure.id)
         return normalize_structures(structures)
 
-    def test_discrete_categories_property(self):
+    def test_partition_definitions_property(self):
         node = self.node
         with node._managed_cursor() as cursor:
             prop_repo = self.node._dal.PropertyRepository(cursor)
-            prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+            prop_repo.add('partition_definitions', [['A'], ['B'], ['A', 'C']])
 
-        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
+        self.assertEqual(node.partition_definitions, [{'A'}, {'B'}, {'A', 'C'}])
 
-    def test_add_discrete_categories(self):
+    def test_add_partition_definitions(self):
         node = self.node
 
         # Creates the property if it doesn't exist.
-        node.add_discrete_categories({'A'}, {'B'})
-        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'B', 'C'}])
+        node.add_partition_definitions({'A'}, {'B'})
+        self.assertEqual(node.partition_definitions, [{'A'}, {'B'}, {'A', 'B', 'C'}])
         expected = [
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
             Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
@@ -613,8 +613,8 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         self.assertEqual(self.get_structure_helper(), expected)
 
         # Updates the property if it does exist.
-        node.add_discrete_categories({'A', 'C'})
-        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}])
+        node.add_partition_definitions({'A', 'C'})
+        self.assertEqual(node.partition_definitions, [{'A'}, {'B'}, {'A', 'C'}])
         expected = [
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
             Structure(id=2, granularity=1.0,  bits=(1, 0, 0)),
@@ -625,30 +625,30 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 
-        # Raises error if category does not match existing index column.
-        regex = r"invalid category value 'D'"
+        # Raises error if label does not match existing index column.
+        regex = r"invalid label name 'D'"
         with self.assertRaisesRegex(ValueError, regex):
-            node.add_discrete_categories({'C', 'D'})
+            node.add_partition_definitions({'C', 'D'})
 
-        # Check that a warning is raised on redundant categories.
+        # Check that a warning is raised on redundant definitions.
         with self.assertWarns(ToronWarning) as cm:
-            node.add_discrete_categories({'A', 'B'})
+            node.add_partition_definitions({'A', 'B'})
 
         # Check warning message.
-        regex = r"omitting redundant categories: \{'[AB]', '[AB]'\}"
+        regex = r"omitting redundant definitions: \{'[AB]', '[AB]'\}"
         self.assertRegex(str(cm.warning), regex)
 
-        # Check that existing categories were not changed by error or warning.
-        self.assertEqual(node.discrete_categories, [{'A'}, {'B'}, {'A', 'C'}], msg='should be unchanged')
+        # Check that existing definitions were not changed by error or warning.
+        self.assertEqual(node.partition_definitions, [{'A'}, {'B'}, {'A', 'C'}], msg='should be unchanged')
 
-    def test_drop_discrete_categories(self):
+    def test_drop_partition_definitions(self):
         node = self.node
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
-            prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+            prop_repo.add('partition_definitions', [['A'], ['B'], ['A', 'C']])
 
-        node.drop_discrete_categories({'A'}, {'B'})
-        self.assertEqual(node.discrete_categories, [{'A', 'C'}, {'A', 'B', 'C'}])
+        node.drop_partition_definitions({'A'}, {'B'})
+        self.assertEqual(node.partition_definitions, [{'A', 'C'}, {'A', 'B', 'C'}])
         expected = [
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
             Structure(id=2, granularity=3.0,  bits=(1, 0, 1)),
@@ -656,8 +656,8 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 
-        node.drop_discrete_categories({'A', 'B'})  # <- Not present (no change).
-        self.assertEqual(node.discrete_categories, [{'A', 'C'}, {'A', 'B', 'C'}])
+        node.drop_partition_definitions({'A', 'B'})  # <- Not present (no change).
+        self.assertEqual(node.partition_definitions, [{'A', 'C'}, {'A', 'B', 'C'}])
         expected = [
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
             Structure(id=2, granularity=3.0,  bits=(1, 0, 1)),
@@ -665,34 +665,34 @@ class TestDiscreteCategoriesMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 
-        node.drop_discrete_categories({'A', 'C'})
-        self.assertEqual(node.discrete_categories, [{'A', 'B', 'C'}])
+        node.drop_partition_definitions({'A', 'C'})
+        self.assertEqual(node.partition_definitions, [{'A', 'B', 'C'}])
         expected = [
             Structure(id=1, granularity=None, bits=(0, 0, 0)),
             Structure(id=2, granularity=3.0,  bits=(1, 1, 1)),
         ]
         self.assertEqual(self.get_structure_helper(), expected)
 
-    def test_drop_discrete_categories_error(self):
+    def test_drop_partition_definitions_error(self):
         """Should raise error if user tries to remove whole space."""
         node = self.node
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
-            prop_repo.add('discrete_categories', [['A'], ['B'], ['A', 'C']])
+            prop_repo.add('partition_definitions', [['A'], ['B'], ['A', 'C']])
 
         regex = r"cannot drop whole space: \{'[ABC]', '[ABC]', '[ABC]'\}"
 
         # Test implicit whole space element (it's  covered by other elements).
         with self.assertRaisesRegex(ValueError, regex):
-            node.drop_discrete_categories({'A', 'B', 'C'})
+            node.drop_partition_definitions({'A', 'B', 'C'})
 
         # Change categories so that the whole space element appears explicitly.
-        node.drop_discrete_categories({'A'}, {'A', 'C'})
-        self.assertEqual(node.discrete_categories, [{'B'}, {'A', 'B', 'C'}])
+        node.drop_partition_definitions({'A'}, {'A', 'C'})
+        self.assertEqual(node.partition_definitions, [{'B'}, {'A', 'B', 'C'}])
 
         # Test with explicit whole space.
         with self.assertRaisesRegex(ValueError, regex):
-            node.drop_discrete_categories({'A', 'B', 'C'})
+            node.drop_partition_definitions({'A', 'B', 'C'})
 
 
 class TestRegisteredAttributesMethods(unittest.TestCase):
@@ -750,13 +750,13 @@ class TestRenameLabelColumn(unittest.TestCase):
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
             categories = [list(x) for x in categories]
-            prop_repo.add('discrete_categories', categories)
+            prop_repo.add('partition_definitions', categories)
 
     @staticmethod
     def get_categories_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
-            return [set(x) for x in prop_repo.get('discrete_categories')]
+            return [set(x) for x in prop_repo.get('partition_definitions')]
 
     @staticmethod
     def add_attributes_helper(node, *attributes):  # <- Helper function.
@@ -846,14 +846,14 @@ class TestIndexColumnMethods(unittest.TestCase):
     def get_categories_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
-            return [set(x) for x in prop_repo.get('discrete_categories')]
+            return [set(x) for x in prop_repo.get('partition_definitions')]
 
     @staticmethod
     def add_categories_helper(node, categories):  # <- Helper function.
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
             categories = [list(x) for x in categories]
-            prop_repo.add('discrete_categories', categories)
+            prop_repo.add('partition_definitions', categories)
 
     def test_add_index_columns(self):
         node = TopoNode()
@@ -893,14 +893,14 @@ class TestIndexColumnMethods(unittest.TestCase):
         """Should remove old whole space if unused."""
         node = TopoNode()
 
-        self.assertEqual(node.discrete_categories, [], msg='should start empty')
+        self.assertEqual(node.partition_definitions, [], msg='should start empty')
 
         node.add_index_columns('A', 'B')
-        self.assertEqual(node.discrete_categories, [{'A', 'B'}],
+        self.assertEqual(node.partition_definitions, [{'A', 'B'}],
                          msg='should create whole space for all columns')
 
         node.add_index_columns('C')
-        self.assertEqual(node.discrete_categories, [{'A', 'B', 'C'}],
+        self.assertEqual(node.partition_definitions, [{'A', 'B', 'C'}],
                          msg='should remove previous whole space if unused')
 
     def test_add_index_columns_retain_whole_space_if_quantities(self):
@@ -919,18 +919,18 @@ class TestIndexColumnMethods(unittest.TestCase):
             attribute_repo.add({'foo': 'bar'})
             quantity_repo.add(1, 1, 100.0)  # <- Quantity uses location 1.
 
-        self.assertEqual(node.discrete_categories, [{'A', 'B'}])  # Verify existing categories.
+        self.assertEqual(node.partition_definitions, [{'A', 'B'}])  # Verify existing categories.
 
         node.add_index_columns('C')
         self.assertEqual(
-            node.discrete_categories,
+            node.partition_definitions,
             [{'A', 'B'}, {'A', 'B', 'C'}],
             msg="should retain previous whole space because it's used by a quantity",
         )
 
         node.add_index_columns('D')
         self.assertEqual(
-            node.discrete_categories,
+            node.partition_definitions,
             [{'A', 'B'}, {'A', 'B', 'C', 'D'}],
             msg="should drop unused whole space `A B C` but keep used space `A B`.",
         )
@@ -949,19 +949,19 @@ class TestIndexColumnMethods(unittest.TestCase):
             link_repo.add('000-00-0000-0000', 'other_file', 'population')
             mapping_repo.add(1, 1, 1, mapping_level=b'\xc0', value=100.0)  # <- Mapping level for bit flags `1, 1`.
 
-        self.assertEqual(node.discrete_categories, [{'A', 'B'}])  # Verify existing categories.
+        self.assertEqual(node.partition_definitions, [{'A', 'B'}])  # Verify existing categories.
 
         node.add_index_columns('C')
 
         self.assertEqual(
-            node.discrete_categories,
+            node.partition_definitions,
             [{'A', 'B'}, {'A', 'B', 'C'}],
             msg="should retain previous whole space because it's used by a mapping",
         )
 
         node.add_index_columns('D')
         self.assertEqual(
-            node.discrete_categories,
+            node.partition_definitions,
             [{'A', 'B'}, {'A', 'B', 'C', 'D'}],
             msg="should drop unused whole space `A B C` but keep used space `A B`.",
         )
@@ -3540,7 +3540,7 @@ class TestTopoNodeInsertMappings2(unittest.TestCase):
             # Add link_id 1.
             link_repo.add('111-111-1111', 'myfile.toron', 'rel1')
 
-        node.add_discrete_categories({'A', 'B'}, {'A'})
+        node.add_partition_definitions({'A', 'B'}, {'A'})
         self.node = node
 
     def get_mappings_helper(self):  # <- Helper function.
@@ -5021,7 +5021,7 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         #   1. {'state', 'county'} <- the whole space
         #   2. {'state'}           <- state alone
         #   3. {}                  <- the empty set
-        self.node.add_discrete_categories({'state'})  # <- Add "state".
+        self.node.add_partition_definitions({'state'})  # <- Add "state".
         self.node.insert_quantities2(value_column='counts', data=data)
 
         self.assertLocationsEqual([
@@ -5039,25 +5039,25 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             Quantity(2, 2, 2, 187990),
         ])
 
-    def test_invalid_category_allowed(self):
-        """Should allow invalid categories when using `allow_invalid_category=True`."""
+    def test_invalid_partition_allowed(self):
+        """Should allow invalid categories when using `allow_invalid_partition=True`."""
         # The location `['', 'BUTLER']`, includes a county value but
         # does not include a state value. County alone ({'county'}) is
-        # not a valid category, but we can load this data regardless by
-        # passing the argument to ignore category errors.
+        # not valid, but we can load this data regardless by
+        # passing the argument to ignore partition errors.
 
         self.node.insert_quantities2(
             value_column='counts',
             data=[
                 ('state', 'county',   'category', 'sex',    'counts'),
                 ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
-                ('',      'BUTLER',   'TOTAL',    'FEMALE', 187990),  # <- Invalid category.
+                ('',      'BUTLER',   'TOTAL',    'FEMALE', 187990),  # <- Invalid partition.
             ],
-            allow_invalid_category=True,  # <- Allowing invalid categories.
+            allow_invalid_partition=True,  # <- Allowing invalid categories.
         )
         self.assertLocationsEqual([
             Location(1, 'OH', 'BUTLER'),
-            Location(2, '',   'BUTLER'),  # <- Invalid category.
+            Location(2, '',   'BUTLER'),  # <- Invalid partition.
         ])
 
         self.assertAttributesEqual([
@@ -5148,7 +5148,7 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             self.node.insert_quantities2(
                 value_column='counts',
                 data=data,
-                allow_invalid_category=True,
+                allow_invalid_partition=True,
             )
 
         regex = r"already been loaded"
@@ -5158,7 +5158,7 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
                 value_column='counts',
                 data=data,
                 allow_invalid_label=True,
-                allow_invalid_category=True,
+                allow_invalid_partition=True,
             )
 
         with self.assertLogs('app-toron', level='INFO') as cm:
@@ -5166,14 +5166,14 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
                 value_column='counts',
                 data=data,
                 allow_invalid_label=True,
-                allow_invalid_category=True,
+                allow_invalid_partition=True,
                 on_existing='sum',
             )
 
         self.assertEqual(
             cm.output,
             ['INFO:app-toron.node:skipped 2 quantities with no attribute values',
-             'INFO:app-toron.node:2 quantities used invalid categories',
+             'INFO:app-toron.node:2 quantities matched no specified partition',
              'INFO:app-toron.node:2 quantities used invalid labels',
              'INFO:app-toron.node:added 1 quantities to existing attributes and locations',
              'INFO:app-toron.node:loaded 5 quantities'],
@@ -5226,7 +5226,7 @@ class TestTopoNodeSelectQuantities2(unittest.TestCase):
             value_column='quantity',
             data=data,
             allow_invalid_label=True,
-            allow_invalid_category=True,
+            allow_invalid_partition=True,
         )
 
         results = self.node.select_quantities2()  # <- Method under test.
@@ -5602,7 +5602,7 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
     def test_select_unmatched_quantities(self):
         """Check quantities without matching index or structure."""
         self.node.set_domain('year2025')
-        self.node.add_discrete_categories({'state'})
+        self.node.add_partition_definitions({'state'})
         self.node.insert_quantities(
             value='quantity',
             attributes=['category', 'sex'],
@@ -5628,7 +5628,7 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
     def test_delete_unmatched_quantities(self):
         """Check quantities without matching index or structure."""
         self.node.set_domain('year2025')
-        self.node.add_discrete_categories({'state'})
+        self.node.add_partition_definitions({'state'})
         self.node.insert_quantities(
             value='quantity',
             attributes=['category', 'sex'],
@@ -5882,7 +5882,7 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
     def setUp(self):
         node = TopoNode()
         node.add_index_columns('state', 'county')
-        node.add_discrete_categories({'state'}, {'state', 'county'})
+        node.add_partition_definitions({'state'}, {'state', 'county'})
         node.add_weight_group('totpop', make_default=True)
         node.insert_index([('state', 'county',   'totpop'),
                            ('OH',    'BUTLER',   374150),
@@ -6108,7 +6108,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            categories:
+            partitions:
               None
             weights:
               None
@@ -6130,7 +6130,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               FooBar
-            categories:
+            partitions:
               None
             weights:
               None
@@ -6152,7 +6152,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            categories:
+            partitions:
                None  foo, bar, baz
             weights:
               None
@@ -6178,7 +6178,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            categories:
+            partitions:
               2.750  A, B, C
             weights:
               None
@@ -6203,7 +6203,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            categories:
+            partitions:
                None  A, B, C
             weights:
               bar, baz (default, incomplete), foo (incomplete)
@@ -6227,7 +6227,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            categories:
+            partitions:
               None
             weights:
               None
@@ -6282,7 +6282,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         expected = """
             domain:
               None
-            categories:
+            partitions:
               None
             weights:
               None

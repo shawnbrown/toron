@@ -2,46 +2,46 @@
 import unittest
 from decimal import Decimal
 from toron.formatters import (
-    sort_categories,
+    sort_partition_definitions,
     format_granularity,
 )
 
 
-class TestSortCategories(unittest.TestCase):
+class TestSortPartitionDefinitions(unittest.TestCase):
     def test_basic_sorting(self):
-        """Should sort categories and items within categories."""
-        discrete_categories=[
+        """Should sort definitions and items within definitions."""
+        partition_definitions=[
             {'a', 'b'},
             {'a', 'c'},
             {'a', 'b', 'c'},
         ]
 
         self.assertEqual(
-            sort_categories(discrete_categories, labels=['a', 'b', 'c']),
+            sort_partition_definitions(partition_definitions, labels=['a', 'b', 'c']),
             [['a', 'b', 'c'], ['a', 'b'], ['a', 'c']],
         )
 
         self.assertEqual(
-            sort_categories(discrete_categories, labels=['c', 'b', 'a']),
+            sort_partition_definitions(partition_definitions, labels=['c', 'b', 'a']),
             [['c', 'b', 'a'], ['c', 'a'], ['b', 'a']],
         )
 
     def test_adding_whole_space(self):
         """Shold add "whole space" when not included in given categories."""
-        discrete_categories=[{'a', 'c'}, {'b', 'a'}]  # <- No whole space, ['a', 'b', 'c'].
+        partition_definitions=[{'a', 'c'}, {'b', 'a'}]  # <- No whole space, ['a', 'b', 'c'].
 
         self.assertEqual(
-            sort_categories(discrete_categories, labels=['a', 'b', 'c']),
+            sort_partition_definitions(partition_definitions, labels=['a', 'b', 'c']),
             [['a', 'b', 'c'], ['a', 'b'], ['a', 'c']],
         )
 
     def test_label_mismatch(self):
         """When value is missing from labels, error message should give context."""
-        discrete_categories=[{'a', 'b', 'c'}, {'a', 'b'}, {'a', 'c'}]
+        partition_definitions=[{'a', 'b', 'c'}, {'a', 'b'}, {'a', 'c'}]
 
-        regex = r"category label 'c' missing from given labels \['a', 'b', 'd'\]"
+        regex = r"partition label 'c' missing from given labels \['a', 'b', 'd'\]"
         with self.assertRaisesRegex(ValueError, regex):
-            sort_categories(discrete_categories, labels=['a', 'b', 'd']),
+            sort_partition_definitions(partition_definitions, labels=['a', 'b', 'd']),
 
 
 class TestFormatGranularity(unittest.TestCase):

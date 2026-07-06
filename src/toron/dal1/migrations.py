@@ -176,6 +176,13 @@ def v020_to_v030_step05_properties(cursor: sqlite3.Cursor) -> None:
         (json.dumps(attribute_keys),)
     )
 
+    # Update "partition_definitions" key.
+    cursor.execute("""
+        UPDATE main.property
+        SET key='partition_definitions'
+        WHERE key='discrete_categories'
+    """)
+
     # Update schema version number.
     cursor.execute("""
         UPDATE main.property

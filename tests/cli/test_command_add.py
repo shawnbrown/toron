@@ -137,7 +137,7 @@ class TestAddPartition(TempNodeMixin, unittest.TestCase):
         ))
 
         self.assertEqual(
-            read_file(self.filepath).discrete_categories,
+            read_file(self.filepath).partition_definitions,
             [{'A', 'B'}, {'A', 'B', 'C'}],
         )
 
@@ -161,7 +161,7 @@ class TestAddPartition(TempNodeMixin, unittest.TestCase):
         ))
 
         self.assertEqual(
-            read_file(self.filepath).discrete_categories,
+            read_file(self.filepath).partition_definitions,
             [{'A', 'B'}, {'A', 'B', 'C'}],
         )
 

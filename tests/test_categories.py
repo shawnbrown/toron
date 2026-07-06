@@ -8,22 +8,22 @@ from toron.categories import find_minimal_partition_generating_set
 
 class TestMakeStructure(unittest.TestCase):
     def test_discrete_topology(self):
-        discrete_categories = [{'A'}, {'B'}, {'A', 'C'}]
-        result = make_structure(discrete_categories)
+        partition_definitions = [{'A'}, {'B'}, {'A', 'C'}]
+        result = make_structure(partition_definitions)
 
         expected = [set(), {'A'}, {'B'}, {'A', 'C'}, {'A', 'B'}, {'A', 'B', 'C'}]
         self.assertEqual(result, expected)
 
     def test_discrete_nontopology(self):
-        discrete_categories = [{'A', 'C'}, {'B', 'C'}]
-        result = make_structure(discrete_categories)
+        partition_definitions = [{'A', 'C'}, {'B', 'C'}]
+        result = make_structure(partition_definitions)
 
         expected = [set(), {'A', 'C'}, {'B', 'C'}, {'A', 'B', 'C'}]
         self.assertEqual(result, expected)
 
     def test_duplicate_input(self):
-        discrete_categories = [{'A'}, {'A'}, {'A'}, {'A'}, {'A'}, {'A'}, {'B'}]
-        result = make_structure(discrete_categories)
+        partition_definitions = [{'A'}, {'A'}, {'A'}, {'A'}, {'A'}, {'A'}, {'B'}]
+        result = make_structure(partition_definitions)
 
         expected = [set(), {'A'}, {'B'}, {'A', 'B'}]
         self.assertEqual(result, expected)

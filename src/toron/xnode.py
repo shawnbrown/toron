@@ -50,10 +50,10 @@ class xNode(object):
         Index columns are used to store the labels for individual
         records.
         """
-        data = self._dal.get_data(['discrete_categories', 'index_columns'])
+        data = self._dal.get_data(['partition_definitions', 'index_columns'])
 
         minimized = find_minimal_partition_generating_set(
-            data['discrete_categories'],
+            data['partition_definitions'],
             [set(columns).union(data['index_columns'])],
         )
         structure = make_structure(minimized)
@@ -120,14 +120,14 @@ class xNode(object):
                               selectors=selectors,
                               description=description)
 
-    def add_discrete_categories(self, discrete_categories):
-        """Add discrete categories to the node's internal structure.
+    def add_partition_definitions(self, partition_definitions):
+        """Add partition definitions to the node's internal structure.
 
         .. code-block::
 
             >>> node = Node(...)
             >>> node.add_index_columns(['state', 'county', 'town'])
-            >>> node.add_discrete_categories([{'state'}, {'state', 'county'}])
+            >>> node.add_partition_definitions([{'state'}, {'state', 'county'}])
 
         A node's discrete categories are the basis for its levels of
         granularity.
@@ -172,21 +172,21 @@ class xNode(object):
         discreteness is determined by the domain being modeled--it
         cannot be derived with certainty from a dataset alone.
         """
-        self._dal.add_discrete_categories(discrete_categories)
+        self._dal.add_partition_definitions(partition_definitions)
 
-    def remove_discrete_categories(self, discrete_categories):
-        """Remove discrete categories from the node's internal
+    def remove_partition_definitions(self, partition_definitions):
+        """Remove partition definitions from the node's internal
         structure.
 
         .. code-block::
 
             >>> node = Node(...)
-            >>> node.remove_discrete_categories([{'county'}, {'state', 'town'}])
+            >>> node.remove_partition_definitions([{'county'}, {'state', 'town'}])
 
-        A node's discrete categories are the basis for its levels of
+        A node's partition definitions are the basis for its levels of
         granularity.
         """
-        self._dal.remove_discrete_categories(discrete_categories)
+        self._dal.remove_partition_definitions(partition_definitions)
 
     def structure(self) -> Sequence[Tuple]:
         """Sequence of bitmask tuples representing the node structure."""

@@ -42,8 +42,8 @@ class TestMapperInit(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_different_levels(self):
-        self.node_a.add_discrete_categories(('foo', 'bar'), ('foo',))
-        self.node_b.add_discrete_categories(('foo',))
+        self.node_a.add_partition_definitions(('foo', 'bar'), ('foo',))
+        self.node_b.add_partition_definitions(('foo',))
         data = [
             [None, ['A-1',    '',    ''], BitFlags(1, 0, 0), None, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
             [None, ['B-1', 'Y-1',    ''], BitFlags(1, 1, 0), None, ['B-2',    ''], BitFlags(1, 0), 200.0],
@@ -61,15 +61,15 @@ class TestMapperInit(TopoNodeFixtures, unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_invalid_level(self):
-        self.node_a.add_discrete_categories(('foo', 'bar'), ('foo',))
-        self.node_b.add_discrete_categories(('foo',))
+        self.node_a.add_partition_definitions(('foo', 'bar'), ('foo',))
+        self.node_b.add_partition_definitions(('foo',))
         data = [
             [None, ['A-1',    '',    ''], BitFlags(1, 0, 0), 1, ['A-2', 'X-2'], BitFlags(1, 1), 100.0],
             [None, ['B-1', 'Y-1',    ''], BitFlags(1, 1, 0), 2, ['B-2', 'Y-2'], BitFlags(1, 1), 200.0],
             [None, ['C-1',    '', '3-1'], BitFlags(1, 0, 1), 3, ['C-2', 'Z-2'], BitFlags(1, 1), 300.0],
         ]
 
-        regex = r"FILE1 has no category \('foo', 'baz'\); cannot load values \['C-1', '', '3-1'\]"
+        regex = r"FILE1 has no partition definition \('foo', 'baz'\); cannot load values \['C-1', '', '3-1'\]"
         with self.assertRaisesRegex(RuntimeError, regex):
             mapper = Mapper(self.node_a, self.node_b, data)
 
@@ -956,7 +956,7 @@ class TwoNodesBaseTest(unittest.TestCase):
     def setUp(self):
         self.node1 = TopoNode()
         self.node1.add_index_columns('idx')
-        self.node1.add_discrete_categories({'idx'})
+        self.node1.add_partition_definitions({'idx'})
         self.node1.add_weight_group('wght', make_default=True)
         self.node1.insert_index([
             ['idx', 'wght'],
@@ -967,7 +967,7 @@ class TwoNodesBaseTest(unittest.TestCase):
 
         self.node2 = TopoNode()
         self.node2.add_index_columns('idx1', 'idx2')
-        self.node2.add_discrete_categories({'idx1'})
+        self.node2.add_partition_definitions({'idx1'})
         self.node2.add_weight_group('wght', make_default=True)
         self.node2.insert_index([
             ['idx1', 'idx2', 'wght'],
@@ -1070,7 +1070,7 @@ class TestMapper_OLD_MatchRecords(TwoNodesBaseTest):
             data=[['idx', 'population', 'idx1', 'idx2'],
                   ['A', 70, 'A', 'x'],
                   ['A', 40, 'A', 'y'],
-                  ['B', 80,  '', 'y']],  # <- Invalid category.
+                  ['B', 80,  '', 'y']],  # <- Does not match a partition.
         )
 
         mapper.match_records(self.node2, 'right')  # <- match_limit dafaults to 1

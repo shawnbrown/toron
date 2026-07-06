@@ -798,7 +798,7 @@ class TestRemoveIndexColumnsMixin(object):
         self.addCleanup(self.cur.close)
 
         self.dal.set_data({'add_index_columns': ['state', 'county', 'mcd', 'place']})
-        self.dal.add_discrete_categories([
+        self.dal.add_partition_definitions([
             {'state'},
             {'state', 'county'},
             {'state', 'county', 'mcd'},
@@ -822,14 +822,14 @@ class TestRemoveIndexColumnsMixin(object):
 
     def test_initial_fixture_state(self):
         # Check initial categories.
-        data = self.dal.get_data(['discrete_categories'])
+        data = self.dal.get_data(['partition_definitions'])
         expected = [
             {'state'},
             {'state', 'county'},
             {'state', 'county', 'mcd'},
             {'state', 'county', 'mcd', 'place'},  # <- whole space
         ]
-        self.assertEqual(data['discrete_categories'], expected)
+        self.assertEqual(data['partition_definitions'], expected)
 
         # Check initial structure table.
         self.cur.execute('SELECT * FROM main.structure')
@@ -847,8 +847,8 @@ class TestRemoveIndexColumnsMixin(object):
         self.dal.remove_index_columns(['mcd', 'place'])  # <- Method under test.
 
         # Check rebuilt categories.
-        data = self.dal.get_data(['discrete_categories'])
-        self.assertEqual(data['discrete_categories'], [{'state'}, {'state', 'county'}])
+        data = self.dal.get_data(['partition_definitions'])
+        self.assertEqual(data['partition_definitions'], [{'state'}, {'state', 'county'}])
 
         # Check rebuild structure table.
         self.cur.execute('SELECT * FROM main.structure')
@@ -902,9 +902,9 @@ class TestRemoveIndexColumnsMixin(object):
         self.dal.remove_index_columns(['mcd'], preserve_structure=False)  # <- Method under test.
 
         # Check rebuilt categories.
-        data = self.dal.get_data(['discrete_categories'])
+        data = self.dal.get_data(['partition_definitions'])
         self.assertEqual(
-            data['discrete_categories'],
+            data['partition_definitions'],
             [{'state'}, {'county', 'state'}, {'county', 'state', 'place'}],
         )
 
@@ -1129,7 +1129,7 @@ class TestRemoveIndexColumnsWithEdgesMixin(object):
     def load_data(dal, data, index_cols, categories, weight_col):
         """Helper function to load node data."""
         dal.set_data({'add_index_columns': index_cols})
-        dal.add_discrete_categories(categories)
+        dal.add_partition_definitions(categories)
         dal.add_index_records(data)
         dal.add_weights(data, name=weight_col, selectors=None)
 
@@ -2865,7 +2865,7 @@ class TestStaticDisaggregate(unittest.TestCase):
         self.dal.set_data({'add_index_columns': columns})
 
         categories = [{'col1'}]
-        self.dal.add_discrete_categories(categories)
+        self.dal.add_partition_definitions(categories)
 
         records = [
             ('col1', 'col2'),
@@ -3078,7 +3078,7 @@ class TestAdaptiveDisaggregate(unittest.TestCase):
         self.dal.set_data({'add_index_columns': columns})
 
         categories = [{'col1'}]
-        self.dal.add_discrete_categories(categories)
+        self.dal.add_partition_definitions(categories)
 
         records = [
             ('col1', 'col2'),
@@ -3512,7 +3512,7 @@ class TestGetColumnNames(unittest.TestCase):
         self.assertEqual(data, {'index_columns': []})
 
 
-class TestGetAndSetDiscreteCategories(unittest.TestCase):
+class TestGetAndSetPartitionDefinition(unittest.TestCase):
     def setUp(self):
         self.dal = dal_class()
 
@@ -3525,25 +3525,25 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
     def test_get_categories(self):
         self.cursor.execute('''
             INSERT INTO property
-            VALUES ('discrete_categories', '[["A"], ["A", "B"], ["A", "B", "C"]]')
+            VALUES ('partition_definitions', '[["A"], ["A", "B"], ["A", "B", "C"]]')
         ''')
-        data = self.dal.get_data(['discrete_categories'])  # <- Method under test.
-        expected = {'discrete_categories': [{"A"}, {"A", "B"}, {"A", "B", "C"}]}
+        data = self.dal.get_data(['partition_definitions'])  # <- Method under test.
+        expected = {'partition_definitions': [{"A"}, {"A", "B"}, {"A", "B", "C"}]}
         self.assertEqual(data, expected, msg='should get a list of sets')
 
     def test_get_categories_none_defined(self):
-        """If no discrete categories, should return empty list."""
-        self.cursor.execute("DELETE FROM property WHERE key='discrete_categories'")
-        data = self.dal.get_data(['discrete_categories'])  # <- Method under test.
-        self.assertEqual(data, {'discrete_categories': []})
+        """If no partition definitions, should return empty list."""
+        self.cursor.execute("DELETE FROM property WHERE key='partition_definitions'")
+        data = self.dal.get_data(['partition_definitions'])  # <- Method under test.
+        self.assertEqual(data, {'partition_definitions': []})
 
     def test_set_categories(self):
         self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
 
         categories = [{'A'}, {'B'}, {'C'}]
-        self.dal.add_discrete_categories(categories)  # <- Method under test.
+        self.dal.add_partition_definitions(categories)  # <- Method under test.
 
-        self.cursor.execute("SELECT value FROM property WHERE key='discrete_categories'")
+        self.cursor.execute("SELECT value FROM property WHERE key='partition_definitions'")
         result = self.cursor.fetchone()[0]
         self.assertEqual(result, [['A'], ['B'], ['C']])
 
@@ -3562,9 +3562,9 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
         self.dal.set_data({'add_index_columns': ['A', 'B', 'C']})
 
         categories = [{'A'}, {'B'}]
-        self.dal.add_discrete_categories(categories)  # <- Method under test.
+        self.dal.add_partition_definitions(categories)  # <- Method under test.
 
-        self.cursor.execute("SELECT value FROM property WHERE key='discrete_categories'")
+        self.cursor.execute("SELECT value FROM property WHERE key='partition_definitions'")
         actual = [set(x) for x in self.cursor.fetchone()[0]]
         expected = [
             {'A'},
@@ -3578,10 +3578,10 @@ class TestGetAndSetDiscreteCategories(unittest.TestCase):
 
         categories = [{'A'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
-        self.dal.add_discrete_categories(categories)  # <- Set!!!
-        data = self.dal.get_data(['discrete_categories'])  # <- Get!!!
+        self.dal.add_partition_definitions(categories)  # <- Set!!!
+        data = self.dal.get_data(['partition_definitions'])  # <- Get!!!
 
-        self.assertEqual(data['discrete_categories'], categories)
+        self.assertEqual(data['partition_definitions'], categories)
 
 
 class TestGetProperties(unittest.TestCase):
@@ -3711,7 +3711,7 @@ class TestRefreshGranularity(unittest.TestCase):
         # Prepare DAL to test.
         dal = dal_class()
         dal.set_data({'add_index_columns': ['A', 'B', 'C']})
-        dal.add_discrete_categories([{'A', 'B'}])
+        dal.add_partition_definitions([{'A', 'B'}])
         connection = dal._connection
         dal.add_index_records([
             ['A',  'B',  'C'],
@@ -3741,7 +3741,7 @@ class TestRefreshGranularity(unittest.TestCase):
         """Test for DataAccessLayer._refresh_granularity() method."""
         dal = dal_class()
         dal.set_data({'add_index_columns': ['A', 'B', 'C']})
-        dal.add_discrete_categories([{'A'}, {'A', 'B'}])
+        dal.add_partition_definitions([{'A'}, {'A', 'B'}])
         cur = dal._connection.cursor()
 
         columns = ['A',  'B',  'C']
@@ -4775,7 +4775,7 @@ class TestGetIncomingEdge(unittest.TestCase):
     def load_data(dal, data, index_cols, categories, weight_col):
         """Helper function to load node data."""
         dal.set_data({'add_index_columns': index_cols})
-        dal.add_discrete_categories(categories)
+        dal.add_partition_definitions(categories)
         dal.add_index_records(data)
         dal.add_weights(data, name=weight_col, selectors=None)
 

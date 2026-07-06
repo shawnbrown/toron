@@ -340,9 +340,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity.add_argument('--allow-invalid-label', action='store_true',
                                  dest='allow_invalid_label',
                                  help='allow quantities without matching index labels')
-    parser_quantity.add_argument('--allow-invalid-category', action='store_true',
-                                 dest='allow_invalid_category',
-                                 help='allow quantities without matching categories')
+    parser_quantity.add_argument('--allow-invalid-partition', action='store_true',
+                                 dest='allow_invalid_partition',
+                                 help='allow quantities without matching partitions')
     parser_quantity.add_argument('--on-existing',
                                  default='abort',
                                  choices=['ignore', 'replace', 'sum', 'abort'],

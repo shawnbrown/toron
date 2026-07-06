@@ -786,7 +786,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             mapper.find_matches(self.node1, 'left')
 
         # Add one of the missing categories and try again.
-        self.node1.add_discrete_categories([{'idx1'}])
+        self.node1.add_partition_definitions([{'idx1'}])
         regex = (
             'skipped 2 values that used invalid categories:\n'
             '  idx1, idx2\n'
@@ -796,7 +796,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             mapper.find_matches(self.node1, 'left')
 
         # Add another missing category and try again.
-        self.node1.add_discrete_categories([{'idx1', 'idx2'}])
+        self.node1.add_partition_definitions([{'idx1', 'idx2'}])
         regex = (
             'skipped 1 values that used invalid categories:\n'
             '  idx2'
@@ -811,7 +811,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', 'y', '', 50,  'D', 'y', 'h'],
             ['D', 'y', '', 50,  'D', 'y', 'i'],
         ]
-        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        self.node1.add_partition_definitions([{'idx1'}, {'idx1', 'idx2'}])
         mapper = xMapper(data, 'population')
 
         mapper.find_matches(self.node1, 'left', match_limit=2)  # <- Method under test.
@@ -833,7 +833,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', 'x', '', 100,  'D', 'x', ''],  # <- Matches D/x/f (weight: 18.75) and D/x/g (weight: None).
             ['D', 'y', '', 100,  'D', 'y', ''],
         ]
-        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        self.node1.add_partition_definitions([{'idx1'}, {'idx1', 'idx2'}])
         mapper = xMapper(data, 'population')
 
         regex = (
@@ -864,7 +864,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['D', 'x', 'g', 100, 'D', 'x', 'g'],
             ['D', 'y', '',  100, 'D', 'y', ''],
         ]
-        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        self.node1.add_partition_definitions([{'idx1'}, {'idx1', 'idx2'}])
         mapper = xMapper(data, 'population')
 
         mapper.find_matches(self.node1, 'left', match_limit=4, allow_overlapping=False)  # <- Method under test.
@@ -884,7 +884,7 @@ class TestMapperFindMatches2(unittest.TestCase):
             ['B', 'x', '',  100, 'B', 'x', ''],
             ['B', '',  '',  100, 'B', '',  ''],
         ]
-        self.node1.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        self.node1.add_partition_definitions([{'idx1'}, {'idx1', 'idx2'}])
         mapper = xMapper(data, 'population')
 
         mapper.find_matches(self.node1, 'left', match_limit=4, allow_overlapping=True)  # <- Method under test.
@@ -968,7 +968,7 @@ class TestGetRelations(TwoNodesBaseTest):
             ['C', 28, 'C', ''],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
             ['C', 7, 'C', 'y'],   # <- Exact match (overlaps the records matched on "C" alone).
         ]
-        self.node2.add_discrete_categories([{'idx1'}])
+        self.node2.add_partition_definitions([{'idx1'}])
         mapper = xMapper(data, 'population')
         mapper.find_matches(self.node1, 'left')
         mapper.find_matches(self.node2, 'right', match_limit=2)
@@ -994,7 +994,7 @@ class TestGetRelations(TwoNodesBaseTest):
             ['C', 28, 'C', ''],   # <- Matched to 2 right-side record (2-ambiguous, allowing overlap).
             ['C', 7, 'C',  'y'],  # <- Exact match (overlaps the records matched on "C" alone).
         ]
-        self.node2.add_discrete_categories([{'idx1'}])
+        self.node2.add_partition_definitions([{'idx1'}])
         mapper = xMapper(data, 'population')
 
         mapper.find_matches(self.node1, 'left')

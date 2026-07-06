@@ -124,7 +124,7 @@ def legacy_rename_labels(node: 'TopoNode', mapping: Dict[str, str]) -> None:
         raise TypeError(msg)
 
     from toron.data_service import validate_new_index_columns
-    from toron.data_service import rename_discrete_categories
+    from toron.data_service import rename_partition_definitions
 
     with node._managed_cursor() as cursor:
         if cursor.connection.in_transaction:
@@ -208,8 +208,8 @@ def legacy_rename_labels(node: 'TopoNode', mapping: Dict[str, str]) -> None:
             schema.verify_foreign_key_check(cursor)
             schema.create_schema_constraints(cursor)
 
-            # Rename discrete categories to match new column names.
-            rename_discrete_categories(mapping, label_manager, property_repo)
+            # Rename partition definitions to match new column names.
+            rename_partition_definitions(mapping, label_manager, property_repo)
 
             cursor.execute('COMMIT TRANSACTION')
 

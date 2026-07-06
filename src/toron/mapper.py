@@ -126,7 +126,7 @@ class Mapper(object):
                 );
             """)
 
-            # Structure bits are determined by a node's discrete categories.
+            # Structure bits are determined by a node's partition definitions.
             node1_allowed_bytes = {bytes(BitFlags(s.bits)) for s in self.node1_structure}
             node2_allowed_bytes = {bytes(BitFlags(s.bits)) for s in self.node2_structure}
 
@@ -139,16 +139,16 @@ class Mapper(object):
                 node2_level = bytes(node2_bitflags)
 
                 if node1_level not in node1_allowed_bytes:
-                    bad_category = compress(self.node1.index_columns, node1_bitflags)
+                    bad_definition = compress(self.node1.index_columns, node1_bitflags)
                     raise RuntimeError(
-                        f'FILE1 has no category {tuple(bad_category)}; '
+                        f'FILE1 has no partition definition {tuple(bad_definition)}; '
                         f'cannot load values {node1_location!r}'
                     )
 
                 if node2_level not in node2_allowed_bytes:
-                    bad_category = compress(self.node2.index_columns, node2_bitflags)
+                    bad_definition = compress(self.node2.index_columns, node2_bitflags)
                     raise RuntimeError(
-                        f'FILE2 has no category {tuple(bad_category)}; '
+                        f'FILE2 has no partition definition {tuple(bad_definition)}; '
                         f'cannot load values {node2_location!r}'
                     )
 
@@ -645,7 +645,7 @@ class Mapper_OLD(object):
                 f'matched: {", ".join(repr(x) for x in unknown_columns)}'
             )
 
-        invalid_categories = []
+        invalid_definitions = []
         counter: Counter = Counter()
         with node._managed_cursor() as node_cur, \
                 closing(self.con.cursor()) as cur1, \
@@ -674,8 +674,8 @@ class Mapper_OLD(object):
             # Loop over levels from highest to lowest granularity.
             for match_bytes, node_bytes in ordered_level_pairs:
                 if node_bytes is None:
-                    # If no matching level in node, category is invalid.
-                    invalid_categories.append(
+                    # If no matching level in node, definition is invalid.
+                    invalid_definitions.append(
                         tuple(compress(match_columns, BitFlags(match_bytes)))
                     )
                     cur1.execute(
@@ -792,11 +792,11 @@ class Mapper_OLD(object):
             )
 
         if counter['invalid_rows']:
-            category_list = [', '.join(c) for c in sorted(invalid_categories)]
-            category_string = '\n  '.join(category_list)
+            definition_list = [', '.join(c) for c in sorted(invalid_definitions)]
+            definition_string = '\n  '.join(definition_list)
             applogger.warning(
                 f"skipped {counter['invalid_rows']} values that used invalid "
-                f"categories:\n  {category_string}"
+                f"categories:\n  {definition_string}"
             )
 
     @eagerly_initialize

@@ -7,16 +7,17 @@ from ._typing import (
 )
 
 
-def sort_categories(
-    discrete_categories: List[Set[str]],
+def sort_partition_definitions(
+    definitions: List[Set[str]],
     labels: Sequence[str],
 ) -> List[List[str]]:
-    """Sort a list of categories and sort labels within categories.
-    The order is determined by the given ``labels`` sequence.
+    """Sort a list of partition definitions and sort labels within
+    individual definitions. The order is determined by the given
+    ``labels`` sequence.
 
     .. code-block:: none
 
-        >>> sort_categories(
+        >>> sort_partition_definitions(
         ...     [{'state', 'town'}, {'county', 'state'}],
         ...     labels=['state', 'county', 'town'],
         ... )
@@ -25,20 +26,20 @@ def sort_categories(
          ['state', 'town']]
     """
     whole_space = set(labels)
-    if whole_space and (whole_space not in discrete_categories):
-        discrete_categories.append(whole_space)
+    if whole_space and (whole_space not in definitions):
+        definitions.append(whole_space)
 
-    # Sort categories (starting with whole space first).
+    # Sort definitions (starting with whole space first).
     catkey = lambda cat: tuple((x in cat) for x in labels)
-    discrete_categories = sorted(discrete_categories, key=catkey, reverse=True)
+    definitions = sorted(definitions, key=catkey, reverse=True)
 
-    # Sort labels within categories.
+    # Sort labels within definitions.
     label_to_index = {label: i for (i, label) in enumerate(labels)}
     lblkey = lambda label: label_to_index[label]
     try:
-        return [sorted(cat, key=lblkey) for cat in discrete_categories]
+        return [sorted(cat, key=lblkey) for cat in definitions]
     except KeyError as e:
-        raise ValueError(f'category label {e} missing from given labels {labels}')
+        raise ValueError(f'partition label {e} missing from given labels {labels}')
 
 
 def format_granularity(

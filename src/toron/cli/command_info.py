@@ -56,7 +56,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     ]
 
     # When dropping support for Python 3.11, move these into f-string.
-    categories_formatted = '\n  '.join(info_dict['category_list'])
+    partitions_formatted = '\n  '.join(info_dict['partition_list'])
     links_str = '\n  '.join(info_dict['links_list'])
 
     # Prepare and write output.
@@ -64,8 +64,8 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
         f"{hr}\n{filename}\n{hr}\n"
         f"{bright}domain:{reset}\n"
         f"  {info_dict['domain_str']}\n"
-        f"{bright}categories:{reset}\n"
-        f"  {categories_formatted}\n"
+        f"{bright}partitions:{reset}\n"
+        f"  {partitions_formatted}\n"
         f"{bright}weights:{reset}\n"
         f"  {', '.join(info_dict['weights_list'])}\n"
         f"{bright}attributes:{reset}\n"

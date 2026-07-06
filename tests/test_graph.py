@@ -171,7 +171,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         self.node1 = TopoNode()
         self.node1.path_hint = 'file1.toron'
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
-        self.node1.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
+        self.node1.add_partition_definitions({'idx1'}, {'idx1', 'idx2'})
         self.node1.add_weight_group('wght', make_default=True)
         self.node1.insert_index([
             ['idx1', 'idx2', 'idx3', 'wght'],
@@ -190,7 +190,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         self.node2 = TopoNode()
         self.node2.path_hint = 'file2.toron'
         self.node2.add_index_columns('idx1', 'idx2', 'idx3')
-        self.node2.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
+        self.node2.add_partition_definitions({'idx1'}, {'idx1', 'idx2'})
         self.node2.add_weight_group('wght', make_default=True)
         self.node2.insert_index([
             ['idx1', 'idx2', 'idx3', 'wght'],
@@ -862,7 +862,7 @@ class TestTranslate(unittest.TestCase):
 
         self.node = TopoNode()
         self.node.add_index_columns('A', 'B', 'C')
-        self.node.add_discrete_categories({'A', 'B', 'C'})
+        self.node.add_partition_definitions({'A', 'B', 'C'})
         self.node.insert_index([
             ['A', 'B', 'C'],
             ['a1', 'b1', 'c1'],  # <- index_id=1
@@ -1187,8 +1187,8 @@ class TestXAddEdge(unittest.TestCase):
     def test_some_ambiguous(self):
         self.maxDiff = None
 
-        self.node1.add_discrete_categories([{'idx1'}])
-        self.node2.add_discrete_categories([{'idx1'}, {'idx1', 'idx2'}])
+        self.node1.add_partition_definitions([{'idx1'}])
+        self.node2.add_partition_definitions([{'idx1'}, {'idx1', 'idx2'}])
 
         mapping_data = [
             ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2', 'idx3'],

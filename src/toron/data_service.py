@@ -52,7 +52,7 @@ from .data_models import (
 )
 from .formatters import (
     format_granularity,
-    sort_categories,
+    sort_partition_definitions,
 )
 from .selectors import (
     parse_selector,
@@ -596,27 +596,27 @@ def find_matching_weight_groups(
         yield (attribute_group, all_weight_groups[weight_group_id])
 
 
-def get_all_discrete_categories(
+def get_all_partition_definitions(
     property_repo: BasePropertyRepository
 ) -> List[Set[str]]:
-    """Get all discrete categories defined for a node."""
+    """Get all partition definitions defined for a node."""
     try:
-        values = cast(List[List[str]], property_repo.get('discrete_categories'))
+        values = cast(List[List[str]], property_repo.get('partition_definitions'))
         return [set(x) for x in values]
     except KeyError:
         return []  # Empty list when no columns are defined.
 
 
-def rename_discrete_categories(
+def rename_partition_definitions(
     mapping: Dict[str, str],
     label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
 ) -> None:
-    categories = get_all_discrete_categories(property_repo)
-    do_rename = lambda cat: {mapping.get(x, x) for x in cat}
-    category_sets = [do_rename(cat) for cat in categories]
-    category_lists: JsonTypes = [list(cat) for cat in category_sets]
-    property_repo.update('discrete_categories', category_lists)
+    definitions = get_all_partition_definitions(property_repo)
+    do_rename = lambda pdef: {mapping.get(x, x) for x in pdef}
+    definition_sets = [do_rename(pdef) for pdef in definitions]
+    definition_lists: JsonTypes = [list(pdef) for pdef in definition_sets]
+    property_repo.update('partition_definitions', definition_lists)
 
 
 def calculate_granularity(
@@ -710,76 +710,75 @@ def rebuild_structure_table(
     for structure in structure_repo.get_all():
         structure_repo.delete(structure.id)
 
-    # Get columns and categories.
+    # Get columns and partition definitions.
     columns = label_manager.get_columns()
-    categories = get_all_discrete_categories(property_repo)
-    if columns and not categories:
-        raise RuntimeError("node has columns but no 'discrete_categories'")
+    definitions = get_all_partition_definitions(property_repo)
+    if columns and not definitions:
+        raise RuntimeError("node has columns but no partition definitions")
 
     # Regenerate new structure.
-    for cat in make_structure(categories):
-        granularity = granularity_func(list(cat), index_repo, aux_index_repo)
-        bits = [(x in cat) for x in columns]
+    for pdef in make_structure(definitions):
+        granularity = granularity_func(list(pdef), index_repo, aux_index_repo)
+        bits = [(x in pdef) for x in columns]
         structure_repo.add(granularity, *bits)
 
 
-def add_discrete_categories(
-    categories: Iterable[Set[str]],
+def add_partition_definitions(
+    definitions: Iterable[Set[str]],
     label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
 ) -> None:
     columns = label_manager.get_columns()
     if not columns:
-        msg = 'must add index columns before defining categories'
+        msg = 'must add index labels before specifying partitions'
         raise RuntimeError(msg)
 
-    for field in set(chain(*categories)):
+    for field in set(chain(*definitions)):
         if field not in columns:
             raise ValueError(
-                f'invalid category value {field!r}, values '
-                f'must be present in index columns'
+                f'invalid label name {field!r}, must be present in index'
             )
 
-    existing_categories = get_all_discrete_categories(property_repo)
+    existing_definitions = get_all_partition_definitions(property_repo)
 
     whole_space = set(columns)
-    category_sets: List[Set[str]] = find_minimal_partition_generating_set(
-        categories, existing_categories, [whole_space]
+    definition_sets: List[Set[str]] = find_minimal_partition_generating_set(
+        definitions, existing_definitions, [whole_space]
     )
 
-    omitting = [cat for cat in categories if (cat not in category_sets)]
+    omitting = [cat for cat in definitions if (cat not in definition_sets)]
     if omitting:
         import warnings
         formatted = ', '.join(repr(cat) for cat in omitting)
-        msg = f'omitting redundant categories: {formatted}'
+        msg = f'omitting redundant definitions: {formatted}'
         warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
-    category_lists = cast(JsonTypes, [list(cat) for cat in category_sets])
+    definition_lists = cast(JsonTypes, [list(cat) for cat in definition_sets])
     try:
-        property_repo.add('discrete_categories', category_lists)
+        property_repo.add('partition_definitions', definition_lists)
     except Exception:
-        property_repo.update('discrete_categories', category_lists)
+        property_repo.update('partition_definitions', definition_lists)
 
 
-def add_discrete_category(
-    category: Collection[str],
+def add_partition_definition(
+    definition: Collection[str],
     label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
 ) -> None:
-    """Add discrete category.
+    """Add partition definition.
 
-    Raises a ``ValueError`` if category uses index labels that do not
-    exist. Raises a ``RuntimeError`` if category cannot be created for
+    Raises a ``ValueError`` if definition uses index labels that do not
+    exist. Raises a ``RuntimeError`` if definition cannot be created for
     some other reason.
     """
     index_labels: Sequence[str] = label_manager.get_columns()
 
     if not index_labels:
-        raise RuntimeError('must add index labels before defining a category')
+        raise RuntimeError('must add index labels before specifying a partition definition')
 
-    category = set(category)
-    if category.difference(index_labels):
-        invalid_labels = category.difference(index_labels)
+    definition = set(definition)
+    if definition.difference(index_labels):
+        invalid_labels = definition.difference(index_labels)
         raise ValueError(
             f"invalid partition, "
             f"no index label{'s' if len(invalid_labels) != 1 else ''} "
@@ -791,47 +790,47 @@ def add_discrete_category(
         repr(sorted(cat, key=lambda x: index_labels.index(x)))[1:-1]
     }}}"""
 
-    existing_cats = get_all_discrete_categories(property_repo)
+    existing_cats = get_all_partition_definitions(property_repo)
 
-    if category in existing_cats:
-        raise RuntimeError(f'category {repr_sorted(category)} is already defined')
+    if definition in existing_cats:
+        raise RuntimeError(f'definition {repr_sorted(definition)} already exists')
 
     whole_space = set(index_labels)
     minimized_cats: List[Set[str]] = find_minimal_partition_generating_set(
-        [category], existing_cats, [whole_space]
+        [definition], existing_cats, [whole_space]
     )
 
-    if category not in minimized_cats:
+    if definition not in minimized_cats:
         raise RuntimeError(
-            f'category {repr_sorted(category)} is already covered by a union '
-            f'of existing categories'
+            f'{repr_sorted(definition)} is already covered by a union '
+            f'of existing partition definitions'
         )
 
-    category_lists = cast(JsonTypes, [list(cat) for cat in minimized_cats])
-    property_repo.add_or_update('discrete_categories', category_lists)
+    definition_lists = cast(JsonTypes, [list(cat) for cat in minimized_cats])
+    property_repo.add_or_update('partition_definitions', definition_lists)
 
 
-def remove_discrete_category(
-    category: Collection[str],
+def remove_partition_definition(
+    definition: Collection[str],
     label_manager: BaseLabelManager,
     property_repo: BasePropertyRepository,
 ) -> None:
-    """Remove a discrete category."""
+    """Remove a partition definition."""
     columns = label_manager.get_columns()
     whole_space = set(columns)
 
-    if category == whole_space:
-        formatted_category = f"{{{', '.join(repr(x) for x in sorted(whole_space))}}}"
-        raise IntegrityError(f"cannot drop whole space: {formatted_category}")
+    if definition == whole_space:
+        formatted_definition = f"{{{', '.join(repr(x) for x in sorted(whole_space))}}}"
+        raise IntegrityError(f"cannot drop whole space: {formatted_definition}")
 
-    existing_cats = get_all_discrete_categories(property_repo)
-    cats_to_keep = [x for x in existing_cats if x != category]
+    existing_cats = get_all_partition_definitions(property_repo)
+    cats_to_keep = [x for x in existing_cats if x != definition]
 
-    category_sets = find_minimal_partition_generating_set(
+    definition_sets = find_minimal_partition_generating_set(
         cats_to_keep, [whole_space]
     )
-    category_lists: JsonTypes = [list(cat) for cat in category_sets]
-    property_repo.update('discrete_categories', category_lists)
+    definition_lists: JsonTypes = [list(cat) for cat in definition_sets]
+    property_repo.update('partition_definitions', definition_lists)
 
 
 def refresh_structure_granularity(
@@ -850,8 +849,8 @@ def refresh_structure_granularity(
     # Recalculate granularity and update structure records.
     label_columns = label_manager.get_columns()
     for structure in structure_repo.get_all():
-        category = list(compress(label_columns, structure.bits))
-        granularity = granularity_func(category, index_repo, aux_index_repo)
+        definition = list(compress(label_columns, structure.bits))
+        granularity = granularity_func(definition, index_repo, aux_index_repo)
         structure.granularity = granularity
         structure_repo.update(structure)
 
@@ -865,12 +864,12 @@ def refresh_or_rebuild_structure_granularity(
     optimizations: Optional[Dict[str, Callable]] = None
 ) -> None:
     try:
-        has_discrete_categories = bool(property_repo.get('discrete_categories'))
+        has_partition_definitions = bool(property_repo.get('partition_definitions'))
     except KeyError:
-        has_discrete_categories = False
+        has_partition_definitions = False
 
-    if has_discrete_categories:
-        # If categories already exist, then refresh granularity.
+    if has_partition_definitions:
+        # If definitions already exist, then refresh granularity.
         refresh_structure_granularity(
             label_manager=label_manager,
             structure_repo=structure_repo,
@@ -879,10 +878,10 @@ def refresh_or_rebuild_structure_granularity(
             optimizations=optimizations,
         )
     else:
-        # If no categories yet, add "whole space" and build structure.
+        # If no definitions yet, add "whole space" and build structure.
         whole_space = set(index_repo.get_label_names())
-        add_discrete_categories(
-            categories=[whole_space],
+        add_partition_definitions(
+            definitions=[whole_space],
             label_manager=label_manager,
             property_repo=property_repo,
         )
@@ -1072,22 +1071,22 @@ def get_node_info_text(
         property_repo=property_repo,
     )
 
-    # Get categories as an ordered list (granularity and labels).
-    discrete_categories = get_all_discrete_categories(property_repo)
-    sorted_categories = sort_categories(discrete_categories, labels_in_display_order)
+    # Get definitions as an ordered list (granularity and labels).
+    partition_definitions = get_all_partition_definitions(property_repo)
+    sorted_definitions = sort_partition_definitions(partition_definitions, labels_in_display_order)
     def _get_granularity(cat):
         try:
             return structure_repo.get_by_labels(cat).granularity
         except EmptyCollectionError:
             return None
-    raw_granularity = [_get_granularity(cat) for cat in sorted_categories]
+    raw_granularity = [_get_granularity(cat) for cat in sorted_definitions]
     formatted_granularity = format_granularity(raw_granularity)
-    category_list = [
+    partition_list = [
         f"{g}  {', '.join(c)}"
-        for g, c in zip(formatted_granularity, sorted_categories)
+        for g, c in zip(formatted_granularity, sorted_definitions)
     ]
-    if not category_list:
-        category_list = ['None']
+    if not partition_list:
+        partition_list = ['None']
 
     # Get list of weight group names.
     weight_groups = sorted(weight_group_repo.get_all(), key=lambda x: x.name)
@@ -1134,7 +1133,7 @@ def get_node_info_text(
 
     return {
         'domain_str': domain_str,
-        'category_list': category_list,
+        'partition_list': partition_list,
         'weights_list': weights_list,
         'links_list': links_list,
     }

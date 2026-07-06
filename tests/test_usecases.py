@@ -27,7 +27,7 @@ class TestBuildUsingAPI(unittest.TestCase):
 
         self.node1 = TopoNode()
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
-        self.node1.add_discrete_categories({'idx1'}, {'idx1', 'idx2'})
+        self.node1.add_partition_definitions({'idx1'}, {'idx1', 'idx2'})
         self.node1.add_weight_group('wght', make_default=True)
         self.node1.insert_index([
             ['idx1', 'idx2', 'idx3', 'wght'],
@@ -60,7 +60,7 @@ class TestBuildUsingAPI(unittest.TestCase):
 
         self.node2 = TopoNode()
         self.node2.add_index_columns('idx1', 'idx2')
-        self.node2.add_discrete_categories({'idx1'})
+        self.node2.add_partition_definitions({'idx1'})
         self.node2.add_weight_group('wght', make_default=True)
         self.node2.insert_index([
             ['idx1', 'idx2', 'wght'],
@@ -309,7 +309,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             command='quantity',
             value_column='quantity',
             allow_invalid_label='abort',
-            allow_invalid_category='abort',
+            allow_invalid_partition='abort',
             on_existing='abort',
             stdin=DummyRedirection(
                 'idx1,idx2,idx3,variable,quantity\n'

@@ -58,13 +58,13 @@ from .data_service import (
     set_default_weight_group,
     get_default_weight_group,
     find_matching_weight_groups,
-    get_all_discrete_categories,
-    rename_discrete_categories,
+    get_all_partition_definitions,
+    rename_partition_definitions,
     rebuild_structure_table,
     refresh_or_rebuild_structure_granularity,
-    add_discrete_categories,
-    add_discrete_category,
-    remove_discrete_category,
+    add_partition_definitions,
+    add_partition_definition,
+    remove_partition_definition,
     refresh_structure_granularity,
     set_domain,
     get_domain,
@@ -269,17 +269,17 @@ class TopoNode(object):
             set_domain(domain, self._dal.PropertyRepository(cursor))
 
     @property
-    def discrete_categories(self) -> List[Set[str]]:
+    def partition_definitions(self) -> List[Set[str]]:
         with self._managed_cursor() as cursor:
             label_manager = self._dal.LabelManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
-            return get_all_discrete_categories(prop_repo)
+            return get_all_partition_definitions(prop_repo)
 
-    def add_discrete_categories(
-        self, category: Set[str], *categories: Set[str]
+    def add_partition_definitions(
+        self, definition: Set[str], *definitions: Set[str]
     ) -> None:
-        """Add multiple discrete categories."""
-        categories_to_add = (category,) + categories
+        """Add multiple partition definitions."""
+        definitions_to_add = (definition,) + definitions
 
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
@@ -287,8 +287,8 @@ class TopoNode(object):
             label_manager = self._dal.LabelManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
 
-            add_discrete_categories(
-                categories=categories_to_add,
+            add_partition_definitions(
+                definitions=definitions_to_add,
                 label_manager=label_manager,
                 property_repo=prop_repo,
             )
@@ -302,16 +302,16 @@ class TopoNode(object):
                 optimizations=self._dal.optimizations,
             )
 
-    def add_discrete_category(self, category: Set[str]) -> None:
-        """Add discrete category."""
+    def add_partition_definition(self, definition: Set[str]) -> None:
+        """Add partition definition."""
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
 
             label_manager = self._dal.LabelManager(cursor)
             prop_repo = self._dal.PropertyRepository(cursor)
 
-            add_discrete_category(
-                category=category,
+            add_partition_definition(
+                definition=definition,
                 label_manager=label_manager,
                 property_repo=prop_repo,
             )
@@ -325,10 +325,10 @@ class TopoNode(object):
                 optimizations=self._dal.optimizations,
             )
 
-    def drop_discrete_categories(
-        self, category: Set[str], *categories: Set[str]
+    def drop_partition_definitions(
+        self, definition: Set[str], *definitions: Set[str]
     ) -> None:
-        cats_to_drop = list(chain((category,), categories))
+        defs_to_drop = list(chain((definition,), definitions))
 
         with self._managed_cursor(n=2) as (cursor, aux_cursor), \
                 self._managed_transaction(cursor):
@@ -339,18 +339,18 @@ class TopoNode(object):
             columns = label_manager.get_columns()
             whole_space = set(columns)
 
-            if whole_space in cats_to_drop:
+            if whole_space in defs_to_drop:
                 msg = f'cannot drop whole space: {whole_space!r}'
                 raise ValueError(msg)
 
-            existing_cats = get_all_discrete_categories(prop_repo)
-            cats_to_keep = [x for x in existing_cats if x not in cats_to_drop]
+            existing_cats = get_all_partition_definitions(prop_repo)
+            cats_to_keep = [x for x in existing_cats if x not in defs_to_drop]
 
-            category_sets = find_minimal_partition_generating_set(
+            definition_sets = find_minimal_partition_generating_set(
                 cats_to_keep, [whole_space]
             )
-            category_lists: JsonTypes = [list(cat) for cat in category_sets]
-            prop_repo.update('discrete_categories', category_lists)
+            definition_lists: JsonTypes = [list(cat) for cat in definition_sets]
+            prop_repo.update('partition_definitions', definition_lists)
 
             rebuild_structure_table(
                 label_manager=label_manager,
@@ -421,9 +421,9 @@ class TopoNode(object):
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
 
-            # Rename column and update discrete categories.
+            # Rename column and update partition definitions.
             label_manager.rename_columns({old_label: new_label})
-            rename_discrete_categories(
+            rename_partition_definitions(
                 mapping={old_label: new_label},
                 label_manager=label_manager,
                 property_repo=property_repo,
@@ -456,9 +456,9 @@ class TopoNode(object):
             old_whole_space = set(label_manager.get_columns())
             label_manager.add_columns(column, *columns)
 
-            # Add new "whole space" category.
-            add_discrete_category(
-                category=set(label_manager.get_columns()),  # All columns.
+            # Add new "whole space" definition.
+            add_partition_definition(
+                definition=set(label_manager.get_columns()),  # All columns.
                 label_manager=label_manager,
                 property_repo=property_repo,
             )
@@ -492,7 +492,7 @@ class TopoNode(object):
 
             if is_unused_by_quantity and is_unused_by_mapping:
                 # Remove old whole space if it is not used.
-                remove_discrete_category(
+                remove_partition_definition(
                     old_whole_space,
                     label_manager,
                     property_repo,
@@ -526,9 +526,9 @@ class TopoNode(object):
                 attribute_repo=self._dal.AttributeGroupRepository(cursor),
             )
 
-            # Rename columns and discrete categories.
+            # Rename columns and partition definitions.
             label_manager.rename_columns(mapping)
-            rename_discrete_categories(
+            rename_partition_definitions(
                 mapping=mapping,
                 label_manager=label_manager,
                 property_repo=property_repo,
@@ -2369,7 +2369,7 @@ class TopoNode(object):
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
         allow_invalid_label: bool = False,
-        allow_invalid_category: bool = False,
+        allow_invalid_partition: bool = False,
         on_existing: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
     ) -> None:
         """Load quantity and attribute values."""
@@ -2422,21 +2422,21 @@ class TopoNode(object):
                     counter['no_attrs'] += 1
                     continue  # Skip to next row.
 
-                # Check for valid category.
+                # Check for valid partition definitions.
                 if BitFlags(labels_dict.values()) not in structure:
-                    if allow_invalid_category:
+                    if allow_invalid_partition:
                         counter['invalid_category'] += 1
                     else:
                         # This error message can be user facing so it
                         # includes more context that it otherwise might.
-                        category_text = ', '.join(
+                        formatted_names = ', '.join(
                             repr(x)
                             for x in compress(label_names,
                                               BitFlags(labels_dict.values()))
                         )
                         raise ValueError(
                             f'no matching partition:\n'
-                            f'   names: {{{category_text}}}\n'
+                            f'   names: {{{formatted_names}}}\n'
                             f'  record: {list(labels_dict.values())!r}'
                         )
 
@@ -2505,8 +2505,8 @@ class TopoNode(object):
 
         if counter['invalid_category']:
             applogger.info(
-                f"{counter['invalid_category']} quantities used "
-                f"invalid categories"
+                f"{counter['invalid_category']} quantities matched "
+                f"no specified partition"
             )
 
         if counter['invalid_label']:
@@ -3058,15 +3058,15 @@ class TopoNode(object):
             registered_attributes = get_registered_attributes(property_repo)
 
         # When dropping support for Python 3.11, move these into f-string.
-        categories_formatted = '\n  '.join(info['category_list'])
+        partitions_formatted = '\n  '.join(info['partition_list'])
         links_str = '\n  '.join(info['links_list'])
 
         return (
             f"{super().__repr__()}\n"  # Use default repr as a first line.
             f"domain:\n"
             f"  {info['domain_str']}\n"
-            f"categories:\n"
-            f"  {categories_formatted}\n"
+            f"partitions:\n"
+            f"  {partitions_formatted}\n"
             f"weights:\n"
             f"  {', '.join(info['weights_list'])}\n"
             f"attributes:\n"

@@ -55,10 +55,12 @@ def add_partition(args: argparse.Namespace) -> ExitCode:
 
     normalized = normalize_arg_list(args.labels)
     try:
-        node.add_discrete_category(set(normalized))
+        node.add_partition_definition(set(normalized))
     except (ValueError, RuntimeError) as e:
         raise ToronError(str(e))
 
+    applogger.info(f"added partition definition: "
+                   f"{{{', '.join(repr(x) for x in normalized)}}}")
     return ExitCode.OK
 
 

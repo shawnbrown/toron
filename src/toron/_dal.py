@@ -996,7 +996,7 @@ class DataAccessLayer(object):
 
         names_remaining = [col for col in column_names if col not in columns]
 
-        categories = self._get_data_property(cursor, 'discrete_categories') or []
+        categories = self._get_data_property(cursor, 'partition_definitions') or []
         categories = [set(cat) for cat in categories]
         cats_filtered = [cat for cat in categories if not cat.intersection(columns)]
 
@@ -2268,7 +2268,7 @@ class DataAccessLayer(object):
                     cur.execute("PRAGMA main.table_info('node_index')")
                     names = [row[1] for row in cur.fetchall()]
                     data[key] = names[1:]  # Slice-off index_id.
-                elif key == 'discrete_categories':
+                elif key == 'partition_definitions':
                     categories = self._get_data_property(cur, key) or []
                     data[key] = [set(x) for x in categories]
                 else:
@@ -2407,7 +2407,7 @@ class DataAccessLayer(object):
 
         * Rebuild of the 'structure' table (this happens via the
           _set_data_structure() method which gets called after adding
-          or removing discrete categories and when adding or removing
+          or removing partition definitions and when adding or removing
           a column in the 'node_index' table).
         * Records are changed in the 'node_index' table (after INSERT,
           DELETE, and UPDATE queries).
@@ -2441,7 +2441,7 @@ class DataAccessLayer(object):
         *,
         minimize: bool = True,
     ) -> None:
-        """Update `discrete_categories` property and `structure` table.
+        """Update `partition_definitions` property and `structure` table.
 
         Set new categories and rebuild structure table::
 
@@ -2462,7 +2462,7 @@ class DataAccessLayer(object):
             >>> dal._update_categories_and_structure(cur)
         """
         if not categories:
-            categories = cls._get_data_property(cursor, 'discrete_categories') or []
+            categories = cls._get_data_property(cursor, 'partition_definitions') or []
             categories = [set(x) for x in categories]
 
         if minimize:
@@ -2470,7 +2470,7 @@ class DataAccessLayer(object):
             categories = find_minimal_partition_generating_set(categories, [whole_space])
 
         list_of_lists = [list(cat) for cat in categories]  # type: ignore [union-attr]
-        cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
+        cls._set_data_property(cursor, 'partition_definitions', list_of_lists)
 
         structure = make_structure(categories)
         cls._set_data_structure(cursor, structure)
@@ -2491,7 +2491,7 @@ class DataAccessLayer(object):
 
         with self._transaction() as cur:
             for key, value in items:
-                if key == 'discrete_categories':
+                if key == 'partition_definitions':
                     self._set_data_property(cur, key, [list(cat) for cat in value])
                 elif key == 'structure':
                     self._set_data_structure(cur, value)
@@ -2503,17 +2503,17 @@ class DataAccessLayer(object):
                     msg = f"can't set value for {key!r}"
                     raise ToronError(msg)
 
-    def add_discrete_categories(
-        self, discrete_categories: Iterable[Set[str]]
+    def add_partition_definitions(
+        self, partition_definitions: Iterable[Set[str]]
     ) -> None:
-        data = self.get_data(['discrete_categories', 'index_columns'])
+        data = self.get_data(['partition_definitions', 'index_columns'])
         minimized = find_minimal_partition_generating_set(
-            data['discrete_categories'],
-            discrete_categories,
+            data['partition_definitions'],
+            partition_definitions,
             [set(data['index_columns'])],
         )
 
-        omitted = [cat for cat in discrete_categories if (cat not in minimized)]
+        omitted = [cat for cat in partition_definitions if (cat not in minimized)]
         if omitted:
             import warnings
             formatted = ', '.join(repr(cat) for cat in omitted)
@@ -2523,28 +2523,28 @@ class DataAccessLayer(object):
         with self._transaction() as cur:
             self._update_categories_and_structure(cur, minimized, minimize=False)
 
-    def remove_discrete_categories(
-        self, discrete_categories: List[Set[str]]
+    def remove_partition_definitions(
+        self, partition_definitions: List[Set[str]]
     ) -> None:
-        data = self.get_data(['discrete_categories', 'index_columns'])
-        current_cats = data['discrete_categories']
+        data = self.get_data(['partition_definitions', 'index_columns'])
+        current_cats = data['partition_definitions']
         mandatory_cat = set(data['index_columns'])
 
-        if mandatory_cat in discrete_categories:
+        if mandatory_cat in partition_definitions:
             import warnings
             formatted = ', '.join(repr(x) for x in data['index_columns'])
             msg = f'cannot remove whole space: {{{mandatory_cat}}}'
             warnings.warn(msg, category=ToronWarning, stacklevel=2)
-            discrete_categories.remove(mandatory_cat)  # <- Remove and continue.
+            partition_definitions.remove(mandatory_cat)  # <- Remove and continue.
 
-        no_match = [x for x in discrete_categories if x not in current_cats]
+        no_match = [x for x in partition_definitions if x not in current_cats]
         if no_match:
             import warnings
             formatted = ', '.join(repr(x) for x in no_match)
             msg = f'no match for categories, cannot remove: {formatted}'
             warnings.warn(msg, category=ToronWarning, stacklevel=2)
 
-        remaining_cats = [x for x in current_cats if x not in discrete_categories]
+        remaining_cats = [x for x in current_cats if x not in partition_definitions]
 
         minimized = find_minimal_partition_generating_set(
             remaining_cats,
