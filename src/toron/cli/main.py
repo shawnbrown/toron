@@ -112,6 +112,12 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
+    # Common parser for "--no-backup" option (to use with `parents` arg).
+    no_backup_parent = argparse.ArgumentParser(add_help=False)
+    no_backup_parent.add_argument('--no-backup', action='store_false',
+                                  dest='backup',
+                                  help='do not make a backup file')
+
     # Subcommand: init
     parser_init = subparsers.add_parser(
         'init',
@@ -140,12 +146,10 @@ def get_parser() -> argparse.ArgumentParser:
         help='add index labels',
         description=('Add index label to a node file. Labels may be provided '
                      'as separate arguments or as a comma-separated list.'),
+        parents=[no_backup_parent],
     )
     parser_add_label.add_argument('labels', nargs='+',
                                   help='index label to add', metavar='LABEL')
-    parser_add_label.add_argument('--no-backup', action='store_false',
-                                  dest='backup',
-                                  help='do not make a backup file')
     parser_add_label.set_defaults(func=command_add.add_label)
 
     # Subcommand: add weight
@@ -153,6 +157,7 @@ def get_parser() -> argparse.ArgumentParser:
         'weight',
         help='add an index weight group',
         description='Add an index weight group to a node file.',
+        parents=[no_backup_parent],
     )
     parser_add_weight.add_argument('weight',
                                    help='name of index weight to add',
@@ -164,9 +169,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_weight.add_argument('--default', action='store_true',
                                    dest='make_default',
                                    help='set as the default weight group')
-    parser_add_weight.add_argument('--no-backup', action='store_false',
-                                   dest='backup',
-                                   help='do not make a backup file')
     parser_add_weight.set_defaults(func=command_add.add_weight)
 
     # Subcommand: add partition
@@ -177,13 +179,11 @@ def get_parser() -> argparse.ArgumentParser:
                      'records into cells based on the specified index labels. '
                      'Label names may be provided as separate arguments or as '
                      'a comma-separated list.'),
+        parents=[no_backup_parent],
     )
     parser_add_partition.add_argument('labels', nargs='+',
                                      help='label names that form the partition',
                                      metavar='LABEL')
-    parser_add_partition.add_argument('--no-backup', action='store_false',
-                                     dest='backup',
-                                     help='do not make a backup file')
     parser_add_partition.set_defaults(func=command_add.add_partition)
 
     # Subcommand: add attribute
@@ -193,12 +193,10 @@ def get_parser() -> argparse.ArgumentParser:
         description=('Add quantity attribute columns to a node file. '
                      'Attributes may be provided as separate arguments '
                      'or as a comma-separated list.'),
+        parents=[no_backup_parent],
     )
     parser_add_attribute.add_argument('attributes', nargs='+',
                                       help='attribute column to add', metavar='ATTRIBUTE')
-    parser_add_attribute.add_argument('--no-backup', action='store_false',
-                                      dest='backup',
-                                      help='do not make a backup file')
     parser_add_attribute.set_defaults(func=command_add.add_attribute)
 
     # Subcommand: add link
@@ -207,6 +205,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='add a link between two nodes',
         description='Add a link between two node files.',
         prog='toron FILE1 add link',  # <- Replaces "FILE" with "FILE1".
+        parents=[no_backup_parent],
     )
     parser_add_link.add_argument('filepath2',
                                  help='name of second (right) node file',
@@ -236,9 +235,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_link.add_argument('--default', action='store_true',
                                  dest='make_default',
                                  help='set as the default link')
-    parser_add_link.add_argument('--no-backup', action='store_false',
-                                 dest='backup',
-                                 help='do not make backup files')
     parser_add_link.set_defaults(
         func=command_add.add_link,
         direction='both',
@@ -261,6 +257,7 @@ def get_parser() -> argparse.ArgumentParser:
         'label',
         help='update an index label',
         description='Update an index label in a node file.',
+        parents=[no_backup_parent],
     )
     parser_update_label.add_argument('label',
                                      help='index label to update', metavar='LABEL')
@@ -271,9 +268,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_update_label_group.add_argument('--move-right', action='count',
                                            default=0,
                                            help='move label to the right one position')
-    parser_update_label.add_argument('--no-backup', action='store_false',
-                                     dest='backup',
-                                     help='do not make a backup file')
     parser_update_label.set_defaults(func=command_update.update_label)
 
     # Subcommand: rename
@@ -293,14 +287,12 @@ def get_parser() -> argparse.ArgumentParser:
         'label',
         help='rename an index label',
         description='Rename OLD_LABEL to NEW_LABEL.',
+        parents=[no_backup_parent],
     )
     parser_rename_label.add_argument('old_label',
                                      help='index label to rename', metavar='OLD_LABEL')
     parser_rename_label.add_argument('new_label',
                                      help='replacement label name', metavar='NEW_LABEL')
-    parser_rename_label.add_argument('--no-backup', action='store_false',
-                                     dest='backup',
-                                     help='do not make a backup file')
     parser_rename_label.set_defaults(func=command_rename.rename_label)
 
     # Subcommand: index
@@ -309,6 +301,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='write index to stdout or load index from stdin',
         description=('Write index records to stdout or load index records '
                      'from stdin (CSV format).'),
+        parents=[no_backup_parent],
     )
     parser_index.add_argument('--on-label-conflict',
                               default='abort',
@@ -320,9 +313,6 @@ def get_parser() -> argparse.ArgumentParser:
                               choices=['ignore', 'replace', 'abort'],
                               dest='on_weight_conflict',
                               help='strategy for weight conflicts (default: %(default)s)')
-    parser_index.add_argument('--no-backup', action='store_false',
-                              dest='backup',
-                              help='do not make a backup file')
     parser_index.set_defaults(func=command_index.process_index_action)
 
     # Subcommand: quantity
@@ -331,6 +321,7 @@ def get_parser() -> argparse.ArgumentParser:
         help='write quantities to stdout or load quantities from stdin',
         description=('Write quantity records to stdout or load quantity '
                      'records from stdin (CSV format).'),
+        parents=[no_backup_parent],
     )
     parser_quantity.add_argument('--column',
                                  default='quantity',
@@ -348,9 +339,6 @@ def get_parser() -> argparse.ArgumentParser:
                                  choices=['ignore', 'replace', 'sum', 'abort'],
                                  dest='on_existing',
                                  help='strategy for existing quantities (default: %(default)s)')
-    parser_quantity.add_argument('--no-backup', action='store_false',
-                                 dest='backup',
-                                 help='do not make a backup file')
     parser_quantity.set_defaults(func=command_quantity.process_quantity_action)
 
     # Subcommand: mapping
@@ -360,6 +348,7 @@ def get_parser() -> argparse.ArgumentParser:
         description=('Write mapping records to stdout or load mapping '
                      'records from stdin (CSV format).'),
         prog='toron FILE1 mapping',  # <- Replaces "FILE" with "FILE1".
+        parents=[no_backup_parent],
     )
     parser_mapping.add_argument('filepath2',
                                   help='second (right) filename',
@@ -393,9 +382,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_mapping.add_argument('--allow-incomplete',
                                   action='store_true',
                                   help='allow loading even when matches are incomplete')
-    parser_mapping.add_argument('--no-backup', action='store_false',
-                                  dest='backup',
-                                  help='do not make a backup file')
     parser_mapping.set_defaults(
         func=command_mapping.process_mapping_action,
         direction='both',
