@@ -12,7 +12,7 @@ from typing import (
 
 from ._dal import dal_class, PathType
 from .categories import make_structure
-from .categories import minimize_discrete_categories
+from .categories import find_minimal_partition_generating_set
 from ._utils import TabularData
 
 
@@ -52,7 +52,7 @@ class xNode(object):
         """
         data = self._dal.get_data(['discrete_categories', 'index_columns'])
 
-        minimized = minimize_discrete_categories(
+        minimized = find_minimal_partition_generating_set(
             data['discrete_categories'],
             [set(columns).union(data['index_columns'])],
         )

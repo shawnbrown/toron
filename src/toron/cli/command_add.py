@@ -48,8 +48,8 @@ def add_weight(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
-def add_category(args: argparse.Namespace) -> ExitCode:
-    """Add a discrete category to an existing node file."""
+def add_partition(args: argparse.Namespace) -> ExitCode:
+    """Add a partition to an existing node file."""
     node = cli_bind_node(args.filepath, mode='rw')
     process_backup_option(args, node)
 

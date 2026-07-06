@@ -26,7 +26,7 @@ from toron._typing import (
 
 from .categories import (
     make_structure,
-    minimize_discrete_categories,
+    find_minimal_partition_generating_set,
 )
 from .data_models import (
     COMMON_RESERVED_IDENTIFIERS,
@@ -743,7 +743,7 @@ def add_discrete_categories(
     existing_categories = get_all_discrete_categories(property_repo)
 
     whole_space = set(columns)
-    category_sets: List[Set[str]] = minimize_discrete_categories(
+    category_sets: List[Set[str]] = find_minimal_partition_generating_set(
         categories, existing_categories, [whole_space]
     )
 
@@ -781,7 +781,7 @@ def add_discrete_category(
     if category.difference(index_labels):
         invalid_labels = category.difference(index_labels)
         raise ValueError(
-            f"invalid category, "
+            f"invalid partition, "
             f"no index label{'s' if len(invalid_labels) != 1 else ''} "
             f"{', '.join(repr(x) for x in sorted(invalid_labels))}"
         )
@@ -797,7 +797,7 @@ def add_discrete_category(
         raise RuntimeError(f'category {repr_sorted(category)} is already defined')
 
     whole_space = set(index_labels)
-    minimized_cats: List[Set[str]] = minimize_discrete_categories(
+    minimized_cats: List[Set[str]] = find_minimal_partition_generating_set(
         [category], existing_cats, [whole_space]
     )
 
@@ -827,7 +827,7 @@ def remove_discrete_category(
     existing_cats = get_all_discrete_categories(property_repo)
     cats_to_keep = [x for x in existing_cats if x != category]
 
-    category_sets = minimize_discrete_categories(
+    category_sets = find_minimal_partition_generating_set(
         cats_to_keep, [whole_space]
     )
     category_lists: JsonTypes = [list(cat) for cat in category_sets]

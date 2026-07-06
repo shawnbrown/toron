@@ -122,17 +122,17 @@ class TestAddWeight(TempNodeMixin, unittest.TestCase):
             ))
 
 
-class TestAddCategory(TempNodeMixin, unittest.TestCase):
+class TestAddPartition(TempNodeMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
         node = bind_node(self.filepath, mode='rw')
         node.add_index_columns('A', 'B', 'C')
 
-    def test_add_category(self):
-        command_add.add_category(argparse.Namespace(
+    def test_add_partition(self):
+        command_add.add_partition(argparse.Namespace(
             filepath=self.filepath,
             command='add',
-            element='category',
+            element='partition',
             labels=['A', 'B'],
         ))
 
@@ -143,20 +143,20 @@ class TestAddCategory(TempNodeMixin, unittest.TestCase):
 
     def test_error_case(self):
         """Failures should raise a ``ToronError``."""
-        regex = r"invalid category, no index labels 'D', 'E'"
+        regex = r"invalid partition, no index labels 'D', 'E'"
         with self.assertRaisesRegex(ToronError, regex):
-            command_add.add_category(argparse.Namespace(
+            command_add.add_partition(argparse.Namespace(
                 filepath=self.filepath,
                 command='add',
-                element='category',
+                element='partition',
                 labels=['C', 'D', 'E'],
             ))
 
-    def test_add_category_comma_separated_value(self):
-        command_add.add_category(argparse.Namespace(
+    def test_add_partition_comma_separated_value(self):
+        command_add.add_partition(argparse.Namespace(
             filepath=self.filepath,
             command='add',
-            element='category',
+            element='partition',
             labels=['A,B'],  # <- Comma-separated value.
         ))
 

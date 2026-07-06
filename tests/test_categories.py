@@ -3,7 +3,7 @@
 import unittest
 
 from toron.categories import make_structure
-from toron.categories import minimize_discrete_categories
+from toron.categories import find_minimal_partition_generating_set
 
 
 class TestMakeStructure(unittest.TestCase):
@@ -29,48 +29,48 @@ class TestMakeStructure(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestMinimizeDiscreteCategories(unittest.TestCase):
+class TestFindMinimalPartitionGeneratingSet(unittest.TestCase):
     def test_a_and_b_are_distinct(self):
         base_a = [{'A'}, {'A', 'B'}]
         base_b = [{'A', 'B', 'C'}]
-        result = minimize_discrete_categories(base_a, base_b)
+        result = find_minimal_partition_generating_set(base_a, base_b)
         self.assertEqual(result, [{'A'}, {'A', 'B'}, {'A', 'B', 'C'}])
 
     def test_a_covers_b(self):
         base_a = [{'A'}, {'B'}, {'A', 'C'}]
         base_b = [{'A', 'B', 'C'}]
-        result = minimize_discrete_categories(base_a, base_b)
+        result = find_minimal_partition_generating_set(base_a, base_b)
         self.assertEqual(result, [{'A'}, {'B'}, {'A', 'C'}])
 
     def test_b_covers_a(self):
         base_a = [{'A', 'B', 'C'}]
         base_b = [{'A'}, {'B'}, {'A', 'C'}]
-        result = minimize_discrete_categories(base_a, base_b)
+        result = find_minimal_partition_generating_set(base_a, base_b)
         self.assertEqual(result, [{'A'}, {'B'}, {'A', 'C'}])
 
     def test_a_covers_part_of_b(self):
         base_a = [{'A'}]
         base_b = [{'A', 'B'}, {'B'}]
-        result = minimize_discrete_categories(base_a, base_b)
+        result = find_minimal_partition_generating_set(base_a, base_b)
         self.assertEqual(result, [{'A'}, {'B'}])
 
     def test_b_covers_part_of_a(self):
         base_a = [{'A', 'B'}, {'B'}]
         base_b = [{'A'}]
-        result = minimize_discrete_categories(base_a, base_b)
+        result = find_minimal_partition_generating_set(base_a, base_b)
         self.assertEqual(result, [{'B'}, {'A'}])
 
     def test_symmetric_difference(self):
         """Check when A covers part of B and B covers part of A."""
         base_a = [{'A'}, {'B'}, {'B', 'C'}]
         base_b = [{'A', 'C'}, {'C'}, {'C', 'D'}]
-        result = minimize_discrete_categories(base_a, base_b)
+        result = find_minimal_partition_generating_set(base_a, base_b)
         self.assertEqual(result, [{'A'}, {'B'}, {'C'}, {'C', 'D'}])
 
     def test_a_and_b_covers_c(self):
         base_a = [{'A'}, {'A', 'B'}]
         base_b = [{'B', 'C'}, {'D'}]
         base_c = [{'A', 'B', 'C', 'D'}]
-        result = minimize_discrete_categories(base_a, base_b, base_c)
+        result = find_minimal_partition_generating_set(base_a, base_b, base_c)
         self.assertEqual(result, [{'A'}, {'D'}, {'A', 'B'}, {'B', 'C'}])
 

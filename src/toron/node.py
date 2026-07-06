@@ -30,7 +30,7 @@ from toron._typing import (
 
 from . import data_access
 from .categories import (
-    minimize_discrete_categories,
+    find_minimal_partition_generating_set,
 )
 from .data_models import (
     COMMON_RESERVED_IDENTIFIERS,
@@ -346,7 +346,7 @@ class TopoNode(object):
             existing_cats = get_all_discrete_categories(prop_repo)
             cats_to_keep = [x for x in existing_cats if x not in cats_to_drop]
 
-            category_sets = minimize_discrete_categories(
+            category_sets = find_minimal_partition_generating_set(
                 cats_to_keep, [whole_space]
             )
             category_lists: JsonTypes = [list(cat) for cat in category_sets]
@@ -2435,9 +2435,9 @@ class TopoNode(object):
                                               BitFlags(labels_dict.values()))
                         )
                         raise ValueError(
-                            f'invalid category:\n'
-                            f'  category: {{{category_text}}}\n'
-                            f'    record: {list(labels_dict.values())!r}'
+                            f'no matching partition:\n'
+                            f'   names: {{{category_text}}}\n'
+                            f'  record: {list(labels_dict.values())!r}'
                         )
 
                 # Check for valid labels.

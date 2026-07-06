@@ -578,7 +578,7 @@ class BaseStructureRepository(ABC):
         raise KeyError(msg)
 
     def get_by_labels(self, labels: Iterable[str]) -> Structure:
-        """Get record with the matching category labels."""
+        """Get record with the matching partition labels."""
         labels = list(labels)
         all_labels = self.get_label_names()
         bits = [int(x in labels) for x in all_labels]

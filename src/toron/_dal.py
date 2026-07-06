@@ -51,7 +51,7 @@ except ImportError:
 
 from . import _schema
 from .categories import make_structure
-from .categories import minimize_discrete_categories
+from .categories import find_minimal_partition_generating_set
 from ._xmapper import xMapper
 from ._utils import (
     ToronError,
@@ -2467,7 +2467,7 @@ class DataAccessLayer(object):
 
         if minimize:
             whole_space = set(cls._get_column_names(cursor, 'node_index')[1:])
-            categories = minimize_discrete_categories(categories, [whole_space])
+            categories = find_minimal_partition_generating_set(categories, [whole_space])
 
         list_of_lists = [list(cat) for cat in categories]  # type: ignore [union-attr]
         cls._set_data_property(cursor, 'discrete_categories', list_of_lists)
@@ -2507,7 +2507,7 @@ class DataAccessLayer(object):
         self, discrete_categories: Iterable[Set[str]]
     ) -> None:
         data = self.get_data(['discrete_categories', 'index_columns'])
-        minimized = minimize_discrete_categories(
+        minimized = find_minimal_partition_generating_set(
             data['discrete_categories'],
             discrete_categories,
             [set(data['index_columns'])],
@@ -2546,7 +2546,7 @@ class DataAccessLayer(object):
 
         remaining_cats = [x for x in current_cats if x not in discrete_categories]
 
-        minimized = minimize_discrete_categories(
+        minimized = find_minimal_partition_generating_set(
             remaining_cats,
             [mandatory_cat],
         )

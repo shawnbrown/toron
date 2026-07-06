@@ -169,21 +169,22 @@ def get_parser() -> argparse.ArgumentParser:
                                    help='do not make a backup file')
     parser_add_weight.set_defaults(func=command_add.add_weight)
 
-    # Subcommand: add category
-    parser_add_category = parser_add_subparsers.add_parser(
-        'category',
-        help='add a discrete category',
-        description=('Add a discrete category to an existing node file. '
-                     'Labels may be provided as separate arguments or as '
+    # Subcommand: add partition
+    parser_add_partition = parser_add_subparsers.add_parser(
+        'partition',
+        help='add a partition',
+        description=('Add a partition to a node file. A partition groups '
+                     'records into cells based on the specified index labels. '
+                     'Label names may be provided as separate arguments or as '
                      'a comma-separated list.'),
     )
-    parser_add_category.add_argument('labels', nargs='+',
-                                     help='index labels that define a category',
+    parser_add_partition.add_argument('labels', nargs='+',
+                                     help='label names that form the partition',
                                      metavar='LABEL')
-    parser_add_category.add_argument('--no-backup', action='store_false',
+    parser_add_partition.add_argument('--no-backup', action='store_false',
                                      dest='backup',
                                      help='do not make a backup file')
-    parser_add_category.set_defaults(func=command_add.add_category)
+    parser_add_partition.set_defaults(func=command_add.add_partition)
 
     # Subcommand: add attribute
     parser_add_attribute = parser_add_subparsers.add_parser(

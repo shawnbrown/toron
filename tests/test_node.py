@@ -4987,26 +4987,27 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             Quantity(2, 1, 2, 222),
         ])
 
-    def test_invalid_category(self):
-        """Should fail when quantities use an invalid category."""
+    def test_invalid_partition(self):
+        """Should fail when quantities use an invalid partition."""
         data = [
             ('state', 'county',   'category', 'sex',    'counts'),
             ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
             ('OH',    '',         'TOTAL',    'FEMALE', 187990),
         ]
 
-        # Should fail because "state" alone is not a valid category.
+        # Should fail because "state" alone does not match a specified
+        # partition definition.
         #
-        # To start, the node only has two valid categories:
+        # To start, the node only has two valid partition definitions:
         #   1. {'state', 'county'} <- the whole space
         #   3. {}                  <- the empty set
         #
         # The location `['OH', '']`, includes a state value but does not
         # include a county value. And since {'state'} is not one of the
-        # valid categories, this should raise an error.
-        regex = (r"invalid category:\n"
-                 r"  category: \{'state'\}\n"
-                 r"    record: \['OH', ''\]")
+        # valid definitions, this should raise an error.
+        regex = (r"no matching partition:\n"
+                 r"   names: \{'state'\}\n"
+                 r"  record: \['OH', ''\]")
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities2(value_column='counts', data=data)
 
@@ -5014,9 +5015,9 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         self.assertAttributesEqual([], msg='should load no records')
         self.assertQuantitiesEqual([], msg='should load no records')
 
-        # Should pass because "state" is added as a category.
+        # Should pass because "state" is added as a partition definition.
         #
-        # Here, we update the valid categories to the following:
+        # Here, we update the valid partitions to the following:
         #   1. {'state', 'county'} <- the whole space
         #   2. {'state'}           <- state alone
         #   3. {}                  <- the empty set
@@ -5130,9 +5131,9 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
             ('',      'NULL ISLAND', 'TOTAL',    None,     111111),
         ]
 
-        regex = (r"invalid category:\n"
-                 r"  category: \{'county'\}\n"
-                 r"    record: \['', 'NULL ISLAND'\]")
+        regex = (r"no matching partition:\n"
+                 r"   names: \{'county'\}\n"
+                 r"  record: \['', 'NULL ISLAND'\]")
         msg = 'first: should check categories'
         with self.assertRaisesRegex(ValueError, regex, msg=msg):
             self.node.insert_quantities2(

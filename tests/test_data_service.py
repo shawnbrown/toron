@@ -1372,7 +1372,7 @@ class TestAddAndRemoveDiscreteCategory(unittest.TestCase):
     def test_add_bad_column_name(self):
         self.label_manager.add_columns('A', 'B')
 
-        regex = "invalid category, no index label 'C'"
+        regex = "invalid partition, no index label 'C'"
         with self.assertRaisesRegex(ValueError, regex):
             add_discrete_category(  # <- Function under test.
                 category={'A', 'C'},
