@@ -33,7 +33,7 @@ from .._typing import (
 
 
 if TYPE_CHECKING:
-    from _csv import _writer as WriterType
+    import _csv
     from .. import TopoNode
 
 
@@ -52,7 +52,7 @@ def is_streamed(standard_io: TextIO):
 @contextmanager
 def csv_stdout_writer(
     stdout: Optional[TextIO] = None
-) -> Generator['WriterType', None, None]:
+) -> Generator['_csv.Writer', None, None]:
     """Context manager to yield a ``csv.writer()`` to stdout."""
     if stdout is None:
         stdout = sys.stdout
