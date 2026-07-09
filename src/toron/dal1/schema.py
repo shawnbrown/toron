@@ -64,6 +64,7 @@ from json import (
 )
 from uuid import uuid4
 
+import toron._datetime as datetime
 from toron._typing import (
     Callable,
     Final,
@@ -217,8 +218,11 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
         INSERT INTO main.label_index (index_id) VALUES (0);
 
         /* Set properties for Toron schema and application versions. */
-        INSERT INTO main.property VALUES ('toron_schema_version', '"0.3.0"');
+        INSERT INTO main.property VALUES ('toron_schema_version', '"0.3.1"');
         INSERT INTO main.property VALUES ('toron_app_version', '"0.1.0"');
+
+        /* Set initial user_properties (an empty JSON object). */
+        INSERT INTO main.property VALUES ('user_properties', '{}');
     """)
 
     # Set magic number to indicate data uses Toron DAL1.
@@ -235,6 +239,13 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     cur.execute(
         'INSERT INTO main.property (key, value) VALUES (?, ?)',
         ('index_hash', json_dumps(SequenceHash([0]).get_hexdigest())),
+    )
+
+    # Set initial created_date using ISO 8601 UTC format.
+    cur.execute(
+        'INSERT INTO main.property (key, value) VALUES (?, ?)',
+        ('created_date',
+         json_dumps(datetime.datetime.now(datetime.UTC).isoformat(timespec='seconds'))),
     )
 
 

@@ -8,6 +8,7 @@ from toron.dal1.migrations import (
     v020_to_v030_step03_quantity_table,
     v020_to_v030_step04_rename_label_tables,
     v020_to_v030_step05_properties,
+    v030_to_v031_step01_properties,
     apply_migrations,
 )
 
@@ -415,13 +416,45 @@ class TestApplyMigrations(unittest.TestCase):
         self.cur.execute("SELECT value from property where key='partition_definitions'")
         self.assertEqual(self.cur.fetchone()[0], '[["label_b", "label_c", "label_a"]]')
 
+    def test_v030_to_v031_step01_properties(self):
+        self.cur.executescript("""
+            /* Create version 0.3.0 'property' and 'attribute_group' tables. */
+            CREATE TABLE attribute_group(
+                attribute_group_id INTEGER PRIMARY KEY,
+                attributes TEXT_ATTRIBUTES NOT NULL,
+                UNIQUE (attributes)
+            );
+            INSERT INTO "attribute_group" VALUES(1, '{"A": "aaa"}');
+            INSERT INTO "attribute_group" VALUES(2, '{"B": "bbb", "C": "ccc"}');
+
+            CREATE TABLE property(
+                key TEXT PRIMARY KEY NOT NULL,
+                value TEXT_JSON
+            );
+            INSERT INTO "property" VALUES('toron_schema_version', '"0.3.0"');
+            INSERT INTO "property" VALUES('domain', '"foo_bar"');
+            INSERT INTO "property" VALUES('registered_attributes', '["A", "B", "C"]');
+            INSERT INTO "property" VALUES('partition_definitions','[["label_b", "label_c", "label_a"]]');
+        """)
+
+        v030_to_v031_step01_properties(self.cur)  # <- Function under test.
+
+        self.cur.execute("SELECT value from property where key='toron_schema_version'")
+        self.assertEqual(self.cur.fetchone()[0], '"0.3.1"')
+
+        self.cur.execute("SELECT value from property where key='created_date'")
+        self.assertRegex(self.cur.fetchone()[0], r'^"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00"$')
+
+        self.cur.execute("SELECT value from property where key='user_properties'")
+        self.assertEqual(self.cur.fetchone()[0], '{}')
+
     def test_apply_migrations(self):
         self.cur.executescript(FULL_NODE_SCHEMA_V_020)
 
         apply_migrations(self.cur)  # <- Function under test.
 
         self.cur.execute("SELECT value from property where key='toron_schema_version'")
-        self.assertEqual(self.cur.fetchone()[0], '"0.3.0"')
+        self.assertEqual(self.cur.fetchone()[0], '"0.3.1"')
 
         self.cur.execute("SELECT value from property where key='domain'")
         self.assertEqual(self.cur.fetchone()[0], '"baz_qux_foo_bar"')

@@ -87,6 +87,30 @@ class TestInstantiation(unittest.TestCase):
                  'they are empty'),
         )
 
+    def test_new_node_created_date(self):
+        """Should have "created_date" property in ISO 8601 UTC format."""
+        node = TopoNode()  # Create empty node.
+
+        with node._managed_cursor() as cursor:
+            property_repo = node._dal.PropertyRepository(cursor)
+            created_date = property_repo.get('created_date')
+
+        # Below, the "+00:00" suffix is the timezone offset for UTC.
+        self.assertRegex(
+            created_date,
+            r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$',
+        )
+
+    def test_new_node_user_properties(self):
+        """Should have "user_properties" property as an empty dictionary."""
+        node = TopoNode()  # Create empty node.
+
+        with node._managed_cursor() as cursor:
+            property_repo = node._dal.PropertyRepository(cursor)
+            user_properties = property_repo.get('user_properties')
+
+        self.assertEqual(user_properties, dict(), msg='should be empty dict')
+
 
 class TestFileHandling(unittest.TestCase):
     """Test ``TopoNode.to_file()`` method and ``read_file()`` function."""

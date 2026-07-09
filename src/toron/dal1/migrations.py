@@ -1,7 +1,9 @@
 """Database schema version migration functions."""
 import json
+import logging
 import sqlite3
 from itertools import chain
+import toron._datetime as datetime
 from toron._typing import (
     Optional,
 )
@@ -196,6 +198,32 @@ def v020_to_v030_step05_properties(cursor: sqlite3.Cursor) -> None:
 
 
 ########################################################################
+# Schema Migrations for 0.3.0 to 0.3.1
+########################################################################
+
+def v030_to_v031_step01_properties(cursor: sqlite3.Cursor) -> None:
+    """Update 'property' values for 0.3.0 to 0.3.1 migration."""
+    # Add a "user_properties" property (empty JSON object).
+    cursor.execute(
+        "INSERT INTO main.property VALUES('user_properties', '{}')"
+    )
+
+    # Add "created_date" property in ISO 8601 format and emit warning.
+    cursor.execute(
+        "INSERT INTO main.property VALUES('created_date', ?)",
+        (json.dumps(datetime.datetime.now(datetime.UTC).isoformat(timespec='seconds')),),
+    )
+    logging.getLogger('app-toron').warning('"created_date" set to current time')
+
+    # Update schema version number.
+    cursor.execute("""
+        UPDATE main.property
+        SET value='"0.3.1"'
+        WHERE key='toron_schema_version'
+    """)
+
+
+########################################################################
 # Main "Apply Migrations" Function
 ########################################################################
 
@@ -212,7 +240,7 @@ def apply_migrations(
     toron_schema_version = cursor.fetchone()[0]
 
     # Exit without changes if schema already uses the latest version.
-    if toron_schema_version in {'0.3.0', '"0.3.0"'}:
+    if toron_schema_version == '0.3.1' or toron_schema_version == '"0.3.1"':
         return  # <- EXIT!
 
     if mode == 'ro':
@@ -244,6 +272,9 @@ def apply_migrations(
             v020_to_v030_step03_quantity_table(cursor)
             v020_to_v030_step04_rename_label_tables(cursor)
             v020_to_v030_step05_properties(cursor)
+            v030_to_v031_step01_properties(cursor)
+        elif toron_schema_version in {'0.3.0', '"0.3.0"'}:
+            v030_to_v031_step01_properties(cursor)
 
         # Check integrity, re-create constraints, and commit transaction.
         schema.verify_foreign_key_check(cursor)
