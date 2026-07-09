@@ -10,6 +10,10 @@ from . import schema
 from toron._utils import BitFlags
 
 
+########################################################################
+# Schema Migrations for 0.2.0 to 0.3.0
+########################################################################
+
 def v020_to_v030_step01_link_table(cursor: sqlite3.Cursor) -> None:
     """Update 'link' tables for 0.2.0 to 0.3.0 migration."""
     # Rename table and columns 'crosswalk' -> 'link'.
@@ -190,6 +194,10 @@ def v020_to_v030_step05_properties(cursor: sqlite3.Cursor) -> None:
         WHERE key='toron_schema_version'
     """)
 
+
+########################################################################
+# Main "Apply Migrations" Function
+########################################################################
 
 def apply_migrations(
     cursor: sqlite3.Cursor, mode: Optional[str] = None
