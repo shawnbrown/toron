@@ -5,6 +5,7 @@ from collections import Counter
 from itertools import chain, compress, groupby
 from math import log2
 
+import toron._datetime as datetime
 from toron._typing import (
     Any,
     Callable,
@@ -1131,9 +1132,14 @@ def get_node_info_text(
     else:
         links_list = ['None']
 
+    utc_timestamp = cast(str, property_repo.get('created_date'))
+    dt_obj = datetime.datetime.fromisoformat(utc_timestamp)
+    local_timestamp = dt_obj.astimezone().strftime('%Y-%m-%d %I:%M:%S %p %Z')
+
     return {
         'domain_str': domain_str,
         'partition_list': partition_list,
         'weights_list': weights_list,
         'links_list': links_list,
+        'created_date': local_timestamp,
     }

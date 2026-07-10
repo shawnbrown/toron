@@ -6108,10 +6108,22 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
 
 
 class TestTopoNodeRepr(unittest.TestCase):
-    @staticmethod
-    def strip_first_line(text):  # <- Helper function.
-        """Return given text without the first line."""
-        return text[text.find('\n')+1:]
+    def assertTextEqual(self, first, second, ignore_top=0, ignore_bottom=0, msg=None):
+        """Compare text optionally ignoring a number of top and bottom lines."""
+        first_lines = first.splitlines(keepends=True)
+        second_lines = second.splitlines(keepends=True)
+
+        if ignore_top:
+            first_lines = first_lines[ignore_top:]
+            second_lines = second_lines[ignore_top:]
+
+        if ignore_bottom:
+            first_lines = first_lines[:-ignore_bottom]
+            second_lines = second_lines[:-ignore_bottom]
+
+        first = ''.join(first_lines)
+        second = ''.join(second_lines)
+        self.assertEqual(first, second, msg=msg)
 
     def test_first_line(self):
         node = TopoNode()
@@ -6126,10 +6138,24 @@ class TestTopoNodeRepr(unittest.TestCase):
             r'^<toron.TopoNode object at 0x[0-9A-Fa-f]+>$',
         )
 
+    def test_created_date(self):
+        """Check create date format: 1970-01-01 00:00:00 AM UTC."""
+        node = TopoNode()
+
+        repr_text = repr(node)
+        repr_lines = repr_text.splitlines()
+        created_lines = '\n'.join(repr_lines[-2:])  # Get last two lines.
+
+        self.assertRegex(
+            created_lines,
+            r'created:\n  \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} .*'
+        )
+
     def test_empty_node(self):
         node = TopoNode()
 
-        expected = """
+        expected = dedent("""
+            <toron.TopoNode object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6140,18 +6166,20 @@ class TestTopoNodeRepr(unittest.TestCase):
               None
             incoming links:
               None
-        """
+            created:
+              1970-01-01 00:00:00 AM UTC
+        """).lstrip()
 
-        self.assertEqual(
-            self.strip_first_line(repr(node)),
-            dedent(expected).strip(),
+        self.assertTextEqual(
+            repr(node), expected, ignore_top=1, ignore_bottom=1
         )
 
     def test_domain(self):
         node = TopoNode()
         node.set_domain('FooBar')
 
-        expected = """
+        expected = dedent("""
+            <toron.TopoNode object at 0x000000000000>
             domain:
               FooBar
             partitions:
@@ -6162,18 +6190,20 @@ class TestTopoNodeRepr(unittest.TestCase):
               None
             incoming links:
               None
-        """
+            created:
+              1970-01-01 00:00:00 AM UTC
+        """).lstrip()
 
-        self.assertEqual(
-            self.strip_first_line(repr(node)),
-            dedent(expected).strip(),
+        self.assertTextEqual(
+            repr(node), expected, ignore_top=1, ignore_bottom=1
         )
 
     def test_index_columns(self):
         node = TopoNode()
         node.add_index_columns('foo', 'bar', 'baz')
 
-        expected = """
+        expected = dedent("""
+            <toron.TopoNode object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6184,11 +6214,12 @@ class TestTopoNodeRepr(unittest.TestCase):
               None
             incoming links:
               None
-        """
+            created:
+              1970-01-01 00:00:00 AM UTC
+        """).lstrip()
 
-        self.assertEqual(
-            self.strip_first_line(repr(node)),
-            dedent(expected).strip(),
+        self.assertTextEqual(
+            repr(node), expected, ignore_top=1, ignore_bottom=1
         )
 
     def test_granularity(self):
@@ -6199,7 +6230,8 @@ class TestTopoNodeRepr(unittest.TestCase):
             structure = structure_repo.get_by_labels(['A', 'B', 'C'])
             structure_repo.update(replace(structure, granularity=2.75))
 
-        expected = """
+        expected = dedent("""
+            <toron.TopoNode object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6210,11 +6242,12 @@ class TestTopoNodeRepr(unittest.TestCase):
               None
             incoming links:
               None
-        """
+            created:
+              1970-01-01 00:00:00 AM UTC
+        """).lstrip()
 
-        self.assertEqual(
-            self.strip_first_line(repr(node)),
-            dedent(expected).strip(),
+        self.assertTextEqual(
+            repr(node), expected, ignore_top=1, ignore_bottom=1
         )
 
     def test_weight_groups(self):
@@ -6224,7 +6257,8 @@ class TestTopoNodeRepr(unittest.TestCase):
         node.add_weight_group('bar', is_complete=True, make_default=False)
         node.add_weight_group('baz', is_complete=False, make_default=True)
 
-        expected = """
+        expected = dedent("""
+            <toron.TopoNode object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6235,11 +6269,12 @@ class TestTopoNodeRepr(unittest.TestCase):
               None
             incoming links:
               None
-        """
+            created:
+              1970-01-01 00:00:00 AM UTC
+        """).lstrip()
 
-        self.assertEqual(
-            self.strip_first_line(repr(node)),
-            dedent(expected).strip(),
+        self.assertTextEqual(
+            repr(node), expected, ignore_top=1, ignore_bottom=1
         )
 
     def test_attributes(self):
@@ -6248,7 +6283,8 @@ class TestTopoNodeRepr(unittest.TestCase):
             property_repo = node._dal.PropertyRepository(cursor)
             property_repo.add('registered_attributes', ['foo', 'bar', 'baz'])
 
-        expected = """
+        expected = dedent("""
+            <toron.TopoNode object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6259,11 +6295,12 @@ class TestTopoNodeRepr(unittest.TestCase):
               foo, bar, baz
             incoming links:
               None
-        """
+            created:
+              1970-01-01 00:00:00 AM UTC
+        """).lstrip()
 
-        self.assertEqual(
-            self.strip_first_line(repr(node)),
-            dedent(expected).strip(),
+        self.assertTextEqual(
+            repr(node), expected, ignore_top=1, ignore_bottom=1
         )
 
     def test_links(self):
@@ -6303,7 +6340,8 @@ class TestTopoNodeRepr(unittest.TestCase):
                 is_locally_complete=True,
             )
 
-        expected = """
+        expected = dedent("""
+            <toron.TopoNode object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6315,9 +6353,10 @@ class TestTopoNodeRepr(unittest.TestCase):
             incoming links:
               node1.toron: bar (default, locally incomplete), foo
               node2.toron: baz, corge (default), qux (locally incomplete)
-        """
+            created:
+              1970-01-01 00:00:00 AM UTC
+        """).lstrip()
 
-        self.assertEqual(
-            self.strip_first_line(repr(node)),
-            dedent(expected).strip(),
+        self.assertTextEqual(
+            repr(node), expected, ignore_top=1, ignore_bottom=1
         )

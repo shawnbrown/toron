@@ -3072,7 +3072,9 @@ class TopoNode(object):
             f"attributes:\n"
             f"  {', '.join(registered_attributes) or 'None'}\n"
             f"incoming links:\n"
-            f"  {links_str}"
+            f"  {links_str}\n"
+            f"created:\n"
+            f"  {info['created_date']}"
         )
 
 

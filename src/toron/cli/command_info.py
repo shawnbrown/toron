@@ -72,5 +72,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
         f"  {', '.join(formatted_attributes) or 'None'}\n"
         f"{bright}incoming links:{reset}\n"
         f"  {links_str}\n"
+        f"{bright}created:{reset}\n"
+        f"  {info_dict['created_date']}\n"
     )
     return ExitCode.OK
