@@ -265,8 +265,8 @@ def apply_migrations(
         cursor.execute('BEGIN TRANSACTION')
         schema.drop_schema_constraints(cursor)
 
-        # Apply migrations.
         if toron_schema_version in {'0.2.0', '"0.2.0"'}:
+            # Apply 0.2.0 -> 0.3.1 migrations.
             v020_to_v030_step01_link_table(cursor)
             v020_to_v030_step02_relation_table(cursor, whole_space_level)
             v020_to_v030_step03_quantity_table(cursor)
@@ -274,6 +274,7 @@ def apply_migrations(
             v020_to_v030_step05_properties(cursor)
             v030_to_v031_step01_properties(cursor)
         elif toron_schema_version in {'0.3.0', '"0.3.0"'}:
+            # Apply 0.3.0 -> 0.3.1 migrations.
             v030_to_v031_step01_properties(cursor)
 
         # Check integrity, re-create constraints, and commit transaction.
