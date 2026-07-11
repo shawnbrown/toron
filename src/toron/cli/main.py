@@ -295,6 +295,17 @@ def get_parser() -> argparse.ArgumentParser:
                                      help='replacement label name', metavar='NEW_LABEL')
     parser_rename_label.set_defaults(func=command_rename.rename_label)
 
+    # Subcommand: rename domain
+    parser_rename_domain = parser_rename_subparsers.add_parser(
+        'domain',
+        help="change the node's domain",
+        description="Change the node's domain.",
+        parents=[no_backup_parent],
+    )
+    parser_rename_domain.add_argument('new_domain',
+                                      help='new domain value', metavar='NEW_DOMAIN')
+    parser_rename_domain.set_defaults(func=command_rename.rename_domain)
+
     # Subcommand: index
     parser_index = subparsers.add_parser(
         name='index',

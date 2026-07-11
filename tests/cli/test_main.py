@@ -257,7 +257,7 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 'foo',
                 '--move-left',   # <- Should only allow one direction.
                 '--move-right',  # <- Should only allow one direction.
-            ]),
+            ])
 
     def test_subcommand_rename_label(self):
         """Check "rename label" subparser."""
@@ -277,6 +277,25 @@ class TestToronArgumentParser(StreamWrapperTestCase):
                 new_label='bar',
                 backup=True,
                 func=command_rename.rename_label,
+            ),
+        )
+
+    def test_subcommand_rename_domain(self):
+        """Check "rename domain" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'rename',
+                'domain',
+                'new_domain_name',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='rename',
+                element='domain',
+                backup=True,
+                new_domain='new_domain_name',
+                func=command_rename.rename_domain,
             ),
         )
 

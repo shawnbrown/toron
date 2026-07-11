@@ -66,3 +66,29 @@ class TestRenameLabel(unittest.TestCase):
         regex = r"no label 'S'"
         with self.assertRaisesRegex(ToronError, regex):
             command_rename.rename_label(args)  # Function under test.
+
+
+class TestRenameDomain(unittest.TestCase):
+    def setUp(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            self.filepath = tmp.name
+        self.addCleanup(os.remove, self.filepath)
+
+        TopoNode().to_file(self.filepath)
+
+    def test_rename_domain(self):
+        bind_node(self.filepath, mode='rw').set_domain('orig_value')
+
+        args = argparse.Namespace(
+            filepath=self.filepath,
+            command='rename',
+            element='domain',
+            new_domain='new_value',
+        )
+        exit_code = command_rename.rename_domain(args)  # Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+        self.assertEqual(
+            bind_node(self.filepath, mode='ro').domain,
+            'new_value',
+        )

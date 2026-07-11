@@ -21,3 +21,14 @@ def rename_label(args: argparse.Namespace) -> ExitCode:
     applogger.info(f'renamed label {args.old_label!r} -> {args.new_label!r}')
 
     return ExitCode.OK
+
+
+def rename_domain(args: argparse.Namespace) -> ExitCode:
+    """Change the given node's domain."""
+    node = cli_bind_node(args.filepath, mode='rw')
+    process_backup_option(args, node)
+
+    node.set_domain(args.new_domain)
+    applogger.info(f'domain set to {args.new_domain!r}')
+
+    return ExitCode.OK
