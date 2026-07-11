@@ -12,7 +12,7 @@ class TestLocationRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         self.cursor = connection.cursor()
         self.addCleanup(self.cursor.close)

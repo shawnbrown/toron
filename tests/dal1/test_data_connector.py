@@ -86,7 +86,7 @@ class TestGetSqlite3Connection(unittest.TestCase):
     def test_explicit_tempfile(self):
         with closing(tempfile.NamedTemporaryFile(delete=False)) as temp_f:
             database_path = os.path.abspath(temp_f.name)
-            self.addCleanup(lambda: os.unlink(database_path))
+            self.addCleanup(os.unlink, database_path)
 
         con = get_sqlite_connection(database_path)
 
@@ -96,7 +96,7 @@ class TestGetSqlite3Connection(unittest.TestCase):
     def test_read_only_access_mode(self):
         with closing(tempfile.NamedTemporaryFile(delete=False)) as temp_f:
             database_path = os.path.abspath(temp_f.name)
-            self.addCleanup(lambda: os.unlink(database_path))
+            self.addCleanup(os.unlink, database_path)
 
         con = get_sqlite_connection(database_path, access_mode='ro')
 
@@ -132,7 +132,7 @@ class TestGetSqlite3Connection(unittest.TestCase):
         """Non-database files should fail."""
         with tempfile.NamedTemporaryFile(prefix='toron-', delete=False) as f:
             f.write(b'\xff' * 64)  # Write 64 bytes of 1s.
-        self.addCleanup(lambda: os.unlink(f.name))
+        self.addCleanup(os.unlink, f.name)
 
         # Returns connection but doesn't fail immediately.
         con = get_sqlite_connection(f.name)

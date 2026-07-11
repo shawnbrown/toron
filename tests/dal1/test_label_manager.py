@@ -21,7 +21,7 @@ class TestLabelManager(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         self.cursor = connection.cursor()
         self.addCleanup(self.cursor.close)
@@ -153,7 +153,7 @@ class TestLegacyLabelFunctions(unittest.TestCase):
     def setUp(self):
         self.node = TopoNode()
         connection = self.node._connector.acquire_connection()
-        self.addCleanup(lambda: self.node._connector.release_connection(connection))
+        self.addCleanup(self.node._connector.release_connection, connection)
         self.cursor = connection.cursor()
         self.addCleanup(self.cursor.close)
 
@@ -181,7 +181,7 @@ class TestLegacyLabelFunctions(unittest.TestCase):
         manager.add_columns('foo', 'bar')
 
         self.cursor.execute('BEGIN TRANSACTION')
-        self.addCleanup(lambda: self.cursor.execute('ROLLBACK TRANSACTION'))
+        self.addCleanup(self.cursor.execute, 'ROLLBACK TRANSACTION')
 
         regex = 'existing transaction'
         with self.assertRaisesRegex(RuntimeError, regex):

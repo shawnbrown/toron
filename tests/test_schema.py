@@ -887,7 +887,7 @@ class TestConnectDb(TempDirTestCase):
 
         # Connect to existing file with read-only permissions (should fail).
         os.chmod(path, S_IRUSR)  # Set to read-only.
-        self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))  # Revert to read-write after test.
+        self.addCleanup(os.chmod, path, S_IRUSR|S_IWUSR)  # Revert to read-write after test.
         with self.assertRaises(PermissionError):
             get_connection(path, required_permissions='readwrite')
 
@@ -907,7 +907,7 @@ class TestConnectDb(TempDirTestCase):
             get_connection(path, required_permissions='readonly')
 
         os.chmod(path, S_IRUSR)  # Set file permissions to read-only.
-        self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))
+        self.addCleanup(os.chmod, path, S_IRUSR|S_IWUSR)
 
         # Open readonly connection to file with read-only permissions.
         con = get_connection(path, required_permissions='readonly')
@@ -926,7 +926,7 @@ class TestConnectDb(TempDirTestCase):
         get_connection(path, required_permissions=None).close()  # Connects to existing.
 
         os.chmod(path, S_IRUSR)  # Set file permissions to read-only.
-        self.addCleanup(lambda: os.chmod(path, S_IRUSR|S_IWUSR))
+        self.addCleanup(os.chmod, path, S_IRUSR|S_IWUSR)
         get_connection(path, required_permissions=None).close()  # Connects to read-only.
 
     def test_invalid_permissions(self):

@@ -180,7 +180,7 @@ class TestApplyMigrations(unittest.TestCase):
         self.addCleanup(self.cur.close)
 
         self.cur.execute('PRAGMA foreign_keys=OFF')
-        self.addCleanup(lambda: self.cur.execute('PRAGMA foreign_keys=ON'))
+        self.addCleanup(self.cur.execute, 'PRAGMA foreign_keys=ON')
 
     def test_v020_to_v030_step01_link_table(self):
         self.cur.executescript("""

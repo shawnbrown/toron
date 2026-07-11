@@ -17,7 +17,7 @@ class TempNodeMixin(object):
     def setUp(self):
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             self.filepath = tmp.name
-        self.addCleanup(lambda: os.remove(self.filepath))
+        self.addCleanup(os.remove, self.filepath)
 
         node = TopoNode()
         node.to_file(self.filepath)
@@ -254,7 +254,7 @@ class TestAddLink(unittest.TestCase):
     def setUp(self):
         with tempfile.NamedTemporaryFile(delete=False) as tmp1:
             self.filepath1 = tmp1.name
-        self.addCleanup(lambda: os.remove(self.filepath1))
+        self.addCleanup(os.remove, self.filepath1)
         node1 = TopoNode()
         with node1._managed_transaction() as cur:
             property_repo = node1._dal.PropertyRepository(cur)
@@ -265,7 +265,7 @@ class TestAddLink(unittest.TestCase):
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp2:
             self.filepath2 = tmp2.name
-        self.addCleanup(lambda: os.remove(self.filepath2))
+        self.addCleanup(os.remove, self.filepath2)
         node2 = TopoNode()
         with node2._managed_transaction() as cur:
             property_repo = node2._dal.PropertyRepository(cur)

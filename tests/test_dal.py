@@ -208,7 +208,7 @@ class TestDataAccessLayerOpen(TempDirTestCase):
         self.addCleanup(self.cleanup_temp_files)
 
         os.chmod(self.existing_path, S_IRUSR)  # Set to read-only.
-        self.addCleanup(lambda: os.chmod(self.existing_path, S_IRUSR|S_IWUSR))  # Revert to read-write after test.
+        self.addCleanup(os.chmod, self.existing_path, S_IRUSR|S_IWUSR)  # Revert to read-write after test.
 
     def test_readwrite_new(self):
         """In readwrite mode, nodes can be created directly on drive."""
@@ -311,7 +311,7 @@ class TestDataAccessLayerToFile(TempDirTestCase):
         os.chmod(file_path, stat.S_IREAD)
 
         # Re-enable write permissions during clean-up.
-        self.addCleanup(lambda: os.chmod(file_path, stat.S_IWRITE))
+        self.addCleanup(os.chmod, file_path, stat.S_IWRITE)
 
         # Verify read-only status.
         self.assertFalse(os.access(file_path, os.W_OK), msg='expecting read-only')

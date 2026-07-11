@@ -49,7 +49,7 @@ class TestGetBackendFromPath(unittest.TestCase):
     def setUp(self):
         f = NamedTemporaryFile(prefix='toron-', delete=False)
         f.close()
-        self.addCleanup(lambda: os.unlink(f.name))
+        self.addCleanup(os.unlink, f.name)
         self.fname = f.name  # <- Start with empty file.
 
     def test_dal1(self):

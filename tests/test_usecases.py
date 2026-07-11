@@ -85,7 +85,7 @@ class TestBuildUsingAPI(unittest.TestCase):
         handler = logging.StreamHandler(self.log_stream)
         handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
         applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
+        self.addCleanup(applogger.removeHandler, handler)
 
         # Add an exact mapping between node1 and node2.
         load_mapping(

@@ -55,16 +55,12 @@ class TempDirTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        original_working_dir = os.getcwd()
-
         cls._tempdir = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(cls._tempdir.cleanup)
+
+        orig_working_dir = os.getcwd()
         os.chdir(cls._tempdir.name)
-
-        def cleanup_func():
-            os.chdir(original_working_dir)
-            cls._tempdir.cleanup()
-
-        cls.addClassCleanup(cleanup_func)
+        cls.addClassCleanup(os.chdir, orig_working_dir)
 
     def cleanup_temp_files(self):
         """Remove all files from the current temporary directory."""
@@ -182,11 +178,11 @@ class StreamWrapperTestCase(unittest.TestCase):
     def setUp(self):
         stdout_cm = redirect_stdout(io.StringIO())
         self.stdout_capture = stdout_cm.__enter__()
-        self.addCleanup(lambda: stdout_cm.__exit__(None, None, None))
+        self.addCleanup(stdout_cm.__exit__, None, None, None)
 
         stderr_cm = redirect_stderr(io.StringIO())
         self.stderr_capture = stderr_cm.__enter__()
-        self.addCleanup(lambda: stderr_cm.__exit__(None, None, None))
+        self.addCleanup(stderr_cm.__exit__, None, None, None)
 
     @contextmanager
     def patched_stdin(self, input_str):
@@ -203,9 +199,10 @@ class StreamWrapperTestCase(unittest.TestCase):
 
     def get_tempfile_path(self):
         """Helper function to get a path to a temporary file."""
-        with closing(tempfile.NamedTemporaryFile(delete=False)) as tmp:
-            self.addCleanup(lambda: os.remove(tmp.name))
-        return tmp.name
+        fd, filepath = tempfile.mkstemp()
+        os.close(fd)
+        self.addCleanup(os.remove, filepath)
+        return filepath
 
     def assertStream(self, stream, expected, *, encoding='utf-8', msg=None):
         """Fail if ``stream`` value does not equal ``expected`` value.

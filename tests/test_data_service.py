@@ -54,9 +54,9 @@ class TestValidateNewLabelColumns(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.reserved_identifiers = dal.reserved_identifiers
         self.label_manager = dal.LabelManager(cur)
@@ -139,9 +139,9 @@ class TestDeleteIndexRecord(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         dal.LabelManager(cur).add_columns('A', 'B')
         self.index_repo = dal.IndexRepository(cur)
@@ -199,13 +199,13 @@ class TestFindLocationFunctions(unittest.TestCase):
 
         connector = dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         cursor1 = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor1))
+        self.addCleanup(connector.release_cursor, cursor1)
 
         cursor2 = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor2))
+        self.addCleanup(connector.release_cursor, cursor2)
 
         self.manager = dal.LabelManager(cursor1)
         self.location_repo = dal.LocationRepository(cursor1)
@@ -306,13 +306,13 @@ class TestFind_X_WithoutQuantity(unittest.TestCase):
 
         connector = dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         cursor1 = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor1))
+        self.addCleanup(connector.release_cursor, cursor1)
 
         cursor2 = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor2))
+        self.addCleanup(connector.release_cursor, cursor2)
 
         self.manager = dal.LabelManager(cursor1)
         self.location_repo = dal.LocationRepository(cursor1)
@@ -361,10 +361,10 @@ class TestGetQuantityValueSum(unittest.TestCase):
 
         connector = dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         # Set-up test values.
         manager = dal.LabelManager(cursor)
@@ -406,13 +406,13 @@ class TestDisaggregateValue(unittest.TestCase):
 
         connector = dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         # The index and weight repositories must use different cursors.
         aux1_cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(aux1_cursor))
+        self.addCleanup(connector.release_cursor, aux1_cursor)
         aux2_cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(aux2_cursor))
+        self.addCleanup(connector.release_cursor, aux2_cursor)
 
         index_repo = dal.IndexRepository(aux1_cursor)
         weight_repo = dal.WeightRepository(aux2_cursor)
@@ -593,9 +593,9 @@ class TestFindLinksByNodeReference(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         label_manager = dal.LabelManager(cur)
         index_repo = dal.IndexRepository(cur)
@@ -656,7 +656,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
 
         trg_cm = self.node_f._managed_cursor()
         trg_cur = trg_cm.__enter__()
-        self.addCleanup(lambda: trg_cm.__exit__(None, None, None))
+        self.addCleanup(trg_cm.__exit__, None, None, None)
 
         self.trg_index_repo = self.node_f._dal.IndexRepository(trg_cur)
         self.trg_link_repo = self.node_f._dal.LinkRepository(trg_cur)
@@ -664,7 +664,7 @@ class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
 
         src_cm = self.node_e._managed_cursor()
         src_cur = src_cm.__enter__()
-        self.addCleanup(lambda: src_cm.__exit__(None, None, None))
+        self.addCleanup(src_cm.__exit__, None, None, None)
 
         self.src_prop_repo = self.node_e._dal.PropertyRepository(src_cur)
         self.src_index_repo = self.node_e._dal.IndexRepository(src_cur)
@@ -887,9 +887,9 @@ class TestGetAndSetDefaultWeightGroup(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.weight_group_repo = dal.WeightGroupRepository(cur)
         self.property_repo = dal.PropertyRepository(cur)
@@ -951,9 +951,9 @@ class TestFindMatchingWeightGroups(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         label_manager = dal.LabelManager(cur)
         index_repo = dal.IndexRepository(cur)
@@ -1044,9 +1044,9 @@ class TestRenamePartitionDefinitions(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.label_manager = dal.LabelManager(cur)
         self.label_manager.add_columns('A', 'B', 'C')
@@ -1071,11 +1071,11 @@ class TestRebuildStructureTable(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
         alt_cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(alt_cur))
+        self.addCleanup(connector.release_cursor, alt_cur)
 
         self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
@@ -1206,9 +1206,9 @@ class TestAddDiscretePartitions(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
@@ -1297,9 +1297,9 @@ class TestAddAndRemovePartitionDefinition(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
@@ -1415,11 +1415,11 @@ class TestRefreshStructureGranularity(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
         alt_cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(alt_cur))
+        self.addCleanup(connector.release_cursor, alt_cur)
 
         self.label_manager = dal.LabelManager(cur)
         self.property_repo = dal.PropertyRepository(cur)
@@ -1485,9 +1485,9 @@ class TestDomainMethods(unittest.TestCase):
 
         connector = dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.label_manager = dal.LabelManager(cur)
         self.attribute_repo = dal.AttributeGroupRepository(cur)
@@ -1520,9 +1520,9 @@ class TestRegisteredAttributeFunctions(unittest.TestCase):
 
         connector = self.dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.index_repo = self.dal.IndexRepository(cur)
         self.property_repo = self.dal.PropertyRepository(cur)
@@ -1593,9 +1593,9 @@ class TestGetLoadedAttributes(unittest.TestCase):
 
         connector = self.dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.attribute_repo = self.dal.AttributeGroupRepository(cur)
 
@@ -1636,9 +1636,9 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
 
         connector = self.dal.DataConnector()
         con = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(con))
+        self.addCleanup(connector.release_connection, con)
         cur = connector.acquire_cursor(con)
-        self.addCleanup(lambda: connector.release_cursor(cur))
+        self.addCleanup(connector.release_cursor, cur)
 
         self.label_manager = self.dal.LabelManager(cur)
         self.index_repo = self.dal.IndexRepository(cur)

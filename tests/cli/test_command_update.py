@@ -13,7 +13,7 @@ class TestUpdateLabel(unittest.TestCase):
     def setUp(self):
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             self.filepath = tmp.name
-        self.addCleanup(lambda: os.remove(self.filepath))
+        self.addCleanup(os.remove, self.filepath)
 
         node = TopoNode()
         node.to_file(self.filepath)

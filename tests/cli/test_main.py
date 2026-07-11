@@ -430,7 +430,7 @@ class TestMainNewCommand(StreamWrapperTestCase):
         # Patch the `command_init` module with a mock object.
         mock_cm = unittest.mock.patch(target='toron.cli.main.command_init')
         self.mock = mock_cm.__enter__()
-        self.addCleanup(lambda: mock_cm.__exit__(None, None, None))
+        self.addCleanup(mock_cm.__exit__, None, None, None)
 
     def test_create_file(self):
         """Check call to command_init.create_file()."""
@@ -453,12 +453,12 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         # Patch `command_index.read_from_stdin()` function with mock object.
         mock_read_from_stdin_cm = unittest.mock.patch(target='toron.cli.main.command_index.read_from_stdin')
         self.mock_read_from_stdin = mock_read_from_stdin_cm.__enter__()
-        self.addCleanup(lambda: mock_read_from_stdin_cm.__exit__(None, None, None))
+        self.addCleanup(mock_read_from_stdin_cm.__exit__, None, None, None)
 
         # Patch `command_index.write_to_stdout()` function with mock object.
         mock_write_to_stdout_cm = unittest.mock.patch(target='toron.cli.main.command_index.write_to_stdout')
         self.mock_write_to_stdout = mock_write_to_stdout_cm.__enter__()
-        self.addCleanup(lambda: mock_write_to_stdout_cm.__exit__(None, None, None))
+        self.addCleanup(mock_write_to_stdout_cm.__exit__, None, None, None)
 
     def test_write_to_stdout(self):
         """Check call to command_index.write_to_stdout()."""
@@ -480,7 +480,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         dir_name, base_name = os.path.split(file_path)
         backup_file = os.path.join(dir_name, f'backup-{base_name}')
         if os.path.isfile(backup_file):
-            self.addCleanup(lambda: os.remove(backup_file))
+            self.addCleanup(os.remove, backup_file)
             self.fail('backup file was created unintentionally')
 
     def test_read_from_stdin(self):
@@ -504,7 +504,7 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         dir_name, base_name = os.path.split(file_path)
         backup_file = os.path.join(dir_name, f'backup-{base_name}')
         self.assertTrue(os.path.isfile(backup_file))
-        self.addCleanup(lambda: os.remove(backup_file))
+        self.addCleanup(os.remove, backup_file)
 
     def test_read_from_stdin_no_backup(self):
         """Should not write a '.bak' file when passing `--no-backup`."""
@@ -527,5 +527,5 @@ class TestMainIndexCommand(StreamWrapperTestCase):
         dir_name, base_name = os.path.split(file_path)
         backup_file = os.path.join(dir_name, f'backup-{base_name}')
         if os.path.isfile(backup_file):
-            self.addCleanup(lambda: os.remove(backup_file))
+            self.addCleanup(os.remove, backup_file)
             self.fail('backup file was created unintentionally')

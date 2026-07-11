@@ -12,14 +12,14 @@ class TestQuantityRepository(unittest.TestCase):
     def setUp(self):
         connector = DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         self.cursor = connection.cursor()
         self.addCleanup(self.cursor.close)
 
         # Disable foreign keys for testing only.
         self.cursor.execute('PRAGMA foreign_keys=OFF')
-        self.addCleanup(lambda: self.cursor.execute('PRAGMA foreign_keys=ON'))
+        self.addCleanup(self.cursor.execute, 'PRAGMA foreign_keys=ON')
 
     def assertRecords(self, expected_records, msg=None):
         self.cursor.execute(f'SELECT * FROM quantity')

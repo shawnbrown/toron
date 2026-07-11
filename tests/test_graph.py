@@ -214,7 +214,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
         handler = logging.StreamHandler(self.log_stream)
         handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
         applogger.addHandler(handler)
-        self.addCleanup(lambda: applogger.removeHandler(handler))
+        self.addCleanup(applogger.removeHandler, handler)
 
 
 class TestdGetMappingStats(TwoNodesBaseTestCase):

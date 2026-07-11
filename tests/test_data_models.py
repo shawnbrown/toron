@@ -150,9 +150,9 @@ class DataConnectorBaseTest(ABC):
     def test_transaction_is_active(self):
         connector = self.dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
         cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         # Should start with no active transaction.
         self.assertFalse(connector.transaction_is_active(cursor))
@@ -180,10 +180,10 @@ class LabelManagerBaseTest(ABC):
         connector = self.dal.DataConnector()
 
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.repository = self.dal.LabelManager(cursor)
 
@@ -218,10 +218,10 @@ class IndexRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         self.cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(self.cursor))
+        self.addCleanup(connector.release_cursor, self.cursor)
 
         self.manager = self.dal.LabelManager(self.cursor)
         self.repository = self.dal.IndexRepository(self.cursor)
@@ -460,10 +460,10 @@ class LocationRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.manager = self.dal.LabelManager(cursor)
         self.repository = self.dal.LocationRepository(cursor)
@@ -624,10 +624,10 @@ class StructureRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.manager = self.dal.LabelManager(cursor)
         self.repository = self.dal.StructureRepository(cursor)
@@ -719,10 +719,10 @@ class WeightRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         self.connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(self.connection))
+        self.addCleanup(connector.release_connection, self.connection)
 
         cursor = connector.acquire_cursor(self.connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.manager = self.dal.LabelManager(cursor)
         self.index_repo = self.dal.IndexRepository(cursor)
@@ -949,10 +949,10 @@ class AttributeGroupRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         self.connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(self.connection))
+        self.addCleanup(connector.release_connection, self.connection)
 
         cursor = connector.acquire_cursor(self.connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.repository = self.dal.AttributeGroupRepository(cursor)
 
@@ -1117,10 +1117,10 @@ class QuantityRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         self.connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(self.connection))
+        self.addCleanup(connector.release_connection, self.connection)
 
         cursor = connector.acquire_cursor(self.connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         # Set-up test values for quantity table to use.
         manager = self.dal.LabelManager(cursor)
@@ -1238,10 +1238,10 @@ class QuantityRepositoryFindByStructureBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         self.connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(self.connection))
+        self.addCleanup(connector.release_connection, self.connection)
 
         cursor = connector.acquire_cursor(self.connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         # Set-up test values for quantity table to use.
         manager = self.dal.LabelManager(cursor)
@@ -1381,10 +1381,10 @@ class LinkRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         self.connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(self.connection))
+        self.addCleanup(connector.release_connection, self.connection)
 
         cursor = connector.acquire_cursor(self.connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.repository = self.dal.LinkRepository(cursor)
 
@@ -1428,10 +1428,10 @@ class MappingRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         self.connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(self.connection))
+        self.addCleanup(connector.release_connection, self.connection)
 
         cursor = connector.acquire_cursor(self.connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.manager = self.dal.LabelManager(cursor)
         self.index_repo = self.dal.IndexRepository(cursor)
@@ -1805,10 +1805,10 @@ class PropertyRepositoryBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(connection))
+        self.addCleanup(connector.release_connection, connection)
 
         cursor = connector.acquire_cursor(connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.repository = self.dal.PropertyRepository(cursor)
 
@@ -1871,10 +1871,10 @@ class CrossRepositoryRelationsBaseTest(ABC):
     def setUp(self):
         connector = self.dal.DataConnector()
         self.connection = connector.acquire_connection()
-        self.addCleanup(lambda: connector.release_connection(self.connection))
+        self.addCleanup(connector.release_connection, self.connection)
 
         cursor = connector.acquire_cursor(self.connection)
-        self.addCleanup(lambda: connector.release_cursor(cursor))
+        self.addCleanup(connector.release_cursor, cursor)
 
         self.manager = self.dal.LabelManager(cursor)
         self.location_repo = self.dal.LocationRepository(cursor)
