@@ -6,9 +6,15 @@ from unittest import *
 from unittest import mock
 
 
-try:
-    TestCase.assertNoLogs  # New in 3.10
-except AttributeError:
+# Save original TestCase reference.
+_TestCaseOrig = TestCase
+
+# Subclass which will be monkey-patched as needed.
+class TestCase(_TestCaseOrig):
+    pass
+
+
+if not hasattr(TestCase, 'assertNoLogs'):  # New in 3.10
     # The following code is adapted from the Python 3.10 Standard Library.
     import collections
     import logging
@@ -84,50 +90,43 @@ except AttributeError:
                         "no logs of level {} or higher triggered on {}"
                         .format(logging.getLevelName(self.level), self.logger.name))
 
-    class _TestCase(TestCase):
-        def assertNoLogs(self, logger=None, level=None):
-            return _AssertLogsContext(self, logger, level, no_logs=True)
+    def _assertNoLogs(self, logger=None, level=None):
+        return _AssertLogsContext(self, logger, level, no_logs=True)
 
-    TestCase = _TestCase
+    TestCase.assertNoLogs = _assertNoLogs
 
 
-try:
-    TestCase.enterContext  # New in 3.11
-except AttributeError:
+if not hasattr(TestCase, 'enterContext'):  # New in 3.11
     # The following code is adapted from the Python 3.11 Standard Library.
-    class _TestCase(TestCase):
-        def enterContext(self, cm):
-            cls = type(cm)
-            try:
-                enter = cls.__enter__
-                exit = cls.__exit__
-            except AttributeError:
-                raise TypeError(f"'{cls.__module__}.{cls.__qualname__}' object does "
-                                f"not support the context manager protocol") from None
-            result = enter(cm)
-            self.addCleanup(exit, cm, None, None, None)
-            return result
+    def _enterContext(self, cm):
+        cls = type(cm)
+        try:
+            enter = cls.__enter__
+            exit = cls.__exit__
+        except AttributeError:
+            raise TypeError(f"'{cls.__module__}.{cls.__qualname__}' object does "
+                            f"not support the context manager protocol") from None
+        result = enter(cm)
+        self.addCleanup(exit, cm, None, None, None)
+        return result
 
-    TestCase = _TestCase
+    TestCase.enterContext = _enterContext
 
 
-try:
-    TestCase.assertIsSubclass  # New in 3.14
-except AttributeError:
+if not hasattr(TestCase, 'assertIsSubclass'):  # New in 3.14
     # The following code is adapted from the Python 3.14 Standard Library.
-    class _TestCase(TestCase):
-        def assertIsSubclass(self, cls, superclass, msg=None):
-            try:
-                if issubclass(cls, superclass):
-                    return
-            except TypeError:
-                if not isinstance(cls, type):
-                    self.fail(self._formatMessage(msg, f'{cls!r} is not a class'))
-                raise
-            if isinstance(superclass, tuple):
-                standardMsg = f'{cls!r} is not a subclass of any of {superclass!r}'
-            else:
-                standardMsg = f'{cls!r} is not a subclass of {superclass!r}'
-            self.fail(self._formatMessage(msg, standardMsg))
+    def _assertIsSubclass(self, cls, superclass, msg=None):
+        try:
+            if issubclass(cls, superclass):
+                return
+        except TypeError:
+            if not isinstance(cls, type):
+                self.fail(self._formatMessage(msg, f'{cls!r} is not a class'))
+            raise
+        if isinstance(superclass, tuple):
+            standardMsg = f'{cls!r} is not a subclass of any of {superclass!r}'
+        else:
+            standardMsg = f'{cls!r} is not a subclass of {superclass!r}'
+        self.fail(self._formatMessage(msg, standardMsg))
 
-    TestCase = _TestCase
+    TestCase.assertIsSubclass = _assertIsSubclass
