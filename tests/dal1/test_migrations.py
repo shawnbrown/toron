@@ -437,7 +437,8 @@ class TestApplyMigrations(unittest.TestCase):
             INSERT INTO "property" VALUES('partition_definitions','[["label_b", "label_c", "label_a"]]');
         """)
 
-        v030_to_v031_step01_properties(self.cur)  # <- Function under test.
+        with self.assertLogs('app-toron', level='INFO'):
+            v030_to_v031_step01_properties(self.cur)  # <- Function under test.
 
         self.cur.execute("SELECT value from property where key='toron_schema_version'")
         self.assertEqual(self.cur.fetchone()[0], '"0.3.1"')
@@ -451,7 +452,8 @@ class TestApplyMigrations(unittest.TestCase):
     def test_apply_migrations(self):
         self.cur.executescript(FULL_NODE_SCHEMA_V_020)
 
-        apply_migrations(self.cur)  # <- Function under test.
+        with self.assertLogs('app-toron', level='INFO'):
+            apply_migrations(self.cur)  # <- Function under test.
 
         self.cur.execute("SELECT value from property where key='toron_schema_version'")
         self.assertEqual(self.cur.fetchone()[0], '"0.3.1"')

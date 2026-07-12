@@ -2,10 +2,10 @@
 
 import logging
 import sqlite3
-import unittest
 from contextlib import closing
 from io import StringIO
 
+from . import _unittest as unittest
 from .common import TopoNodeFixturesMixin
 
 from toron.node import TopoNode
@@ -618,8 +618,10 @@ class TestMapperIterRelations(TopoNodeFixturesMixin, unittest.TestCase):
                   [None, ['C'], BitFlags(1), None, ['C',  ''], BitFlags(1, 0), 28],   # <- Matched to 1 right-side record (2-ambiguous, minus 1-exact overlap).
                   [None, ['C'], BitFlags(1), None, ['C', 'y'], BitFlags(1, 1),  7]],  # <- Exact match (overlaps the records matched on "C" alone).
         )
-        mapper.match_records('node1')
-        mapper.match_records('node2', match_limit=2)
+        with self.assertNoLogs('app-toron'):
+            mapper.match_records('node1')
+        with self.assertLogs('app-toron'):
+            mapper.match_records('node2', match_limit=2)
 
         mappings = mapper.iter_mappings(target_node='node2')  # <- Method under test.
 
