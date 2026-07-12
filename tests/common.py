@@ -179,13 +179,8 @@ class TopoNodeFixturesMixin(object):
 class StreamWrapperMixin(object):
     def setUp(self):
         super().setUp()
-        stdout_cm = redirect_stdout(io.StringIO())
-        self.stdout_capture = stdout_cm.__enter__()
-        self.addCleanup(stdout_cm.__exit__, None, None, None)
-
-        stderr_cm = redirect_stderr(io.StringIO())
-        self.stderr_capture = stderr_cm.__enter__()
-        self.addCleanup(stderr_cm.__exit__, None, None, None)
+        self.stdout_capture = self.enterContext(redirect_stdout(io.StringIO()))
+        self.stderr_capture = self.enterContext(redirect_stderr(io.StringIO()))
 
     @contextmanager
     def patched_stdin(self, input_str):

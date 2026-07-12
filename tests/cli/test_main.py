@@ -428,9 +428,7 @@ class TestMainNewCommand(StreamWrapperMixin, unittest.TestCase):
         super().setUp()
 
         # Patch the `command_init` module with a mock object.
-        mock_cm = unittest.mock.patch(target='toron.cli.main.command_init')
-        self.mock = mock_cm.__enter__()
-        self.addCleanup(mock_cm.__exit__, None, None, None)
+        self.mock = self.enterContext(unittest.mock.patch(target='toron.cli.main.command_init'))
 
     def test_create_file(self):
         """Check call to command_init.create_file()."""
@@ -451,14 +449,14 @@ class TestMainIndexCommand(StreamWrapperMixin, unittest.TestCase):
         super().setUp()
 
         # Patch `command_index.read_from_stdin()` function with mock object.
-        mock_read_from_stdin_cm = unittest.mock.patch(target='toron.cli.main.command_index.read_from_stdin')
-        self.mock_read_from_stdin = mock_read_from_stdin_cm.__enter__()
-        self.addCleanup(mock_read_from_stdin_cm.__exit__, None, None, None)
+        self.mock_read_from_stdin = self.enterContext(
+            unittest.mock.patch(target='toron.cli.main.command_index.read_from_stdin')
+        )
 
         # Patch `command_index.write_to_stdout()` function with mock object.
-        mock_write_to_stdout_cm = unittest.mock.patch(target='toron.cli.main.command_index.write_to_stdout')
-        self.mock_write_to_stdout = mock_write_to_stdout_cm.__enter__()
-        self.addCleanup(mock_write_to_stdout_cm.__exit__, None, None, None)
+        self.mock_write_to_stdout = self.enterContext(
+            unittest.mock.patch(target='toron.cli.main.command_index.write_to_stdout')
+        )
 
     def test_write_to_stdout(self):
         """Check call to command_index.write_to_stdout()."""

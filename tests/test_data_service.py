@@ -1,7 +1,7 @@
 """Tests for toron/data_service.py module."""
 
 import array
-import unittest
+from . import _unittest as unittest
 from .common import normalize_structures, TopoNodeFixturesMixin
 
 from toron.data_models import (
@@ -654,18 +654,12 @@ class TestGenerateMappingElements(TopoNodeFixturesMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 
-        trg_cm = self.node_f._managed_cursor()
-        trg_cur = trg_cm.__enter__()
-        self.addCleanup(trg_cm.__exit__, None, None, None)
-
+        trg_cur = self.enterContext(self.node_f._managed_cursor())
         self.trg_index_repo = self.node_f._dal.IndexRepository(trg_cur)
         self.trg_link_repo = self.node_f._dal.LinkRepository(trg_cur)
         self.trg_mapping_repo = self.node_f._dal.MappingRepository(trg_cur)
 
-        src_cm = self.node_e._managed_cursor()
-        src_cur = src_cm.__enter__()
-        self.addCleanup(src_cm.__exit__, None, None, None)
-
+        src_cur = self.enterContext(self.node_e._managed_cursor())
         self.src_prop_repo = self.node_e._dal.PropertyRepository(src_cur)
         self.src_index_repo = self.node_e._dal.IndexRepository(src_cur)
 

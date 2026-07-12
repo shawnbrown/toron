@@ -92,6 +92,26 @@ except AttributeError:
 
 
 try:
+    TestCase.enterContext  # New in 3.11
+except AttributeError:
+    # The following code is adapted from the Python 3.11 Standard Library.
+    class _TestCase(TestCase):
+        def enterContext(self, cm):
+            cls = type(cm)
+            try:
+                enter = cls.__enter__
+                exit = cls.__exit__
+            except AttributeError:
+                raise TypeError(f"'{cls.__module__}.{cls.__qualname__}' object does "
+                                f"not support the context manager protocol") from None
+            result = enter(cm)
+            self.addCleanup(exit, cm, None, None, None)
+            return result
+
+    TestCase = _TestCase
+
+
+try:
     TestCase.assertIsSubclass  # New in 3.14
 except AttributeError:
     # The following code is adapted from the Python 3.14 Standard Library.
