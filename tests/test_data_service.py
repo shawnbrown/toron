@@ -2,7 +2,7 @@
 
 import array
 import unittest
-from .common import normalize_structures, TopoNodeFixtures
+from .common import normalize_structures, TopoNodeFixturesMixin
 
 from toron.data_models import (
     Index,
@@ -650,7 +650,7 @@ class TestFindLinksByNodeReference(unittest.TestCase):
         self.assertEqual(links, [])
 
 
-class TestGenerateMappingElements(TopoNodeFixtures, unittest.TestCase):
+class TestGenerateMappingElements(TopoNodeFixturesMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 

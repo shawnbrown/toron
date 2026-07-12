@@ -4,7 +4,7 @@ import uuid
 from io import BytesIO, TextIOWrapper
 from .. import _unittest as unittest
 from ..common import (  # <- tests/common.py (not cli/common.py)
-    StreamWrapperTestCase,
+    StreamWrapperMixin,
     DummyTTY,
     DummyRedirection,
 )
@@ -25,7 +25,7 @@ from toron.cli.common import (
 )
 
 
-class TestCsvStdoutWriter(StreamWrapperTestCase):
+class TestCsvStdoutWriter(StreamWrapperMixin, unittest.TestCase):
     def test_line_endings(self):
         """Should use consistent newlines regardless of system."""
         dummy_stdout = TextIOWrapper(BytesIO(), newline='\r\n')

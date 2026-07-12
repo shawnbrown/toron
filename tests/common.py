@@ -48,13 +48,14 @@ def get_column_names(connection_or_cursor, table):
     return [row[1] for row in cur.fetchall()]
 
 
-class TempDirTestCase(unittest.TestCase):
+class TempChdirMixin(object):
     # A TestCase to create a temporary directory, then chdir() into
     # it for testing. After testing, the original working directory
     # is restored and the temporary directory is removed.
 
     @classmethod
     def setUpClass(cls):
+        super().setUpClass()
         cls._tempdir = tempfile.TemporaryDirectory()
         cls.addClassCleanup(cls._tempdir.cleanup)
 
@@ -71,7 +72,7 @@ class TempDirTestCase(unittest.TestCase):
                 os.remove(path)
 
 
-class TopoNodeFixtures(object):
+class TopoNodeFixturesMixin(object):
     """A mixin class for testing with TopoNode fixtures in setUp()."""
     @staticmethod
     def set_unique_id(node, unique_id):
@@ -81,6 +82,7 @@ class TopoNodeFixtures(object):
             property_repo.update('unique_id', unique_id)
 
     def setUp(self):
+        super().setUp()
         self.maxDiff = None
 
         self.node_a = TopoNode()
@@ -174,8 +176,9 @@ class TopoNodeFixtures(object):
         ])
 
 
-class StreamWrapperTestCase(unittest.TestCase):
+class StreamWrapperMixin(object):
     def setUp(self):
+        super().setUp()
         stdout_cm = redirect_stdout(io.StringIO())
         self.stdout_capture = stdout_cm.__enter__()
         self.addCleanup(stdout_cm.__exit__, None, None, None)

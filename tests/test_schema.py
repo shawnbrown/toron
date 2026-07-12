@@ -11,7 +11,7 @@ import weakref
 from collections import namedtuple, OrderedDict, UserString
 from contextlib import closing
 from stat import S_IRUSR, S_IWUSR
-from .common import TempDirTestCase
+from .common import TempChdirMixin
 
 from toron._typing import Generator
 from toron._utils import ToronError
@@ -248,7 +248,7 @@ class CheckJsonMixin(object):
     ]
 
 
-class TestUserJsonValid(unittest.TestCase, CheckJsonMixin):
+class TestUserJsonValid(CheckJsonMixin, unittest.TestCase):
     """Check application defined SQL function for TEXT_JSON."""
     def test_valid_values(self):
         for value in self.valid_values:
@@ -264,7 +264,7 @@ class TestUserJsonValid(unittest.TestCase, CheckJsonMixin):
         self.assertFalse(_user_json_valid(None))
 
 
-class TestJsonTrigger(unittest.TestCase, CheckJsonMixin):
+class TestJsonTrigger(CheckJsonMixin, unittest.TestCase):
     """Check trigger behavior for `property.value` column (uses the
     TEXT_JSON declared type).
     """
@@ -317,7 +317,7 @@ class CheckUserPropertiesMixin(object):
     ]
 
 
-class TestUserUserpropertiesValid(unittest.TestCase, CheckUserPropertiesMixin):
+class TestUserUserpropertiesValid(CheckUserPropertiesMixin, unittest.TestCase):
     """Check application defined SQL function for TEXT_USERPROPERTIES."""
     def test_valid_values(self):
         for value in self.valid_values:
@@ -338,7 +338,7 @@ class TestUserUserpropertiesValid(unittest.TestCase, CheckUserPropertiesMixin):
         self.assertFalse(_user_userproperties_valid(None))
 
 
-class TestUserPropertiesTrigger(unittest.TestCase, CheckUserPropertiesMixin):
+class TestUserPropertiesTrigger(CheckUserPropertiesMixin, unittest.TestCase):
     """Check TRIGGER behavior for edge.user_properties column."""
 
     def setUp(self):
@@ -416,7 +416,7 @@ class CheckAttributesMixin(object):
     ]
 
 
-class TestUserAttributesValid(unittest.TestCase, CheckAttributesMixin):
+class TestUserAttributesValid(CheckAttributesMixin, unittest.TestCase):
     """Check application defined SQL function for TEXT_ATTRIBUTES."""
     def test_valid_values(self):
         for value in self.valid_values:
@@ -442,7 +442,7 @@ class TestUserAttributesValid(unittest.TestCase, CheckAttributesMixin):
         self.assertFalse(_user_attributes_valid(None))
 
 
-class TestAttributesTrigger(unittest.TestCase, CheckAttributesMixin):
+class TestAttributesTrigger(CheckAttributesMixin, unittest.TestCase):
     """Check trigger behavior for `attribute.attribute_value` column
     with the TEXT_ATTRIBUTES declared type.
     """
@@ -515,7 +515,7 @@ class CheckSelectorsMixin(object):
     ]
 
 
-class TestUserSelectorsValid(unittest.TestCase, CheckSelectorsMixin):
+class TestUserSelectorsValid(CheckSelectorsMixin, unittest.TestCase):
     """Check application defined SQL function for TEXT_SELECTORS."""
     def test_valid_values(self):
         for value in self.valid_values:
@@ -541,7 +541,7 @@ class TestUserSelectorsValid(unittest.TestCase, CheckSelectorsMixin):
         self.assertFalse(_user_selectors_valid(None))
 
 
-class TestSelectorsTrigger(unittest.TestCase, CheckSelectorsMixin):
+class TestSelectorsTrigger(CheckSelectorsMixin, unittest.TestCase):
     """Check trigger behavior for columns with the TEXT_SELECTORS
     declared type.
 
@@ -685,7 +685,7 @@ class TestTriggerCoverage(unittest.TestCase):
         self.assertEqual(set(actual_triggers), set(expected_triggers))
 
 
-class TestValidatePermissions(TempDirTestCase):
+class TestValidatePermissions(TempChdirMixin, unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -798,7 +798,8 @@ class TestMakeSqliteUriFilepath(unittest.TestCase):
         expected = f'file:/{c_drive_cwd}/mynode.toron'.replace('\\', '/').replace('//', '/')
         self.assertEqual(_make_sqlite_uri_filepath(path, mode=None), expected)
 
-class TestConnectDb(TempDirTestCase):
+
+class TestConnectDb(TempChdirMixin, unittest.TestCase):
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
 

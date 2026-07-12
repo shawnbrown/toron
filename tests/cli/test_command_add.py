@@ -9,8 +9,6 @@ from toron.data_models import Link, WeightGroup
 from toron.cli import command_add
 from toron.cli.common import ExitCode
 
-from ..common import StreamWrapperTestCase
-
 
 class TempNodeMixin(object):
     """A mixin helper with setUp() that creats a tempoary node file."""

@@ -2,14 +2,14 @@
 import argparse
 from dataclasses import astuple
 from .. import _unittest as unittest
-from ..common import DummyRedirection, TopoNodeFixtures
+from ..common import DummyRedirection, TopoNodeFixturesMixin
 from toron._utils import ToronError, BitFlags
 
 from toron.cli import command_mapping
 from toron.cli.common import ExitCode
 
 
-class TestGetColumnPositions(TopoNodeFixtures, unittest.TestCase):
+class TestGetColumnPositions(TopoNodeFixturesMixin, unittest.TestCase):
     def test_simple_case(self):
         header = ['index_code', 'foo', 'bar', 'baz', 'corge', 'index_code', 'foo', 'bar']
         data_list = [
@@ -298,7 +298,7 @@ class TestGetLocationFactory(unittest.TestCase):
             )
 
 
-class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
+class TestMakeGetterFunctions(TopoNodeFixturesMixin, unittest.TestCase):
     def test_return_types(self):
         result = command_mapping.make_getter_functions(
             node=self.node_a,
@@ -423,7 +423,7 @@ class TestMakeGetterFunctions(TopoNodeFixtures, unittest.TestCase):
         )
 
 
-class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
+class TestNormalizeMappingData(TopoNodeFixturesMixin, unittest.TestCase):
     def test_index_codes_and_labels(self):
         actual = command_mapping.normalize_mapping_data(
             node1=self.node_a,
@@ -523,7 +523,7 @@ class TestNormalizeMappingData(TopoNodeFixtures, unittest.TestCase):
             )
 
 
-class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
+class TestReadFromStdin(TopoNodeFixturesMixin, unittest.TestCase):
     @staticmethod
     def get_mappings(source_node, target_node, link_name):
         with target_node._managed_cursor() as cur:
@@ -961,7 +961,7 @@ class TestReadFromStdin(TopoNodeFixtures, unittest.TestCase):
         )
 
 
-class TestWriteToStdout(TopoNodeFixtures, unittest.TestCase):
+class TestWriteToStdout(TopoNodeFixturesMixin, unittest.TestCase):
     def test_full_mapping(self):
         self.node_d.add_link(node=self.node_c,
                                   link_name='population',

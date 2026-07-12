@@ -14,7 +14,7 @@ from stat import S_IRUSR, S_IWUSR
 from textwrap import dedent
 
 from .common import get_column_names
-from .common import TempDirTestCase
+from .common import TempChdirMixin
 
 from toron._schema import get_connection
 from toron._schema import _schema_script
@@ -64,7 +64,7 @@ def get_dal_filepath(dal):
     return file
 
 
-class TestDataAccessLayerInit(TempDirTestCase):
+class TestDataAccessLayerInit(TempChdirMixin, unittest.TestCase):
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
 
@@ -96,7 +96,7 @@ class TestDataAccessLayerInit(TempDirTestCase):
         self.assertEqual(result, expected)
 
 
-class TestUniqueId(TempDirTestCase):
+class TestUniqueId(TempChdirMixin, unittest.TestCase):
     """On creation, each node should get its own unique id value."""
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
@@ -130,7 +130,7 @@ class TestUniqueId(TempDirTestCase):
         self.assertEqual(initial_value, reloaded_value, msg=msg)
 
 
-class TestDataAccessLayerFromFile(TempDirTestCase):
+class TestDataAccessLayerFromFile(TempChdirMixin, unittest.TestCase):
     def setUp(self):
         self.existing_path = 'existing_node.toron'
         with closing(get_connection(self.existing_path, 'readwrite')) as con:
@@ -201,7 +201,7 @@ class TestDataAccessLayerFromFile(TempDirTestCase):
         # removed.
 
 
-class TestDataAccessLayerOpen(TempDirTestCase):
+class TestDataAccessLayerOpen(TempChdirMixin, unittest.TestCase):
     def setUp(self):
         self.existing_path = 'existing_node.toron'
         get_connection(self.existing_path, None).close()  # Create empty Toron node file.
@@ -255,7 +255,7 @@ class TestDataAccessLayerOpen(TempDirTestCase):
             dal_class.open(self.existing_path, 'badpermissions')
 
 
-class TestDataAccessLayerToFile(TempDirTestCase):
+class TestDataAccessLayerToFile(TempChdirMixin, unittest.TestCase):
     def setUp(self):
         self.addCleanup(self.cleanup_temp_files)
 
@@ -327,7 +327,7 @@ class TestDataAccessLayerToFile(TempDirTestCase):
             self.assertEqual(f.read(), 'original content\n')
 
 
-class TestTransaction(TempDirTestCase):
+class TestTransaction(TempChdirMixin, unittest.TestCase):
     """Tests for the _transaction() context manager.
 
     When DAL is backed with a file on-drive, the _transaction()

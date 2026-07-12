@@ -3,7 +3,7 @@ import argparse
 import io
 import os
 from .. import _unittest as unittest
-from ..common import StreamWrapperTestCase, DummyTTY
+from ..common import StreamWrapperMixin, DummyTTY
 from toron import TopoNode
 
 from toron.cli.common import ExitCode
@@ -21,7 +21,7 @@ from toron.cli.main import (
 )
 
 
-class TestToronArgumentParser(StreamWrapperTestCase):
+class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
     def setUp(self):
         self.parser = get_parser()  # Get ToronArgumentParser instance.
         super().setUp()
@@ -423,7 +423,7 @@ class TestToronArgumentParser(StreamWrapperTestCase):
         )
 
 
-class TestMainNewCommand(StreamWrapperTestCase):
+class TestMainNewCommand(StreamWrapperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 
@@ -446,7 +446,7 @@ class TestMainNewCommand(StreamWrapperTestCase):
         self.assertEqual(args[0].filepath, filepath)
 
 
-class TestMainIndexCommand(StreamWrapperTestCase):
+class TestMainIndexCommand(StreamWrapperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 

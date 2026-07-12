@@ -6,7 +6,7 @@ import unittest
 from contextlib import closing
 from io import StringIO
 
-from .common import TopoNodeFixtures
+from .common import TopoNodeFixturesMixin
 
 from toron.node import TopoNode
 from toron.mapper import Mapper, Mapper_OLD
@@ -14,7 +14,7 @@ from toron.data_models import Structure
 from toron._utils import BitFlags
 
 
-class TestMapperInit(TopoNodeFixtures, unittest.TestCase):
+class TestMapperInit(TopoNodeFixturesMixin, unittest.TestCase):
     @staticmethod
     def get_mapping_source(mapper):
         """Helper method to get contents of 'mapping_source' table."""
@@ -191,7 +191,7 @@ class TestRefreshProportions(unittest.TestCase):
                                                     (3, 5, b'\x80', 0.0, 0.25)})
 
 
-class TestMatchRecords(TopoNodeFixtures, unittest.TestCase):
+class TestMatchRecords(TopoNodeFixturesMixin, unittest.TestCase):
     @staticmethod
     def get_node_matches(mapper, node_var):
         """Helper method to get contents of 'node#_matches' table."""
@@ -516,7 +516,7 @@ class TestMatchRecords(TopoNodeFixtures, unittest.TestCase):
         )
 
 
-class TestMapperIsFullyMatched(TopoNodeFixtures, unittest.TestCase):
+class TestMapperIsFullyMatched(TopoNodeFixturesMixin, unittest.TestCase):
     def test_fully_matched(self):
         complete_mapping = [
             [1, [], BitFlags(1), 1, [], BitFlags(1, 1), 10],
@@ -545,7 +545,7 @@ class TestMapperIsFullyMatched(TopoNodeFixtures, unittest.TestCase):
         self.assertFalse(mapper.is_fully_matched())
 
 
-class TestMapperIterRelations(TopoNodeFixtures, unittest.TestCase):
+class TestMapperIterRelations(TopoNodeFixturesMixin, unittest.TestCase):
     def test_exact_matches(self):
         mapper = Mapper(
             node1=self.node_c,
