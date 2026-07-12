@@ -5,7 +5,8 @@ import sqlite3
 import unittest
 from contextlib import closing
 from dataclasses import FrozenInstanceError
-from tempfile import NamedTemporaryFile
+
+from .common import TempFileMixin
 
 from toron import dal1
 from toron.data_access import (
@@ -45,19 +46,13 @@ class TestDataAccessLayer(unittest.TestCase):
             self.dal.backend = 'some-other-value'
 
 
-class TestGetBackendFromPath(unittest.TestCase):
-    def setUp(self):
-        f = NamedTemporaryFile(prefix='toron-', delete=False)
-        f.close()
-        self.addCleanup(os.unlink, f.name)
-        self.fname = f.name  # <- Start with empty file.
-
+class TestGetBackendFromPath(TempFileMixin, unittest.TestCase):
     def test_dal1(self):
-        dal1.DataConnector().save_to_file(self.fname, fsync=False)
-        self.assertEqual(get_backend_from_path(self.fname), 'DAL1')
+        dal1.DataConnector().save_to_file(self.filepath, fsync=False)
+        self.assertEqual(get_backend_from_path(self.filepath), 'DAL1')
 
     def test_sqlite_file(self):
-        with closing(sqlite3.connect(self.fname)) as con:
+        with closing(sqlite3.connect(self.filepath)) as con:
             con.executescript("""
                 CREATE TABLE mytable (A, B);
                 INSERT INTO mytable VALUES (1, 1), (2, 2);
@@ -65,20 +60,20 @@ class TestGetBackendFromPath(unittest.TestCase):
 
         regex = 'does not appear to be a Toron file'
         with self.assertRaisesRegex(ValueError, regex):
-            get_backend_from_path(self.fname)
+            get_backend_from_path(self.filepath)
 
     def test_other_file(self):
-        with open(self.fname, 'wb') as f:
+        with open(self.filepath, 'wb') as f:
             f.write(b'\xff' * 64)  # Write 64 bytes of 1s.
 
         regex = 'does not appear to be a Toron file'
         with self.assertRaisesRegex(ValueError, regex):
-            get_backend_from_path(self.fname)
+            get_backend_from_path(self.filepath)
 
     def test_empty_file(self):
         regex = 'does not appear to be a Toron file'
         with self.assertRaisesRegex(ValueError, regex):
-            get_backend_from_path(self.fname)
+            get_backend_from_path(self.filepath)
 
     def test_file_not_found(self):
         with self.assertRaises(FileNotFoundError):

@@ -71,6 +71,36 @@ class TempChdirMixin(object):
                 os.remove(path)
 
 
+class ClassTempFileMixin(object):
+    """Mixin provides tempfile class-fixture as `self.filepath`."""
+    filepath: str
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        with tempfile.NamedTemporaryFile(prefix='toron-', delete=False) as f:
+            cls.filepath = f.name
+        cls.addClassCleanup(os.remove, cls.filepath)
+
+
+class TempFileMixin(object):
+    """Mixin provides tempfile instance-fixture as `self.filepath`."""
+    filepath: str
+
+    def setUp(self):
+        super().setUp()
+        with tempfile.NamedTemporaryFile(prefix='toron-', delete=False) as f:
+            self.filepath = f.name
+        self.addCleanup(os.remove, self.filepath)
+
+
+class TempTopoNodeMixin(ClassTempFileMixin):
+    """Mixin provides temporary TopoNode file fixture as `self.filepath`."""
+    def setUp(self):
+        super().setUp()
+        TopoNode().to_file(self.filepath)  # Overwrite file with empty node.
+
+
 class TopoNodeFixturesMixin(object):
     """A mixin class for testing with TopoNode fixtures in setUp()."""
     @staticmethod

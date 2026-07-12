@@ -3,6 +3,7 @@ import argparse
 import os
 import tempfile
 from .. import _unittest as unittest
+from ..common import TempTopoNodeMixin
 from toron import TopoNode, ToronError, read_file, bind_node
 from toron.data_models import Link, WeightGroup
 
@@ -10,18 +11,7 @@ from toron.cli import command_add
 from toron.cli.common import ExitCode
 
 
-class TempNodeMixin(object):
-    """A mixin helper with setUp() that creats a tempoary node file."""
-    def setUp(self):
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            self.filepath = tmp.name
-        self.addCleanup(os.remove, self.filepath)
-
-        node = TopoNode()
-        node.to_file(self.filepath)
-
-
-class TestAddLabels(TempNodeMixin, unittest.TestCase):
+class TestAddLabels(TempTopoNodeMixin, unittest.TestCase):
     def test_add_label(self):
         command_add.add_label(argparse.Namespace(
             filepath=self.filepath,
@@ -70,7 +60,7 @@ class TestAddLabels(TempNodeMixin, unittest.TestCase):
         )
 
 
-class TestAddWeight(TempNodeMixin, unittest.TestCase):
+class TestAddWeight(TempTopoNodeMixin, unittest.TestCase):
     def test_add_weight(self):
         command_add.add_weight(argparse.Namespace(
             filepath=self.filepath,
@@ -120,7 +110,7 @@ class TestAddWeight(TempNodeMixin, unittest.TestCase):
             ))
 
 
-class TestAddPartition(TempNodeMixin, unittest.TestCase):
+class TestAddPartition(TempTopoNodeMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
         node = bind_node(self.filepath, mode='rw')
@@ -164,7 +154,7 @@ class TestAddPartition(TempNodeMixin, unittest.TestCase):
         )
 
 
-class TestAddAttributes(TempNodeMixin, unittest.TestCase):
+class TestAddAttributes(TempTopoNodeMixin, unittest.TestCase):
     def test_add_attributes(self):
         args = argparse.Namespace(
             filepath=self.filepath,
