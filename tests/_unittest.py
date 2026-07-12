@@ -96,9 +96,12 @@ if not hasattr(TestCase, 'assertNoLogs'):  # New in 3.10
     TestCase.assertNoLogs = _assertNoLogs
 
 
-if not hasattr(TestCase, 'enterContext'):  # New in 3.11
+if not all([
+    hasattr(TestCase, 'enterContext'),  # New in 3.11
+    hasattr(TestCase, 'enterClassContext'),  # New in 3.11
+]):
     # The following code is adapted from the Python 3.11 Standard Library.
-    def _enterContext(self, cm):
+    def _enter_context(cm, addcleanup):
         cls = type(cm)
         try:
             enter = cls.__enter__
@@ -107,9 +110,17 @@ if not hasattr(TestCase, 'enterContext'):  # New in 3.11
             raise TypeError(f"'{cls.__module__}.{cls.__qualname__}' object does "
                             f"not support the context manager protocol") from None
         result = enter(cm)
-        self.addCleanup(exit, cm, None, None, None)
+        addcleanup(exit, cm, None, None, None)
         return result
 
+    @classmethod
+    def _enterClassContext(cls, cm):
+        return _enter_context(cm, cls.addClassCleanup)
+
+    def _enterContext(self, cm):
+        return _enter_context(cm, self.addCleanup)
+
+    TestCase.enterClassContext = _enterClassContext
     TestCase.enterContext = _enterContext
 
 

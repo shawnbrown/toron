@@ -56,16 +56,15 @@ class TempChdirMixin(object):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls._tempdir = tempfile.TemporaryDirectory()
-        cls.addClassCleanup(cls._tempdir.cleanup)
+        cls._tempdir_name = cls.enterClassContext(tempfile.TemporaryDirectory())
 
         orig_working_dir = os.getcwd()
-        os.chdir(cls._tempdir.name)
+        os.chdir(cls._tempdir_name)
         cls.addClassCleanup(os.chdir, orig_working_dir)
 
-    def cleanup_temp_files(self):
+    def reset_tempdir(self):
         """Remove all files from the current temporary directory."""
-        for path in glob.glob(os.path.join(self._tempdir.name, '*')):
+        for path in glob.glob(os.path.join(self._tempdir_name, '*')):
             if os.path.isdir(path):
                 shutil.rmtree(path)
             else:

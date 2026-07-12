@@ -7,12 +7,12 @@ import json
 import sqlite3
 import stat
 import tempfile
-import unittest
 from collections import OrderedDict
 from contextlib import closing
 from stat import S_IRUSR, S_IWUSR
 from textwrap import dedent
 
+from . import _unittest as unittest
 from .common import get_column_names
 from .common import TempChdirMixin
 
@@ -66,7 +66,7 @@ def get_dal_filepath(dal):
 
 class TestDataAccessLayerInit(TempChdirMixin, unittest.TestCase):
     def setUp(self):
-        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.reset_tempdir)
 
     def test_load_in_memory(self):
         dal = dal_class()  # <- Loads into memory.
@@ -99,7 +99,7 @@ class TestDataAccessLayerInit(TempChdirMixin, unittest.TestCase):
 class TestUniqueId(TempChdirMixin, unittest.TestCase):
     """On creation, each node should get its own unique id value."""
     def setUp(self):
-        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.reset_tempdir)
 
     def test_unique_id_basics(self):
         """Check basic unique id behavior."""
@@ -137,7 +137,7 @@ class TestDataAccessLayerFromFile(TempChdirMixin, unittest.TestCase):
             params = ('testkey', '"testval"')
             con.execute("INSERT INTO main.property(key, value) VALUES(?, ?)", params)
 
-        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.reset_tempdir)
 
     def test_load_in_memory(self):
         # Load data from file.
@@ -205,7 +205,7 @@ class TestDataAccessLayerOpen(TempChdirMixin, unittest.TestCase):
     def setUp(self):
         self.existing_path = 'existing_node.toron'
         get_connection(self.existing_path, None).close()  # Create empty Toron node file.
-        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.reset_tempdir)
 
         os.chmod(self.existing_path, S_IRUSR)  # Set to read-only.
         self.addCleanup(os.chmod, self.existing_path, S_IRUSR|S_IWUSR)  # Revert to read-write after test.
@@ -257,7 +257,7 @@ class TestDataAccessLayerOpen(TempChdirMixin, unittest.TestCase):
 
 class TestDataAccessLayerToFile(TempChdirMixin, unittest.TestCase):
     def setUp(self):
-        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.reset_tempdir)
 
     @staticmethod
     def make_dummy_dal(**properties):
@@ -335,7 +335,7 @@ class TestTransaction(TempChdirMixin, unittest.TestCase):
     connection once it is finished.
     """
     def setUp(self):
-        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.reset_tempdir)
 
     def assertCursorOpen(self, cursor, msg=None):
         try:

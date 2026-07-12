@@ -6,11 +6,11 @@ import json
 import os
 import sqlite3
 import sys
-import unittest
 import weakref
 from collections import namedtuple, OrderedDict, UserString
 from contextlib import closing
 from stat import S_IRUSR, S_IWUSR
+from . import _unittest as unittest
 from .common import TempChdirMixin
 
 from toron._typing import Generator
@@ -801,7 +801,7 @@ class TestMakeSqliteUriFilepath(unittest.TestCase):
 
 class TestConnectDb(TempChdirMixin, unittest.TestCase):
     def setUp(self):
-        self.addCleanup(self.cleanup_temp_files)
+        self.addCleanup(self.reset_tempdir)
 
     def test_new_file(self):
         """If a node file doesn't exist it should be created."""
