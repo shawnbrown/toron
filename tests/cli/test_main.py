@@ -234,21 +234,52 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
                 'update',
                 'label',
                 'foo',
-                '--move-left',
+                '--move-left',  # <- Option without int arg.
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
                 command='update',
                 element='label',
                 label='foo',
-                move_left=1,
+                move_left=1,  # <- Gets 1 when no int is given.
                 move_right=0,
                 backup=True,
                 func=command_update.update_label,
             ),
         )
 
-        msg = 'argparse should forbid left and right at the same time'
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'label',
+                'foo',
+                '--move-right', '3',  # <- Option with an int arg.
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='update',
+                element='label',
+                label='foo',
+                move_left=0,
+                move_right=3,  # <- Gets int as given.
+                backup=True,
+                func=command_update.update_label,
+            ),
+        )
+
+        msg = 'parser should forbid negative integers here'
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'label',
+                'foo',
+                '--move-left',
+                '-3',  # <- Negative value should raise error.
+            ])
+
+        msg = 'parser should forbid left and right at the same time'
         with self.assertRaises(SystemExit, msg=msg):
             self.parser.parse_args([
                 'myfile.toron',

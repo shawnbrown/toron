@@ -33,6 +33,16 @@ from .common import (
 )
 
 
+def non_negative_int(string: str) -> int:
+    """Custom argparse type validator for non-negative integers."""
+    integer = int(string)
+    if integer < 0:
+        raise argparse.ArgumentTypeError(
+            f'value cannot be negative, got {integer}'
+        )
+    return integer
+
+
 def get_parser() -> argparse.ArgumentParser:
     """Get argument parser for Toron command line interface."""
 
@@ -262,12 +272,14 @@ def get_parser() -> argparse.ArgumentParser:
     parser_update_label.add_argument('label',
                                      help='index label to update', metavar='LABEL')
     parser_update_label_group = parser_update_label.add_mutually_exclusive_group(required=True)
-    parser_update_label_group.add_argument('--move-left', action='count',
-                                           default=0,
-                                           help='move label to the left one position')
-    parser_update_label_group.add_argument('--move-right', action='count',
-                                           default=0,
-                                           help='move label to the right one position')
+    parser_update_label_group.add_argument('--move-left',
+                                           type=non_negative_int, metavar='N', nargs='?', default=0,
+                                           const=1, # <- Used if flag given without int arg.
+                                           help='move label to the left 1 or N positions')
+    parser_update_label_group.add_argument('--move-right',
+                                           type=non_negative_int, metavar='N', nargs='?', default=0,
+                                           const=1, # <- Used if flag given without int arg.
+                                           help='move label to the right 1 or N positions')
     parser_update_label.set_defaults(func=command_update.update_label)
 
     # Subcommand: update weight
