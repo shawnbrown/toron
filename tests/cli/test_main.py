@@ -259,6 +259,31 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
                 '--move-right',  # <- Should only allow one direction.
             ])
 
+    def test_subcommand_update_weight(self):
+        """Check "update weight" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'weight',
+                'myweight',
+                '--description',
+                'New description.',
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='update',
+                element='weight',
+                backup=True,
+                weight='myweight',
+                description='New description.',
+                add_selector=None,
+                remove_selector=None,
+                make_default=False,
+                func=command_update.update_weight,
+            ),
+        )
+
     def test_subcommand_rename_label(self):
         """Check "rename label" subparser."""
         self.assertEqual(

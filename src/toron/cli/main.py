@@ -270,6 +270,29 @@ def get_parser() -> argparse.ArgumentParser:
                                            help='move label to the right one position')
     parser_update_label.set_defaults(func=command_update.update_label)
 
+    # Subcommand: update weight
+    parser_update_weight = parser_update_subparsers.add_parser(
+        'weight',
+        help='update an index weight',
+        description='Update an index weight in a node file.',
+        parents=[no_backup_parent],
+    )
+    parser_update_weight.add_argument('weight',
+                                      help='name of index weight to update',
+                                      metavar='WEIGHT')
+    parser_update_weight.add_argument('--description',
+                                      help="change the weight's description")
+    parser_update_weight.add_argument('--add-selector', nargs='+',
+                                      metavar='SELECTOR',
+                                      help='add one or more attribute selectors')
+    parser_update_weight.add_argument('--remove-selector', nargs='+',
+                                      metavar='SELECTOR',
+                                      help='remove one or more attribute selectors')
+    parser_update_weight.add_argument('--default', action='store_true',
+                                      dest='make_default',
+                                      help="set as the node's default weight group")
+    parser_update_weight.set_defaults(func=command_update.update_weight)
+
     # Subcommand: rename
     parser_rename = subparsers.add_parser(
         'rename',
