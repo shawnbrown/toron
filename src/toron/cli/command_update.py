@@ -76,3 +76,20 @@ def update_weight(args: argparse.Namespace) -> ExitCode:
         applogger.info(f'set weight {args.weight!r} as the default')
 
     return ExitCode.OK
+
+
+def update_attribute(args: argparse.Namespace) -> ExitCode:
+    """Update quantity attribute in the given node file."""
+    node = cli_bind_node(args.filepath, mode='rw')
+    process_backup_option(args, node)
+
+    if args.move_left and not args.move_right:
+        node.change_attribute_order(args.attribute, offset=-args.move_left)
+        applogger.info(f'moved attribute {args.attribute!r} to the left')
+    elif args.move_right and not args.move_left:
+        node.change_attribute_order(args.attribute, offset=args.move_right)
+        applogger.info(f'moved attribute {args.attribute!r} to the right')
+    else:
+        raise Exception
+
+    return ExitCode.OK
