@@ -305,6 +305,26 @@ def get_parser() -> argparse.ArgumentParser:
                                       help="set as the node's default weight group")
     parser_update_weight.set_defaults(func=command_update.update_weight)
 
+    # Subcommand: update attribute
+    parser_update_attr = parser_update_subparsers.add_parser(
+        'attribute',
+        help='update a quantity attribute',
+        description='Update a quantity attribute in a node file.',
+        parents=[no_backup_parent],
+    )
+    parser_update_attr.add_argument('attribute', metavar='ATTRIBUTE',
+                                    help='quantity attribute to update')
+    parser_update_attr_group = parser_update_attr.add_mutually_exclusive_group(required=True)
+    parser_update_attr_group.add_argument('--move-left',
+                                          type=non_negative_int, metavar='N', nargs='?', default=0,
+                                          const=1, # <- Used if flag given without int arg.
+                                          help='move attribute to the left 1 or N positions')
+    parser_update_attr_group.add_argument('--move-right',
+                                          type=non_negative_int, metavar='N', nargs='?', default=0,
+                                          const=1, # <- Used if flag given without int arg.
+                                          help='move attribute to the right 1 or N positions')
+    parser_update_attr.set_defaults(func=command_update.update_attribute)
+
     # Subcommand: rename
     parser_rename = subparsers.add_parser(
         'rename',

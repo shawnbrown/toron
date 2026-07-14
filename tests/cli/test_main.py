@@ -315,6 +315,70 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             ),
         )
 
+    def test_subcommand_update_attribute(self):
+        """Check "update attribute" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'attribute',
+                'foo',
+                '--move-left',  # <- Option without int arg.
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='update',
+                element='attribute',
+                attribute='foo',
+                move_left=1,  # <- Gets 1 when no int is given.
+                move_right=0,
+                backup=True,
+                func=command_update.update_attribute,
+            ),
+        )
+
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'attribute',
+                'foo',
+                '--move-right', '3',  # <- Option with an int arg.
+            ]),
+            argparse.Namespace(
+                filepath='myfile.toron',
+                command='update',
+                element='attribute',
+                attribute='foo',
+                move_left=0,
+                move_right=3,  # <- Gets int as given.
+                backup=True,
+                func=command_update.update_attribute,
+            ),
+        )
+
+        msg = 'parser should forbid negative integers here'
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'attribute',
+                'foo',
+                '--move-left',
+                '-3',  # <- Negative value should raise error.
+            ])
+
+        msg = 'parser should forbid left and right at the same time'
+        with self.assertRaises(SystemExit, msg=msg):
+            self.parser.parse_args([
+                'myfile.toron',
+                'update',
+                'attribute',
+                'foo',
+                '--move-left',   # <- Should only allow one direction.
+                '--move-right',  # <- Should only allow one direction.
+            ])
+
     def test_subcommand_rename_label(self):
         """Check "rename label" subparser."""
         self.assertEqual(
