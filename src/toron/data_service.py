@@ -1018,38 +1018,36 @@ def get_labels_in_display_order(
     return display_order
 
 
-def change_label_order(
-    ordered_labels: Sequence[str], label: str, *, offset: int
+def change_element_order(
+    sequence: Sequence[str], element: str, *, offset: int
 ) -> List[str]:
-    """Move *label* by given *offset*, return reordered labels.
+    """Move *element* by given *offset*, return updated sequence order.
 
-    Move label "B" one position to the right::
+    Move element "B" one position to the right::
 
-        >>> change_label_order(['B', 'A', 'C'], 'B', offset=1)
+        >>> change_element_order(['B', 'A', 'C'], 'B', offset=1)
         ['A', 'B', 'C']
 
-    Move label "A" two positions to the left::
+    Move element "A" two positions to the left::
 
-        >>> change_label_order(['B', 'C', 'A'], 'A', offset=-2)
+        >>> change_element_order(['B', 'C', 'A'], 'A', offset=-2)
         ['A', 'B', 'C']
     """
-    reordered_labels = list(ordered_labels)
+    # Get current position of *element*.
     try:
-        current_pos = reordered_labels.index(label)
+        current_pos = sequence.index(element)
     except ValueError:
-        raise ToronError(f'no label named {label!r}')
+        raise ToronError(f'{element!r} not found')
 
-    # Get target index position (keeping within valid bounds).
+    # Get new position (keeping within valid bounds).
     new_pos = current_pos + offset
     new_pos = max(0, new_pos)
-    new_pos = min(new_pos, len(reordered_labels) - 1)
+    new_pos = min(new_pos, len(sequence) - 1)
 
-    # Change position of label and save new display order.
-    reordered_labels.insert(
-        new_pos,
-        reordered_labels.pop(current_pos),
-    )
-    return reordered_labels
+    # Make a copy of sequence and change *element* position.
+    reordered = list(sequence)
+    reordered.insert(new_pos, reordered.pop(current_pos))
+    return reordered
 
 
 def get_node_info_text(

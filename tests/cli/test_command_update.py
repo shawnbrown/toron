@@ -43,7 +43,7 @@ class TestUpdateLabel(TempTopoNodeMixin, unittest.TestCase):
             move_right=0,
         )
 
-        regex = r"no label named 'X'"
+        regex = r"'X' not found"
         with self.assertRaisesRegex(ToronError, regex):
             command_update.update_label(args)  # Function under test.
 
