@@ -378,6 +378,21 @@ class TopoNode(object):
         with self._managed_cursor() as cur:
             return get_registered_attributes(self._dal.PropertyRepository(cur))
 
+    def change_attribute_order(self, attribute: str, offset: int) -> None:
+        """Change display order of registered *attribute* by given *offset*."""
+        with self._managed_transaction() as cursor:
+            index_repo = self._dal.IndexRepository(cursor)
+            property_repo = self._dal.PropertyRepository(cursor)
+
+            attr_seq = get_registered_attributes(property_repo)
+            attr_reordered = change_element_order(attr_seq, attribute, offset=offset)
+            set_registered_attributes(
+                attribute_columns=attr_reordered,
+                reserved_identifiers=self._dal.reserved_identifiers,
+                index_repo=index_repo,
+                property_repo=property_repo,
+            )
+
     @property
     def max_index_id(self) -> int:
         with self._managed_cursor() as cursor:

@@ -728,6 +728,25 @@ class TestRegisteredAttributesMethods(unittest.TestCase):
         node.set_registered_attributes(['foo', 'bar'])
         self.assertEqual(node.get_registered_attributes(), ['foo', 'bar'])
 
+    def test_change_attribute_order(self):
+        self.node = TopoNode()
+        self.node.set_registered_attributes(['baz', 'bar', 'foo'])
+
+        offset = -2  # Negative offset to move left.
+        self.node.change_attribute_order('foo', offset=offset)  # Method under test.
+        self.assertEqual(
+            self.node.get_registered_attributes(),
+            ['foo', 'baz', 'bar'],
+            msg="should move 'foo' to the left 2 places",
+        )
+
+        self.node.change_attribute_order('baz', offset=1)  # Method under test.
+        self.assertEqual(
+            self.node.get_registered_attributes(),
+            ['foo', 'bar', 'baz'],
+            msg="should move 'baz' to the right 1 place",
+        )
+
 
 class TestGetAndReorderLabelsMethods(unittest.TestCase):
     def test_get_label_columns(self):
