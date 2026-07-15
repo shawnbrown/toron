@@ -192,8 +192,8 @@ def get_parser() -> argparse.ArgumentParser:
         parents=[no_backup_parent],
     )
     parser_add_partition.add_argument('labels', nargs='+',
-                                     help='label names that form the partition',
-                                     metavar='LABEL')
+                                      help='label names that form the partition',
+                                      metavar='LABEL')
     parser_add_partition.set_defaults(func=command_add.add_partition)
 
     # Subcommand: add attribute
@@ -417,11 +417,11 @@ def get_parser() -> argparse.ArgumentParser:
         parents=[no_backup_parent],
     )
     parser_mapping.add_argument('filepath2',
-                                  help='second (right) filename',
-                                  metavar='FILE2')
+                                help='second (right) filename',
+                                metavar='FILE2')
     parser_mapping.add_argument('link',
-                                  help='name of the link associated with the mapping',
-                                  metavar='LINK')
+                                help='name of the link associated with the mapping',
+                                metavar='LINK')
     parser_mapping_group = parser_mapping.add_mutually_exclusive_group()
     parser_mapping_group.add_argument(
         '--right',
@@ -438,16 +438,16 @@ def get_parser() -> argparse.ArgumentParser:
         help='add single direction: FILE1 <- FILE2',
     )
     parser_mapping.add_argument('--match-limit',
-                                  default=1,
-                                  type=int,
-                                  help='exclude matches exceeding one-to-LIMIT (default 1)',
-                                  metavar='LIMIT')
+                                default=1,
+                                type=int,
+                                help='exclude matches exceeding one-to-LIMIT (default 1)',
+                                metavar='LIMIT')
     parser_mapping.add_argument('--allow-overlapping',
-                                  action='store_true',
-                                  help='allow ambiguous matches to overlap')
+                                action='store_true',
+                                help='allow ambiguous matches to overlap')
     parser_mapping.add_argument('--allow-incomplete',
-                                  action='store_true',
-                                  help='allow loading even when matches are incomplete')
+                                action='store_true',
+                                help='allow loading even when matches are incomplete')
     parser_mapping.set_defaults(
         func=command_mapping.process_mapping_action,
         direction='both',
