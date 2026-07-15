@@ -225,18 +225,18 @@ def get_parser() -> argparse.ArgumentParser:
                                  metavar='LINK')
     parser_add_link_group = parser_add_link.add_mutually_exclusive_group()
     parser_add_link_group.add_argument(
-        '--right',
-        action='store_const',
-        const='right',
-        dest='direction',
-        help='add single direction: FILE1 -> FILE2',
-    )
-    parser_add_link_group.add_argument(
         '--left',
         action='store_const',
         const='left',
         dest='direction',
         help='add single direction: FILE1 <- FILE2',
+    )
+    parser_add_link_group.add_argument(
+        '--right',
+        action='store_const',
+        const='right',
+        dest='direction',
+        help='add single direction: FILE1 -> FILE2',
     )
     parser_add_link.add_argument('--description',
                                  help='description of the link')
@@ -424,18 +424,18 @@ def get_parser() -> argparse.ArgumentParser:
                                 metavar='LINK')
     parser_mapping_group = parser_mapping.add_mutually_exclusive_group()
     parser_mapping_group.add_argument(
-        '--right',
-        action='store_const',
-        const='right',
-        dest='direction',
-        help='add single direction: FILE1 -> FILE2',
-    )
-    parser_mapping_group.add_argument(
         '--left',
         action='store_const',
         const='left',
         dest='direction',
         help='add single direction: FILE1 <- FILE2',
+    )
+    parser_mapping_group.add_argument(
+        '--right',
+        action='store_const',
+        const='right',
+        dest='direction',
+        help='add single direction: FILE1 -> FILE2',
     )
     parser_mapping.add_argument('--match-limit',
                                 default=1,
