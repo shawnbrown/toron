@@ -104,7 +104,9 @@ def get_parser() -> argparse.ArgumentParser:
             args = self._preprocess_args(args)
             return super().parse_args(args, namespace)
 
+    ####################################################################
     # Main parser
+    ####################################################################
     parser = ToronArgumentParser(
         prog='toron',
         description='Show and edit Toron node file data and elements.',
@@ -128,7 +130,9 @@ def get_parser() -> argparse.ArgumentParser:
                                   dest='backup',
                                   help='do not make a backup file')
 
+    ####################################################################
     # Subcommand: init
+    ####################################################################
     parser_init = subparsers.add_parser(
         'init',
         help='create a new node',
@@ -138,7 +142,9 @@ def get_parser() -> argparse.ArgumentParser:
                              help='define a domain (defaults to FILE without extension)')
     parser_init.set_defaults(func=command_init.create_file)
 
+    ####################################################################
     # Subcommand: add
+    ####################################################################
     parser_add = subparsers.add_parser(
         'add',
         help='add elements',
@@ -250,7 +256,9 @@ def get_parser() -> argparse.ArgumentParser:
         direction='both',
     )
 
+    ####################################################################
     # Subcommand: update
+    ####################################################################
     parser_update = subparsers.add_parser(
         'update',
         help='update elements',
@@ -325,7 +333,9 @@ def get_parser() -> argparse.ArgumentParser:
                                           help='move attribute to the right 1 or N positions')
     parser_update_attr.set_defaults(func=command_update.update_attribute)
 
+    ####################################################################
     # Subcommand: rename
+    ####################################################################
     parser_rename = subparsers.add_parser(
         'rename',
         help='rename elements',
@@ -361,7 +371,9 @@ def get_parser() -> argparse.ArgumentParser:
                                       help='new domain value', metavar='NEW_DOMAIN')
     parser_rename_domain.set_defaults(func=command_rename.rename_domain)
 
+    ####################################################################
     # Subcommand: index
+    ####################################################################
     parser_index = subparsers.add_parser(
         name='index',
         help='write index to stdout or load index from stdin',
@@ -381,7 +393,9 @@ def get_parser() -> argparse.ArgumentParser:
                               help='strategy for weight conflicts (default: %(default)s)')
     parser_index.set_defaults(func=command_index.process_index_action)
 
+    ####################################################################
     # Subcommand: quantity
+    ####################################################################
     parser_quantity = subparsers.add_parser(
         name='quantity',
         help='write quantities to stdout or load quantities from stdin',
@@ -407,7 +421,9 @@ def get_parser() -> argparse.ArgumentParser:
                                  help='strategy for existing quantities (default: %(default)s)')
     parser_quantity.set_defaults(func=command_quantity.process_quantity_action)
 
+    ####################################################################
     # Subcommand: mapping
+    ####################################################################
     parser_mapping = subparsers.add_parser(
         name='mapping',
         help='write mapping to stdout or load mapping from stdin',
@@ -453,7 +469,9 @@ def get_parser() -> argparse.ArgumentParser:
         direction='both',
     )
 
+    ####################################################################
     # Subcommand: info
+    ####################################################################
     parser_info = subparsers.add_parser(
         'info',
         help='show file info (default if COMMAND omitted)',
