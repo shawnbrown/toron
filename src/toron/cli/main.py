@@ -440,14 +440,14 @@ def get_parser() -> argparse.ArgumentParser:
     parser_mapping.add_argument('--match-limit',
                                 default=1,
                                 type=int,
-                                help='exclude matches exceeding one-to-LIMIT (default 1)',
-                                metavar='LIMIT')
+                                help='accept one-to-many (N) matches (default: one-to-one)',
+                                metavar='N')
     parser_mapping.add_argument('--allow-overlapping',
                                 action='store_true',
-                                help='allow ambiguous matches to overlap')
+                                help='fuzzy matches may overlap target records')
     parser_mapping.add_argument('--allow-incomplete',
                                 action='store_true',
-                                help='allow loading even when matches are incomplete')
+                                help='load matches even if the mapping is incomplete')
     parser_mapping.set_defaults(
         func=command_mapping.process_mapping_action,
         direction='both',
