@@ -147,8 +147,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_add = subparsers.add_parser(
         'add',
-        help='add elements',
-        description='Add elements to a node file.',
+        help='add element',
+        description='Add an element to a node file.',
     )
     parser_add_subparsers = parser_add.add_subparsers(
         dest='element',
@@ -261,8 +261,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_update = subparsers.add_parser(
         'update',
-        help='update elements',
-        description='Update elements in a node file.',
+        help='update element',
+        description='Update an element in a node file.',
     )
     parser_update_subparsers = parser_update.add_subparsers(
         dest='element',
@@ -338,8 +338,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_rename = subparsers.add_parser(
         'rename',
-        help='rename elements',
-        description='Rename elements in a node file.',
+        help='rename element',
+        description='Rename an element in a node file.',
     )
     parser_rename_subparsers = parser_rename.add_subparsers(
         dest='element',
@@ -376,7 +376,7 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_index = subparsers.add_parser(
         name='index',
-        help='write index to stdout or load index from stdin',
+        help='write index to stdout (or load from stdin)',
         description=('Write index records to stdout or load index records '
                      'from stdin (CSV format).'),
         parents=[no_backup_parent],
@@ -398,7 +398,7 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_quantity = subparsers.add_parser(
         name='quantity',
-        help='write quantities to stdout or load quantities from stdin',
+        help='write quantities to stdout (or load from stdin)',
         description=('Write quantity records to stdout or load quantity '
                      'records from stdin (CSV format).'),
         parents=[no_backup_parent],
@@ -426,7 +426,7 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_mapping = subparsers.add_parser(
         name='mapping',
-        help='write mapping to stdout or load mapping from stdin',
+        help='write mapping to stdout (or load from stdin)',
         description=('Write mapping records to stdout or load mapping '
                      'records from stdin (CSV format).'),
         prog='toron FILE1 mapping',  # <- Replaces "FILE" with "FILE1".
@@ -474,7 +474,7 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_info = subparsers.add_parser(
         'info',
-        help='show file info (default if COMMAND omitted)',
+        help='show file info, used as default if COMMAND omitted',
         description='Show file information.',
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)
