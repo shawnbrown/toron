@@ -1737,11 +1737,10 @@ class TopoNode(object):
             link_repo = self._dal.LinkRepository(cursor)
             link = self._get_link(node_or_ref, link_name, link_repo)
             if not link:
-                applogger.warning(
+                raise ToronError(
                     f'no link matching node reference {node_or_ref!r} '
                     f'and name {link_name!r}'
                 )
-                return  # <- EXIT!
 
             link_repo.delete_and_cascade(link.id)
 

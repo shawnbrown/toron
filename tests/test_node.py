@@ -3564,6 +3564,11 @@ class TestTopoNodeLinkMethods(unittest.TestCase):
         ]
         self.assertEqual(self.get_link_helper(self.node), expected)
 
+        # Missing link should raise ToronError.
+        regex = "no link matching node reference '222-222-2222' and name 'foobar'"
+        with self.assertRaisesRegex(ToronError, regex):
+            self.node.drop_link('222-222-2222', 'foobar')
+
 
 class TestTopoNodeInsertMappings2(unittest.TestCase):
     def setUp(self):
