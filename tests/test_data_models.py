@@ -1386,6 +1386,9 @@ class LinkRepositoryBaseTest(ABC):
         cursor = connector.acquire_cursor(self.connection)
         self.addCleanup(connector.release_cursor, cursor)
 
+        self.label_manager = self.dal.LabelManager(cursor)
+        self.index_repo = self.dal.IndexRepository(cursor)
+        self.mapping_repo = self.dal.MappingRepository(cursor)
         self.repository = self.dal.LinkRepository(cursor)
 
     def test_inheritance(self):
@@ -1417,6 +1420,32 @@ class LinkRepositoryBaseTest(ABC):
         regex = r"no link exists with other_unique_id 111-11-1111 and name 'blerg'"
         with self.assertRaisesRegex(KeyError, regex):
             self.repository.get_by_unique_id_and_name('111-11-1111', 'blerg')
+
+    def test_delete_and_cascade(self):
+        # Set up minimal node with link and mappings.
+        self.label_manager.add_columns('A', 'B')
+        self.index_repo.add('foo', 'x')
+        self.index_repo.add('bar', 'y')
+        self.index_repo.add('baz', 'z')
+        self.repository.add('111-11-1111', None, 'other1', is_locally_complete=True)
+        self.mapping_repo.add(1, 1, 1, b'\xc0', 131250, 1.0)
+        self.mapping_repo.add(1, 2, 1, b'\x40',  40960, 0.625)
+        self.mapping_repo.add(1, 2, 2, b'\x40',  24576, 0.375)
+        self.mapping_repo.add(1, 3, 3, b'\xc0', 100000, 1.0)
+
+        self.assertEqual(
+            len(list(self.mapping_repo.find(link_id=1))),
+            4,
+            msg="verify that we're starting with 4 mapping records",
+        )
+
+        self.repository.delete_and_cascade(id=1)  # <- Method under test.
+
+        self.assertEqual(
+            len(list(self.mapping_repo.find(link_id=1))),
+            0,
+            msg='should now be 0 -- deleting a link should cascade to its mappings',
+        )
 
 
 class MappingRepositoryBaseTest(ABC):
