@@ -408,6 +408,52 @@ def find_links_by_ref(
     return []  # Return empty list if no match.
 
 
+def get_links_by_ref(
+    ref: str,
+    link_repo: BaseLinkRepository,
+) -> List[Link]:
+    """Get links that match the given reference or raise a ToronError.
+
+    The reference (*ref*) can be a unique_id string, a filename_hint,
+    or a unique_id prefix (i.e., a short-code of 7 characters or more).
+    """
+    if not ref:
+        raise ToronError('must provide a reference value')
+
+    matches: List[Link]
+
+    # Try to match by exact 'other_unique_id'.
+    matches = list(link_repo.find_by_other_unique_id(ref))
+    if matches:
+        return matches  # <- EXIT!
+
+    # Try to find matches by 'other_filename_hint'.
+    matches = list(link_repo.find_by_other_filename_hint(ref))
+    if not ref.endswith('.toron'):
+        matches.extend(link_repo.find_by_other_filename_hint(f'{ref}.toron'))
+
+    # If still no matches, seatch by 'other_unique_id' prefix (short code).
+    if not matches and len(ref) >= 7:  # <- Must be at least 7 characters.
+        matches = [
+            x for x in link_repo.get_all() if x.other_unique_id.startswith(ref)
+        ]
+
+    # Check that only a single 'other_unique_id' exists among matches.
+    unique_sources = {x.other_unique_id: x.other_filename_hint for x in matches}
+    if len(unique_sources) > 1:
+        ordered_items = sorted(unique_sources.items())
+        formatted = '\n  '.join(
+            f"{k} ({v or '<no filename>'})" for k, v in ordered_items
+        )
+        msg = f'reference matches more than one file:\n  {formatted}'
+        raise ToronError(msg)
+
+    if not matches:
+        raise ToronError(f'no links match reference {ref!r}')
+
+    return matches
+
+
 def make_get_link_id_func(
     ref: str,
     link_repo: BaseLinkRepository,

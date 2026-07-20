@@ -27,6 +27,7 @@ from toron.data_service import (
     get_quantity_value_sum,
     disaggregate_value,
     find_links_by_ref,
+    get_links_by_ref,
     generate_mapping_elements,
     set_default_weight_group,
     get_default_weight_group,
@@ -648,6 +649,82 @@ class TestFindLinksByNodeReference(unittest.TestCase):
 
         links = find_links_by_ref(None, self.link_repo)
         self.assertEqual(links, [])
+
+
+class TestGetLinksByReference(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(connector.release_connection, con)
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(connector.release_cursor, cur)
+
+        label_manager = dal.LabelManager(cur)
+        index_repo = dal.IndexRepository(cur)
+        link_repo = dal.LinkRepository(cur)
+
+        label_manager.add_columns('A', 'B')
+        index_repo.add('foo', 'x')
+        index_repo.add('bar', 'y')
+        index_repo.add('bar', 'z')
+        link_repo.add('111-111-1111', 'file1.toron', 'link1')  # Add link_id 1.
+        link_repo.add('111-111-1111', 'file1', 'link2')  # Add link_id 2 (no toron extension).
+        link_repo.add('222-222-2222', 'file2.toron', 'link2')  # Add link_id 3.
+
+        self.link_repo = link_repo
+
+    def test_other_unique_id(self):
+        """Should return exact match on 'other_unique_id' value."""
+        links = get_links_by_ref('111-111-1111', self.link_repo)
+        self.assertEqual(set([x.id for x in links]), {1, 2})
+
+        links = get_links_by_ref('222-222-2222', self.link_repo)
+        self.assertEqual([x.id for x in links], [3])
+
+    def test_other_filename_hint(self):
+        """Should return exact match on 'other_filename_hint' value."""
+        links = get_links_by_ref('file1.toron', self.link_repo)
+        self.assertEqual(set([x.id for x in links]), {1})
+
+    def test_other_filename_hint_stem_only(self):
+        """Should return matches without ".toron" extension (file stem)
+        and also matches with ".toron" extension.
+        """
+        links = get_links_by_ref('file1', self.link_repo)  # <- Stem 'file1'.
+        self.assertEqual(set([x.id for x in links]), {1, 2})
+
+    def test_other_unique_id_shortcode(self):
+        """If node reference is 7 characters or more, try to match the
+        start of 'other_unique_id' values.
+        """
+        links = get_links_by_ref('111-111', self.link_repo)  # <- Short code.
+        self.assertEqual(set([x.id for x in links]), {1, 2})
+
+    def test_multiple_unique_id_matches(self):
+        self.link_repo.add('444-444-4444', 'file2', 'link4')    # Add link_id 4.
+
+        regex = (r'reference matches more than one file:\n'
+                 r'  222-222-2222 \(file2.toron\)\n'
+                 r'  444-444-4444 \(file2\)')
+
+        with self.assertRaisesRegex(ToronError, regex):
+            get_links_by_ref('file2', self.link_repo)
+
+    def test_no_match(self):
+        regex = r"no links match reference 'xxx-xxx-xxxx'"
+        with self.assertRaisesRegex(ToronError, regex):
+            get_links_by_ref('xxx-xxx-xxxx', self.link_repo)
+
+    def test_empty(self):
+        regex = r'must provide a reference value'
+
+        with self.assertRaisesRegex(ToronError, regex):
+            get_links_by_ref('', self.link_repo)
+
+        with self.assertRaisesRegex(ToronError, regex):
+            get_links_by_ref(None, self.link_repo)
 
 
 class TestGenerateMappingElements(TopoNodeFixturesMixin, unittest.TestCase):
