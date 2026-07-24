@@ -1,6 +1,7 @@
 """Tests for toron/data_service.py module."""
 
 import array
+from dataclasses import replace
 from . import _unittest as unittest
 from .common import normalize_structures, TopoNodeFixturesMixin
 
@@ -28,6 +29,7 @@ from toron.data_service import (
     disaggregate_value,
     find_links_by_ref,
     get_links_by_ref,
+    get_link,
     generate_mapping_elements,
     set_default_weight_group,
     get_default_weight_group,
@@ -725,6 +727,66 @@ class TestGetLinksByReference(unittest.TestCase):
 
         with self.assertRaisesRegex(ToronError, regex):
             get_links_by_ref(None, self.link_repo)
+
+
+class TestGetLink(unittest.TestCase):
+    def setUp(self):
+        dal = data_access.get_data_access_layer()
+
+        connector = dal.DataConnector()
+        con = connector.acquire_connection()
+        self.addCleanup(connector.release_connection, con)
+        cur = connector.acquire_cursor(con)
+        self.addCleanup(connector.release_cursor, cur)
+
+        label_manager = dal.LabelManager(cur)
+        index_repo = dal.IndexRepository(cur)
+        link_repo = dal.LinkRepository(cur)
+
+        label_manager.add_columns('A', 'B')
+        index_repo.add('foo', 'x')
+        index_repo.add('bar', 'y')
+        index_repo.add('bar', 'z')
+        link_repo.add('111-111-1111', 'file1.toron', 'link1')  # Add link_id 1.
+        link_repo.add('111-111-1111', 'file1', 'link2')  # Add link_id 2 (no toron extension).
+        link_repo.add('222-222-2222', 'file2.toron', 'link3')  # Add link_id 3.
+
+        self.link_repo = link_repo
+
+    def test_match_by_link_name(self):
+        """Should match by 'link_name' value."""
+        link = get_link('111-111-1111', 'link1', self.link_repo)
+        self.assertEqual(link.id, 1)
+
+    def test_link_name_not_found(self):
+        regex = r"link 'unknown_name' not found, can be: 'link1', 'link2'"
+        with self.assertRaisesRegex(ToronError, regex):
+            get_link('111-111-1111', 'unknown_name', self.link_repo)
+
+    def test_single_matching_link(self):
+        link = get_link('file2.toron', None, self.link_repo)
+        self.assertEqual(link.id, 3)
+
+    def test_multiple_matches_default_not_allowed(self):
+        regex = r"found multiple links, must specify name, can be: 'link1', 'link2'"
+        with self.assertRaisesRegex(ToronError, regex):
+            get_link('111-111-1111', None, self.link_repo, allow_default=False)
+
+    def test_multiple_matches_default_found(self):
+        self.link_repo.update(replace(self.link_repo.get(1), is_default=True))
+
+        link = get_link('111-111-1111', None, self.link_repo, allow_default=True)
+        self.assertEqual(link.id, 1)
+
+    def test_multiple_matches_default_not_found(self):
+        regex = r"cannot find default link, must specify name, can be: 'link1', 'link2'"
+        with self.assertRaisesRegex(ToronError, regex):
+            get_link('111-111-1111', None, self.link_repo, allow_default=True)
+
+    def test_no_links_match_reference(self):
+        regex = r"no links match reference 'file4.toron'"
+        with self.assertRaisesRegex(ToronError, regex):
+            get_link('file4.toron', None, self.link_repo, allow_default=True)
 
 
 class TestGenerateMappingElements(TopoNodeFixturesMixin, unittest.TestCase):

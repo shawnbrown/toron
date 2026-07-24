@@ -454,6 +454,50 @@ def get_links_by_ref(
     return matches
 
 
+def get_link(
+    ref: str,
+    link_name: Optional[str],
+    link_repo: BaseLinkRepository,
+    allow_default: bool = True,
+) -> Link:
+    """Get link by reference and name or raise ToronError."""
+    links: List[Link] = get_links_by_ref(ref, link_repo)
+
+    if not links:
+        raise ToronError(f'no links match reference {ref!r}')
+
+    available_names = ', '.join(repr(x.name) for x in links)
+
+    # If `link_name`, look for matching name.
+    if link_name:
+        for link in links:
+            if link.name == link_name:
+                return link  # <- EXIT!
+        raise ToronError(f'link {link_name!r} not found, can be: {available_names}')
+
+    # If single matching result, log message and return.
+    if len(links) == 1:
+        link = links[0]
+        applogger.info(f'using link {link.name!r}')
+        return link  # <- EXIT!
+
+    # If multiple matches, check if default allowed.
+    if not allow_default:
+        raise ToronError(
+            f'found multiple links, must specify name, can be: {available_names}'
+        )
+
+    # Multiple matches, search for default.
+    for link in links:
+        if link.is_default:
+            applogger.info(f'using link {link.name!r} (default)')
+            return link  # <- EXIT!
+
+    raise ToronError(
+        f'cannot find default link, must specify name, can be: {available_names}'
+    )
+
+
 def make_get_link_id_func(
     ref: str,
     link_repo: BaseLinkRepository,
