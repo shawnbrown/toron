@@ -55,6 +55,7 @@ from .data_service import (
     get_quantity_value_sum,
     disaggregate_value,
     find_links_by_ref,
+    get_link,
     set_default_weight_group,
     get_default_weight_group,
     find_matching_weight_groups,
@@ -1587,60 +1588,23 @@ class TopoNode(object):
         node_or_ref: Union['TopoNode', str],
         link_name: Optional[str],
         link_repo: BaseLinkRepository,
-    ) -> Optional[Link]:
-        """Get link by node reference and name."""
-        if isinstance(node_or_ref, TopoNode):  # If TopoNode, find by 'unique_id' only.
-            matches = list(link_repo.find_by_other_unique_id(node_or_ref.unique_id))
-        else:
-            matches = find_links_by_ref(node_or_ref, link_repo)
-
-        if len({x.other_unique_id for x in matches}) > 1:
-            node_info = {x.other_unique_id: x.other_filename_hint for x in matches}
-            func = lambda a, b: f"{a} ({b or '<no filename>'})"
-            formatted = '\n  '.join(func(k, v) for k, v in node_info.items())
-            msg = f'node reference matches more than one node:\n  {formatted}'
-            raise ValueError(msg)
-
-        if link_name:
-            filtered = [x for x in matches if x.name == link_name]
-            if not filtered and matches:
-                names = ', '.join(repr(x.name) for x in matches)
-                applogger.warning(
-                    f'link {link_name!r} not found, can be: {names}'
-                )
-        else:
-            filtered = matches
-
-        if len(filtered) > 1:
-            defaults = [x for x in filtered if x.is_default]
-            if len(defaults) == 1:
-                link = defaults[0]
-                applogger.warning(
-                    f'found multiple links, using default: {link.name!r}'
-                )
-                return link
-            else:
-                names = ', '.join(repr(x.name) for x in filtered)
-                msg = f'found multiple links, must specify name: {names}'
-                raise ValueError(msg)
-
-        if len(filtered) == 1:
-            return filtered[0]
-
-        return None
+    ) -> Link:
+        """A wrapper to normalize input for ``get_link()`` function."""
+        if not isinstance(node_or_ref, str):
+            node_or_ref = node_or_ref.unique_id
+        return get_link(node_or_ref, link_name, link_repo)
 
     def get_link(
         self,
         node_or_ref: Union['TopoNode', str],
         link_name: Optional[str] = None,
-    ) -> Optional[Link]:
+    ) -> Link:
         with self._managed_cursor() as cursor:
-            link = self._get_link(
+            return self._get_link(
                 node_or_ref,
                 link_name,
                 self._dal.LinkRepository(cursor),
             )
-            return link
 
     def add_link(
         self,
@@ -1711,13 +1675,6 @@ class TopoNode(object):
             link_repo = self._dal.LinkRepository(cursor)
             link = self._get_link(node_or_ref, link_name, link_repo)
 
-            if not link:
-                applogger.warning(
-                    f'no link matching node reference {node_or_ref!r} '
-                    f'and name {link_name!r}'
-                )
-                return  # <- EXIT!
-
             # If setting is_default=True, all other links coming from
             # the same node should be set to False.
             if changes.get('is_default') == True:
@@ -1735,13 +1692,8 @@ class TopoNode(object):
     ) -> None:
         with self._managed_transaction() as cursor:
             link_repo = self._dal.LinkRepository(cursor)
-            link = self._get_link(node_or_ref, link_name, link_repo)
-            if not link:
-                raise ToronError(
-                    f'no link matching node reference {node_or_ref!r} '
-                    f'and name {link_name!r}'
-                )
 
+            link = self._get_link(node_or_ref, link_name, link_repo)
             link_repo.delete_and_cascade(link.id)
 
     def select_mappings(
@@ -1757,12 +1709,6 @@ class TopoNode(object):
             link_repo = self._dal.LinkRepository(cursor)
 
             link = self._get_link(node_or_ref, link_name, link_repo)
-            if not link:
-                raise ValueError(
-                    f'no link matching node reference {node_or_ref!r} '
-                    f'and name {link_name!r}'
-                )
-
             label_columns = label_manager.get_columns()
 
             if header:
@@ -1838,14 +1784,7 @@ class TopoNode(object):
             link_repo = self._dal.LinkRepository(cursor)
             mapping_repo = self._dal.MappingRepository(cursor)
 
-            # Get link id.
-            link = self._get_link(node_or_ref, link_name,
-                                            link_repo)
-            if not link:
-                raise ValueError(
-                    f'no link matching node reference {node_or_ref!r} '
-                    f'and name {link_name!r}'
-                )
+            link = self._get_link(node_or_ref, link_name, link_repo)
             link_id = link.id
 
             # Get allowed structure values.
@@ -1942,13 +1881,7 @@ class TopoNode(object):
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             link = self._get_link(node_or_ref, link_name, link_repo)
-            if not link:
-                raise ValueError(
-                    f'no link matching node reference {node_or_ref!r} '
-                    f'and name {link_name!r}'
-                )
             link_id = link.id
-
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
             for row in data:
@@ -2040,13 +1973,7 @@ class TopoNode(object):
             verify_columns_set(columns, label_columns, allow_extras=True)
 
             link = self._get_link(node_or_ref, link_name, link_repo)
-            if not link:
-                raise ValueError(
-                    f'no link matching node reference {node_or_ref!r} '
-                    f'and name {link_name!r}'
-                )
             link_id = link.id
-
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
             for row in data:
@@ -2174,11 +2101,6 @@ class TopoNode(object):
             index_repo = self._dal.IndexRepository(cursor)
 
             link = self._get_link(node_or_ref, link_name, link_repo)
-            if not link:
-                raise ValueError(
-                    f'no link matching node reference {node_or_ref!r} '
-                    f'and name {link_name!r}'
-                )
             link_id = link.id
 
             if data:
@@ -2325,12 +2247,6 @@ class TopoNode(object):
             link_repo = self._dal.LinkRepository(cursor)
 
             link = self._get_link(node_or_ref, link_name, link_repo)
-            if not link:
-                raise ValueError(
-                    f'no link matching node reference {node_or_ref!r} '
-                    f'and name {link_name!r}'
-                )
-
             label_names = index_repo.get_label_names()
             fully_specified_level = bytes(BitFlags([1] * len(label_names)))
 

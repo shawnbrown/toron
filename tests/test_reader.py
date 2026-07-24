@@ -230,13 +230,13 @@ class TestNodeReaderTranslate(unittest.TestCase):
         )
         self.node.add_link(
             node=mock_node,
-            other_filename_hint='other-file',
+            other_filename_hint='other-file.toron',
             link_name='edge 2',
             description='Edge two description.',
             selectors=['[foo]'],
         )
         self.node.insert_mappings(
-            node_or_ref='other-file.toron',
+            node_or_ref='other-file',
             link_name='edge 2',
             data=[
                 ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C', 'mapping_level'),

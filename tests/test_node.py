@@ -3416,24 +3416,24 @@ class TestTopoNodeLinkMethods(unittest.TestCase):
         result = self.node.get_link('somefile')
         self.assertEqual(result.id, 1, msg='should find distinct match on filename hint')
 
-        regex = (r'node reference matches more than one node:\n'
+        regex = (r'reference matches more than one file:\n'
                  r'  111-111-1111 \(somefile\)\n'
                  r'  111-111-2222 \(otherfile\)')
         msg = 'should raise error if matches multiple nodes'
-        with self.assertRaisesRegex(ValueError, regex, msg=msg):
-            result = self.node.get_link('111-111')  # <- Ambiguous shortcode.
+        with self.assertRaisesRegex(ToronError, regex, msg=msg):
+            self.node.get_link('111-111')  # <- Ambiguous shortcode.
 
         with self.assertLogs('app-toron', level='INFO') as cm:
             result = self.node.get_link('111-111-2222')
 
         self.assertEqual(
             cm.output,
-            ["WARNING:app-toron.node:found multiple links, using default: 'name1'"],
+            ["INFO:app-toron:using link 'name1' (default)"],
         )
 
-        regex = "found multiple links, must specify name: 'name1', 'name2'"
+        regex = r"cannot find default link, must specify name, can be: 'name1', 'name2'"
         msg = 'should raise error if there are multiples but no default'
-        with self.assertRaisesRegex(ValueError, regex, msg=msg):
+        with self.assertRaisesRegex(ToronError, regex, msg=msg):
             result = self.node.get_link('333-333-3333')
 
         result = self.node.get_link('111-111-2222', 'name2')
@@ -3442,18 +3442,13 @@ class TestTopoNodeLinkMethods(unittest.TestCase):
         result = self.node.get_link('333-333-3333', 'name1')
         self.assertEqual(result.id, 4, msg='specified name should match non-default link')
 
-        with self.assertLogs('app-toron', level='INFO') as cm:
-            result = self.node.get_link('333-333-3333', 'unknown_name')
-            self.assertIsNone(result, msg='if specified name does not exist, should be None')
+        regex = r"link 'unknown_name' not found, can be: 'name1', 'name2'"
+        with self.assertRaisesRegex(ToronError, regex):
+            self.node.get_link('333-333-3333', 'unknown_name')
 
-        self.assertEqual(
-            cm.output,
-            [("WARNING:app-toron.node:link 'unknown_name' not found, "
-              "can be: 'name1', 'name2'")],
-        )
-
-        result = self.node.get_link('000-unknown-0000')
-        self.assertIsNone(result, msg='if specified node does not exist, should be None')
+        regex = r"no links match reference '000-unknown-0000'"
+        with self.assertRaisesRegex(ToronError, regex):
+            self.node.get_link('000-unknown-0000')
 
     def test_add_link(self):
         mock_other_node = unittest.mock.Mock()
@@ -3565,7 +3560,7 @@ class TestTopoNodeLinkMethods(unittest.TestCase):
         self.assertEqual(self.get_link_helper(self.node), expected)
 
         # Missing link should raise ToronError.
-        regex = "no link matching node reference '222-222-2222' and name 'foobar'"
+        regex = "link 'foobar' not found, can be: 'name1'"
         with self.assertRaisesRegex(ToronError, regex):
             self.node.drop_link('222-222-2222', 'foobar')
 

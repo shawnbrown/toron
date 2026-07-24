@@ -363,8 +363,15 @@ def read_from_stdin(
 ) -> ExitCode:
     """Insert mapping records read from stdin stream."""
     # Check that link is defined in nodes.
-    left_link = node1.get_link(node2, args.link)
-    right_link = node2.get_link(node1, args.link)
+    try:
+        left_link = node1.get_link(node2, args.link)
+    except ToronError:
+        left_link = None
+    try:
+        right_link = node2.get_link(node1, args.link)
+    except ToronError:
+        right_link = None
+
     if args.direction == 'both':
         if right_link and not left_link:
             applogger.warning(f'no {args.link!r} link from FILE2 to FILE1')

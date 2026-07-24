@@ -328,9 +328,9 @@ class TestAddLink(unittest.TestCase):
         )
 
         # Check that left-side link (node1 <- node2) does not exist.
-        self.assertIsNone(
+        regex = r"no links match reference .+'"
+        with self.assertRaisesRegex(ToronError, regex):
             read_file(self.filepath1).get_link(self.filepath2, 'population')
-        )
 
     def test_link_already_exists(self):
         node1 = bind_node(self.filepath1, mode='rw')
