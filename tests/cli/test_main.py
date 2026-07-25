@@ -13,6 +13,7 @@ from toron.cli.main import (
     command_add,
     command_update,
     command_rename,
+    command_remove,
     command_index,
     command_quantity,
     command_mapping,
@@ -416,6 +417,28 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
                 backup=True,
                 new_domain='new_domain_name',
                 func=command_rename.rename_domain,
+            ),
+        )
+
+    def test_subcommand_remove_link(self):
+        """Check "remove link" subparser."""
+        self.assertEqual(
+            self.parser.parse_args([
+                'myfile1.toron',
+                'remove',
+                'link',
+                'myfile2.toron',
+                'my_link_name',
+            ]),
+            argparse.Namespace(
+                filepath='myfile1.toron',
+                command='remove',
+                element='link',
+                filepath2='myfile2.toron',
+                link='my_link_name',
+                direction='both',
+                backup=True,
+                func=command_remove.remove_link,
             ),
         )
 
