@@ -110,14 +110,15 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser = ToronArgumentParser(
         prog='toron',
-        description='Show and edit Toron node file data and elements.',
+        description="Show and edit a Toron file's data and elements.",
+        epilog='Toron is a tool for multi-level data disaggregation and translation.',
     )
     parser.add_argument('--version',
                         action='version',
                         version=f'%(prog)s {__version__}')
     parser.add_argument('filepath',
                         type=str,
-                        help='name of node file',
+                        help='path to a Toron file',
                         metavar='FILE')
     subparsers = parser.add_subparsers(
         dest='command',
@@ -136,8 +137,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_init = subparsers.add_parser(
         'init',
-        help='create a new node',
-        description='Create a new node file.',
+        help='create a new file',
+        description='Create a new Toron file.',
     )
     parser_init.add_argument('--domain',
                              help='define a domain (defaults to FILE without extension)')
@@ -149,7 +150,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add = subparsers.add_parser(
         'add',
         help='add element',
-        description='Add an element to a node file.',
+        description='Add an element to a file.',
     )
     parser_add_subparsers = parser_add.add_subparsers(
         dest='element',
@@ -161,8 +162,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_label = parser_add_subparsers.add_parser(
         'label',
         help='add index labels',
-        description=('Add index label to a node file. Labels may be provided '
-                     'as separate arguments or as a comma-separated list.'),
+        description=('Add index label to a file. Labels may be provided as '
+                     'separate arguments or as a comma-separated list.'),
         parents=[no_backup_parent],
     )
     parser_add_label.add_argument('labels', nargs='+',
@@ -173,7 +174,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_weight = parser_add_subparsers.add_parser(
         'weight',
         help='add an index weight group',
-        description='Add an index weight group to a node file.',
+        description='Add an index weight group to a file.',
         parents=[no_backup_parent],
     )
     parser_add_weight.add_argument('weight',
@@ -192,10 +193,10 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_partition = parser_add_subparsers.add_parser(
         'partition',
         help='add a partition',
-        description=('Add a partition to a node file. A partition groups '
-                     'records into cells based on the specified index labels. '
-                     'Label names may be provided as separate arguments or as '
-                     'a comma-separated list.'),
+        description=('Add a partition to a file. A partition groups records '
+                     'into cells based on the specified index labels. Label '
+                     'names may be provided as separate arguments or as a '
+                     'comma-separated list.'),
         parents=[no_backup_parent],
     )
     parser_add_partition.add_argument('labels', nargs='+',
@@ -207,9 +208,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_add_attribute = parser_add_subparsers.add_parser(
         'attribute',
         help='add quantity attributes',
-        description=('Add quantity attribute columns to a node file. '
-                     'Attributes may be provided as separate arguments '
-                     'or as a comma-separated list.'),
+        description=('Add quantity attribute columns to a file. Attributes '
+                     'may be provided as separate arguments or as a '
+                     'comma-separated list.'),
         parents=[no_backup_parent],
     )
     parser_add_attribute.add_argument('attributes', nargs='+',
@@ -219,13 +220,13 @@ def get_parser() -> argparse.ArgumentParser:
     # Subcommand: add link
     parser_add_link = parser_add_subparsers.add_parser(
         'link',
-        help='add a link between two nodes',
-        description='Add a link between two node files.',
+        help='add a link between two files',
+        description='Add a link between two Toron files.',
         prog='toron FILE1 add link',  # <- Replaces "FILE" with "FILE1".
         parents=[no_backup_parent],
     )
     parser_add_link.add_argument('filepath2',
-                                 help='name of second (right) node file',
+                                 help='name of the second (right-side) file',
                                  metavar='FILE2')
     parser_add_link.add_argument('link',
                                  help='name of the link to add',
@@ -263,7 +264,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_update = subparsers.add_parser(
         'update',
         help='update element',
-        description='Update an element in a node file.',
+        description='Update an element in a file.',
     )
     parser_update_subparsers = parser_update.add_subparsers(
         dest='element',
@@ -275,7 +276,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_update_label = parser_update_subparsers.add_parser(
         'label',
         help='update an index label',
-        description='Update an index label in a node file.',
+        description='Update an index label in a file.',
         parents=[no_backup_parent],
     )
     parser_update_label.add_argument('label',
@@ -295,7 +296,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_update_weight = parser_update_subparsers.add_parser(
         'weight',
         help='update an index weight',
-        description='Update an index weight in a node file.',
+        description='Update an index weight in a file.',
         parents=[no_backup_parent],
     )
     parser_update_weight.add_argument('weight',
@@ -311,14 +312,14 @@ def get_parser() -> argparse.ArgumentParser:
                                       help='remove one or more attribute selectors')
     parser_update_weight.add_argument('--default', action='store_true',
                                       dest='make_default',
-                                      help="set as the node's default weight group")
+                                      help="set as the file's default weight group")
     parser_update_weight.set_defaults(func=command_update.update_weight)
 
     # Subcommand: update attribute
     parser_update_attr = parser_update_subparsers.add_parser(
         'attribute',
         help='update a quantity attribute',
-        description='Update a quantity attribute in a node file.',
+        description='Update a quantity attribute in a file.',
         parents=[no_backup_parent],
     )
     parser_update_attr.add_argument('attribute', metavar='ATTRIBUTE',
@@ -340,7 +341,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_rename = subparsers.add_parser(
         'rename',
         help='rename element',
-        description='Rename an element in a node file.',
+        description='Rename an element in a file.',
     )
     parser_rename_subparsers = parser_rename.add_subparsers(
         dest='element',
@@ -364,8 +365,8 @@ def get_parser() -> argparse.ArgumentParser:
     # Subcommand: rename domain
     parser_rename_domain = parser_rename_subparsers.add_parser(
         'domain',
-        help="change the node's domain",
-        description="Change the node's domain.",
+        help="change the file's domain",
+        description="Change the file's domain.",
         parents=[no_backup_parent],
     )
     parser_rename_domain.add_argument('new_domain',

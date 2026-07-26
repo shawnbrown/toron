@@ -547,7 +547,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             self.stdout_capture.getvalue(),
             (r'^usage: toron FILE init \[-h\] \[--domain DOMAIN\]\n'
              r'\n'
-             r'Create a new node file.'),
+             r'Create a new Toron file.'),
         )
 
         # Clear stdout buffer for next check.

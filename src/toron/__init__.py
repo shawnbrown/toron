@@ -1,4 +1,4 @@
-"""Data structures to refine granularity and translate crosswalks."""
+"""Tools for multi-level data disaggregation and translation."""
 
 __all__ = [
     # PACKAGE CONTENTS
