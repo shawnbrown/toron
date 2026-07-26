@@ -4,7 +4,7 @@ import os
 import tempfile
 from .. import _unittest as unittest
 from ..common import ClassTempFileMixin, TempDataSpaceMixin
-from toron import DataSpace, ToronError, bind_node
+from toron import DataSpace, ToronError, bind_file
 
 from toron.cli import command_update
 from toron.cli.common import ExitCode
@@ -13,7 +13,7 @@ from toron.data_models import WeightGroup
 
 class TestUpdateLabel(TempDataSpaceMixin, unittest.TestCase):
     def test_update_label(self):
-        bind_node(self.filepath, mode='rw').add_index_columns('A', 'C', 'B', 'D')
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'C', 'B', 'D')
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -27,12 +27,12 @@ class TestUpdateLabel(TempDataSpaceMixin, unittest.TestCase):
 
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').get_label_columns(),
+            bind_file(self.filepath, mode='ro').get_label_columns(),
             ['A', 'B', 'C', 'D'],
         )
 
     def test_bad_label(self):
-        bind_node(self.filepath, mode='rw').add_index_columns('A', 'C', 'B', 'D')
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'C', 'B', 'D')
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -48,7 +48,7 @@ class TestUpdateLabel(TempDataSpaceMixin, unittest.TestCase):
             command_update.update_label(args)  # Function under test.
 
     def test_invalid_direction(self):
-        bind_node(self.filepath, mode='rw').add_index_columns('A', 'C', 'B', 'D')
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'C', 'B', 'D')
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -112,7 +112,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
 
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').weight_groups,
+            bind_file(self.filepath, mode='ro').weight_groups,
              [
                 WeightGroup(
                     id=1,
@@ -130,7 +130,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
         exit_code = command_update.update_weight(args)  # Function under test.
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').weight_groups,
+            bind_file(self.filepath, mode='ro').weight_groups,
              [
                 WeightGroup(
                     id=1,
@@ -147,7 +147,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
         exit_code = command_update.update_weight(args)  # Function under test.
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').weight_groups,
+            bind_file(self.filepath, mode='ro').weight_groups,
              [
                 WeightGroup(
                     id=1,
@@ -164,7 +164,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
         exit_code = command_update.update_weight(args)  # Function under test.
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').weight_groups,
+            bind_file(self.filepath, mode='ro').weight_groups,
              [
                 WeightGroup(
                     id=1,
@@ -181,7 +181,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
         exit_code = command_update.update_weight(args)  # Function under test.
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').weight_groups,
+            bind_file(self.filepath, mode='ro').weight_groups,
              [
                 WeightGroup(
                     id=1,
@@ -198,7 +198,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
         exit_code = command_update.update_weight(args)  # Function under test.
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').weight_groups,
+            bind_file(self.filepath, mode='ro').weight_groups,
             [
                 WeightGroup(
                     id=1,
@@ -211,7 +211,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
         )
 
     def test_make_default_option(self):
-        node = bind_node(self.filepath, mode='ro')
+        node = bind_file(self.filepath, mode='ro')
 
         self.assertIsNone(
             node.get_default_weight_group(),
@@ -236,7 +236,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
 
 class TestUpdateAttribute(TempDataSpaceMixin, unittest.TestCase):
     def test_update_attribute(self):
-        bind_node(self.filepath, mode='rw').set_registered_attributes(['A', 'C', 'B', 'D'])
+        bind_file(self.filepath, mode='rw').set_registered_attributes(['A', 'C', 'B', 'D'])
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -250,12 +250,12 @@ class TestUpdateAttribute(TempDataSpaceMixin, unittest.TestCase):
 
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').get_registered_attributes(),
+            bind_file(self.filepath, mode='ro').get_registered_attributes(),
             ['A', 'B', 'C', 'D'],
         )
 
     def test_bad_label(self):
-        bind_node(self.filepath, mode='rw').set_registered_attributes(['A', 'C', 'B', 'D'])
+        bind_file(self.filepath, mode='rw').set_registered_attributes(['A', 'C', 'B', 'D'])
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -271,7 +271,7 @@ class TestUpdateAttribute(TempDataSpaceMixin, unittest.TestCase):
             command_update.update_attribute(args)  # Function under test.
 
     def test_invalid_direction(self):
-        bind_node(self.filepath, mode='rw').set_registered_attributes(['A', 'C', 'B', 'D'])
+        bind_file(self.filepath, mode='rw').set_registered_attributes(['A', 'C', 'B', 'D'])
 
         args = argparse.Namespace(
             filepath=self.filepath,

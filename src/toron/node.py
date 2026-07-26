@@ -3025,7 +3025,7 @@ def read_file(filepath: Union[str, bytes, os.PathLike], **kwds) -> DataSpace:
     return obj
 
 
-def bind_node(
+def bind_file(
     filepath: Union[str, bytes, os.PathLike],
     *,
     mode: Literal['ro', 'rw', 'rwc'],
@@ -3044,11 +3044,11 @@ def bind_node(
 
     .. code-block:: python
 
-        >>> node = toron.attach_node('mynode.toron', mode='rw')
+        >>> node = toron.bind_file('mynode.toron', mode='rw')
 
     .. warning::
 
-        Operations on a node bound directly to its file on drive
+        Operations on a DataSpace bound directly to its file on drive
         are **live and irreversible**. Any modifications are written
         immediately and permanently to the associated file.
     """

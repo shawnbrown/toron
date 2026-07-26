@@ -12,7 +12,7 @@ __all__ = [
 
     # FUNCTIONS
     'read_file',
-    'bind_node',
+    'bind_file',
     'wide_to_narrow',
     'wide_to_long',
 ]
@@ -26,7 +26,7 @@ def __dir__():  # Customize module attribute list (PEP 562).
 from .node import (
     DataSpace,
     read_file,
-    bind_node,
+    bind_file,
 )
 from .xnode import xNode
 from ._utils import (

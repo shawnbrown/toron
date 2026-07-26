@@ -4,7 +4,7 @@ import os
 import tempfile
 from .. import _unittest as unittest
 from ..common import TempDataSpaceMixin
-from toron import DataSpace, ToronError, read_file, bind_node
+from toron import DataSpace, ToronError, read_file, bind_file
 from toron.data_models import Link, WeightGroup
 
 from toron.cli import command_add
@@ -113,7 +113,7 @@ class TestAddWeight(TempDataSpaceMixin, unittest.TestCase):
 class TestAddPartition(TempDataSpaceMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
-        node = bind_node(self.filepath, mode='rw')
+        node = bind_file(self.filepath, mode='rw')
         node.add_index_columns('A', 'B', 'C')
 
     def test_add_partition(self):
@@ -333,8 +333,8 @@ class TestAddLink(unittest.TestCase):
             read_file(self.filepath1).get_link(self.filepath2, 'population')
 
     def test_link_already_exists(self):
-        node1 = bind_node(self.filepath1, mode='rw')
-        node2 = bind_node(self.filepath2, mode='rw')
+        node1 = bind_file(self.filepath1, mode='rw')
+        node2 = bind_file(self.filepath2, mode='rw')
         node1.add_link(
             node=node2,
             link_name='population',

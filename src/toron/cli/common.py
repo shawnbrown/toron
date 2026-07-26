@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from dataclasses import astuple, dataclass
 from enum import IntEnum
 from struct import Struct
-from .. import bind_node, ToronError
+from .. import bind_file, ToronError
 from .._typing import (
     Any,
     Dict,
@@ -73,12 +73,12 @@ def csv_stdout_writer(
             pass
 
 
-def cli_bind_node(
+def cli_bind_file(
     filepath: str, *, mode: Literal['ro', 'rw', 'rwc']
 ) -> 'DataSpace':
     """Open file directly from drive (bind) or raise ``ToronError``."""
     try:
-        return bind_node(filepath, mode=mode)
+        return bind_file(filepath, mode=mode)
     except (PermissionError, FileNotFoundError, ValueError) as e:
         raise ToronError(e)
 

@@ -3,7 +3,7 @@ import argparse
 import logging
 
 from .common import (
-    cli_bind_node,
+    cli_bind_file,
     process_backup_option,
     ExitCode,
 )
@@ -14,7 +14,7 @@ applogger = logging.getLogger('app-toron')
 
 def rename_label(args: argparse.Namespace) -> ExitCode:
     """Rename an index label column."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     node.rename_label_column(args.old_label, args.new_label)
@@ -25,7 +25,7 @@ def rename_label(args: argparse.Namespace) -> ExitCode:
 
 def rename_domain(args: argparse.Namespace) -> ExitCode:
     """Change the given node's domain."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     node.set_domain(args.new_domain)

@@ -43,7 +43,7 @@ from toron.data_models import (
 from toron.node import (
     DataSpace,
     read_file,
-    bind_node,
+    bind_file,
 )
 from toron.reader import NodeReader
 
@@ -222,7 +222,7 @@ class TestBindNode(unittest.TestCase):
         new_path = os.path.join(self.temp_dir.name, 'new_node.toron')
         self.assertFalse(os.path.isfile(new_path))
 
-        node = bind_node(new_path, mode='rwc')
+        node = bind_file(new_path, mode='rwc')
         del node
         gc.collect()  # Explicitly trigger full garbage collection.
 
@@ -234,28 +234,28 @@ class TestBindNode(unittest.TestCase):
         self.assertFalse(os.path.isfile(new_path))
 
         with self.assertRaises(FileNotFoundError):
-            node = bind_node(new_path, mode='ro')
+            node = bind_file(new_path, mode='ro')
 
     def test_existing_read_write(self):
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
         DataSpace().to_file(file_path)  # Create a new node and save to drive.
 
         try:
-            node = bind_node(file_path, mode='rw')
+            node = bind_file(file_path, mode='rw')
         except Exception:
             self.fail("read-write file should open with 'rw' permissions")
 
         os.chmod(file_path, stat.S_IRUSR)  # Set to read-only.
         regex = "cannot bind to .+ in 'rw' mode, process does not have write permissions"
         with self.assertRaisesRegex(PermissionError, regex):
-            connector = bind_node(file_path, mode='rw')
+            connector = bind_file(file_path, mode='rw')
 
     def test_existing_read_only(self):
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
         DataSpace().to_file(file_path)  # Create a new node and save to drive.
 
         try:
-            node = bind_node(file_path, mode='ro')
+            node = bind_file(file_path, mode='ro')
         except Exception:
             self.fail("file with read and write permissions should open in 'ro' mode")
 
@@ -265,7 +265,7 @@ class TestBindNode(unittest.TestCase):
 
         os.chmod(file_path, stat.S_IRUSR)  # Set to read-only.
         try:
-            node = bind_node(file_path, mode='ro')
+            node = bind_file(file_path, mode='ro')
         except Exception:
             self.fail("file with read-only permissions should open in 'ro' mode")
 

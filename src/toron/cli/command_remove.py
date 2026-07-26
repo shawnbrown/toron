@@ -3,7 +3,7 @@ import argparse
 import logging
 
 from .common import (
-    cli_bind_node,
+    cli_bind_file,
     process_backup_option,
     ExitCode,
 )
@@ -17,8 +17,8 @@ applogger = logging.getLogger('app-toron')
 
 def remove_link(args: argparse.Namespace) -> ExitCode:
     """Remove a link from between two files."""
-    node1 = cli_bind_node(args.filepath, mode='rw')
-    node2 = cli_bind_node(args.filepath2, mode='rw')
+    node1 = cli_bind_file(args.filepath, mode='rw')
+    node2 = cli_bind_file(args.filepath2, mode='rw')
     process_backup_option(args, node1, node2)
 
     do_remove = lambda tail, head, link_name: head.drop_link(tail, link_name)

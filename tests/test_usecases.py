@@ -18,7 +18,7 @@ except ImportError:
 from .common import DummyRedirection
 from toron.node import DataSpace
 from toron.graph import load_mapping
-from toron import cli, bind_node
+from toron import cli, bind_file
 
 
 class TestBuildUsingAPI(unittest.TestCase):
@@ -402,8 +402,8 @@ class TestBuildUsingCLI(unittest.TestCase):
         ))
 
     def test_disaggregate_translate(self):
-        node1 = bind_node(self.filepath1, mode='ro')
-        node2 = bind_node(self.filepath2, mode='ro')
+        node1 = bind_file(self.filepath1, mode='ro')
+        node2 = bind_file(self.filepath2, mode='ro')
 
         result_iter = node1() >> node2  # <- Disaggregate and translate.
 

@@ -3,7 +3,7 @@ import argparse
 import os
 import tempfile
 from .. import _unittest as unittest
-from toron import DataSpace, ToronError, read_file, bind_node
+from toron import DataSpace, ToronError, read_file, bind_file
 
 from toron.cli import command_remove
 from toron.cli.common import ExitCode
@@ -42,8 +42,8 @@ class TestRemoveLink(unittest.TestCase):
     @staticmethod
     def add_link(tail_file, head_file, link_name, is_default=None):
         """Helper function to add links between files for testing."""
-        tail = bind_node(tail_file, mode='rw')
-        head = bind_node(head_file, mode='rw')
+        tail = bind_file(tail_file, mode='rw')
+        head = bind_file(head_file, mode='rw')
         head.add_link(
             node=tail,
             link_name=link_name,

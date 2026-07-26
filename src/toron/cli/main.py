@@ -12,7 +12,7 @@ from .._typing import (
 )
 from .. import (
     __version__,
-    bind_node,
+    bind_file,
     DataSpace,
     ToronError,
 )

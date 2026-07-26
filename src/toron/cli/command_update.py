@@ -5,7 +5,7 @@ from dataclasses import replace
 from .._typing import cast, TYPE_CHECKING
 
 from .common import (
-    cli_bind_node,
+    cli_bind_file,
     process_backup_option,
     ExitCode,
 )
@@ -19,7 +19,7 @@ applogger = logging.getLogger('app-toron')
 
 def update_label(args: argparse.Namespace) -> ExitCode:
     """Update index label column in the given node file."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     if args.move_left and not args.move_right:
@@ -36,7 +36,7 @@ def update_label(args: argparse.Namespace) -> ExitCode:
 
 def update_weight(args: argparse.Namespace) -> ExitCode:
     """Update index weight group in the given node file."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     group = node.get_weight_group(args.weight)
@@ -80,7 +80,7 @@ def update_weight(args: argparse.Namespace) -> ExitCode:
 
 def update_attribute(args: argparse.Namespace) -> ExitCode:
     """Update quantity attribute in the given node file."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     if args.move_left and not args.move_right:

@@ -4,7 +4,7 @@ import os
 import tempfile
 from .. import _unittest as unittest
 from ..common import TempDataSpaceMixin
-from toron import DataSpace, ToronError, bind_node
+from toron import DataSpace, ToronError, bind_file
 
 from toron.cli import command_rename
 from toron.cli.common import ExitCode
@@ -12,7 +12,7 @@ from toron.cli.common import ExitCode
 
 class TestRenameLabel(TempDataSpaceMixin, unittest.TestCase):
     def test_rename_label(self):
-        bind_node(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -26,12 +26,12 @@ class TestRenameLabel(TempDataSpaceMixin, unittest.TestCase):
 
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').get_label_columns(),
+            bind_file(self.filepath, mode='ro').get_label_columns(),
             ['A', 'B', 'C', 'D'],
         )
 
     def test_bad_new_label(self):
-        bind_node(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -46,7 +46,7 @@ class TestRenameLabel(TempDataSpaceMixin, unittest.TestCase):
             command_rename.rename_label(args)  # Function under test.
 
     def test_missing_old_label(self):
-        bind_node(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -63,7 +63,7 @@ class TestRenameLabel(TempDataSpaceMixin, unittest.TestCase):
 
 class TestRenameDomain(TempDataSpaceMixin, unittest.TestCase):
     def test_rename_domain(self):
-        bind_node(self.filepath, mode='rw').set_domain('orig_value')
+        bind_file(self.filepath, mode='rw').set_domain('orig_value')
 
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -75,6 +75,6 @@ class TestRenameDomain(TempDataSpaceMixin, unittest.TestCase):
 
         self.assertEqual(exit_code, ExitCode.OK)
         self.assertEqual(
-            bind_node(self.filepath, mode='ro').domain,
+            bind_file(self.filepath, mode='ro').domain,
             'new_value',
         )

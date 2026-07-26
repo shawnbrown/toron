@@ -3,7 +3,7 @@ import argparse
 import logging
 
 from .common import (
-    cli_bind_node,
+    cli_bind_file,
     process_backup_option,
     normalize_arg_list,
     ExitCode,
@@ -18,7 +18,7 @@ applogger = logging.getLogger('app-toron')
 
 def add_label(args: argparse.Namespace) -> ExitCode:
     """Add index label columns to the given node file."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
     normalized = normalize_arg_list(args.labels)
 
@@ -32,7 +32,7 @@ def add_label(args: argparse.Namespace) -> ExitCode:
 
 def add_weight(args: argparse.Namespace) -> ExitCode:
     """Add index weight groups to the given node file."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     node.add_weight_group(
@@ -50,7 +50,7 @@ def add_weight(args: argparse.Namespace) -> ExitCode:
 
 def add_partition(args: argparse.Namespace) -> ExitCode:
     """Add a partition to an existing node file."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     normalized = normalize_arg_list(args.labels)
@@ -66,7 +66,7 @@ def add_partition(args: argparse.Namespace) -> ExitCode:
 
 def add_attribute(args: argparse.Namespace) -> ExitCode:
     """Add attribute columns to the given node file."""
-    node = cli_bind_node(args.filepath, mode='rw')
+    node = cli_bind_file(args.filepath, mode='rw')
     process_backup_option(args, node)
 
     attribute_columns = node.get_registered_attributes()
@@ -93,8 +93,8 @@ def add_attribute(args: argparse.Namespace) -> ExitCode:
 
 def add_link(args: argparse.Namespace) -> ExitCode:
     """Add link between two node files."""
-    node1 = cli_bind_node(args.filepath, mode='rw')
-    node2 = cli_bind_node(args.filepath2, mode='rw')
+    node1 = cli_bind_file(args.filepath, mode='rw')
+    node2 = cli_bind_file(args.filepath2, mode='rw')
     process_backup_option(args, node1, node2)
 
     do_add = lambda tail, head, args: head.add_link(

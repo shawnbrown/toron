@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from shutil import get_terminal_size
 
-from .. import bind_node
+from .. import bind_file
 from ..data_service import (
     get_registered_attributes,
     get_loaded_attributes,
@@ -13,13 +13,13 @@ from ..data_service import (
 from .common import (
     ExitCode,
     StyleCodes,
-    cli_bind_node,
+    cli_bind_file,
 )
 
 
 def write_to_stdout(args: argparse.Namespace) -> ExitCode:
     """Show information for Toron node file."""
-    node = cli_bind_node(args.filepath, mode='ro')
+    node = cli_bind_file(args.filepath, mode='ro')
 
     # Get dictionary of node info values.
     with node._managed_cursor() as cursor:
