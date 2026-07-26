@@ -1,4 +1,4 @@
-"""Category handling functions for the Toron project."""
+"""Functions for working with partition definitions."""
 
 from itertools import chain
 from itertools import combinations
@@ -21,13 +21,15 @@ def make_structure(partition_definitions: List[Set[str]]) -> List[Set[str]]:
 
     .. code-block::
 
-        >>> make_structure([{'A'}, {'B'}, {'B', 'C'}])
+        >>> partition_definitions = [{'A'}, {'B'}, {'B', 'C'}]
+        >>> make_structure(partition_definitions)
         [set(), {'A'}, {'B'}, {'B', 'C'}, {'A', 'B'}, {'A', 'B', 'C'}]
 
     While the collection of sets may resemble a topology, it does not
     necessarily satisfy the requirements of one::
 
-        >>> make_structure([{'A', 'B'}, {'B', 'C'}])
+        >>> partition_definitions = [{'A', 'B'}, {'B', 'C'}]
+        >>> make_structure(partition_definitions)
         [set(), {'A', 'B'}, {'B', 'C'}, {'A', 'B', 'C'}]
 
     The result above is not a topology because it is missing the set
@@ -72,8 +74,12 @@ def make_structure(partition_definitions: List[Set[str]]) -> List[Set[str]]:
 def find_minimal_partition_generating_set(
     *bases: Iterable[Set[str]],
 ) -> List[Set[str]]:
-    """Return a minimal set of partition definitions sufficient to
-    generate all of the given *bases*.
+    """Return a minimal collection of partition definitions sufficient
+    to generate all of the given *bases* under union.
+
+    This function builds the smallest possible list of partition
+    definitions whose distinct unions (when computed across all
+    combinations) cover every element in the given *bases*.
 
     .. code-block::
 
