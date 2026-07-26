@@ -8,7 +8,7 @@ from io import StringIO
 from . import _unittest as unittest
 from .common import DataSpaceFixturesMixin
 
-from toron.node import DataSpace
+from toron.space import DataSpace
 from toron.mapper import Mapper, Mapper_OLD
 from toron.data_models import Structure
 from toron._utils import BitFlags

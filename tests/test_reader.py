@@ -12,7 +12,7 @@ try:
 except ImportError:
     pd = None
 
-from toron.node import DataSpace
+from toron.space import DataSpace
 from toron.reader import (
     NodeReader,
     format_column,

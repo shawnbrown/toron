@@ -48,7 +48,7 @@ from .data_service import (
     generate_mapping_elements,
     get_domain,
 )
-from .node import DataSpace
+from .space import DataSpace
 from .mapper import (
     get_mapping_value_position,
     Mapper_OLD,

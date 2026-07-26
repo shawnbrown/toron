@@ -16,7 +16,7 @@ except ImportError:
     pd = None
 
 from .common import DummyRedirection
-from toron.node import DataSpace
+from toron.space import DataSpace
 from toron.graph import load_mapping
 from toron import cli, bind_file
 

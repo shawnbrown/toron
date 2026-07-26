@@ -23,7 +23,7 @@ def __dir__():  # Customize module attribute list (PEP 562).
     special_attrs = [x for x in globals().keys() if x.startswith('__')]
     return __all__ + special_attrs
 
-from .node import (
+from .space import (
     DataSpace,
     read_file,
     bind_file,

@@ -1,4 +1,4 @@
-"""Tests for toron/node.py module."""
+"""Tests for toron/space.py module."""
 
 import gc
 import os
@@ -40,7 +40,7 @@ from toron.data_models import (
     Quantity,
     QuantityIterator,
 )
-from toron.node import (
+from toron.space import (
     DataSpace,
     read_file,
     bind_file,
@@ -1240,8 +1240,8 @@ class TestIndexMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 2 index records",
-             "WARNING:app-toron.node:ignored extra columns: 'C', 'D'"],
+            ["INFO:app-toron.space:loaded 2 index records",
+             "WARNING:app-toron.space:ignored extra columns: 'C', 'D'"],
         )
 
         expected = [
@@ -1268,9 +1268,9 @@ class TestIndexMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 3 index records',
-             'WARNING:app-toron.node:skipped 1 duplicate records',
-             'WARNING:app-toron.node:skipped 1 records having some empty string labels'],
+            ['INFO:app-toron.space:loaded 3 index records',
+             'WARNING:app-toron.space:skipped 1 duplicate records',
+             'WARNING:app-toron.space:skipped 1 records having some empty string labels'],
         )
 
         # Check the loaded data.
@@ -1611,7 +1611,7 @@ class TestInsertIndex(unittest.TestCase):
 
         # Check the logged messages.
         self.assertIn(
-            "INFO:app-toron.node:ignored extra columns: 'D', 'E'",
+            "INFO:app-toron.space:ignored extra columns: 'D', 'E'",
             cm.output,
         )
 
@@ -1737,7 +1737,7 @@ class TestInsertIndex(unittest.TestCase):
 
         # Check for logged message.
         self.assertIn(
-            'WARNING:app-toron.node:skipped 2 index labels containing empty values',
+            'WARNING:app-toron.space:skipped 2 index labels containing empty values',
             cm.output,
         )
 
@@ -2590,7 +2590,7 @@ class TestDataSpaceWeightGroupMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["WARNING:app-toron.node:setting default weight group: 'name_a'"],
+            ["WARNING:app-toron.space:setting default weight group: 'name_a'"],
         )
 
         node.add_weight_group(  # <- Defining all properties.
@@ -2648,7 +2648,7 @@ class TestDataSpaceWeightGroupMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["WARNING:app-toron.node:no weight group named 'name_x'"],
+            ["WARNING:app-toron.space:no weight group named 'name_x'"],
         )
 
     def test_drop_weight_group(self):
@@ -2680,8 +2680,8 @@ class TestDataSpaceWeightGroupMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:removed weight group 'name_a'",
-             "WARNING:app-toron.node:default weight group was removed"],
+            ["INFO:app-toron.space:removed weight group 'name_a'",
+             "WARNING:app-toron.space:default weight group was removed"],
         )
 
         msg = 'weight group and associated weights should be deleted'
@@ -2693,7 +2693,7 @@ class TestDataSpaceWeightGroupMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["WARNING:app-toron.node:no weight group named 'name_x'"],
+            ["WARNING:app-toron.space:no weight group named 'name_x'"],
         )
 
 
@@ -2950,9 +2950,9 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 1 new records into 'group1'",
-             "WARNING:app-toron.node:skipped 1 rows with no matching index_id",
-             "WARNING:app-toron.node:skipped 1 rows whose labels do not match the given index_id"],
+            ["INFO:app-toron.space:loaded 1 new records into 'group1'",
+             "WARNING:app-toron.space:skipped 1 rows with no matching index_id",
+             "WARNING:app-toron.space:skipped 1 rows whose labels do not match the given index_id"],
         )
 
         # Check inserted records (only one).
@@ -2972,8 +2972,8 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 1 new records into 'group1'",
-             "WARNING:app-toron.node:skipped 2 rows whose labels do not match any existing index"],
+            ["INFO:app-toron.space:loaded 1 new records into 'group1'",
+             "WARNING:app-toron.space:skipped 2 rows whose labels do not match any existing index"],
         )
 
         # Check inserted records (only one).
@@ -2996,8 +2996,8 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
-             "WARNING:app-toron.node:skipped 2 rows matching the undefined record"],
+            ["INFO:app-toron.space:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.space:skipped 2 rows matching the undefined record"],
         )
 
         # Check that the other weights were loaded as normal.
@@ -3038,8 +3038,8 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
-             "WARNING:app-toron.node:skipped 3 rows without real number values"],
+            ["INFO:app-toron.space:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.space:skipped 3 rows without real number values"],
         )
 
         expected = [(1, 1, 1, 10.0), (2, 1, 2, 25.0), (3, 1, 3, 15.0)]
@@ -3079,8 +3079,8 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
-             "WARNING:app-toron.node:skipped 1 rows that match existing records"],
+            ["INFO:app-toron.space:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.space:skipped 1 rows that match existing records"],
         )
 
         self.assertEqual(
@@ -3102,8 +3102,8 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
-             "WARNING:app-toron.node:replaced 1 existing records with new weights"],
+            ["INFO:app-toron.space:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.space:replaced 1 existing records with new weights"],
         )
 
         self.assertEqual(
@@ -3125,8 +3125,8 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 3 new records into 'group1', weight group is complete",
-             "WARNING:app-toron.node:combined sum of 1 new weights together with existing records"],
+            ["INFO:app-toron.space:loaded 3 new records into 'group1', weight group is complete",
+             "WARNING:app-toron.space:combined sum of 1 new weights together with existing records"],
         )
 
         self.assertEqual(
@@ -3190,8 +3190,8 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:updated 2 existing records in 'group1'",
-             "WARNING:app-toron.node:loaded 1 new records, weight group is complete"],
+            ["INFO:app-toron.space:updated 2 existing records in 'group1'",
+             "WARNING:app-toron.space:loaded 1 new records, weight group is complete"],
         )
 
         # Check updated values.
@@ -3259,9 +3259,9 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
         # Check the logged messages.
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:updated 0 existing records in 'group1'",
-             "WARNING:app-toron.node:skipped 1 rows with no matching index_id",
-             "WARNING:app-toron.node:skipped 1 rows whose labels do not match the given index_id"],
+            ["INFO:app-toron.space:updated 0 existing records in 'group1'",
+             "WARNING:app-toron.space:skipped 1 rows with no matching index_id",
+             "WARNING:app-toron.space:skipped 1 rows whose labels do not match the given index_id"],
         )
 
         # Check that values are unchanged.
@@ -3318,10 +3318,10 @@ class TestDataSpaceWeightMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:deleted 0 weights from 'group1'",
-             'WARNING:app-toron.node:skipped 1 rows with mismatched labels',
-             'WARNING:app-toron.node:skipped 1 rows with no matching index_id',
-             'WARNING:app-toron.node:skipped 1 rows with no matching weight record'],
+            ["INFO:app-toron.space:deleted 0 weights from 'group1'",
+             'WARNING:app-toron.space:skipped 1 rows with mismatched labels',
+             'WARNING:app-toron.space:skipped 1 rows with no matching index_id',
+             'WARNING:app-toron.space:skipped 1 rows with no matching weight record'],
         )
 
         # Check weights (unchanged--only two weights were added).
@@ -3461,7 +3461,7 @@ class TestDataSpaceLinkMethods(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["WARNING:app-toron.node:setting default link: 'name1'"],
+            ["WARNING:app-toron.space:setting default link: 'name1'"],
         )
 
         node.add_link(  # <- Defining all properties.
@@ -3724,8 +3724,8 @@ class TestDataSpaceInsertMappings2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 2 mappings',
-             'WARNING:app-toron.node:skipped 2 mappings with invalid mapping levels'],
+            ['INFO:app-toron.space:loaded 2 mappings',
+             'WARNING:app-toron.space:skipped 2 mappings with invalid mapping levels'],
         )
 
         self.assertEqual(
@@ -4715,7 +4715,7 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 4 quantities'],
+            ['INFO:app-toron.space:loaded 4 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -4750,7 +4750,7 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 4 quantities'],
+            ['INFO:app-toron.space:loaded 4 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -4805,7 +4805,7 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 4 quantities'],
+            ['INFO:app-toron.space:loaded 4 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -4845,8 +4845,8 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:skipped 2 quantities with no attribute values',
-             'INFO:app-toron.node:loaded 2 quantities'],
+            ['INFO:app-toron.space:skipped 2 quantities with no attribute values',
+             'INFO:app-toron.space:loaded 2 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -4880,7 +4880,7 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:loaded 2 quantities'],
+            ['INFO:app-toron.space:loaded 2 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -4944,8 +4944,8 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:skipped 2 quantities with existing attributes and locations',
-             'INFO:app-toron.node:loaded 2 quantities'],
+            ['INFO:app-toron.space:skipped 2 quantities with existing attributes and locations',
+             'INFO:app-toron.space:loaded 2 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -4978,8 +4978,8 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:replaced 2 quantities for existing attributes and locations',
-             'INFO:app-toron.node:loaded 2 quantities'],
+            ['INFO:app-toron.space:replaced 2 quantities for existing attributes and locations',
+             'INFO:app-toron.space:loaded 2 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -5012,8 +5012,8 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:added 2 quantities to existing attributes and locations',
-             'INFO:app-toron.node:loaded 2 quantities'],
+            ['INFO:app-toron.space:added 2 quantities to existing attributes and locations',
+             'INFO:app-toron.space:loaded 2 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -5215,11 +5215,11 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['INFO:app-toron.node:skipped 2 quantities with no attribute values',
-             'INFO:app-toron.node:2 quantities matched no specified partition',
-             'INFO:app-toron.node:2 quantities used invalid labels',
-             'INFO:app-toron.node:added 1 quantities to existing attributes and locations',
-             'INFO:app-toron.node:loaded 5 quantities'],
+            ['INFO:app-toron.space:skipped 2 quantities with no attribute values',
+             'INFO:app-toron.space:2 quantities matched no specified partition',
+             'INFO:app-toron.space:2 quantities used invalid labels',
+             'INFO:app-toron.space:added 1 quantities to existing attributes and locations',
+             'INFO:app-toron.space:loaded 5 quantities'],
         )
 
         self.assertLocationsEqual([
@@ -5485,8 +5485,8 @@ class TestDataSpaceInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ['WARNING:app-toron.node:removing domain columns from attributes',
-             'INFO:app-toron.node:loaded 4 quantities'],
+            ['WARNING:app-toron.space:removing domain columns from attributes',
+             'INFO:app-toron.space:loaded 4 quantities'],
         )
 
         self.assertEqual(
@@ -5515,8 +5515,8 @@ class TestDataSpaceInsertQuantities(unittest.TestCase):
 
         self.assertEqual(
             cm.output,
-            ["INFO:app-toron.node:loaded 2 quantities",
-             "WARNING:app-toron.node:skipped 2 quantities with bad domain " \
+            ["INFO:app-toron.space:loaded 2 quantities",
+             "WARNING:app-toron.space:skipped 2 quantities with bad domain " \
                "values; domain must be 'iso_US'"],
         )
 
@@ -6108,10 +6108,10 @@ class TestDataSpaceDisaggregate(unittest.TestCase):
         # for the `pprint.pformat()` function's `indent` and `width` arguments
         # and the output now includes line breaks where none previously existed.
         regex_list = [
-            re.compile(r"INFO:app-toron.node:using weights: 'totpop'"),
+            re.compile(r"INFO:app-toron.space:using weights: 'totpop'"),
 
             re.compile(r"""
-                DEBUG:app-toron.node:attribute\ matches:\s+
+                DEBUG:app-toron.space:attribute\ matches:\s+
                 \{\s*
                     'totpop':\ \[\s*
                         \{'category':\ 'TOTAL',\ 'sex':\ 'MALE'\},\s*

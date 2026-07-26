@@ -35,7 +35,7 @@ from toron._typing import (
 
 if TYPE_CHECKING:  # <- Temporary (remove after moving QuantityIterator).
     import pandas as pd
-    from .node import DataSpace
+    from .space import DataSpace
 
 
 T1 = TypeVar('T1')

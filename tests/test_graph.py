@@ -6,7 +6,7 @@ import unittest.mock
 import warnings
 from io import StringIO
 
-from toron.node import DataSpace
+from toron.space import DataSpace
 from toron.xnode import xNode
 from toron._utils import (
     ToronWarning,

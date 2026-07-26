@@ -56,7 +56,7 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
 
         self.assertEqual(
             logs_cm.output,
-            ['INFO:app-toron.node:loaded 4 quantities'],
+            ['INFO:app-toron.space:loaded 4 quantities'],
         )
 
         self.assertEqual(

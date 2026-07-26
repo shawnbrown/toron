@@ -40,7 +40,7 @@ from ._utils import (
 
 if TYPE_CHECKING:
     from .data_models import Structure
-    from .node import DataSpace
+    from .space import DataSpace
 
 
 applogger = logging.getLogger(f'app-{__name__}')

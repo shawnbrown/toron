@@ -10,7 +10,7 @@ from toron.dal1.label_manager import (
     legacy_rename_labels,
     legacy_drop_labels,
 )
-from toron.node import DataSpace
+from toron.space import DataSpace
 
 
 class TestLabelManager(unittest.TestCase):

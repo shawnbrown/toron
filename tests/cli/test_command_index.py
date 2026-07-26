@@ -38,8 +38,8 @@ class TestIndexReadFromStdin(unittest.TestCase):
         self.assertEqual(index_values, expected_values)
         self.assertEqual(
             logs_cm.output,
-            ['INFO:app-toron.node:loaded 3 index labels',
-             'INFO:app-toron.node:loaded 3 index weights'],
+            ['INFO:app-toron.space:loaded 3 index labels',
+             'INFO:app-toron.space:loaded 3 index weights'],
         )
 
     def test_abort_on_label_conflict(self):
@@ -100,8 +100,8 @@ class TestIndexReadFromStdin(unittest.TestCase):
 
         self.assertEqual(
             logs_cm.output,
-            ['INFO:app-toron.node:ignored 1 non-matching index labels',
-             'INFO:app-toron.node:loaded 3 index weights']
+            ['INFO:app-toron.space:ignored 1 non-matching index labels',
+             'INFO:app-toron.space:loaded 3 index weights']
         )
 
     def test_replace_on_label_conflict(self):
@@ -130,8 +130,8 @@ class TestIndexReadFromStdin(unittest.TestCase):
 
         self.assertEqual(
             logs_cm.output,
-            ['INFO:app-toron.node:replaced 1 index labels',
-             'INFO:app-toron.node:loaded 3 index weights']
+            ['INFO:app-toron.space:replaced 1 index labels',
+             'INFO:app-toron.space:loaded 3 index weights']
         )
 
     def test_abort_on_weight_conflict(self):
@@ -196,9 +196,9 @@ class TestIndexReadFromStdin(unittest.TestCase):
         self.assertEqual(index_values, expected_values)
         self.assertEqual(
             logs_cm.output,
-            ['INFO:app-toron.node:loaded 3 index labels',
-             'INFO:app-toron.node:loaded 3 index weights',
-             'INFO:app-toron.node:replaced 1 index weights'],
+            ['INFO:app-toron.space:loaded 3 index labels',
+             'INFO:app-toron.space:loaded 3 index weights',
+             'INFO:app-toron.space:replaced 1 index weights'],
         )
 
 

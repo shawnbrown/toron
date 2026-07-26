@@ -583,10 +583,10 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
             ['INFO:app-toron:matching FILE1 index records',
              'INFO:app-toron:matching FILE2 index records',
              'INFO:app-toron:loading mappings: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 8 mappings',
+             'INFO:app-toron.space:loaded 8 mappings',
              'INFO:app-toron:mapping is complete',
              'INFO:app-toron:loading mappings: FILE1 <- FILE2',
-             'INFO:app-toron.node:loaded 8 mappings',
+             'INFO:app-toron.space:loaded 8 mappings',
              'INFO:app-toron:mapping is complete'],
         )
 
@@ -660,10 +660,10 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
             ['INFO:app-toron:matching FILE1 index records',
              'INFO:app-toron:matching FILE2 index records',
              'INFO:app-toron:loading mappings: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 9 mappings',
+             'INFO:app-toron.space:loaded 9 mappings',
              'INFO:app-toron:mapping is complete',
              'INFO:app-toron:loading mappings: FILE1 <- FILE2',
-             'INFO:app-toron.node:loaded 9 mappings',
+             'INFO:app-toron.space:loaded 9 mappings',
              'INFO:app-toron:mapping is complete'],
         )
 
@@ -731,7 +731,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
              "INFO:app-toron:matching FILE1 index records",
              "INFO:app-toron:matching FILE2 index records",
              "INFO:app-toron:loading mappings: FILE1 -> FILE2",
-             "INFO:app-toron.node:loaded 6 mappings",
+             "INFO:app-toron.space:loaded 6 mappings",
              "INFO:app-toron:mapping is complete"],
         )
 
@@ -824,7 +824,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                 'overlap with records that were already matched at a finer ' \
                 'level of granularity',
              'INFO:app-toron:loading mappings: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 6 mappings',
+             'INFO:app-toron.space:loaded 6 mappings',
              'INFO:app-toron:mapping is complete'],
         )
 
@@ -878,7 +878,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                 'overlap with records that were also matched at a finer ' \
                 'level of granularity',
              'INFO:app-toron:loading mappings: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 7 mappings',
+             'INFO:app-toron.space:loaded 7 mappings',
              'INFO:app-toron:mapping is complete'],
         )
 
@@ -949,7 +949,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
             ['INFO:app-toron:matching FILE1 index records',
              'INFO:app-toron:matching FILE2 index records',
              'INFO:app-toron:loading mappings: FILE1 -> FILE2',
-             'INFO:app-toron.node:loaded 3 mappings',
+             'INFO:app-toron.space:loaded 3 mappings',
              'WARNING:app-toron:mapping is incomplete'],
         )
 
