@@ -68,18 +68,18 @@ class EmptyCollectionError(LookupError):
 class BaseDataConnector(ABC, Generic[T1, T2]):
     @abstractmethod
     def __init__(self, **kwds) -> None:
-        """Initialize a new node instance."""
+        """Initialize a new DataSpace store instance."""
 
     @property
     @abstractmethod
     def unique_id(self) -> str:
-        """Unique identifier for the node object."""
+        """Unique identifier for the DataSpace object."""
 
     @abstractmethod
     def acquire_connection(self) -> T1:
-        """Return an appropriate object to interact with a node's data.
+        """Return an appropriate object to access to the store's data.
 
-        If a node's storage backend is a database, the connection
+        If a DataSpace's storage backend is a database, the connection
         might be a DBAPI2 Connection. If other storage backends are
         implemented, the "connection" could be an HDF5 group object,
         a collection of Parquet tables, etc.
@@ -101,9 +101,9 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
 
     @abstractmethod
     def acquire_cursor(self, connection: T1) -> T2:
-        """Return an appropriate object to interact with a node's data.
+        """Return an appropriate object to interact with a store's data.
 
-        If a node's storage backend is a relational database, the
+        If a DataSpace's storage backend is a relational database, the
         *cursor* might be a DBAPI2 Cursor. If other storage backends
         are implemented, the *cursor* could be an HDF5 dataset, a
         Parquet table, etc.
@@ -163,12 +163,12 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
     def save_to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
-        """Write node data to a file.
+        """Write DataSpace store to a file.
 
         Parameters
         ----------
         path : :py:term:`path-like-object`
-            File path where the node data should be saved.
+            File path where the data should be saved.
         fsync : bool, default True
             Immediately flush any cached data to drive storage.
 
@@ -182,12 +182,12 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
     def read_from_file(
         cls, path: Union[str, bytes, os.PathLike], *args: Any, **kwds: Any
     ) -> Self:
-        """Read a node file into a new data connector object.
+        """Read a Toron file into a new data connector object.
 
         Parameters
         ----------
         path : :py:term:`path-like-object`
-            File path containing the node data.
+            File path containing the DataSpace file.
 
         .. note::
             If a concrete method adds additional arguments, they should
@@ -219,9 +219,9 @@ class BaseDataConnector(ABC, Generic[T1, T2]):
 
         .. warning::
 
-            When operating on a bound node in 'rw' or 'rwc' mode,
-            changes are applied **immediately** to the file on drive
-            and cannot be undone.
+            When operating on a bound DataSpace store in 'rw' or 'rwc'
+            mode, changes are applied **immediately** to the file on
+            drive and cannot be undone.
         """
 
 
@@ -278,13 +278,13 @@ class Index(object):
 
 
 class BaseIndexRepository(ABC):
-    """The IndexRepository holds id and label values for a node's index.
+    """The IndexRepository holds ids and labels for a DataSpace's index.
 
     ``index_id`` (INTEGER)
         * This is used as a primary key and can appear in user facing
           data results.
-        * The same set of labels should never be reused for the life
-          of the node.
+        * An index_id value should never be reused for the life
+          of the DataSpace file.
             - In SQLite, this requirement can be satisfied by defining a
               column using ``index_id INTEGER PRIMARY KEY AUTOINCREMENT``.
               The ``AUTOINCREMENT`` keyword prevents the reuse of record
@@ -1340,7 +1340,7 @@ class QuantityIterator(object):
         return self
 
     def __rshift__(self, other: 'DataSpace') -> 'QuantityIterator':
-        """Translate quantities to the index of the *other* node."""
+        """Translate quantities to the index of the *other* DataSpace."""
         # TODO: Update this method and fix import after this
         # class is moved into a different module.
         from toron.graph import translate
