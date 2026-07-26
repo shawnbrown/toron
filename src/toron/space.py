@@ -74,7 +74,7 @@ from .data_service import (
     set_labels_in_display_order,
     get_labels_in_display_order,
     change_element_order,
-    get_node_info_text,
+    get_dataspace_info_text,
 )
 from toron.reader import (
     NodeReader,
@@ -2976,7 +2976,7 @@ class DataSpace(object):
         with self._managed_cursor() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
 
-            info = get_node_info_text(
+            info = get_dataspace_info_text(
                 property_repo=property_repo,
                 index_repo=self._dal.IndexRepository(cursor),
                 structure_repo=self._dal.StructureRepository(cursor),

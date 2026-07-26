@@ -8,7 +8,7 @@ from .. import bind_file
 from ..data_service import (
     get_registered_attributes,
     get_loaded_attributes,
-    get_node_info_text,
+    get_dataspace_info_text,
 )
 from .common import (
     ExitCode,
@@ -26,7 +26,7 @@ def write_to_stdout(args: argparse.Namespace) -> ExitCode:
         property_repo = node._dal.PropertyRepository(cursor)
         attribute_repo = node._dal.AttributeGroupRepository(cursor)
 
-        info_dict = get_node_info_text(
+        info_dict = get_dataspace_info_text(
             property_repo=property_repo,
             index_repo=node._dal.IndexRepository(cursor),
             structure_repo=node._dal.StructureRepository(cursor),

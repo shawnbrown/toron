@@ -1140,7 +1140,7 @@ def change_element_order(
     return reordered
 
 
-def get_node_info_text(
+def get_dataspace_info_text(
     property_repo: BasePropertyRepository,
     index_repo: BaseIndexRepository,
     structure_repo: BaseStructureRepository,
@@ -1148,7 +1148,7 @@ def get_node_info_text(
     attribute_repo: BaseAttributeGroupRepository,
     link_repo: BaseLinkRepository,
 ) -> Dict[str, Union[List[str], str]]:
-    """Return dictionary of node information appropriate for repr."""
+    """Return dictionary of data space info appropriate for repr."""
     # Get domain string.
     domain_str = get_domain(property_repo)
     if not domain_str:
@@ -1195,7 +1195,7 @@ def get_node_info_text(
     else:
         weights_list = ['None']
 
-    # Get list of link nodes and names.
+    # Get list of link spaces and names.
     links = link_repo.get_all()
     if links:
         def make_note(link):
@@ -1211,12 +1211,12 @@ def get_node_info_text(
         links_list = []
         for key, grp in groupby(links, key=lambda x: x.other_unique_id):
             first_link = next(grp)
-            node_ref = (first_link.other_filename_hint
+            space_ref = (first_link.other_filename_hint
                             or f'[{first_link.other_unique_id[:7]}]')
             sub_list = sorted(
                 f'{x.name}{make_note(x)}' for x in chain([first_link], grp)
             )
-            links_list.append(f'{node_ref}: {", ".join(sub_list)}')
+            links_list.append(f'{space_ref}: {", ".join(sub_list)}')
     else:
         links_list = ['None']
 
