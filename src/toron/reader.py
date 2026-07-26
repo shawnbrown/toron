@@ -43,11 +43,11 @@ from toron._utils import (
 
 if TYPE_CHECKING:
     import pandas as pd
-    from toron import TopoNode
+    from toron import DataSpace
 
 
 class NodeReader(object):
-    """An iterator for base level TopoNode data."""
+    """An iterator for base level DataSpace data."""
     _data: Optional[Generator[Tuple[Union[str, float], ...], None, None]]
     _current_working_path: Optional[str]
     _in_memory_connection: Optional[sqlite3.Connection]
@@ -58,7 +58,7 @@ class NodeReader(object):
     def __init__(
         self,
         data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
-        node: 'TopoNode',
+        node: 'DataSpace',
         cache_to_drive: bool = False,
         quantize_default: bool = False,
     ) -> None:
@@ -266,7 +266,7 @@ class NodeReader(object):
 
     def translate(
         self,
-        node: 'TopoNode',
+        node: 'DataSpace',
         quantize: Optional[bool] = None,
     ) -> None:
         """Translate quantities to use the index of the target node.
@@ -353,7 +353,7 @@ class NodeReader(object):
         self._node = node  # Replace old node reference with the new node.
         self._index_columns = node.index_columns
 
-    def __rshift__(self, other: 'TopoNode') -> 'NodeReader':
+    def __rshift__(self, other: 'DataSpace') -> 'NodeReader':
         """Translate quantities to the index of the *other* node."""
         self.translate(other, quantize=self.quantize_default)
         return self

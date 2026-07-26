@@ -2,14 +2,14 @@
 import argparse
 from .. import _unittest as unittest
 from ..common import DummyRedirection
-from toron import TopoNode
+from toron import DataSpace
 
 from toron.cli import command_index
 
 
 class TestIndexReadFromStdin(unittest.TestCase):
     def test_input_labels_and_weights(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
 
@@ -43,7 +43,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
     def test_abort_on_label_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
@@ -75,7 +75,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
     def test_ignore_on_label_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
@@ -105,7 +105,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
     def test_replace_on_label_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
@@ -135,7 +135,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
     def test_abort_on_weight_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
 
@@ -166,7 +166,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
         )
 
     def test_replace_on_weight_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('state', 'county')
         node.add_weight_group('population', make_default=True)
 
@@ -204,7 +204,7 @@ class TestIndexReadFromStdin(unittest.TestCase):
 
 class TestIndexWriteToStdout(unittest.TestCase):
     def test_basic_behavior(self):
-        node = TopoNode()
+        node = DataSpace()
         node._connector._unique_id = '11111111-1111-1111-1111-111111111111'
         node.add_index_columns('state', 'county')
         node.add_weight_group('wght3', make_default=False)

@@ -16,7 +16,7 @@ except ImportError:
     pd = None
 
 from .common import DummyRedirection
-from toron.node import TopoNode
+from toron.node import DataSpace
 from toron.graph import load_mapping
 from toron import cli, bind_node
 
@@ -25,7 +25,7 @@ class TestBuildUsingAPI(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-        self.node1 = TopoNode()
+        self.node1 = DataSpace()
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
         self.node1.add_partition_definitions({'idx1'}, {'idx1', 'idx2'})
         self.node1.add_weight_group('wght', make_default=True)
@@ -58,7 +58,7 @@ class TestBuildUsingAPI(unittest.TestCase):
             ],
         )
 
-        self.node2 = TopoNode()
+        self.node2 = DataSpace()
         self.node2.add_index_columns('idx1', 'idx2')
         self.node2.add_partition_definitions({'idx1'})
         self.node2.add_weight_group('wght', make_default=True)
@@ -262,7 +262,7 @@ class TestBuildUsingCLI(unittest.TestCase):
         self.filepath1 = os.path.join(dirpath, 'node1.toron')
         self.filepath2 = os.path.join(dirpath, 'node2.toron')
 
-        node1 = TopoNode()
+        node1 = DataSpace()
         self.unsafe_set_unique_id(node1, '11111111-1111-1111-1111-111111111111')
         node1.to_file(self.filepath1)
         cli.command_add.add_label(argparse.Namespace(
@@ -326,7 +326,7 @@ class TestBuildUsingCLI(unittest.TestCase):
             ),
         ))
 
-        node2 = TopoNode()
+        node2 = DataSpace()
         self.unsafe_set_unique_id(node2, '22222222-2222-2222-2222-222222222222')
         node2.to_file(self.filepath2)
         cli.command_add.add_label(argparse.Namespace(

@@ -16,7 +16,7 @@ from contextlib import (
 )
 from typing import Iterable, List
 
-from toron import TopoNode
+from toron import DataSpace
 from toron.data_models import Structure
 from . import _unittest as unittest
 
@@ -94,15 +94,15 @@ class TempFileMixin(object):
         self.addCleanup(os.remove, self.filepath)
 
 
-class TempTopoNodeMixin(ClassTempFileMixin):
-    """Mixin provides temporary TopoNode file fixture as `self.filepath`."""
+class TempDataSpaceMixin(ClassTempFileMixin):
+    """Mixin provides temporary DataSpace file fixture as `self.filepath`."""
     def setUp(self):
         super().setUp()
-        TopoNode().to_file(self.filepath)  # Overwrite file with empty node.
+        DataSpace().to_file(self.filepath)  # Overwrite file with empty node.
 
 
-class TopoNodeFixturesMixin(object):
-    """A mixin class for testing with TopoNode fixtures in setUp()."""
+class DataSpaceFixturesMixin(object):
+    """A mixin class for testing with DataSpace fixtures in setUp()."""
     @staticmethod
     def set_unique_id(node, unique_id):
         node._connector._unique_id = unique_id
@@ -114,7 +114,7 @@ class TopoNodeFixturesMixin(object):
         super().setUp()
         self.maxDiff = None
 
-        self.node_a = TopoNode()
+        self.node_a = DataSpace()
         self.set_unique_id(self.node_a, '11111111-1111-1111-1111-111111111111')
         self.node_a.add_index_columns('foo', 'bar', 'baz')
         self.node_a.add_partition_definitions({'foo', 'bar', 'baz'})
@@ -126,7 +126,7 @@ class TopoNodeFixturesMixin(object):
             ['C-1', 'Z-1', '3-1', 300.0],
         ])
 
-        self.node_b = TopoNode()
+        self.node_b = DataSpace()
         self.set_unique_id(self.node_b, '22222222-2222-2222-2222-222222222222')
         self.node_b.add_index_columns('foo', 'bar')
         self.node_b.add_partition_definitions({'foo', 'bar'})
@@ -138,7 +138,7 @@ class TopoNodeFixturesMixin(object):
             ['C-2', 'Z-2', 300.0],
         ])
 
-        self.node_c = TopoNode()
+        self.node_c = DataSpace()
         self.set_unique_id(self.node_c, '33333333-3333-3333-3333-333333333333')
         self.node_c.add_index_columns('lbl1')
         self.node_c.add_partition_definitions({'lbl1'})
@@ -150,7 +150,7 @@ class TopoNodeFixturesMixin(object):
             ['C', 32],
         ])
 
-        self.node_d = TopoNode()
+        self.node_d = DataSpace()
         self.set_unique_id(self.node_d, '44444444-4444-4444-4444-444444444444')
         self.node_d.add_index_columns('lbl1', 'lbl2')
         self.node_d.add_partition_definitions({'lbl1'})
@@ -165,7 +165,7 @@ class TopoNodeFixturesMixin(object):
             ['C', 'y', 19],
         ])
 
-        self.node_e = TopoNode()
+        self.node_e = DataSpace()
         self.set_unique_id(self.node_e, '55555555-5555-5555-5555-555555555555')
         self.node_e.path_hint = 'node_e.toron'
         self.node_e.add_index_columns('idx1', 'idx2', 'idx3')
@@ -185,7 +185,7 @@ class TopoNodeFixturesMixin(object):
 
         ])
 
-        self.node_f = TopoNode()
+        self.node_f = DataSpace()
         self.set_unique_id(self.node_f, '66666666-6666-6666-6666-666666666666')
         self.node_f.path_hint = 'node_f.toron'
         self.node_f.add_index_columns('idx1', 'idx2', 'idx3')

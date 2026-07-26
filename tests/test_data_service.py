@@ -3,7 +3,7 @@
 import array
 from dataclasses import replace
 from . import _unittest as unittest
-from .common import normalize_structures, TopoNodeFixturesMixin
+from .common import normalize_structures, DataSpaceFixturesMixin
 
 from toron.data_models import (
     Index,
@@ -789,7 +789,7 @@ class TestGetLink(unittest.TestCase):
             get_link('file4.toron', None, self.link_repo, allow_default=True)
 
 
-class TestGenerateMappingElements(TopoNodeFixturesMixin, unittest.TestCase):
+class TestGenerateMappingElements(DataSpaceFixturesMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 

@@ -10,7 +10,7 @@ from toron.dal1.label_manager import (
     legacy_rename_labels,
     legacy_drop_labels,
 )
-from toron.node import TopoNode
+from toron.node import DataSpace
 
 
 class TestLabelManager(unittest.TestCase):
@@ -151,7 +151,7 @@ class TestLegacyLabelFunctions(unittest.TestCase):
         self.assertEqual(actual_records, expected_records, msg=msg)
 
     def setUp(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         connection = self.node._connector.acquire_connection()
         self.addCleanup(self.node._connector.release_connection, connection)
         self.cursor = connection.cursor()

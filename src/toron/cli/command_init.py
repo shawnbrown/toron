@@ -4,14 +4,14 @@ import logging
 import os
 
 from .common import ExitCode
-from .. import TopoNode
+from .. import DataSpace
 
 
 applogger = logging.getLogger('app-toron')
 
 
 def create_file(args: argparse.Namespace) -> ExitCode:
-    """Create a new TopoNode and save it to the given 'filepath'."""
+    """Create a new DataSpace and save it to the given 'filepath'."""
     if not os.path.basename(args.filepath).strip():        # Must first check for
         applogger.error(f'filename cannot be whitespace')  # whitespace for proper
         return ExitCode.ERR                                # behavior on Windows.
@@ -20,7 +20,7 @@ def create_file(args: argparse.Namespace) -> ExitCode:
         applogger.error(f'cancelled: {args.filepath!r} already exists')
         return ExitCode.ERR
 
-    node = TopoNode()
+    node = DataSpace()
 
     if args.domain:
         node.set_domain(args.domain)

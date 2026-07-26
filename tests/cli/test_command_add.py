@@ -3,15 +3,15 @@ import argparse
 import os
 import tempfile
 from .. import _unittest as unittest
-from ..common import TempTopoNodeMixin
-from toron import TopoNode, ToronError, read_file, bind_node
+from ..common import TempDataSpaceMixin
+from toron import DataSpace, ToronError, read_file, bind_node
 from toron.data_models import Link, WeightGroup
 
 from toron.cli import command_add
 from toron.cli.common import ExitCode
 
 
-class TestAddLabels(TempTopoNodeMixin, unittest.TestCase):
+class TestAddLabels(TempDataSpaceMixin, unittest.TestCase):
     def test_add_label(self):
         command_add.add_label(argparse.Namespace(
             filepath=self.filepath,
@@ -60,7 +60,7 @@ class TestAddLabels(TempTopoNodeMixin, unittest.TestCase):
         )
 
 
-class TestAddWeight(TempTopoNodeMixin, unittest.TestCase):
+class TestAddWeight(TempDataSpaceMixin, unittest.TestCase):
     def test_add_weight(self):
         command_add.add_weight(argparse.Namespace(
             filepath=self.filepath,
@@ -110,7 +110,7 @@ class TestAddWeight(TempTopoNodeMixin, unittest.TestCase):
             ))
 
 
-class TestAddPartition(TempTopoNodeMixin, unittest.TestCase):
+class TestAddPartition(TempDataSpaceMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
         node = bind_node(self.filepath, mode='rw')
@@ -154,7 +154,7 @@ class TestAddPartition(TempTopoNodeMixin, unittest.TestCase):
         )
 
 
-class TestAddAttributes(TempTopoNodeMixin, unittest.TestCase):
+class TestAddAttributes(TempDataSpaceMixin, unittest.TestCase):
     def test_add_attributes(self):
         args = argparse.Namespace(
             filepath=self.filepath,
@@ -243,7 +243,7 @@ class TestAddLink(unittest.TestCase):
         with tempfile.NamedTemporaryFile(delete=False) as tmp1:
             self.filepath1 = tmp1.name
         self.addCleanup(os.remove, self.filepath1)
-        node1 = TopoNode()
+        node1 = DataSpace()
         with node1._managed_transaction() as cur:
             property_repo = node1._dal.PropertyRepository(cur)
             property_repo.add_or_update(
@@ -254,7 +254,7 @@ class TestAddLink(unittest.TestCase):
         with tempfile.NamedTemporaryFile(delete=False) as tmp2:
             self.filepath2 = tmp2.name
         self.addCleanup(os.remove, self.filepath2)
-        node2 = TopoNode()
+        node2 = DataSpace()
         with node2._managed_transaction() as cur:
             property_repo = node2._dal.PropertyRepository(cur)
             property_repo.add_or_update(

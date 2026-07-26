@@ -1,4 +1,4 @@
-"""TopoNode implementation for the Toron project."""
+"""DataSpace implementation for the Toron project."""
 
 import array
 import os
@@ -147,7 +147,7 @@ def warn_if_issues(
     )
 
 
-class TopoNode(object):
+class DataSpace(object):
     """Topologically organized dataset of quantities, weights, and edges.
 
     This data structure's primary purpose is to:
@@ -1585,7 +1585,7 @@ class TopoNode(object):
 
     @staticmethod
     def _get_link(
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         link_repo: BaseLinkRepository,
     ) -> Link:
@@ -1596,7 +1596,7 @@ class TopoNode(object):
 
     def get_link(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: Optional[str] = None,
     ) -> Link:
         with self._managed_cursor() as cursor:
@@ -1608,7 +1608,7 @@ class TopoNode(object):
 
     def add_link(
         self,
-        node: 'TopoNode',
+        node: 'DataSpace',
         link_name: str,
         *,
         other_filename_hint: Optional[str] = None,
@@ -1667,7 +1667,7 @@ class TopoNode(object):
 
     def edit_link(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: str,
         **changes: Any,
     ) -> None:
@@ -1687,7 +1687,7 @@ class TopoNode(object):
 
     def drop_link(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: str,
     ) -> None:
         with self._managed_transaction() as cursor:
@@ -1698,7 +1698,7 @@ class TopoNode(object):
 
     def select_mappings(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: Optional[str] = None,
         header: bool = False,
         **criteria: str,
@@ -1746,7 +1746,7 @@ class TopoNode(object):
 
     def insert_mappings2(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1854,7 +1854,7 @@ class TopoNode(object):
 
     def insert_mappings(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1946,7 +1946,7 @@ class TopoNode(object):
 
     def update_mappings(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -2065,7 +2065,7 @@ class TopoNode(object):
     @overload
     def delete_mappings(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -2074,7 +2074,7 @@ class TopoNode(object):
     @overload
     def delete_mappings(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         **criteria: str,
     ) -> None:
@@ -2210,7 +2210,7 @@ class TopoNode(object):
 
     def reify_mappings(
         self,
-        node_or_ref: Union['TopoNode', str],
+        node_or_ref: Union['DataSpace', str],
         link_name: str,
         **criteria: str,
     ) -> None:
@@ -2232,7 +2232,7 @@ class TopoNode(object):
 
         Parameters
         ----------
-        node_or_ref : Union[TopoNode, str]
+        node_or_ref : Union[DataSpace, str]
             The node from which the link is coming.
         link_name : str
             The name of the link. This is needed because multiple
@@ -2972,7 +2972,7 @@ class TopoNode(object):
         return node_reader
 
     def __repr__(self):
-        """Return string representation of TopoNode object."""
+        """Return string representation of DataSpace object."""
         with self._managed_cursor() as cursor:
             property_repo = self._dal.PropertyRepository(cursor)
 
@@ -3008,8 +3008,8 @@ class TopoNode(object):
         )
 
 
-def read_file(filepath: Union[str, bytes, os.PathLike], **kwds) -> TopoNode:
-    """Read a ``.toron`` file into a TopoNode.
+def read_file(filepath: Union[str, bytes, os.PathLike], **kwds) -> DataSpace:
+    """Read a ``.toron`` file into a DataSpace.
 
     Any additional keyword arguments (``**kwds``) are passed along to
     the lower-level file interface.
@@ -3018,7 +3018,7 @@ def read_file(filepath: Union[str, bytes, os.PathLike], **kwds) -> TopoNode:
     if not backend:
         raise RuntimeError(f'invalid file format, cannot open {filepath!r}')
 
-    obj = TopoNode.__new__(TopoNode)
+    obj = DataSpace.__new__(DataSpace)
     obj._dal = data_access.get_data_access_layer(backend)
     obj._connector = obj._dal.DataConnector.read_from_file(filepath, **kwds)
     obj._path_hint = os.fsdecode(filepath)
@@ -3030,8 +3030,8 @@ def bind_node(
     *,
     mode: Literal['ro', 'rw', 'rwc'],
     **kwds: Any,
-) -> TopoNode:
-    """Bind a TopoNode directly to its ``.toron`` file on drive.
+) -> DataSpace:
+    """Bind a DataSpace directly to its ``.toron`` file on drive.
 
     The *mode* must be one of the following:
 
@@ -3075,7 +3075,7 @@ def bind_node(
             )
         backend = None  # Use `None` for default backend.
 
-    obj = TopoNode.__new__(TopoNode)
+    obj = DataSpace.__new__(DataSpace)
     obj._dal = data_access.get_data_access_layer(backend)
     obj._connector = obj._dal.DataConnector.bind_file(filepath, mode=mode, **kwds)
     obj._path_hint = os.fsdecode(filepath)

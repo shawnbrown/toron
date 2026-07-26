@@ -6,7 +6,7 @@ import unittest.mock
 import warnings
 from io import StringIO
 
-from toron.node import TopoNode
+from toron.node import DataSpace
 from toron.xnode import xNode
 from toron._utils import (
     ToronWarning,
@@ -168,7 +168,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-        self.node1 = TopoNode()
+        self.node1 = DataSpace()
         self.node1.path_hint = 'file1.toron'
         self.node1.add_index_columns('idx1', 'idx2', 'idx3')
         self.node1.add_partition_definitions({'idx1'}, {'idx1', 'idx2'})
@@ -187,7 +187,7 @@ class TwoNodesBaseTestCase(unittest.TestCase):
 
         ])
 
-        self.node2 = TopoNode()
+        self.node2 = DataSpace()
         self.node2.path_hint = 'file2.toron'
         self.node2.add_index_columns('idx1', 'idx2', 'idx3')
         self.node2.add_partition_definitions({'idx1'}, {'idx1', 'idx2'})
@@ -776,7 +776,7 @@ class TestGetWeights(unittest.TestCase):
         null_handler = logging.NullHandler()
         applogger.addHandler(null_handler)
         try:
-            self.node = TopoNode()
+            self.node = DataSpace()
             self.node.add_index_columns('idx1', 'idx2', 'idx3')
             self.node.add_weight_group('wght1', make_default=True)
             self.node.add_weight_group('wght2')
@@ -860,7 +860,7 @@ class TestTranslate(unittest.TestCase):
         mock_node = unittest.mock.Mock()
         mock_node.unique_id = '00000000-0000-0000-0000-000000000000'
 
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.node.add_index_columns('A', 'B', 'C')
         self.node.add_partition_definitions({'A', 'B', 'C'})
         self.node.insert_index([

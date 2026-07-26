@@ -26,7 +26,7 @@ from .._typing import (
     cast,
 )
 
-from .. import TopoNode
+from .. import DataSpace
 from ..data_models import Link
 from ..data_service import generate_mapping_elements
 from ..mapper import (
@@ -56,8 +56,8 @@ applogger = logging.getLogger('app-toron')
 
 
 def get_column_positions(
-    node1: TopoNode,
-    node2: TopoNode,
+    node1: DataSpace,
+    node2: DataSpace,
     link_name: str,
     data: Iterable[Sequence],
     columns: Sequence[str],
@@ -260,7 +260,7 @@ def get_location_factory(
 
 
 def make_getter_functions(
-    node: TopoNode,
+    node: DataSpace,
     index_code_pos: Optional[int],
     sample_header: Sequence[str],
     start: Optional[int],
@@ -309,8 +309,8 @@ def make_getter_functions(
 
 @eagerly_initialize
 def normalize_mapping_data(
-    node1: TopoNode,
-    node2: TopoNode,
+    node1: DataSpace,
+    node2: DataSpace,
     link_name: str,
     data: Union[Iterable[Sequence], Iterable[Dict]],
     columns: Optional[Sequence[str]] = None,
@@ -359,7 +359,7 @@ def normalize_mapping_data(
 
 
 def read_from_stdin(
-    args: argparse.Namespace, node1: TopoNode, node2: TopoNode
+    args: argparse.Namespace, node1: DataSpace, node2: DataSpace
 ) -> ExitCode:
     """Insert mapping records read from stdin stream."""
     # Check that link is defined in nodes.
@@ -470,7 +470,7 @@ def get_ambiguous_field_text(
 
 
 def write_to_stdout(
-    args: argparse.Namespace, node1: TopoNode, node2: TopoNode
+    args: argparse.Namespace, node1: DataSpace, node2: DataSpace
 ) -> ExitCode:
     """Print mapping in CSV format to stdout stream."""
     source_node = node1

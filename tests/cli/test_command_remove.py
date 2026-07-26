@@ -3,7 +3,7 @@ import argparse
 import os
 import tempfile
 from .. import _unittest as unittest
-from toron import TopoNode, ToronError, read_file, bind_node
+from toron import DataSpace, ToronError, read_file, bind_node
 
 from toron.cli import command_remove
 from toron.cli.common import ExitCode
@@ -12,10 +12,10 @@ from toron.cli.common import ExitCode
 class TestRemoveLink(unittest.TestCase):
     def setUp(self):
         # Create node objects and set `unique_id` values.
-        node1 = TopoNode()
+        node1 = DataSpace()
         self.change_unique_id(node1, '11111111-1111-1111-1111-111111111111')
 
-        node2 = TopoNode()
+        node2 = DataSpace()
         self.change_unique_id(node2, '22222222-2222-2222-2222-222222222222')
 
         # Create temporary file locations.

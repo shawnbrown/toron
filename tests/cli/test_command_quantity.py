@@ -2,7 +2,7 @@
 import argparse
 from .. import _unittest as unittest
 from ..common import DummyRedirection
-from toron import TopoNode
+from toron import DataSpace
 
 from toron.cli import command_quantity
 
@@ -18,7 +18,7 @@ class QuantityMixin(object):
     def setUp(self):
         self.maxDiff = None
 
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.set_unique_id(self.node, '11111111-1111-1111-1111-111111111111')
         self.node.set_domain('iso_US')
         self.node.add_index_columns('state', 'county')

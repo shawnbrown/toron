@@ -3,14 +3,14 @@ import argparse
 import os
 import tempfile
 from .. import _unittest as unittest
-from ..common import TempTopoNodeMixin
-from toron import TopoNode, ToronError, bind_node
+from ..common import TempDataSpaceMixin
+from toron import DataSpace, ToronError, bind_node
 
 from toron.cli import command_rename
 from toron.cli.common import ExitCode
 
 
-class TestRenameLabel(TempTopoNodeMixin, unittest.TestCase):
+class TestRenameLabel(TempDataSpaceMixin, unittest.TestCase):
     def test_rename_label(self):
         bind_node(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
 
@@ -61,7 +61,7 @@ class TestRenameLabel(TempTopoNodeMixin, unittest.TestCase):
             command_rename.rename_label(args)  # Function under test.
 
 
-class TestRenameDomain(TempTopoNodeMixin, unittest.TestCase):
+class TestRenameDomain(TempDataSpaceMixin, unittest.TestCase):
     def test_rename_domain(self):
         bind_node(self.filepath, mode='rw').set_domain('orig_value')
 

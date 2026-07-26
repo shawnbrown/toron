@@ -4,7 +4,7 @@ import io
 import os
 from .. import _unittest as unittest
 from ..common import StreamWrapperMixin, DummyTTY
-from toron import TopoNode
+from toron import DataSpace
 
 from toron.cli.common import ExitCode
 from toron.cli.main import (
@@ -57,7 +57,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
     def test_help_with_filename(self):
         """Using '-h' with a filename should give the main help message."""
         file_path = self.get_tempfile_path()
-        TopoNode().to_file(file_path)
+        DataSpace().to_file(file_path)
 
         with self.assertRaises(SystemExit) as cm:
             self.parser.parse_args([file_path, '-h'])
@@ -604,7 +604,7 @@ class TestMainIndexCommand(StreamWrapperMixin, unittest.TestCase):
     def test_write_to_stdout(self):
         """Check call to command_index.write_to_stdout()."""
         file_path = self.get_tempfile_path()
-        TopoNode().to_file(file_path)
+        DataSpace().to_file(file_path)
 
         main([file_path, 'index'], stdin=DummyTTY())  # Function under test.
 
@@ -627,7 +627,7 @@ class TestMainIndexCommand(StreamWrapperMixin, unittest.TestCase):
     def test_read_from_stdin(self):
         """Check call to command_index.read_from_stdin()."""
         file_path = self.get_tempfile_path()
-        TopoNode().to_file(file_path)
+        DataSpace().to_file(file_path)
 
         with self.patched_stdin('A,B\nfoo,bar\n'):  # Dummy input not ingested,
             main([file_path, 'index'])              # only used for redirection.
@@ -650,7 +650,7 @@ class TestMainIndexCommand(StreamWrapperMixin, unittest.TestCase):
     def test_read_from_stdin_no_backup(self):
         """Should not write a '.bak' file when passing `--no-backup`."""
         file_path = self.get_tempfile_path()
-        TopoNode().to_file(file_path)
+        DataSpace().to_file(file_path)
 
         with self.patched_stdin('A,B\nfoo,bar\n'):     # Dummy input not ingested,
             main([file_path, 'index', '--no-backup'])  # only used for redirection.

@@ -12,7 +12,7 @@ try:
 except ImportError:
     pd = None
 
-from toron.node import TopoNode
+from toron.node import DataSpace
 from toron.reader import (
     NodeReader,
     format_column,
@@ -23,11 +23,11 @@ from toron.reader import (
 
 class TestNodeReader(unittest.TestCase):
     def test_minimal_instantiation(self):
-        reader = NodeReader([], TopoNode())
+        reader = NodeReader([], DataSpace())
         self.assertEqual(list(reader), [])
 
     def test_close_finalizer(self):
-        reader = NodeReader([], TopoNode(), cache_to_drive=True)
+        reader = NodeReader([], DataSpace(), cache_to_drive=True)
 
         filepath = reader._current_working_path  # Get database file path.
         self.assertTrue(os.path.isfile(filepath))
@@ -44,7 +44,7 @@ class TestNodeReader(unittest.TestCase):
                 (11, {'a': 'foo'}, 75.0),
                 (12, {'a': 'bar'}, 50.0),
             ],
-            node=TopoNode(),
+            node=DataSpace(),
         )
 
         # Check column names.
@@ -69,7 +69,7 @@ class TestNodeReader(unittest.TestCase):
                 self.assertEqual(cur.fetchall(), quant_data)
 
     def test_iteration_and_aggregation(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('county', 'town')
         node.insert_index([
             ('county',  'town'),
@@ -99,7 +99,7 @@ class TestNodeReader(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_iteration_and_cleanup(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('county', 'town')
         node.insert_index([
             ('county',  'town'),
@@ -126,7 +126,7 @@ class TestNodeReader(unittest.TestCase):
     @unittest.skipUnless(pd, 'requires pandas')
     def test_to_pandas(self):
         """Check convertion to Pandas DataFrame."""
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('county', 'town')
         node.insert_index([
             ('county',  'town'),
@@ -158,7 +158,7 @@ class TestNodeReader(unittest.TestCase):
     @unittest.skipUnless(pd, 'requires pandas')
     def test_to_pandas_with_index(self):
         """Check convertion to Pandas DataFrame."""
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('county', 'town')
         node.insert_index([
             ('county',  'town'),
@@ -194,7 +194,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         mock_node = unittest.mock.Mock()
         mock_node.unique_id = '00000000-0000-0000-0000-000000000000'
 
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.node.add_index_columns('A', 'B', 'C')
         self.node.add_partition_definitions({'A', 'B', 'C'})
         self.node.insert_index([
@@ -253,7 +253,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         )
 
     def test_simple_case(self):
-        source_node = TopoNode()
+        source_node = DataSpace()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
         source_node.insert_index(
@@ -286,7 +286,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         with the greatest unique specificity or the default edge if
         there is no unique match.
         """
-        source_node = TopoNode()
+        source_node = DataSpace()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
         source_node.insert_index(
@@ -333,7 +333,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
 
     def test_quantize(self):
         """Check that values are quantized properly."""
-        source_node = TopoNode()
+        source_node = DataSpace()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
         source_node.insert_index(
@@ -384,7 +384,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         #    ('a1', 'b2', 'c4', 'baz', None,     33.30078125),
 
     def test_rshift_operator(self):
-        source_node = TopoNode()
+        source_node = DataSpace()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
         source_node.insert_index(
@@ -422,7 +422,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         self.assertEqual(set(reader), expected)
 
     def test_undefined_handling(self):
-        source_node = TopoNode()
+        source_node = DataSpace()
         source_node._connector._unique_id = '00000000-0000-0000-0000-000000000000'
         source_node.add_index_columns('X')
         source_node.insert_index(
@@ -453,7 +453,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
 
 class TestPivotReader(unittest.TestCase):
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('county', 'town')
         node.insert_index([
             ('county',  'town'),

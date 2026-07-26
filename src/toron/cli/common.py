@@ -34,7 +34,7 @@ from .._typing import (
 
 if TYPE_CHECKING:
     import _csv
-    from .. import TopoNode
+    from .. import DataSpace
 
 
 class ExitCode(IntEnum):
@@ -75,7 +75,7 @@ def csv_stdout_writer(
 
 def cli_bind_node(
     filepath: str, *, mode: Literal['ro', 'rw', 'rwc']
-) -> 'TopoNode':
+) -> 'DataSpace':
     """Open file directly from drive (bind) or raise ``ToronError``."""
     try:
         return bind_node(filepath, mode=mode)
@@ -84,7 +84,7 @@ def cli_bind_node(
 
 
 def process_backup_option(
-    args: argparse.Namespace, *nodes: 'TopoNode'
+    args: argparse.Namespace, *nodes: 'DataSpace'
 ) -> None:
     """If `args.backup` is True, make backup copies of *nodes*.
 

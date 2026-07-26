@@ -14,13 +14,13 @@ from .common import (
 )
 
 if TYPE_CHECKING:
-    from .. import TopoNode
+    from .. import DataSpace
 
 
 applogger = logging.getLogger('app-toron')
 
 
-def read_from_stdin(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
+def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:
     """Load quantity records read from stdin stream."""
     reader = csv.reader(args.stdin)
 
@@ -46,7 +46,7 @@ def read_from_stdin(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
     return ExitCode.OK
 
 
-def write_to_stdout(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
+def write_to_stdout(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:
     """Write quantity records to stdout stream in CSV format."""
     row_count = 0
     with csv_stdout_writer(args.stdout) as writer:

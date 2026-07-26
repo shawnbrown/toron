@@ -3,15 +3,15 @@ import argparse
 import os
 import tempfile
 from .. import _unittest as unittest
-from ..common import ClassTempFileMixin, TempTopoNodeMixin
-from toron import TopoNode, ToronError, bind_node
+from ..common import ClassTempFileMixin, TempDataSpaceMixin
+from toron import DataSpace, ToronError, bind_node
 
 from toron.cli import command_update
 from toron.cli.common import ExitCode
 from toron.data_models import WeightGroup
 
 
-class TestUpdateLabel(TempTopoNodeMixin, unittest.TestCase):
+class TestUpdateLabel(TempDataSpaceMixin, unittest.TestCase):
     def test_update_label(self):
         bind_node(self.filepath, mode='rw').add_index_columns('A', 'C', 'B', 'D')
 
@@ -77,7 +77,7 @@ class TestUpdateLabel(TempTopoNodeMixin, unittest.TestCase):
 class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
-        node = TopoNode()
+        node = DataSpace()
         node.add_weight_group(
             name='myweight',
             description='Original description.',
@@ -234,7 +234,7 @@ class TestUpdateWeight(ClassTempFileMixin, unittest.TestCase):
         )
 
 
-class TestUpdateAttribute(TempTopoNodeMixin, unittest.TestCase):
+class TestUpdateAttribute(TempDataSpaceMixin, unittest.TestCase):
     def test_update_attribute(self):
         bind_node(self.filepath, mode='rw').set_registered_attributes(['A', 'C', 'B', 'D'])
 

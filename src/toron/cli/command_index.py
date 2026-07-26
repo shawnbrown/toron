@@ -20,13 +20,13 @@ from .common import (
 )
 
 if TYPE_CHECKING:
-    from .. import TopoNode
+    from .. import DataSpace
 
 
 applogger = logging.getLogger('app-toron')
 
 
-def read_from_stdin(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
+def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:
     """Insert index records read from stdin stream."""
     reader = csv.reader(args.stdin)
     sample_rows = list(islice(reader, 10))
@@ -68,7 +68,7 @@ def read_from_stdin(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
     return ExitCode.OK
 
 
-def write_to_stdout(args: argparse.Namespace, node: 'TopoNode') -> ExitCode:
+def write_to_stdout(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:
     """Print node index in CSV format to stdout stream."""
     domain_value = node.domain
     unique_id_bytes = uuid.UUID(node.unique_id).bytes

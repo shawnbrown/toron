@@ -40,7 +40,7 @@ from ._utils import (
 
 if TYPE_CHECKING:
     from .data_models import Structure
-    from .node import TopoNode
+    from .node import DataSpace
 
 
 applogger = logging.getLogger(f'app-{__name__}')
@@ -63,8 +63,8 @@ class Mapper(object):
     """A class to build mapping records between two nodes."""
     def __init__(
         self,
-        node1: 'TopoNode',
-        node2: 'TopoNode',
+        node1: 'DataSpace',
+        node2: 'DataSpace',
         data: Iterable[Sequence],
     ) -> None:
         """Initialize a new Mapper instance.
@@ -536,12 +536,12 @@ class Mapper_OLD(object):
            The bytes derived from the given input data.
 
         ``node_bytes``
-           The bytes that correspond to records in the TopoNode's
+           The bytes that correspond to records in the DataSpace's
            current structure.
 
         Level pairs are sorted in descending order of granularity
         (as defined in the node structures). If an input level has
-        no corresponding record in the TopoNode's current structure,
+        no corresponding record in the DataSpace's current structure,
         then the ``node_bytes`` will be ``None``.
 
         .. code-block:: python
@@ -610,7 +610,7 @@ class Mapper_OLD(object):
 
     def match_records(
         self,
-        node: 'TopoNode',
+        node: 'DataSpace',
         side: Literal['left', 'right'],
         match_limit: int = 1,
         allow_overlapping: bool = False,

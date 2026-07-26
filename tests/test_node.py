@@ -41,7 +41,7 @@ from toron.data_models import (
     QuantityIterator,
 )
 from toron.node import (
-    TopoNode,
+    DataSpace,
     read_file,
     bind_node,
 )
@@ -51,31 +51,31 @@ from toron.reader import NodeReader
 class TestInstantiation(unittest.TestCase):
     def test_backend_implicit(self):
         """When no arguments are given, should create empty node."""
-        node = TopoNode()
+        node = DataSpace()
         self.assertEqual(node._dal.backend, 'DAL1')
 
     def test_backend_explicit(self):
         """The ``backend`` can be given explicitly."""
-        node = TopoNode(backend='DAL1')
+        node = DataSpace(backend='DAL1')
         self.assertEqual(node._dal.backend, 'DAL1')
 
     def test_backend_keyword_only(self):
         """The ``backend`` argument is keyword-only (not positional)."""
         with self.assertRaises(TypeError):
-            node = TopoNode('DAL1')  # Using positional argument.
+            node = DataSpace('DAL1')  # Using positional argument.
 
     def test_backend_unknown(self):
         """Invalid ``backend`` values should raise an error."""
         with self.assertRaises(RuntimeError):
-            node = TopoNode(backend='DAL#')
+            node = DataSpace(backend='DAL#')
 
     def test_kwds(self):
         """The ``**kwds`` are used to create a DataConnector."""
-        node = TopoNode(cache_to_drive=True)
+        node = DataSpace(cache_to_drive=True)
 
     def test_new_node_index_hash(self):
         """Should set index_hash for newly created nodes."""
-        node = TopoNode()  # Create empty node.
+        node = DataSpace()  # Create empty node.
 
         with node._managed_cursor() as cursor:
             property_repo = node._dal.PropertyRepository(cursor)
@@ -89,7 +89,7 @@ class TestInstantiation(unittest.TestCase):
 
     def test_new_node_created_date(self):
         """Should have "created_date" property in ISO 8601 UTC format."""
-        node = TopoNode()  # Create empty node.
+        node = DataSpace()  # Create empty node.
 
         with node._managed_cursor() as cursor:
             property_repo = node._dal.PropertyRepository(cursor)
@@ -103,7 +103,7 @@ class TestInstantiation(unittest.TestCase):
 
     def test_new_node_user_properties(self):
         """Should have "user_properties" property as an empty dictionary."""
-        node = TopoNode()  # Create empty node.
+        node = DataSpace()  # Create empty node.
 
         with node._managed_cursor() as cursor:
             property_repo = node._dal.PropertyRepository(cursor)
@@ -113,7 +113,7 @@ class TestInstantiation(unittest.TestCase):
 
 
 class TestFileHandling(unittest.TestCase):
-    """Test ``TopoNode.to_file()`` method and ``read_file()`` function."""
+    """Test ``DataSpace.to_file()`` method and ``read_file()`` function."""
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
         self.addCleanup(self.temp_dir.cleanup)
@@ -133,7 +133,7 @@ class TestFileHandling(unittest.TestCase):
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
         self.assertFalse(os.path.isfile(file_path))
 
-        node = TopoNode()  # <- When unspecified, uses default backend.
+        node = DataSpace()  # <- When unspecified, uses default backend.
         original_unique_id = node.unique_id
         node.to_file(file_path, fsync=True)  # <- Write node to file.
         del node
@@ -151,7 +151,7 @@ class TestFileHandling(unittest.TestCase):
         file_path = os.path.join(self.temp_dir.name, 'mynode-dal1.toron')
         self.assertFalse(os.path.isfile(file_path))
 
-        node = TopoNode(backend='DAL1')  # <- Specify DAL1 explicitly.
+        node = DataSpace(backend='DAL1')  # <- Specify DAL1 explicitly.
         original_unique_id = node.unique_id
         node.to_file(file_path, fsync=True)  # <- Write node to file.
         del node
@@ -166,7 +166,7 @@ class TestFileHandling(unittest.TestCase):
 
     def test_path_hint(self):
         """Check `path_hint` property handling."""
-        node = TopoNode()
+        node = DataSpace()
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
 
         # Should be `None` when created in memory but never saved.
@@ -196,7 +196,7 @@ class TestFileHandling(unittest.TestCase):
         self.assertEqual(node.path_hint, other_absolute_path)
 
         # Check that it remains `None` if `to_file()` fails.
-        node = TopoNode()  # <- Created in memory.
+        node = DataSpace()  # <- Created in memory.
         with suppress(TypeError):
             node.to_file(object())  # <- Saving fails with TypeError.
         self.assertIsNone(node.path_hint)
@@ -238,7 +238,7 @@ class TestBindNode(unittest.TestCase):
 
     def test_existing_read_write(self):
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
-        TopoNode().to_file(file_path)  # Create a new node and save to drive.
+        DataSpace().to_file(file_path)  # Create a new node and save to drive.
 
         try:
             node = bind_node(file_path, mode='rw')
@@ -252,7 +252,7 @@ class TestBindNode(unittest.TestCase):
 
     def test_existing_read_only(self):
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
-        TopoNode().to_file(file_path)  # Create a new node and save to drive.
+        DataSpace().to_file(file_path)  # Create a new node and save to drive.
 
         try:
             node = bind_node(file_path, mode='ro')
@@ -273,7 +273,7 @@ class TestBindNode(unittest.TestCase):
 class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
     def test_managed_connection_type(self):
         """Connection manager should return appropriate type."""
-        node = TopoNode()  # Create node and get connection type (generic T1).
+        node = DataSpace()  # Create node and get connection type (generic T1).
         connection_type = get_args(node._dal.DataConnector.__orig_bases__[0])[0]
 
         with node._managed_connection() as connection:
@@ -283,7 +283,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_connection_calls(self):
         """Connection manager should interact with connection methods."""
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
 
         with node._managed_connection() as connection:
@@ -300,7 +300,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_cursor_type(self):
         """Data cursor manager should return appropriate type."""
-        node = TopoNode()  # Create node and get cursor type (generic T2).
+        node = DataSpace()  # Create node and get cursor type (generic T2).
         cursor_type = get_args(node._dal.DataConnector.__orig_bases__[0])[1]
 
         with node._managed_connection() as connection:
@@ -311,7 +311,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_cursor_calls(self):
         """Cursor manager should interact with cursor methods."""
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
 
         # The acquire_connection() mock must return unique objects.
@@ -344,7 +344,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Test ``_managed_cursor`` called without ``connection`` argument
         (should automatically create a connection internally).
         """
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
         dummy_connections = [sentinel.con1, sentinel.con2]
         node._connector.acquire_connection.side_effect = dummy_connections
@@ -364,7 +364,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Should commit changes when no errors occur."""
         shared_state = {}
 
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -396,7 +396,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Should not allow a transaction within a transaction."""
         shared_state = {}
 
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -435,7 +435,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Should roll-back changes when an error occurs."""
         shared_state = {}
 
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -465,7 +465,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
     def test_managed_transaction_implicit_resources_commit(self):
         """When called without args, should auto-acquire resources."""
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -486,7 +486,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         ])
 
     def test_managed_transaction_implicit_resources_rollback(self):
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -511,7 +511,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
         """Unfinished transactions should be rolled back."""
         shared_state = {}
 
-        node = TopoNode()
+        node = DataSpace()
         node._connector = Mock()
         node._connector.acquire_connection.return_value = sentinel.con
         node._connector.acquire_cursor.return_value = sentinel.cur
@@ -552,7 +552,7 @@ class TestManagedConnectionCursorAndTransaction(unittest.TestCase):
 
 class TestDomainMethods(unittest.TestCase):
     def setUp(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
 
     def test_domain_property(self):
         with self.node._managed_cursor() as cur:
@@ -591,7 +591,7 @@ class TestDomainMethods(unittest.TestCase):
 
 class TestPartitionDefinitionMethods(unittest.TestCase):
     def setUp(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         with self.node._managed_cursor() as cur:
             label_manager = self.node._dal.LabelManager(cur)
             index_repo = self.node._dal.IndexRepository(cur)
@@ -721,7 +721,7 @@ class TestPartitionDefinitionMethods(unittest.TestCase):
 
 class TestRegisteredAttributesMethods(unittest.TestCase):
     def test_set_and_get_registered_attributes(self):
-        node = TopoNode()
+        node = DataSpace()
 
         self.assertEqual(node.get_registered_attributes(), [])
 
@@ -729,7 +729,7 @@ class TestRegisteredAttributesMethods(unittest.TestCase):
         self.assertEqual(node.get_registered_attributes(), ['foo', 'bar'])
 
     def test_change_attribute_order(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.node.set_registered_attributes(['baz', 'bar', 'foo'])
 
         offset = -2  # Negative offset to move left.
@@ -750,14 +750,14 @@ class TestRegisteredAttributesMethods(unittest.TestCase):
 
 class TestGetAndReorderLabelsMethods(unittest.TestCase):
     def test_get_label_columns(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.node.add_index_columns('A', 'B', 'C')
 
         label_columns = self.node.get_label_columns()  # Method under test.
         self.assertEqual(label_columns, ['A', 'B', 'C'])
 
     def test_change_label_order(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.node.add_index_columns('C', 'B', 'A')
 
         offset = -2  # Negative offset to move left.
@@ -808,7 +808,7 @@ class TestRenameLabelColumn(unittest.TestCase):
             property_repo.add('registered_attributes', list(attributes))
 
     def test_rename_columns(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         node.rename_label_column(old_label='B', new_label='E')
@@ -817,7 +817,7 @@ class TestRenameLabelColumn(unittest.TestCase):
         self.assertEqual(self.get_cols_helper(node), ('A', 'E', 'C', 'F'))
 
     def test_rename_columns_and_partitions(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
         self.add_partitions_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
 
@@ -832,7 +832,7 @@ class TestRenameLabelColumn(unittest.TestCase):
         )
 
     def test_domain_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = "'domain' is a reserved name"
@@ -840,7 +840,7 @@ class TestRenameLabelColumn(unittest.TestCase):
             node.rename_label_column('A', 'domain')
 
     def test_attribute_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
         self.add_attributes_helper(node, 'E','F', 'G')
 
@@ -849,7 +849,7 @@ class TestRenameLabelColumn(unittest.TestCase):
             node.rename_label_column('B', 'E')
 
     def test_reserved_identifier(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = "'value' is a reserved name"
@@ -857,7 +857,7 @@ class TestRenameLabelColumn(unittest.TestCase):
             node.rename_label_column('A', 'value')
 
     def test_old_label_missing(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = "no label 'E'"
@@ -865,7 +865,7 @@ class TestRenameLabelColumn(unittest.TestCase):
             node.rename_label_column('E', 'F')
 
     def test_new_label_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = "index label column 'B' already exists"
@@ -899,7 +899,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             prop_repo.add('partition_definitions', partitions)
 
     def test_add_index_columns(self):
-        node = TopoNode()
+        node = DataSpace()
 
         node.add_index_columns('A', 'B')
 
@@ -909,7 +909,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         """Adding columns should be an atomic operation (either all
         columns should be added or none should be added).
         """
-        node = TopoNode()
+        node = DataSpace()
 
         with suppress(Exception):
             # Second 'baz' causes an error (cannot have duplicate names).
@@ -920,7 +920,7 @@ class TestIndexColumnMethods(unittest.TestCase):
 
     def test_add_index_columns_domain_conflict(self):
         """An index column cannot be the same as a domain name."""
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             node._dal.PropertyRepository(cursor).add('domain', 'baz')
 
@@ -934,7 +934,7 @@ class TestIndexColumnMethods(unittest.TestCase):
 
     def test_add_index_columns_remove_unused_whole_space(self):
         """Should remove old whole space if unused."""
-        node = TopoNode()
+        node = DataSpace()
 
         self.assertEqual(node.partition_definitions, [], msg='should start empty')
 
@@ -948,7 +948,7 @@ class TestIndexColumnMethods(unittest.TestCase):
 
     def test_add_index_columns_retain_whole_space_if_quantities(self):
         """Should remove old whole space if used by quantities."""
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('A', 'B')
 
         with node._managed_cursor() as cursor:
@@ -980,7 +980,7 @@ class TestIndexColumnMethods(unittest.TestCase):
 
     def test_add_index_columns_retain_whole_space_if_mappings(self):
         """Should remove old whole space if used by mappings."""
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('A', 'B')
 
         with node._managed_cursor() as cursor:
@@ -1010,7 +1010,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         )
 
     def test_index_columns_property(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         columns = node.index_columns  # Accessed as property attribute.
@@ -1018,7 +1018,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         self.assertEqual(columns, ['A', 'B'])
 
     def test_rename_index_columns(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
@@ -1030,7 +1030,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
 
     def test_rename_index_columns_and_partitions(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
         self.add_partitions_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
 
@@ -1047,7 +1047,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         )
 
     def test_rename_index_columns_domain_conflict(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = "'domain' is a reserved name"
@@ -1059,7 +1059,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 toron.dal1.legacy_rename_labels(node, {'B': 'G', 'D': 'domain'})
 
     def test_rename_index_columns_reserved_identifier(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = "'value' is a reserved name"
@@ -1071,7 +1071,7 @@ class TestIndexColumnMethods(unittest.TestCase):
                 toron.dal1.legacy_rename_labels(node, {'B': 'value'})
 
     def test_rename_index_columns_bad_old_label(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = "no label 'E'"
@@ -1079,7 +1079,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             node.rename_index_columns({'E': 'G'})
 
     def test_drop_index_columns(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         if sqlite3.sqlite_version_info >= (3, 35, 5) or node._dal.backend != 'DAL1':
@@ -1091,7 +1091,7 @@ class TestIndexColumnMethods(unittest.TestCase):
         self.assertEqual(self.get_cols_helper(node), ('A', 'C'))
 
     def test_drop_index_columns_all(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C')
 
         if node._dal.backend == 'DAL1' and sqlite3.sqlite_version_info < (3, 35, 5):
@@ -1102,7 +1102,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             node.drop_index_columns('A', 'B', 'C')
 
     def test_drop_index_columns_reserved_identifier(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C')
 
         regex = "cannot alter columns, 'index_id' is a reserved identifier"
@@ -1149,7 +1149,7 @@ class TestIndexMethods(unittest.TestCase):
         return normalize_structures(structures)
 
     def test_insert_OLD(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
 
@@ -1171,7 +1171,7 @@ class TestIndexMethods(unittest.TestCase):
 
     def test_insert_no_existing_structure_OLD(self):
         """Should auto-add partitions and structure if not defined."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         self.assertEqual(self.get_structure_helper(node), [], msg='should start empty')
@@ -1190,7 +1190,7 @@ class TestIndexMethods(unittest.TestCase):
         """Text based files (like CSV files) often end with a newline
         character. Many parsers interpret this as an empty row of data.
         """
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         # Insert data where second and last items are empty.
@@ -1205,7 +1205,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_different_order_OLD(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         data = [('B', 'A'), ('x', 'foo'), ('y', 'bar')]  # <- Different order.
@@ -1219,7 +1219,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_missing_columns_OLD(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
         regex = r"missing required columns: 'C', 'D'"
@@ -1227,7 +1227,7 @@ class TestIndexMethods(unittest.TestCase):
             node.insert_index_OLD([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
 
     def test_insert_extra_columns_OLD(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         with self.assertLogs('app-toron') as cm:
@@ -1252,7 +1252,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_duplicate_or_empty_strings_OLD(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         with self.assertLogs('app-toron') as cm:
@@ -1283,7 +1283,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_insert_index_group_is_complete_OLD(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('bar', 'y')]
         self.add_index_helper(node, data)
@@ -1313,7 +1313,7 @@ class TestIndexMethods(unittest.TestCase):
             self.assertFalse(group.is_complete)
 
     def test_insert_index_mapping_is_complete_OLD(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('bar', 'y')]
         self.add_index_helper(node, data)
@@ -1344,7 +1344,7 @@ class TestIndexMethods(unittest.TestCase):
             self.assertFalse(link.is_locally_complete)
 
     def test_insert_index_modifies_index_hash_OLD(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         with node._managed_cursor() as cursor:
@@ -1365,7 +1365,7 @@ class TestIndexMethods(unittest.TestCase):
             )
 
     def test_select(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('foo', 'y'), ('bar', 'x'), ('bar', 'y')]
         self.add_index_helper(node, data)
@@ -1467,7 +1467,7 @@ class TestInsertIndex(unittest.TestCase):
         return normalize_structures(structures)
 
     def test_missing_label_column(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         regex = r"missing required columns: 'B'"
@@ -1476,7 +1476,7 @@ class TestInsertIndex(unittest.TestCase):
             node.insert_index(data)
 
     def test_weight_not_in_input_data(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         regex = r"weights not in input data: 'D', 'E'"
@@ -1485,7 +1485,7 @@ class TestInsertIndex(unittest.TestCase):
             node.insert_index(data, weights=['C', 'D', 'E'])
 
     def test_weight_not_in_node(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         regex = r"no weight group named 'C'"
@@ -1494,7 +1494,7 @@ class TestInsertIndex(unittest.TestCase):
             node.insert_index(data, weights='C')
 
     def test_insert_records(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C', selectors=['[baz]'])
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
@@ -1539,14 +1539,14 @@ class TestInsertIndex(unittest.TestCase):
         self.assertEqual(self.get_weight_groups_helper(node), expected)
 
     def test_no_index_label_columns(self):
-        node = TopoNode()  # Empty node, no index label columns.
+        node = DataSpace()  # Empty node, no index label columns.
 
         regex = r'no label columns defined'
         with self.assertRaisesRegex(Exception, regex):
             node.insert_index(data=[('A', 'B'), ('foo', 5.0), ('bar', 4.0)])
 
     def test_different_column_order(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
@@ -1572,7 +1572,7 @@ class TestInsertIndex(unittest.TestCase):
         """Text based files (like CSV files) often end with a newline
         character. Many parsers interpret this as an empty row of data.
         """
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         # Insert data where second and last items are empty.
@@ -1587,7 +1587,7 @@ class TestInsertIndex(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_missing_columns(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
         self.add_weight_group_helper(node, name='E')
         self.add_structure_helper(node, [(None, 0, 0, 0, 0), (None, 1, 1, 1, 1)])
@@ -1599,7 +1599,7 @@ class TestInsertIndex(unittest.TestCase):
             ])
 
     def test_extra_columns(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         with self.assertLogs('app-toron') as cm:
@@ -1623,7 +1623,7 @@ class TestInsertIndex(unittest.TestCase):
         self.assertEqual(self.get_index_helper(node), expected)
 
     def test_modifies_index_hash(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         with node._managed_cursor() as cursor:
@@ -1645,7 +1645,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_no_existing_structure(self):
         """Should auto-add partitions and structure if not defined."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
@@ -1659,7 +1659,7 @@ class TestInsertIndex(unittest.TestCase):
         self.assertEqual(self.get_structure_helper(node), expected)
 
     def test_weight_group_completeness(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
         self.add_weight_group_helper(node, name='D')
@@ -1692,7 +1692,7 @@ class TestInsertIndex(unittest.TestCase):
         self.assertEqual(self.get_weight_groups_helper(node), expected)
 
     def test_mapping_is_complete(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         data = [('foo', 'x'), ('bar', 'y')]
         self.add_index_helper(node, data)
@@ -1723,7 +1723,7 @@ class TestInsertIndex(unittest.TestCase):
             self.assertFalse(link.is_locally_complete)
 
     def test_empty_string_values(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         with self.assertLogs('app-toron') as cm:
@@ -1751,7 +1751,7 @@ class TestInsertIndex(unittest.TestCase):
         """Duplicate labels should be skipped automatically
         regardless of ``on_conflict`` value.
         """
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
         node.insert_index([
@@ -1769,7 +1769,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_insert_weights_with_index_id_and_labels(self):
         """Should allow 'index_id' and 'labels' if index already exists."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
         self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
@@ -1790,7 +1790,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_insert_weights_with_index_id(self):
         """Should allow 'index_id' input if index already exists."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
         self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
@@ -1804,7 +1804,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_on_label_conflict_abort(self):
         """Using 'abort' should raise an error."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
@@ -1827,7 +1827,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_on_label_conflict_ignore(self):
         """Using 'ignore' should overlook mismatched labels."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
@@ -1857,7 +1857,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_on_label_conflict_replace(self):
         """Using 'replace' should overwrite existing labels with new ones."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
         self.add_structure_helper(node, [(None, 0, 0), (None, 1, 1)])
@@ -1887,7 +1887,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_on_weight_conflict_abort(self):
         """Using 'abort' should raise an error."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
@@ -1903,7 +1903,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_on_weight_conflict_ignore(self):
         """Using 'ignore' should skip duplicate records."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
@@ -1923,7 +1923,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_on_weight_conflict_replace(self):
         """Using 'replace' should replace existing records with new ones."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
@@ -1943,7 +1943,7 @@ class TestInsertIndex(unittest.TestCase):
 
     def test_on_weight_conflict_bad_value(self):
         """Should raise an error when given bad value."""
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
 
@@ -1957,7 +1957,7 @@ class TestInsertIndex(unittest.TestCase):
                 on_weight_conflict='BAD VALUE',
             )
 
-class TestTopoNodeUpdateIndex(unittest.TestCase):
+class TestDataSpaceUpdateIndex(unittest.TestCase):
     @staticmethod
     def get_index_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -1979,7 +1979,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
             return cursor.fetchall()
 
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             manager = node._dal.LabelManager(cursor)
             manager.add_columns('A', 'B')
@@ -2240,7 +2240,7 @@ class TestTopoNodeUpdateIndex(unittest.TestCase):
             )
 
 
-class TestTopoNodeDeleteIndex(unittest.TestCase):
+class TestDataSpaceDeleteIndex(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -2275,7 +2275,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             return list(repository.find_all())
 
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
         self.add_index_helper(node, [('foo', 'x'), ('bar', 'y')])
 
@@ -2512,7 +2512,7 @@ class TestTopoNodeDeleteIndex(unittest.TestCase):
             )
 
 
-class TestTopoNodeWeightGroupMethods(unittest.TestCase):
+class TestDataSpaceWeightGroupMethods(unittest.TestCase):
     @staticmethod
     def get_weight_group_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -2536,7 +2536,7 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
         """The `node.weight_groups` property should be list of groups
         ordered by name.
         """
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_group_repo.add('name_b')
@@ -2569,7 +2569,7 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
         self.assertEqual(node.weight_groups, expected)
 
     def test_get_weight_group(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_group_repo.add('name_a', 'Group A')
@@ -2583,7 +2583,7 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
 
     def test_add_weight_group(self):
         """Test `add_weight_group()` behavior."""
-        node = TopoNode()
+        node = DataSpace()
 
         with self.assertLogs('app-toron', level='INFO') as cm:
             node.add_weight_group('name_a')  # <- Only `name` is required (should log a warning and set as default).
@@ -2621,7 +2621,7 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
         )
 
     def test_edit_weight_group(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             weight_group_repo = node._dal.WeightGroupRepository(cursor)
             weight_group_repo.add(
@@ -2652,7 +2652,7 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
         )
 
     def test_drop_weight_group(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -2697,9 +2697,9 @@ class TestTopoNodeWeightGroupMethods(unittest.TestCase):
         )
 
 
-class TestTopoNodeSelectWeights(unittest.TestCase):
+class TestDataSpaceSelectWeights(unittest.TestCase):
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             # Add index columns and records.
             node._dal.LabelManager(cursor).add_columns('A', 'B')
@@ -2791,9 +2791,9 @@ class TestTopoNodeSelectWeights(unittest.TestCase):
         )
 
 
-class TestTopoNodeWeightMethods(unittest.TestCase):
+class TestDataSpaceWeightMethods(unittest.TestCase):
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -3345,9 +3345,9 @@ class TestTopoNodeWeightMethods(unittest.TestCase):
         self.assertEqual(self.get_weights_helper(), [])
 
 
-class TestTopoNodeLinkMethods(unittest.TestCase):
+class TestDataSpaceLinkMethods(unittest.TestCase):
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -3454,7 +3454,7 @@ class TestTopoNodeLinkMethods(unittest.TestCase):
         mock_other_node = unittest.mock.Mock()
         mock_other_node.unique_id = '111-111-1111'
 
-        node = TopoNode()
+        node = DataSpace()
 
         with self.assertLogs('app-toron', level='INFO') as cm:
             node.add_link(mock_other_node, 'name1')  # <- Only required args (sets as default and logs warning).
@@ -3565,10 +3565,10 @@ class TestTopoNodeLinkMethods(unittest.TestCase):
             self.node.drop_link('222-222-2222', 'foobar')
 
 
-class TestTopoNodeInsertMappings2(unittest.TestCase):
+class TestDataSpaceInsertMappings2(unittest.TestCase):
     def setUp(self):
-        # Build TopoNode fixture to use in test cases.
-        node = TopoNode()
+        # Build DataSpace fixture to use in test cases.
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -3772,9 +3772,9 @@ class TestTopoNodeInsertMappings2(unittest.TestCase):
             )
 
 
-class TestTopoNodeMappingMethods(unittest.TestCase):
+class TestDataSpaceMappingMethods(unittest.TestCase):
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -4066,7 +4066,7 @@ class TestTopoNodeMappingMethods(unittest.TestCase):
             )
 
 
-class TestTopoNodeUpdateMappings(unittest.TestCase):
+class TestDataSpaceUpdateMappings(unittest.TestCase):
     def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
@@ -4074,7 +4074,7 @@ class TestTopoNodeUpdateMappings(unittest.TestCase):
             return cursor.fetchall()
 
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -4266,7 +4266,7 @@ class TestTopoNodeUpdateMappings(unittest.TestCase):
             )
 
 
-class TestTopoNodeDeleteMappings(unittest.TestCase):
+class TestDataSpaceDeleteMappings(unittest.TestCase):
     def get_mappings_helper(self):  # <- Helper function.
         # TODO: Update this helper when proper interface is available.
         with self.node._managed_cursor() as cursor:
@@ -4274,7 +4274,7 @@ class TestTopoNodeDeleteMappings(unittest.TestCase):
             return cursor.fetchall()
 
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -4541,9 +4541,9 @@ class TestTopoNodeDeleteMappings(unittest.TestCase):
         self.assertEqual(self.get_mappings_helper(), expected)
 
 
-class TestTopoNodeRefiyMappings(unittest.TestCase):
+class TestDataSpaceRefiyMappings(unittest.TestCase):
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             label_manager = node._dal.LabelManager(cursor)
             index_repo = node._dal.IndexRepository(cursor)
@@ -4661,9 +4661,9 @@ class TestTopoNodeRefiyMappings(unittest.TestCase):
         #   match based on definitive associations.
 
 
-class TestTopoNodeInsertQuantities2(unittest.TestCase):
+class TestDataSpaceInsertQuantities2(unittest.TestCase):
     def setUp(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.node.add_index_columns('state', 'county')
         self.node.insert_index(
             [['state', 'county'],
@@ -5243,9 +5243,9 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         ])
 
 
-class TestTopoNodeSelectQuantities2(unittest.TestCase):
+class TestDataSpaceSelectQuantities2(unittest.TestCase):
     def setUp(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.node.add_index_columns('state', 'county')
         self.node.insert_index(
             [['state', 'county'],
@@ -5277,7 +5277,7 @@ class TestTopoNodeSelectQuantities2(unittest.TestCase):
         self.assertEqual(list(results), data, msg='should match original data')
 
 
-class TestTopoNodeInsertQuantities(unittest.TestCase):
+class TestDataSpaceInsertQuantities(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -5315,7 +5315,7 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
             return sorted(quantities, key=lambda x: x.id)
 
     def setUp(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.add_cols_helper(self.node, 'state', 'county')
         self.add_index_helper(self.node, [('OH', 'BUTLER'), ('OH', 'FRANKLIN'), ('IN', 'KNOX')])
 
@@ -5527,7 +5527,7 @@ class TestTopoNodeInsertQuantities(unittest.TestCase):
         )
 
 
-class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
+class TestDataSpaceQuantityHandlingMethods(unittest.TestCase):
     @staticmethod
     def add_cols_helper(node, *columns):  # <- Helper function.
         with node._managed_cursor() as cursor:
@@ -5556,7 +5556,7 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
                 yield attr_group
 
     def setUp(self):
-        self.node = TopoNode()
+        self.node = DataSpace()
         self.add_cols_helper(self.node, 'state', 'county')
         self.add_index_helper(
             self.node,
@@ -5712,9 +5712,9 @@ class TestTopoNodeQuantityHandlingMethods(unittest.TestCase):
         )
 
 
-class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
+class TestDataSpaceDisaggregateGenerator(unittest.TestCase):
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
 
         with node._managed_cursor() as cursor:
             manager = node._dal.LabelManager(cursor)
@@ -5921,9 +5921,9 @@ class TestTopoNodeDisaggregateGenerator(unittest.TestCase):
             list(results)  # Consume iterator.
 
 
-class TestTopoNodeDisaggregate(unittest.TestCase):
+class TestDataSpaceDisaggregate(unittest.TestCase):
     def setUp(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('state', 'county')
         node.add_partition_definitions({'state'}, {'state', 'county'})
         node.add_weight_group('totpop', make_default=True)
@@ -6126,7 +6126,7 @@ class TestTopoNodeDisaggregate(unittest.TestCase):
                 self.assertRegex(text, regex)
 
 
-class TestTopoNodeRepr(unittest.TestCase):
+class TestDataSpaceRepr(unittest.TestCase):
     def assertTextEqual(self, first, second, ignore_top=0, ignore_bottom=0, msg=None):
         """Compare text optionally ignoring a number of top and bottom lines."""
         first_lines = first.splitlines(keepends=True)
@@ -6145,7 +6145,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         self.assertEqual(first, second, msg=msg)
 
     def test_first_line(self):
-        node = TopoNode()
+        node = DataSpace()
 
         self.assertEqual(node.__module__, 'toron')
 
@@ -6154,12 +6154,12 @@ class TestTopoNodeRepr(unittest.TestCase):
 
         self.assertRegex(
             first_line,
-            r'^<toron.TopoNode object at 0x[0-9A-Fa-f]+>$',
+            r'^<toron.DataSpace object at 0x[0-9A-Fa-f]+>$',
         )
 
     def test_created_date(self):
         """Check create date format: 1970-01-01 00:00:00 AM UTC."""
-        node = TopoNode()
+        node = DataSpace()
 
         repr_text = repr(node)
         repr_lines = repr_text.splitlines()
@@ -6171,10 +6171,10 @@ class TestTopoNodeRepr(unittest.TestCase):
         )
 
     def test_empty_node(self):
-        node = TopoNode()
+        node = DataSpace()
 
         expected = dedent("""
-            <toron.TopoNode object at 0x000000000000>
+            <toron.DataSpace object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6194,11 +6194,11 @@ class TestTopoNodeRepr(unittest.TestCase):
         )
 
     def test_domain(self):
-        node = TopoNode()
+        node = DataSpace()
         node.set_domain('FooBar')
 
         expected = dedent("""
-            <toron.TopoNode object at 0x000000000000>
+            <toron.DataSpace object at 0x000000000000>
             domain:
               FooBar
             partitions:
@@ -6218,11 +6218,11 @@ class TestTopoNodeRepr(unittest.TestCase):
         )
 
     def test_index_columns(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('foo', 'bar', 'baz')
 
         expected = dedent("""
-            <toron.TopoNode object at 0x000000000000>
+            <toron.DataSpace object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6242,7 +6242,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         )
 
     def test_granularity(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('A', 'B', 'C')
         with node._managed_cursor() as cursor:
             structure_repo = node._dal.StructureRepository(cursor)
@@ -6250,7 +6250,7 @@ class TestTopoNodeRepr(unittest.TestCase):
             structure_repo.update(replace(structure, granularity=2.75))
 
         expected = dedent("""
-            <toron.TopoNode object at 0x000000000000>
+            <toron.DataSpace object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6270,14 +6270,14 @@ class TestTopoNodeRepr(unittest.TestCase):
         )
 
     def test_weight_groups(self):
-        node = TopoNode()
+        node = DataSpace()
         node.add_index_columns('A', 'B', 'C')
         node.add_weight_group('foo', is_complete=False, make_default=False)
         node.add_weight_group('bar', is_complete=True, make_default=False)
         node.add_weight_group('baz', is_complete=False, make_default=True)
 
         expected = dedent("""
-            <toron.TopoNode object at 0x000000000000>
+            <toron.DataSpace object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6297,13 +6297,13 @@ class TestTopoNodeRepr(unittest.TestCase):
         )
 
     def test_attributes(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             property_repo = node._dal.PropertyRepository(cursor)
             property_repo.add('registered_attributes', ['foo', 'bar', 'baz'])
 
         expected = dedent("""
-            <toron.TopoNode object at 0x000000000000>
+            <toron.DataSpace object at 0x000000000000>
             domain:
               None
             partitions:
@@ -6323,7 +6323,7 @@ class TestTopoNodeRepr(unittest.TestCase):
         )
 
     def test_links(self):
-        node = TopoNode()
+        node = DataSpace()
         with node._managed_cursor() as cursor:
             link_repo = node._dal.LinkRepository(cursor)
             link_repo.add(
@@ -6360,7 +6360,7 @@ class TestTopoNodeRepr(unittest.TestCase):
             )
 
         expected = dedent("""
-            <toron.TopoNode object at 0x000000000000>
+            <toron.DataSpace object at 0x000000000000>
             domain:
               None
             partitions:

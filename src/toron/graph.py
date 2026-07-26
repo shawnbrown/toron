@@ -48,7 +48,7 @@ from .data_service import (
     generate_mapping_elements,
     get_domain,
 )
-from .node import TopoNode
+from .node import DataSpace
 from .mapper import (
     get_mapping_value_position,
     Mapper_OLD,
@@ -147,8 +147,8 @@ def normalize_filename_hints(
 
 
 def _get_mapping_stats(
-    source_node: TopoNode,
-    target_node: TopoNode,
+    source_node: DataSpace,
+    target_node: DataSpace,
     link: Link,
 ) -> Dict[str, int]:
     """Return a summary of mapping statistics for a given link.
@@ -222,9 +222,9 @@ def _get_mapping_stats(
 
 def _log_load_mapping_stats(
     logger: logging.Logger,
-    left_node : TopoNode,
+    left_node : DataSpace,
     direction: Literal['<-', '->'],
-    right_node : TopoNode,
+    right_node : DataSpace,
     link_name: str,
 ) -> None:
     """Log mapping stats using given *logger* for specified link."""
@@ -271,9 +271,9 @@ def _log_load_mapping_stats(
 
 
 def load_mapping(
-    left_node : TopoNode,
+    left_node : DataSpace,
     direction : Direction,
-    right_node : TopoNode,
+    right_node : DataSpace,
     link_name: str,
     data: Union[Iterable[Sequence], Iterable[Dict]],
     columns: Optional[Sequence[str]] = None,
@@ -359,8 +359,8 @@ _MappingElementsTuple : TypeAlias = Union[
 ]
 
 def _get_mapping_elements(
-    source_node: TopoNode,
-    target_node: TopoNode,
+    source_node: DataSpace,
+    target_node: DataSpace,
     link_name: Optional[str] = None,
 ) -> Generator[_MappingElementsTuple, None, None]:
     """See ``data_service.generate_mapping_elements()`` for details."""
@@ -416,8 +416,8 @@ def _get_ambiguous_fields(
 
 
 def get_mapping(
-    source_node: TopoNode,
-    target_node: TopoNode,
+    source_node: DataSpace,
+    target_node: DataSpace,
     link_name: Optional[str] = None,
     header: bool = True,
 ) -> Iterator[Tuple]:
@@ -511,8 +511,8 @@ def get_mapping(
 
 
 def get_mapping_info_str(
-    source_node: TopoNode,
-    target_node: TopoNode,
+    source_node: DataSpace,
+    target_node: DataSpace,
     link_name: Optional[str] = None,
 ) -> str:
     """Return a text description of information about a mapping."""
@@ -567,7 +567,7 @@ def get_mapping_info_str(
 
 @eagerly_initialize
 def get_weights(
-    node: TopoNode,
+    node: DataSpace,
     weights: Optional[Union[str, Iterable[str]]] = None,
     header: bool = True,
 ) -> Generator[List, None, None]:
@@ -628,7 +628,7 @@ def get_weights(
 
 
 def _translate(
-    quantity_iterator: QuantityIterator, node: TopoNode
+    quantity_iterator: QuantityIterator, node: DataSpace
 ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
     """Generator to yield index, attribute, and quantity tuples."""
     with node._managed_cursor() as cursor:
@@ -690,7 +690,7 @@ def _translate(
 
 
 def translate(
-    quantity_iterator: QuantityIterator, node: TopoNode
+    quantity_iterator: QuantityIterator, node: DataSpace
 ) -> QuantityIterator:
     """Translate quantities to the index of the target *node*."""
     with node._managed_cursor() as cursor:

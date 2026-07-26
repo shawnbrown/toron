@@ -6,15 +6,15 @@ from contextlib import closing
 from io import StringIO
 
 from . import _unittest as unittest
-from .common import TopoNodeFixturesMixin
+from .common import DataSpaceFixturesMixin
 
-from toron.node import TopoNode
+from toron.node import DataSpace
 from toron.mapper import Mapper, Mapper_OLD
 from toron.data_models import Structure
 from toron._utils import BitFlags
 
 
-class TestMapperInit(TopoNodeFixturesMixin, unittest.TestCase):
+class TestMapperInit(DataSpaceFixturesMixin, unittest.TestCase):
     @staticmethod
     def get_mapping_source(mapper):
         """Helper method to get contents of 'mapping_source' table."""
@@ -191,7 +191,7 @@ class TestRefreshProportions(unittest.TestCase):
                                                     (3, 5, b'\x80', 0.0, 0.25)})
 
 
-class TestMatchRecords(TopoNodeFixturesMixin, unittest.TestCase):
+class TestMatchRecords(DataSpaceFixturesMixin, unittest.TestCase):
     @staticmethod
     def get_node_matches(mapper, node_var):
         """Helper method to get contents of 'node#_matches' table."""
@@ -516,7 +516,7 @@ class TestMatchRecords(TopoNodeFixturesMixin, unittest.TestCase):
         )
 
 
-class TestMapperIsFullyMatched(TopoNodeFixturesMixin, unittest.TestCase):
+class TestMapperIsFullyMatched(DataSpaceFixturesMixin, unittest.TestCase):
     def test_fully_matched(self):
         complete_mapping = [
             [1, [], BitFlags(1), 1, [], BitFlags(1, 1), 10],
@@ -545,7 +545,7 @@ class TestMapperIsFullyMatched(TopoNodeFixturesMixin, unittest.TestCase):
         self.assertFalse(mapper.is_fully_matched())
 
 
-class TestMapperIterRelations(TopoNodeFixturesMixin, unittest.TestCase):
+class TestMapperIterRelations(DataSpaceFixturesMixin, unittest.TestCase):
     def test_exact_matches(self):
         mapper = Mapper(
             node1=self.node_c,
@@ -956,7 +956,7 @@ class TestMapper_OLD_MatchRefreshProportions(unittest.TestCase):
 class TwoNodesBaseTest(unittest.TestCase):
     """A base class that sets-up node fixtures and a logging handler."""
     def setUp(self):
-        self.node1 = TopoNode()
+        self.node1 = DataSpace()
         self.node1.add_index_columns('idx')
         self.node1.add_partition_definitions({'idx'})
         self.node1.add_weight_group('wght', make_default=True)
@@ -967,7 +967,7 @@ class TwoNodesBaseTest(unittest.TestCase):
             ['C', 32],
         ])
 
-        self.node2 = TopoNode()
+        self.node2 = DataSpace()
         self.node2.add_index_columns('idx1', 'idx2')
         self.node2.add_partition_definitions({'idx1'})
         self.node2.add_weight_group('wght', make_default=True)
