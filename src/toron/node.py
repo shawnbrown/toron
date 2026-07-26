@@ -29,7 +29,7 @@ from toron._typing import (
 )
 
 from . import data_access
-from .categories import (
+from .partitions import (
     find_minimal_partition_generating_set,
 )
 from .data_models import (

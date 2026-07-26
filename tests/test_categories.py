@@ -1,9 +1,9 @@
-"""Tests for toron/categories.py module."""
+"""Tests for toron/partitions.py module."""
 
 import unittest
 
-from toron.categories import make_structure
-from toron.categories import find_minimal_partition_generating_set
+from toron.partitions import make_structure
+from toron.partitions import find_minimal_partition_generating_set
 
 
 class TestMakeStructure(unittest.TestCase):

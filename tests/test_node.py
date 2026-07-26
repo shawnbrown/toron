@@ -710,7 +710,7 @@ class TestPartitionDefinitionMethods(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, regex):
             node.drop_partition_definitions({'A', 'B', 'C'})
 
-        # Change categories so that the whole space element appears explicitly.
+        # Change partitions so that the whole space element appears explicitly.
         node.drop_partition_definitions({'A'}, {'A', 'C'})
         self.assertEqual(node.partition_definitions, [{'B'}, {'A', 'B', 'C'}])
 
@@ -789,14 +789,14 @@ class TestRenameLabelColumn(unittest.TestCase):
             return node._dal.LabelManager(cursor).get_columns()
 
     @staticmethod
-    def add_categories_helper(node, categories):  # <- Helper function.
+    def add_partitions_helper(node, partitions):  # <- Helper function.
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
-            categories = [list(x) for x in categories]
-            prop_repo.add('partition_definitions', categories)
+            partitions = [list(x) for x in partitions]
+            prop_repo.add('partition_definitions', partitions)
 
     @staticmethod
-    def get_categories_helper(node):  # <- Helper function.
+    def get_partitions_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
             return [set(x) for x in prop_repo.get('partition_definitions')]
@@ -816,19 +816,19 @@ class TestRenameLabelColumn(unittest.TestCase):
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'E', 'C', 'F'))
 
-    def test_rename_columns_and_categories(self):
+    def test_rename_columns_and_partitions(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
-        self.add_categories_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
+        self.add_partitions_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
 
         node.rename_label_column('B', 'E')
         node.rename_label_column('D', 'F')
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'E', 'C', 'F'))
         self.assertEqual(
-            self.get_categories_helper(node),
+            self.get_partitions_helper(node),
             [{'A'}, {'A', 'E'}, {'A', 'E', 'C', 'F'}],
-            msg='categories should be automatically renamed, too',
+            msg='partitions should be automatically renamed, too',
         )
 
     def test_domain_conflict(self):
@@ -886,17 +886,17 @@ class TestIndexColumnMethods(unittest.TestCase):
             manager.add_columns(*columns)
 
     @staticmethod
-    def get_categories_helper(node):  # <- Helper function.
+    def get_partitions_helper(node):  # <- Helper function.
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
             return [set(x) for x in prop_repo.get('partition_definitions')]
 
     @staticmethod
-    def add_categories_helper(node, categories):  # <- Helper function.
+    def add_partitions_helper(node, partitions):  # <- Helper function.
         with node._managed_cursor() as cursor:
             prop_repo = node._dal.PropertyRepository(cursor)
-            categories = [list(x) for x in categories]
-            prop_repo.add('partition_definitions', categories)
+            partitions = [list(x) for x in partitions]
+            prop_repo.add('partition_definitions', partitions)
 
     def test_add_index_columns(self):
         node = TopoNode()
@@ -962,7 +962,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             attribute_repo.add({'foo': 'bar'})
             quantity_repo.add(1, 1, 100.0)  # <- Quantity uses location 1.
 
-        self.assertEqual(node.partition_definitions, [{'A', 'B'}])  # Verify existing categories.
+        self.assertEqual(node.partition_definitions, [{'A', 'B'}])  # Verify existing partitions.
 
         node.add_index_columns('C')
         self.assertEqual(
@@ -992,7 +992,7 @@ class TestIndexColumnMethods(unittest.TestCase):
             link_repo.add('000-00-0000-0000', 'other_file', 'population')
             mapping_repo.add(1, 1, 1, mapping_level=b'\xc0', value=100.0)  # <- Mapping level for bit flags `1, 1`.
 
-        self.assertEqual(node.partition_definitions, [{'A', 'B'}])  # Verify existing categories.
+        self.assertEqual(node.partition_definitions, [{'A', 'B'}])  # Verify existing partitions.
 
         node.add_index_columns('C')
 
@@ -1029,10 +1029,10 @@ class TestIndexColumnMethods(unittest.TestCase):
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
 
-    def test_rename_index_columns_and_categories(self):
+    def test_rename_index_columns_and_partitions(self):
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
-        self.add_categories_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
+        self.add_partitions_helper(node, [{'A'}, {'A', 'B'}, {'A', 'B', 'C', 'D'}])
 
         if sqlite3.sqlite_version_info >= (3, 25, 0) or node._dal.backend != 'DAL1':
             node.rename_index_columns({'B': 'G', 'D': 'T'})
@@ -1042,7 +1042,7 @@ class TestIndexColumnMethods(unittest.TestCase):
 
         self.assertEqual(self.get_cols_helper(node), ('A', 'G', 'C', 'T'))
         self.assertEqual(
-            self.get_categories_helper(node),
+            self.get_partitions_helper(node),
             [{'A'}, {'A', 'G'}, {'A', 'G', 'C', 'T'}],
         )
 
@@ -1170,7 +1170,7 @@ class TestIndexMethods(unittest.TestCase):
         self.assertEqual(self.get_structure_helper(node), expected)
 
     def test_insert_no_existing_structure_OLD(self):
-        """Should auto-add categories and structure if not defined."""
+        """Should auto-add partitions and structure if not defined."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
 
@@ -1644,7 +1644,7 @@ class TestInsertIndex(unittest.TestCase):
             )
 
     def test_no_existing_structure(self):
-        """Should auto-add categories and structure if not defined."""
+        """Should auto-add partitions and structure if not defined."""
         node = TopoNode()
         self.add_cols_helper(node, 'A', 'B')
         self.add_weight_group_helper(node, name='C')
@@ -5083,7 +5083,7 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         ])
 
     def test_invalid_partition_allowed(self):
-        """Should allow invalid categories when using `allow_invalid_partition=True`."""
+        """Should allow invalid partitions when using `allow_invalid_partition=True`."""
         # The location `['', 'BUTLER']`, includes a county value but
         # does not include a state value. County alone ({'county'}) is
         # not valid, but we can load this data regardless by
@@ -5096,7 +5096,7 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
                 ('OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
                 ('',      'BUTLER',   'TOTAL',    'FEMALE', 187990),  # <- Invalid partition.
             ],
-            allow_invalid_partition=True,  # <- Allowing invalid categories.
+            allow_invalid_partition=True,  # <- Allowing invalid partitions.
         )
         self.assertLocationsEqual([
             Location(1, 'OH', 'BUTLER'),
@@ -5177,7 +5177,7 @@ class TestTopoNodeInsertQuantities2(unittest.TestCase):
         regex = (r"no matching partition:\n"
                  r"   names: \{'county'\}\n"
                  r"  record: \['', 'NULL ISLAND'\]")
-        msg = 'first: should check categories'
+        msg = 'first: should check partitions'
         with self.assertRaisesRegex(ValueError, regex, msg=msg):
             self.node.insert_quantities2(
                 value_column='counts',

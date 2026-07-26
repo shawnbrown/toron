@@ -11,8 +11,8 @@ from typing import (
 )
 
 from ._dal import dal_class, PathType
-from .categories import make_structure
-from .categories import find_minimal_partition_generating_set
+from .partitions import make_structure
+from .partitions import find_minimal_partition_generating_set
 from ._utils import TabularData
 
 

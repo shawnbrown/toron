@@ -50,8 +50,8 @@ except ImportError:
     fcntl = None  # type: ignore
 
 from . import _schema
-from .categories import make_structure
-from .categories import find_minimal_partition_generating_set
+from .partitions import make_structure
+from .partitions import find_minimal_partition_generating_set
 from ._xmapper import xMapper
 from ._utils import (
     ToronError,

@@ -25,7 +25,7 @@ from toron._typing import (
     TypeAlias,
 )
 
-from .categories import (
+from .partitions import (
     make_structure,
     find_minimal_partition_generating_set,
 )

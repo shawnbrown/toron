@@ -27,7 +27,7 @@ class TestSortPartitionDefinitions(unittest.TestCase):
         )
 
     def test_adding_whole_space(self):
-        """Shold add "whole space" when not included in given categories."""
+        """Shold add "whole space" when not included in given partitions."""
         partition_definitions=[{'a', 'c'}, {'b', 'a'}]  # <- No whole space, ['a', 'b', 'c'].
 
         self.assertEqual(
