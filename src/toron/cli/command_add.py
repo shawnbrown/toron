@@ -98,7 +98,7 @@ def add_link(args: argparse.Namespace) -> ExitCode:
     process_backup_option(args, node1, node2)
 
     do_add = lambda tail, head, args: head.add_link(
-        node=tail,
+        space=tail,
         link_name=args.link,
         other_filename_hint=tail.path_hint,
         description=args.description,

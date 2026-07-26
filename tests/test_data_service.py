@@ -806,7 +806,7 @@ class TestGenerateMappingElements(DataSpaceFixturesMixin, unittest.TestCase):
         """Helper to make "population" link from node_e to node_f."""
         self.node_f.add_link(self.node_e, 'population', is_default=True)
         self.node_f.insert_mappings2(
-            node_or_ref=self.node_e,
+            space_or_ref=self.node_e,
             link_name='population',
             data=data,
             columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],

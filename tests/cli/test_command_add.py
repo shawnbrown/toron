@@ -336,7 +336,7 @@ class TestAddLink(unittest.TestCase):
         node1 = bind_file(self.filepath1, mode='rw')
         node2 = bind_file(self.filepath2, mode='rw')
         node1.add_link(
-            node=node2,
+            space=node2,
             link_name='population',
             other_filename_hint=node2.path_hint,
             description=None,

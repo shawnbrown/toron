@@ -205,7 +205,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
             ['a1', 'b2', 'c4'],  # <- index_id=4
         ])
         self.node.add_link(
-            node=mock_node,
+            space=mock_node,
             link_name='edge 1',
             other_filename_hint='other-file',
             description='Edge one description.',
@@ -213,7 +213,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
             is_default=True,
         )
         self.node.insert_mappings(
-            node_or_ref='other-file',
+            space_or_ref='other-file',
             link_name='edge 1',
             data=[
                 ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C', 'mapping_level'),
@@ -229,14 +229,14 @@ class TestNodeReaderTranslate(unittest.TestCase):
             ],
         )
         self.node.add_link(
-            node=mock_node,
+            space=mock_node,
             other_filename_hint='other-file.toron',
             link_name='edge 2',
             description='Edge two description.',
             selectors=['[foo]'],
         )
         self.node.insert_mappings(
-            node_or_ref='other-file',
+            space_or_ref='other-file',
             link_name='edge 2',
             data=[
                 ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C', 'mapping_level'),

@@ -305,14 +305,14 @@ def load_mapping(
         applogger.info('loading mapping from left to right')
 
         right_node.add_link(
-            node=left_node,
+            space=left_node,
             link_name=link_name,
             other_filename_hint=left_filename_hint,
             selectors=selectors,
             is_default=is_default,
         )
         right_node.insert_mappings2(
-            node_or_ref=left_node,
+            space_or_ref=left_node,
             link_name=link_name,
             data=mapper.get_mappings('->'),
             columns=['other_index_id', link_name, 'index_id', 'mapping_level'],
@@ -330,14 +330,14 @@ def load_mapping(
         applogger.info('loading mapping from right to left')
 
         left_node.add_link(
-            node=right_node,
+            space=right_node,
             link_name=link_name,
             other_filename_hint=right_filename_hint,
             selectors=selectors,
             is_default=is_default,
         )
         left_node.insert_mappings2(
-            node_or_ref=right_node,
+            space_or_ref=right_node,
             link_name=link_name,
             data=mapper.get_mappings('<-'),
             columns=['other_index_id', link_name, 'index_id', 'mapping_level'],
@@ -517,7 +517,7 @@ def get_mapping_info_str(
 ) -> str:
     """Return a text description of information about a mapping."""
     link = target_node.get_link(
-        node_or_ref=source_node,
+        space_or_ref=source_node,
         link_name=link_name,
     )
 

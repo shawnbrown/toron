@@ -45,7 +45,7 @@ class TestRemoveLink(unittest.TestCase):
         tail = bind_file(tail_file, mode='rw')
         head = bind_file(head_file, mode='rw')
         head.add_link(
-            node=tail,
+            space=tail,
             link_name=link_name,
             other_filename_hint=tail.path_hint,
             is_default=is_default,

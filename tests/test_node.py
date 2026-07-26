@@ -3465,7 +3465,7 @@ class TestDataSpaceLinkMethods(unittest.TestCase):
         )
 
         node.add_link(  # <- Defining all properties.
-                node=mock_other_node,
+                space=mock_other_node,
                 link_name='name2',
                 other_filename_hint='mocked_file',
                 description='The second link.',
@@ -3479,25 +3479,25 @@ class TestDataSpaceLinkMethods(unittest.TestCase):
         self.assertEqual(
             self.get_link_helper(node),
             [Link(id=1,
-                       other_unique_id='111-111-1111',
-                       other_filename_hint=None,
-                       name='name1',
-                       description=None,
-                       selectors=None,
-                       is_default=False,
-                       user_properties=None,
-                       other_index_hash=None,
-                       is_locally_complete=False),
+                  other_unique_id='111-111-1111',
+                  other_filename_hint=None,
+                  name='name1',
+                  description=None,
+                  selectors=None,
+                  is_default=False,
+                  user_properties=None,
+                  other_index_hash=None,
+                  is_locally_complete=False),
              Link(id=2,
-                       other_unique_id='111-111-1111',
-                       other_filename_hint='mocked_file',
-                       name='name2',
-                       description='The second link.',
-                       selectors=['"[foo]"'],
-                       is_default=True,
-                       user_properties={'quux': 123, 'qux': 'abc'},
-                       other_index_hash='12437810',
-                       is_locally_complete=False)]
+                  other_unique_id='111-111-1111',
+                  other_filename_hint='mocked_file',
+                  name='name2',
+                  description='The second link.',
+                  selectors=['"[foo]"'],
+                  is_default=True,
+                  user_properties={'quux': 123, 'qux': 'abc'},
+                  other_index_hash='12437810',
+                  is_locally_complete=False)]
         )
 
     def test_edit_link(self):

@@ -169,7 +169,7 @@ class DataSpace(object):
 
     @property
     def path_hint(self) -> Optional[str]:
-        """The first known file path associated with the node.
+        """The first known file path associated with the DataSpace.
 
         * If the instance was loaded from a file or bound directly to
           a file, this is the source file path.
@@ -191,7 +191,7 @@ class DataSpace(object):
     def to_file(
         self, path: Union[str, bytes, os.PathLike], *, fsync: bool = True
     ) -> None:
-        """Write node data to a file."""
+        """Write space data to a file."""
         self._connector.save_to_file(path=path, fsync=fsync)
         if not self._path_hint:
             self._path_hint = os.fsdecode(path)
@@ -250,22 +250,22 @@ class DataSpace(object):
 
     @property
     def unique_id(self) -> str:
-        """Unique identifier for the node."""
+        """Unique identifier for the space."""
         return self._connector.unique_id
 
     @property
     def domain(self) -> str:
-        """A short string describing the type of data the node contains.
+        """A short string describing the type of data the space contains.
 
         Typically this should be a name or code (often the same name as
-        the node's file on drive).
+        the DataSpace's file on drive).
         """
-        # The domain defines the scope of data a node will represent.
+        # The domain defines the scope of data a space will represent.
         with self._managed_cursor() as cursor:
             return get_domain(self._dal.PropertyRepository(cursor))
 
     def set_domain(self, domain: str) -> None:
-        """Set the node's domain value."""
+        """Set the DataSpace's domain value."""
         with self._managed_cursor() as cursor:
             set_domain(domain, self._dal.PropertyRepository(cursor))
 
@@ -365,7 +365,7 @@ class DataSpace(object):
     def set_registered_attributes(
         self, attribute_columns: Sequence[str]
     ) -> None:
-        """Set the node's registered attribute columns."""
+        """Set the DataSpace's registered attribute columns."""
         with self._managed_transaction() as cur:
             set_registered_attributes(
                 attribute_columns=attribute_columns,
@@ -375,7 +375,7 @@ class DataSpace(object):
             )
 
     def get_registered_attributes(self) -> List[str]:
-        """Get the node's registered attribute columns."""
+        """Get the DataSpace's registered attribute columns."""
         with self._managed_cursor() as cur:
             return get_registered_attributes(self._dal.PropertyRepository(cur))
 
@@ -565,7 +565,7 @@ class DataSpace(object):
                 msg = (
                     'cannot remove all index columns\n'
                     '\n'
-                    'Without at least one index column, a node cannot represent '
+                    'Without at least one index column, a DataSpace cannot represent '
                     'any weights, quantities, or mappings it might contain.'
                 )
                 raise RuntimeError(msg)
@@ -617,7 +617,7 @@ class DataSpace(object):
             if label_names:  # If input labels given, must include all labels.
                 verify_columns_set(label_names, all_label_cols, allow_extras=True)
 
-            # Get label positions in node-label order.
+            # Get label positions in DataSpace-label order.
             label_position_list = tuple(
                 columns.index(x) for x in all_label_cols if x in label_names
             )
@@ -944,7 +944,7 @@ class DataSpace(object):
                             f"cannot update index_id {index_record.id}, new labels "
                             f"conflict with the existing index_id {matching.id}.\n"
                             f"\n"
-                            f"To merge these records use 'node.update_index(..., "
+                            f"To merge these records use 'space.update_index(..., "
                             f"merge_on_conflict=True)'."
                         )
                     weight_repo.merge_by_index_id(matching.id, index_record.id)
@@ -1585,30 +1585,30 @@ class DataSpace(object):
 
     @staticmethod
     def _get_link(
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         link_repo: BaseLinkRepository,
     ) -> Link:
         """A wrapper to normalize input for ``get_link()`` function."""
-        if not isinstance(node_or_ref, str):
-            node_or_ref = node_or_ref.unique_id
-        return get_link(node_or_ref, link_name, link_repo)
+        if not isinstance(space_or_ref, str):
+            space_or_ref = space_or_ref.unique_id
+        return get_link(space_or_ref, link_name, link_repo)
 
     def get_link(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: Optional[str] = None,
     ) -> Link:
         with self._managed_cursor() as cursor:
             return self._get_link(
-                node_or_ref,
+                space_or_ref,
                 link_name,
                 self._dal.LinkRepository(cursor),
             )
 
     def add_link(
         self,
-        node: 'DataSpace',
+        space: 'DataSpace',
         link_name: str,
         *,
         other_filename_hint: Optional[str] = None,
@@ -1619,7 +1619,7 @@ class DataSpace(object):
         other_index_hash: Optional[str] = None,
         is_locally_complete: bool = False,
     ) -> None:
-        other_unique_id = node.unique_id
+        other_unique_id = space.unique_id
 
         with self._managed_transaction() as cursor:
             link_repo = self._dal.LinkRepository(cursor)
@@ -1633,7 +1633,7 @@ class DataSpace(object):
                 if link.name == link_name:
                     raise ToronError(
                         f'a link named {link_name!r} already exists '
-                        f'between these two nodes'
+                        f'between these two dataspaces'
                     )
 
             if is_default is None:
@@ -1648,7 +1648,7 @@ class DataSpace(object):
 
             if is_default:
                 # If *is_default* is True, all other links coming from
-                # the same node should be set to False.
+                # the same DataSpace should be set to False.
                 for link in other_links:
                     if link.is_default:
                         link_repo.update(replace(link, is_default=False))
@@ -1667,16 +1667,16 @@ class DataSpace(object):
 
     def edit_link(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: str,
         **changes: Any,
     ) -> None:
         with self._managed_transaction() as cursor:
             link_repo = self._dal.LinkRepository(cursor)
-            link = self._get_link(node_or_ref, link_name, link_repo)
+            link = self._get_link(space_or_ref, link_name, link_repo)
 
             # If setting is_default=True, all other links coming from
-            # the same node should be set to False.
+            # the same DataSpace should be set to False.
             if changes.get('is_default') == True:
                 matches = link_repo.find_by_other_unique_id(link.other_unique_id)
                 for match in list(matches):  # Use list() to eagerly fetch all matches.
@@ -1687,18 +1687,18 @@ class DataSpace(object):
 
     def drop_link(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: str,
     ) -> None:
         with self._managed_transaction() as cursor:
             link_repo = self._dal.LinkRepository(cursor)
 
-            link = self._get_link(node_or_ref, link_name, link_repo)
+            link = self._get_link(space_or_ref, link_name, link_repo)
             link_repo.delete_and_cascade(link.id)
 
     def select_mappings(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: Optional[str] = None,
         header: bool = False,
         **criteria: str,
@@ -1708,7 +1708,7 @@ class DataSpace(object):
             index_repo = self._dal.IndexRepository(cursor)
             link_repo = self._dal.LinkRepository(cursor)
 
-            link = self._get_link(node_or_ref, link_name, link_repo)
+            link = self._get_link(space_or_ref, link_name, link_repo)
             label_columns = label_manager.get_columns()
 
             if header:
@@ -1746,7 +1746,7 @@ class DataSpace(object):
 
     def insert_mappings2(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1755,8 +1755,8 @@ class DataSpace(object):
 
         .. code-block:: python
 
-            >>> node.insert_mappings2(
-            ...     node_or_ref='myfile',
+            >>> space.insert_mappings2(
+            ...     space_or_ref='myfile',
             ...     link_name='pop2000',
             ...     data=[
             ...         ('other_index_id', 'index_id', 'mapping_level', 'pop2000'),
@@ -1784,7 +1784,7 @@ class DataSpace(object):
             link_repo = self._dal.LinkRepository(cursor)
             mapping_repo = self._dal.MappingRepository(cursor)
 
-            link = self._get_link(node_or_ref, link_name, link_repo)
+            link = self._get_link(space_or_ref, link_name, link_repo)
             link_id = link.id
 
             # Get allowed structure values.
@@ -1854,7 +1854,7 @@ class DataSpace(object):
 
     def insert_mappings(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1880,7 +1880,7 @@ class DataSpace(object):
             label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            link = self._get_link(node_or_ref, link_name, link_repo)
+            link = self._get_link(space_or_ref, link_name, link_repo)
             link_id = link.id
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
@@ -1946,7 +1946,7 @@ class DataSpace(object):
 
     def update_mappings(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -1972,7 +1972,7 @@ class DataSpace(object):
             label_columns = label_manager.get_columns()
             verify_columns_set(columns, label_columns, allow_extras=True)
 
-            link = self._get_link(node_or_ref, link_name, link_repo)
+            link = self._get_link(space_or_ref, link_name, link_repo)
             link_id = link.id
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
 
@@ -2065,7 +2065,7 @@ class DataSpace(object):
     @overload
     def delete_mappings(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         data: Union[Iterable[Sequence], Iterable[Dict]],
         columns: Optional[Sequence[str]] = None,
@@ -2074,14 +2074,14 @@ class DataSpace(object):
     @overload
     def delete_mappings(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: Optional[str],
         **criteria: str,
     ) -> None:
         ...
     def delete_mappings(
         self,
-        node_or_ref,
+        space_or_ref,
         link_name=None,
         data=None,
         columns=None,
@@ -2100,7 +2100,7 @@ class DataSpace(object):
             aux_mapping_repo = self._dal.MappingRepository(aux_cursor)
             index_repo = self._dal.IndexRepository(cursor)
 
-            link = self._get_link(node_or_ref, link_name, link_repo)
+            link = self._get_link(space_or_ref, link_name, link_repo)
             link_id = link.id
 
             if data:
@@ -2210,7 +2210,7 @@ class DataSpace(object):
 
     def reify_mappings(
         self,
-        node_or_ref: Union['DataSpace', str],
+        space_or_ref: Union['DataSpace', str],
         link_name: str,
         **criteria: str,
     ) -> None:
@@ -2224,7 +2224,7 @@ class DataSpace(object):
         After reification, mappings that were originally inferred with
         uncertainty are now treated as definitive, and the mappings are
         interpreted as a direct and unambiguous correspondence between
-        nodes.
+        dataspaces.
 
         Use this when a mapping was loaded without certain labels but
         is known to be accurate, or when ambiguous mappings have been
@@ -2232,11 +2232,11 @@ class DataSpace(object):
 
         Parameters
         ----------
-        node_or_ref : Union[DataSpace, str]
-            The node from which the link is coming.
+        space_or_ref : Union[DataSpace, str]
+            The DataSpace from which the link is coming.
         link_name : str
             The name of the link. This is needed because multiple
-            links can come from the same node.
+            links can come from the same DataSpace.
         **criteria : str
             Additional keyword arguments to select only those mappings
             associated the given index labels for reification.
@@ -2246,7 +2246,7 @@ class DataSpace(object):
             index_repo = self._dal.IndexRepository(cursor)
             link_repo = self._dal.LinkRepository(cursor)
 
-            link = self._get_link(node_or_ref, link_name, link_repo)
+            link = self._get_link(space_or_ref, link_name, link_repo)
             label_names = index_repo.get_label_names()
             fully_specified_level = bytes(BitFlags([1] * len(label_names)))
 
@@ -2337,7 +2337,7 @@ class DataSpace(object):
             for row in data:
                 row_dict = dict(zip(columns, row))
 
-                # If 'domain' is given, it must match `node.domain`.
+                # If 'domain' is given, it must match `space.domain`.
                 if 'domain' in row_dict and row_dict['domain'] != domain:
                     raise ValueError(
                         f"domain must be {domain!r}, got: {row_dict['domain']!r}"
@@ -2467,7 +2467,7 @@ class DataSpace(object):
             applogger.warning('no quantities loaded')
 
     def select_quantities2(self, header: bool = True) -> Iterator[Sequence]:
-        """Select quantites from node."""
+        """Select quantites from DataSpace."""
         # This new method uses "registered attributes", unlike the original.
         with self._managed_cursor(n=3) as (cur1, cur2, cur3):
             location_repo = self._dal.LocationRepository(cur1)
@@ -3044,7 +3044,7 @@ def bind_file(
 
     .. code-block:: python
 
-        >>> node = toron.bind_file('mynode.toron', mode='rw')
+        >>> space = toron.bind_file('myfile.toron', mode='rw')
 
     .. warning::
 

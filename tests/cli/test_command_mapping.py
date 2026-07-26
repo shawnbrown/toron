@@ -539,12 +539,12 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
             return set(astuple(rel) for rel in mappings)
 
     def test_insert_both_directions(self):
-        self.node_c.add_link(node=self.node_d,
+        self.node_c.add_link(space=self.node_d,
                              link_name='population',
                              other_filename_hint='node_d',
                              is_default=True)
 
-        self.node_d.add_link(node=self.node_c,
+        self.node_d.add_link(space=self.node_c,
                              link_name='population',
                              other_filename_hint='node_c',
                              is_default=True)
@@ -615,15 +615,15 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
         )
 
     def test_insert_both_directions_with_undefined_cases(self):
-        self.node_c.add_link(node=self.node_d,
-                                  link_name='population',
-                                  other_filename_hint='node_d',
-                                  is_default=True)
+        self.node_c.add_link(space=self.node_d,
+                             link_name='population',
+                             other_filename_hint='node_d',
+                             is_default=True)
 
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         args = argparse.Namespace(
             link='population',
@@ -694,10 +694,10 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
         )
 
     def test_missing_one_side(self):
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         args = argparse.Namespace(
             link='population',
@@ -776,10 +776,10 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
         )
 
     def test_match_limit_without_overlapping(self):
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         args = argparse.Namespace(
             link='population',
@@ -829,10 +829,10 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
         )
 
     def test_match_limit_with_allow_overlapping(self):
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         args = argparse.Namespace(
             link='population',
@@ -884,10 +884,10 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
 
     def test_incomplete_match_error(self):
         """Default behavior is for incomplete matches to trigger an error."""
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         args = argparse.Namespace(
             link='population',
@@ -914,10 +914,10 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
 
     def test_incomplete_match_allowed(self):
         """Incomplete matches can be loaded with ``--allow-incomplete``."""
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         args = argparse.Namespace(
             link='population',
@@ -963,10 +963,10 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
 
 class TestWriteToStdout(DataSpaceFixturesMixin, unittest.TestCase):
     def test_full_mapping(self):
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         self.node_d.insert_mappings2(
             self.node_c,
@@ -1009,10 +1009,10 @@ class TestWriteToStdout(DataSpaceFixturesMixin, unittest.TestCase):
         )
 
     def test_some_ambiguous_some_disjoint(self):
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         self.node_d.insert_mappings2(
             self.node_c,
@@ -1056,10 +1056,10 @@ class TestWriteToStdout(DataSpaceFixturesMixin, unittest.TestCase):
         )
 
     def test_full_disjoint(self):
-        self.node_d.add_link(node=self.node_c,
-                                  link_name='population',
-                                  other_filename_hint='node_c',
-                                  is_default=True)
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
 
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(

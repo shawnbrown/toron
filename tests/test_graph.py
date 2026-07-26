@@ -221,7 +221,7 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
     def test_all_matched(self):
         self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
@@ -254,7 +254,7 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
     def test_source_missing(self):
         self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
@@ -287,7 +287,7 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
     def test_target_missing(self):
         self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 # Target element 1 is omitted.
@@ -320,7 +320,7 @@ class TestdGetMappingStats(TwoNodesBaseTestCase):
     def test_source_stale(self):
         self.node2.add_link(self.node1, 'population', other_filename_hint='file1')
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 (99, 1, b'\xe0', 25.0),  # <- Element 99 is stale (not in current source).
@@ -566,7 +566,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         """Check fully mapped link."""
         self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 (1, 1, b'\x80',  25.0),  # ambiguous: b'\x80' -> 1, 0, 0
@@ -607,7 +607,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
         self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
@@ -645,7 +645,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         """Check unmapped left-side elemenets."""
         self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
@@ -687,7 +687,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
         """Check unmapped right-side elemenets."""
         self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
@@ -732,7 +732,7 @@ class TestGetMapping(TwoNodesBaseTestCase):
 
         self.node2.add_link(self.node1, 'population', is_default=True)
         self.node2.insert_mappings2(
-            node_or_ref=self.node1,
+            space_or_ref=self.node1,
             link_name='population',
             data=[
                 (1, 1, b'\xe0',  25.0),
@@ -871,7 +871,7 @@ class TestTranslate(unittest.TestCase):
             ['a1', 'b2', 'c4'],  # <- index_id=4
         ])
         self.node.add_link(
-            node=mock_node,
+            space=mock_node,
             link_name='edge 1',
             other_filename_hint='other-file',
             description='Edge one description.',
@@ -879,7 +879,7 @@ class TestTranslate(unittest.TestCase):
             is_default=True,
         )
         self.node.insert_mappings(
-            node_or_ref='other-file',
+            space_or_ref='other-file',
             link_name='edge 1',
             data=[
                 ('other_index_id', 'edge 1', 'index_id', 'A', 'B', 'C', 'mapping_level'),
@@ -895,14 +895,14 @@ class TestTranslate(unittest.TestCase):
             ],
         )
         self.node.add_link(
-            node=mock_node,
+            space=mock_node,
             link_name='edge 2',
             other_filename_hint='other-file',
             description='Edge two description.',
             selectors=['[foo]'],
         )
         self.node.insert_mappings(
-            node_or_ref='other-file',
+            space_or_ref='other-file',
             link_name='edge 2',
             data=[
                 ('other_index_id', 'edge 2', 'index_id', 'A', 'B', 'C', 'mapping_level'),
