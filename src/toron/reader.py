@@ -249,6 +249,8 @@ class NodeReader(object):
     ) -> Generator[Tuple[Union[str, float], ...], None, None]:
         """Return generator that iterates over NodeReader data."""
         attr_keys = self._attr_keys  # Assign locally to reduce dot-lookups.
+        _loads = loads  # Assign locally to reduce scope-lookups.
+
         with self._space._managed_cursor() as space_cur:
             index_repo = self._space._dal.IndexRepository(space_cur)
             with self._managed_connection() as con:
@@ -260,8 +262,7 @@ class NodeReader(object):
                 """)
                 for index_id, attributes, quant_value in cur:
                     labels = index_repo.get(index_id).labels
-                    get_attr_value = loads(attributes).get  # Assign get() method directly.
-                    attr_vals = tuple(get_attr_value(x) for x in attr_keys)
+                    attr_vals = tuple(map(_loads(attributes).get, attr_keys))
                     yield labels + attr_vals + (quant_value,)
 
     def translate(
