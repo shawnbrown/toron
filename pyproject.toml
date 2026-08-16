@@ -14,7 +14,7 @@ requires-python = ">=3.9"
 authors = [
   { name="Shawn Brown", email="shawnbrown@users.noreply.github.com" },
 ]
-description = "Data structures to refine granularity and translate crosswalks."
+description = "Tools for multi-level data disaggregation and translation."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
