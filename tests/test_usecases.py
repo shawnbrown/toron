@@ -89,9 +89,9 @@ class TestBuildUsingAPI(unittest.TestCase):
 
         # Add an exact mapping between node1 and node2.
         load_mapping(
-            left_node=self.node1,
+            left_space=self.node1,
             direction='->',
-            right_node=self.node2,
+            right_space=self.node2,
             link_name='population',
             data=[
                 ['idx1', 'idx2', 'idx3', 'population', 'idx1', 'idx2'],

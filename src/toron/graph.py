@@ -147,15 +147,15 @@ def normalize_filename_hints(
 
 
 def _get_mapping_stats(
-    source_node: DataSpace,
-    target_node: DataSpace,
+    source_space: DataSpace,
+    target_space: DataSpace,
     link: Link,
 ) -> Dict[str, int]:
     """Return a summary of mapping statistics for a given link.
 
     .. code-block::
 
-        >>> _get_mapping_stats(node1, node2, link)
+        >>> _get_mapping_stats(space1, space2, link)
         {'src_cardinality': 10,
          'src_index_matched': 10,
          'src_index_missing': 0,
@@ -164,16 +164,16 @@ def _get_mapping_stats(
          'trg_index_matched': 10,
          'trg_index_missing': 0}
     """
-    with source_node._managed_cursor() as src_cur, \
-            target_node._managed_cursor() as trg_cur:
-        src_index_repo = source_node._dal.IndexRepository(src_cur)
-        src_prop_repo = source_node._dal.PropertyRepository(src_cur)
+    with source_space._managed_cursor() as src_cur, \
+            target_space._managed_cursor() as trg_cur:
+        src_index_repo = source_space._dal.IndexRepository(src_cur)
+        src_prop_repo = source_space._dal.PropertyRepository(src_cur)
 
-        trg_index_repo = target_node._dal.IndexRepository(trg_cur)
-        trg_rel_repo = target_node._dal.MappingRepository(trg_cur)
+        trg_index_repo = target_space._dal.IndexRepository(trg_cur)
+        trg_rel_repo = target_space._dal.MappingRepository(trg_cur)
 
         if link.other_unique_id != src_prop_repo.get('unique_id'):
-            msg = 'link does not match source node'
+            msg = 'link does not match source DataSpace'
             raise Exception(msg)
 
         # Get source-side counts. If the hashes match, we know that all
@@ -202,9 +202,9 @@ def _get_mapping_stats(
 
         # Get target-side counts. Note: There is no 'trg_index_stale'
         # because target index references should never go stale. They
-        # are managed locally--the target node holds data for incoming
-        # mappings so if an index is deleted from the target node,
-        # it should also be deleted from mappings in that node.
+        # are managed locally--the target space holds data for incoming
+        # mappings so if an index is deleted from the target space, it
+        # should also be deleted from mappings in that space.
         trg_cardinality = trg_index_repo.get_cardinality()
         trg_index_matched = trg_rel_repo.get_index_id_cardinality(link.id)
         trg_index_missing = trg_cardinality - trg_index_matched
@@ -222,29 +222,29 @@ def _get_mapping_stats(
 
 def _log_load_mapping_stats(
     logger: logging.Logger,
-    left_node : DataSpace,
+    left_space : DataSpace,
     direction: Literal['<-', '->'],
-    right_node : DataSpace,
+    right_space : DataSpace,
     link_name: str,
 ) -> None:
     """Log mapping stats using given *logger* for specified link."""
     if direction == '<-':
-        source_node = right_node
-        target_node = left_node
+        source_space = right_space
+        target_space = left_space
         source_side = 'right-side'
         target_side = 'left-side'
     elif direction == '->':
-        source_node = left_node
-        target_node = right_node
+        source_space = left_space
+        target_space = right_space
         source_side = 'left-side'
         target_side = 'right-side'
     else:
         msg = f"direction must be '<-' or '->', got {direction!r}"
         raise ValueError(msg)
 
-    link = target_node.get_link(source_node, link_name)
+    link = target_space.get_link(source_space, link_name)
     mapping_stats = _get_mapping_stats(
-        source_node, target_node, cast(Link, link)
+        source_space, target_space, cast(Link, link)
     )
     if not any([mapping_stats['src_index_missing'],
                 mapping_stats['src_index_stale'],
@@ -271,9 +271,9 @@ def _log_load_mapping_stats(
 
 
 def load_mapping(
-    left_node : DataSpace,
+    left_space : DataSpace,
     direction : Direction,
-    right_node : DataSpace,
+    right_space : DataSpace,
     link_name: str,
     data: Union[Iterable[Sequence], Iterable[Dict]],
     columns: Optional[Sequence[str]] = None,
@@ -282,37 +282,37 @@ def load_mapping(
     match_limit: int = 1,
     allow_overlapping: bool = False,
 ) -> None:
-    """Use mapping data to build a link between two nodes."""
+    """Use mapping data to build a link between two DataSpaces."""
     data, columns = normalize_tabular(data, columns)
     data, columns = normalize_mapping_data(
         data=data,
         columns=columns,
         link_name=link_name,
-        left_domain=left_node.domain,
-        right_domain=right_node.domain,
+        left_domain=left_space.domain,
+        right_domain=right_space.domain,
     )
 
     mapper = Mapper_OLD(link_name, data, columns)
-    mapper.match_records(left_node, 'left', match_limit, allow_overlapping)
-    mapper.match_records(right_node, 'right', match_limit, allow_overlapping)
+    mapper.match_records(left_space, 'left', match_limit, allow_overlapping)
+    mapper.match_records(right_space, 'right', match_limit, allow_overlapping)
 
     left_filename_hint, right_filename_hint = normalize_filename_hints(
-        left_node.path_hint,
-        right_node.path_hint,
+        left_space.path_hint,
+        right_space.path_hint,
     )
 
     if '->' in direction:
         applogger.info('loading mapping from left to right')
 
-        right_node.add_link(
-            space=left_node,
+        right_space.add_link(
+            space=left_space,
             link_name=link_name,
             other_filename_hint=left_filename_hint,
             selectors=selectors,
             is_default=is_default,
         )
-        right_node.insert_mappings2(
-            space_or_ref=left_node,
+        right_space.insert_mappings2(
+            space_or_ref=left_space,
             link_name=link_name,
             data=mapper.get_mappings('->'),
             columns=['other_index_id', link_name, 'index_id', 'mapping_level'],
@@ -320,24 +320,24 @@ def load_mapping(
 
         _log_load_mapping_stats(
             logger=applogger,
-            left_node=left_node,
+            left_space=left_space,
             direction='->',
-            right_node=right_node,
+            right_space=right_space,
             link_name=link_name,
         )
 
     if '<-' in direction:
         applogger.info('loading mapping from right to left')
 
-        left_node.add_link(
-            space=right_node,
+        left_space.add_link(
+            space=right_space,
             link_name=link_name,
             other_filename_hint=right_filename_hint,
             selectors=selectors,
             is_default=is_default,
         )
-        left_node.insert_mappings2(
-            space_or_ref=right_node,
+        left_space.insert_mappings2(
+            space_or_ref=right_space,
             link_name=link_name,
             data=mapper.get_mappings('<-'),
             columns=['other_index_id', link_name, 'index_id', 'mapping_level'],
@@ -345,9 +345,9 @@ def load_mapping(
 
         _log_load_mapping_stats(
             logger=applogger,
-            left_node=left_node,
+            left_space=left_space,
             direction='<-',
-            right_node=right_node,
+            right_space=right_space,
             link_name=link_name,
         )
 
@@ -359,21 +359,21 @@ _MappingElementsTuple : TypeAlias = Union[
 ]
 
 def _get_mapping_elements(
-    source_node: DataSpace,
-    target_node: DataSpace,
+    source_space: DataSpace,
+    target_space: DataSpace,
     link_name: Optional[str] = None,
 ) -> Generator[_MappingElementsTuple, None, None]:
     """See ``data_service.generate_mapping_elements()`` for details."""
-    with source_node._managed_cursor() as src_cur, \
-            target_node._managed_cursor() as trg_cur:
+    with source_space._managed_cursor() as src_cur, \
+            target_space._managed_cursor() as trg_cur:
 
         generator = generate_mapping_elements(
             link_name=link_name,
-            trg_index_repo=target_node._dal.IndexRepository(trg_cur),
-            trg_link_repo=target_node._dal.LinkRepository(trg_cur),
-            trg_mapping_repo=target_node._dal.MappingRepository(trg_cur),
-            src_index_repo=source_node._dal.IndexRepository(src_cur),
-            src_prop_repo=source_node._dal.PropertyRepository(src_cur),
+            trg_index_repo=target_space._dal.IndexRepository(trg_cur),
+            trg_link_repo=target_space._dal.LinkRepository(trg_cur),
+            trg_mapping_repo=target_space._dal.MappingRepository(trg_cur),
+            src_index_repo=source_space._dal.IndexRepository(src_cur),
+            src_prop_repo=source_space._dal.PropertyRepository(src_cur),
         )
         for result in generator:
             yield result
@@ -416,43 +416,43 @@ def _get_ambiguous_fields(
 
 
 def get_mapping(
-    source_node: DataSpace,
-    target_node: DataSpace,
+    source_space: DataSpace,
+    target_space: DataSpace,
     link_name: Optional[str] = None,
     header: bool = True,
 ) -> Iterator[Tuple]:
-    """Yield an index mapping from *source_node* to *target_node*
+    """Yield an index mapping from *source_space* to *target_space*
     for a particular link.
     """
-    src_index_cols = tuple(source_node.index_columns)
-    trg_index_cols = tuple(target_node.index_columns)
+    src_index_cols = tuple(source_space.index_columns)
+    trg_index_cols = tuple(target_space.index_columns)
 
     # Patch to use old `dict` logic for domain handling. This function
     # will eventually be removed so there's no strong need to refactor.
-    if source_node.domain:
-        src_domain = {'domain': source_node.domain}
+    if source_space.domain:
+        src_domain = {'domain': source_space.domain}
     else:
         src_domain = {}
     src_domain_keys = tuple(src_domain.keys())
     src_domain_vals = tuple(src_domain.values())
 
-    if target_node.domain:
-        trg_domain = {'domain': target_node.domain}
+    if target_space.domain:
+        trg_domain = {'domain': target_space.domain}
     else:
         trg_domain = {}
     trg_domain_keys = tuple(trg_domain.keys())
     trg_domain_vals = tuple(trg_domain.values())
 
     mapping_elements = _get_mapping_elements(
-        source_node=source_node,
-        target_node=target_node,
+        source_space=source_space,
+        target_space=target_space,
         link_name=link_name,
     )
 
-    with source_node._managed_cursor() as src_cur, \
-            target_node._managed_cursor() as trg_cur:
-        src_index_repo = source_node._dal.IndexRepository(src_cur)
-        trg_index_repo = target_node._dal.IndexRepository(trg_cur)
+    with source_space._managed_cursor() as src_cur, \
+            target_space._managed_cursor() as trg_cur:
+        src_index_repo = source_space._dal.IndexRepository(src_cur)
+        trg_index_repo = target_space._dal.IndexRepository(trg_cur)
 
         if header:
             yield (
@@ -474,7 +474,7 @@ def get_mapping(
         for element in mapping_elements:
             src_index_id, trg_index_id, mapping_level, rel_value = element
 
-            # Set domain output and get source node labels.
+            # Set domain output and get source DataSpace labels.
             if src_index_id is not None:
                 src_domain_output = src_domain_vals
                 try:
@@ -486,7 +486,7 @@ def get_mapping(
                 src_domain_output = (None,) * len(src_domain_vals)
                 src_index_labels = (None,) * len(src_index_cols)
 
-            # Set domain output and get target node labels.
+            # Set domain output and get target DataSpace labels.
             if trg_index_id is not None:
                 trg_domain_output = trg_domain_vals
                 try:
@@ -511,13 +511,13 @@ def get_mapping(
 
 
 def get_mapping_info_str(
-    source_node: DataSpace,
-    target_node: DataSpace,
+    source_space: DataSpace,
+    target_space: DataSpace,
     link_name: Optional[str] = None,
 ) -> str:
     """Return a text description of information about a mapping."""
-    link = target_node.get_link(
-        space_or_ref=source_node,
+    link = target_space.get_link(
+        space_or_ref=source_space,
         link_name=link_name,
     )
 
@@ -529,22 +529,22 @@ def get_mapping_info_str(
         link_name = link.name
 
     stats = _get_mapping_stats(
-        source_node=source_node,
-        target_node=target_node,
+        source_space=source_space,
+        target_space=target_space,
         link=link,
     )
 
-    source_short_hint = source_node.path_hint
+    source_short_hint = source_space.path_hint
     if source_short_hint and source_short_hint.endswith('.toron'):
         source_short_hint = source_short_hint[:-6]
     else:
-        source_short_hint = f'[{source_node.unique_id[:7]}]'
+        source_short_hint = f'[{source_space.unique_id[:7]}]'
 
-    target_short_hint = target_node.path_hint
+    target_short_hint = target_space.path_hint
     if target_short_hint and target_short_hint.endswith('.toron'):
         target_short_hint = target_short_hint[:-6]
     else:
-        target_short_hint = f'[{target_node.unique_id[:7]}]'
+        target_short_hint = f'[{target_space.unique_id[:7]}]'
 
     info = [
         f'{link_name}: {source_short_hint} -> {target_short_hint}',
@@ -559,7 +559,7 @@ def get_mapping_info_str(
         info.extend([
             f'',
             f'  Mapping contains {stats["src_index_stale"]} indexes that ' \
-                f'no longer exist in {source_node.path_hint}',
+                f'no longer exist in {source_space.path_hint}',
         ])
 
     return '\n'.join(info)
@@ -567,16 +567,16 @@ def get_mapping_info_str(
 
 @eagerly_initialize
 def get_weights(
-    node: DataSpace,
+    space: DataSpace,
     weights: Optional[Union[str, Iterable[str]]] = None,
     header: bool = True,
 ) -> Generator[List, None, None]:
-    """Yield weight records from the given *node*."""
-    with node._managed_cursor(n=2) as (cur1, cur2):
-        group_repo = node._dal.WeightGroupRepository(cur1)
-        index_repo = node._dal.IndexRepository(cur1)
-        prop_repo = node._dal.PropertyRepository(cur1)
-        weight_repo = node._dal.WeightRepository(cur2)
+    """Yield weight records from the given DataSpace."""
+    with space._managed_cursor(n=2) as (cur1, cur2):
+        group_repo = space._dal.WeightGroupRepository(cur1)
+        index_repo = space._dal.IndexRepository(cur1)
+        prop_repo = space._dal.PropertyRepository(cur1)
+        weight_repo = space._dal.WeightRepository(cur2)
 
         domain = get_domain(prop_repo)
         if domain:
@@ -603,7 +603,7 @@ def get_weights(
 
         if header:
             # Make and yield header row.
-            label_columns = node._dal.LabelManager(cur1).get_columns()
+            label_columns = space._dal.LabelManager(cur1).get_columns()
             group_names = [grp.name for grp in groups]
             yield ['index_id'] + domain_keys + list(label_columns) + group_names
 
@@ -628,13 +628,13 @@ def get_weights(
 
 
 def _translate(
-    quantity_iterator: QuantityIterator, node: DataSpace
+    quantity_iterator: QuantityIterator, space: DataSpace
 ) -> Generator[Tuple[Index, AttributesDict, float], None, None]:
     """Generator to yield index, attribute, and quantity tuples."""
-    with node._managed_cursor() as cursor:
-        link_repo = node._dal.LinkRepository(cursor)
-        mapping_repo = node._dal.MappingRepository(cursor)
-        index_repo = node._dal.IndexRepository(cursor)
+    with space._managed_cursor() as cursor:
+        link_repo = space._dal.LinkRepository(cursor)
+        mapping_repo = space._dal.MappingRepository(cursor)
+        index_repo = space._dal.IndexRepository(cursor)
 
         # Get all links.
         links: List = find_links_by_ref(
@@ -654,7 +654,7 @@ def _translate(
                 default_link_id = link.id
                 break
         else:  # IF NO BREAK!
-            msg = f'no default link found for node {node}'
+            msg = f'no default link found for DataSpace {space}'
             raise RuntimeError(msg)
 
         # Build dict of index id values and attribute selector objects.
@@ -690,20 +690,20 @@ def _translate(
 
 
 def translate(
-    quantity_iterator: QuantityIterator, node: DataSpace
+    quantity_iterator: QuantityIterator, space: DataSpace
 ) -> QuantityIterator:
-    """Translate quantities to the index of the target *node*."""
-    with node._managed_cursor() as cursor:
-        property_repo = node._dal.PropertyRepository(cursor)
+    """Translate quantities to the index of the target DataSpace."""
+    with space._managed_cursor() as cursor:
+        property_repo = space._dal.PropertyRepository(cursor)
         new_unique_id = check_type(property_repo.get('unique_id'), str)
         new_index_hash = check_type(property_repo.get('index_hash'), str)
-        new_label_names = node._dal.LabelManager(cursor).get_columns()
+        new_label_names = space._dal.LabelManager(cursor).get_columns()
 
     new_quantity_iter = QuantityIterator(
         unique_id=new_unique_id,
         index_hash=new_index_hash,
         domain=quantity_iterator.domain,
-        data=_translate(quantity_iterator, node),
+        data=_translate(quantity_iterator, space),
         label_names=new_label_names,
         attribute_keys=quantity_iterator.attribute_keys,
     )

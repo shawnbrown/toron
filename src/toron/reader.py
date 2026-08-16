@@ -58,7 +58,7 @@ class NodeReader(object):
     def __init__(
         self,
         data: Iterator[Tuple[int, Dict[str, str], Optional[float]]],
-        node: 'DataSpace',
+        space: 'DataSpace',
         cache_to_drive: bool = False,
         quantize_default: bool = False,
     ) -> None:
@@ -133,8 +133,8 @@ class NodeReader(object):
         self._current_working_path = filepath
         self._in_memory_connection = connection
         self._data = None  # <- Assigned only when iteration begins.
-        self._node = node
-        self._index_columns = node.index_columns
+        self._space = space
+        self._index_columns = space.index_columns
         self._attr_keys = sorted(attr_keys)
 
         # Assign `close()` method (gets a callable finalizer object).
@@ -249,8 +249,8 @@ class NodeReader(object):
     ) -> Generator[Tuple[Union[str, float], ...], None, None]:
         """Return generator that iterates over NodeReader data."""
         attr_keys = self._attr_keys  # Assign locally to reduce dot-lookups.
-        with self._node._managed_cursor() as node_cur:
-            index_repo = self._node._dal.IndexRepository(node_cur)
+        with self._space._managed_cursor() as space_cur:
+            index_repo = self._space._dal.IndexRepository(space_cur)
             with self._managed_connection() as con:
                 cur = con.execute("""
                     SELECT index_id, attributes, SUM(quant_value) AS quant_value
@@ -266,10 +266,10 @@ class NodeReader(object):
 
     def translate(
         self,
-        node: 'DataSpace',
+        space: 'DataSpace',
         quantize: Optional[bool] = None,
     ) -> None:
-        """Translate quantities to use the index of the target node.
+        """Translate quantities to use the index of the target space.
 
         This method modifies the NodeReader in place and does not
         return a value.
@@ -277,18 +277,18 @@ class NodeReader(object):
         if quantize is None:
             quantize = self.quantize_default
 
-        # Get `old_index_hash` from source node.
-        with self._node._managed_cursor() as node_cur:
-            property_repo = self._node._dal.PropertyRepository(node_cur)
+        # Get `old_index_hash` from source DataSpace.
+        with self._space._managed_cursor() as space_cur:
+            property_repo = self._space._dal.PropertyRepository(space_cur)
             old_index_hash = check_type(property_repo.get('index_hash'), str)
 
-        # Translate "quant_data" table to use the index of the new *node*.
-        with node._managed_cursor() as node_cur:
-            mapping_repo = node._dal.MappingRepository(node_cur)
+        # Translate "quant_data" table to use the index of the new *space*.
+        with space._managed_cursor() as space_cur:
+            mapping_repo = space._dal.MappingRepository(space_cur)
 
             get_link_id = make_get_link_id_func(
-                ref=self._node.unique_id,
-                link_repo=node._dal.LinkRepository(node_cur),
+                ref=self._space.unique_id,
+                link_repo=space._dal.LinkRepository(space_cur),
                 other_index_hash=old_index_hash,
             )
 
@@ -296,7 +296,7 @@ class NodeReader(object):
                 cur1 = con.cursor()
                 cur2 = con.cursor()
 
-                # Update 'link_id' to use ids from new node.
+                # Update 'link_id' to use ids from new space.
                 cur1.execute('SELECT attr_data_id, attributes FROM main.attr_data')
                 for attr_data_id, attributes in cur1:
                     attributes_obj = loads(attributes)
@@ -350,11 +350,11 @@ class NodeReader(object):
                 cur1.execute('DROP TABLE main.quant_data')
                 cur1.execute('ALTER TABLE main.new_quant_data RENAME TO quant_data')
 
-        self._node = node  # Replace old node reference with the new node.
-        self._index_columns = node.index_columns
+        self._space = space  # Replace old space reference with the new space.
+        self._index_columns = space.index_columns
 
     def __rshift__(self, other: 'DataSpace') -> 'NodeReader':
-        """Translate quantities to the index of the *other* node."""
+        """Translate quantities to the index of the *other* space."""
         self.translate(other, quantize=self.quantize_default)
         return self
 
@@ -446,7 +446,7 @@ def pivot_reader(
 
             # Format and yield header row.
             str_or_tuple_cols = [format_column(loads(x)) for x in pivoted_columns]
-            yield list(reader._node.index_columns) + str_or_tuple_cols
+            yield list(reader._space.index_columns) + str_or_tuple_cols
 
             # Get aggregated values for pivot (must be sorted by `index_id`).
             sql_aggfunc = aggfuncs[aggregate_function]
@@ -464,9 +464,9 @@ def pivot_reader(
             """)
 
             # Yield pivoted data rows.
-            with reader._node._managed_cursor() as node_cur:
+            with reader._space._managed_cursor() as space_cur:
                 # Assign `get` method to local var and define helper-lambda.
-                get_index = reader._node._dal.IndexRepository(node_cur).get
+                get_index = reader._space._dal.IndexRepository(space_cur).get
                 get_labels = lambda x: list(get_index(x).labels)
 
                 # Group by pre-sorted `index_id` and make pivoted rows.

@@ -383,7 +383,7 @@ def find_links_by_ref(
     ref: str,
     link_repo: BaseLinkRepository,
 ) -> List[Link]:
-    """Find links that match the given node reference."""
+    """Find links that match the given DataSpace reference."""
     # Try to match by exact 'other_unique_id'.
     matches = list(link_repo.find_by_other_unique_id(ref))
     if matches:
@@ -509,13 +509,13 @@ def make_get_link_id_func(
     when no unique match is found, the function will return
     the default ``link_id``.
     """
-    # Get links with matching node.
+    # Get links with matching DataSpace.
     links = find_links_by_ref(
         ref=ref,
         link_repo=link_repo,
     )
     if not links:
-        raise RuntimeError('no link found connecting nodes')
+        raise RuntimeError('no link found connecting DataSpaces')
 
     # Verify that links are current.
     links = [x for x in links if x.other_index_hash == other_index_hash]
@@ -529,7 +529,7 @@ def make_get_link_id_func(
             default_link_id = link.id
             break
     else:  # IF NO BREAK!
-        raise RuntimeError('no default link found for node')
+        raise RuntimeError('no default link found for DataSpace')
 
     # Build dict of index id values and attribute selector objects.
     links = [x for x in links if x.is_locally_complete and x.selectors]
@@ -604,8 +604,8 @@ def generate_mapping_elements(
     # If source index is different, yield unmatched left-side elements.
     if src_prop_repo.get('index_hash') != link.other_index_hash:
         for other_index_id in src_index_repo.find_all_index_ids():
-            # In a mapping, an undefined record is always considered matched
-            # to the other node's undefined record (can never be unmatched).
+            # In a mapping, an undefined record is always considered matched to
+            # the other DataSpace's undefined record (can never be unmatched).
             if other_index_id == 0:
                 continue
 
@@ -621,7 +621,7 @@ def set_default_weight_group(
     weight_group: Union[WeightGroup, None],
     property_repo: BasePropertyRepository,
 ) -> None:
-    """Sets the node's default weight group."""
+    """Sets the DataSpace's default weight group."""
     property_repo.add_or_update(
         key='default_weight_group_id',
         value=weight_group.id if weight_group else None,
@@ -632,7 +632,7 @@ def get_default_weight_group(
     property_repo: BasePropertyRepository,
     weight_group_repo: BaseWeightGroupRepository,
 ) -> WeightGroup:
-    """Return the node's default weight group."""
+    """Return the DataSpace's default weight group."""
     try:
         weight_group_id = property_repo.get('default_weight_group_id')
     except KeyError:
@@ -690,7 +690,7 @@ def find_matching_weight_groups(
 def get_all_partition_definitions(
     property_repo: BasePropertyRepository
 ) -> List[Set[str]]:
-    """Get all partition definitions defined for a node."""
+    """Get all partition definitions defined for a DataSpace."""
     try:
         values = cast(List[List[str]], property_repo.get('partition_definitions'))
         return [set(x) for x in values]
@@ -805,7 +805,7 @@ def rebuild_structure_table(
     columns = label_manager.get_columns()
     definitions = get_all_partition_definitions(property_repo)
     if columns and not definitions:
-        raise RuntimeError("node has columns but no partition definitions")
+        raise RuntimeError('DataSpace has columns but no partition definitions')
 
     # Regenerate new structure.
     for pdef in make_structure(definitions):
@@ -987,13 +987,13 @@ def refresh_or_rebuild_structure_granularity(
 
 
 def set_domain(domain: str, property_repo: BasePropertyRepository) -> None:
-    """Set the node's domain."""
+    """Set the DataSpace's domain."""
     check_type(domain, str)
     property_repo.add_or_update('domain', domain)
 
 
 def get_domain(property_repo: BasePropertyRepository) -> str:
-    """Return the node's domain."""
+    """Return the DataSpace's domain."""
     try:
         domain = property_repo.get('domain')
         return check_type(domain, str)
@@ -1007,7 +1007,7 @@ def set_registered_attributes(
     index_repo: BaseIndexRepository,
     property_repo: BasePropertyRepository,
 ) -> None:
-    """Set the node's registered attribute columns in user-defined order."""
+    """Set the DataSpace's registered attribute columns in user-defined order."""
     all_reserved_identifiers = \
         reserved_identifiers.union(COMMON_RESERVED_IDENTIFIERS)
 
@@ -1037,7 +1037,7 @@ def set_registered_attributes(
 def get_registered_attributes(
     property_repo: BasePropertyRepository,
 ) -> List[str]:
-    """Get the node's registered attribute columns in user-defined order."""
+    """Get the DataSpace's registered attribute columns in user-defined order."""
     try:
         registered_attributes = property_repo.get('registered_attributes')
         return check_type(registered_attributes, required_type=list)
@@ -1051,7 +1051,7 @@ def get_loaded_attributes(
 ) -> List[str]:
     """Get the names of attributes that have been loaded.
 
-    Raises a ``RuntimeError`` if node contains unregistered attributes.
+    Raises a ``RuntimeError`` if DataSpace contains unregistered attributes.
     """
     loaded_attrs_set = set(attribute_repo.get_all_attribute_names())
 
@@ -1060,7 +1060,7 @@ def get_loaded_attributes(
     if not loaded_attrs_set.issubset(registered_attrs_set):
         unregistered_attrs = loaded_attrs_set.difference(registered_attrs_set)
         raise RuntimeError(
-            f"node contains unregistered attributes: "
+            f"DataSpace contains unregistered attributes: "
             f"{', '.join(repr(x) for x in sorted(unregistered_attrs))}"
         )
 

@@ -2965,7 +2965,7 @@ class DataSpace(object):
         # Build and return a reader instance.
         node_reader = NodeReader(
             data=data,
-            node=self,
+            space=self,
             cache_to_drive=cache_to_drive,
             quantize_default=quantize,
         )

@@ -1321,7 +1321,7 @@ class TestRebuildStructureTable(unittest.TestCase):
         """Should fail if columns exist but partition_definitions are missing."""
         self.property_repo.delete('partition_definitions')  # <- No definitions!
 
-        regex = "node has columns but no partition definitions"
+        regex = 'DataSpace has columns but no partition definitions'
         with self.assertRaisesRegex(RuntimeError, regex):
             rebuild_structure_table(
                 self.label_manager,
@@ -1755,7 +1755,7 @@ class TestGetLoadedAttributes(unittest.TestCase):
         self.attribute_repo.add({'bar': 'bbb'})
         self.attribute_repo.add({'qux': 'ccc'})
 
-        regex = r"node contains unregistered attributes: 'qux'"
+        regex = r"DataSpace contains unregistered attributes: 'qux'"
         with self.assertRaisesRegex(RuntimeError, regex):
             get_loaded_attributes(
                 registered_attributes=['foo', 'bar', 'baz'],

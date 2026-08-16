@@ -367,9 +367,9 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             ['D', 'y', 'i', 100, 'D', 'y', 'i'],
         ]
         load_mapping(  # <- The method under test.
-            left_node=self.node1,
+            left_space=self.node1,
             direction='->',
-            right_node=self.node2,
+            right_space=self.node2,
             link_name='population',
             data=mapping_data,
         )
@@ -412,9 +412,9 @@ class TestLoadMapping(TwoNodesBaseTestCase):
         ]
 
         load_mapping(  # <- The method under test.
-            left_node=self.node1,
+            left_space=self.node1,
             direction='->',
-            right_node=self.node2,
+            right_space=self.node2,
             link_name='population',
             data=mapping_data,
             is_default=True,
@@ -464,9 +464,9 @@ class TestLoadMapping(TwoNodesBaseTestCase):
         ]
 
         load_mapping(  # <- The method under test.
-            left_node=self.node1,
+            left_space=self.node1,
             direction='<-->',  # <- Makes links in both directions!
-            right_node=self.node2,
+            right_space=self.node2,
             link_name='population',
             data=mapping_data,
             match_limit=2,
@@ -529,9 +529,9 @@ class TestLoadMapping(TwoNodesBaseTestCase):
             ['foo', 'D', 'y', 'i', 100, 'D', 'y', 'i'],
         ]
         load_mapping(  # <- The method under test.
-            left_node=self.node1,
+            left_space=self.node1,
             direction='->',
-            right_node=self.node2,
+            right_space=self.node2,
             link_name='population',
             data=mapping_data,
         )

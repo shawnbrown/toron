@@ -44,7 +44,7 @@ class TestNodeReader(unittest.TestCase):
                 (11, {'a': 'foo'}, 75.0),
                 (12, {'a': 'bar'}, 50.0),
             ],
-            node=DataSpace(),
+            space=DataSpace(),
         )
 
         # Check column names.
@@ -69,9 +69,9 @@ class TestNodeReader(unittest.TestCase):
                 self.assertEqual(cur.fetchall(), quant_data)
 
     def test_iteration_and_aggregation(self):
-        node = DataSpace()
-        node.add_index_columns('county', 'town')
-        node.insert_index([
+        space = DataSpace()
+        space.add_index_columns('county', 'town')
+        space.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -84,7 +84,7 @@ class TestNodeReader(unittest.TestCase):
                 (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
                 (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
             ],
-            node=node,
+            space=space,
         )
 
         self.assertEqual(reader.index_columns, ['county', 'town'])
@@ -99,9 +99,9 @@ class TestNodeReader(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_iteration_and_cleanup(self):
-        node = DataSpace()
-        node.add_index_columns('county', 'town')
-        node.insert_index([
+        space = DataSpace()
+        space.add_index_columns('county', 'town')
+        space.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -114,7 +114,7 @@ class TestNodeReader(unittest.TestCase):
                 (2, {'someattr': 'foo'}, 75.0),
                 (3, {'someattr': 'bar'}, 50.0),
             ],
-            node=node,
+            space=space,
             cache_to_drive=True,
         )
         next(reader)  # Start iteration.
@@ -126,9 +126,9 @@ class TestNodeReader(unittest.TestCase):
     @unittest.skipUnless(pd, 'requires pandas')
     def test_to_pandas(self):
         """Check convertion to Pandas DataFrame."""
-        node = DataSpace()
-        node.add_index_columns('county', 'town')
-        node.insert_index([
+        space = DataSpace()
+        space.add_index_columns('county', 'town')
+        space.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -141,7 +141,7 @@ class TestNodeReader(unittest.TestCase):
                 (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
                 (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
             ],
-            node=node,
+            space=space,
         )
 
         df = reader.to_pandas()  # <- Method under test.
@@ -158,9 +158,9 @@ class TestNodeReader(unittest.TestCase):
     @unittest.skipUnless(pd, 'requires pandas')
     def test_to_pandas_with_index(self):
         """Check convertion to Pandas DataFrame."""
-        node = DataSpace()
-        node.add_index_columns('county', 'town')
-        node.insert_index([
+        space = DataSpace()
+        space.add_index_columns('county', 'town')
+        space.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -173,7 +173,7 @@ class TestNodeReader(unittest.TestCase):
                 (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
                 (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
             ],
-            node=node,
+            space=space,
         )
 
         df = reader.to_pandas(index=True)  # <- Method under test.
@@ -194,17 +194,17 @@ class TestNodeReaderTranslate(unittest.TestCase):
         mock_node = unittest.mock.Mock()
         mock_node.unique_id = '00000000-0000-0000-0000-000000000000'
 
-        self.node = DataSpace()
-        self.node.add_index_columns('A', 'B', 'C')
-        self.node.add_partition_definitions({'A', 'B', 'C'})
-        self.node.insert_index([
+        self.space = DataSpace()
+        self.space.add_index_columns('A', 'B', 'C')
+        self.space.add_partition_definitions({'A', 'B', 'C'})
+        self.space.insert_index([
             ['A', 'B', 'C'],
             ['a1', 'b1', 'c1'],  # <- index_id=1
             ['a1', 'b1', 'c2'],  # <- index_id=2
             ['a1', 'b2', 'c3'],  # <- index_id=3
             ['a1', 'b2', 'c4'],  # <- index_id=4
         ])
-        self.node.add_link(
+        self.space.add_link(
             space=mock_node,
             link_name='edge 1',
             other_filename_hint='other-file',
@@ -212,7 +212,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
             selectors=['[foo="bar"]'],
             is_default=True,
         )
-        self.node.insert_mappings(
+        self.space.insert_mappings(
             space_or_ref='other-file',
             link_name='edge 1',
             data=[
@@ -228,14 +228,14 @@ class TestNodeReaderTranslate(unittest.TestCase):
                 (5,  31.0, 4, 'a1', 'b2', 'c4', b'\xe0'),  # proportion: 0.62
             ],
         )
-        self.node.add_link(
+        self.space.add_link(
             space=mock_node,
             other_filename_hint='other-file.toron',
             link_name='edge 2',
             description='Edge two description.',
             selectors=['[foo]'],
         )
-        self.node.insert_mappings(
+        self.space.insert_mappings(
             space_or_ref='other-file',
             link_name='edge 2',
             data=[
@@ -269,7 +269,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         ]
         reader = NodeReader(data, source_node)
 
-        reader.translate(self.node)
+        reader.translate(self.space)
 
         expected = {
             ('a1', 'b1', 'c1', 'bar', 60.0),
@@ -314,7 +314,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         ]
         reader = NodeReader(data, source_node)
 
-        reader.translate(self.node)
+        reader.translate(self.space)
 
         # If `new_quantities` were accumulated, it would be:
         expected = {
@@ -354,7 +354,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         ]
         reader = NodeReader(data, source_node)
 
-        reader.translate(self.node, quantize=True)  # <- Quantized translation.
+        reader.translate(self.space, quantize=True)  # <- Quantized translation.
 
         expected = {
             ('a1', 'b1', 'c1', 'bar', None,     60.0),  # <- Unchanged (Edge 1)
@@ -401,7 +401,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
 
         # Translate reader using right-shift operator.
         reader = NodeReader(data, source_node)
-        reader = reader >> self.node  # Right-shift!
+        reader = reader >> self.space  # Right-shift!
         expected = {
             ('a1', 'b1', 'c1', 'bar',  60.0),
             ('a1', 'b1', 'c2', 'bar', 165.0),
@@ -412,7 +412,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
 
         # Translate reader whose `quantize_default` is True using right-shift.
         reader = NodeReader(data, source_node, quantize_default=True)
-        reader = reader >> self.node  # Right-shift!
+        reader = reader >> self.space  # Right-shift!
         expected = {
             ('a1', 'b1', 'c1', 'bar',  60.0),
             ('a1', 'b1', 'c2', 'bar', 165.0),
@@ -439,7 +439,7 @@ class TestNodeReaderTranslate(unittest.TestCase):
         ]
         reader = NodeReader(data, source_node)
 
-        reader.translate(self.node)  # <- Method under test.
+        reader.translate(self.space)  # <- Method under test.
 
         expected = {
             ('-',  '-',  '-',  'bar',  25.0),  # <- Remains unchanged.
@@ -453,9 +453,9 @@ class TestNodeReaderTranslate(unittest.TestCase):
 
 class TestPivotReader(unittest.TestCase):
     def setUp(self):
-        node = DataSpace()
-        node.add_index_columns('county', 'town')
-        node.insert_index([
+        space = DataSpace()
+        space.add_index_columns('county', 'town')
+        space.insert_index([
             ('county',  'town'),
             ('ALAMEDA', 'HAYWARD'),
             ('BUTTE',   'PALERMO'),
@@ -474,7 +474,7 @@ class TestPivotReader(unittest.TestCase):
                 (3, {'attr1': 'foo', 'attr3': 'YYY'}, 11.0),  # <- Should be summed together before pivot.
                 (3, {'attr3': 'qux'},                 60.0),
             ],
-            node=node,
+            space=space,
         )
         self.reader = reader
 
