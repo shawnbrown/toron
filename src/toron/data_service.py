@@ -1068,12 +1068,12 @@ def get_loaded_attributes(
     return [attr for attr in registered_attributes if attr in loaded_attrs_set]
 
 
-def set_labels_in_display_order(
+def set_label_column_display_order(
     labels: List[str],
     index_repo: BaseIndexRepository,
     property_repo: BasePropertyRepository,
 ) -> None:
-    """Save the list of *labels* as the specified display order."""
+    """Save a list of label names as the specified display order."""
     all_labels = set(index_repo.get_label_names())
 
     unknown_labels = [x for x in labels if x not in all_labels]
@@ -1085,11 +1085,11 @@ def set_labels_in_display_order(
     property_repo.add_or_update('label_display_order', labels)
 
 
-def get_labels_in_display_order(
+def get_label_column_display_order(
     index_repo: BaseIndexRepository,
     property_repo: BasePropertyRepository,
 ) -> List[str]:
-    """Return a list of labels in their specified display order.
+    """Return a list of label names in their specified display order.
 
     Any labels without a specified order will fall back to storage
     order and appear at the end of the list.
@@ -1155,7 +1155,7 @@ def get_dataspace_info_text(
         domain_str = 'None'
 
     # Get list of index column names.
-    labels_in_display_order = get_labels_in_display_order(
+    labels_in_display_order = get_label_column_display_order(
         index_repo=index_repo,
         property_repo=property_repo,
     )

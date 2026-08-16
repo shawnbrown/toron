@@ -45,8 +45,8 @@ from toron.data_service import (
     set_registered_attributes,
     get_registered_attributes,
     get_loaded_attributes,
-    set_labels_in_display_order,
-    get_labels_in_display_order,
+    set_label_column_display_order,
+    get_label_column_display_order,
     change_element_order,
 )
 
@@ -1780,14 +1780,14 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
     def test_simple_set_and_get(self):
         self.label_manager.add_columns('D', 'C', 'B', 'A')
 
-        set_labels_in_display_order(
+        set_label_column_display_order(
             labels=['A', 'B', 'C', 'D'],
             index_repo=self.index_repo,
             property_repo=self.property_repo,
         )
 
         self.assertEqual(
-            get_labels_in_display_order(self.index_repo, self.property_repo),
+            get_label_column_display_order(self.index_repo, self.property_repo),
             ['A', 'B', 'C', 'D'],
         )
 
@@ -1795,7 +1795,7 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
         self.label_manager.add_columns('D', 'C', 'B', 'A')
 
         self.assertEqual(
-            get_labels_in_display_order(self.index_repo, self.property_repo),
+            get_label_column_display_order(self.index_repo, self.property_repo),
             ['D', 'C', 'B', 'A'],
             msg='when no display order set, should remain in storage order',
         )
@@ -1803,14 +1803,14 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
     def test_display_order_and_storage_order(self):
         self.label_manager.add_columns('D', 'C', 'B', 'A')
 
-        set_labels_in_display_order(
+        set_label_column_display_order(
             labels=['A', 'B'],  # <- Set order of columns 'A' and 'B' only.
             index_repo=self.index_repo,
             property_repo=self.property_repo,
         )
 
         self.assertEqual(
-            get_labels_in_display_order(self.index_repo, self.property_repo),
+            get_label_column_display_order(self.index_repo, self.property_repo),
             ['A', 'B', 'D', 'C'],
             msg='colmns D and C should appear at the end in storage order',
         )
@@ -1820,7 +1820,7 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
 
         regex = r"cannot set display order for unknown labels: 'D', 'E'"
         with self.assertRaisesRegex(ValueError, regex):
-            set_labels_in_display_order(
+            set_label_column_display_order(
                 labels=['A', 'B', 'C', 'D', 'E'],  # <- 'C' and 'D' are not labels.
                 index_repo=self.index_repo,
                 property_repo=self.property_repo,
@@ -1828,7 +1828,7 @@ class TestSetAndGetLabelsInDisplayOrder(unittest.TestCase):
 
     def test_no_labels_created(self):
         self.assertEqual(
-            get_labels_in_display_order(self.index_repo, self.property_repo),
+            get_label_column_display_order(self.index_repo, self.property_repo),
             [],
             msg='should return empty list',
         )

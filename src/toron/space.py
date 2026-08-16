@@ -71,8 +71,8 @@ from .data_service import (
     get_domain,
     set_registered_attributes,
     get_registered_attributes,
-    set_labels_in_display_order,
-    get_labels_in_display_order,
+    set_label_column_display_order,
+    get_label_column_display_order,
     change_element_order,
     get_dataspace_info_text,
 )
@@ -402,7 +402,7 @@ class DataSpace(object):
     def get_label_columns(self) -> List[str]:
         """Return label columns in display order."""
         with self._managed_cursor() as cursor:
-            return get_labels_in_display_order(
+            return get_label_column_display_order(
                 index_repo=self._dal.IndexRepository(cursor),
                 property_repo=self._dal.PropertyRepository(cursor),
             )
@@ -413,9 +413,9 @@ class DataSpace(object):
             index_repo = self._dal.IndexRepository(cursor)
             property_repo = self._dal.PropertyRepository(cursor)
 
-            ordered_labels = get_labels_in_display_order(index_repo, property_repo)
+            ordered_labels = get_label_column_display_order(index_repo, property_repo)
             reordered_labels = change_element_order(ordered_labels, label, offset=offset)
-            set_labels_in_display_order(reordered_labels, index_repo, property_repo)
+            set_label_column_display_order(reordered_labels, index_repo, property_repo)
 
     def rename_label_column(self, old_label: str, new_label: str) -> None:
         """Rename a label column."""
