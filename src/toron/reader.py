@@ -252,7 +252,7 @@ class NodeReader(object):
         attr_keys = self._attr_keys  # Assign locally to reduce dot-lookups.
         _loads = loads  # Assign locally to reduce scope-lookups.
 
-        # Make `reorder()` helper function.
+        # Make helper function for changing storage order to display order.
         storage_order = self._space.index_columns
         display_order = self._space.get_label_columns()
         indexes = [storage_order.index(col) for col in display_order]
@@ -260,7 +260,7 @@ class NodeReader(object):
 
         with self._space._managed_cursor() as space_cur:
             index_repo = self._space._dal.IndexRepository(space_cur)
-            index_repo_get = index_repo.get  # Assign locally to reduce dot-lookups.
+            index_repo_get = index_repo.get  # Assign to reduce dot-lookups.
 
             with self._managed_connection() as con:
                 cur = con.execute("""
