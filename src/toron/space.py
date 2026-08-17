@@ -3009,9 +3009,12 @@ class DataSpace(object):
 
 
 def read_file(filepath: Union[str, bytes, os.PathLike], **kwds) -> DataSpace:
-    """Read a ``.toron`` file into a DataSpace.
+    """Load a toron file (`.toron` or `.ds`) into memory as a DataSpace.
 
-    Any additional keyword arguments (``**kwds``) are passed along to
+    This loads the file's contents into memory, creating a copy of the
+    data independent from the original file on drive.
+
+    Any additional keyword arguments (`**kwds`) are passed along to
     the lower-level file interface.
     """
     backend = data_access.get_backend_from_path(filepath)
@@ -3031,15 +3034,18 @@ def bind_file(
     mode: Literal['ro', 'rw', 'rwc'],
     **kwds: Any,
 ) -> DataSpace:
-    """Bind a DataSpace directly to its ``.toron`` file on drive.
+    """Bind a DataSpace to a toron file (`.toron` or `.ds`) on drive.
+
+    This establishes a connection directly to the file on drive without
+    loading its contents into memory.
 
     The *mode* must be one of the following:
 
-    * ``'ro'``: read-only
-    * ``'rw'``: read and write
-    * ``'rwc'``: read, write, and create (if file doesn't already exist)
+    * `'ro'`: read-only
+    * `'rw'`: read and write
+    * `'rwc'`: read, write, and create (if file doesn't already exist)
 
-    Any additional keyword arguments (``**kwds``) are passed along to
+    Any additional keyword arguments (`**kwds`) are passed along to
     the lower-level file interface.
 
     .. code-block:: python
