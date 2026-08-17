@@ -11,6 +11,7 @@ from contextlib import (
 )
 from itertools import chain, groupby
 from json import dumps, loads
+from operator import itemgetter
 from tempfile import NamedTemporaryFile
 
 from toron._typing import (
@@ -134,7 +135,7 @@ class NodeReader(object):
         self._in_memory_connection = connection
         self._data = None  # <- Assigned only when iteration begins.
         self._space = space
-        self._index_columns = space.index_columns
+        self._index_columns = space.get_label_columns()  # Columns in display order.
         self._attr_keys = sorted(attr_keys)
 
         # Assign `close()` method (gets a callable finalizer object).
@@ -251,8 +252,16 @@ class NodeReader(object):
         attr_keys = self._attr_keys  # Assign locally to reduce dot-lookups.
         _loads = loads  # Assign locally to reduce scope-lookups.
 
+        # Make `reorder()` helper function.
+        storage_order = self._space.index_columns
+        display_order = self._space.get_label_columns()
+        indexes = [storage_order.index(col) for col in display_order]
+        reorder = itemgetter(*indexes) if indexes else lambda x: x
+
         with self._space._managed_cursor() as space_cur:
             index_repo = self._space._dal.IndexRepository(space_cur)
+            index_repo_get = index_repo.get  # Assign locally to reduce dot-lookups.
+
             with self._managed_connection() as con:
                 cur = con.execute("""
                     SELECT index_id, attributes, SUM(quant_value) AS quant_value
@@ -261,7 +270,7 @@ class NodeReader(object):
                     GROUP BY index_id, attributes
                 """)
                 for index_id, attributes, quant_value in cur:
-                    labels = index_repo.get(index_id).labels
+                    labels = reorder(index_repo_get(index_id).labels)
                     attr_vals = tuple(map(_loads(attributes).get, attr_keys))
                     yield labels + attr_vals + (quant_value,)
 
@@ -352,7 +361,7 @@ class NodeReader(object):
                 cur1.execute('ALTER TABLE main.new_quant_data RENAME TO quant_data')
 
         self._space = space  # Replace old space reference with the new space.
-        self._index_columns = space.index_columns
+        self._index_columns = space.get_label_columns()  # Columns in display order.
 
     def __rshift__(self, other: 'DataSpace') -> 'NodeReader':
         """Translate quantities to the index of the *other* space."""

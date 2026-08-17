@@ -123,6 +123,40 @@ class TestNodeReader(unittest.TestCase):
         self.assertFalse(os.path.isfile(reader._current_working_path))  # File should be removed.
         self.assertEqual(list(reader), [])  # No more records after closing.
 
+    def test_different_display_order(self):
+        """Index labels should be given in display order."""
+        space = DataSpace()
+        space.add_index_columns('county', 'town')
+        space.insert_index([
+            ('county',  'town'),
+            ('ALAMEDA', 'HAYWARD'),
+            ('BUTTE',   'PALERMO'),
+            ('COLUSA',  'GRIMES'),
+        ])
+        # Move "town" left 1 position.
+        space.change_label_order('town', offset=-1)  # <- Change display order!
+
+        reader = NodeReader(
+            data=[
+                (1, {'attr1': 'foo'},                 25.0),
+                (2, {'attr1': 'foo'},                 75.0),
+                (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
+                (3, {'attr1': 'bar', 'attr2': 'baz'}, 25.0),
+            ],
+            space=space,
+        )
+
+        self.assertEqual(reader.index_columns, ['town', 'county'])
+        self.assertEqual(reader.columns, ['town', 'county', 'attr1', 'attr2', 'value'])
+
+        result = list(reader)
+        expected = [
+            ('HAYWARD', 'ALAMEDA', 'foo', None,  25.0),
+            ('PALERMO', 'BUTTE',   'foo', None,  75.0),
+            ('GRIMES',  'COLUSA',  'bar', 'baz', 50.0),
+        ]
+        self.assertEqual(result, expected)
+
     @unittest.skipUnless(pd, 'requires pandas')
     def test_to_pandas(self):
         """Check convertion to Pandas DataFrame."""
