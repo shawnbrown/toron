@@ -38,7 +38,9 @@ def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:
             cardinality = index_repo.get_cardinality(include_undefined=False)
 
         if cardinality == 0:
-            applogger.warning(f'node contains no index records')
+            applogger.warning('file contains no index records (you must '
+                              'load index records before you can load '
+                              'quantity records)')
 
         applogger.error(f'operation cancelled, {err}')
         return ExitCode.ERR
