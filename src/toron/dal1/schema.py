@@ -1,16 +1,15 @@
-"""Database schema functions and information for a Toron node file.
+"""Database schema functions and information for a Toron DataSpace.
 
-The DAL1 backend stores a Toron node as an individual file. The file
-format is managed, internally, as a relational database. The schema for
-this database is shown below as a simplified ERD (entity relationship
-diagram). SQL foreign key relationships are represented with hyphen and
-pipe characters (``---`` and ``|``). Other, more complex relationships
-are represented with bullet points (``•••``) and these are enforced at
-the application layer:
+The DAL1 backend stores a Toron DataSpace as SQLite 3 database. The
+schema for this database is shown below as a simplified ERD (entity
+relationship diagram). SQL foreign key relationships are represented
+with hyphen and pipe characters (``---`` and ``|``). Other, more complex
+relationships are represented with bullet points (``•••``) and these are
+enforced at the application layer:
 
 .. code-block:: text
 
-                                     <Other Node> •••••••
+                                <Other DataSpace> •••••••
                                                         •   +--------------------+
                                   +----------------+    •   | attribute_group    |
   +----------------------+        | mapping        |    •   +--------------------+
@@ -119,7 +118,7 @@ with closing(sqlite3.connect(':memory:')) as _con:
 
 
 def create_schema_tables(cur: sqlite3.Cursor) -> None:
-    """Create tables and set starting values for Toron node schema."""
+    """Create tables and set starting values for Toron DataSpace schema."""
     cur.executescript("""
         PRAGMA foreign_keys = ON;
 
@@ -229,7 +228,7 @@ def create_schema_tables(cur: sqlite3.Cursor) -> None:
     cur.execute(f"PRAGMA main.application_id = {int.from_bytes(TORON_MAGIC_NUMBER, 'big')}")
     cur.execute(f"PRAGMA main.user_version = {int.from_bytes(b'DAL1', 'big')}")
 
-    # Set unique_id for node (using uuid4() for most random value).
+    # Set unique_id for DataSpace (using uuid4() for most random value).
     cur.execute(
         'INSERT INTO main.property (key, value) VALUES (?, ?)',
         ('unique_id', json_dumps(str(uuid4()))),
@@ -356,7 +355,7 @@ def drop_schema_constraints(cur: sqlite3.Cursor) -> None:
 
 def create_node_schema(cur: sqlite3.Cursor) -> None:
     """Creates schema, initial values, indexes, and persistent triggers
-    for a Toron node dataset.
+    for a Toron DataSpace.
 
     This function expects a *cursor* to a newly-created, or otherwise
     empty database.
@@ -406,12 +405,12 @@ def verify_foreign_key_check(cursor: sqlite3.Cursor) -> None:
 # schema code itself doesn't need to do this sort of checking.
 
 def verify_node_schema(cur: sqlite3.Cursor) -> None:
-    """Raise RuntimeError if connected db does not have node tables.
+    """Raise RuntimeError if connected db does not have DataSpace tables.
 
     This function performs a quick check--it does not verify columns
     or database integrity. If you already know that a connected database
-    contains a Toron node schema, there is no benefit to running this
-    function.
+    contains a Toron DataSpace schema, there is no benefit to running
+    this function.
     """
     msg = 'unknown or unsupported file format'
     try:
@@ -808,7 +807,7 @@ def create_functions_and_temporary_triggers(
     .. important::
 
         This function should only be called with a *connection* to a
-        Toron node SQL schema. It should not be called on an empty
+        Toron DataSpace SQL schema. It should not be called on an empty
         database or a database containing some other schema.
     """
     if not SQLITE_ENABLE_JSON1:
