@@ -109,8 +109,8 @@ def get_parser() -> argparse.ArgumentParser:
     # Main parser
     ####################################################################
     parser = ToronArgumentParser(
-        prog='toron',
-        description="Show and edit a Toron file's data and elements.",
+        prog='toron FILE',  # Includes FILE argument.
+        description='View and edit the data and elements of a Toron FILE.',
         epilog='Toron is a tool for multi-level data disaggregation and translation.',
     )
     parser.add_argument('--version',
@@ -118,7 +118,7 @@ def get_parser() -> argparse.ArgumentParser:
                         version=f'%(prog)s {__version__}')
     parser.add_argument('filepath',
                         type=str,
-                        help='path to a Toron file',
+                        help=argparse.SUPPRESS,  # Included in `prog` string.
                         metavar='FILE')
     subparsers = parser.add_subparsers(
         dest='command',
