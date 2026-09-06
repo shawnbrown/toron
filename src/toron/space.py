@@ -2407,9 +2407,9 @@ class DataSpace(object):
 
                     if on_existing == 'abort':
                         raise ValueError(
-                            'data contains quantities for locations and '
-                            'attributes that have already been loaded; use '
-                            '--on-existing to change load behavior'
+                            'data contains locations and attributes that '
+                            'have already been loaded; use --on-existing '
+                            'to change load behavior'
                         )
                     elif on_existing == 'ignore':
                         counter['existing_ignored'] += 1

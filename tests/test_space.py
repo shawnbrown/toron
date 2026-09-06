@@ -4917,7 +4917,11 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
             )
 
     def test_on_existing_abort(self):
-        with self.assertRaises(ValueError):
+        regex = (
+            'data contains locations and attributes that have already '
+            'been loaded; use --on-existing to change load behavior'
+        )
+        with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities2(  # <- Method under test.
                 value_column='counts',
                 data=[
