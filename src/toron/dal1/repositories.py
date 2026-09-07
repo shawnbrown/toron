@@ -739,35 +739,6 @@ class QuantityRepository(BaseQuantityRepository):
             quantity_id, loc_id, attr_id, val = quantity
             yield Quantity(quantity_id, loc_id, attr_id, float(val))
 
-    def find(
-        self,
-        *,
-        location_id: Optional[int] = None,
-        attribute_group_id: Optional[int] = None,
-    ) -> Iterator[Quantity]:
-        """Find records matching given id values.
-
-        If no id values are given, the returned iterator should contain
-        no items.
-        """
-        criteria = []
-        if location_id is not None:
-            criteria.append('_location_id=:location_id')
-        if attribute_group_id is not None:
-            criteria.append('attribute_group_id=:attribute_group_id')
-
-        if criteria:
-            sql = f'SELECT * FROM main.quantity WHERE {" AND ".join(criteria)}'
-            parameters = {
-                'location_id': location_id,
-                'attribute_group_id': attribute_group_id,
-            }
-            self._cursor.execute(sql, parameters)
-
-            for quantity in self._cursor:
-                quantity_id, loc_id, attr_id, val = quantity
-                yield Quantity(quantity_id, loc_id, attr_id, float(val))
-
     def find_by_structure(
         self,
         structure: Structure,

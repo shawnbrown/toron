@@ -1189,44 +1189,42 @@ class QuantityRepositoryBaseTest(ABC):
         self.assertIsInstance(self.repository.get(2).value, float)
         self.assertIsInstance(self.repository.get(3).value, float)
 
-    def test_find(self):
+    def test_find_by_location_id(self):
         self.repository.add(location_id=1, attribute_group_id=1, value=15.0)  # Add quantity_id 1
         self.repository.add(location_id=2, attribute_group_id=1, value=20.0)  # Add quantity_id 2
         self.repository.add(location_id=1, attribute_group_id=2, value=25.0)  # Add quantity_id 3
         self.repository.add(location_id=2, attribute_group_id=2, value=45.0)  # Add quantity_id 4
 
-        result = list(self.repository.find(location_id=1, attribute_group_id=2))
         self.assertEqual(
-            result,
-            [Quantity(id=3, location_id=1, attribute_group_id=2, value=25.0)],
-            msg='matches location_id 1 and attribute_group_id 2',
-        )
-        self.assertIsInstance(result[0].value, float)
-
-        self.assertEqual(
-            list(self.repository.find(location_id=1)),
+            list(self.repository.find_by_location_id(1)),
             [Quantity(id=1, location_id=1, attribute_group_id=1, value=15.0),
              Quantity(id=3, location_id=1, attribute_group_id=2, value=25.0)],
             msg='matches location_id 1',
         )
 
         self.assertEqual(
-            list(self.repository.find(attribute_group_id=2)),
+            list(self.repository.find_by_location_id(4)),
+            [],
+            msg='matches location_id 4 (zero matching records)',
+        )
+
+    def test_find_by_attribute_group_id(self):
+        self.repository.add(location_id=1, attribute_group_id=1, value=15.0)  # Add quantity_id 1
+        self.repository.add(location_id=2, attribute_group_id=1, value=20.0)  # Add quantity_id 2
+        self.repository.add(location_id=1, attribute_group_id=2, value=25.0)  # Add quantity_id 3
+        self.repository.add(location_id=2, attribute_group_id=2, value=45.0)  # Add quantity_id 4
+
+        self.assertEqual(
+            list(self.repository.find_by_attribute_group_id(2)),
             [Quantity(id=3, location_id=1, attribute_group_id=2, value=25.0),
              Quantity(id=4, location_id=2, attribute_group_id=2, value=45.0)],
             msg='matches attribute_group_id 2',
         )
 
         self.assertEqual(
-            list(self.repository.find(location_id=4, attribute_group_id=2)),
+            list(self.repository.find_by_attribute_group_id(3)),
             [],
-            msg='matches location_id 4 and attribute_group_id 2 (zero matching records)',
-        )
-
-        self.assertEqual(
-            list(self.repository.find()),
-            [],
-            msg='when no ids given, return empty iterator',
+            msg='matches attribute_group_id 3 (zero matching records)',
         )
 
 

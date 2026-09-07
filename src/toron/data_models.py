@@ -958,19 +958,6 @@ class BaseQuantityRepository(ABC):
         """Find records matching given *attribute_group_id* value."""
 
     @abstractmethod
-    def find(
-        self,
-        *,
-        location_id: Optional[int] = None,
-        attribute_group_id: Optional[int] = None,
-    ) -> Iterator[Quantity]:
-        """Find records matching given id values.
-
-        If no id values are given, the returned iterator should contain
-        no items.
-        """
-
-    @abstractmethod
     def find_by_structure(
         self,
         structure: Structure,
