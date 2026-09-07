@@ -466,7 +466,7 @@ def get_parser() -> argparse.ArgumentParser:
                                  help='allow quantities without matching partitions')
     parser_quantity.add_argument('--on-existing',
                                  default='abort',
-                                 choices=['ignore', 'replace', 'sum', 'abort'],
+                                 choices=['abort', 'sum', 'replace', 'ignore'],
                                  dest='on_existing',
                                  help='strategy for existing quantities (default: %(default)s)')
     parser_quantity.set_defaults(func=command_quantity.process_quantity_action)

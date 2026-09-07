@@ -2300,7 +2300,7 @@ class DataSpace(object):
         columns: Optional[Sequence[str]] = None,
         allow_invalid_label: bool = False,
         allow_invalid_partition: bool = False,
-        on_existing: Literal['abort', 'ignore', 'replace', 'sum'] = 'abort',
+        on_existing: Literal['abort', 'sum', 'replace', 'ignore'] = 'abort',
     ) -> None:
         """Load quantity and attribute values."""
         # This new method uses "registered attributes", unlike the original.
@@ -2408,15 +2408,6 @@ class DataSpace(object):
                         raise ValueError(
                             f'{msg}; use --on-existing to change load behavior'
                         )
-                    elif on_existing == 'ignore':
-                        counter['existing_ignored'] += 1
-                        continue  # Skip to next.
-                    elif on_existing == 'replace':
-                        quantity = quantity_repo.get_by_location_id_and_attribute_group_id(
-                            location.id, attribute_group.id,
-                        )
-                        quantity_repo.update(replace(quantity, value=row_dict[value_column]))
-                        counter['existing_replaced'] += 1
                     elif on_existing == 'sum':
                         quantity = quantity_repo.get_by_location_id_and_attribute_group_id(
                             location.id, attribute_group.id,
@@ -2424,10 +2415,19 @@ class DataSpace(object):
                         summed_value = quantity.value + float(row_dict[value_column])
                         quantity_repo.update(replace(quantity, value=summed_value))
                         counter['existing_summed'] += 1
+                    elif on_existing == 'replace':
+                        quantity = quantity_repo.get_by_location_id_and_attribute_group_id(
+                            location.id, attribute_group.id,
+                        )
+                        quantity_repo.update(replace(quantity, value=row_dict[value_column]))
+                        counter['existing_replaced'] += 1
+                    elif on_existing == 'ignore':
+                        counter['existing_ignored'] += 1
+                        continue  # Skip to next.
                     else:
                         raise ValueError(
-                            f"--on-existing must be 'abort', 'ignore', "
-                            f"'replace', or 'sum'; got {on_existing!r}"
+                            f"--on-existing must be 'abort', 'sum', "
+                            f"'replace', or 'ignore'; got {on_existing!r}"
                         )
 
         if counter['no_attrs']:
