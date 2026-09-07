@@ -951,11 +951,11 @@ class BaseQuantityRepository(ABC):
     def find_by_location_id(self, location_id: int) -> Iterator[Quantity]:
         """Find records matching given *location_id* value."""
 
-    #@abstractmethod
-    #def find_by_attribute_group_id(
-    #    self, attribute_group_id: int
-    #) -> Iterator[Quantity]:
-    #    """Find records matching given *attribute_group_id* value."""
+    @abstractmethod
+    def find_by_attribute_group_id(
+        self, attribute_group_id: int
+    ) -> Iterator[Quantity]:
+        """Find records matching given *attribute_group_id* value."""
 
     @abstractmethod
     def find(

@@ -727,6 +727,18 @@ class QuantityRepository(BaseQuantityRepository):
             quantity_id, loc_id, attr_id, val = quantity
             yield Quantity(quantity_id, loc_id, attr_id, float(val))
 
+    def find_by_attribute_group_id(
+        self, attribute_group_id: int
+    ) -> Iterator[Quantity]:
+        """Find records matching given *attribute_group_id* value."""
+        self._cursor.execute(
+            'SELECT * FROM main.quantity WHERE attribute_group_id=?',
+            (attribute_group_id,),
+        )
+        for quantity in self._cursor:
+            quantity_id, loc_id, attr_id, val = quantity
+            yield Quantity(quantity_id, loc_id, attr_id, float(val))
+
     def find(
         self,
         *,

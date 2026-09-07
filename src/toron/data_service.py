@@ -258,7 +258,7 @@ def find_attribute_groups_without_quantity(
 ) -> Iterator[AttributeGroup]:
     """Find AttributeGroup records that have no matching Quantity."""
     for attr_group in attrib_repo.find_all():
-        quantities = alt_quantity_repo.find(attribute_group_id=attr_group.id)
+        quantities = alt_quantity_repo.find_by_attribute_group_id(attr_group.id)
         if not any(quantities):
             yield attr_group
 
