@@ -948,6 +948,10 @@ class BaseQuantityRepository(ABC):
         """
 
     @abstractmethod
+    def find_all(self) -> Iterator[Quantity]:
+        """Find all quantity records."""
+
+    @abstractmethod
     def find_by_location_id(self, location_id: int) -> Iterator[Quantity]:
         """Find records matching given *location_id* value."""
 
