@@ -4918,8 +4918,8 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
 
     def test_on_existing_abort(self):
         regex = (
-            'data contains locations and attributes that have already '
-            'been loaded; use --on-existing to change load behavior'
+            'data contains duplicate location and attribute combos; '
+            'use --on-existing to change load behavior'
         )
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities2(  # <- Method under test.
@@ -4927,6 +4927,28 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
                 data=[
                     ('state', 'county', 'category', 'sex',   'counts'),
                     ('OH',    'BUTLER', 'TOTAL',    'MALE',  180140),
+                    ('OH',    'BUTLER', 'TOTAL',    'MALE',  566499),
+                ],
+                on_existing='abort',  # <- This is the default value.
+            )
+
+        # Add existing record, then insert conflicting value later.
+        self.node.insert_quantities2(
+            value_column='counts',
+            data=[('state', 'county', 'category', 'sex',   'counts'),
+                  ('OH',    'BUTLER', 'TOTAL',    'MALE',  180140)],
+        )
+        # Message includes "or matches combos that have already been imported".
+        regex = (
+            'data contains duplicate location and attribute combos '
+            'or matches combos that have already been imported; use '
+            '--on-existing to change load behavior'
+        )
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=[
+                    ('state', 'county', 'category', 'sex',   'counts'),
                     ('OH',    'BUTLER', 'TOTAL',    'MALE',  566499),
                 ],
                 on_existing='abort',  # <- This is the default value.
@@ -5198,7 +5220,7 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
                 allow_invalid_partition=True,
             )
 
-        regex = r"already been loaded"
+        regex = 'duplicate location and attribute'
         msg = 'third: should check for existing quantity (if allowing other issues)'
         with self.assertRaisesRegex(ValueError, regex, msg=msg):
             self.node.insert_quantities2(

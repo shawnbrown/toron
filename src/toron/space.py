@@ -2330,8 +2330,8 @@ class DataSpace(object):
             )
 
             domain = self.domain  # Assign locally to reduce dot-lookups.
-
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
+            starting_empty = not any(quantity_repo.find_all())
 
             for row in data:
                 row_dict = dict(zip(columns, row))
@@ -2405,10 +2405,18 @@ class DataSpace(object):
                         raise err  # Re-raise original error.
 
                     if on_existing == 'abort':
+                        if starting_empty:
+                            # When no quantities exist prior to importing,
+                            # we know that duplicates must exist in the
+                            # given data itself.
+                            msg = ('data contains duplicate location and '
+                                   'attribute combos')
+                        else:
+                            msg = ('data contains duplicate location and '
+                                   'attribute combos or matches combos that '
+                                   'have already been imported')
                         raise ValueError(
-                            'data contains locations and attributes that '
-                            'have already been loaded; use --on-existing '
-                            'to change load behavior'
+                            f'{msg}; use --on-existing to change load behavior'
                         )
                     elif on_existing == 'ignore':
                         counter['existing_ignored'] += 1
