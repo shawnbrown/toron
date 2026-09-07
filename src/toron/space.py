@@ -2488,7 +2488,7 @@ class DataSpace(object):
                 yield list(chain(domain_col, label_cols, registered_attributes, ['quantity']))
 
             for location in location_repo.find_all():
-                quantities = quantity_repo.find(location_id=location.id)
+                quantities = quantity_repo.find_by_location_id(location.id)
                 for quantity in quantities:
                     label_vals = location.labels
 
@@ -2598,7 +2598,7 @@ class DataSpace(object):
                 yield domain_cols + label_cols + attr_cols + ['quantity']
 
             for location in location_repo.find_all():
-                quantities = quantity_repo.find(location_id=location.id)
+                quantities = quantity_repo.find_by_location_id(location.id)
                 for quantity in quantities:
                     attr_group = attribute_repo.get(quantity.attribute_group_id)
                     attr_dict = attr_group.attributes
@@ -2639,7 +2639,7 @@ class DataSpace(object):
                 aux_index_repo=aux_index_repo,
             )
             for location in locations:
-                quantities = quantity_repo.find(location_id=location.id)
+                quantities = quantity_repo.find_by_location_id(location.id)
                 for quantity in quantities:
                     attr_group = attribute_repo.get(quantity.attribute_group_id)
                     attr_dict = attr_group.attributes
@@ -2662,7 +2662,7 @@ class DataSpace(object):
                     aux_index_repo=index_repo,
                 )
                 for location in locations:
-                    quantities = quantity_repo.find(location_id=location.id)
+                    quantities = quantity_repo.find_by_location_id(location.id)
                     quantity_ids = array.array('q', (x.id for x in quantities))
                     for quantity_id in quantity_ids:
                         quantity_repo.delete(quantity_id)
@@ -2720,7 +2720,7 @@ class DataSpace(object):
             )
             for location in locations:
                 labels = list(location.labels)
-                quantities = quantity_repo.find(location_id=location.id)
+                quantities = quantity_repo.find_by_location_id(location.id)
                 for quantity in quantities:
                     attr_group = attribute_repo.get(quantity.attribute_group_id)
                     attr_dict = attr_group.attributes

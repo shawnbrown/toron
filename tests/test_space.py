@@ -4695,7 +4695,7 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
             quantity_repo = self.node._dal.QuantityRepository(cur2)
             quantities = []
             for location in location_repo.find_all():
-                quantity = quantity_repo.find(location_id=location.id)
+                quantity = quantity_repo.find_by_location_id(location.id)
                 quantities.extend(quantity)
             quantities = sorted(quantities, key=lambda x: x.id)
         self.assertEqual(quantities, values, msg=msg)
@@ -5314,7 +5314,7 @@ class TestDataSpaceInsertQuantities(unittest.TestCase):
             quantity_repo = node._dal.QuantityRepository(cur2)
             quantities = []
             for location in location_repo.find_all():
-                quantity = quantity_repo.find(location_id=location.id)
+                quantity = quantity_repo.find_by_location_id(location.id)
                 quantities.extend(quantity)
             return sorted(quantities, key=lambda x: x.id)
 

@@ -947,9 +947,9 @@ class BaseQuantityRepository(ABC):
         If no quantity matches the given ids, a ``KeyError`` is raised.
         """
 
-    #@abstractmethod
-    #def find_by_location_id(self, location_id: int) -> Iterator[Quantity]:
-    #    """Find records matching given *location_id* value."""
+    @abstractmethod
+    def find_by_location_id(self, location_id: int) -> Iterator[Quantity]:
+        """Find records matching given *location_id* value."""
 
     #@abstractmethod
     #def find_by_attribute_group_id(

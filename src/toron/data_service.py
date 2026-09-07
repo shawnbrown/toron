@@ -269,7 +269,7 @@ def find_locations_without_quantity(
 ) -> Iterator[Location]:
     """Find Location records that have no matching Quantity."""
     for location in location_repo.find_all():
-        quantities = alt_quantity_repo.find(location_id=location.id)
+        quantities = alt_quantity_repo.find_by_location_id(location.id)
         if not any(quantities):
             yield location
 
