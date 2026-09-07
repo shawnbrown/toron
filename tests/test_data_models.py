@@ -24,6 +24,7 @@ except ImportError:
 
 from toron.data_models import (
     EmptyCollectionError,
+    UniqueConstraintError,
     BaseDataConnector,
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
@@ -262,7 +263,7 @@ class IndexRepositoryBaseTest(ABC):
         self.repository.add('foo', 'bar')
 
         msg = "should not add ('foo', 'bar') again, duplicates not allowed"
-        with self.assertRaises(ValueError, msg=msg):
+        with self.assertRaises(UniqueConstraintError, msg=msg):
             self.repository.add('foo', 'bar')
 
     def test_add_empty_string(self):
@@ -1173,7 +1174,7 @@ class QuantityRepositoryBaseTest(ABC):
 
         msg = ('should raise an exception because a Quantity with '
                'location_id=1, attribute_group_id=1 already exists.')
-        with self.assertRaises(Exception, msg=msg):
+        with self.assertRaises(UniqueConstraintError, msg=msg):
             self.repository.add(location_id=1, attribute_group_id=1, value=20.0)
 
     def test_get_value_type(self):

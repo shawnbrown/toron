@@ -65,6 +65,10 @@ class EmptyCollectionError(LookupError):
     """Raised when underlying data collection or resource is empty."""
 
 
+class UniqueConstraintError(ValueError):
+    """Raised when an operation violates a uniqueness constraint."""
+
+
 class BaseDataConnector(ABC, Generic[T1, T2]):
     @abstractmethod
     def __init__(self, **kwds) -> None:
@@ -311,7 +315,8 @@ class BaseIndexRepository(ABC):
     def add(self, label: str, *labels: str) -> int:
         """Add a record to the repository and return its ``index_id``.
 
-        Duplicate or invalid data should raise a ValueError.
+        If duplicate labels are given, a ``UniqueConstraintError`` must
+        be raised.
         """
 
     @abstractmethod
@@ -911,7 +916,12 @@ class BaseQuantityRepository(ABC):
 
     @abstractmethod
     def add(self, location_id: int, attribute_group_id: int, value: float) -> None:
-        """Add a record to the repository."""
+        """Add a record to the repository.
+
+        The combination of *location_id* and *attribute_group_id*
+        must be unique. If a duplicate combination is given, a
+        ``UniqueConstraintError`` must be raised.
+        """
 
     @abstractmethod
     def get(self, id: int) -> Quantity:

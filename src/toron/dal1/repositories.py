@@ -23,6 +23,7 @@ from .schema import (
     format_identifier,
 )
 from ..data_models import (
+    UniqueConstraintError,
     Index, BaseIndexRepository,
     Location, BaseLocationRepository,
     Structure, BaseStructureRepository,
@@ -49,7 +50,9 @@ class IndexRepository(BaseIndexRepository):
         try:
             self._cursor.execute(sql, labels)
         except sqlite3.IntegrityError as err:
-            raise ValueError(str(err))
+            if 'UNIQUE constraint failed' in str(err):
+                raise UniqueConstraintError(err)
+            raise ValueError(err)
         return cast(int, self._cursor.lastrowid)
 
     def get(self, id: int) -> Index:
@@ -660,7 +663,12 @@ class QuantityRepository(BaseQuantityRepository):
             INSERT INTO main.quantity (_location_id, attribute_group_id, quantity_value)
             VALUES (?, ?, ?)
         """
-        self._cursor.execute(sql, (location_id, attribute_group_id, value))
+        try:
+            self._cursor.execute(sql, (location_id, attribute_group_id, value))
+        except sqlite3.IntegrityError as err:
+            if 'UNIQUE constraint failed' not in str(err):
+                raise  # Re-raise original error.
+            raise UniqueConstraintError(err)
 
     def get(self, id: int) -> Quantity:
         """Get a record from the repository."""
