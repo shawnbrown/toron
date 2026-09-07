@@ -52,7 +52,6 @@ from .data_service import (
     find_locations_without_quantity,
     find_nonmatching_locations,
     find_attribute_groups_without_quantity,
-    get_quantity_value_sum,
     disaggregate_value,
     find_links_by_ref,
     get_link,

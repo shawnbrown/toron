@@ -274,22 +274,6 @@ def find_locations_without_quantity(
             yield location
 
 
-def get_quantity_value_sum(
-    location_id: int,
-    attribute_group_id: int,
-    quantity_repo: BaseQuantityRepository,
-) -> Optional[float]:
-    """Return sum of quantities matching location_id and attribute_group_id."""
-    quantities = quantity_repo.find(
-        location_id=location_id,
-        attribute_group_id=attribute_group_id,
-    )
-    try:
-        return sum(x.value for x in chain([next(quantities)], quantities))
-    except StopIteration:
-        return None
-
-
 def disaggregate_value(
     quantity_value: float,
     index_ids: Collection[int],

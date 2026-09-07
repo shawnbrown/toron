@@ -25,7 +25,6 @@ from toron.data_service import (
     count_nonmatching_locations,
     find_attribute_groups_without_quantity,
     find_locations_without_quantity,
-    get_quantity_value_sum,
     disaggregate_value,
     find_links_by_ref,
     get_links_by_ref,
@@ -356,51 +355,6 @@ class TestFind_X_WithoutQuantity(unittest.TestCase):
             list(locations),
             [Location(id=2, labels=('bar', 'quux'))],
         )
-
-
-class TestGetQuantityValueSum(unittest.TestCase):
-    def setUp(self):
-        dal = data_access.get_data_access_layer()
-
-        connector = dal.DataConnector()
-        connection = connector.acquire_connection()
-        self.addCleanup(connector.release_connection, connection)
-
-        cursor = connector.acquire_cursor(connection)
-        self.addCleanup(connector.release_cursor, cursor)
-
-        # Set-up test values.
-        manager = dal.LabelManager(cursor)
-        manager.add_columns('A', 'B')
-
-        location_repo = dal.LocationRepository(cursor)
-        location_repo.add('foo', 'qux')   # Add location_id 1
-        location_repo.add('bar', 'quux')  # Add location_id 2
-
-        attribute_repo = dal.AttributeGroupRepository(cursor)
-        attribute_repo.add({'aaa': 'one'})  # Add attribute_group_id 1
-        attribute_repo.add({'bbb': 'two'})  # Add attribute_group_id 2
-
-        quantity_repo = dal.QuantityRepository(cursor)
-        quantity_repo.add(location_id=1, attribute_group_id=1, value=20.0)  # Add quantity_id 1
-        quantity_repo.add(location_id=1, attribute_group_id=2, value=0.0)   # Add quantity_id 2
-        quantity_repo.add(location_id=2, attribute_group_id=2, value=45.0)  # Add quantity_id 3
-
-        self.quantity_repo = quantity_repo
-
-    def test_sum_of_single_item(self):
-        self.assertEqual(get_quantity_value_sum(1, 1, self.quantity_repo), 20.0)
-
-    def test_sum_of_single_item_zero(self):
-        self.assertEqual(get_quantity_value_sum(1, 2, self.quantity_repo), 0.0)
-
-    def test_sum_of_multiple_items(self):
-        """Should sum the ``value`` of multiple matching quantities."""
-        self.assertIsInstance(get_quantity_value_sum(2, 2, self.quantity_repo), float)
-
-    def test_missing_item(self):
-        """Should return None when there are no matching quantities."""
-        self.assertIsNone(get_quantity_value_sum(3, 1, self.quantity_repo))
 
 
 class TestDisaggregateValue(unittest.TestCase):
