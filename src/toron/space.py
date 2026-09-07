@@ -34,6 +34,7 @@ from .partitions import (
 )
 from .data_models import (
     COMMON_RESERVED_IDENTIFIERS,
+    UniqueConstraintError,
     Index,
     Location,
     AttributesDict,
@@ -2392,18 +2393,7 @@ class DataSpace(object):
                         value=row_dict[value_column],
                     )
                     counter['inserted'] += 1
-                except Exception as err:  # <- Use `Exception` because different
-                    try:                  #    backends could raise different types.
-                        quantity = quantity_repo.get_by_location_id_and_attribute_group_id(
-                            location_id=location.id,
-                            attribute_group_id=attribute_group.id,
-                        )
-                    except KeyError:
-                        # If we get a KeyError, then a duplicate quantity does
-                        # not exist. This means that the original error was for
-                        # some other reason.
-                        raise err  # Re-raise original error.
-
+                except UniqueConstraintError:
                     if on_existing == 'abort':
                         if starting_empty:
                             # When no quantities exist prior to importing,
@@ -2422,9 +2412,15 @@ class DataSpace(object):
                         counter['existing_ignored'] += 1
                         continue  # Skip to next.
                     elif on_existing == 'replace':
+                        quantity = quantity_repo.get_by_location_id_and_attribute_group_id(
+                            location.id, attribute_group.id,
+                        )
                         quantity_repo.update(replace(quantity, value=row_dict[value_column]))
                         counter['existing_replaced'] += 1
                     elif on_existing == 'sum':
+                        quantity = quantity_repo.get_by_location_id_and_attribute_group_id(
+                            location.id, attribute_group.id,
+                        )
                         summed_value = quantity.value + float(row_dict[value_column])
                         quantity_repo.update(replace(quantity, value=summed_value))
                         counter['existing_summed'] += 1
