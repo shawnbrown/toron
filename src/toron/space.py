@@ -2332,7 +2332,7 @@ class DataSpace(object):
 
             domain = self.domain  # Assign locally to reduce dot-lookups.
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
-            starting_empty = not any(quantity_repo.find_all())
+            starting_empty = not any(quantity_repo.find_all())  # Consumes 1 record at most.
 
             for row in data:
                 row_dict = dict(zip(columns, row))
@@ -2395,18 +2395,12 @@ class DataSpace(object):
                     counter['inserted'] += 1
                 except UniqueConstraintError:
                     if on_existing == 'abort':
-                        if starting_empty:
-                            # When no quantities exist prior to importing,
-                            # we know that duplicates must exist in the
-                            # given data itself.
-                            msg = ('data contains duplicate location and '
-                                   'attribute combos')
-                        else:
-                            msg = ('data contains duplicate location and '
-                                   'attribute combos or matches combos that '
-                                   'have already been imported')
+                        not_empty_msg = ('' if starting_empty else ' or matches '
+                                         'combos that have already been imported')
                         raise ValueError(
-                            f'{msg}; use --on-existing to change load behavior'
+                            f'data contains duplicate location and attribute '
+                            f'combos{not_empty_msg}; use --on-existing to change '
+                            f'load behavior'
                         )
                     elif on_existing == 'sum':
                         quantity = quantity_repo.get_by_location_id_and_attribute_group_id(
