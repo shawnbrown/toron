@@ -64,7 +64,8 @@ def get_parser() -> argparse.ArgumentParser:
             user-friendly shorthands:
 
             1. Allows subcommand help invocation without requiring a
-               FILE argument (e.g., "toron init -h").
+               FILE argument (e.g., "toron label -h" or for relation
+               commands like "toron : create -h").
             2. Defaults to the "info" command when FILE is provided
                but COMMAND is omitted (e.g., 'toron myfile.toron').
             """
@@ -76,13 +77,15 @@ def get_parser() -> argparse.ArgumentParser:
                 first = next(positionals, None)
                 second = next(positionals, None)
 
-                # Parser expects FILE before COMMAND. But we want to support
-                # calling help with COMMAND alone, so we insert a dummy value
-                # if FILE is missing.
+                # Parser expects FILE before COMMAND. To allow `--help` using
+                # COMMAND alone, insert dummy values for missing file arguments.
+                #if first == ':':
+                #    return ['<dummy-FILE1>', ':', '<dummy-FILE2>'] + args[1:]
                 if second not in self._choices_ref and (
                     first in self._choices_ref or (first and not isfile(first))
                 ):
-                    return ['<dummy-filename>'] + args
+                    return ['<dummy-FILE>'] + args
+
                 return args
 
             # If FILE is given but COMMAND is missing, default to "info".
@@ -528,6 +531,29 @@ def get_parser() -> argparse.ArgumentParser:
         description='Show file information.',
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)
+
+    ####################################################################
+    # Subcommand: relation operator (for relations between files)
+    ####################################################################
+    #parser_rel = subparsers.add_parser(
+    #    ':',
+    #    prog='toron FILE1 : FILE2',
+    #    description='Manage relations between Toron files FILE1 and FILE2.',
+    #    help='relation operator (FILE1 : FILE2 ...)',
+    #)
+    #parser_rel.add_argument('filepath2',
+    #                        type=str,
+    #                        help=argparse.SUPPRESS,
+    #                        metavar='FILE2')
+    #parser_rel.add_argument('link',
+    #                        type=str,
+    #                        help='name of the link between FILE1 and FILE2',
+    #                        metavar='LINK')
+    #parser_rel_subparsers = parser_rel.add_subparsers(
+    #    dest='action',
+    #    required=True,
+    #    metavar='ACTION',
+    #)
 
     return parser
 
