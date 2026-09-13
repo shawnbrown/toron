@@ -63,11 +63,7 @@ def update_weight(args: argparse.Namespace) -> ExitCode:
                            f"{', '.join(repr(x) for x in args.remove_selector)}")
 
         selectors = sorted(set(selectors))  # Should be unique.
-
-        # Remove any line-breaks in selector text.
-        func = lambda x: x.replace('\n', ' ').replace('\r\n', ' ')
-        selectors = [func(sel) for sel in selectors]
-
+        selectors = [' '.join(sel.splitlines()) for sel in selectors]  # Remove newlines.
         node.edit_weight_group(args.weight, selectors=selectors)
 
     if args.make_default:
