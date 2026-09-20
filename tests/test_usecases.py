@@ -15,10 +15,11 @@ try:
 except ImportError:
     pd = None
 
-from .common import DummyRedirection
+from .common import DummyRedirection, IncrementalTestingMixin
 from toron.space import DataSpace
 from toron.graph import load_mapping
 from toron import cli, bind_file
+from toron.cli.common import ExitCode
 
 
 class TestBuildUsingAPI(unittest.TestCase):
@@ -426,3 +427,71 @@ class TestBuildUsingOldCLI(unittest.TestCase):
              ('D', 'Hartford',     'baz', 100.0),
              ('D', 'Irvine',       'baz', 100.0)},
         )
+
+
+class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
+    @staticmethod
+    def unsafe_set_unique_id(ds, unique_id):
+        """Helper function to set unique_id values for testing."""
+        ds._connector._unique_id = unique_id
+        with ds._managed_transaction() as cur:
+            property_repo = ds._dal.PropertyRepository(cur)
+            property_repo.add_or_update('unique_id', unique_id)
+
+    @classmethod
+    def setUpClass(cls):
+        """Initialize `step_failed` and temporary directory."""
+        super().setUpClass()
+
+        # TODO: Use following code when dropping support for Python 3.11.
+        #tmpdir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
+        #self.addClassCleanup(tmpdir.cleanup)
+        #dirpath = os.path.realpath(tmpdir.name)
+
+        # Using `mkdtemp()` to support Python 3.11 and older.
+        dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
+        cls.addClassCleanup(shutil.rmtree, dirpath)
+
+        cls.filepath1 = os.path.join(dirpath, 'file1.ds')
+        cls.filepath2 = os.path.join(dirpath, 'file2.ds')
+
+    def setUp(self):
+        self.buffer = StringIO()
+
+    def run_main(self, argv):  # <- Helper function.
+        """Run Toron's main command line function."""
+        return cli.main.main(argv, stderr=self.buffer)
+
+    def test_001_create_files(self):
+        """Create new data-space files."""
+        exit_code = self.run_main([self.filepath1, 'create', '--domain', 'file1'])
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        exit_code = self.run_main([self.filepath2, 'create'])
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        # Set unique_id values for testing.
+        ds1 = bind_file(self.filepath1, mode='rw')
+        ds2 = bind_file(self.filepath2, mode='rw')
+        self.unsafe_set_unique_id(ds1, '11111111-1111-1111-1111-111111111111')
+        self.unsafe_set_unique_id(ds2, '22222222-2222-2222-2222-222222222222')
+
+    def test_002_add_labels(self):
+        """Add label names."""
+        exit_code = self.run_main([self.filepath1, 'label', 'add', 'lbl1,lbl2,lbl3'])
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        exit_code = self.run_main([self.filepath2, 'label', 'add', 'lbl1', 'lbl2'])
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            self.buffer.getvalue(),
+            ("INFO: added label names: 'lbl1', 'lbl2', 'lbl3'\n"
+             "INFO: added label names: 'lbl1', 'lbl2'\n"),
+        )
+
+        ds1 = bind_file(self.filepath1, mode='rw')
+        self.assertEqual(ds1.index_columns, ['lbl1', 'lbl2', 'lbl3'])
+
+        ds2 = bind_file(self.filepath2, mode='rw')
+        self.assertEqual(ds2.index_columns, ['lbl1', 'lbl2'])
