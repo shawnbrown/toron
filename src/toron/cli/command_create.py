@@ -1,0 +1,39 @@
+"""Implementation for "create" command."""
+import argparse
+import logging
+import os
+
+from .common import ExitCode
+from .. import DataSpace
+
+
+applogger = logging.getLogger('app-toron')
+
+
+def create_file(args: argparse.Namespace) -> ExitCode:
+    """Create a new DataSpace and save it to the given 'filepath'."""
+    if not os.path.basename(args.filepath).strip():        # Must first check for
+        applogger.error(f'filename cannot be whitespace')  # whitespace for proper
+        return ExitCode.ERR                                # behavior on Windows.
+
+    if os.path.exists(args.filepath):
+        applogger.error(f'cancelled: {args.filepath!r} already exists')
+        return ExitCode.ERR
+
+    ds = DataSpace()
+
+    if args.domain:
+        ds.set_domain(args.domain)
+    else:
+        ds.set_domain(os.path.splitext(os.path.basename(args.filepath))[0])
+
+    try:
+        ds.to_file(args.filepath)
+    except OSError as e:
+        applogger.error(f'cancelled: {e}')
+        return ExitCode.ERR
+
+    applogger.info(f'created file {args.filepath!r}')
+    if args.domain is None:
+        applogger.info(f'domain set to {ds.domain!r}')
+    return ExitCode.OK

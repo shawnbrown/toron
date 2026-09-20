@@ -26,6 +26,7 @@ from . import (
     command_quantity,
     command_mapping,
     command_init,
+    command_create,
     command_label,
 )
 from .common import (
@@ -522,6 +523,18 @@ def get_parser() -> argparse.ArgumentParser:
         description='Show file information.',
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)
+
+    ####################################################################
+    # Command: create
+    ####################################################################
+    parser_create = subparsers.add_parser(
+        'create',
+        help='create a new file',
+        description='Create a new Toron file.',
+    )
+    parser_create.add_argument('--domain',
+                               help='define a domain (defaults to FILE without extension)')
+    parser_create.set_defaults(func=command_create.create_file)
 
     ####################################################################
     # Command: label
