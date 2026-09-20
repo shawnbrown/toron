@@ -48,6 +48,47 @@ def get_column_names(connection_or_cursor, table):
     return [row[1] for row in cur.fetchall()]
 
 
+class IncrementalTestingMixin(object):
+    """A mixin class for incremental testing.
+
+    Incremental testing runs ordered tests up to the first failure.
+    After a failure, all of the remaining tests in the class are
+    aborted.
+    """
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.step_failed = False
+
+    def run(self, result=None):
+        """Abort if a previus test has failed, otherwise run."""
+        if result is None:
+            result = self.defaultTestResult()
+
+        if self.__class__.step_failed:
+            err = AssertionError('incremental test failed, remaining tests aborted')
+            result.addFailure(self, (err.__class__, err, None))
+        else:
+            # Try to parse order from method string identifier (e.g.,
+            # 'tests.test_mymodule.TestMyClass.test_001_foo').
+            _, _, method_name = self.id().rpartition('.')
+            order, _, _ = method_name.removeprefix('test_').partition('_')
+
+            if not order.isdigit():
+                err = ValueError(
+                    f"invalid method name {method_name!r}; incremental test "
+                    f"names must start with 'test_' followed by a numeric "
+                    f"order component (e.g., 'test_001_foo', 'test_002_bar', "
+                    f"etc.)"
+                )
+                self.__class__.step_failed = True
+                result.addError(self, (err.__class__, err, None))
+            else:
+                super().run(result)
+                if not result.wasSuccessful():
+                    self.__class__.step_failed = True
+
+
 class TempChdirMixin(object):
     # A TestCase to create a temporary directory, then chdir() into
     # it for testing. After testing, the original working directory
