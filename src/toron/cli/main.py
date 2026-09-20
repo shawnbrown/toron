@@ -124,11 +124,9 @@ def get_parser() -> argparse.ArgumentParser:
                         type=str,
                         help=argparse.SUPPRESS,  # Included in `prog` string.
                         metavar='FILE')
-    subparsers = parser.add_subparsers(
-        dest='command',
-        required=True,
-        metavar='COMMAND',
-    )
+    subparsers = parser.add_subparsers(dest='command',
+                                       required=True,
+                                       metavar='COMMAND')
 
     # Common parser for "--no-backup" option (to use with `parents` arg).
     no_backup_parent = argparse.ArgumentParser(add_help=False)
@@ -156,11 +154,9 @@ def get_parser() -> argparse.ArgumentParser:
         help='add element',
         description='Add an element to a file.',
     )
-    parser_add_subparsers = parser_add.add_subparsers(
-        dest='element',
-        required=True,
-        metavar='ELEMENT',
-    )
+    parser_add_subparsers = parser_add.add_subparsers(dest='element',
+                                                      required=True,
+                                                      metavar='ELEMENT')
 
     # Subcommand: add label
     parser_add_label = parser_add_subparsers.add_parser(
@@ -270,11 +266,9 @@ def get_parser() -> argparse.ArgumentParser:
         help='update element',
         description='Update an element in a file.',
     )
-    parser_update_subparsers = parser_update.add_subparsers(
-        dest='element',
-        required=True,
-        metavar='ELEMENT',
-    )
+    parser_update_subparsers = parser_update.add_subparsers(dest='element',
+                                                            required=True,
+                                                            metavar='ELEMENT')
 
     # Subcommand: update label
     parser_update_label = parser_update_subparsers.add_parser(
@@ -347,11 +341,9 @@ def get_parser() -> argparse.ArgumentParser:
         help='rename element',
         description='Rename an element in a file.',
     )
-    parser_rename_subparsers = parser_rename.add_subparsers(
-        dest='element',
-        required=True,
-        metavar='ELEMENT',
-    )
+    parser_rename_subparsers = parser_rename.add_subparsers(dest='element',
+                                                            required=True,
+                                                            metavar='ELEMENT')
 
     # Subcommand: rename label
     parser_rename_label = parser_rename_subparsers.add_parser(
@@ -385,11 +377,9 @@ def get_parser() -> argparse.ArgumentParser:
         help='remove element',
         description='Remove an element from a Toron file.',
     )
-    parser_remove_subparsers = parser_remove.add_subparsers(
-        dest='element',
-        required=True,
-        metavar='ELEMENT',
-    )
+    parser_remove_subparsers = parser_remove.add_subparsers(dest='element',
+                                                            required=True,
+                                                            metavar='ELEMENT')
 
     # Subcommand: remove link
     parser_remove_link = parser_remove_subparsers.add_parser(
@@ -541,11 +531,9 @@ def get_parser() -> argparse.ArgumentParser:
         help='label names used by the index',
         description='Operate on index label columns.',
     )
-    parser_label_subparsers = parser_label.add_subparsers(
-        dest='subcommand',
-        required=True,
-        metavar='COMMAND',
-    )
+    parser_label_subparsers = parser_label.add_subparsers(dest='subcommand',
+                                                          required=True,
+                                                          metavar='COMMAND')
 
     # Subcommand: add
     parser_label_add = parser_label_subparsers.add_parser(
@@ -577,11 +565,9 @@ def get_parser() -> argparse.ArgumentParser:
     #                        type=str,
     #                        help='name of the link between FILE1 and FILE2',
     #                        metavar='LINK')
-    #parser_rel_subparsers = parser_rel.add_subparsers(
-    #    dest='action',
-    #    required=True,
-    #    metavar='ACTION',
-    #)
+    #parser_rel_subparsers = parser_rel.add_subparsers(dest='action',
+    #                                                  required=True,
+    #                                                  metavar='ACTION')
 
     return parser
 
