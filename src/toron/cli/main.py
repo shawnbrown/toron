@@ -26,6 +26,7 @@ from . import (
     command_quantity,
     command_mapping,
     command_init,
+    command_label,
 )
 from .common import (
     ExitCode,
@@ -531,6 +532,33 @@ def get_parser() -> argparse.ArgumentParser:
         description='Show file information.',
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)
+
+    ####################################################################
+    # Command: label
+    ####################################################################
+    parser_label = subparsers.add_parser(
+        'label',
+        help='label names used by the index',
+        description='Operate on index label columns.',
+    )
+    parser_label_subparsers = parser_label.add_subparsers(
+        dest='subcommand',
+        required=True,
+        metavar='COMMAND',
+    )
+
+    # Subcommand: add
+    parser_label_add = parser_label_subparsers.add_parser(
+        'add',
+        help='add index label names',
+        description=('Add index label names to a file. Label names may be '
+                     'provided as separate arguments or as a comma-separated '
+                     'list.'),
+        parents=[no_backup_parent],
+    )
+    parser_label_add.add_argument('names', nargs='+',
+                                  help='label name to add', metavar='NAME')
+    parser_label_add.set_defaults(func=command_label.add)
 
     ####################################################################
     # Subcommand: relation operator (for relations between files)

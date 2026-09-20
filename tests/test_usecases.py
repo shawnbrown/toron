@@ -238,7 +238,7 @@ class TestBuildUsingAPI(unittest.TestCase):
         pd.testing.assert_frame_equal(df_pivoted, df_expected)
 
 
-class TestBuildUsingCLI(unittest.TestCase):
+class TestBuildUsingOldCLI(unittest.TestCase):
     @staticmethod
     def unsafe_set_unique_id(node, unique_id):
         """Helper function to set unique_id values for testing."""
