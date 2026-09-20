@@ -490,8 +490,8 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              "INFO: added label names: 'lbl1', 'lbl2'\n"),
         )
 
-        ds1 = bind_file(self.filepath1, mode='rw')
+        ds1 = bind_file(self.filepath1, mode='ro')
         self.assertEqual(ds1.index_columns, ['lbl1', 'lbl2', 'lbl3'])
 
-        ds2 = bind_file(self.filepath2, mode='rw')
+        ds2 = bind_file(self.filepath2, mode='ro')
         self.assertEqual(ds2.index_columns, ['lbl1', 'lbl2'])
