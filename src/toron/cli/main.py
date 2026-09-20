@@ -548,6 +548,26 @@ def get_parser() -> argparse.ArgumentParser:
                                   help='label name to add', metavar='NAME')
     parser_label_add.set_defaults(func=command_label.add)
 
+    # Subcommand: update
+    parser_label_update = parser_label_subparsers.add_parser(
+        'update',
+        help='update an index label',
+        description='Update an index label in a file.',
+        parents=[no_backup_parent],
+    )
+    parser_label_update.add_argument('name',
+                                     help='label name to update', metavar='NAME')
+    parser_label_update_group = parser_label_update.add_mutually_exclusive_group(required=True)
+    parser_label_update_group.add_argument('--move-left',
+                                           type=non_negative_int, metavar='N', nargs='?', default=0,
+                                           const=1, # <- Used if flag given without int arg.
+                                           help='move label to the left 1 or N positions')
+    parser_label_update_group.add_argument('--move-right',
+                                           type=non_negative_int, metavar='N', nargs='?', default=0,
+                                           const=1, # <- Used if flag given without int arg.
+                                           help='move label to the right 1 or N positions')
+    parser_label_update.set_defaults(func=command_label.update)
+
     ####################################################################
     # Subcommand: relation operator (for relations between files)
     ####################################################################
