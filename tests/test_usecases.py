@@ -495,3 +495,17 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
         ds2 = bind_file(self.filepath2, mode='ro')
         self.assertEqual(ds2.index_columns, ['lbl1', 'lbl2'])
+
+    def test_003_add_weight(self):
+        exit_code = self.run_main([self.filepath1, 'weight', 'add', 'wght', '--make-default'])
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        exit_code = self.run_main([self.filepath2, 'weight', 'add', 'wght'])
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertRegex(
+            self.buffer.getvalue(),
+            ("INFO: added index weight group 'wght' to .+file1.ds\n"
+             "WARNING: setting default weight group: 'wght'\n"
+             "INFO: added index weight group 'wght' to .+file2.ds\n"),
+        )

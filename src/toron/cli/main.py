@@ -28,6 +28,7 @@ from . import (
     command_init,
     command_create,
     command_label,
+    command_weight,
 )
 from .common import (
     ExitCode,
@@ -580,6 +581,36 @@ def get_parser() -> argparse.ArgumentParser:
                                            const=1, # <- Used if flag given without int arg.
                                            help='move label to the right 1 or N positions')
     parser_label_update.set_defaults(func=command_label.update)
+
+    ####################################################################
+    # Command: weight
+    ####################################################################
+    parser_weight = subparsers.add_parser(
+        'weight',
+        help='weight names used by the index',
+        description='Operate on index weight columns.',
+    )
+    parser_weight_subparsers = parser_weight.add_subparsers(dest='subcommand',
+                                                            required=True,
+                                                            metavar='COMMAND')
+
+    # Subcommand: add
+    parser_weight_add = parser_weight_subparsers.add_parser(
+        'add',
+        help='add an index weight group',
+        description='Add an index weight group to a file.',
+        parents=[no_backup_parent],
+    )
+    parser_weight_add.add_argument('name',
+                                   help='name of index weight to add',
+                                   metavar='NAME')
+    parser_weight_add.add_argument('--description',
+                                   help='description of weight group')
+    parser_weight_add.add_argument('--selectors', nargs='+',
+                                   help='attribute selectors')
+    parser_weight_add.add_argument('--make-default', action='store_true',
+                                   help='set as the default weight group')
+    parser_weight_add.set_defaults(func=command_weight.add)
 
     ####################################################################
     # Subcommand: relation operator (for relations between files)
