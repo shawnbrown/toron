@@ -452,6 +452,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             argparse.Namespace(
                 filepath='myfile.toron',
                 command='index',
+                subcommand=None,
                 on_label_conflict='abort',
                 on_weight_conflict='abort',
                 backup=True,

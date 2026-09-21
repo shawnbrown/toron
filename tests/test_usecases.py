@@ -446,14 +446,14 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         # TODO: Use following code when dropping support for Python 3.11.
         #tmpdir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
         #self.addClassCleanup(tmpdir.cleanup)
-        #dirpath = os.path.realpath(tmpdir.name)
+        #cls.dirpath = os.path.realpath(tmpdir.name)
 
         # Using `mkdtemp()` to support Python 3.11 and older.
-        dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
-        cls.addClassCleanup(shutil.rmtree, dirpath)
+        cls.dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
+        cls.addClassCleanup(shutil.rmtree, cls.dirpath)
 
-        cls.filepath1 = os.path.join(dirpath, 'file1.ds')
-        cls.filepath2 = os.path.join(dirpath, 'file2.ds')
+        cls.filepath1 = os.path.join(cls.dirpath, 'file1.ds')
+        cls.filepath2 = os.path.join(cls.dirpath, 'file2.ds')
 
     def setUp(self):
         self.buffer = StringIO()
@@ -509,3 +509,29 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              "WARNING: setting default weight group: 'wght'\n"
              "INFO: added index weight group 'wght' to .+file2.ds\n"),
         )
+
+    def test_004_import_index(self):
+        # Write actualy CSV file to temp dir.
+        csv_path = os.path.join(self.__class__.dirpath, 'file1_index.csv')
+        with open(csv_path, 'w') as f:
+            f.write(
+                'lbl1,lbl2,lbl3,wght\n'
+                'A,z,a,72\n'
+                'B,x,b,37.5\n'
+                'B,y,c,62.5\n'
+                'C,x,d,75\n'
+                'C,y,e,25\n'
+                'D,x,f,25\n'
+                'D,x,g,0\n'
+                'D,y,h,50\n'
+                'D,y,i,25\n'
+            )
+
+        exit_code = self.run_main([self.filepath1, 'index', 'import', csv_path])
+
+        self.assertEqual(
+            self.buffer.getvalue(),
+            ('INFO: loaded 9 index labels\n'
+             'INFO: loaded 9 index weights\n'),
+        )
+        self.assertEqual(exit_code, ExitCode.OK)

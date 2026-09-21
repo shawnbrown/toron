@@ -418,28 +418,6 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     ####################################################################
-    # Subcommand: index
-    ####################################################################
-    parser_index = subparsers.add_parser(
-        name='index',
-        help='write index to stdout (or load from stdin)',
-        description=('Write index records to stdout or load index records '
-                     'from stdin (CSV format).'),
-        parents=[no_backup_parent],
-    )
-    parser_index.add_argument('--on-label-conflict',
-                              default='abort',
-                              choices=['ignore', 'replace', 'abort'],
-                              dest='on_label_conflict',
-                              help='strategy for label conflicts (default: %(default)s)')
-    parser_index.add_argument('--on-weight-conflict',
-                              default='abort',
-                              choices=['ignore', 'replace', 'abort'],
-                              dest='on_weight_conflict',
-                              help='strategy for weight conflicts (default: %(default)s)')
-    parser_index.set_defaults(func=command_index.process_index_action)
-
-    ####################################################################
     # Subcommand: quantity
     ####################################################################
     parser_quantity = subparsers.add_parser(
@@ -611,6 +589,50 @@ def get_parser() -> argparse.ArgumentParser:
     parser_weight_add.add_argument('--make-default', action='store_true',
                                    help='set as the default weight group')
     parser_weight_add.set_defaults(func=command_weight.add)
+
+    ####################################################################
+    # Command: index
+    ####################################################################
+    parser_index = subparsers.add_parser(
+        name='index',
+        help='index records',
+        description='Operate on index records.',
+        parents=[no_backup_parent],  # <- TODO: Remove when import/export implemented.
+    )
+    parser_index.add_argument('--on-label-conflict',  # <- TODO: Remove when import/export implemented.
+                              default='abort',
+                              choices=['ignore', 'replace', 'abort'],
+                              dest='on_label_conflict',
+                              help='strategy for label conflicts (default: %(default)s)')
+    parser_index.add_argument('--on-weight-conflict',  # <- TODO: Remove when import/export implemented.
+                              default='abort',
+                              choices=['ignore', 'replace', 'abort'],
+                              dest='on_weight_conflict',
+                              help='strategy for weight conflicts (default: %(default)s)')
+    parser_index.set_defaults(func=command_index.process_index_action)  # <- TODO: Remove when import/export implemented.
+    parser_index_subparsers = parser_index.add_subparsers(dest='subcommand',
+                                                          required=False,  # TODO: Change to True after refactoring.
+                                                          metavar='COMMAND')
+
+    # Subcommand: import
+    parser_index_import = parser_index_subparsers.add_parser(
+        'import',
+        help='load index records from SOURCE file',
+        description='Load index records from a SOURCE file.',
+        parents=[no_backup_parent],
+    )
+    parser_index_import.add_argument('source',
+                                     help='CSV file containing records to load',
+                                     metavar='SOURCE')
+    parser_index_import.add_argument('--on-label-conflict',
+                                     default='abort',
+                                     choices=['abort', 'ignore', 'replace'],
+                                     help='strategy for label conflicts (default: %(default)s)')
+    parser_index_import.add_argument('--on-weight-conflict',
+                                     default='abort',
+                                     choices=['abort', 'ignore', 'replace'],
+                                     help='strategy for weight conflicts (default: %(default)s)')
+    parser_index_import.set_defaults(func=command_index.import_records)
 
     ####################################################################
     # Subcommand: relation operator (for relations between files)

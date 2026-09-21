@@ -6,7 +6,14 @@ import os
 import re
 import uuid
 from itertools import chain, islice
-from .._typing import Iterator, List, TYPE_CHECKING
+from .._typing import (
+    Iterator,
+    List,
+    Literal,
+    Sequence,
+    Union,
+    TYPE_CHECKING,
+)
 
 from .common import (
     ExitCode,
@@ -24,6 +31,68 @@ if TYPE_CHECKING:
 
 
 applogger = logging.getLogger('app-toron')
+
+
+def _import_records(
+    ds: 'DataSpace',
+    reader: Iterator[Sequence[Union[str, float]]],
+    on_label_conflict: Literal['abort', 'ignore', 'replace'],
+    on_weight_conflict: Literal['abort', 'ignore', 'replace'],
+) -> ExitCode:
+    """Import index records from CSV file."""
+    sample_rows = list(islice(reader, 10))
+    iterator: Iterator[Sequence] = chain(sample_rows, reader)
+
+    unique_id_bytes = uuid.UUID(ds.unique_id).bytes
+    try:
+        position = get_index_code_position(sample_rows, unique_id_bytes)
+        iterator = remap_index_codes_to_index_ids(iterator, unique_id_bytes, position)
+    except RuntimeError as e:
+        # If raw 'index_id' is given (instead of index code), raise error.
+        # But if no index is given at all, continue (for loading new index
+        # records).
+        header = sample_rows[0]
+        if 'index_id' in header:
+            msg = f"{e}; found unexpected column 'index_id'"
+            raise RuntimeError(msg) from None
+
+    try:
+        ds.insert_index(
+            iterator,
+            on_label_conflict=on_label_conflict,
+            on_weight_conflict=on_weight_conflict,
+        )
+    except ValueError as e:
+        e_str = str(e)
+        match = re.search(r'index_id (\d+)\b', e_str)
+        if match:
+            # Replace index_id with index code in error message.
+            index_id = int(match.group(1))
+            index_code = index_id_to_code(index_id, unique_id_bytes)
+            e_str = e_str.replace(match.group(0), f'index code {index_code}')
+
+        msg = (f'{e_str}\n  load behavior can be changed using '
+               f'--on-label-conflict and --on-weight-conflict')
+        applogger.error(msg)
+        return ExitCode.ERR
+
+    return ExitCode.OK
+
+
+def import_records(args: argparse.Namespace) -> ExitCode:
+    """Import index records from CSV file."""
+    with open(args.source) as f_source:
+        reader = csv.reader(f_source)
+
+        ds = cli_bind_file(args.filepath, mode='rw')
+        process_backup_option(args, ds)
+
+        return _import_records(
+            ds,
+            reader,
+            args.on_label_conflict,
+            args.on_weight_conflict
+        )
 
 
 def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:

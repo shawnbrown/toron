@@ -7,6 +7,177 @@ from toron import DataSpace
 from toron.cli import command_index
 
 
+class TestIndexImportRecords(unittest.TestCase):
+    def test_input_labels_and_weights(self):
+        ds = DataSpace()
+        ds.add_index_columns('state', 'county')
+        ds.add_weight_group('population', make_default=True)
+
+        reader = iter([
+            ['state', 'county', 'population'],
+            ['Illinois', 'Cook', '5275541'],
+            ['Indiana', 'Porter', '175860'],
+            ['Michigan', 'Cass', '51589'],
+        ])
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index._import_records(ds, reader, 'abort', 'abort')  # <- Function under test.
+
+        self.assertEqual(
+            logs_cm.output,
+            ['INFO:app-toron.space:loaded 3 index labels',
+             'INFO:app-toron.space:loaded 3 index weights'],
+        )
+        index_values = list(ds.select_index(header=True))
+        expected_values = [
+            ('index_id', 'state', 'county'),
+            (0, '-', '-'),
+            (1, 'Illinois', 'Cook'),
+            (2, 'Indiana', 'Porter'),
+            (3, 'Michigan', 'Cass'),
+        ]
+        self.assertEqual(index_values, expected_values)
+
+    def test_abort_on_label_conflict(self):
+        ds = DataSpace()
+        ds._connector._unique_id = '11111111-1111-1111-1111-111111111111'
+        ds.add_index_columns('state', 'county')
+        ds.add_weight_group('population', make_default=True)
+        ds.insert_index([['state', 'county'],
+                         ['Illinois', 'Cook'],
+                         ['Indiana', 'Porter'],
+                         ['Michigan', 'Cass']])
+
+        reader = iter([
+            ['index_code', 'state', 'county', 'population'],
+            ['1XA0157D6E', 'Illinois', 'Cook', '5275541'],
+            ['2XF38F26EA', 'Indiana', 'Porter', '175860'],
+            ['3X7429EDA9', 'Michigan', 'OTHERVALUE', '51589'],  # <- Will abort operation.
+        ])
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index._import_records(ds, reader, 'abort', 'abort')  # <- Function under test.
+
+        self.assertEqual(
+            logs_cm.output,
+            ["ERROR:app-toron:index code 3X7429EDA9 and labels ('Michigan', 'OTHERVALUE') "
+               "do not match Index(id=3, labels=('Michigan', 'Cass'))\n"
+               "  load behavior can be changed using --on-label-conflict "
+               "and --on-weight-conflict"]
+        )
+
+    def test_ignore_on_label_conflict(self):
+        ds = DataSpace()
+        ds._connector._unique_id = '11111111-1111-1111-1111-111111111111'
+        ds.add_index_columns('state', 'county')
+        ds.add_weight_group('population', make_default=True)
+        ds.insert_index([['state', 'county'],
+                         ['Illinois', 'Cook'],
+                         ['Indiana', 'Porter'],
+                         ['Michigan', 'Cass']])
+
+        reader = iter([
+            ['index_code', 'state', 'county', 'population'],
+            ['1XA0157D6E', 'Illinois', 'Cook', '5275541'],
+            ['2XF38F26EA', 'Indiana', 'Porter', '175860'],
+            ['3X7429EDA9', 'Michigan', 'OTHERVALUE', '51589'],  # <- Label will be ignored.
+        ])
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index._import_records(ds, reader, 'ignore', 'abort')  # <- Function under test.
+
+        self.assertEqual(
+            logs_cm.output,
+            ['INFO:app-toron.space:ignored 1 non-matching index labels',
+             'INFO:app-toron.space:loaded 3 index weights']
+        )
+
+    def test_replace_on_label_conflict(self):
+        ds = DataSpace()
+        ds._connector._unique_id = '11111111-1111-1111-1111-111111111111'
+        ds.add_index_columns('state', 'county')
+        ds.add_weight_group('population', make_default=True)
+        ds.insert_index([['state', 'county'],
+                         ['Illinois', 'Cook'],
+                         ['Indiana', 'Porter'],
+                         ['Michigan', 'Cass']])
+
+        reader = iter([
+            ['index_id', 'state', 'county', 'population'],
+            ['1XA0157D6E', 'Illinois', 'Cook', '5275541'],
+            ['2XF38F26EA', 'Indiana', 'Porter', '175860'],
+            ['3X7429EDA9', 'Michigan', 'OTHERVALUE', '51589'],  # <- Will replace with new label.
+        ])
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index._import_records(ds, reader, 'replace', 'abort')  # <- Function under test.
+
+        self.assertEqual(
+            logs_cm.output,
+            ['INFO:app-toron.space:replaced 1 index labels',
+             'INFO:app-toron.space:loaded 3 index weights']
+        )
+
+    def test_abort_on_weight_conflict(self):
+        ds = DataSpace()
+        ds.add_index_columns('state', 'county')
+        ds.add_weight_group('population', make_default=True)
+
+        reader = iter([
+            ['state', 'county', 'population'],
+            ['Illinois', 'Cook', '5275541'],
+            ['Indiana', 'Porter', '175860'],
+            ['Michigan', 'Cass', '51589'],
+            ['Michigan', 'Cass', '50000'],  # <- Will abort operation.
+        ])
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index._import_records(ds, reader, 'abort', 'abort')  # <- Function under test.
+
+        index_values = list(ds.select_index(header=True))
+        expected_values = [('index_id', 'state', 'county'), (0, '-', '-')]
+        self.assertEqual(index_values, expected_values)
+        self.assertEqual(
+            logs_cm.output,
+            ["ERROR:app-toron:weight group 'population' already has "
+               "a value for Index(id=3, labels=('Michigan', 'Cass'))\n"
+               "  load behavior can be changed using --on-label-conflict "
+               "and --on-weight-conflict"],
+        )
+
+    def test_replace_on_weight_conflict(self):
+        ds = DataSpace()
+        ds.add_index_columns('state', 'county')
+        ds.add_weight_group('population', make_default=True)
+
+        reader = iter([
+            ['state', 'county', 'population'],
+            ['Illinois', 'Cook', '5275541'],
+            ['Indiana', 'Porter', '175860'],
+            ['Michigan', 'Cass', '0'],  # <- Will get replaced by later record.
+            ['Michigan', 'Cass', '51589'],
+        ])
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_index._import_records(ds, reader, 'abort', 'replace')  # <- Function under test.
+
+        index_values = list(ds.select_index(header=True))
+        expected_values = [
+            ('index_id', 'state', 'county'),
+            (0, '-', '-'),
+            (1, 'Illinois', 'Cook'),
+            (2, 'Indiana', 'Porter'),
+            (3, 'Michigan', 'Cass'),
+        ]
+        self.assertEqual(index_values, expected_values)
+        self.assertEqual(
+            logs_cm.output,
+            ['INFO:app-toron.space:loaded 3 index labels',
+             'INFO:app-toron.space:loaded 3 index weights',
+             'INFO:app-toron.space:replaced 1 index weights'],
+        )
+
+
 class TestIndexReadFromStdin(unittest.TestCase):
     def test_input_labels_and_weights(self):
         node = DataSpace()
