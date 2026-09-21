@@ -58,14 +58,14 @@ class IncrementalTestingMixin(object):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.step_failed = False
+        cls._step_failed = False
 
     def run(self, result=None):
         """Abort if a previus test has failed, otherwise run."""
         if result is None:
             result = self.defaultTestResult()
 
-        if self.__class__.step_failed:
+        if self.__class__._step_failed:
             err = AssertionError('incremental test failed, remaining tests aborted')
             result.addFailure(self, (err.__class__, err, None))
         else:
@@ -81,12 +81,16 @@ class IncrementalTestingMixin(object):
                     f"order component (e.g., 'test_001_foo', 'test_002_bar', "
                     f"etc.)"
                 )
-                self.__class__.step_failed = True
+                self.__class__._step_failed = True
                 result.addError(self, (err.__class__, err, None))
             else:
+                pretest_counts = (len(result.failures), len(result.errors))
+
                 super().run(result)
-                if not result.wasSuccessful():
-                    self.__class__.step_failed = True
+
+                # If errors or failures increase, the current test has failed.
+                if (len(result.failures), len(result.errors)) > pretest_counts:
+                    self.__class__._step_failed = True
 
 
 class TempChdirMixin(object):
