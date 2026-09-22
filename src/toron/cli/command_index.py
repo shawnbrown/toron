@@ -15,6 +15,7 @@ from .._typing import (
     TYPE_CHECKING,
 )
 
+from .._utils import ToronError
 from .common import (
     ExitCode,
     is_streamed,
@@ -93,6 +94,96 @@ def import_records(args: argparse.Namespace) -> ExitCode:
             args.on_label_conflict,
             args.on_weight_conflict
         )
+
+
+def _export_records(ds: 'DataSpace') -> Iterator[List[Union[str, float]]]:
+    """Yield index record rows."""
+    domain_value = ds.domain
+    unique_id_bytes = uuid.UUID(ds.unique_id).bytes
+
+    with ds._managed_cursor(n=2) as (cur1, cur2):
+        index_repo = ds._dal.IndexRepository(cur1)
+
+        # Get groups and sort (start with default group then order by name).
+        try:
+            default_id = ds._dal.PropertyRepository(cur1).get('default_weight_group_id')
+        except KeyError:
+            default_id = None
+        groups = ds._dal.WeightGroupRepository(cur1).get_all()
+        groups = sorted(groups, key=lambda g: (g.id!=default_id, g.name))
+        weight_group_names = [group.name for group in groups]
+        weight_group_ids = [group.id for group in groups]
+
+        # Define a helper function to get weight values (needs separate cursor).
+        _get_weight_obj = ds._dal.WeightRepository(cur2).get_by_weight_group_id_and_index_id
+        def get_weight_value(group_id, index_id):
+            try:
+                return _get_weight_obj(group_id, index_id).value
+            except KeyError:
+                return 0.0 if index_id == 0 else None
+
+        # Prepare domain text for header row.
+        if domain_value:
+            domain_value = domain_value.replace(' ', '_') + '_'
+
+        # Yield header row.
+        yield list(chain(
+            [f'{domain_value}index_code'],
+            index_repo.get_label_names(),
+            weight_group_names,
+        ))
+
+        # Yield data rows.
+        row_count = 0
+        for index in index_repo.find_all():
+            yield list(chain(
+                [index_id_to_code(index.id, unique_id_bytes)],
+                index.labels,
+                (get_weight_value(grp_id, index.id) for grp_id in weight_group_ids),
+            ))
+            row_count += 1
+
+        applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
+
+
+def export_records(args: argparse.Namespace) -> ExitCode:
+    """Write index records to target CSV file."""
+    # Bind DataSpace first to make sure it exists.
+    ds = cli_bind_file(args.filepath, mode='ro')
+
+    # Overwrite target (w) if using "--force" else fail if target exists (x).
+    mode = 'w' if args.force else 'x'
+
+    if os.path.isdir(args.target):
+        # Automatically generate a target path.
+        stem, _ = os.path.splitext(os.path.basename(args.filepath))
+        target_part= os.path.normpath(os.path.join(args.target, f'index-{stem}'))
+        for suffix in chain([''], (f'_{n}' for n in range(2, 10))):
+            try:
+                target_path = f'{target_part}{suffix}.csv'
+                f_target = open(target_path, mode)
+                break
+            except FileExistsError:
+                pass
+        else:  # NOBREAK: Loop fell through without break.
+            raise ToronError('unable to auto-generate filename')
+    else:
+        # Use explicit target path.
+        target_path = os.path.normpath(args.target)
+        try:
+            f_target = open(target_path, mode)
+        except FileExistsError as err:
+            raise ToronError(f'{err}; use -f or --force to overwrite existing file')
+
+    try:
+        writer = csv.writer(f_target, lineterminator='\n')
+        for row in _export_records(ds):
+            writer.writerow(row)
+    finally:
+        f_target.close()
+
+    applogger.info(f'saved to {target_path!r}')
+    return ExitCode.OK
 
 
 def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:

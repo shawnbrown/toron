@@ -511,7 +511,8 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         )
 
     def test_004_import_index(self):
-        # Write actualy CSV file to temp dir.
+        """Load index records from file."""
+        # Write actual CSV file to temp dir.
         csv_path = os.path.join(self.__class__.dirpath, 'file1_index.csv')
         with open(csv_path, 'w') as f:
             f.write(
@@ -526,6 +527,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
                 'D,y,h,50\n'
                 'D,y,i,25\n'
             )
+        self.addCleanup(lambda: os.remove(csv_path))
 
         exit_code = self.run_main([self.filepath1, 'index', 'import', csv_path])
 
@@ -535,3 +537,35 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              'INFO: loaded 9 index weights\n'),
         )
         self.assertEqual(exit_code, ExitCode.OK)
+
+    def test_005_export_index(self):
+        """Write index records to drive."""
+        csv_path = os.path.join(self.__class__.dirpath, 'index-file1.csv')
+
+        exit_code = self.run_main([self.filepath1, 'index', 'export', csv_path])
+        self.addCleanup(lambda: os.remove(csv_path))  # Remove file.
+
+        self.assertRegex(
+            self.buffer.getvalue(),
+            ("INFO: written 10 records\n"
+             "INFO: saved to '.+index-file1.csv'\n"),
+        )
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        with open(csv_path) as f:
+            csv_contents = f.read()
+
+        expected = (
+            'file1_index_code,lbl1,lbl2,lbl3,wght\n'
+            '0X27B3B62D,-,-,-,0.0\n'
+            '1XA0157D6E,A,z,a,72.0\n'
+            '2XF38F26EA,B,x,b,37.5\n'
+            '3X7429EDA9,B,y,c,62.5\n'
+            '4X54BB91E2,C,x,d,75.0\n'
+            '5XD31D5AA1,C,y,e,25.0\n'
+            '6X80870125,D,x,f,25.0\n'
+            '7X0721CA66,D,x,g,0.0\n'
+            '8XC1A3F9B3,D,y,h,50.0\n'
+            '9X460532F0,D,y,i,25.0\n'
+        )
+        self.assertEqual(csv_contents, expected)

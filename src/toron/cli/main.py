@@ -634,6 +634,20 @@ def get_parser() -> argparse.ArgumentParser:
                                      help='strategy for weight conflicts (default: %(default)s)')
     parser_index_import.set_defaults(func=command_index.import_records)
 
+    # Subcommand: export
+    parser_index_export = parser_index_subparsers.add_parser(
+        'export',
+        help='write index records to TARGET file or directory',
+        description=('Write index records to a TARGET file or directory; '
+                     'uses an auto-generated name if TARGET is a directory.'),
+    )
+    parser_index_export.add_argument('target',
+                                     help='CSV file or directory to save records',
+                                     metavar='TARGET')
+    parser_index_export.add_argument('-f', '--force', action='store_true',
+                                     help='force overwrite of TARGET if it already exists')
+    parser_index_export.set_defaults(func=command_index.export_records)
+
     ####################################################################
     # Subcommand: relation operator (for relations between files)
     ####################################################################
