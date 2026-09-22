@@ -39,7 +39,7 @@ def _import_records(
     on_label_conflict: Literal['abort', 'ignore', 'replace'],
     on_weight_conflict: Literal['abort', 'ignore', 'replace'],
 ) -> ExitCode:
-    """Import index records from CSV file."""
+    """Load index records from `csv.reader`-like object."""
     sample_rows = list(islice(reader, 10))
     iterator: Iterator[Sequence] = chain(sample_rows, reader)
 
@@ -80,7 +80,7 @@ def _import_records(
 
 
 def import_records(args: argparse.Namespace) -> ExitCode:
-    """Import index records from CSV file."""
+    """Load index records from source CSV file."""
     with open(args.source) as f_source:
         reader = csv.reader(f_source)
 
