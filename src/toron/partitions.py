@@ -16,8 +16,8 @@ def make_structure(partition_definitions: List[Set[str]]) -> List[Set[str]]:
     In Toron, each "basic open set" is a set of label names that defines
     a partition of the data. This function takes a list of partition
     definitions and computes all possible unions among them, including
-    the empty set. The resulting join-semilattice forms the basis used
-    to organize data within a node.
+    the empty set. The resulting join-semilattice forms the structure
+    used to organize data within a data-space.
 
     .. code-block::
 
