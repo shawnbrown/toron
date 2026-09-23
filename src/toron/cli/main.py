@@ -29,6 +29,7 @@ from . import (
     command_create,
     command_label,
     command_weight,
+    command_partition,
 )
 from .common import (
     ExitCode,
@@ -647,6 +648,37 @@ def get_parser() -> argparse.ArgumentParser:
     parser_index_export.add_argument('-f', '--force', action='store_true',
                                      help='force overwrite of TARGET if it already exists')
     parser_index_export.set_defaults(func=command_index.export_records)
+
+    ####################################################################
+    # Command: partition
+    ####################################################################
+    parser_partition = subparsers.add_parser(
+        'partition',
+        help='partition definitions',
+        description='Operate on partition definitions.',
+        epilog=('Partition definitions are specified using sets of label '
+                'names to organize index records into regions. Well-specified '
+                'definitions use only the labels necessary to distinguish one '
+                'region from another. These definitions are used to build a '
+                'structure for organizing quantities and mappings.'),
+    )
+    parser_partition_subparsers = parser_partition.add_subparsers(dest='subcommand',
+                                                                  required=True,
+                                                                  metavar='COMMAND')
+
+    # Subcommand: add
+    parser_partition_add = parser_partition_subparsers.add_parser(
+        'add',
+        help='add a partition definition',
+        description=('Add a new partition definition. Label names may be '
+                     'provided as separate arguments or as a comma-separated '
+                     'list.'),
+        parents=[no_backup_parent],
+    )
+    parser_partition_add.add_argument('names', nargs='+',
+                                      help='label names that define the partition',
+                                      metavar='NAME')
+    parser_partition_add.set_defaults(func=command_partition.add)
 
     ####################################################################
     # Subcommand: relation operator (for relations between files)
