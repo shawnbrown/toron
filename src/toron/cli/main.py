@@ -523,6 +523,7 @@ def get_parser() -> argparse.ArgumentParser:
         'label',
         help='label names used by the index',
         description='Operate on index label columns.',
+        epilog='Index labels are text values that identify locations in a data space.',
     )
     parser_label_subparsers = parser_label.add_subparsers(dest='subcommand',
                                                           required=True,
@@ -568,6 +569,11 @@ def get_parser() -> argparse.ArgumentParser:
         'weight',
         help='weight names used by the index',
         description='Operate on index weight columns.',
+        epilog=(
+            'Index weights are numeric values defined for individual index '
+            'records. Aggregate quantities for a location are distributed to '
+            'the more granular index records in proportion to these weights.'
+        ),
     )
     parser_weight_subparsers = parser_weight.add_subparsers(dest='subcommand',
                                                             required=True,
@@ -598,6 +604,12 @@ def get_parser() -> argparse.ArgumentParser:
         name='index',
         help='index records',
         description='Operate on index records.',
+        epilog=(
+            'An index is a collection of labels and weights that defines the '
+            'most granular units in a data space. Index records provide the '
+            'basis for disaggregation within domains and translation across '
+            'domains.'
+        ),
         parents=[no_backup_parent],  # <- TODO: Remove when import/export implemented.
     )
     parser_index.add_argument('--on-label-conflict',  # <- TODO: Remove when import/export implemented.
