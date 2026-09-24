@@ -1,6 +1,7 @@
 """Common functions and classes for test cases."""
 __unittest = True
 
+import functools
 import glob
 import io
 import os
@@ -60,37 +61,37 @@ class IncrementalTestingMixin(object):
         super().setUpClass()
         cls._step_failed = False
 
-    def run(self, result=None):
-        """Abort if a previus test has failed, otherwise run."""
-        if result is None:
-            result = self.defaultTestResult()
+        for name in dir(cls):
+            if name.startswith('test_'):
+                # Check that method names have an order component.
+                order, _, _ = name.removeprefix('test_').partition('_')
+                if not order.isdigit():
+                    raise Exception(
+                        f"invalid method name {name!r}\n"
+                        f"\n"
+                        f"incremental test names must start with 'test_' "
+                        f"followed by a numeric order component (e.g., "
+                        f"'test_001_foo', 'test_002_bar', etc.)"
+                    )
+                # Decorate test method.
+                method = getattr(cls, name)
+                if callable(method):
+                    decorated = cls._decorate_incremental(method)
+                    setattr(cls, name, decorated)
 
-        if self.__class__._step_failed:
-            err = AssertionError('incremental test failed, remaining tests aborted')
-            result.addFailure(self, (err.__class__, err, None))
-        else:
-            # Try to parse order from method string identifier (e.g.,
-            # 'tests.test_mymodule.TestMyClass.test_001_foo').
-            _, _, method_name = self.id().rpartition('.')
-            order, _, _ = method_name.removeprefix('test_').partition('_')
-
-            if not order.isdigit():
-                err = ValueError(
-                    f"invalid method name {method_name!r}; incremental test "
-                    f"names must start with 'test_' followed by a numeric "
-                    f"order component (e.g., 'test_001_foo', 'test_002_bar', "
-                    f"etc.)"
-                )
-                self.__class__._step_failed = True
-                result.addError(self, (err.__class__, err, None))
-            else:
-                pretest_counts = (len(result.failures), len(result.errors))
-
-                super().run(result)
-
-                # If errors or failures increase, the current test has failed.
-                if (len(result.failures), len(result.errors)) > pretest_counts:
-                    self.__class__._step_failed = True
+    @staticmethod
+    def _decorate_incremental(method):
+        """Decorate a method to abort if a previous test has already failed."""
+        @functools.wraps(method)
+        def wrapper(self, *args, **kwds):
+            if self.__class__._step_failed:
+                self.fail('incremental test failed, remaining tests aborted')
+            try:
+                return method(self, *args, **kwds)
+            except Exception:
+                self.__class__._step_failed = True  # Set on first failure!
+                raise
+        return wrapper
 
 
 class TempChdirMixin(object):
