@@ -41,3 +41,14 @@ def update(args: argparse.Namespace) -> ExitCode:
         raise Exception
 
     return ExitCode.OK
+
+
+def rename(args: argparse.Namespace) -> ExitCode:
+    """Rename an index label column."""
+    ds = cli_bind_file(args.filepath, mode='rw')
+    process_backup_option(args, ds)
+
+    ds.rename_label_column(args.old_name, args.new_name)
+    applogger.info(f'renamed label {args.old_name!r} -> {args.new_name!r}')
+
+    return ExitCode.OK

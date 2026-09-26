@@ -118,3 +118,54 @@ class TestLabelUpdate(TempDataSpaceMixin, unittest.TestCase):
                 'a bug that needs fixed, rather than an invalid user input'
             ),
         )
+
+
+class TestLabelRename(TempDataSpaceMixin, unittest.TestCase):
+    def test_rename_label(self):
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
+
+        args = argparse.Namespace(
+            filepath=self.filepath,
+            command='update',
+            element='rename',
+            old_name='X',
+            new_name='D',
+        )
+
+        exit_code = command_label.rename(args)  # Function under test.
+
+        self.assertEqual(exit_code, ExitCode.OK)
+        self.assertEqual(
+            bind_file(self.filepath, mode='ro').get_label_columns(),
+            ['A', 'B', 'C', 'D'],
+        )
+
+    def test_bad_new_name(self):
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
+
+        args = argparse.Namespace(
+            filepath=self.filepath,
+            command='update',
+            element='rename',
+            old_name='X',
+            new_name='index_id',  # <- Not allowed.
+        )
+
+        regex = r"'index_id' is a reserved name"
+        with self.assertRaisesRegex(ToronError, regex):
+            command_label.rename(args)  # Function under test.
+
+    def test_missing_old_name(self):
+        bind_file(self.filepath, mode='rw').add_index_columns('A', 'B', 'C', 'X')
+
+        args = argparse.Namespace(
+            filepath=self.filepath,
+            command='update',
+            element='rename',
+            old_name='S',  # <- Missing from current labels.
+            new_name='D',
+        )
+
+        regex = r"no label 'S'"
+        with self.assertRaisesRegex(ToronError, regex):
+            command_label.rename(args)  # Function under test.

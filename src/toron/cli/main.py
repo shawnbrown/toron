@@ -562,6 +562,19 @@ def get_parser() -> argparse.ArgumentParser:
                                            help='move label to the right 1 or N positions')
     parser_label_update.set_defaults(func=command_label.update)
 
+    # Subcommand: rename
+    parser_label_rename = parser_label_subparsers.add_parser(
+        'rename',
+        help='rename an index label',
+        description='Rename label from OLD_NAME to NEW_NAME.',
+        parents=[no_backup_parent],
+    )
+    parser_label_rename.add_argument('old_name',
+                                     help='index label to rename', metavar='OLD_NAME')
+    parser_label_rename.add_argument('new_name',
+                                     help='replacement label name', metavar='NEW_NAME')
+    parser_label_rename.set_defaults(func=command_label.rename)
+
     ####################################################################
     # Command: weight
     ####################################################################

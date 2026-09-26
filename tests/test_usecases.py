@@ -478,26 +478,40 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         self.unsafe_set_unique_id(ds2, '22222222-2222-2222-2222-222222222222')
 
     def test_002_add_labels(self):
-        """Add label names."""
+        """Add label names to both files."""
         exit_code = self.run_main([self.filepath1, 'label', 'add', 'lbl1,lbl2,lbl3'])
         self.assertEqual(exit_code, ExitCode.OK)
 
-        exit_code = self.run_main([self.filepath2, 'label', 'add', 'lbl1', 'lbl2'])
+        exit_code = self.run_main([self.filepath2, 'label', 'add', 'lbl1', 'lblXXX'])
         self.assertEqual(exit_code, ExitCode.OK)
 
         self.assertEqual(
             self.buffer.getvalue(),
             ("INFO: added label names: 'lbl1', 'lbl2', 'lbl3'\n"
-             "INFO: added label names: 'lbl1', 'lbl2'\n"),
+             "INFO: added label names: 'lbl1', 'lblXXX'\n"),
         )
 
         ds1 = bind_file(self.filepath1, mode='ro')
         self.assertEqual(ds1.index_columns, ['lbl1', 'lbl2', 'lbl3'])
 
         ds2 = bind_file(self.filepath2, mode='ro')
+        self.assertEqual(ds2.index_columns, ['lbl1', 'lblXXX'])
+
+    def test_003_rename_label(self):
+        """Rename a label."""
+        exit_code = self.run_main([self.filepath2, 'label', 'rename', 'lblXXX', 'lbl2'])
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            self.buffer.getvalue(),
+            "INFO: renamed label 'lblXXX' -> 'lbl2'\n"
+        )
+
+        ds2 = bind_file(self.filepath2, mode='ro')
         self.assertEqual(ds2.index_columns, ['lbl1', 'lbl2'])
 
-    def test_003_add_weight(self):
+    def test_004_add_weight(self):
+        """Add weight groups to both files."""
         exit_code = self.run_main([self.filepath1, 'weight', 'add', 'wght', '--make-default'])
         self.assertEqual(exit_code, ExitCode.OK)
 
@@ -511,7 +525,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              "INFO: added index weight group 'wght' to .+file2.ds\n"),
         )
 
-    def test_004_import_index(self):
+    def test_005_import_index(self):
         """Load index records from file."""
         # Write actual CSV file to temp dir.
         csv_path = os.path.join(self.__class__.dirpath, 'file1_index.csv')
@@ -539,7 +553,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         )
         self.assertEqual(exit_code, ExitCode.OK)
 
-    def test_005_export_index(self):
+    def test_006_export_index(self):
         """Write index records to drive."""
         csv_path = os.path.join(self.__class__.dirpath, 'index-file1.csv')
 
