@@ -587,3 +587,24 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
             '9X460532F0,D,y,i,25.0\n'
         )
         self.assertEqual(csv_contents, expected)
+
+    def test_007_add_partitions(self):
+        """Add partition definitions to both files."""
+        params = [
+            # Add two partitions to filepath1.
+            ([self.filepath1, 'partition', 'add', 'lbl1'],
+             "INFO: added partition definition: {'lbl1'}\n"),
+            ([self.filepath1, 'partition', 'add', 'lbl1', 'lbl2'],
+             "INFO: added partition definition: {'lbl1', 'lbl2'}\n"),
+
+            # Add one partition to filepath2.
+            ([self.filepath2, 'partition', 'add', 'lbl1'],
+             "INFO: added partition definition: {'lbl1'}\n"),
+        ]
+
+        for args, logmsg in params:
+            buffer = StringIO()
+            with self.subTest(args=args, logmsg=logmsg):
+                exit_code = cli.main.main(args, stderr=buffer)
+                self.assertEqual(buffer.getvalue(), logmsg)
+                self.assertEqual(exit_code, ExitCode.OK)
