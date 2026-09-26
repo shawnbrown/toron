@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from io import StringIO
@@ -251,14 +252,14 @@ class TestBuildUsingOldCLI(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-        # TODO: Use following code when dropping support for Python 3.11.
-        #tmpdir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
-        #self.addCleanup(tmpdir.cleanup)
-        #dirpath = os.path.realpath(tmpdir.name)
-
-        # Using `mkdtemp()` to support Python 3.11 and older.
-        dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
-        self.addCleanup(shutil.rmtree, dirpath)
+        if sys.version_info[:2] >= (3, 12):
+            tmpdir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
+            self.addClassCleanup(tmpdir.cleanup)
+            dirpath = os.path.realpath(tmpdir.name)
+        else:
+            # TODO: Remove when dropping support for Python 3.11.
+            dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
+            self.addClassCleanup(shutil.rmtree, dirpath)
 
         self.filepath1 = os.path.join(dirpath, 'node1.toron')
         self.filepath2 = os.path.join(dirpath, 'node2.toron')
@@ -443,14 +444,14 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         """Initialize `step_failed` and temporary directory."""
         super().setUpClass()
 
-        # TODO: Use following code when dropping support for Python 3.11.
-        #tmpdir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
-        #self.addClassCleanup(tmpdir.cleanup)
-        #cls.dirpath = os.path.realpath(tmpdir.name)
-
-        # Using `mkdtemp()` to support Python 3.11 and older.
-        cls.dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
-        cls.addClassCleanup(shutil.rmtree, cls.dirpath)
+        if sys.version_info[:2] >= (3, 12):
+            tmpdir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
+            cls.addClassCleanup(tmpdir.cleanup)
+            cls.dirpath = os.path.realpath(tmpdir.name)
+        else:
+            # TODO: Remove when dropping support for Python 3.11.
+            cls.dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
+            cls.addClassCleanup(shutil.rmtree, cls.dirpath)
 
         cls.filepath1 = os.path.join(cls.dirpath, 'file1.ds')
         cls.filepath2 = os.path.join(cls.dirpath, 'file2.ds')
