@@ -608,3 +608,13 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
                 exit_code = cli.main.main(args, stderr=buffer)
                 self.assertEqual(buffer.getvalue(), logmsg)
                 self.assertEqual(exit_code, ExitCode.OK)
+
+    def test_008_add_attributes(self):
+        """Add an attribute name to filepath1."""
+        exit_code = self.run_main([self.filepath1, 'attribute', 'add', 'code'])
+
+        self.assertEqual(
+            self.buffer.getvalue(),
+            "INFO: added attribute columns: 'code'\n",
+        )
+        self.assertEqual(exit_code, ExitCode.OK)

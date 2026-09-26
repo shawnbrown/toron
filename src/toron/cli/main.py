@@ -30,6 +30,7 @@ from . import (
     command_label,
     command_weight,
     command_partition,
+    command_attribute,
 )
 from .common import (
     ExitCode,
@@ -704,6 +705,35 @@ def get_parser() -> argparse.ArgumentParser:
                                       help='label names that define the partition',
                                       metavar='NAME')
     parser_partition_add.set_defaults(func=command_partition.add)
+
+    ####################################################################
+    # Command: attribute
+    ####################################################################
+    parser_attribute = subparsers.add_parser(
+        'attribute',
+        help='attribute names used by quantities',
+        description='Operate on attribute names.',
+        epilog=(
+            'Attributes are text values that describe and categorize '
+            'quantities.'
+        ),
+    )
+    parser_attribute_subparsers = parser_attribute.add_subparsers(dest='subcommand',
+                                                                  required=True,
+                                                                  metavar='COMMAND')
+
+    # Subcommand: add
+    parser_attribute_add = parser_attribute_subparsers.add_parser(
+        'add',
+        help='add attribute names',
+        description=('Add attribute names to a file. Attributes may be '
+                     'provided as separate arguments or as a comma-separated '
+                     'list.'),
+        parents=[no_backup_parent],
+    )
+    parser_attribute_add.add_argument('names', nargs='+',
+                                      help='attribute name to add', metavar='NAME')
+    parser_attribute_add.set_defaults(func=command_attribute.add)
 
     ####################################################################
     # Subcommand: relation operator (for relations between files)
