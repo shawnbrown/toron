@@ -431,6 +431,9 @@ class TestBuildUsingOldCLI(unittest.TestCase):
 
 
 class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
+    """Tests the incremental creation, update, and linking of
+    `DataSpace` files using the `IncrementalTestingMixin`.
+    """
     @staticmethod
     def unsafe_set_unique_id(ds, unique_id):
         """Helper function to set unique_id values for testing."""
