@@ -24,8 +24,17 @@ from toron.cli.main import (
 
 class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
     def setUp(self):
-        self.parser = get_parser()  # Get ToronArgumentParser instance.
         super().setUp()
+        self.parser = get_parser()  # Get ToronArgumentParser instance.
+
+    def assertNamespaceEqual(self, first, second, msg=None):
+        """Check that `argparse.Namespace` instances are equal."""
+        # Check instances types.
+        self.assertIsInstance(first, argparse.Namespace, msg)
+        self.assertIsInstance(second, argparse.Namespace, msg)
+
+        # Check Namespace contents.
+        self.assertDictEqual(vars(first), vars(second), msg)
 
     def test_help_explicit(self):
         """When calling help explicitly, should write to stdout and exit with OK."""
@@ -68,7 +77,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_init(self):
         """Check "init" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'init',
@@ -81,7 +90,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             ),
         )
 
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'init',
@@ -97,7 +106,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_add_label(self):
         """Check "add label" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'add',
@@ -116,7 +125,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_add_weight(self):
         """Check "add weight" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'add',
@@ -140,7 +149,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         )
 
         # Check minimal invocation (no description or selectors).
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'add',
@@ -162,7 +171,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_add_partition(self):
         """Check "add partition" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'add',
@@ -181,7 +190,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_add_attribute(self):
         """Check "add attribute" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'add',
@@ -200,7 +209,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_add_link(self):
         """Check "add link" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile1.toron',
                 'add',
@@ -229,7 +238,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_update_label(self):
         """Check "update label" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'update',
@@ -249,7 +258,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             ),
         )
 
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'update',
@@ -293,7 +302,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_update_weight(self):
         """Check "update weight" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'update',
@@ -318,7 +327,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_update_attribute(self):
         """Check "update attribute" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'update',
@@ -338,7 +347,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             ),
         )
 
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'update',
@@ -382,7 +391,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_rename_label(self):
         """Check "rename label" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'rename',
@@ -403,7 +412,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_rename_domain(self):
         """Check "rename domain" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'rename',
@@ -422,7 +431,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_remove_link(self):
         """Check "remove link" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile1.toron',
                 'remove',
@@ -444,7 +453,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_index(self):
         """Check "index" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'index',
@@ -462,7 +471,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_quantity(self):
         """Check "quantity" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'quantity',
@@ -481,7 +490,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_mapping(self):
         """Check "mapping" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'file1.toron',
                 'mapping',
@@ -504,7 +513,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_info(self):
         """Check "info" subparser."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
                 'info',
@@ -518,7 +527,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
     def test_subcommand_default(self):
         """When no COMMAND is given, should default to 'info'."""
-        self.assertEqual(
+        self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',  # <- FILE only (no COMMAND).
             ]),
