@@ -44,7 +44,7 @@ class ExitCode(IntEnum):
     USAGE = 2  # Incorrect usage (invalid options or missing args).
 
 
-def is_streamed(standard_io: TextIO):
+def is_streamed(standard_io: TextIO) -> bool:
     """Returns True if stream is redirected or piped."""
     return not standard_io.isatty()
 
