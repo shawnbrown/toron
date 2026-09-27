@@ -20,6 +20,7 @@ from .common import DummyRedirection, IncrementalTestingMixin
 from toron.space import DataSpace
 from toron.graph import load_mapping
 from toron import cli, bind_file
+from toron.cli.main import main
 from toron.cli.common import ExitCode
 
 
@@ -461,13 +462,13 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
     def assertMain(self, args, stderr_message, exit_code=ExitCode.OK, msg=None):
         buffer = StringIO()
-        actual_exit_code = cli.main.main(args, stderr=buffer)
+        actual_exit_code = main(args, stderr=buffer)
         self.assertEqual(buffer.getvalue(), stderr_message, msg=msg)
         self.assertEqual(actual_exit_code, exit_code, msg=msg)
 
     def assertMainRegex(self, args, stderr_regex, exit_code=ExitCode.OK, msg=None):
         buffer = StringIO()
-        actual_exit_code = cli.main.main(args, stderr=buffer)
+        actual_exit_code = main(args, stderr=buffer)
         self.assertRegex(buffer.getvalue(), stderr_regex, msg=msg)
         self.assertEqual(actual_exit_code, exit_code, msg=msg)
 
