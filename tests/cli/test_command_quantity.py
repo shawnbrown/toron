@@ -39,8 +39,8 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
             filepath='file1.toron',
             command='quantity',
             value_column='quantity',  # <- This is the default column name.
-            allow_invalid_label='abort',
-            allow_invalid_partition='abort',
+            allow_invalid_label=False,
+            allow_invalid_partition=False,
             on_existing='abort',
             stdin=DummyRedirection(
                 'domain,state,county,category,sex,quantity\n'
@@ -76,8 +76,8 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
             filepath='file1.toron',
             command='quantity',
             value_column='counts',  # <- Non-default value column.
-            allow_invalid_label='abort',
-            allow_invalid_partition='abort',
+            allow_invalid_label=False,
+            allow_invalid_partition=False,
             on_existing='abort',
             stdin=DummyRedirection(
                 'domain,state,county,category,sex,counts\n'  # <- Value in "counts" column.
