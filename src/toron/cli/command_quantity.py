@@ -5,10 +5,12 @@ import logging
 import os
 from .._typing import (
     Iterator,
+    List,
     Literal,
     Sequence,
     Union,
     TYPE_CHECKING,
+    cast,
 )
 
 from .common import (
@@ -75,6 +77,25 @@ def import_records(args: argparse.Namespace) -> ExitCode:
             allow_invalid_partition=args.allow_invalid_partition,
             on_existing=args.on_existing,
         )
+
+
+def _export_records(ds: 'DataSpace') -> Iterator[List[Union[str, float]]]:
+    """Yield quantity record rows."""
+    data = ds.select_quantities2(header=True)
+
+    # Cast type until return hint for `select_quantities2()` is improved.
+    # TODO: Update `select_quantities2()` to use better type hint.
+    data = cast(Iterator[List[Union[str, float]]], data)
+
+    header = next(data)
+    yield header
+
+    row_count = 0
+    for row in data:
+        yield row
+        row_count += 1
+
+    applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
 
 
 def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:

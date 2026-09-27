@@ -103,6 +103,36 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
             )
 
 
+class TestQuantityExportRecords(QuantityMixin, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.ds.set_registered_attributes(['category', 'sex'])
+        self.ds.insert_quantities2(
+            value_column='quantity',
+            data=[['domain', 'state', 'county',   'category', 'sex',    'quantity'],
+                  ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140.0],
+                  ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990.0],
+                  ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499.0],
+                  ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915.0]],
+        )
+
+    def test_export_records_generator(self):
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            generator = command_quantity._export_records(self.ds)  # <- Function under test.
+            records = list(generator)
+
+        self.assertEqual(logs_cm.output, ['INFO:app-toron:written 4 records'])
+
+        expected_values = [
+            ['domain', 'state', 'county',   'category', 'sex',    'quantity'],
+            ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140.0],
+            ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990.0],
+            ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'MALE',   566499.0],
+            ['iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915.0],
+        ]
+        self.assertEqual(records, expected_values)
+
+
 class TestReadFromStdin(QuantityMixin, unittest.TestCase):
     def test_standard_input_columns(self):
         """Check input with domain, all labels, and all attributes."""
