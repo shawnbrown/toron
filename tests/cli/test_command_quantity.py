@@ -9,31 +9,31 @@ from toron.cli import command_quantity
 
 class QuantityMixin(object):
     @staticmethod
-    def set_unique_id(node, unique_id):
-        node._connector._unique_id = unique_id
-        with node._managed_transaction() as cur:
-            property_repo = node._dal.PropertyRepository(cur)
+    def set_unique_id(ds, unique_id):
+        ds._connector._unique_id = unique_id
+        with ds._managed_transaction() as cur:
+            property_repo = ds._dal.PropertyRepository(cur)
             property_repo.update('unique_id', unique_id)
 
     def setUp(self):
         self.maxDiff = None
 
-        self.node = DataSpace()
-        self.set_unique_id(self.node, '11111111-1111-1111-1111-111111111111')
-        self.node.set_domain('iso_US')
-        self.node.add_index_columns('state', 'county')
-        self.node.add_weight_group('population', make_default=True)
-        self.node.insert_index([('state', 'county',   'population'),
-                                ('OH',    'BUTLER',   374150),
-                                ('OH',    'FRANKLIN', 1336250),
-                                ('IN',    'KNOX',     36864),
-                                ('IN',    'LAPORTE',  110592)])
+        self.ds = DataSpace()
+        self.set_unique_id(self.ds, '11111111-1111-1111-1111-111111111111')
+        self.ds.set_domain('iso_US')
+        self.ds.add_index_columns('state', 'county')
+        self.ds.add_weight_group('population', make_default=True)
+        self.ds.insert_index([('state', 'county',   'population'),
+                              ('OH',    'BUTLER',   374150),
+                              ('OH',    'FRANKLIN', 1336250),
+                              ('IN',    'KNOX',     36864),
+                              ('IN',    'LAPORTE',  110592)])
 
 
 class TestReadFromStdin(QuantityMixin, unittest.TestCase):
     def test_standard_input_columns(self):
         """Check input with domain, all labels, and all attributes."""
-        self.node.set_registered_attributes(['category', 'sex'])
+        self.ds.set_registered_attributes(['category', 'sex'])
 
         args = argparse.Namespace(
             filepath='file1.toron',
@@ -52,7 +52,7 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_quantity.read_from_stdin(args, self.node)  # <- Function under test.
+            command_quantity.read_from_stdin(args, self.ds)  # <- Function under test.
 
         self.assertEqual(
             logs_cm.output,
@@ -60,7 +60,7 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
         )
 
         self.assertEqual(
-            list(self.node.select_quantities(header=True)),
+            list(self.ds.select_quantities(header=True)),
             [['domain', 'state', 'county',   'category', 'sex',    'quantity'],
              ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140.0],
              ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990.0],
@@ -70,7 +70,7 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
 
     def test_alternate_value_column(self):
         """Check data with non-default value column."""
-        self.node.set_registered_attributes(['category', 'sex'])
+        self.ds.set_registered_attributes(['category', 'sex'])
 
         args = argparse.Namespace(
             filepath='file1.toron',
@@ -88,10 +88,10 @@ class TestReadFromStdin(QuantityMixin, unittest.TestCase):
             ),
         )
 
-        command_quantity.read_from_stdin(args, self.node)  # <- Function under test.
+        command_quantity.read_from_stdin(args, self.ds)  # <- Function under test.
 
         self.assertEqual(
-            list(self.node.select_quantities(header=True)),
+            list(self.ds.select_quantities(header=True)),
             [['domain', 'state', 'county',   'category', 'sex',    'quantity'],
              ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140.0],
              ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990.0],
@@ -104,8 +104,8 @@ class TestWriteToStdout(QuantityMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 
-        self.node.set_registered_attributes(['category', 'sex'])
-        self.node.insert_quantities2(
+        self.ds.set_registered_attributes(['category', 'sex'])
+        self.ds.insert_quantities2(
             value_column='quantity',
             data=[['domain', 'state', 'county',   'category', 'sex',    'quantity'],
                   ['iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140.0],
@@ -118,12 +118,12 @@ class TestWriteToStdout(QuantityMixin, unittest.TestCase):
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(
             command='quantity',
-            node=self.node,
+            ds=self.ds,
             stdout=dummy_stdout,
         )
 
         with self.assertLogs('app-toron', level='INFO') as logs_cm:
-            command_quantity.write_to_stdout(args, self.node)  # <- Function under test.
+            command_quantity.write_to_stdout(args, self.ds)  # <- Function under test.
 
         self.assertEqual(logs_cm.output, ['INFO:app-toron:written 4 records'])
 
