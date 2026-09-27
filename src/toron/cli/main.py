@@ -420,34 +420,6 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     ####################################################################
-    # Subcommand: quantity
-    ####################################################################
-    parser_quantity = subparsers.add_parser(
-        name='quantity',
-        help='write quantities to stdout (or load from stdin)',
-        description=('Write quantity records to stdout or load quantity '
-                     'records from stdin (CSV format).'),
-        parents=[no_backup_parent],
-    )
-    parser_quantity.add_argument('--column',
-                                 default='quantity',
-                                 dest='value_column',
-                                 help='name of column containing values (default: %(default)s)',
-                                 metavar='NAME')
-    parser_quantity.add_argument('--allow-invalid-label', action='store_true',
-                                 dest='allow_invalid_label',
-                                 help='allow quantities without matching index labels')
-    parser_quantity.add_argument('--allow-invalid-partition', action='store_true',
-                                 dest='allow_invalid_partition',
-                                 help='allow quantities without matching partitions')
-    parser_quantity.add_argument('--on-existing',
-                                 default='abort',
-                                 choices=['abort', 'sum', 'replace', 'ignore'],
-                                 dest='on_existing',
-                                 help='strategy for existing quantities (default: %(default)s)')
-    parser_quantity.set_defaults(func=command_quantity.process_quantity_action)
-
-    ####################################################################
     # Subcommand: mapping
     ####################################################################
     parser_mapping = subparsers.add_parser(
@@ -734,6 +706,36 @@ def get_parser() -> argparse.ArgumentParser:
     parser_attribute_add.add_argument('names', nargs='+',
                                       help='attribute name to add', metavar='NAME')
     parser_attribute_add.set_defaults(func=command_attribute.add)
+
+    ####################################################################
+    # Command: quantity
+    ####################################################################
+    parser_quantity = subparsers.add_parser(
+        name='quantity',
+        help='quantity records',
+        description=('Operate on quantity records.'),
+        parents=[no_backup_parent],
+    )
+    parser_quantity.add_argument('--column',  # <- TODO: Remove when import/export implemented.
+                                 default='quantity',
+                                 dest='value_column',
+                                 help='name of column containing values (default: %(default)s)',
+                                 metavar='NAME')
+    parser_quantity.add_argument('--allow-invalid-label', action='store_true',  # <- TODO: Remove when import/export implemented.
+                                 dest='allow_invalid_label',
+                                 help='allow quantities without matching index labels')
+    parser_quantity.add_argument('--allow-invalid-partition', action='store_true',  # <- TODO: Remove when import/export implemented.
+                                 dest='allow_invalid_partition',
+                                 help='allow quantities without matching partitions')
+    parser_quantity.add_argument('--on-existing',  # <- TODO: Remove when import/export implemented.
+                                 default='abort',
+                                 choices=['abort', 'sum', 'replace', 'ignore'],
+                                 dest='on_existing',
+                                 help='strategy for existing quantities (default: %(default)s)')
+    parser_quantity.set_defaults(func=command_quantity.process_quantity_action)  # <- TODO: Remove when import/export implemented.
+    parser_quantity_subparsers = parser_quantity.add_subparsers(dest='subcommand',
+                                                                required=False,  # TODO: Change to True after refactoring.
+                                                                metavar='COMMAND')
 
     ####################################################################
     # Subcommand: relation operator (for relations between files)
