@@ -459,20 +459,29 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         cls.filepath1 = os.path.join(cls.dirpath, 'file1.ds')
         cls.filepath2 = os.path.join(cls.dirpath, 'file2.ds')
 
-    def setUp(self):
-        self.buffer = StringIO()
+    def assertMain(self, args, stderr_message, exit_code=ExitCode.OK, msg=None):
+        buffer = StringIO()
+        actual_exit_code = cli.main.main(args, stderr=buffer)
+        self.assertEqual(buffer.getvalue(), stderr_message, msg=msg)
+        self.assertEqual(actual_exit_code, exit_code, msg=msg)
 
-    def run_main(self, argv):  # <- Helper function.
-        """Run Toron's main command line function."""
-        return cli.main.main(argv, stderr=self.buffer)
+    def assertMainRegex(self, args, stderr_regex, exit_code=ExitCode.OK, msg=None):
+        buffer = StringIO()
+        actual_exit_code = cli.main.main(args, stderr=buffer)
+        self.assertRegex(buffer.getvalue(), stderr_regex, msg=msg)
+        self.assertEqual(actual_exit_code, exit_code, msg=msg)
 
     def test_001_create_files(self):
         """Create new data-space files."""
-        exit_code = self.run_main([self.filepath1, 'create', '--domain', 'file1'])
-        self.assertEqual(exit_code, ExitCode.OK)
-
-        exit_code = self.run_main([self.filepath2, 'create'])
-        self.assertEqual(exit_code, ExitCode.OK)
+        self.assertMainRegex(
+            [self.filepath1, 'create', '--domain', 'file1'],
+            r"INFO: created file '.+file1.ds'\n",
+        )
+        self.assertMainRegex(
+            [self.filepath2, 'create'],
+            (r"INFO: created file '.+file2.ds'\n"
+             r"INFO: domain set to 'file2'\n"),
+        )
 
         # Set unique_id values for testing.
         ds1 = bind_file(self.filepath1, mode='rw')
@@ -482,16 +491,13 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
     def test_002_add_labels(self):
         """Add label names to both files."""
-        exit_code = self.run_main([self.filepath1, 'label', 'add', 'lbl1,lbl2,lbl3'])
-        self.assertEqual(exit_code, ExitCode.OK)
-
-        exit_code = self.run_main([self.filepath2, 'label', 'add', 'lbl1', 'lblXXX'])
-        self.assertEqual(exit_code, ExitCode.OK)
-
-        self.assertEqual(
-            self.buffer.getvalue(),
-            ("INFO: added label names: 'lbl1', 'lbl2', 'lbl3'\n"
-             "INFO: added label names: 'lbl1', 'lblXXX'\n"),
+        self.assertMain(
+            [self.filepath1, 'label', 'add', 'lbl1,lbl2,lbl3'],
+            "INFO: added label names: 'lbl1', 'lbl2', 'lbl3'\n",
+        )
+        self.assertMain(
+            [self.filepath2, 'label', 'add', 'lbl1', 'lblXXX'],
+            "INFO: added label names: 'lbl1', 'lblXXX'\n",
         )
 
         ds1 = bind_file(self.filepath1, mode='ro')
@@ -502,12 +508,9 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
     def test_003_rename_label(self):
         """Rename a label."""
-        exit_code = self.run_main([self.filepath2, 'label', 'rename', 'lblXXX', 'lbl2'])
-        self.assertEqual(exit_code, ExitCode.OK)
-
-        self.assertEqual(
-            self.buffer.getvalue(),
-            "INFO: renamed label 'lblXXX' -> 'lbl2'\n"
+        self.assertMain(
+            [self.filepath2, 'label', 'rename', 'lblXXX', 'lbl2'],
+            "INFO: renamed label 'lblXXX' -> 'lbl2'\n",
         )
 
         ds2 = bind_file(self.filepath2, mode='ro')
@@ -515,16 +518,13 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
     def test_004_add_weight(self):
         """Add weight groups to both files."""
-        exit_code = self.run_main([self.filepath1, 'weight', 'add', 'wght', '--make-default'])
-        self.assertEqual(exit_code, ExitCode.OK)
-
-        exit_code = self.run_main([self.filepath2, 'weight', 'add', 'wght'])
-        self.assertEqual(exit_code, ExitCode.OK)
-
-        self.assertRegex(
-            self.buffer.getvalue(),
-            ("INFO: added index weight group 'wght' to .+file1.ds\n"
-             "WARNING: setting default weight group: 'wght'\n"
+        self.assertMainRegex(
+            [self.filepath1, 'weight', 'add', 'wght', '--make-default'],
+            "INFO: added index weight group 'wght' to .+file1.ds\n",
+        )
+        self.assertMainRegex(
+            [self.filepath2, 'weight', 'add', 'wght'],
+            ("WARNING: setting default weight group: 'wght'\n"
              "INFO: added index weight group 'wght' to .+file2.ds\n"),
         )
 
@@ -547,28 +547,23 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
             )
         self.addCleanup(lambda: os.remove(csv_path))
 
-        exit_code = self.run_main([self.filepath1, 'index', 'import', csv_path])
-
-        self.assertEqual(
-            self.buffer.getvalue(),
+        self.assertMain(
+            [self.filepath1, 'index', 'import', csv_path],
             ('INFO: loaded 9 index labels\n'
              'INFO: loaded 9 index weights\n'),
         )
-        self.assertEqual(exit_code, ExitCode.OK)
 
     def test_006_export_index(self):
         """Write index records to drive."""
         csv_path = os.path.join(self.__class__.dirpath, 'index-file1.csv')
 
-        exit_code = self.run_main([self.filepath1, 'index', 'export', csv_path])
-        self.addCleanup(lambda: os.remove(csv_path))  # Remove file.
-
-        self.assertRegex(
-            self.buffer.getvalue(),
+        self.assertMainRegex(
+            [self.filepath1, 'index', 'export', csv_path],
             ("INFO: written 10 records\n"
              "INFO: saved to '.+index-file1.csv'\n"),
         )
-        self.assertEqual(exit_code, ExitCode.OK)
+        # Add clean-up file created by "export" command.
+        self.addCleanup(lambda: os.remove(csv_path))
 
         with open(csv_path) as f:
             csv_contents = f.read()
@@ -590,31 +585,24 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
     def test_007_add_partitions(self):
         """Add partition definitions to both files."""
-        params = [
-            # Add two partitions to filepath1.
-            ([self.filepath1, 'partition', 'add', 'lbl1'],
-             "INFO: added partition definition: {'lbl1'}\n"),
-            ([self.filepath1, 'partition', 'add', 'lbl1', 'lbl2'],
-             "INFO: added partition definition: {'lbl1', 'lbl2'}\n"),
-
-            # Add one partition to filepath2.
-            ([self.filepath2, 'partition', 'add', 'lbl1'],
-             "INFO: added partition definition: {'lbl1'}\n"),
-        ]
-
-        for args, logmsg in params:
-            buffer = StringIO()
-            with self.subTest(args=args, logmsg=logmsg):
-                exit_code = cli.main.main(args, stderr=buffer)
-                self.assertEqual(buffer.getvalue(), logmsg)
-                self.assertEqual(exit_code, ExitCode.OK)
+        # Add two partitions to filepath1.
+        self.assertMain(
+            [self.filepath1, 'partition', 'add', 'lbl1'],
+            "INFO: added partition definition: {'lbl1'}\n",
+        )
+        self.assertMain(
+            [self.filepath1, 'partition', 'add', 'lbl1', 'lbl2'],
+            "INFO: added partition definition: {'lbl1', 'lbl2'}\n",
+        )
+        # Add one partition to filepath2.
+        self.assertMain(
+            [self.filepath2, 'partition', 'add', 'lbl1'],
+            "INFO: added partition definition: {'lbl1'}\n",
+        )
 
     def test_008_add_attributes(self):
         """Add an attribute name to filepath1."""
-        exit_code = self.run_main([self.filepath1, 'attribute', 'add', 'code'])
-
-        self.assertEqual(
-            self.buffer.getvalue(),
+        self.assertMain(
+            [self.filepath1, 'attribute', 'add', 'code'],
             "INFO: added attribute columns: 'code'\n",
         )
-        self.assertEqual(exit_code, ExitCode.OK)
