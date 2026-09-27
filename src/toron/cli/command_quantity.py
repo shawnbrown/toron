@@ -59,6 +59,24 @@ def _import_records(
     return ExitCode.OK
 
 
+def import_records(args: argparse.Namespace) -> ExitCode:
+    """Load quantity records from source CSV file."""
+    with open(args.source) as f_source:
+        reader = csv.reader(f_source)
+
+        ds = cli_bind_file(args.filepath, mode='rw')
+        process_backup_option(args, ds)
+
+        return _import_records(
+            ds=ds,
+            reader=reader,
+            value_column=args.value_column,
+            allow_invalid_label=args.allow_invalid_label,
+            allow_invalid_partition=args.allow_invalid_partition,
+            on_existing=args.on_existing,
+        )
+
+
 def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:
     """Load quantity records read from stdin stream."""
     reader = csv.reader(args.stdin)

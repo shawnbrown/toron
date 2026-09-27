@@ -737,6 +737,34 @@ def get_parser() -> argparse.ArgumentParser:
                                                                 required=False,  # TODO: Change to True after refactoring.
                                                                 metavar='COMMAND')
 
+    # Subcommand: import
+    parser_quantity_import = parser_quantity_subparsers.add_parser(
+        'import',
+        help='load quantity records from SOURCE file',
+        description='Load quantity records from a SOURCE file.',
+        parents=[no_backup_parent],
+    )
+    parser_quantity_import.add_argument('source',
+                                        help='CSV file containing records to load',
+                                        metavar='SOURCE')
+    parser_quantity_import.add_argument('--column',
+                                        default='quantity',
+                                        dest='value_column',
+                                        help='name of column containing values (default: %(default)s)',
+                                        metavar='NAME')
+    parser_quantity_import.add_argument('--allow-invalid-label',
+                                        action='store_true',
+                                        help='allow quantities without matching index labels')
+    parser_quantity_import.add_argument('--allow-invalid-partition',
+                                        action='store_true',
+                                        help='allow quantities without matching partitions')
+    parser_quantity_import.add_argument('--on-existing',
+                                        default='abort',
+                                        choices=['abort', 'sum', 'replace', 'ignore'],
+                                        dest='on_existing',
+                                        help='strategy for existing quantities (default: %(default)s)')
+    parser_quantity_import.set_defaults(func=command_quantity.import_records)
+
     ####################################################################
     # Subcommand: relation operator (for relations between files)
     ####################################################################

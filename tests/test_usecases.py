@@ -607,3 +607,26 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
             [self.filepath1, 'attribute', 'add', 'code'],
             "INFO: added attribute columns: 'code'\n",
         )
+
+    def test_009_import_quantities(self):
+        """Load quantity records from CSV file."""
+        csv_path = os.path.join(self.__class__.dirpath, 'file1_quantity.csv')
+        with open(csv_path, 'w') as f:
+            f.write(
+                'lbl1,lbl2,lbl3,code,quantity\n'
+                'A,z,a,foo,100\n'
+                'B,x,b,foo,100\n'
+                'B,y,c,bar,100\n'
+                'C,x,d,bar,100\n'
+                'C,y,e,bar,100\n'
+                'D,x,f,bar,100\n'
+                'D,x,g,baz,100\n'
+                'D,y,h,baz,100\n'
+                'D,y,i,baz,100\n'
+            )
+        self.addCleanup(lambda: os.remove(csv_path))
+
+        self.assertMain(
+            [self.filepath1, 'quantity', 'import', csv_path],
+            'INFO: loaded 9 quantities\n',
+        )
