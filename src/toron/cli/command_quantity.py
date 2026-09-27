@@ -3,7 +3,13 @@ import argparse
 import csv
 import logging
 import os
-from .._typing import TYPE_CHECKING
+from .._typing import (
+    Iterator,
+    Literal,
+    Sequence,
+    Union,
+    TYPE_CHECKING,
+)
 
 from .common import (
     ExitCode,
@@ -12,12 +18,45 @@ from .common import (
     cli_bind_file,
     process_backup_option,
 )
+from .._utils import (
+    ToronError,
+)
 
 if TYPE_CHECKING:
     from .. import DataSpace
 
 
 applogger = logging.getLogger('app-toron')
+
+
+def _import_records(
+    ds: 'DataSpace',
+    reader: Iterator[Sequence[Union[str, float]]],
+    value_column: str,
+    allow_invalid_label: bool,
+    allow_invalid_partition: bool,
+    on_existing: Literal['abort', 'sum', 'replace', 'ignore'],
+) -> ExitCode:
+    """Load quantity records from `csv.reader`-like object."""
+    try:
+        ds.insert_quantities2(
+            value_column=value_column,
+            data=reader,
+            allow_invalid_label=allow_invalid_label,
+            allow_invalid_partition=allow_invalid_partition,
+            on_existing=on_existing,
+        )
+    except ValueError as err:
+        with ds._managed_cursor() as (cur):
+            index_repo = ds._dal.IndexRepository(cur)
+            cardinality = index_repo.get_cardinality(include_undefined=False)
+
+        if cardinality == 0:
+            raise ToronError('operation cancelled, file contains no index records')
+        else:
+            raise  # Or else use original error as-is.
+
+    return ExitCode.OK
 
 
 def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:

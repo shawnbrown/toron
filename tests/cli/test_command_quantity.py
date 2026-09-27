@@ -2,7 +2,7 @@
 import argparse
 from .. import _unittest as unittest
 from ..common import DummyRedirection
-from toron import DataSpace
+from toron import DataSpace, ToronError
 
 from toron.cli import command_quantity
 
@@ -28,6 +28,79 @@ class QuantityMixin(object):
                               ('OH',    'FRANKLIN', 1336250),
                               ('IN',    'KNOX',     36864),
                               ('IN',    'LAPORTE',  110592)])
+
+
+class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
+    def test_import_records(self):
+        self.ds.set_registered_attributes(['category', 'sex'])
+
+        reader = iter([
+            ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', '180140'],
+            ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', '187990'],
+            ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', '566499'],
+            ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', '596915'],
+        ])
+
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_quantity._import_records(  # <- Function under test.
+                ds=self.ds,
+                reader=reader,
+                value_column='quantity',  # <- This is the default column name.
+                allow_invalid_label=False,
+                allow_invalid_partition=False,
+                on_existing='abort',
+            )
+
+        self.assertEqual(
+            logs_cm.output,
+            ['INFO:app-toron.space:loaded 4 quantities'],
+        )
+
+        self.assertEqual(
+            list(self.ds.select_quantities(header=True)),
+            [['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+             ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140.0],
+             ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990.0],
+             ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499.0],
+             ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915.0]],
+        )
+
+    def test_no_attributes(self):
+        regex = 'operation cancelled, no attributes registered'
+        with self.assertRaisesRegex(ToronError, regex) as cm:
+            command_quantity._import_records(  # <- Function under test.
+                ds=self.ds,
+                reader=iter([
+                    ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+                    ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', '180140'],
+                    ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', '187990'],
+                ]),
+                value_column='quantity',
+                allow_invalid_label=False,
+                allow_invalid_partition=False,
+                on_existing='abort',
+            )
+
+    def test_no_index_records(self):
+        ds = DataSpace()  # <- Empty DataSpace.
+        ds.set_domain('iso_US')
+        ds.set_registered_attributes(['category', 'sex'])
+
+        regex = 'operation cancelled, file contains no index records'
+        with self.assertRaisesRegex(ToronError, regex) as cm:
+            command_quantity._import_records(  # <- Function under test.
+                ds=ds,
+                reader=iter([
+                    ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+                    ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', '180140'],
+                    ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', '187990'],
+                ]),
+                value_column='quantity',
+                allow_invalid_label=False,
+                allow_invalid_partition=False,
+                on_existing='abort',
+            )
 
 
 class TestReadFromStdin(QuantityMixin, unittest.TestCase):
