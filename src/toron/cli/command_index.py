@@ -19,6 +19,7 @@ from .._utils import ToronError
 from .common import (
     ExitCode,
     is_streamed,
+    open_target_file,
     csv_stdout_writer,
     cli_bind_file,
     process_backup_option,
@@ -151,38 +152,12 @@ def export_records(args: argparse.Namespace) -> ExitCode:
     # Bind DataSpace first to make sure it exists.
     ds = cli_bind_file(args.filepath, mode='ro')
 
-    # Overwrite target (w) if using "--force" else fail if target exists (x).
-    mode = 'w' if args.force else 'x'
-
-    if os.path.isdir(args.target):
-        # Automatically generate a target path.
-        stem, _ = os.path.splitext(os.path.basename(args.filepath))
-        target_part= os.path.normpath(os.path.join(args.target, f'index-{stem}'))
-        for suffix in chain([''], (f'_{n}' for n in range(2, 10))):
-            try:
-                target_path = f'{target_part}{suffix}.csv'
-                f_target = open(target_path, mode)
-                break
-            except FileExistsError:
-                pass
-        else:  # NOBREAK: Loop fell through without break.
-            raise ToronError('unable to auto-generate filename')
-    else:
-        # Use explicit target path.
-        target_path = os.path.normpath(args.target)
-        try:
-            f_target = open(target_path, mode)
-        except FileExistsError as err:
-            raise ToronError(f'{err}; use -f or --force to overwrite existing file')
-
-    try:
-        writer = csv.writer(f_target, lineterminator='\n')
+    with open_target_file(args.filepath, args.target, 'index-', args.force) as f:
+        writer = csv.writer(f, lineterminator='\n')
         for row in _export_records(ds):
             writer.writerow(row)
-    finally:
-        f_target.close()
 
-    applogger.info(f'saved to {target_path!r}')
+    applogger.info(f'saved to {f.name!r}')
     return ExitCode.OK
 
 
