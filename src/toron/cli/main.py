@@ -18,12 +18,10 @@ from .. import (
 )
 from . import (
     command_add,
-    command_info,
     command_index,
     command_update,
     command_rename,
     command_remove,
-    command_quantity,
     command_mapping,
     command_init,
     command_create,
@@ -31,6 +29,8 @@ from . import (
     command_weight,
     command_partition,
     command_attribute,
+    command_quantity,
+    command_info,
 )
 from .common import (
     ExitCode,
@@ -468,16 +468,6 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     ####################################################################
-    # Subcommand: info
-    ####################################################################
-    parser_info = subparsers.add_parser(
-        'info',
-        help='show file info, used as default if COMMAND omitted',
-        description='Show file information.',
-    )
-    parser_info.set_defaults(func=command_info.write_to_stdout)
-
-    ####################################################################
     # Command: create
     ####################################################################
     parser_create = subparsers.add_parser(
@@ -778,6 +768,16 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity_export.add_argument('-f', '--force', action='store_true',
                                         help='force overwrite of TARGET if it already exists')
     parser_quantity_export.set_defaults(func=command_quantity.export_records)
+
+    ####################################################################
+    # Command: info
+    ####################################################################
+    parser_info = subparsers.add_parser(
+        'info',
+        help='show file info, used as default if COMMAND omitted',
+        description='Show file information.',
+    )
+    parser_info.set_defaults(func=command_info.write_to_stdout)
 
     ####################################################################
     # Subcommand: relation operator (for relations between files)
