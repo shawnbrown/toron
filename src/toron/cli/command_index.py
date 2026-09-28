@@ -149,7 +149,7 @@ def _export_records(ds: 'DataSpace') -> Iterator[List[Union[str, float]]]:
 
 def export_records(args: argparse.Namespace) -> ExitCode:
     """Write index records to target CSV file."""
-    # Bind DataSpace first to make sure it exists.
+    # Bind DataSpace (to make sure it exists) before opening output file.
     ds = cli_bind_file(args.filepath, mode='ro')
 
     with open_target_file(args.filepath, args.target, 'index-', args.force) as f:
