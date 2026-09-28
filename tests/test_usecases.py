@@ -630,3 +630,32 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
             [self.filepath1, 'quantity', 'import', csv_path],
             'INFO: loaded 9 quantities\n',
         )
+
+    def test_010_export_quantity(self):
+        """Write quantity records to drive."""
+        csv_path = os.path.join(self.__class__.dirpath, 'quantity-file1.csv')
+
+        self.assertMainRegex(
+            [self.filepath1, 'quantity', 'export', csv_path],
+            (r"INFO: written 9 records\n"
+             r"INFO: saved to '.+quantity-file1.csv'\n"),
+        )
+        # Add clean-up for file created by "export" command.
+        self.addCleanup(lambda: os.remove(csv_path))
+
+        with open(csv_path) as f:
+            csv_contents = f.read()
+
+        expected = (
+            'domain,lbl1,lbl2,lbl3,code,quantity\n'
+            'file1,A,z,a,foo,100.0\n'
+            'file1,B,x,b,foo,100.0\n'
+            'file1,B,y,c,bar,100.0\n'
+            'file1,C,x,d,bar,100.0\n'
+            'file1,C,y,e,bar,100.0\n'
+            'file1,D,x,f,bar,100.0\n'
+            'file1,D,x,g,baz,100.0\n'
+            'file1,D,y,h,baz,100.0\n'
+            'file1,D,y,i,baz,100.0\n'
+        )
+        self.assertEqual(csv_contents, expected)

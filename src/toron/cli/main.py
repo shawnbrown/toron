@@ -765,6 +765,20 @@ def get_parser() -> argparse.ArgumentParser:
                                         help='strategy for existing quantities (default: %(default)s)')
     parser_quantity_import.set_defaults(func=command_quantity.import_records)
 
+    # Subcommand: export
+    parser_quantity_export = parser_quantity_subparsers.add_parser(
+        'export',
+        help='write quantity records to TARGET file or directory',
+        description=('Write quantity records to a TARGET file or directory; '
+                     'uses an auto-generated name if TARGET is a directory.'),
+    )
+    parser_quantity_export.add_argument('target',
+                                        help='CSV file or directory to save records',
+                                        metavar='TARGET')
+    parser_quantity_export.add_argument('-f', '--force', action='store_true',
+                                        help='force overwrite of TARGET if it already exists')
+    parser_quantity_export.set_defaults(func=command_quantity.export_records)
+
     ####################################################################
     # Subcommand: relation operator (for relations between files)
     ####################################################################

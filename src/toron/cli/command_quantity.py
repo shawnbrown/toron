@@ -17,6 +17,7 @@ from .common import (
     ExitCode,
     is_streamed,
     csv_stdout_writer,
+    open_target_file,
     cli_bind_file,
     process_backup_option,
 )
@@ -96,6 +97,25 @@ def _export_records(ds: 'DataSpace') -> Iterator[List[Union[str, float]]]:
         row_count += 1
 
     applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
+
+
+def export_records(args: argparse.Namespace) -> ExitCode:
+    """Write quantity records to target CSV file."""
+    # Bind DataSpace (to make sure it exists) before opening output file.
+    ds = cli_bind_file(args.filepath, mode='ro')
+
+    with open_target_file(
+        src_path=args.filepath,
+        trg_path=args.target,
+        auto_prefix='quantity-',
+        force=args.force,
+    ) as f:
+        writer = csv.writer(f, lineterminator='\n')
+        for row in _export_records(ds):
+            writer.writerow(row)
+
+    applogger.info(f'saved to {f.name!r}')
+    return ExitCode.OK
 
 
 def read_from_stdin(args: argparse.Namespace, node: 'DataSpace') -> ExitCode:
