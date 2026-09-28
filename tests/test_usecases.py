@@ -659,3 +659,13 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
             'file1,D,y,i,baz,100.0\n'
         )
         self.assertEqual(csv_contents, expected)
+
+    def test_011_create_link(self):
+        """Create a link named "population" between file1.ds and file2.ds."""
+        self.assertMain(
+            [self.filepath1, ':', self.filepath2, 'population', 'create'],
+            ("INFO: adding link 'file1.ds' -> file2.ds\n"
+             "WARNING: setting default link: 'population'\n"
+             "INFO: adding link 'file1.ds' <- file2.ds\n"
+             "WARNING: setting default link: 'population'\n"),
+        )
