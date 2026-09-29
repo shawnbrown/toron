@@ -690,3 +690,36 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              "INFO: adding link 'file1.ds' <- file2.ds\n"
              "WARNING: setting default link: 'population'\n"),
         )
+
+    def test_012_import_mapping(self):
+        csv_path = os.path.join(self.__class__.dirpath, 'file1_file2_mapping.csv')
+        with open(csv_path, 'w') as f:
+            f.write(
+                'index_code,population,index_code\n'
+                '0X27B3B62D,0.0,0X7054347B\n'
+                '1XA0157D6E,25.0,1XF7F2FF38\n'
+                '1XA0157D6E,25.0,2XA468A4BC\n'
+                '2XF38F26EA,50.0,3X23CE6FFF\n'
+                '3X7429EDA9,50.0,3X23CE6FFF\n'
+                '4X54BB91E2,55.0,4X035C13B4\n'
+                '5XD31D5AA1,45.0,5X84FAD8F7\n'
+                '0X27B3B62D,5.0,5X84FAD8F7\n'
+                '6X80870125,100.0,6XD7608373\n'
+                '7X0721CA66,90.0,7X50C64830\n'
+                '7X0721CA66,10.0,0X7054347B\n'
+                '8XC1A3F9B3,100.0,8X96447BE5\n'
+                '9X460532F0,100.0,9X11E2B0A6\n'
+            )
+        self.addCleanup(lambda: os.remove(csv_path))
+
+        self.assertMain(
+            [self.filepath1, ':', self.filepath2, 'population', 'import', csv_path],
+            ('INFO: matching FILE1 index records\n'
+             'INFO: matching FILE2 index records\n'
+             'INFO: loading mappings: FILE1 -> FILE2\n'
+             'INFO: loaded 12 mappings\n'
+             'INFO: mapping is complete\n'
+             'INFO: loading mappings: FILE1 <- FILE2\n'
+             'INFO: loaded 12 mappings\n'
+             'INFO: mapping is complete\n'),
+        )

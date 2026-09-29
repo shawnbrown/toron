@@ -841,6 +841,46 @@ def get_parser() -> argparse.ArgumentParser:
     parser_rel_create.set_defaults(direction='both',
                                    func=command_relation.create_link)
 
+    # Subcommand: import
+    parser_rel_import = parser_rel_subparsers.add_parser(
+        'import',
+        help='load mapping records from SOURCE file',
+        description='Load mapping records from a SOURCE file.',
+        #epilog='',
+        parents=[no_backup_parent],
+    )
+    parser_rel_import.add_argument('source',
+                                   help='CSV file of mapping records to load',
+                                   metavar='SOURCE')
+    parser_rel_import_group = parser_rel_import.add_mutually_exclusive_group()
+    parser_rel_import_group.add_argument(
+        '--left',
+        action='store_const',
+        const='left',
+        dest='direction',
+        help='add single direction, FILE1 <- FILE2',
+    )
+    parser_rel_import_group.add_argument(
+        '--right',
+        action='store_const',
+        const='right',
+        dest='direction',
+        help='add single direction, FILE1 -> FILE2',
+    )
+    parser_rel_import.add_argument('--match-limit',
+                                   default=1,
+                                   type=int,
+                                   help='accept one-to-many (N) matches (default: one-to-one)',
+                                   metavar='N')
+    parser_rel_import.add_argument('--allow-overlapping',
+                                   action='store_true',
+                                   help='fuzzy matches may overlap target records')
+    parser_rel_import.add_argument('--allow-incomplete',
+                                   action='store_true',
+                                   help='load matches even if the mapping is incomplete')
+    parser_rel_import.set_defaults(direction='both',
+                                   func=command_relation.import_records)
+
     return parser
 
 

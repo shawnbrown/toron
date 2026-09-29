@@ -487,6 +487,25 @@ def _import_records(
     return ExitCode.OK
 
 
+def import_records(args: argparse.Namespace) -> ExitCode:
+    """Load mapping records from source CSV file."""
+    with open(args.source) as f_source:
+        ds1 = cli_bind_file(args.filepath, mode='rw')
+        ds2 = cli_bind_file(args.filepath2, mode='rw')
+        process_backup_option(args, ds1, ds2)
+
+        return _import_records(
+            ds1=ds1,
+            ds2=ds2,
+            link_name=args.link,
+            reader=csv.reader(f_source),
+            direction=args.direction,
+            match_limit=args.match_limit,
+            allow_overlapping=args.allow_overlapping,
+            allow_incomplete=args.allow_incomplete,
+        )
+
+
 def read_from_stdin(
     args: argparse.Namespace, node1: DataSpace, node2: DataSpace
 ) -> ExitCode:
