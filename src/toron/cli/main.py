@@ -118,18 +118,19 @@ def get_parser() -> argparse.ArgumentParser:
     # Main parser
     ####################################################################
     parser = ToronArgumentParser(
-        prog='toron FILE',  # Includes FILE argument.
-        description='View and edit the data and elements of a Toron FILE.',
-        epilog='Toron is a tool for multi-level data disaggregation and translation.',
+        prog='toron',
+        description='View and edit the contents of Toron files.',
+        epilog='Run `%(prog)s COMMAND -h` for command-specific options.',
     )
     parser.add_argument('--version',
                         action='version',
                         version=f'%(prog)s {__version__}')
     parser.add_argument('filepath',
                         type=str,
-                        help=argparse.SUPPRESS,  # Included in `prog` string.
+                        help='path to a Toron file (.toron or .ds)',
                         metavar='FILE')
     subparsers = parser.add_subparsers(dest='command',
+                                       help='available commands',
                                        required=True,
                                        metavar='COMMAND')
 
@@ -485,9 +486,10 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_label = subparsers.add_parser(
         'label',
-        help='label names used by the index',
-        description='Operate on index label columns.',
-        epilog='Index labels are text values that identify locations in a data space.',
+        help='manage label names used by the index',
+        description='Manage label names used by the index.',
+        epilog=('Index labels are text values that identify locations in '
+                'a data space.'),
     )
     parser_label_subparsers = parser_label.add_subparsers(dest='subcommand',
                                                           required=True,
@@ -496,10 +498,10 @@ def get_parser() -> argparse.ArgumentParser:
     # Subcommand: add
     parser_label_add = parser_label_subparsers.add_parser(
         'add',
-        help='add index label names',
-        description=('Add index label names to a file. Label names may be '
-                     'provided as separate arguments or as a comma-separated '
-                     'list.'),
+        help='add label names',
+        description='Add index label names.',
+        epilog=('Label names can be separate arguments or a comma-separated '
+                'list.'),
         parents=[no_backup_parent],
     )
     parser_label_add.add_argument('names', nargs='+',
@@ -509,8 +511,8 @@ def get_parser() -> argparse.ArgumentParser:
     # Subcommand: update
     parser_label_update = parser_label_subparsers.add_parser(
         'update',
-        help='update an index label',
-        description='Update an index label in a file.',
+        help='update the position of a label',
+        description='Update the position of a label.',
         parents=[no_backup_parent],
     )
     parser_label_update.add_argument('name',
@@ -529,8 +531,8 @@ def get_parser() -> argparse.ArgumentParser:
     # Subcommand: rename
     parser_label_rename = parser_label_subparsers.add_parser(
         'rename',
-        help='rename an index label',
-        description='Rename label from OLD_NAME to NEW_NAME.',
+        help='rename a label',
+        description='Rename a label from OLD_NAME to NEW_NAME.',
         parents=[no_backup_parent],
     )
     parser_label_rename.add_argument('old_name',
@@ -544,8 +546,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_weight = subparsers.add_parser(
         'weight',
-        help='weight names used by the index',
-        description='Operate on index weight columns.',
+        help='manage weight groups used by the index',
+        description='Manage weight groups used by the index.',
         epilog=(
             'Index weights are numeric values defined for individual index '
             'records. Aggregate quantities for a location are distributed to '
@@ -579,8 +581,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_index = subparsers.add_parser(
         name='index',
-        help='index records',
-        description='Operate on index records.',
+        help='import or export index records',
+        description='Import or export index records.',
         epilog=(
             'An index is a collection of labels and weights that defines the '
             'most granular units in a data space. Index records provide the '
@@ -609,6 +611,8 @@ def get_parser() -> argparse.ArgumentParser:
         'import',
         help='load index records from SOURCE file',
         description='Load index records from a SOURCE file.',
+        epilog=("The SOURCE file must contain label and weight columns "
+                "matching those defined in the FILE."),
         parents=[no_backup_parent],
     )
     parser_index_import.add_argument('source',
@@ -643,8 +647,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_partition = subparsers.add_parser(
         'partition',
-        help='partition definitions',
-        description='Operate on partition definitions.',
+        help='manage partition definitions used by quantities',
+        description='Manage partition definitions used by quantities.',
         epilog=('Partition definitions are specified using sets of label '
                 'names to organize index records into regions. Well-specified '
                 'definitions use only the labels necessary to distinguish one '
@@ -674,8 +678,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_attribute = subparsers.add_parser(
         'attribute',
-        help='attribute names used by quantities',
-        description='Operate on attribute names.',
+        help='manage attribute names used by quantities',
+        description='Manage attribute names used by quantities.',
         epilog=(
             'Attributes are text values that describe and categorize '
             'quantities.'
@@ -689,9 +693,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_attribute_add = parser_attribute_subparsers.add_parser(
         'add',
         help='add attribute names',
-        description=('Add attribute names to a file. Attributes may be '
-                     'provided as separate arguments or as a comma-separated '
-                     'list.'),
+        description='Add attribute names to a file.',
+        epilog=('Attribute names can be separate arguments or a '
+                'comma-separated list.'),
         parents=[no_backup_parent],
     )
     parser_attribute_add.add_argument('names', nargs='+',
@@ -703,8 +707,8 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_quantity = subparsers.add_parser(
         name='quantity',
-        help='quantity records',
-        description=('Operate on quantity records.'),
+        help='import or export quantity records',
+        description=('Import or export quantity records.'),
         parents=[no_backup_parent],
     )
     parser_quantity.add_argument('--column',  # <- TODO: Remove when import/export implemented.
@@ -733,6 +737,10 @@ def get_parser() -> argparse.ArgumentParser:
         'import',
         help='load quantity records from SOURCE file',
         description='Load quantity records from a SOURCE file.',
+        epilog=('The SOURCE file must contain label and attribute columns '
+                'matching those defined in FILE. Specify the quantity column '
+                'name with --column or use the default (quantity).'
+        ),
         parents=[no_backup_parent],
     )
     parser_quantity_import.add_argument('source',
@@ -775,7 +783,7 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_info = subparsers.add_parser(
         'info',
-        help='show file info, used as default if COMMAND omitted',
+        help='show file information (default if COMMAND omitted)',
         description='Show file information.',
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)
@@ -787,7 +795,7 @@ def get_parser() -> argparse.ArgumentParser:
         ':',  # <- Relation operator.
         prog='toron FILE1 : FILE2',
         description='Manage relations between FILE1 and FILE2.',
-        help='manage relations between files (run `toron : -h` for details)',
+        help='manage relations between files (run `%(prog)s : -h` for details)',
     )
     parser_rel.add_argument('filepath2',
                             type=str,
