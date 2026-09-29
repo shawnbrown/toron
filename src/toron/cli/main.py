@@ -22,7 +22,7 @@ from . import (
     command_update,
     command_rename,
     command_remove,
-    command_mapping,
+    command_relation,
     command_init,
     command_create,
     command_label,
@@ -465,7 +465,7 @@ def get_parser() -> argparse.ArgumentParser:
                                 action='store_true',
                                 help='load matches even if the mapping is incomplete')
     parser_mapping.set_defaults(
-        func=command_mapping.process_mapping_action,
+        func=command_relation.process_mapping_action,
         direction='both',
     )
 

@@ -16,7 +16,7 @@ from toron.cli.main import (
     command_remove,
     command_index,
     command_quantity,
-    command_mapping,
+    command_relation,
     command_info,
     main,
 )
@@ -489,7 +489,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             ),
         )
 
-    def test_subcommand_mapping(self):
+    def test_subcommand_relation(self):
         """Check "mapping" subparser."""
         self.assertNamespaceEqual(
             self.parser.parse_args([
@@ -508,7 +508,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
                 allow_overlapping=False,
                 allow_incomplete=False,
                 backup=True,
-                func=command_mapping.process_mapping_action,
+                func=command_relation.process_mapping_action,
             ),
         )
 

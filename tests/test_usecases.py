@@ -377,7 +377,7 @@ class TestBuildUsingOldCLI(unittest.TestCase):
             selectors=None,
             make_default=True,
         ))
-        cli.command_mapping.process_mapping_action(argparse.Namespace(
+        cli.command_relation.process_mapping_action(argparse.Namespace(
             filepath=self.filepath1,
             command='mapping',
             filepath2=self.filepath2,
