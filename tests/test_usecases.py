@@ -723,3 +723,29 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              'INFO: loaded 12 mappings\n'
              'INFO: mapping is complete\n'),
         )
+
+    def test_013_disaggregate_translate(self):
+        """Test disaggregation using API (not CLI at the moment)."""
+        node1 = bind_file(self.filepath1, mode='ro')
+        node2 = bind_file(self.filepath2, mode='ro')
+        result_iter = node1() >> node2  # <- Disaggregate and translate.
+
+        self.assertEqual(
+            result_iter.columns,
+            ['lbl1', 'lbl2', 'code', 'domain', 'value'],
+        )
+
+        self.assertEqual(
+            set(result_iter),
+            {('-', '-',            'baz', 'file1',  10.0),
+             ('A', 'Athens',       'foo', 'file1',  50.0),
+             ('A', 'Boston',       'foo', 'file1',  50.0),
+             ('B', 'Charleston',   'foo', 'file1', 100.0),
+             ('B', 'Charleston',   'bar', 'file1', 100.0),
+             ('C', 'Dover',        'bar', 'file1', 100.0),
+             ('C', 'Erie',         'bar', 'file1', 100.0),
+             ('D', 'Fayetteville', 'bar', 'file1', 100.0),
+             ('D', 'Greensboro',   'baz', 'file1',  90.0),
+             ('D', 'Hartford',     'baz', 'file1', 100.0),
+             ('D', 'Irvine',       'baz', 'file1', 100.0)},
+        )
