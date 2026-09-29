@@ -635,6 +635,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         with open(csv_path, 'w') as f:
             f.write(
                 'lbl1,lbl2,lbl3,code,quantity\n'
+                '-,-,-,foo,5\n'
                 'A,z,a,foo,100\n'
                 'B,x,b,foo,100\n'
                 'B,y,c,bar,100\n'
@@ -649,7 +650,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
         self.assertMain(
             [self.filepath1, 'quantity', 'import', csv_path],
-            'INFO: loaded 9 quantities\n',
+            'INFO: loaded 10 quantities\n',
         )
 
     def test_010_export_quantity(self):
@@ -658,7 +659,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
         self.assertMainRegex(
             [self.filepath1, 'quantity', 'export', csv_path],
-            (r"INFO: written 9 records\n"
+            (r"INFO: written 10 records\n"
              r"INFO: saved to '.+quantity-file1.csv'\n"),
         )
         # Add clean-up for file created by "export" command.
@@ -669,6 +670,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
         expected = (
             'domain,lbl1,lbl2,lbl3,code,quantity\n'
+            'file1,-,-,-,foo,5.0\n'
             'file1,A,z,a,foo,100.0\n'
             'file1,B,x,b,foo,100.0\n'
             'file1,B,y,c,bar,100.0\n'
@@ -737,7 +739,8 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
         self.assertEqual(
             set(result_iter),
-            {('-', '-',            'baz', 'file1',  10.0),
+            {('-', '-',            'foo', 'file1',   5.0),
+             ('-', '-',            'baz', 'file1',  10.0),
              ('A', 'Athens',       'foo', 'file1',  50.0),
              ('A', 'Boston',       'foo', 'file1',  50.0),
              ('B', 'Charleston',   'foo', 'file1', 100.0),
