@@ -531,9 +531,8 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
     def test_005_import_index(self):
         """Load index records from file."""
-        # Write actual CSV file to temp dir.
-        csv_path = os.path.join(self.__class__.dirpath, 'file1_index.csv')
-        with open(csv_path, 'w') as f:
+        csv_path1 = os.path.join(self.__class__.dirpath, 'file1_index.csv')
+        with open(csv_path1, 'w') as f:
             f.write(
                 'lbl1,lbl2,lbl3,wght\n'
                 'A,z,a,72\n'
@@ -546,10 +545,32 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
                 'D,y,h,50\n'
                 'D,y,i,25\n'
             )
-        self.addCleanup(lambda: os.remove(csv_path))
+        self.addCleanup(lambda: os.remove(csv_path1))
 
         self.assertMain(
-            [self.filepath1, 'index', 'import', csv_path],
+            [self.filepath1, 'index', 'import', csv_path1],
+            ('INFO: loaded 9 index labels\n'
+             'INFO: loaded 9 index weights\n'),
+        )
+
+        csv_path2 = os.path.join(self.__class__.dirpath, 'file2_index.csv')
+        with open(csv_path2, 'w') as f:
+            f.write(
+                'lbl1,lbl2,wght\n'
+                'A,Athens,25\n'
+                'A,Boston,75\n'
+                'B,Charleston,80\n'
+                'C,Dover,25\n'
+                'C,Erie,75\n'
+                'D,Fayetteville,37.5\n'
+                'D,Greensboro,43.75\n'
+                'D,Hartford,31.25\n'
+                'D,Irvine,31.25\n'
+            )
+        self.addCleanup(lambda: os.remove(csv_path2))
+
+        self.assertMain(
+            [self.filepath2, 'index', 'import', csv_path2],
             ('INFO: loaded 9 index labels\n'
              'INFO: loaded 9 index weights\n'),
         )
