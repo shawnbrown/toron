@@ -31,7 +31,7 @@ from . import (
     command_attribute,
     command_quantity,
     command_info,
-    command_relation,
+    command_relation_temp,
 )
 from .common import (
     ExitCode,
@@ -840,7 +840,7 @@ def get_parser() -> argparse.ArgumentParser:
                                    dest='make_default',
                                    help='set as the default link')
     parser_rel_create.set_defaults(direction='both',
-                                   func=command_relation.create_link)
+                                   func=command_relation_temp.create_link)
 
     return parser
 

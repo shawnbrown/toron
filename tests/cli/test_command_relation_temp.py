@@ -1,4 +1,4 @@
-"""Tests for toron/cli/command_relation.py module."""
+"""Tests for toron/cli/command_relation_temp.py module."""
 import argparse
 import os
 import tempfile
@@ -8,7 +8,7 @@ from .. import _unittest as unittest
 from toron import DataSpace, ToronError, read_file, bind_file
 from toron.cli.common import ExitCode
 from toron.data_models import Link
-from toron.cli import command_relation
+from toron.cli import command_relation_temp
 
 
 class TestCreateLink(unittest.TestCase):
@@ -48,7 +48,7 @@ class TestCreateLink(unittest.TestCase):
             selectors=None,
             make_default=True,
         )
-        command_relation.create_link(args)  # <- Method under test.
+        command_relation_temp.create_link(args)  # <- Method under test.
 
         # Check right-side link (ds1 -> ds2).
         self.assertEqual(
@@ -86,7 +86,7 @@ class TestCreateLink(unittest.TestCase):
             selectors=None,
             make_default=True,
         )
-        command_relation.create_link(args)  # <- Method under test.
+        command_relation_temp.create_link(args)  # <- Method under test.
 
         # Check right-side link (ds1 -> ds2).
         self.assertEqual(
@@ -131,4 +131,4 @@ class TestCreateLink(unittest.TestCase):
 
         regex = r"a link named 'population' already exists"
         with self.assertRaisesRegex(ToronError, regex):
-            command_relation.create_link(args)  # <- Method under test.
+            command_relation_temp.create_link(args)  # <- Method under test.
