@@ -1497,6 +1497,110 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
         )
 
 
+class TestRelationExportRecords(DataSpaceFixturesMixin, unittest.TestCase):
+    def test_full_mapping(self):
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        self.node_d.insert_mappings2(
+            self.node_c,
+            'population',
+            data=[(1, 1, b'\xc0', 10.0),
+                  (1, 2, b'\xc0', 70.0),
+                  (2, 3, b'\xc0', 20.0),
+                  (2, 4, b'\xc0', 60.0),
+                  (3, 5, b'\xc0', 30.0),
+                  (3, 6, b'\xc0', 50.0)],
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            generator = command_relation._export_records(  # <- Function under test.
+                self.node_c, self.node_d, 'population'
+            )
+
+            self.assertEqual(
+                list(generator),
+                [['index_code', 'lbl1', 'population', 'index_code', 'lbl1', 'lbl2'],
+                 ['0XF4264876', '-',  0.0, '0XDF9B30D7', '-', '-'],
+                 ['1X73808335', 'A', 10.0, '1X583DFB94', 'A', 'x'],
+                 ['1X73808335', 'A', 70.0, '2X0BA7A010', 'A', 'y'],
+                 ['2X201AD8B1', 'B', 20.0, '3X8C016B53', 'B', 'x'],
+                 ['2X201AD8B1', 'B', 60.0, '4XAC931718', 'B', 'y'],
+                 ['3XA7BC13F2', 'C', 30.0, '5X2B35DC5B', 'C', 'x'],
+                 ['3XA7BC13F2', 'C', 50.0, '6X78AF87DF', 'C', 'y']],
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:written 7 records'],
+        )
+
+    def test_some_ambiguous_some_disjoint(self):
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        self.node_d.insert_mappings2(
+            self.node_c,
+            'population',
+            data=[(1, 1, b'\xc0', 10.0),
+                  (1, 2, b'\xc0', 70.0),
+                  (2, 3, b'\x80', 20.0),
+                  (2, 4, b'\x80', 60.0)],
+                  # Omitting 3 -> 5
+                  # Omitting 3 -> 6
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
+        )
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            generator = command_relation._export_records(  # <- Function under test.
+                self.node_c, self.node_d, 'population'
+            )
+
+            self.assertEqual(
+                list(generator),
+                [['index_code', 'lbl1', 'population', 'index_code', 'lbl1', 'lbl2', 'ambiguous_fields'],
+                 ['0XF4264876', '-',  0.0, '0XDF9B30D7', '-', '-', None],
+                 ['1X73808335', 'A', 10.0, '1X583DFB94', 'A', 'x', None],
+                 ['1X73808335', 'A', 70.0, '2X0BA7A010', 'A', 'y', None],
+                 ['2X201AD8B1', 'B', 20.0, '3X8C016B53', 'B', 'x', 'lbl2'],  # <- 'lbl2' is ambiguous
+                 ['2X201AD8B1', 'B', 60.0, '4XAC931718', 'B', 'y', 'lbl2'],  # <- 'lbl2' is ambiguous
+                 [None, None, None, '5X2B35DC5B', 'C', 'x', None],  # <- Target index_id 5 is disjoint.
+                 [None, None, None, '6X78AF87DF', 'C', 'y', None],  # <- Target index_id 6 is disjoint.
+                 ['3XA7BC13F2', 'C', None, None, None, None, None]],  # <- Source index_id 3 is disjoint.
+            )
+
+    def test_full_disjoint(self):
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            generator = command_relation._export_records(  # <- Function under test.
+                self.node_c, self.node_d, 'population'
+            )
+
+            self.assertEqual(
+                list(generator),
+                [['index_code', 'lbl1', 'population', 'index_code', 'lbl1', 'lbl2'],
+                 ['0XF4264876', '-',  0.0 , '0XDF9B30D7', '-', '-'],  # <- Undefined records always match to each other.
+                 [None, None, None, '1X583DFB94', 'A', 'x'],
+                 [None, None, None, '2X0BA7A010', 'A', 'y'],
+                 [None, None, None, '3X8C016B53', 'B', 'x'],
+                 [None, None, None, '4XAC931718', 'B', 'y'],
+                 [None, None, None, '5X2B35DC5B', 'C', 'x'],
+                 [None, None, None, '6X78AF87DF', 'C', 'y'],
+                 ['1X73808335', 'A', None, None, None, None],
+                 ['2X201AD8B1', 'B', None, None, None, None],
+                 ['3XA7BC13F2', 'C', None, None, None, None]],
+            )
+
+
 class TestWriteToStdout(DataSpaceFixturesMixin, unittest.TestCase):
     def test_full_mapping(self):
         self.node_d.add_link(space=self.node_c,

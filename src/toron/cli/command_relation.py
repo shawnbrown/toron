@@ -18,6 +18,7 @@ from .._typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Never,
     Optional,
     Sequence,
@@ -615,6 +616,140 @@ def get_ambiguous_field_text(
     inverted_level = [(not bit) for bit in BitFlags(mapping_level)]
     ambiguous_fields = compress(label_names, inverted_level)
     return ', '.join(ambiguous_fields) or None
+
+
+def _export_records(
+    ds1: 'DataSpace',
+    ds2: 'DataSpace',
+    link_name: str,
+) -> Iterator[List[Union[str, float, None]]]:
+    """Yield mapping record rows."""
+    source_ds = ds1
+    target_ds = ds2
+
+    src_unique_id = source_ds.unique_id
+    trg_unique_id = target_ds.unique_id
+
+    src_index_header = make_index_code_header(source_ds.domain)
+    trg_index_header = make_index_code_header(target_ds.domain)
+
+    counter: Counter[str] = Counter()
+    with source_ds._managed_cursor(n=2) as (src_cur1, src_cur2), \
+            target_ds._managed_cursor(n=2) as (trg_cur1, trg_cur2):
+
+        src_index_repo = source_ds._dal.IndexRepository(src_cur1)
+        src_prop_repo = source_ds._dal.PropertyRepository(src_cur1)
+        trg_index_repo = target_ds._dal.IndexRepository(trg_cur1)
+        trg_link_repo = target_ds._dal.LinkRepository(trg_cur1)
+        trg_mapping_repo = target_ds._dal.MappingRepository(trg_cur1)
+
+        src_label_names = src_index_repo.get_label_names()
+        trg_label_names = trg_index_repo.get_label_names()
+
+        src_label_no_values = (None,) * len(src_label_names)
+        trg_label_no_values = (None,) * len(trg_label_names)
+
+        # Check if any mappings are ambiguous.
+        link = trg_link_repo.get_by_unique_id_and_name(
+            other_unique_id=src_unique_id, name=link_name,
+        )
+        mapping_levels = trg_mapping_repo.get_distinct_mapping_levels(link.id)
+        whole_space_bytes = bytes(BitFlags(trg_label_names))
+        ambiguous_header: Tuple[str, ...]
+        get_ambiguous: Callable[[Union[bytes, None], Sequence[str]],
+                                Union[Tuple[Never, ...], Tuple[Optional[str]]]]
+        if not len(mapping_levels) or (len(mapping_levels) == 1
+                                       and mapping_levels[0] == whole_space_bytes):
+            ambiguous_header = tuple()
+            get_ambiguous = lambda lvl, lbls: tuple()
+        else:
+            ambiguous_header = ('ambiguous_fields',)
+            get_ambiguous = lambda lvl, lbls: (get_ambiguous_field_text(lvl, lbls),)
+
+        # Yield header row.
+        yield list(chain(
+            (src_index_header,),
+            src_label_names,
+            (link_name,
+                trg_index_header),
+            trg_label_names,
+            ambiguous_header,
+        ))
+
+        generator = generate_mapping_elements(
+            link_name=link_name,
+            trg_index_repo=trg_index_repo,
+            trg_link_repo=trg_link_repo,
+            trg_mapping_repo=trg_mapping_repo,
+            src_index_repo=src_index_repo,
+            src_prop_repo=src_prop_repo,
+        )
+
+        aux_src_index_repo = source_ds._dal.IndexRepository(src_cur2)
+        aux_trg_index_repo = target_ds._dal.IndexRepository(trg_cur2)
+        src_id_bytes = uuid.UUID(src_unique_id).bytes
+        trg_id_bytes = uuid.UUID(trg_unique_id).bytes
+
+        # Write data rows.
+        src_labels: Tuple[Optional[str], ...]
+        trg_labels: Tuple[Optional[str], ...]
+        for src_index, trg_index, level, value in generator:
+            # Since source labels come from a separate DataSpace, it's
+            # possible to have orphan references. A `KeyError` indicates
+            # that an index in the source DataSpace has been deleted
+            # after the mapping was created (the mapping is now "stale")
+            # which results in some missing records.
+            if src_index is not None:
+                try:
+                    src_labels = aux_src_index_repo.get(src_index).labels
+                except KeyError:
+                    src_labels = src_label_no_values
+                    counter['invalid_source_index'] += 1
+                src_index_code = index_id_to_code(src_index, src_id_bytes)
+            else:
+                src_labels = src_label_no_values
+                src_index_code = None
+                counter['unmatched_source_index'] += 1
+
+            # Target labels come from the same DataSpace that holds
+            # the mapping records (unlike source labels). So it's not
+            # possible to have orphan references.
+            if trg_index is not None:
+                trg_labels = aux_trg_index_repo.get(trg_index).labels
+                trg_index_code = index_id_to_code(trg_index, trg_id_bytes)
+            else:
+                trg_labels = trg_label_no_values
+                trg_index_code = None
+                counter['unmatched_target_index'] += 1
+
+            yield list(chain(
+                (src_index_code,),
+                src_labels,
+                (value,
+                 trg_index_code),
+                trg_labels,
+                get_ambiguous(level, trg_label_names),
+            ))
+            counter['row_count'] += 1
+
+    if counter['invalid_source_index']:
+        applogger.error(
+            f"contains {counter['invalid_source_index']} indexes "
+            f"that no longer exist in FILE1 (included but labels are missing)"
+        )
+    if counter['unmatched_source_index']:
+        applogger.warning(
+            f"contains {counter['unmatched_source_index']} unmatched indexes "
+            f"from FILE1"
+        )
+    if counter['unmatched_target_index']:
+        applogger.warning(
+            f"contains {counter['unmatched_target_index']} unmatched indexes "
+            f"from FILE2"
+        )
+
+    row_count = counter['row_count']
+    applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
 
 
 def write_to_stdout(
