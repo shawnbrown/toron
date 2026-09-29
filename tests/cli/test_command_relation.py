@@ -650,6 +650,415 @@ class TestNormalizeMappingData(DataSpaceFixturesMixin, unittest.TestCase):
             )
 
 
+class TestRelationImportRecords(DataSpaceFixturesMixin, unittest.TestCase):
+    @staticmethod
+    def get_mappings(source_node, target_node, link_name):
+        with target_node._managed_cursor() as cur:
+            mapping_repo = target_node._dal.MappingRepository(cur)
+            link = target_node._get_link(
+                source_node,
+                link_name,
+                target_node._dal.LinkRepository(cur),
+            )
+            if not link:
+                raise Exception
+            mappings = mapping_repo.find(link_id=link.id)
+            return set(astuple(rel) for rel in mappings)
+
+    def test_insert_both_directions(self):
+        self.node_c.add_link(space=self.node_d,
+                             link_name='population',
+                             other_filename_hint='node_d',
+                             is_default=True)
+
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_relation._import_records(  # <- Function under test.
+                ds1=self.node_c,
+                ds2=self.node_d,
+                link_name='population',
+                reader=[
+                    ['index_c', 'population', 'index_d'],
+                    ['0XF4264876',  '0', '0XDF9B30D7'],
+                    ['1X73808335', '18', '1X583DFB94'],
+                    ['1X73808335', '46', '2X0BA7A010'],
+                    ['0XF4264876', '34', '2X0BA7A010'],
+                    ['2X201AD8B1', '20', '3X8C016B53'],
+                    ['2X201AD8B1', '10', '0XDF9B30D7'],
+                    ['2X201AD8B1', '50', '4XAC931718'],
+                    ['3XA7BC13F2', '30', '5X2B35DC5B'],
+                    ['3XA7BC13F2', '50', '6X78AF87DF'],
+                ],
+                direction='both',
+                match_limit=1,
+                allow_overlapping=False,
+                allow_incomplete=False,
+            )
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.space:loaded 8 mappings',
+             'INFO:app-toron:mapping is complete',
+             'INFO:app-toron:loading mappings: FILE1 <- FILE2',
+             'INFO:app-toron.space:loaded 8 mappings',
+             'INFO:app-toron:mapping is complete'],
+        )
+
+        self.assertEqual(
+            self.get_mappings(self.node_c, self.node_d, 'population'),
+            {(1, 1, 0, 2, b'\xc0', 34.0, 0.00000),
+             (2, 1, 1, 1, b'\xc0', 18.0, 0.28125),
+             (3, 1, 1, 2, b'\xc0', 46.0, 0.71875),
+             (4, 1, 2, 0, b'\xc0', 10.0, 0.12500),
+             (5, 1, 2, 3, b'\xc0', 20.0, 0.25000),
+             (6, 1, 2, 4, b'\xc0', 50.0, 0.62500),
+             (7, 1, 3, 5, b'\xc0', 30.0, 0.37500),
+             (8, 1, 3, 6, b'\xc0', 50.0, 0.62500)},
+        )
+
+        self.assertEqual(
+            self.get_mappings(self.node_d, self.node_c, 'population'),
+            {(1, 1, 0, 2, b'\x80', 10.0, 0.000),
+             (2, 1, 1, 1, b'\x80', 18.0, 1.000),
+             (3, 1, 2, 0, b'\x80', 34.0, 0.425),
+             (4, 1, 2, 1, b'\x80', 46.0, 0.575),
+             (5, 1, 3, 2, b'\x80', 20.0, 1.000),
+             (6, 1, 4, 2, b'\x80', 50.0, 1.000),
+             (7, 1, 5, 3, b'\x80', 30.0, 1.000),
+             (8, 1, 6, 3, b'\x80', 50.0, 1.000)},
+        )
+
+    def test_insert_both_directions_with_undefined_cases(self):
+        self.node_c.add_link(space=self.node_d,
+                             link_name='population',
+                             other_filename_hint='node_d',
+                             is_default=True)
+
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_relation._import_records(  # <- Function under test.
+                ds1=self.node_c,
+                ds2=self.node_d,
+                link_name='population',
+                reader=[
+                    ['index_c', 'population', 'index_d'],
+                    ['0XF4264876', '0', '0XDF9B30D7'],   # <- From undefined, to undefined.
+                    ['0XF4264876', '18', '1X583DFB94'],  # <- From undefined, to defined (exlusive)
+                    ['1X73808335', '18', '0XDF9B30D7'],  # <- From defined, to undefined (exlusive)
+                    ['2X201AD8B1', '10', '2X0BA7A010'],
+                    ['0XF4264876', '10', '2X0BA7A010'],  # <- From undefined, to defined (non-exclusive)
+                    ['3XA7BC13F2', '20', '3X8C016B53'],
+                    ['3XA7BC13F2', '12', '0XDF9B30D7'],  # <- From defined, to undefined (non-exclusive)
+                    ['0XF4264876', '45', '4XAC931718'],  # <- From undefined, to defined (exlusive)
+                    ['0XF4264876', '29', '5X2B35DC5B'],  # <- From undefined, to defined (exlusive)
+                    ['0XF4264876', '50', '6X78AF87DF'],  # <- From undefined, to defined (exlusive)
+                ],
+                direction='both',
+                match_limit=1,
+                allow_overlapping=False,
+                allow_incomplete=False,
+            )
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.space:loaded 9 mappings',
+             'INFO:app-toron:mapping is complete',
+             'INFO:app-toron:loading mappings: FILE1 <- FILE2',
+             'INFO:app-toron.space:loaded 9 mappings',
+             'INFO:app-toron:mapping is complete'],
+        )
+
+        self.assertEqual(
+            self.get_mappings(self.node_c, self.node_d, 'population'),
+            {(1, 1, 0, 1, b'\xc0', 18.0, 0.000),   # <- From undefined, to defined.
+             (2, 1, 0, 2, b'\xc0', 10.0, 0.000),   # <- From undefined, to defined.
+             (3, 1, 0, 4, b'\xc0', 45.0, 0.000),   # <- From undefined, to defined.
+             (4, 1, 0, 5, b'\xc0', 29.0, 0.000),   # <- From undefined, to defined.
+             (5, 1, 0, 6, b'\xc0', 50.0, 0.000),   # <- From undefined, to defined.
+             (6, 1, 1, 0, b'\xc0', 18.0, 1.000),   # <- From defined, to undefined.
+             (7, 1, 2, 2, b'\xc0', 10.0, 1.000),
+             (8, 1, 3, 0, b'\xc0', 12.0, 0.375),   # <- From defined, to undefined.
+             (9, 1, 3, 3, b'\xc0', 20.0, 0.625)},
+        )
+
+        self.assertEqual(
+            self.get_mappings(self.node_d, self.node_c, 'population'),
+            {(1, 1, 0, 1, b'\x80', 18.0, 0.000),   # <- From undefined, to defined.
+             (2, 1, 0, 3, b'\x80', 12.0, 0.000),   # <- From undefined, to defined.
+             (3, 1, 1, 0, b'\x80', 18.0, 1.000),   # <- From defined, to undefined.
+             (4, 1, 2, 0, b'\x80', 10.0, 0.500),   # <- From defined, to undefined.
+             (5, 1, 2, 2, b'\x80', 10.0, 0.500),
+             (6, 1, 3, 3, b'\x80', 20.0, 1.000),
+             (7, 1, 4, 0, b'\x80', 45.0, 1.000),   # <- From defined, to undefined.
+             (8, 1, 5, 0, b'\x80', 29.0, 1.000),   # <- From defined, to undefined.
+             (9, 1, 6, 0, b'\x80', 50.0, 1.000)},  # <- From defined, to undefined.
+        )
+
+    def test_missing_one_side(self):
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_relation._import_records(  # <- Function under test.
+                ds1=self.node_c,
+                ds2=self.node_d,
+                link_name='population',
+                reader=[
+                    ['index_c', 'population', 'index_d'],
+                    ['1X73808335', '10', '1X583DFB94'],
+                    ['1X73808335', '70', '2X0BA7A010'],
+                    ['2X201AD8B1', '20', '3X8C016B53'],
+                    ['2X201AD8B1', '60', '4XAC931718'],
+                    ['3XA7BC13F2', '30', '5X2B35DC5B'],
+                    ['3XA7BC13F2', '50', '6X78AF87DF'],
+                ],
+                direction='both',  # <- Direction indicates both, but left-side is missing.
+                match_limit=1,
+                allow_overlapping=False,
+                allow_incomplete=False,
+            )
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            cm.output,
+            ["WARNING:app-toron:no 'population' link from FILE2 to FILE1",
+             "INFO:app-toron:matching FILE1 index records",
+             "INFO:app-toron:matching FILE2 index records",
+             "INFO:app-toron:loading mappings: FILE1 -> FILE2",
+             "INFO:app-toron.space:loaded 6 mappings",
+             "INFO:app-toron:mapping is complete"],
+        )
+
+        self.assertEqual(
+            self.get_mappings(self.node_c, self.node_d, 'population'),
+            {(1, 1, 1, 1, b'\xc0', 10.0, 0.125),
+             (2, 1, 1, 2, b'\xc0', 70.0, 0.875),
+             (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
+             (4, 1, 2, 4, b'\xc0', 60.0, 0.75),
+             (5, 1, 3, 5, b'\xc0', 30.0, 0.375),
+             (6, 1, 3, 6, b'\xc0', 50.0, 0.625)},
+        )
+
+    def test_missing_both_sides(self):
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_relation._import_records(  # <- Function under test.
+                ds1=self.node_c,
+                ds2=self.node_d,
+                link_name='population',
+                reader=[
+                    ['index_c', 'population', 'index_d'],
+                    ['1X73808335', '10', '1X583DFB94'],
+                    ['1X73808335', '70', '2X0BA7A010'],
+                    ['2X201AD8B1', '20', '3X8C016B53'],
+                    ['2X201AD8B1', '60', '4XAC931718'],
+                    ['3XA7BC13F2', '30', '5X2B35DC5B'],
+                    ['3XA7BC13F2', '50', '6X78AF87DF'],
+                ],
+                direction='both',
+                match_limit=1,
+                allow_overlapping=False,
+                allow_incomplete=False,
+            )
+
+        self.assertEqual(exit_code, ExitCode.ERR)
+
+        self.assertEqual(
+            cm.output,
+            ["ERROR:app-toron:no 'population' link exists between FILE1 "
+                 "and FILE2 in either direction"],
+        )
+
+    def test_match_limit_without_overlapping(self):
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_relation._import_records(  # <- Function under test.
+                ds1=self.node_c,
+                ds2=self.node_d,
+                link_name='population',
+                reader=[
+                    ['index_c', 'population', 'index_d', 'lbl1', 'lbl2'],
+                    ['1X73808335', '90', '', 'A', ''],             # <- Matched to 2 right-side records.
+                    ['2X201AD8B1', '20', '3X8C016B53', 'B', 'x'],  # <- Exact match (by index code).
+                    ['2X201AD8B1', '60', '', 'B', 'y'],            # <- Exact match (by index labels).
+                    ['3XA7BC13F2', '28', '', 'C', ''],             # <- Matched to 2 right-side records (2-ambiguous, minus 1-exact overlap).
+                    ['3XA7BC13F2', '7', '6X78AF87DF', 'C', 'y'],   # <- Exact match (overlaps the records matched on "C" alone).
+                ],
+                direction='right',
+                match_limit=2,  # <- Allow up to one-to-two matches.
+                allow_overlapping=False,  # <- Default (no overlapping allowed).
+                allow_incomplete=False,
+            )
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            self.get_mappings(self.node_c, self.node_d, 'population'),
+            {(1, 1, 1, 1, b'\x80', 22.5, 0.25),  # <- Gets proportion of weight.
+             (2, 1, 1, 2, b'\x80', 67.5, 0.75),  # <- Gets proportion of weight.
+             (3, 1, 2, 3, b'\xc0', 20.0, 0.25),
+             (4, 1, 2, 4, b'\xc0', 60.0, 0.75),
+             (5, 1, 3, 5, b'\x80', 28.0, 0.8),   # <- Gets full weight after excluding split created by overlap.
+             (6, 1, 3, 6, b'\xc0',  7.0, 0.2)},  # <- Exact match that was overlapped.
+        )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'WARNING:app-toron.mapper:omitted 1 ambiguous matches that ' \
+                'overlap with records that were already matched at a finer ' \
+                'level of granularity',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.space:loaded 6 mappings',
+             'INFO:app-toron:mapping is complete'],
+        )
+
+    def test_match_limit_with_allow_overlapping(self):
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_relation._import_records(  # <- Function under test.
+                ds1=self.node_c,
+                ds2=self.node_d,
+                link_name='population',
+                reader=[
+                    ['index_c', 'population', 'index_d', 'lbl1', 'lbl2'],
+                    ['1X73808335', '90', '', 'A', ''],             # <- Matched to 2 right-side records.
+                    ['2X201AD8B1', '20', '3X8C016B53', 'B', 'x'],  # <- Exact match (by index code).
+                    ['2X201AD8B1', '60', '', 'B', 'y'],            # <- Exact match (by index labels).
+                    ['3XA7BC13F2', '28', '', 'C', ''],             # <- Matched to 2 right-side records (2-ambiguous, minus 1-exact overlap).
+                    ['3XA7BC13F2', '7', '6X78AF87DF', 'C', 'y'],   # <- Exact match (overlaps the records matched on "C" alone).
+                ],
+                direction='right',
+                match_limit=2,  # <- Allow up to one-to-two matches.
+                allow_overlapping=True,  # <- Allowing overlaps.
+                allow_incomplete=False,
+            )
+
+        self.assertEqual(exit_code, ExitCode.OK)
+
+        self.assertEqual(
+            self.get_mappings(self.node_c, self.node_d, 'population'),
+            {(1, 1, 1, 1, b'\x80', 22.5,   0.25),   # <- Gets proportion of weight.
+             (2, 1, 1, 2, b'\x80', 67.5,   0.75),   # <- Gets proportion of weight.
+             (3, 1, 2, 3, b'\xc0', 20.0,   0.25),
+             (4, 1, 2, 4, b'\xc0', 60.0,   0.75),
+             (5, 1, 3, 5, b'\x80', 11.375, 0.325),  # <- Gets proportion of weight.
+             (6, 1, 3, 6, b'\x80', 16.625, 0.475),  # <- Gets proportion of weight, overlaps with exact match `3, 6`.
+             (7, 1, 3, 6, b'\xc0',  7.0,   0.2)},   # <- Exact match overlapped by ambiguous match.
+        )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'INFO:app-toron.mapper:included 1 ambiguous matches that ' \
+                'overlap with records that were also matched at a finer ' \
+                'level of granularity',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.space:loaded 7 mappings',
+             'INFO:app-toron:mapping is complete'],
+        )
+
+    def test_incomplete_match_error(self):
+        """Default behavior is for incomplete matches to trigger an error."""
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        regex = r'mapping is incomplete, no records loaded'
+        with self.assertRaisesRegex(ToronError, regex):
+            exit_code = command_relation._import_records(  # <- Function under test.
+                ds1=self.node_c,
+                ds2=self.node_d,
+                link_name='population',
+                reader=[
+                    ['index_c', 'population', 'index_d'],
+                    ['0XF4264876',  '0', '0XDF9B30D7'],
+                    ['1X73808335', '50', '1X583DFB94'],
+                    ['1X73808335', '50', '2X0BA7A010'],
+                    ['3XA7BC13F2', '50', '6X78AF87DF'],
+                ],
+                direction='right',
+                match_limit=1,
+                allow_overlapping=False,
+                allow_incomplete=False,  # <- Default (incomplete not allowed).
+            )
+
+    def test_incomplete_match_allowed(self):
+        """Incomplete matches can be loaded with `--allow-incomplete`."""
+        self.node_d.add_link(space=self.node_c,
+                             link_name='population',
+                             other_filename_hint='node_c',
+                             is_default=True)
+
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            exit_code = command_relation._import_records(  # <- Function under test.
+                ds1=self.node_c,
+                ds2=self.node_d,
+                link_name='population',
+                reader=[
+                    ['index_c', 'population', 'index_d'],
+                    ['0XF4264876',  '0', '0XDF9B30D7'],
+                    ['1X73808335', '50', '1X583DFB94'],
+                    ['1X73808335', '50', '2X0BA7A010'],
+                    ['3XA7BC13F2', '50', '6X78AF87DF'],
+                ],
+                direction='right',
+                match_limit=1,
+                allow_overlapping=False,
+                allow_incomplete=True,  # <- Allowing incomplete matches.
+            )
+
+        msg = 'when using --allow-incomplete, process should load partial matches'
+        self.assertEqual(exit_code, ExitCode.OK, msg=msg)
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron:matching FILE1 index records',
+             'INFO:app-toron:matching FILE2 index records',
+             'INFO:app-toron:loading mappings: FILE1 -> FILE2',
+             'INFO:app-toron.space:loaded 3 mappings',
+             'WARNING:app-toron:mapping is incomplete'],
+        )
+
+        self.assertEqual(
+            self.get_mappings(self.node_c, self.node_d, 'population'),
+            {(1, 1, 1, 1, b'\xc0', 50.0, 0.5),
+             (2, 1, 1, 2, b'\xc0', 50.0, 0.5),
+             (3, 1, 3, 6, b'\xc0', 50.0, 1.0)},
+        )
+
+
 class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
     @staticmethod
     def get_mappings(source_node, target_node, link_name):

@@ -395,6 +395,98 @@ def normalize_mapping_data(
         ]
 
 
+def _import_records(
+    ds1: 'DataSpace',
+    ds2: 'DataSpace',
+    link_name: str,
+    reader: Iterator[Sequence[Union[str, float]]],
+    direction: Literal['both', 'left', 'right'],
+    match_limit: int = 1,
+    allow_overlapping: bool = False,
+    allow_incomplete: bool = False,
+) -> ExitCode:
+    """Load mapping records from `csv.reader`-like object."""
+    # Check that link is defined in nodes.
+    try:
+        left_link = ds1.get_link(ds2, link_name)
+    except ToronError:
+        left_link = None
+    try:
+        right_link = ds2.get_link(ds1, link_name)
+    except ToronError:
+        right_link = None
+
+    if direction == 'both':
+        if right_link and not left_link:
+            applogger.warning(f'no {link_name!r} link from FILE2 to FILE1')
+            direction = 'right'
+        elif left_link and not right_link:
+            applogger.warning(f'no {link_name!r} link from FILE1 to FILE2')
+            direction = 'left'
+        elif not left_link and not right_link:
+            applogger.error(f'no {link_name!r} link exists between FILE1 '
+                            f'and FILE2 in either direction')
+            return ExitCode.ERR  # <- EXIT!
+    elif direction == 'left' and not left_link:
+        applogger.error(f'no {link_name!r} link from FILE2 to FILE1')
+        return ExitCode.ERR  # <- EXIT!
+    elif direction == 'right' and not right_link:
+        applogger.error(f'no {link_name!r} link from FILE1 to FILE2')
+        return ExitCode.ERR  # <- EXIT!
+
+    # Normalize and load mapping data.
+    data = normalize_mapping_data(ds1, ds2, link_name, reader)
+    mapper = Mapper(ds1, ds2, data)
+
+    # Match mapping to node labels.
+    applogger.info(f'matching FILE1 index records')
+    mapper.match_records('node1',
+                         match_limit=match_limit,
+                         allow_overlapping=allow_overlapping)
+    applogger.info(f'matching FILE2 index records')
+    mapper.match_records('node2',
+                         match_limit=match_limit,
+                         allow_overlapping=allow_overlapping)
+
+    # Check if all records are matched on both sides.
+    if not allow_incomplete and not mapper.is_fully_matched():
+        raise ToronError('mapping is incomplete, no records loaded')
+
+    # Insert mappings into FILE2.
+    if direction in {'both', 'right'}:
+        applogger.info(f'loading mappings: FILE1 -> FILE2')
+        mappings = mapper.iter_mappings('node2')
+        ds2.insert_mappings2(
+            ds1,
+            link_name,
+            data=mappings,
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
+        )
+        link = cast(Link, ds2.get_link(ds1, link_name))
+        if link.is_locally_complete:
+            applogger.info(f'mapping is complete')
+        else:
+            applogger.warning(f'mapping is incomplete')
+
+    # Insert mappings into FILE1.
+    if direction in {'both', 'left'}:
+        applogger.info(f'loading mappings: FILE1 <- FILE2')
+        mappings = mapper.iter_mappings('node1')
+        ds1.insert_mappings2(
+            ds2,
+            link_name,
+            data=mappings,
+            columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
+        )
+        link = cast(Link, ds1.get_link(ds2, link_name))
+        if link.is_locally_complete:
+            applogger.info(f'mapping is complete')
+        else:
+            applogger.warning(f'mapping is incomplete')
+
+    return ExitCode.OK
+
+
 def read_from_stdin(
     args: argparse.Namespace, node1: DataSpace, node2: DataSpace
 ) -> ExitCode:
