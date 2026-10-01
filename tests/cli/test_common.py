@@ -1,17 +1,23 @@
 """Tests for toron/cli/common.py module."""
 import logging
 import os
+import shutil
+import sys
+import tempfile
 import uuid
 from io import BytesIO, TextIOWrapper
+from pathlib import Path
 from .. import _unittest as unittest
 from ..common import (  # <- tests/common.py (not cli/common.py)
     StreamWrapperMixin,
     DummyTTY,
     DummyRedirection,
 )
+from toron import ToronError
 
 from toron.cli.common import (
     make_path_from_parts,
+    open_file_for_writing,
     csv_stdout_writer,
     normalize_arg_list,
     ansi_codes,
@@ -55,6 +61,62 @@ class TestMakePathFromParts(unittest.TestCase):
             ),
             os.path.join('foo', 'bar-baz-qux.csv'),
         )
+
+
+class TestOpenFileForWriting(unittest.TestCase):
+    def setUp(self):
+        if sys.version_info[:2] >= (3, 12):
+            tmpdir = tempfile.TemporaryDirectory(prefix='toron-', delete=False)
+            self.addClassCleanup(tmpdir.cleanup)
+            self.dirpath = os.path.realpath(tmpdir.name)
+        else:
+            # TODO: Remove when dropping support for Python 3.11.
+            self.dirpath = os.path.realpath(tempfile.mkdtemp(prefix='toron-'))
+            self.addClassCleanup(shutil.rmtree, self.dirpath)
+
+    def test_explicit_filename(self):
+        filepath = Path(self.dirpath, 'file.txt')
+
+        with open_file_for_writing(filepath, ['my', 'file'], 'txt') as f:  # <- Function under test.
+            f.write('Hello World')
+
+        self.assertEqual(filepath.read_text(), 'Hello World')
+
+    def test_automatic_filename(self):
+        """When given a target directory, function should """
+        with open_file_for_writing(self.dirpath, ['my', 'file'], 'txt') as f:  # <- Function under test.
+            f.write('Hello World')
+
+        filepath = Path(self.dirpath, 'my-file.txt')
+        self.assertEqual(filepath.read_text(), 'Hello World')
+
+    def test_explicit_already_exists(self):
+        filepath = Path(self.dirpath, 'file.txt')
+        filepath.write_text('Hello World')
+
+        with self.assertRaises(ToronError):
+            with open_file_for_writing(filepath, ['my', 'file'], 'txt') as f:  # <- Function under test.
+                pass
+
+        # Call using overwrite existing file with `overwrite=True`.
+        with open_file_for_writing(filepath, ['my', 'file'], 'txt', overwrite=True) as f:  # <- Function under test.
+            f.write('Hello New World')
+
+        self.assertEqual(filepath.read_text(), 'Hello New World')
+
+    def test_automatic_already_exists(self):
+        filepath = Path(self.dirpath, 'my-file.txt')
+        filepath.write_text('Hello World')
+
+        with self.assertRaises(ToronError):
+            with open_file_for_writing(self.dirpath, ['my', 'file'], 'txt') as f:  # <- Function under test.
+                pass
+
+        # Call using overwrite existing file with `overwrite=True`.
+        with open_file_for_writing(filepath, ['my', 'file'], 'txt', overwrite=True) as f:  # <- Function under test.
+            f.write('Hello New World')
+
+        self.assertEqual(filepath.read_text(), 'Hello New World')
 
 
 class TestCsvStdoutWriter(StreamWrapperMixin, unittest.TestCase):

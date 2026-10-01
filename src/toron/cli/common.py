@@ -97,6 +97,54 @@ def make_path_from_parts(
 
 
 @contextmanager
+def open_file_for_writing(
+    target_path: str,
+    autoname_parts: Optional[List[str]] = None,
+    autoname_ext: Optional[str] = None,
+    overwrite: bool = False,
+) -> Generator[TextIO, None, None]:
+    """Context manager to open a file for writing in text mode.
+
+        >>> with open_file_for_writing('mydir/myindex.csv') as f:
+        ...     f.name
+        ...
+        'mydir/myindex.csv'
+
+    If `target_path` is a directory, an auto-generated file name is
+    made using `autoname_parts` and `autoname_ext`. To open a file
+    automatically named 'index-myfile.csv', use:
+
+        >>> with open_file_for_writing('mydir', ['index', 'myfile.ds'], 'csv') as f:
+        ...     f.name
+        ...
+        'mydir/index-myfile.csv'
+    """
+    mode = 'wt' if overwrite else 'xt'  # Use "wt" to overwrite target when
+                                        # using *overwrite* or use "xt" to
+                                        # fail if the target already exists.
+
+    # When `target_path` is a directory, auto-generate a filename.
+    if os.path.isdir(target_path):
+        if not autoname_parts:
+            raise TypeError(
+                f'target_path {target_path!r} is a directory, autoname_parts '
+                f'is required'
+            )
+        target_path = make_path_from_parts(target_path, autoname_parts, autoname_ext)
+
+    target_path = os.path.normpath(target_path)
+    try:
+        f_target = open(target_path, mode)
+    except FileExistsError as err:
+        raise ToronError(f'{err}; use -f or --force to overwrite existing file')
+
+    try:
+        yield cast(TextIO, f_target)
+    finally:
+        f_target.close()
+
+
+@contextmanager
 def open_target_file(
     src_path: str,
     trg_path: str,
