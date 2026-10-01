@@ -75,6 +75,27 @@ def csv_stdout_writer(
             pass
 
 
+def make_path_from_parts(
+    parent_dir: str,
+    name_parts: List[str],
+    name_ext: Optional[str] = None,
+) -> str:
+    """Construct and return a file path using dir, parts, and extension.
+
+    Each element in `name_parts` is normalized to a path stem (basename
+    minus extension) and then concatenated together with hyphens:
+
+        >>> make_autoname_path('mydir', ['index', 'myfile.ds'], 'csv')
+        'mydir/index-myfile.csv'
+    """
+    # Normalize name_parts as filename "stems" (basename minus extension).
+    stems = [os.path.splitext(os.path.basename(x))[0] for x in name_parts]
+
+    file_stem = '-'.join(stems)
+    file_ext = f'.{name_ext}' if name_ext else ''
+    return os.path.join(parent_dir, f'{file_stem}{file_ext}')
+
+
 @contextmanager
 def open_target_file(
     src_path: str,

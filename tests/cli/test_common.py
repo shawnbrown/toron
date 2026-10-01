@@ -1,5 +1,6 @@
 """Tests for toron/cli/common.py module."""
 import logging
+import os
 import uuid
 from io import BytesIO, TextIOWrapper
 from .. import _unittest as unittest
@@ -10,6 +11,7 @@ from ..common import (  # <- tests/common.py (not cli/common.py)
 )
 
 from toron.cli.common import (
+    make_path_from_parts,
     csv_stdout_writer,
     normalize_arg_list,
     ansi_codes,
@@ -23,6 +25,36 @@ from toron.cli.common import (
     remap_index_codes_to_index_ids,
     make_index_code_header,
 )
+
+
+class TestMakePathFromParts(unittest.TestCase):
+    def test_dir_parts_and_extension(self):
+        self.assertEqual(
+            make_path_from_parts('foo', ['bar', 'baz.ds'], 'txt'),  # <- Function under test.
+            os.path.join('foo', 'bar-baz.txt'),
+        )
+
+    def test_current_directory(self):
+        self.assertEqual(
+            make_path_from_parts('.', ['bar', 'baz.ds'], 'txt'),  # <- Function under test.
+            './bar-baz.txt',
+        )
+
+    def test_no_extension(self):
+        self.assertEqual(
+            make_path_from_parts('foo', ['bar', 'baz.ds']),  # <- Function under test.
+            os.path.join('foo', 'bar-baz'),
+        )
+
+    def test_additional_name_parts(self):
+        self.assertEqual(
+            make_path_from_parts(  # <- Function under test.
+                parent_dir='foo',
+                name_parts=['bar', 'baz.ds', 'qux.ds'],
+                name_ext='csv'
+            ),
+            os.path.join('foo', 'bar-baz-qux.csv'),
+        )
 
 
 class TestCsvStdoutWriter(StreamWrapperMixin, unittest.TestCase):
