@@ -794,6 +794,7 @@ def get_parser() -> argparse.ArgumentParser:
         ':',  # <- Relation operator.
         prog='toron FILE1 : FILE2',
         description='Manage relations between FILE1 and FILE2.',
+        epilog='Run `toron : COMMAND -h` for command-specific options.',
         help='manage relations between files (run `%(prog)s : -h` for details)',
     )
     parser_rel.add_argument('filepath2',
