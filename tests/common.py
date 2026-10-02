@@ -301,19 +301,25 @@ class StreamWrapperMixin(object):
         self.assertEqual(stream_value, expected, msg)
 
     def assertStdout(self, text, *, msg=None):
-        """Assert that *text* matches captured stdout (decoded as UTF-8)."""
+        """Assert that *text* matches captured stdout."""
         self.stdout_capture.flush()
         captured_value = self.stdout_capture.getvalue()
         self.assertEqual(captured_value, text, msg)
 
+    def assertInStdout(self, text, *, msg=None):
+        """Assert that *text* appears in captured stdout."""
+        self.stdout_capture.flush()
+        captured_value = self.stdout_capture.getvalue()
+        self.assertIn(text, captured_value, msg)
+
     def assertStderr(self, text, *, msg=None):
-        """Assert that *text* matches captured stderr (decoded as UTF-8)."""
+        """Assert that *text* matches captured stderr."""
         self.stderr_capture.flush()
         captured_value = self.stderr_capture.getvalue()
         self.assertEqual(captured_value, text, msg)
 
     def assertInStderr(self, text, *, msg=None):
-        """Assert that *text* matches captured stderr (decoded as UTF-8)."""
+        """Assert that *text* appears in captured stderr."""
         self.stderr_capture.flush()
         captured_value = self.stderr_capture.getvalue()
         self.assertIn(text, captured_value, msg)
