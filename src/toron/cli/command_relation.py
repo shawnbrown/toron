@@ -47,6 +47,7 @@ from .common import (
     index_code_to_id,
     index_id_to_code,
     get_index_code_position,
+    open_file_for_writing,
     cli_bind_file,
     process_backup_option,
     make_index_code_header,
@@ -750,6 +751,29 @@ def _export_records(
 
     row_count = counter['row_count']
     applogger.info(f"written {row_count} record{'s' if row_count != 1 else ''}")
+
+
+def export_records(args: argparse.Namespace) -> ExitCode:
+    """Write mapping records to target CSV file."""
+    # Bind DataSpaces (to make sure they exist) before opening output file.
+    try:
+        ds1 = cli_bind_file(args.filepath, mode='ro')
+        ds2 = cli_bind_file(args.filepath2, mode='ro')
+    except Exception as e:
+        raise Exception(e)
+
+    with open_file_for_writing(
+        target_path=args.target,
+        autoname_parts=['mapping', args.filepath, args.filepath2, args.link],
+        autoname_ext='csv',
+        overwrite=args.force,
+    ) as f:
+        writer = csv.writer(f, lineterminator='\n')
+        for row in _export_records(ds1, ds2, args.link):
+            writer.writerow(row)
+
+    applogger.info(f'saved to {f.name!r}')
+    return ExitCode.OK
 
 
 def write_to_stdout(

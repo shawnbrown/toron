@@ -726,7 +726,40 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              'INFO: mapping is complete\n'),
         )
 
-    def test_013_disaggregate_translate(self):
+    def test_013_export_mapping(self):
+        """Write mapping records to drive."""
+        csv_path = os.path.join(self.__class__.dirpath, 'mapping-file1-file2.csv')
+
+        self.assertMainRegex(
+            [self.filepath1, ':', self.filepath2, 'population', 'export', csv_path],
+            (r"INFO: written 13 records\n"
+             r"INFO: saved to '.+mapping-file1-file2.csv'\n"),
+        )
+        # Add clean-up for file created by "export" command.
+        self.addCleanup(lambda: os.remove(csv_path))
+
+        with open(csv_path) as f:
+            csv_contents = f.read()
+
+        expected = (
+            'file1_index_code,lbl1,lbl2,lbl3,population,file2_index_code,lbl1,lbl2\n'
+            '0X27B3B62D,-,-,-,0.0,0X7054347B,-,-\n'
+            '0X27B3B62D,-,-,-,5.0,5X84FAD8F7,C,Erie\n'
+            '1XA0157D6E,A,z,a,25.0,1XF7F2FF38,A,Athens\n'
+            '1XA0157D6E,A,z,a,25.0,2XA468A4BC,A,Boston\n'
+            '2XF38F26EA,B,x,b,50.0,3X23CE6FFF,B,Charleston\n'
+            '3X7429EDA9,B,y,c,50.0,3X23CE6FFF,B,Charleston\n'
+            '4X54BB91E2,C,x,d,55.0,4X035C13B4,C,Dover\n'
+            '5XD31D5AA1,C,y,e,45.0,5X84FAD8F7,C,Erie\n'
+            '6X80870125,D,x,f,100.0,6XD7608373,D,Fayetteville\n'
+            '7X0721CA66,D,x,g,10.0,0X7054347B,-,-\n'
+            '7X0721CA66,D,x,g,90.0,7X50C64830,D,Greensboro\n'
+            '8XC1A3F9B3,D,y,h,100.0,8X96447BE5,D,Hartford\n'
+            '9X460532F0,D,y,i,100.0,9X11E2B0A6,D,Irvine\n'
+        )
+        self.assertEqual(csv_contents, expected)
+
+    def test_014_disaggregate_translate(self):
         """Test disaggregation using API (not CLI at the moment)."""
         node1 = bind_file(self.filepath1, mode='ro')
         node2 = bind_file(self.filepath2, mode='ro')

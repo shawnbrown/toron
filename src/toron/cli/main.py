@@ -882,6 +882,20 @@ def get_parser() -> argparse.ArgumentParser:
     parser_rel_import.set_defaults(direction='both',
                                    func=command_relation.import_records)
 
+    # Subcommand: export
+    parser_rel_export = parser_rel_subparsers.add_parser(
+        'export',
+        help='write mapping records to TARGET file or directory',
+        description=('Write mapping records to a TARGET file or directory; '
+                     'uses an auto-generated name if TARGET is a directory.'),
+    )
+    parser_rel_export.add_argument('target',
+                                   help='CSV file or directory to save records',
+                                   metavar='TARGET')
+    parser_rel_export.add_argument('-f', '--force', action='store_true',
+                                   help='force overwrite of TARGET if it already exists')
+    parser_rel_export.set_defaults(func=command_relation.export_records)
+
     return parser
 
 
