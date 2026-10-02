@@ -27,21 +27,6 @@ class TestMainHelp(StreamWrapperMixin, unittest.TestCase):
         super().setUp()
         self.parser = get_parser()  # Get ToronArgumentParser instance.
 
-
-class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
-    def setUp(self):
-        super().setUp()
-        self.parser = get_parser()  # Get ToronArgumentParser instance.
-
-    def assertNamespaceEqual(self, first, second, msg=None):
-        """Check that `argparse.Namespace` instances are equal."""
-        # Check instances types.
-        self.assertIsInstance(first, argparse.Namespace, msg)
-        self.assertIsInstance(second, argparse.Namespace, msg)
-
-        # Check Namespace contents.
-        self.assertDictEqual(vars(first), vars(second), msg)
-
     def test_help_explicit(self):
         """When calling help explicitly, should write to stdout and exit with OK."""
         with self.assertRaises(SystemExit) as cm:
@@ -80,6 +65,21 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertEqual(cm.exception.code, ExitCode.OK)
         self.assertStdout(self.parser.format_help())
         self.assertStderr('', msg='should not write to stderr')
+
+
+class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.parser = get_parser()  # Get ToronArgumentParser instance.
+
+    def assertNamespaceEqual(self, first, second, msg=None):
+        """Check that `argparse.Namespace` instances are equal."""
+        # Check instances types.
+        self.assertIsInstance(first, argparse.Namespace, msg)
+        self.assertIsInstance(second, argparse.Namespace, msg)
+
+        # Check Namespace contents.
+        self.assertDictEqual(vars(first), vars(second), msg)
 
     def test_subcommand_init(self):
         """Check "init" subparser."""
