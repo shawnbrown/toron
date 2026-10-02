@@ -17,7 +17,7 @@ from .common import (
     ExitCode,
     is_streamed,
     csv_stdout_writer,
-    open_target_file,
+    open_file_for_writing,
     cli_bind_file,
     process_backup_option,
 )
@@ -104,11 +104,11 @@ def export_records(args: argparse.Namespace) -> ExitCode:
     # Bind DataSpace (to make sure it exists) before opening output file.
     ds = cli_bind_file(args.filepath, mode='ro')
 
-    with open_target_file(
-        src_path=args.filepath,
-        trg_path=args.target,
-        auto_prefix='quantity-',
-        force=args.force,
+    with open_file_for_writing(
+        target_path=args.target,
+        autoname_parts=['quantity', args.filepath],
+        autoname_ext='csv',
+        overwrite=args.force,
     ) as f:
         writer = csv.writer(f, lineterminator='\n')
         for row in _export_records(ds):

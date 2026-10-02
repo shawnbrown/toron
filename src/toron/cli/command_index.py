@@ -19,7 +19,7 @@ from .._utils import ToronError
 from .common import (
     ExitCode,
     is_streamed,
-    open_target_file,
+    open_file_for_writing,
     csv_stdout_writer,
     cli_bind_file,
     process_backup_option,
@@ -152,7 +152,12 @@ def export_records(args: argparse.Namespace) -> ExitCode:
     # Bind DataSpace (to make sure it exists) before opening output file.
     ds = cli_bind_file(args.filepath, mode='ro')
 
-    with open_target_file(args.filepath, args.target, 'index-', args.force) as f:
+    with open_file_for_writing(
+        target_path=args.target,
+        autoname_parts=['index', args.filepath],
+        autoname_ext='csv',
+        overwrite=args.force,
+    ) as f:
         writer = csv.writer(f, lineterminator='\n')
         for row in _export_records(ds):
             writer.writerow(row)

@@ -144,47 +144,6 @@ def open_file_for_writing(
         f_target.close()
 
 
-@contextmanager
-def open_target_file(
-    src_path: str,
-    trg_path: str,
-    auto_prefix: str = '',
-    force: bool = False,
-) -> Generator[TextIO, None, None]:
-    """Context manager to open a file to export records.
-
-    If `trg_path` is a directory, an auto-generated file name is used.
-    """
-    mode = 'wt' if force else 'xt'  # Use "wt" to overwrite target when using
-                                    # *force* or use "xt" to fail if the target
-                                    # already exists.
-    if os.path.isdir(trg_path):
-        # Automatically generate a target path.
-        stem, _ = os.path.splitext(os.path.basename(src_path))
-        target_part= os.path.normpath(os.path.join(trg_path, f'{auto_prefix}{stem}'))
-        for suffix in chain([''], (f'_{n}' for n in range(2, 10))):
-            try:
-                target_path = f'{target_part}{suffix}.csv'
-                f_target = open(target_path, mode)
-                break
-            except FileExistsError:
-                pass
-        else:  # NOBREAK: Loop fell through without break.
-            raise ToronError('unable to auto-generate filename')
-    else:
-        # Use explicit target path.
-        target_path = os.path.normpath(trg_path)
-        try:
-            f_target = open(target_path, mode)
-        except FileExistsError as err:
-            raise ToronError(f'{err}; use -f or --force to overwrite existing file')
-
-    try:
-        yield cast(TextIO, f_target)
-    finally:
-        f_target.close()
-
-
 def cli_bind_file(
     filepath: str, *, mode: Literal['ro', 'rw', 'rwc']
 ) -> 'DataSpace':
