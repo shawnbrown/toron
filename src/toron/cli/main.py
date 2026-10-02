@@ -801,7 +801,7 @@ def get_parser() -> argparse.ArgumentParser:
                             type=str,
                             help=argparse.SUPPRESS,
                             metavar='FILE2')
-    parser_rel.add_argument('link',
+    parser_rel.add_argument('link_name',
                             type=str,
                             help='name of the link',
                             metavar='LINK')

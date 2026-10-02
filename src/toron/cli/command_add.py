@@ -99,7 +99,7 @@ def add_link(args: argparse.Namespace) -> ExitCode:
 
     do_add = lambda tail, head, args: head.add_link(
         space=tail,
-        link_name=args.link,
+        link_name=args.link_name,
         other_filename_hint=tail.path_hint,
         description=args.description,
         selectors=args.selectors,

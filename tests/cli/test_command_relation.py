@@ -44,7 +44,7 @@ class TestCreateLink(unittest.TestCase):
             command=':',
             subcommand='create',
             filepath2=self.filepath2,
-            link='population',
+            link_name='population',
             direction='both',
             description=None,
             selectors=None,
@@ -82,7 +82,7 @@ class TestCreateLink(unittest.TestCase):
             command=':',
             subcommand='create',
             filepath2=self.filepath2,
-            link='population',
+            link_name='population',
             direction='right',  # <- Right-side link only.
             description=None,
             selectors=None,
@@ -124,7 +124,7 @@ class TestCreateLink(unittest.TestCase):
             command=':',
             subcommand='create',
             filepath2=self.filepath2,
-            link='population',
+            link_name='population',
             direction='both',
             description=None,
             selectors=None,
@@ -1086,7 +1086,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                              is_default=True)
 
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='both',
             match_limit=1,
             allow_overlapping=False,
@@ -1162,7 +1162,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                              is_default=True)
 
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='both',
             match_limit=1,
             allow_overlapping=False,
@@ -1236,7 +1236,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                              is_default=True)
 
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='both',  # <- Direction indicates both, but left-side is missing.
             match_limit=1,
             allow_overlapping=False,
@@ -1283,7 +1283,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
 
     def test_missing_both_sides(self):
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='both',
             stdin=DummyRedirection(
                 'index_c,population,index_d\n'
@@ -1318,7 +1318,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                              is_default=True)
 
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='right',
             match_limit=2,  # <- Allow up to one-to-two matches.
             allow_overlapping=False,  # <- Default (no overlapping allowed).
@@ -1371,7 +1371,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                              is_default=True)
 
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='right',
             match_limit=2,  # <- Allow up to one-to-two matches.
             allow_overlapping=True,  # <- Allowing overlaps.
@@ -1426,7 +1426,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                              is_default=True)
 
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='right',
             match_limit=1,
             allow_overlapping=False,
@@ -1456,7 +1456,7 @@ class TestReadFromStdin(DataSpaceFixturesMixin, unittest.TestCase):
                              is_default=True)
 
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='right',
             match_limit=1,
             allow_overlapping=False,
@@ -1622,7 +1622,7 @@ class TestWriteToStdout(DataSpaceFixturesMixin, unittest.TestCase):
 
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='both',
             stdout=dummy_stdout,
         )
@@ -1668,7 +1668,7 @@ class TestWriteToStdout(DataSpaceFixturesMixin, unittest.TestCase):
 
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='both',
             stdout=dummy_stdout,
         )
@@ -1703,7 +1703,7 @@ class TestWriteToStdout(DataSpaceFixturesMixin, unittest.TestCase):
 
         dummy_stdout = DummyRedirection()
         args = argparse.Namespace(
-            link='population',
+            link_name='population',
             direction='both',
             stdout=dummy_stdout,
         )

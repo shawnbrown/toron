@@ -73,7 +73,7 @@ def create_link(args: argparse.Namespace) -> ExitCode:
         applogger.info(f'adding link {basename1!r} -> {basename2}')
         ds2.add_link(
             space=ds1,
-            link_name=args.link,
+            link_name=args.link_name,
             other_filename_hint=ds1.path_hint,
             description=args.description,
             selectors=args.selectors,
@@ -84,7 +84,7 @@ def create_link(args: argparse.Namespace) -> ExitCode:
         applogger.info(f'adding link {basename1!r} <- {basename2}')
         ds1.add_link(
             space=ds2,
-            link_name=args.link,
+            link_name=args.link_name,
             other_filename_hint=ds2.path_hint,
             description=args.description,
             selectors=args.selectors,
@@ -499,7 +499,7 @@ def import_records(args: argparse.Namespace) -> ExitCode:
         return _import_records(
             ds1=ds1,
             ds2=ds2,
-            link_name=args.link,
+            link_name=args.link_name,
             reader=csv.reader(f_source),
             direction=args.direction,
             match_limit=args.match_limit,
@@ -514,35 +514,35 @@ def read_from_stdin(
     """Insert mapping records read from stdin stream."""
     # Check that link is defined in nodes.
     try:
-        left_link = node1.get_link(node2, args.link)
+        left_link = node1.get_link(node2, args.link_name)
     except ToronError:
         left_link = None
     try:
-        right_link = node2.get_link(node1, args.link)
+        right_link = node2.get_link(node1, args.link_name)
     except ToronError:
         right_link = None
 
     if args.direction == 'both':
         if right_link and not left_link:
-            applogger.warning(f'no {args.link!r} link from FILE2 to FILE1')
+            applogger.warning(f'no {args.link_name!r} link from FILE2 to FILE1')
             args.direction = 'right'
         elif left_link and not right_link:
-            applogger.warning(f'no {args.link!r} link from FILE1 to FILE2')
+            applogger.warning(f'no {args.link_name!r} link from FILE1 to FILE2')
             args.direction = 'left'
         elif not left_link and not right_link:
-            applogger.error(f'no {args.link!r} link exists between FILE1 '
+            applogger.error(f'no {args.link_name!r} link exists between FILE1 '
                             f'and FILE2 in either direction')
             return ExitCode.ERR  # <- EXIT!
     elif args.direction == 'left' and not left_link:
-        applogger.error(f'no {args.link!r} link from FILE2 to FILE1')
+        applogger.error(f'no {args.link_name!r} link from FILE2 to FILE1')
         return ExitCode.ERR  # <- EXIT!
     elif args.direction == 'right' and not right_link:
-        applogger.error(f'no {args.link!r} link from FILE1 to FILE2')
+        applogger.error(f'no {args.link_name!r} link from FILE1 to FILE2')
         return ExitCode.ERR  # <- EXIT!
 
     # Normalize and load mapping data.
     data = normalize_mapping_data(
-        node1, node2, args.link, csv.reader(args.stdin)
+        node1, node2, args.link_name, csv.reader(args.stdin)
     )
     mapper = Mapper(node1, node2, data)
 
@@ -566,11 +566,11 @@ def read_from_stdin(
         mappings = mapper.iter_mappings('node2')
         node2.insert_mappings2(
             node1,
-            args.link,
+            args.link_name,
             data=mappings,
             columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
-        link = cast(Link, node2.get_link(node1, args.link))
+        link = cast(Link, node2.get_link(node1, args.link_name))
         if link.is_locally_complete:
             applogger.info(f'mapping is complete')
         else:
@@ -582,11 +582,11 @@ def read_from_stdin(
         mappings = mapper.iter_mappings('node1')
         node1.insert_mappings2(
             node2,
-            args.link,
+            args.link_name,
             data=mappings,
             columns=['other_index_id', 'index_id', 'mapping_level', 'mapping_value'],
         )
-        link = cast(Link, node1.get_link(node2, args.link))
+        link = cast(Link, node1.get_link(node2, args.link_name))
         if link.is_locally_complete:
             applogger.info(f'mapping is complete')
         else:
@@ -764,12 +764,12 @@ def export_records(args: argparse.Namespace) -> ExitCode:
 
     with open_file_for_writing(
         target_path=args.target,
-        autoname_parts=['mapping', args.filepath, args.filepath2, args.link],
+        autoname_parts=['mapping', args.filepath, args.filepath2, args.link_name],
         autoname_ext='csv',
         overwrite=args.force,
     ) as f:
         writer = csv.writer(f, lineterminator='\n')
-        for row in _export_records(ds1, ds2, args.link):
+        for row in _export_records(ds1, ds2, args.link_name):
             writer.writerow(row)
 
     applogger.info(f'saved to {f.name!r}')
@@ -807,7 +807,7 @@ def write_to_stdout(
 
         # Check if any mappings are ambiguous.
         link = trg_link_repo.get_by_unique_id_and_name(
-            other_unique_id=src_unique_id, name=args.link,
+            other_unique_id=src_unique_id, name=args.link_name,
         )
         mapping_levels = trg_mapping_repo.get_distinct_mapping_levels(link.id)
         whole_space_bytes = bytes(BitFlags(trg_label_names))
@@ -827,14 +827,14 @@ def write_to_stdout(
             writer.writerow(chain(
                 (src_index_header,),
                 src_label_names,
-                (args.link,
+                (args.link_name,
                  trg_index_header),
                 trg_label_names,
                 ambiguous_header,
             ))
 
             generator = generate_mapping_elements(
-                link_name=args.link,
+                link_name=args.link_name,
                 trg_index_repo=trg_index_repo,
                 trg_link_repo=trg_link_repo,
                 trg_mapping_repo=trg_mapping_repo,
