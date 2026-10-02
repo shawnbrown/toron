@@ -22,6 +22,12 @@ from toron.cli.main import (
 )
 
 
+class TestMainHelp(StreamWrapperMixin, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.parser = get_parser()  # Get ToronArgumentParser instance.
+
+
 class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
