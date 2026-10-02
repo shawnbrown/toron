@@ -300,6 +300,24 @@ class StreamWrapperMixin(object):
 
         self.assertEqual(stream_value, expected, msg)
 
+    def assertStdout(self, text, *, msg=None):
+        """Assert that *text* matches captured stdout (decoded as UTF-8)."""
+        self.stdout_capture.flush()
+        captured_value = self.stdout_capture.getvalue()
+        self.assertEqual(captured_value, text, msg)
+
+    def assertStderr(self, text, *, msg=None):
+        """Assert that *text* matches captured stderr (decoded as UTF-8)."""
+        self.stderr_capture.flush()
+        captured_value = self.stderr_capture.getvalue()
+        self.assertEqual(captured_value, text, msg)
+
+    def assertInStderr(self, text, *, msg=None):
+        """Assert that *text* matches captured stderr (decoded as UTF-8)."""
+        self.stderr_capture.flush()
+        captured_value = self.stderr_capture.getvalue()
+        self.assertIn(text, captured_value, msg)
+
 
 class DummyTTY(io.TextIOWrapper):
     """TextIOWrapper that mimics an interactive stream (a TTY)."""
