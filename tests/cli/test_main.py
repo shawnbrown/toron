@@ -66,6 +66,18 @@ class TestMainHelp(StreamWrapperMixin, unittest.TestCase):
         self.assertStdout(self.parser.format_help())
         self.assertStderr('', msg='should not write to stderr')
 
+    def test_help_for_relation_commands(self):
+        """Using `: COMMAND -h` should give relation subcommand help."""
+        file_path = self.get_tempfile_path()
+        DataSpace().to_file(file_path)
+
+        with self.assertRaises(SystemExit) as cm:
+            self.parser.parse_args([':', 'create', '-h'])
+
+        self.assertInStdout('usage: toron FILE1 : FILE2 create')
+        self.assertStderr('', msg='should not write to stderr')
+        self.assertEqual(cm.exception.code, ExitCode.OK)
+
 
 class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
     def setUp(self):

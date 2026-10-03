@@ -85,7 +85,7 @@ def get_parser() -> argparse.ArgumentParser:
                 # Parser expects FILE before COMMAND. To allow `--help` using
                 # COMMAND alone, insert dummy values for missing file arguments.
                 if first == ':':
-                    return ['<dummy-FILE1>', ':', '<dummy-FILE2>', '<dummy-LINK>'] + args[1:]
+                    return ['<dummy-FILE1>', ':', '<dummy-FILE2>'] + args[1:]
                 if second not in self._choices_ref and (
                     first in self._choices_ref or (first and not isfile(first))
                 ):
