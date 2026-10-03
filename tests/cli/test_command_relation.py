@@ -13,7 +13,7 @@ from toron.data_models import Link
 from toron.cli import command_relation
 
 
-class TestCreateLink(unittest.TestCase):
+class TestAddLink(unittest.TestCase):
     def setUp(self):
         with tempfile.NamedTemporaryFile(delete=False) as tmp1:
             self.filepath1 = tmp1.name
@@ -50,7 +50,7 @@ class TestCreateLink(unittest.TestCase):
             selectors=None,
             make_default=True,
         )
-        command_relation.create_link(args)  # <- Method under test.
+        command_relation.add_link(args)  # <- Method under test.
 
         # Check right-side link (ds1 -> ds2).
         self.assertEqual(
@@ -88,7 +88,7 @@ class TestCreateLink(unittest.TestCase):
             selectors=None,
             make_default=True,
         )
-        command_relation.create_link(args)  # <- Method under test.
+        command_relation.add_link(args)  # <- Method under test.
 
         # Check right-side link (ds1 -> ds2).
         self.assertEqual(
@@ -133,7 +133,7 @@ class TestCreateLink(unittest.TestCase):
 
         regex = r"a link named 'population' already exists"
         with self.assertRaisesRegex(ToronError, regex):
-            command_relation.create_link(args)  # <- Method under test.
+            command_relation.add_link(args)  # <- Method under test.
 
 
 class TestGetColumnPositions(DataSpaceFixturesMixin, unittest.TestCase):

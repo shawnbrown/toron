@@ -806,40 +806,40 @@ def get_parser() -> argparse.ArgumentParser:
                                                       metavar='COMMAND')
 
     # Subcommand: create
-    parser_rel_create = parser_rel_subparsers.add_parser(
-        'create',
-        help='create a new link between files',
-        description='Create a new link between files.',
+    parser_rel_add = parser_rel_subparsers.add_parser(
+        'add',
+        help='add a new link between files',
+        description='Add a new link between files.',
         parents=[no_backup_parent],
     )
-    parser_rel_create.add_argument('link_name',
-                                   help='name for the new link',
-                                   metavar='NAME')
-    parser_rel_create_group = parser_rel_create.add_mutually_exclusive_group()
-    parser_rel_create_group.add_argument(
+    parser_rel_add.add_argument('link_name',
+                                help='name for the new link',
+                                metavar='NAME')
+    parser_rel_add_group = parser_rel_add.add_mutually_exclusive_group()
+    parser_rel_add_group.add_argument(
         '--left',
         action='store_const',
         const='left',
         dest='direction',
         help='add single direction, FILE1 <- FILE2',
     )
-    parser_rel_create_group.add_argument(
+    parser_rel_add_group.add_argument(
         '--right',
         action='store_const',
         const='right',
         dest='direction',
         help='add single direction, FILE1 -> FILE2',
     )
-    parser_rel_create.add_argument('--description',
-                                   help='description of the link')
-    parser_rel_create.add_argument('--selectors', nargs='+',
-                                   metavar='SELECTOR',
-                                   help='attribute selectors')
-    parser_rel_create.add_argument('--default', action='store_true',
-                                   dest='make_default',
-                                   help='set as the default link')
-    parser_rel_create.set_defaults(direction='both',
-                                   func=command_relation.create_link)
+    parser_rel_add.add_argument('--description',
+                                help='description of the link')
+    parser_rel_add.add_argument('--selectors', nargs='+',
+                                metavar='SELECTOR',
+                                help='attribute selectors')
+    parser_rel_add.add_argument('--default', action='store_true',
+                                dest='make_default',
+                                help='set as the default link')
+    parser_rel_add.set_defaults(direction='both',
+                                func=command_relation.add_link)
 
     # Subcommand: import
     parser_rel_import = parser_rel_subparsers.add_parser(

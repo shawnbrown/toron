@@ -57,8 +57,8 @@ from .common import (
 applogger = logging.getLogger('app-toron')
 
 
-def create_link(args: argparse.Namespace) -> ExitCode:
-    """Create a link between two node files."""
+def add_link(args: argparse.Namespace) -> ExitCode:
+    """Add a link between two node files."""
     if args.direction not in {'both', 'right', 'left'}:
         raise RuntimeError(f'unhandled direction: {args.direction!r}')
 

@@ -72,9 +72,9 @@ class TestMainHelp(StreamWrapperMixin, unittest.TestCase):
         DataSpace().to_file(file_path)
 
         with self.assertRaises(SystemExit) as cm:
-            self.parser.parse_args([':', 'create', '-h'])
+            self.parser.parse_args([':', 'add', '-h'])
 
-        self.assertInStdout('usage: toron FILE1 : FILE2 create')
+        self.assertInStdout('usage: toron FILE1 : FILE2 add')
         self.assertStderr('', msg='should not write to stderr')
         self.assertEqual(cm.exception.code, ExitCode.OK)
 
