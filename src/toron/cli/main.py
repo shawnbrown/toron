@@ -801,10 +801,6 @@ def get_parser() -> argparse.ArgumentParser:
                             type=str,
                             help=argparse.SUPPRESS,
                             metavar='FILE2')
-    parser_rel.add_argument('link_name',
-                            type=str,
-                            help='name of the link',
-                            metavar='LINK')
     parser_rel_subparsers = parser_rel.add_subparsers(dest='subcommand',
                                                       required=True,
                                                       metavar='COMMAND')
@@ -816,6 +812,9 @@ def get_parser() -> argparse.ArgumentParser:
         description='Create a new link between files.',
         parents=[no_backup_parent],
     )
+    parser_rel_create.add_argument('link_name',
+                                   help='name for the new link',
+                                   metavar='NAME')
     parser_rel_create_group = parser_rel_create.add_mutually_exclusive_group()
     parser_rel_create_group.add_argument(
         '--left',
@@ -879,6 +878,11 @@ def get_parser() -> argparse.ArgumentParser:
     parser_rel_import.add_argument('--allow-incomplete',
                                    action='store_true',
                                    help='load matches even if the mapping is incomplete')
+    parser_rel_import.add_argument('--link',
+                                   required=True,
+                                   help='specify a link name',
+                                   metavar='NAME',
+                                   dest='link_name')
     parser_rel_import.set_defaults(direction='both',
                                    func=command_relation.import_records)
 
@@ -894,6 +898,11 @@ def get_parser() -> argparse.ArgumentParser:
                                    metavar='TARGET')
     parser_rel_export.add_argument('-f', '--force', action='store_true',
                                    help='force overwrite of TARGET if it already exists')
+    parser_rel_export.add_argument('--link',
+                                   required=True,
+                                   help='specify a link name',
+                                   metavar='NAME',
+                                   dest='link_name')
     parser_rel_export.set_defaults(func=command_relation.export_records)
 
     return parser

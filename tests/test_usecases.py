@@ -686,7 +686,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
     def test_011_create_link(self):
         """Create a link named "population" between file1.ds and file2.ds."""
         self.assertMain(
-            [self.filepath1, ':', self.filepath2, 'population', 'create'],
+            [self.filepath1, ':', self.filepath2, 'create', 'population'],
             ("INFO: adding link 'file1.ds' -> file2.ds\n"
              "WARNING: setting default link: 'population'\n"
              "INFO: adding link 'file1.ds' <- file2.ds\n"
@@ -715,7 +715,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         self.addCleanup(lambda: os.remove(csv_path))
 
         self.assertMain(
-            [self.filepath1, ':', self.filepath2, 'population', 'import', csv_path],
+            [self.filepath1, ':', self.filepath2, 'import', csv_path, '--link', 'population'],
             ('INFO: matching FILE1 index records\n'
              'INFO: matching FILE2 index records\n'
              'INFO: loading mappings: FILE1 -> FILE2\n'
@@ -731,7 +731,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         csv_path = os.path.join(self.__class__.dirpath, 'mapping-file1-file2.csv')
 
         self.assertMainRegex(
-            [self.filepath1, ':', self.filepath2, 'population', 'export', csv_path],
+            [self.filepath1, ':', self.filepath2, 'export', csv_path, '--link', 'population'],
             (r"INFO: written 13 records\n"
              r"INFO: saved to '.+mapping-file1-file2.csv'\n"),
         )
