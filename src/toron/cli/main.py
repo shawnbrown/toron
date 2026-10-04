@@ -892,6 +892,9 @@ def get_parser() -> argparse.ArgumentParser:
         help='write mapping records to TARGET file or directory',
         description=('Write mapping records to a TARGET file or directory; '
                      'uses an auto-generated name if TARGET is a directory.'),
+        epilog=('NOTE: Currently limited to exporting rightward mappings '
+                '(FILE1 -> FILE2). Support for leftward and bidirectional '
+                'mappings is planned in future updates.'),
     )
     parser_rel_export.add_argument('target',
                                    help='CSV file or directory to save records',
