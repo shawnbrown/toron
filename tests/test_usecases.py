@@ -731,7 +731,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         csv_path = os.path.join(self.__class__.dirpath, 'mapping-file1-file2.csv')
 
         self.assertMainRegex(
-            [self.filepath1, ':', self.filepath2, 'export', csv_path, '--link', 'population'],
+            [self.filepath1, ':', self.filepath2, 'export', csv_path],
             (r"INFO: written 13 records\n"
              r"INFO: saved to '.+mapping-file1-file2.csv'\n"),
         )

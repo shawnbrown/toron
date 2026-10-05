@@ -902,8 +902,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_rel_export.add_argument('-f', '--force', action='store_true',
                                    help='force overwrite of TARGET if it already exists')
     parser_rel_export.add_argument('--link',
-                                   required=True,
-                                   help='specify a link name',
+                                   help='specify a link name if more than one link exists',
                                    metavar='NAME',
                                    dest='link_name')
     parser_rel_export.set_defaults(func=command_relation.export_records)
