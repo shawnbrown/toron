@@ -13,9 +13,10 @@ from ..common import (  # <- tests/common.py (not cli/common.py)
     DummyTTY,
     DummyRedirection,
 )
-from toron import ToronError
+from toron import DataSpace, ToronError
 
 from toron.cli.common import (
+    resolve_link_name,
     make_path_from_parts,
     open_file_for_writing,
     csv_stdout_writer,
@@ -31,6 +32,70 @@ from toron.cli.common import (
     remap_index_codes_to_index_ids,
     make_index_code_header,
 )
+
+
+class TestResolveLinkName(unittest.TestCase):
+    def setUp(self):
+        self.ds1 = DataSpace()
+        self.ds2 = DataSpace()
+
+    def test_one_common_name(self):
+        """Return name when matching one commonly named link."""
+        self.ds1.add_link(self.ds2, 'pop2020', is_default=True)
+        self.ds2.add_link(self.ds1, 'pop2020', is_default=True)
+        self.ds2.add_link(self.ds1, 'pop1990')
+
+        self.assertEqual(
+            resolve_link_name(self.ds1, self.ds2, direction='both'),
+            'pop2020',
+        )
+
+    def test_zero_common_names(self):
+        """Raise error when zero matching links."""
+        self.ds1.add_link(self.ds2, 'pop2020', is_default=True)
+        self.ds2.add_link(self.ds1, 'pop1990', is_default=True)
+
+        regex = 'there are 0 mutual links sharing common names between FILE1 and FILE2'
+        with self.assertRaisesRegex(ToronError, regex):
+            resolve_link_name(self.ds1, self.ds2, direction='both'),
+
+    def test_multiple_common_names(self):
+        """Raise error when there are multiple matching links."""
+        self.ds1.add_link(self.ds2, 'pop2020', is_default=True)
+        self.ds2.add_link(self.ds1, 'pop2020', is_default=True)
+        self.ds1.add_link(self.ds2, 'pop1990')
+        self.ds2.add_link(self.ds1, 'pop1990')
+        self.ds1.add_link(self.ds2, 'pop1940')
+        self.ds2.add_link(self.ds1, 'pop1940')
+
+        regex = (
+            r'there are 3 mutual links sharing common names between FILE1 and '
+            r'FILE2 \(pop1940, pop1990 and pop2020\); use --link to specify a '
+            r'link name'
+        )
+        with self.assertRaisesRegex(ToronError, regex):
+            resolve_link_name(self.ds1, self.ds2, direction='both'),
+
+    def test_match_values(self):
+        """Use `match_values` to filter common names."""
+        self.ds1.add_link(self.ds2, 'pop2020', is_default=True)
+        self.ds2.add_link(self.ds1, 'pop2020', is_default=True)
+        self.ds1.add_link(self.ds2, 'pop1990')
+        self.ds2.add_link(self.ds1, 'pop1990')
+
+        self.assertEqual(
+            resolve_link_name(self.ds1, self.ds2, direction='both', match_values=['foo', 'pop2020', 'bar']),
+            'pop2020',
+        )
+
+    def test_match_values_failed(self):
+        """Raise error when `match_values` contains no matching name."""
+        self.ds1.add_link(self.ds2, 'pop2020', is_default=True)
+        self.ds2.add_link(self.ds1, 'pop2020', is_default=True)
+
+        regex = 'matched 0 mutual links sharing common names between FILE1 and FILE2'
+        with self.assertRaisesRegex(ToronError, regex):
+            resolve_link_name(self.ds1, self.ds2, direction='both', match_values=['foo', 'bar', 'baz']),
 
 
 class TestMakePathFromParts(unittest.TestCase):

@@ -75,6 +75,57 @@ def csv_stdout_writer(
             pass
 
 
+def resolve_link_name(
+    file1_ds: 'DataSpace',
+    file2_ds: 'DataSpace',
+    direction: Literal['left', 'right', 'both'],
+    match_values: Optional[Iterable[str]] = None,
+) -> str:
+    """Resolve a unique link name between data spaces or raise an error.
+    Optionally, matches are narrowed to `match_values` when given.
+    """
+    if direction == 'both':
+        names = set(x.name for x in file2_ds.get_links(file1_ds)) \
+                    .intersection(x.name for x in file1_ds.get_links(file2_ds))
+    elif direction == 'right':
+        names = set(x.name for x in file2_ds.get_links(file1_ds))
+    elif direction == 'left':
+        names = set(x.name for x in file1_ds.get_links(file2_ds))
+    else:
+        raise ValueError(f"direction must be 'left', 'right', or 'both'; "
+                         f"got {direction!r}")
+
+    if match_values:
+        matches = names.intersection(match_values)
+    else:
+        matches = names
+
+    # If a unique name is found, return it.
+    if len(matches) == 1:
+        return matches.pop()  # <- EXIT!
+
+    # If a unique match was not found, prepare message and raise error.
+    begin_text = 'matched' if match_values else 'there are'
+
+    match_count = len(matches)
+
+    if direction == 'both':
+        links_text = 'mutual links sharing common names between FILE1 and FILE2'
+    elif direction == 'right':
+        links_text = 'links from FILE1 to FILE2'
+    elif direction == 'left':
+        links_text = 'links from FILE2 to FILE1'
+
+    msg = f'{begin_text} {match_count} {links_text}'
+
+    if match_count > 1:
+        sorted_names = sorted(matches)
+        formatted_names = f"{', '.join(sorted_names[:-1])} and {sorted_names[-1]}"
+        msg = f'{msg} ({formatted_names}); use --link to specify a link name'
+
+    raise ToronError(msg)
+
+
 def make_path_from_parts(
     parent_dir: str,
     name_parts: List[str],
