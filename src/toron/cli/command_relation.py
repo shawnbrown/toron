@@ -95,6 +95,59 @@ def add_link(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
+def remove_link(args: argparse.Namespace) -> ExitCode:
+    """Remove a link from between two files."""
+    ds1 = cli_bind_file(args.filepath, mode='rw')
+    ds2 = cli_bind_file(args.filepath2, mode='rw')
+    process_backup_option(args, ds1, ds2)
+
+    do_remove = lambda tail, head, link_name: head.drop_link(tail, link_name)
+
+    if args.direction == 'both':
+        try:  # Remove left-side mapping.
+            do_remove(ds2, ds1, args.link_name)  # ds1 <- ds2
+            left_link_removed = True
+        except ToronError:
+            left_link_removed = False
+
+        try:  # Remove right-side mapping.
+            do_remove(ds1, ds2, args.link_name)  # ds1 -> ds2
+            right_link_removed = True
+        except ToronError:
+            right_link_removed = False
+
+        # Write action to applogger or raise error.
+        if left_link_removed and right_link_removed:
+            applogger.info(f'removed {args.link_name!r} link from FILE1 and FILE2')
+        elif left_link_removed and not right_link_removed:
+            applogger.info(f'removed {args.link_name!r} link from FILE1')
+            applogger.info(f'no {args.link_name!r} link found in FILE2')
+        elif not left_link_removed and right_link_removed:
+            applogger.info(f'no {args.link_name!r} link found in FILE1')
+            applogger.info(f'removed {args.link_name!r} link from FILE2')
+        else:
+            raise ToronError(f'no {args.link_name!r} link in FILE1 or FILE2')
+
+    elif args.direction == 'left':
+        try:
+            do_remove(ds2, ds1, args.link_name)  # ds1 <- ds2
+            applogger.info(f'removed {args.link_name!r} link from FILE1')
+        except ToronError:
+            raise ToronError(f'no {args.link_name!r} link found in FILE1')
+
+    elif args.direction == 'right':
+        try:
+            do_remove(ds1, ds2, args.link_name)  # ds1 -> ds2
+            applogger.info(f'removed {args.link_name!r} link from FILE2')
+        except ToronError:
+            raise ToronError(f'no {args.link_name!r} link found in FILE2')
+
+    else:
+        raise RuntimeError(f'unhandled direction: {args.direction!r}')
+
+    return ExitCode.OK
+
+
 def get_column_positions(
     node1: DataSpace,
     node2: DataSpace,

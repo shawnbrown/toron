@@ -699,7 +699,26 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              "WARNING: setting default link: 'population'\n"),
         )
 
-    def test_013_import_mapping(self):
+    def test_013_add_and_remove_link(self):
+        """Create a second link named "count" and then remove it."""
+        # Add a second link to each file.
+        self.assertMain(
+            [self.filepath1, ':', self.filepath2, 'add', 'counts'],
+            ("INFO: adding link 'file1.ds' -> file2.ds\n"
+             "INFO: adding link 'file1.ds' <- file2.ds\n"),
+        )
+        self.assertEqual(len(bind_file(self.filepath1, mode='ro').get_links()), 2)
+        self.assertEqual(len(bind_file(self.filepath2, mode='ro').get_links()), 2)
+
+        # Remove the second link leaving only one remaining link.
+        self.assertMain(
+            [self.filepath1, ':', self.filepath2, 'remove', 'counts'],
+            "INFO: removed 'counts' link from FILE1 and FILE2\n",
+        )
+        self.assertEqual(len(bind_file(self.filepath1, mode='ro').get_links()), 1)
+        self.assertEqual(len(bind_file(self.filepath2, mode='ro').get_links()), 1)
+
+    def test_014_import_mapping(self):
         csv_path = os.path.join(self.__class__.dirpath, 'file1_file2_mapping.csv')
         with open(csv_path, 'w') as f:
             f.write(
@@ -732,7 +751,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              'INFO: mapping is complete\n'),
         )
 
-    def test_014_export_mapping(self):
+    def test_015_export_mapping(self):
         """Write mapping records to drive."""
         csv_path = os.path.join(self.__class__.dirpath, 'mapping-file1-file2.csv')
 
@@ -765,7 +784,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         )
         self.assertEqual(csv_contents, expected)
 
-    def test_015_disaggregate_translate(self):
+    def test_016_disaggregate_translate(self):
         """Test disaggregation using API (not CLI at the moment)."""
         node1 = bind_file(self.filepath1, mode='ro')
         node2 = bind_file(self.filepath2, mode='ro')

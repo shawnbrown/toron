@@ -859,7 +859,7 @@ def get_parser() -> argparse.ArgumentParser:
                                                       required=True,
                                                       metavar='COMMAND')
 
-    # Subcommand: create
+    # Subcommand: add
     parser_rel_add = parser_rel_subparsers.add_parser(
         'add',
         help='add a new link between files',
@@ -894,6 +894,36 @@ def get_parser() -> argparse.ArgumentParser:
                                 help='set as the default link')
     parser_rel_add.set_defaults(direction='both',
                                 func=command_relation.add_link)
+
+    # Subcommand: remove
+    parser_rel_remove = parser_rel_subparsers.add_parser(
+        'remove',
+        help='remove a link from between files',
+        description='Remove a link from between files.',
+        parents=[no_backup_parent],
+    )
+    parser_rel_remove.add_argument('link_name',
+                                   help='name of the link to remove',
+                                   metavar='NAME')
+    parser_rel_remove_group = parser_rel_remove.add_mutually_exclusive_group()
+    parser_rel_remove_group.add_argument(
+        '--left',
+        action='store_const',
+        const='left',
+        dest='direction',
+        help='remove single direction, FILE1 <- FILE2',
+    )
+    parser_rel_remove_group.add_argument(
+        '--right',
+        action='store_const',
+        const='right',
+        dest='direction',
+        help='remove single direction, FILE1 -> FILE2',
+    )
+    parser_rel_remove.set_defaults(
+        func=command_relation.remove_link,
+        direction='both',
+    )
 
     # Subcommand: import
     parser_rel_import = parser_rel_subparsers.add_parser(
