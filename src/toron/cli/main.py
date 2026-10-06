@@ -730,6 +730,31 @@ def get_parser() -> argparse.ArgumentParser:
                                       help='attribute name to add', metavar='NAME')
     parser_attribute_add.set_defaults(func=command_attribute.add)
 
+    # Subcommand: update
+    parser_attribute_update = parser_attribute_subparsers.add_parser(
+        'update',
+        help='update the position of an attribute',
+        description='Update the position of an attribute.',
+        parents=[no_backup_parent],
+    )
+    parser_attribute_update.add_argument('name', metavar='NAME',
+                                         help='attribute name to update')
+    parser_attribute_update_group = \
+        parser_attribute_update.add_mutually_exclusive_group(required=True)
+    parser_attribute_update_group.add_argument(
+        '--move-left',
+        type=non_negative_int, metavar='N', nargs='?', default=0,
+        const=1, # <- Used if flag given without int arg.
+        help='move attribute to the left 1 or N positions',
+    )
+    parser_attribute_update_group.add_argument(
+        '--move-right',
+        type=non_negative_int, metavar='N', nargs='?', default=0,
+        const=1, # <- Used if flag given without int arg.
+        help='move attribute to the right 1 or N positions',
+    )
+    parser_attribute_update.set_defaults(func=command_attribute.update)
+
     ####################################################################
     # Command: quantity
     ####################################################################
