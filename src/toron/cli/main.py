@@ -41,7 +41,13 @@ from .common import (
 
 def non_negative_int(string: str) -> int:
     """Custom argparse type validator for non-negative integers."""
-    integer = int(string)
+    try:
+        integer = int(string)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f'value must be an integer, got {string!r}'
+        )
+
     if integer < 0:
         raise argparse.ArgumentTypeError(
             f'value cannot be negative, got {integer}'
