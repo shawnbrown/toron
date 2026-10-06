@@ -402,7 +402,7 @@ def _import_records(
     ds1: 'DataSpace',
     ds2: 'DataSpace',
     link_name: str,
-    reader: Iterator[Sequence[Union[str, float]]],
+    reader: Iterator[Sequence[Union[str, float, None]]],
     direction: Literal['both', 'left', 'right'],
     match_limit: int = 1,
     allow_overlapping: bool = False,
@@ -495,13 +495,24 @@ def import_records(args: argparse.Namespace) -> ExitCode:
     with open(args.source) as f_source:
         ds1 = cli_bind_file(args.filepath, mode='rw')
         ds2 = cli_bind_file(args.filepath2, mode='rw')
+
+        reader: Iterator[Sequence[Union[str, float, None]]]
+        reader = csv.reader(f_source)
+
+        if args.link_name:
+            link_name = resolve_link_name(ds1, ds2, args.direction, [args.link_name])
+        else:
+            header = next(reader)
+            reader = chain([header], reader)
+            link_name = resolve_link_name(ds1, ds2, args.direction, header)
+
         process_backup_option(args, ds1, ds2)
 
         return _import_records(
             ds1=ds1,
             ds2=ds2,
-            link_name=args.link_name,
-            reader=csv.reader(f_source),
+            link_name=link_name,
+            reader=reader,
             direction=args.direction,
             match_limit=args.match_limit,
             allow_overlapping=args.allow_overlapping,
@@ -763,7 +774,7 @@ def export_records(args: argparse.Namespace) -> ExitCode:
     autoname_parts = ['mapping', args.filepath, args.filepath2]
     if args.link_name:
         autoname_parts.append(args.link_name)
-        link_name = args.link_name
+        link_name = resolve_link_name(src_ds, dst_ds, 'right', [args.link_name])
     else:
         link_name = resolve_link_name(src_ds, dst_ds, 'right')
 

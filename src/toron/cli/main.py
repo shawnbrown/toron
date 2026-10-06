@@ -879,8 +879,7 @@ def get_parser() -> argparse.ArgumentParser:
                                    action='store_true',
                                    help='load matches even if the mapping is incomplete')
     parser_rel_import.add_argument('--link',
-                                   required=True,
-                                   help='specify a link name',
+                                   help='specify a link name if more than one link exists',
                                    metavar='NAME',
                                    dest='link_name')
     parser_rel_import.set_defaults(direction='both',

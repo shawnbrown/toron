@@ -715,7 +715,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         self.addCleanup(lambda: os.remove(csv_path))
 
         self.assertMain(
-            [self.filepath1, ':', self.filepath2, 'import', csv_path, '--link', 'population'],
+            [self.filepath1, ':', self.filepath2, 'import', csv_path],
             ('INFO: matching FILE1 index records\n'
              'INFO: matching FILE2 index records\n'
              'INFO: loading mappings: FILE1 -> FILE2\n'

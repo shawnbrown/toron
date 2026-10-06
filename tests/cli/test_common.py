@@ -69,9 +69,9 @@ class TestResolveLinkName(unittest.TestCase):
         self.ds2.add_link(self.ds1, 'pop1940')
 
         regex = (
-            r'there are 3 mutual links sharing common names between FILE1 and '
-            r'FILE2 \(pop1940, pop1990 and pop2020\); use --link to specify a '
-            r'link name'
+            r'there are 3 mutual links sharing common names between FILE1 '
+            r'and FILE2 \(pop1940, pop1990, pop2020\); use --link to specify '
+            r'a link name'
         )
         with self.assertRaisesRegex(ToronError, regex):
             resolve_link_name(self.ds1, self.ds2, direction='both'),

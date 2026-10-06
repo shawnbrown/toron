@@ -119,8 +119,10 @@ def resolve_link_name(
     msg = f'{begin_text} {match_count} {links_text}'
 
     if match_count > 1:
-        sorted_names = sorted(matches)
-        formatted_names = f"{', '.join(sorted_names[:-1])} and {sorted_names[-1]}"
+        formatted_names = ', '.join(sorted(matches))
+        msg = f'{msg} ({formatted_names}); use --link to specify a link name'
+    elif names:
+        formatted_names = f"available links: {', '.join(sorted(names))}"
         msg = f'{msg} ({formatted_names}); use --link to specify a link name'
 
     raise ToronError(msg)
