@@ -108,7 +108,7 @@ class TestMakePathFromParts(unittest.TestCase):
     def test_current_directory(self):
         self.assertEqual(
             make_path_from_parts('.', ['bar', 'baz.ds'], 'txt'),  # <- Function under test.
-            './bar-baz.txt',
+            os.path.join('.', 'bar-baz.txt'),
         )
 
     def test_no_extension(self):
