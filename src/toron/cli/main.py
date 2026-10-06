@@ -575,6 +575,29 @@ def get_parser() -> argparse.ArgumentParser:
                                    help='set as the default weight group')
     parser_weight_add.set_defaults(func=command_weight.add)
 
+    # Subcommand: update
+    parser_weight_update = parser_weight_subparsers.add_parser(
+        'update',
+        help='update an index weight group',
+        description='Update the properties of an index weight group in a file.',
+        parents=[no_backup_parent],
+    )
+    parser_weight_update.add_argument('name',
+                                      help='name of index weight to update',
+                                      metavar='NAME')
+    parser_weight_update.add_argument('--description',
+                                      help="change the weight's description")
+    parser_weight_update.add_argument('--add-selector', nargs='+',
+                                      metavar='SELECTOR',
+                                      help='add one or more attribute selectors')
+    parser_weight_update.add_argument('--remove-selector', nargs='+',
+                                      metavar='SELECTOR',
+                                      help='remove one or more attribute selectors')
+    parser_weight_update.add_argument('--default', action='store_true',
+                                      dest='make_default',
+                                      help="set as the file's default weight group")
+    parser_weight_update.set_defaults(func=command_weight.update)
+
     ####################################################################
     # Command: index
     ####################################################################
