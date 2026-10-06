@@ -1583,6 +1583,20 @@ class DataSpace(object):
         with self._managed_cursor() as cursor:
             return self._dal.LinkRepository(cursor).get_all()
 
+    def get_links(
+        self, other_space: Optional['DataSpace'] = None
+    ) -> List[Link]:
+        """Get incoming links from *other_space* or all spaces
+        if *other_space* is omitted.
+        """
+        with self._managed_cursor() as cursor:
+            link_repo = self._dal.LinkRepository(cursor)
+            if other_space is None:
+                return link_repo.get_all()
+
+            results = link_repo.find_by_other_unique_id(other_space.unique_id)
+            return list(results)
+
     @staticmethod
     def _get_link(
         space_or_ref: Union['DataSpace', str],
