@@ -529,7 +529,13 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              "INFO: added index weight group 'wght' to .+file2.ds\n"),
         )
 
-    def test_005_import_index(self):
+    def test_005_update_weight(self):
+        self.assertMain(
+            [self.filepath1, 'weight', 'update', 'wght', '--description', 'Description of weight.'],
+            "INFO: changed description: 'Description of weight.'\n",
+        )
+
+    def test_006_import_index(self):
         """Load index records from file."""
         csv_path1 = os.path.join(self.__class__.dirpath, 'file1_index.csv')
         with open(csv_path1, 'w') as f:
@@ -575,7 +581,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              'INFO: loaded 9 index weights\n'),
         )
 
-    def test_006_export_index(self):
+    def test_007_export_index(self):
         """Write index records to drive."""
         csv_path = os.path.join(self.__class__.dirpath, 'index-file1.csv')
 
@@ -605,7 +611,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         )
         self.assertEqual(csv_contents, expected)
 
-    def test_007_add_partitions(self):
+    def test_008_add_partitions(self):
         """Add partition definitions to both files."""
         # Add two partitions to filepath1.
         self.assertMain(
@@ -622,14 +628,14 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
             "INFO: added partition definition: {'lbl1'}\n",
         )
 
-    def test_008_add_attributes(self):
+    def test_009_add_attributes(self):
         """Add an attribute name to filepath1."""
         self.assertMain(
             [self.filepath1, 'attribute', 'add', 'code'],
             "INFO: added attribute columns: 'code'\n",
         )
 
-    def test_009_import_quantities(self):
+    def test_010_import_quantities(self):
         """Load quantity records from CSV file."""
         csv_path = os.path.join(self.__class__.dirpath, 'file1_quantity.csv')
         with open(csv_path, 'w') as f:
@@ -653,7 +659,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
             'INFO: loaded 10 quantities\n',
         )
 
-    def test_010_export_quantity(self):
+    def test_011_export_quantity(self):
         """Write quantity records to drive."""
         csv_path = os.path.join(self.__class__.dirpath, 'quantity-file1.csv')
 
@@ -683,7 +689,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         )
         self.assertEqual(csv_contents, expected)
 
-    def test_011_add_link(self):
+    def test_012_add_link(self):
         """Create a link named "population" between file1.ds and file2.ds."""
         self.assertMain(
             [self.filepath1, ':', self.filepath2, 'add', 'population'],
@@ -693,7 +699,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              "WARNING: setting default link: 'population'\n"),
         )
 
-    def test_012_import_mapping(self):
+    def test_013_import_mapping(self):
         csv_path = os.path.join(self.__class__.dirpath, 'file1_file2_mapping.csv')
         with open(csv_path, 'w') as f:
             f.write(
@@ -726,7 +732,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
              'INFO: mapping is complete\n'),
         )
 
-    def test_013_export_mapping(self):
+    def test_014_export_mapping(self):
         """Write mapping records to drive."""
         csv_path = os.path.join(self.__class__.dirpath, 'mapping-file1-file2.csv')
 
@@ -759,7 +765,7 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
         )
         self.assertEqual(csv_contents, expected)
 
-    def test_014_disaggregate_translate(self):
+    def test_015_disaggregate_translate(self):
         """Test disaggregation using API (not CLI at the moment)."""
         node1 = bind_file(self.filepath1, mode='ro')
         node2 = bind_file(self.filepath2, mode='ro')
