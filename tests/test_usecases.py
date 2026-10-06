@@ -786,9 +786,9 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
 
     def test_016_disaggregate_translate(self):
         """Test disaggregation using API (not CLI at the moment)."""
-        node1 = bind_file(self.filepath1, mode='ro')
-        node2 = bind_file(self.filepath2, mode='ro')
-        result_iter = node1() >> node2  # <- Disaggregate and translate.
+        ds1 = bind_file(self.filepath1, mode='ro')
+        ds2 = bind_file(self.filepath2, mode='ro')
+        result_iter = ds1() >> ds2  # <- Disaggregate and translate.
 
         self.assertEqual(
             result_iter.columns,
