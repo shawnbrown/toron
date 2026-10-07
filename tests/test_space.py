@@ -4863,6 +4863,24 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
             Quantity(2, 1, 2, 187990),
         ])
 
+    def test_some_records_missing_quantity(self):
+        regex = (
+            r"no 'quantity' value for record:\n"
+            r"  \('iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE'\)"
+        )
+
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='quantity',
+                data=[
+                    ('domain', 'state', 'county',   'category', 'sex',    'quantity'),
+                    ('iso_US', 'OH',    'BUTLER',   'TOTAL',    'MALE',   180140),
+                    ('iso_US', 'OH',    'BUTLER',   'TOTAL',    'FEMALE', 187990),
+                    ('iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'MALE'),      # <- No 'quantity' value.
+                    ('iso_US', 'OH',    'FRANKLIN', 'TOTAL',    'FEMALE', 596915),
+                ],
+            )
+
     def test_registered_attributes_different_from_input(self):
         """Should only load registered attribute columns."""
         # Change registered attributes to 'category' only (removes 'sex').

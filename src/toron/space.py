@@ -2437,6 +2437,8 @@ class DataSpace(object):
                             f"--on-existing must be 'abort', 'sum', "
                             f"'replace', or 'ignore'; got {on_existing!r}"
                         )
+                except KeyError as err:
+                    raise ValueError(f'no {err} value for record:\n  {row!r}')
 
         if counter['no_attrs']:
             applogger.info(
