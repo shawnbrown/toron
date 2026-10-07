@@ -20,20 +20,20 @@ def create_file(args: argparse.Namespace) -> ExitCode:
         applogger.error(f'cancelled: {args.filepath!r} already exists')
         return ExitCode.ERR
 
-    node = DataSpace()
+    ds = DataSpace()
 
     if args.domain:
-        node.set_domain(args.domain)
+        ds.set_domain(args.domain)
     else:
-        node.set_domain(os.path.splitext(os.path.basename(args.filepath))[0])
+        ds.set_domain(os.path.splitext(os.path.basename(args.filepath))[0])
 
     try:
-        node.to_file(args.filepath)
+        ds.to_file(args.filepath)
     except OSError as e:
         applogger.error(f'cancelled: {e}')
         return ExitCode.ERR
 
     applogger.info(f'created file {args.filepath!r}')
     if args.domain is None:
-        applogger.info(f'domain set to {node.domain!r}')
+        applogger.info(f'domain set to {ds.domain!r}')
     return ExitCode.OK
