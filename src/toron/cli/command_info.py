@@ -18,21 +18,35 @@ from .common import (
 
 
 def write_to_stdout(args: argparse.Namespace) -> ExitCode:
-    """Show information for Toron node file."""
-    node = cli_bind_file(args.filepath, mode='ro')
+    """Show information for Toron data-space file."""
+    # Check if there are info options to be written.
+    updatable_info = ['set_domain']
+    info_to_update = {}
+    for option in updatable_info:
+        value = getattr(args, option, None)
+        if value is not None:
+            info_to_update[option] = value
 
-    # Get dictionary of node info values.
-    with node._managed_cursor() as cursor:
-        property_repo = node._dal.PropertyRepository(cursor)
-        attribute_repo = node._dal.AttributeGroupRepository(cursor)
+    # Open file and make updates if needed.
+    if info_to_update:
+        ds = cli_bind_file(args.filepath, mode='rw')  # Read-write mode.
+        if 'set_domain' in info_to_update:
+            ds.set_domain(info_to_update['set_domain'])
+    else:
+        ds = cli_bind_file(args.filepath, mode='ro')  # Read-only mode.
+
+    # Get dictionary of DataSpace info values.
+    with ds._managed_cursor() as cursor:
+        property_repo = ds._dal.PropertyRepository(cursor)
+        attribute_repo = ds._dal.AttributeGroupRepository(cursor)
 
         info_dict = get_dataspace_info_text(
             property_repo=property_repo,
-            index_repo=node._dal.IndexRepository(cursor),
-            structure_repo=node._dal.StructureRepository(cursor),
-            weight_group_repo=node._dal.WeightGroupRepository(cursor),
+            index_repo=ds._dal.IndexRepository(cursor),
+            structure_repo=ds._dal.StructureRepository(cursor),
+            weight_group_repo=ds._dal.WeightGroupRepository(cursor),
             attribute_repo=attribute_repo,
-            link_repo=node._dal.LinkRepository(cursor),
+            link_repo=ds._dal.LinkRepository(cursor),
         )
         registered_attributes = get_registered_attributes(property_repo)
         loaded_attributes = \

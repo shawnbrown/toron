@@ -839,6 +839,9 @@ def get_parser() -> argparse.ArgumentParser:
         help='show file information (default if COMMAND omitted)',
         description='Show file information.',
     )
+    parser_info.add_argument('--set-domain',
+                             help='change domain to a new value',
+                             metavar='DOMAIN')
     parser_info.set_defaults(func=command_info.write_to_stdout)
 
     ####################################################################

@@ -540,6 +540,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             argparse.Namespace(
                 filepath='myfile.toron',
                 command='info',
+                set_domain=None,
                 func=command_info.write_to_stdout,
             ),
         )
@@ -553,6 +554,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             argparse.Namespace(
                 filepath='myfile.toron',
                 command='info',
+                set_domain=None,
                 func=command_info.write_to_stdout,
             ),
         )
@@ -589,7 +591,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
         self.assertRegex(
             self.stdout_capture.getvalue(),
-            (r'^usage: toron FILE info \[-h\]\n'
+            (r'^usage: toron FILE info \[-h\][^\n]*\n'
              r'\n'
              r'Show file information.'),
         )
