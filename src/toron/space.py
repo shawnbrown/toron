@@ -2337,14 +2337,14 @@ class DataSpace(object):
             if not registered_attributes:
                 raise ToronError('operation cancelled, no attributes registered')
 
-            attributes_to_load = [x for x in registered_attributes if x in columns]
-
             verify_columns_set(
                 candidate_columns=columns,
-                expected_columns=chain(label_names, attributes_to_load, [value_column]),
+                expected_columns=chain(label_names, registered_attributes, [value_column]),
                 optional_columns=ignore_missing_columns,
                 allow_extras=True,
             )
+
+            attributes_to_load = [x for x in registered_attributes if x in columns]
 
             domain = self.domain  # Assign locally to reduce dot-lookups.
             structure = {BitFlags(x.bits) for x in struct_repo.get_all()}
