@@ -4881,6 +4881,50 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
                 ],
             )
 
+    def test_missing_index_column(self):
+        """Should error on missing index, unless explicitly allowed."""
+        self.node.add_partition_definition({'state'})
+        data = [
+            ('domain', 'state', 'category', 'sex',    'counts'),
+            ('iso_US', 'OH',    'TOTAL',    'MALE',   746639),
+            ('iso_US', 'OH',    'TOTAL',    'FEMALE', 784905),
+        ]
+
+        # Should fail when an index column is missing.
+        regex = r"invalid column names\n  missing required columns: 'county'"
+        with self.assertRaisesRegex(ValueError, regex):
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=data,
+            )
+
+        # Users should be able to explicitly ignore missing index columns.
+        with self.assertLogs('app-toron', level='INFO') as cm:
+            self.node.insert_quantities2(  # <- Method under test.
+                value_column='counts',
+                data=data,
+                ignore_missing_columns=['county'],  # <- Ignore missing 'county' column.
+            )
+
+        self.assertEqual(
+            cm.output,
+            ['INFO:app-toron.space:loaded 2 quantities'],
+        )
+
+        self.assertLocationsEqual([
+            Location(1, 'OH', ''),
+        ])
+
+        self.assertAttributesEqual([
+            AttributeGroup(1, {'category': 'TOTAL', 'sex': 'MALE'}),
+            AttributeGroup(2, {'category': 'TOTAL', 'sex': 'FEMALE'}),
+        ])
+
+        self.assertQuantitiesEqual([
+            Quantity(1, 1, 1, 746639),
+            Quantity(2, 1, 2, 784905),
+        ])
+
     def test_registered_attributes_different_from_input(self):
         """Should only load registered attribute columns."""
         # Change registered attributes to 'category' only (removes 'sex').

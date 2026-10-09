@@ -24,6 +24,7 @@ from math import copysign, modf
 from ._typing import (
     Any,
     Callable,
+    Collection,
     Dict,
     Generator,
     Hashable,
@@ -128,15 +129,27 @@ def normalize_tabular(data, columns=None):
 
 
 def verify_columns_set(
-    columns: Iterable,
-    required_columns: Iterable,
+    candidate_columns: Iterable[str],
+    expected_columns: Iterable[str],
+    *,
+    optional_columns: Optional[Collection[str]] = None,
     allow_extras: bool = False,
 ) -> None:
-    """Raise error if columns do not match set of required columns."""
-    if allow_extras:
-        columns = set(columns)
+    """Raise error if columns do not match set of expected columns.
 
-        missing = [repr(x) for x in required_columns if (x not in columns)]
+    Any *optional_columns* may be missing from *candidate_columns*
+    without triggering an error. When using *allow_extras*, any number
+    of extra columns are allowed.
+    """
+    candidate_tuple = tuple(candidate_columns)
+    expected_tuple = tuple(expected_columns)
+    if optional_columns:
+        required_tuple = tuple(x for x in expected_tuple if x not in optional_columns)
+    else:
+        required_tuple = expected_tuple
+
+    if allow_extras:
+        missing = [repr(x) for x in required_tuple if (x not in candidate_tuple)]
 
         if missing:
             raise ValueError(
@@ -144,19 +157,16 @@ def verify_columns_set(
                 f'  missing required columns: {", ".join(missing)}'
             )
     else:
-        columns = tuple(columns)
-        required_columns = tuple(required_columns)
-
-        missing = [repr(x) for x in required_columns if (x not in columns)]
-        extra = [repr(x) for x in columns if (x not in required_columns)]
+        missing = [repr(x) for x in required_tuple if (x not in candidate_tuple)]
+        extra = [repr(x) for x in candidate_tuple if (x not in expected_tuple)]
 
         if missing or extra:
-            msg = ['invalid column names']
+            msg_list = ['invalid column names']
             if missing:
-                msg.append(f'missing required columns: {", ".join(missing)}')
+                msg_list.append(f'missing required columns: {", ".join(missing)}')
             if extra:
-                msg.append(f'extra columns found: {", ".join(extra)}')
-            raise ValueError('\n  '.join(msg))
+                msg_list.append(f'extra columns found: {", ".join(extra)}')
+            raise ValueError('\n  '.join(msg_list))
 
 
 TabularData : TypeAlias = Union[

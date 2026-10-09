@@ -2314,6 +2314,7 @@ class DataSpace(object):
         columns: Optional[Sequence[str]] = None,
         allow_invalid_label: bool = False,
         allow_invalid_partition: bool = False,
+        ignore_missing_columns: Optional[Collection[str]] = None,
         on_existing: Literal['abort', 'sum', 'replace', 'ignore'] = 'abort',
     ) -> None:
         """Load quantity and attribute values."""
@@ -2339,8 +2340,9 @@ class DataSpace(object):
             attributes_to_load = [x for x in registered_attributes if x in columns]
 
             verify_columns_set(
-                columns=columns,
-                required_columns=chain(label_names, attributes_to_load, [value_column]),
+                candidate_columns=columns,
+                expected_columns=chain(label_names, attributes_to_load, [value_column]),
+                optional_columns=ignore_missing_columns,
                 allow_extras=True,
             )
 
@@ -2359,7 +2361,7 @@ class DataSpace(object):
 
                 # Parse row into separate attribute and label dictionaries.
                 attr_dict = {k: row_dict[k] for k in attributes_to_load if row_dict[k]}
-                labels_dict = {k: row_dict[k] for k in label_names}
+                labels_dict = {k: row_dict.get(k, '') for k in label_names}
 
                 # Skip record if it has no attribute values.
                 if not attr_dict:
@@ -2546,8 +2548,8 @@ class DataSpace(object):
             label_names = location_repo.get_label_names()
 
             verify_columns_set(
-                columns=columns,
-                required_columns=chain(label_names, domain_dict.keys(), attributes, [value]),
+                candidate_columns=columns,
+                expected_columns=chain(label_names, domain_dict.keys(), attributes, [value]),
                 allow_extras=True,
             )
 
