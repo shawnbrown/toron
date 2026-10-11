@@ -20,7 +20,6 @@ from . import (
     command_index,
     command_relation,
     command_init,
-    command_create,
     command_label,
     command_weight,
     command_partition,
@@ -152,18 +151,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_init.add_argument('--domain',
                              help='define a domain (defaults to FILE without extension)')
     parser_init.set_defaults(func=command_init.create_file)
-
-    ####################################################################
-    # Command: create
-    ####################################################################
-    parser_create = subparsers.add_parser(
-        'create',
-        help='create a new file',
-        description='Create a new Toron file.',
-    )
-    parser_create.add_argument('--domain',
-                               help='define a domain (defaults to FILE without extension)')
-    parser_create.set_defaults(func=command_create.create_file)
 
     ####################################################################
     # Command: label

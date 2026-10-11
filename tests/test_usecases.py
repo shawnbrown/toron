@@ -481,11 +481,11 @@ class TestBuildUsingCLI(IncrementalTestingMixin, unittest.TestCase):
     def test_001_create_files(self):
         """Create new data-space files."""
         self.assertMainRegex(
-            [self.filepath1, 'create', '--domain', 'file1'],
+            [self.filepath1, 'init', '--domain', 'file1'],
             r"INFO: created file '.+file1.ds'\n",
         )
         self.assertMainRegex(
-            [self.filepath2, 'create'],
+            [self.filepath2, 'init'],
             (r"INFO: created file '.+file2.ds'\n"
              r"INFO: domain set to 'file2'\n"),
         )
