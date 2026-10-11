@@ -17,7 +17,6 @@ from .. import (
     ToronError,
 )
 from . import (
-    command_add,
     command_index,
     command_update,
     command_rename,
@@ -156,118 +155,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_init.add_argument('--domain',
                              help='define a domain (defaults to FILE without extension)')
     parser_init.set_defaults(func=command_init.create_file)
-
-    ####################################################################
-    # Subcommand: add
-    ####################################################################
-    parser_add = subparsers.add_parser(
-        'add',
-        help='add element',
-        description='Add an element to a file.',
-    )
-    parser_add_subparsers = parser_add.add_subparsers(dest='element',
-                                                      required=True,
-                                                      metavar='ELEMENT')
-
-    # Subcommand: add label
-    parser_add_label = parser_add_subparsers.add_parser(
-        'label',
-        help='add index labels',
-        description=('Add index label to a file. Labels may be provided as '
-                     'separate arguments or as a comma-separated list.'),
-        parents=[no_backup_parent],
-    )
-    parser_add_label.add_argument('labels', nargs='+',
-                                  help='index label to add', metavar='LABEL')
-    parser_add_label.set_defaults(func=command_add.add_label)
-
-    # Subcommand: add weight
-    parser_add_weight = parser_add_subparsers.add_parser(
-        'weight',
-        help='add an index weight group',
-        description='Add an index weight group to a file.',
-        parents=[no_backup_parent],
-    )
-    parser_add_weight.add_argument('weight',
-                                   help='name of index weight to add',
-                                   metavar='WEIGHT')
-    parser_add_weight.add_argument('--description',
-                                   help='description of weight group')
-    parser_add_weight.add_argument('--selectors', nargs='+',
-                                   help='attribute selectors')
-    parser_add_weight.add_argument('--default', action='store_true',
-                                   dest='make_default',
-                                   help='set as the default weight group')
-    parser_add_weight.set_defaults(func=command_add.add_weight)
-
-    # Subcommand: add partition
-    parser_add_partition = parser_add_subparsers.add_parser(
-        'partition',
-        help='add a partition',
-        description=('Add a partition to a file. A partition groups records '
-                     'into cells based on the specified index labels. Label '
-                     'names may be provided as separate arguments or as a '
-                     'comma-separated list.'),
-        parents=[no_backup_parent],
-    )
-    parser_add_partition.add_argument('labels', nargs='+',
-                                      help='label names that form the partition',
-                                      metavar='LABEL')
-    parser_add_partition.set_defaults(func=command_add.add_partition)
-
-    # Subcommand: add attribute
-    parser_add_attribute = parser_add_subparsers.add_parser(
-        'attribute',
-        help='add quantity attributes',
-        description=('Add quantity attribute columns to a file. Attributes '
-                     'may be provided as separate arguments or as a '
-                     'comma-separated list.'),
-        parents=[no_backup_parent],
-    )
-    parser_add_attribute.add_argument('attributes', nargs='+',
-                                      help='attribute column to add', metavar='ATTRIBUTE')
-    parser_add_attribute.set_defaults(func=command_add.add_attribute)
-
-    # Subcommand: add link
-    parser_add_link = parser_add_subparsers.add_parser(
-        'link',
-        help='add a link between two files',
-        description='Add a link between two Toron files.',
-        prog='toron FILE1 add link',  # <- Replaces "FILE" with "FILE1".
-        parents=[no_backup_parent],
-    )
-    parser_add_link.add_argument('filepath2',
-                                 help='name of the second (right-side) file',
-                                 metavar='FILE2')
-    parser_add_link.add_argument('link',
-                                 help='name of the link to add',
-                                 metavar='LINK')
-    parser_add_link_group = parser_add_link.add_mutually_exclusive_group()
-    parser_add_link_group.add_argument(
-        '--left',
-        action='store_const',
-        const='left',
-        dest='direction',
-        help='add single direction: FILE1 <- FILE2',
-    )
-    parser_add_link_group.add_argument(
-        '--right',
-        action='store_const',
-        const='right',
-        dest='direction',
-        help='add single direction: FILE1 -> FILE2',
-    )
-    parser_add_link.add_argument('--description',
-                                 help='description of the link')
-    parser_add_link.add_argument('--selectors', nargs='+',
-                                 help='attribute selectors')
-    parser_add_link.add_argument('--default', action='store_true',
-                                 dest='make_default',
-                                 help='set as the default link')
-    parser_add_link.set_defaults(
-        func=command_add.add_link,
-        direction='both',
-    )
 
     ####################################################################
     # Subcommand: update

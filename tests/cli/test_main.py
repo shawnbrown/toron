@@ -10,11 +10,13 @@ from toron.cli.common import ExitCode
 from toron.cli.main import (
     get_parser,
     command_init,
-    command_add,
     command_update,
     command_rename,
     command_remove,
+    command_weight,
     command_index,
+    command_partition,
+    command_attribute,
     command_quantity,
     command_relation,
     command_info,
@@ -122,47 +124,28 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             ),
         )
 
-    def test_subcommand_add_label(self):
-        """Check "add label" subparser."""
-        self.assertNamespaceEqual(
-            self.parser.parse_args([
-                'myfile.toron',
-                'add',
-                'label',
-                'foo', 'bar', 'baz',
-            ]),
-            argparse.Namespace(
-                filepath='myfile.toron',
-                command='add',
-                element='label',
-                labels=['foo', 'bar', 'baz'],
-                backup=True,
-                func=command_add.add_label,
-            ),
-        )
-
     def test_subcommand_add_weight(self):
         """Check "add weight" subparser."""
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'add',
                 'weight',
+                'add',
                 '--description', 'Census 2020 Population',
                 '--selectors', '[foo="bar"]', '[baz]',
-                '--default',
+                '--make-default',
                 'population',
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='add',
-                element='weight',
-                weight='population',
+                command='weight',
+                subcommand='add',
+                name='population',
                 description='Census 2020 Population',
                 selectors=['[foo="bar"]', '[baz]'],
                 make_default=True,
                 backup=True,
-                func=command_add.add_weight,
+                func=command_weight.add,
             ),
         )
 
@@ -170,20 +153,20 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'add',
                 'weight',
+                'add',
                 'population',
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='add',
-                element='weight',
-                weight='population',
+                command='weight',
+                subcommand='add',
+                name='population',
                 description=None,
                 selectors=None,
                 make_default=False,
                 backup=True,
-                func=command_add.add_weight,
+                func=command_weight.add,
             ),
         )
 
@@ -192,17 +175,17 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'add',
                 'partition',
+                'add',
                 'foo', 'bar', 'baz',
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='add',
-                element='partition',
-                labels=['foo', 'bar', 'baz'],
+                command='partition',
+                subcommand='add',
+                names=['foo', 'bar', 'baz'],
                 backup=True,
-                func=command_add.add_partition,
+                func=command_partition.add,
             ),
         )
 
@@ -211,17 +194,17 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'add',
                 'attribute',
+                'add',
                 'foo', 'bar', 'baz',
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='add',
-                element='attribute',
-                attributes=['foo', 'bar', 'baz'],
+                command='attribute',
+                subcommand='add',
+                names=['foo', 'bar', 'baz'],
                 backup=True,
-                func=command_add.add_attribute,
+                func=command_attribute.add,
             ),
         )
 
@@ -230,9 +213,9 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile1.toron',
-                'add',
-                'link',
+                ':',
                 'myfile2.toron',
+                'add',
                 'mylink',
                 '--description', 'Description of this link.',
                 '--selectors', '[foo="bar"]', '[baz]',
@@ -241,16 +224,16 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             ]),
             argparse.Namespace(
                 filepath='myfile1.toron',
-                command='add',
-                element='link',
+                command=':',
                 filepath2='myfile2.toron',
-                link='mylink',
+                subcommand='add',
+                link_name='mylink',
                 direction='both',
                 description='Description of this link.',
                 selectors=['[foo="bar"]', '[baz]'],
                 make_default=True,
                 backup=False,
-                func=command_add.add_link,
+                func=command_relation.add_link,
             )
         )
 

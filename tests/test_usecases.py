@@ -268,17 +268,17 @@ class TestBuildUsingOldCLI(unittest.TestCase):
         node1 = DataSpace()
         self.unsafe_set_unique_id(node1, '11111111-1111-1111-1111-111111111111')
         node1.to_file(self.filepath1)
-        cli.command_add.add_label(argparse.Namespace(
+        cli.command_label.add(argparse.Namespace(
             filepath=self.filepath1,
-            command='add',
-            element='label',
-            labels=['idx1,idx2,idx3'],
+            command='label',
+            subcommand='add',
+            names=['idx1,idx2,idx3'],
         ))
-        cli.command_add.add_weight(argparse.Namespace(
+        cli.command_weight.add(argparse.Namespace(
             filepath=self.filepath1,
-            command='add',
-            element='weight',
-            weight='wght',
+            command='weight',
+            subcommand='add',
+            name='wght',
             description=None,
             selectors=None,
             make_default=True,
@@ -301,11 +301,11 @@ class TestBuildUsingOldCLI(unittest.TestCase):
                 'D,y,i,25\n'
             ),
         ))
-        cli.command_add.add_attribute(argparse.Namespace(
+        cli.command_attribute.add(argparse.Namespace(
             filepath=self.filepath1,
-            command='add',
-            element='attribute',
-            attributes=['variable'],
+            command='attribute',
+            subcommand='add',
+            names=['variable'],
         ))
         cli.command_quantity.process_quantity_action(argparse.Namespace(
             filepath=self.filepath1,
@@ -332,17 +332,17 @@ class TestBuildUsingOldCLI(unittest.TestCase):
         node2 = DataSpace()
         self.unsafe_set_unique_id(node2, '22222222-2222-2222-2222-222222222222')
         node2.to_file(self.filepath2)
-        cli.command_add.add_label(argparse.Namespace(
+        cli.command_label.add(argparse.Namespace(
             filepath=self.filepath2,
-            command='add',
-            element='label',
-            labels=['idx1', 'idx2']
+            command='label',
+            subcommand='add',
+            names=['idx1', 'idx2']
         ))
-        cli.command_add.add_weight(argparse.Namespace(
+        cli.command_weight.add(argparse.Namespace(
             filepath=self.filepath2,
-            command='add',
-            element='weight',
-            weight='wght',
+            command='weight',
+            subcommand='add',
+            name='wght',
             description=None,
             selectors=None,
             make_default=True,
@@ -366,11 +366,11 @@ class TestBuildUsingOldCLI(unittest.TestCase):
             ),
         ))
 
-        cli.command_add.add_link(argparse.Namespace(
+        cli.command_relation.add_link(argparse.Namespace(
             filepath=self.filepath1,
-            command='add',
-            element='link',
+            command=':',
             filepath2=self.filepath2,
+            subcommand='add',
             link_name='population',
             direction='both',
             description=None,
