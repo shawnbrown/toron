@@ -60,7 +60,7 @@ def _import_records(
         if cardinality == 0:
             raise ToronError('operation cancelled, file contains no index records')
         else:
-            raise  # Or else use original error as-is.
+            raise ToronError(err)
 
     return ExitCode.OK
 

@@ -80,7 +80,7 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
 
         # Attempt to load data that does not include "code" column.
         regex = r"invalid column names\s+missing expected columns: 'county', 'code'"
-        with self.assertRaisesRegex(ValueError, regex):
+        with self.assertRaisesRegex(ToronError, regex):
             command_quantity._import_records(  # <- Function under test.
                 ds=self.ds,
                 reader=reader,
