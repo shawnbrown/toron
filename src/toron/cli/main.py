@@ -18,7 +18,6 @@ from .. import (
 )
 from . import (
     command_index,
-    command_rename,
     command_remove,
     command_relation,
     command_init,
@@ -154,42 +153,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_init.add_argument('--domain',
                              help='define a domain (defaults to FILE without extension)')
     parser_init.set_defaults(func=command_init.create_file)
-
-    ####################################################################
-    # Subcommand: rename
-    ####################################################################
-    parser_rename = subparsers.add_parser(
-        'rename',
-        help='rename element',
-        description='Rename an element in a file.',
-    )
-    parser_rename_subparsers = parser_rename.add_subparsers(dest='element',
-                                                            required=True,
-                                                            metavar='ELEMENT')
-
-    # Subcommand: rename label
-    parser_rename_label = parser_rename_subparsers.add_parser(
-        'label',
-        help='rename an index label',
-        description='Rename OLD_LABEL to NEW_LABEL.',
-        parents=[no_backup_parent],
-    )
-    parser_rename_label.add_argument('old_label',
-                                     help='index label to rename', metavar='OLD_LABEL')
-    parser_rename_label.add_argument('new_label',
-                                     help='replacement label name', metavar='NEW_LABEL')
-    parser_rename_label.set_defaults(func=command_rename.rename_label)
-
-    # Subcommand: rename domain
-    parser_rename_domain = parser_rename_subparsers.add_parser(
-        'domain',
-        help="change the file's domain",
-        description="Change the file's domain.",
-        parents=[no_backup_parent],
-    )
-    parser_rename_domain.add_argument('new_domain',
-                                      help='new domain value', metavar='NEW_DOMAIN')
-    parser_rename_domain.set_defaults(func=command_rename.rename_domain)
 
     ####################################################################
     # Subcommand: remove

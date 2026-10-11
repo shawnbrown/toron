@@ -10,7 +10,6 @@ from toron.cli.common import ExitCode
 from toron.cli.main import (
     get_parser,
     command_init,
-    command_rename,
     command_remove,
     command_label,
     command_weight,
@@ -395,19 +394,19 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'rename',
                 'label',
+                'rename',
                 'foo',
                 'bar',
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='rename',
-                element='label',
-                old_label='foo',
-                new_label='bar',
+                command='label',
+                subcommand='rename',
+                old_name='foo',
+                new_name='bar',
                 backup=True,
-                func=command_rename.rename_label,
+                func=command_label.rename,
             ),
         )
 
@@ -416,17 +415,14 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'rename',
-                'domain',
-                'new_domain_name',
+                'info',
+                '--set-domain', 'new_domain_name',
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='rename',
-                element='domain',
-                backup=True,
-                new_domain='new_domain_name',
-                func=command_rename.rename_domain,
+                command='info',
+                set_domain='new_domain_name',
+                func=command_info.write_to_stdout,
             ),
         )
 
