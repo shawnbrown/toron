@@ -490,21 +490,20 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'file1.toron',
-                'mapping',
+                ':',
                 'file2.toron',
-                'linkname',
+                'export',
+                '.'
             ]),
             argparse.Namespace(
                 filepath='file1.toron',
-                command='mapping',
+                command=':',
                 filepath2='file2.toron',
-                link='linkname',
-                direction='both',
-                match_limit=1,
-                allow_overlapping=False,
-                allow_incomplete=False,
-                backup=True,
-                func=command_relation.process_mapping_action,
+                subcommand='export',
+                target='.',
+                link_name=None,
+                force=False,
+                func=command_relation.export_records,
             ),
         )
 

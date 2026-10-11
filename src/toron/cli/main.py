@@ -154,54 +154,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_init.set_defaults(func=command_init.create_file)
 
     ####################################################################
-    # Subcommand: mapping
-    ####################################################################
-    parser_mapping = subparsers.add_parser(
-        name='mapping',
-        help='write mapping to stdout (or load from stdin)',
-        description=('Write mapping records to stdout or load mapping '
-                     'records from stdin (CSV format).'),
-        prog='toron FILE1 mapping',  # <- Replaces "FILE" with "FILE1".
-        parents=[no_backup_parent],
-    )
-    parser_mapping.add_argument('filepath2',
-                                help='second (right) filename',
-                                metavar='FILE2')
-    parser_mapping.add_argument('link',
-                                help='name of the link associated with the mapping',
-                                metavar='LINK')
-    parser_mapping_group = parser_mapping.add_mutually_exclusive_group()
-    parser_mapping_group.add_argument(
-        '--left',
-        action='store_const',
-        const='left',
-        dest='direction',
-        help='add single direction: FILE1 <- FILE2',
-    )
-    parser_mapping_group.add_argument(
-        '--right',
-        action='store_const',
-        const='right',
-        dest='direction',
-        help='add single direction: FILE1 -> FILE2',
-    )
-    parser_mapping.add_argument('--match-limit',
-                                default=1,
-                                type=int,
-                                help='accept one-to-many (N) matches (default: one-to-one)',
-                                metavar='N')
-    parser_mapping.add_argument('--allow-overlapping',
-                                action='store_true',
-                                help='fuzzy matches may overlap target records')
-    parser_mapping.add_argument('--allow-incomplete',
-                                action='store_true',
-                                help='load matches even if the mapping is incomplete')
-    parser_mapping.set_defaults(
-        func=command_relation.process_mapping_action,
-        direction='both',
-    )
-
-    ####################################################################
     # Command: create
     ####################################################################
     parser_create = subparsers.add_parser(
