@@ -47,6 +47,7 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
                 ds=self.ds,
                 reader=reader,
                 value_column='quantity',  # <- This is the default column name.
+                ignore_missing_column=None,
                 allow_invalid_label=False,
                 allow_invalid_partition=False,
                 on_existing='abort',
@@ -66,6 +67,47 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
              ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915.0]],
         )
 
+    def test_import_records_missing_columns(self):
+        self.ds.set_registered_attributes(['category', 'sex', 'code'])  # <- Includes "code" column.
+
+        reader = [
+            ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+            ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', '180140'],
+            ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', '187990'],
+            ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', '566499'],
+            ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', '596915'],
+        ]
+
+        # Attempt to load data that does not include "code" column.
+        regex = r"invalid column names\s+missing expected columns: 'code'"
+        with self.assertRaisesRegex(ValueError, regex):
+            command_quantity._import_records(  # <- Function under test.
+                ds=self.ds,
+                reader=reader,
+                value_column='quantity',
+                ignore_missing_column=None,
+                allow_invalid_label=False,
+                allow_invalid_partition=False,
+                on_existing='abort',
+            )
+
+        # Load data while ignoring the missing column.
+        with self.assertLogs('app-toron', level='INFO') as logs_cm:
+            command_quantity._import_records(  # <- Function under test.
+                ds=self.ds,
+                reader=reader,
+                value_column='quantity',
+                ignore_missing_column=['code'],  # <- Ignore missing column 'code'.
+                allow_invalid_label=False,
+                allow_invalid_partition=False,
+                on_existing='abort',
+            )
+
+        self.assertEqual(
+            logs_cm.output,
+            ['INFO:app-toron.space:loaded 4 quantities'],
+        )
+
     def test_no_attributes(self):
         regex = 'operation cancelled, no attributes registered'
         with self.assertRaisesRegex(ToronError, regex) as cm:
@@ -77,6 +119,7 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
                     ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', '187990'],
                 ]),
                 value_column='quantity',
+                ignore_missing_column=None,
                 allow_invalid_label=False,
                 allow_invalid_partition=False,
                 on_existing='abort',
@@ -97,6 +140,7 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
                     ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', '187990'],
                 ]),
                 value_column='quantity',
+                ignore_missing_column=None,
                 allow_invalid_label=False,
                 allow_invalid_partition=False,
                 on_existing='abort',

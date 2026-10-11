@@ -802,7 +802,11 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity_import.add_argument('--column',
                                         default='quantity',
                                         dest='value_column',
-                                        help='name of column containing values (default: %(default)s)',
+                                        help='name of the values column (default: %(default)s)',
+                                        metavar='NAME')
+    parser_quantity_import.add_argument('--ignore-missing-column',
+                                        nargs='+',
+                                        help='ignore specified columns if missing from SOURCE data',
                                         metavar='NAME')
     parser_quantity_import.add_argument('--allow-invalid-label',
                                         action='store_true',

@@ -7,6 +7,7 @@ from .._typing import (
     Iterator,
     List,
     Literal,
+    Optional,
     Sequence,
     Union,
     TYPE_CHECKING,
@@ -36,6 +37,7 @@ def _import_records(
     ds: 'DataSpace',
     reader: Iterator[Sequence[Union[str, float]]],
     value_column: str,
+    ignore_missing_column: Optional[List[str]],
     allow_invalid_label: bool,
     allow_invalid_partition: bool,
     on_existing: Literal['abort', 'sum', 'replace', 'ignore'],
@@ -47,6 +49,7 @@ def _import_records(
             data=reader,
             allow_invalid_label=allow_invalid_label,
             allow_invalid_partition=allow_invalid_partition,
+            ignore_missing_columns=ignore_missing_column,
             on_existing=on_existing,
         )
     except ValueError as err:
@@ -74,6 +77,7 @@ def import_records(args: argparse.Namespace) -> ExitCode:
             ds=ds,
             reader=reader,
             value_column=args.value_column,
+            ignore_missing_column=args.ignore_missing_column,
             allow_invalid_label=args.allow_invalid_label,
             allow_invalid_partition=args.allow_invalid_partition,
             on_existing=args.on_existing,
