@@ -154,7 +154,7 @@ def verify_columns_set(
         if missing:
             raise ValueError(
                 f'invalid column names\n'
-                f'  missing required columns: {", ".join(missing)}'
+                f'  missing expected columns: {", ".join(missing)}'
             )
     else:
         missing = [repr(x) for x in required_tuple if (x not in candidate_tuple)]
@@ -163,7 +163,7 @@ def verify_columns_set(
         if missing or extra:
             msg_list = ['invalid column names']
             if missing:
-                msg_list.append(f'missing required columns: {", ".join(missing)}')
+                msg_list.append(f'missing expected columns: {", ".join(missing)}')
             if extra:
                 msg_list.append(f'extra columns found: {", ".join(extra)}')
             raise ValueError('\n  '.join(msg_list))

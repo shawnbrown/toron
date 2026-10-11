@@ -102,7 +102,7 @@ class TestVerifyColumnsSet(unittest.TestCase):
             self.fail('columns are the same, should pass without error')
 
     def test_missing(self):
-        regex = r"^invalid column names\s+missing required columns: 'B', 'C'$"
+        regex = r"^invalid column names\s+missing expected columns: 'B', 'C'$"
         with self.assertRaisesRegex(ValueError, regex):
             verify_columns_set(iter(['A']), iter(['A', 'B', 'C']))
 
@@ -114,7 +114,7 @@ class TestVerifyColumnsSet(unittest.TestCase):
             )
 
     def test_missing_and_extra(self):
-        regex = r"^invalid column names\s+missing required columns: 'C'\s+extra columns found: 'E'$"
+        regex = r"^invalid column names\s+missing expected columns: 'C'\s+extra columns found: 'E'$"
         with self.assertRaisesRegex(ValueError, regex):
             verify_columns_set(iter(['A', 'B', 'E']), iter(['A', 'B', 'C']))
 
@@ -125,7 +125,7 @@ class TestVerifyColumnsSet(unittest.TestCase):
             allow_extras=True,
         )
 
-        regex = r"^invalid column names\s+missing required columns: 'C'$"
+        regex = r"^invalid column names\s+missing expected columns: 'C'$"
         with self.assertRaisesRegex(ValueError, regex):
             verify_columns_set(
                 iter(['A', 'B', 'E']),

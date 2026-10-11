@@ -1222,7 +1222,7 @@ class TestIndexMethods(unittest.TestCase):
         node = DataSpace()
         self.add_cols_helper(node, 'A', 'B', 'C', 'D')
 
-        regex = r"missing required columns: 'C', 'D'"
+        regex = r"missing expected columns: 'C', 'D'"
         with self.assertRaisesRegex(ValueError, regex):
             node.insert_index_OLD([('A', 'B'), ('foo', 'x'), ('bar', 'y')])
 
@@ -1470,7 +1470,7 @@ class TestInsertIndex(unittest.TestCase):
         node = DataSpace()
         self.add_cols_helper(node, 'A', 'B')
 
-        regex = r"missing required columns: 'B'"
+        regex = r"missing expected columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
             data = [('A', 'C'), ('foo', '5.0'), ('bar', '4.0')]
             node.insert_index(data)
@@ -1592,7 +1592,7 @@ class TestInsertIndex(unittest.TestCase):
         self.add_weight_group_helper(node, name='E')
         self.add_structure_helper(node, [(None, 0, 0, 0, 0), (None, 1, 1, 1, 1)])
 
-        regex = r"missing required columns: 'C', 'D'"
+        regex = r"missing expected columns: 'C', 'D'"
         with self.assertRaisesRegex(ValueError, regex):
             node.insert_index([
                 ('A', 'B', 'E'), ('foo', 'x', '5.0'), ('bar', 'y', '4.0'),
@@ -2023,7 +2023,7 @@ class TestDataSpaceUpdateIndex(unittest.TestCase):
         """Update requires all label columns, raise error if missing."""
         data = [('index_id', 'B'), (2, 'xyz')]  # <- Missing column A.
 
-        regex = "missing required columns: 'A'"
+        regex = "missing expected columns: 'A'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.update_index(data)
 
@@ -4026,7 +4026,7 @@ class TestDataSpaceMappingMethods(unittest.TestCase):
             (1, 10.0, 1, 'foo'),
             (2, 20.0, 2, 'bar'),
         ]
-        regex = r"missing required columns: 'B'"
+        regex = r"missing expected columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_mappings('myfile', 'rel1', data)
 
@@ -4232,7 +4232,7 @@ class TestDataSpaceUpdateMappings(unittest.TestCase):
             ('other_index_id', 'rel1', 'index_id', 'A'),
             (2, 60.0, 2, 'bar'),
         ]
-        regex = r"missing required columns: 'B'"
+        regex = r"missing expected columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.update_mappings('myfile', 'rel1', data)
 
@@ -4437,7 +4437,7 @@ class TestDataSpaceDeleteMappings(unittest.TestCase):
             ('other_index_id', 'rel1', 'index_id', 'A'),
             (2, 20.0, 2, 'bar'),
         ]
-        regex = r"missing required columns: 'B'"
+        regex = r"missing expected columns: 'B'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.delete_mappings('myfile', 'rel1', data)
 
@@ -4891,7 +4891,7 @@ class TestDataSpaceInsertQuantities2(unittest.TestCase):
         ]
 
         # Should fail when an index column is missing.
-        regex = r"invalid column names\n  missing required columns: 'county'"
+        regex = r"invalid column names\n  missing expected columns: 'county'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities2(  # <- Method under test.
                 value_column='counts',
@@ -5541,7 +5541,7 @@ class TestDataSpaceInsertQuantities(unittest.TestCase):
     def test_insert_quantities_domain_missing(self):
         self.node.set_domain('iso_US')
 
-        regex = "invalid column names\n  missing required columns: 'domain'"
+        regex = "invalid column names\n  missing expected columns: 'domain'"
         with self.assertRaisesRegex(ValueError, regex):
             self.node.insert_quantities(
                 value='counts',
