@@ -16,8 +16,8 @@ from toron.cli.main import (
     command_partition,
     command_attribute,
     command_quantity,
-    command_relation,
     command_info,
+    command_relation,
     main,
 )
 

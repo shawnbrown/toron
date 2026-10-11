@@ -17,15 +17,15 @@ from .. import (
     ToronError,
 )
 from . import (
-    command_index,
-    command_relation,
     command_init,
     command_label,
     command_weight,
+    command_index,
     command_partition,
     command_attribute,
     command_quantity,
     command_info,
+    command_relation,
 )
 from .common import (
     ExitCode,
