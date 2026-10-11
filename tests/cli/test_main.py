@@ -10,9 +10,9 @@ from toron.cli.common import ExitCode
 from toron.cli.main import (
     get_parser,
     command_init,
-    command_update,
     command_rename,
     command_remove,
+    command_label,
     command_weight,
     command_index,
     command_partition,
@@ -242,40 +242,40 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'update',
                 'label',
+                'update',
                 'foo',
                 '--move-left',  # <- Option without int arg.
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='update',
-                element='label',
-                label='foo',
+                command='label',
+                subcommand='update',
+                name='foo',
                 move_left=1,  # <- Gets 1 when no int is given.
                 move_right=0,
                 backup=True,
-                func=command_update.update_label,
+                func=command_label.update,
             ),
         )
 
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'update',
                 'label',
+                'update',
                 'foo',
                 '--move-right', '3',  # <- Option with an int arg.
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='update',
-                element='label',
-                label='foo',
+                command='label',
+                subcommand='update',
+                name='foo',
                 move_left=0,
                 move_right=3,  # <- Gets int as given.
                 backup=True,
-                func=command_update.update_label,
+                func=command_label.update,
             ),
         )
 
@@ -306,23 +306,23 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'update',
                 'weight',
+                'update',
                 'myweight',
                 '--description',
                 'New description.',
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='update',
-                element='weight',
+                command='weight',
+                subcommand='update',
                 backup=True,
-                weight='myweight',
+                name='myweight',
                 description='New description.',
                 add_selector=None,
                 remove_selector=None,
                 make_default=False,
-                func=command_update.update_weight,
+                func=command_weight.update,
             ),
         )
 
@@ -331,40 +331,40 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'update',
                 'attribute',
+                'update',
                 'foo',
                 '--move-left',  # <- Option without int arg.
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='update',
-                element='attribute',
-                attribute='foo',
+                command='attribute',
+                subcommand='update',
+                name='foo',
                 move_left=1,  # <- Gets 1 when no int is given.
                 move_right=0,
                 backup=True,
-                func=command_update.update_attribute,
+                func=command_attribute.update,
             ),
         )
 
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile.toron',
-                'update',
                 'attribute',
+                'update',
                 'foo',
                 '--move-right', '3',  # <- Option with an int arg.
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
-                command='update',
-                element='attribute',
-                attribute='foo',
+                command='attribute',
+                subcommand='update',
+                name='foo',
                 move_left=0,
                 move_right=3,  # <- Gets int as given.
                 backup=True,
-                func=command_update.update_attribute,
+                func=command_attribute.update,
             ),
         )
 

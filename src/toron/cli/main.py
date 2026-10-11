@@ -18,7 +18,6 @@ from .. import (
 )
 from . import (
     command_index,
-    command_update,
     command_rename,
     command_remove,
     command_relation,
@@ -155,81 +154,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_init.add_argument('--domain',
                              help='define a domain (defaults to FILE without extension)')
     parser_init.set_defaults(func=command_init.create_file)
-
-    ####################################################################
-    # Subcommand: update
-    ####################################################################
-    parser_update = subparsers.add_parser(
-        'update',
-        help='update element',
-        description='Update an element in a file.',
-    )
-    parser_update_subparsers = parser_update.add_subparsers(dest='element',
-                                                            required=True,
-                                                            metavar='ELEMENT')
-
-    # Subcommand: update label
-    parser_update_label = parser_update_subparsers.add_parser(
-        'label',
-        help='update an index label',
-        description='Update an index label in a file.',
-        parents=[no_backup_parent],
-    )
-    parser_update_label.add_argument('label',
-                                     help='index label to update', metavar='LABEL')
-    parser_update_label_group = parser_update_label.add_mutually_exclusive_group(required=True)
-    parser_update_label_group.add_argument('--move-left',
-                                           type=non_negative_int, metavar='N', nargs='?', default=0,
-                                           const=1, # <- Used if flag given without int arg.
-                                           help='move label to the left 1 or N positions')
-    parser_update_label_group.add_argument('--move-right',
-                                           type=non_negative_int, metavar='N', nargs='?', default=0,
-                                           const=1, # <- Used if flag given without int arg.
-                                           help='move label to the right 1 or N positions')
-    parser_update_label.set_defaults(func=command_update.update_label)
-
-    # Subcommand: update weight
-    parser_update_weight = parser_update_subparsers.add_parser(
-        'weight',
-        help='update an index weight',
-        description='Update an index weight in a file.',
-        parents=[no_backup_parent],
-    )
-    parser_update_weight.add_argument('weight',
-                                      help='name of index weight to update',
-                                      metavar='WEIGHT')
-    parser_update_weight.add_argument('--description',
-                                      help="change the weight's description")
-    parser_update_weight.add_argument('--add-selector', nargs='+',
-                                      metavar='SELECTOR',
-                                      help='add one or more attribute selectors')
-    parser_update_weight.add_argument('--remove-selector', nargs='+',
-                                      metavar='SELECTOR',
-                                      help='remove one or more attribute selectors')
-    parser_update_weight.add_argument('--default', action='store_true',
-                                      dest='make_default',
-                                      help="set as the file's default weight group")
-    parser_update_weight.set_defaults(func=command_update.update_weight)
-
-    # Subcommand: update attribute
-    parser_update_attr = parser_update_subparsers.add_parser(
-        'attribute',
-        help='update a quantity attribute',
-        description='Update a quantity attribute in a file.',
-        parents=[no_backup_parent],
-    )
-    parser_update_attr.add_argument('attribute', metavar='ATTRIBUTE',
-                                    help='quantity attribute to update')
-    parser_update_attr_group = parser_update_attr.add_mutually_exclusive_group(required=True)
-    parser_update_attr_group.add_argument('--move-left',
-                                          type=non_negative_int, metavar='N', nargs='?', default=0,
-                                          const=1, # <- Used if flag given without int arg.
-                                          help='move attribute to the left 1 or N positions')
-    parser_update_attr_group.add_argument('--move-right',
-                                          type=non_negative_int, metavar='N', nargs='?', default=0,
-                                          const=1, # <- Used if flag given without int arg.
-                                          help='move attribute to the right 1 or N positions')
-    parser_update_attr.set_defaults(func=command_update.update_attribute)
 
     ####################################################################
     # Subcommand: rename
