@@ -18,7 +18,6 @@ from .. import (
 )
 from . import (
     command_index,
-    command_remove,
     command_relation,
     command_init,
     command_create,
@@ -153,52 +152,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser_init.add_argument('--domain',
                              help='define a domain (defaults to FILE without extension)')
     parser_init.set_defaults(func=command_init.create_file)
-
-    ####################################################################
-    # Subcommand: remove
-    ####################################################################
-    parser_remove = subparsers.add_parser(
-        'remove',
-        help='remove element',
-        description='Remove an element from a Toron file.',
-    )
-    parser_remove_subparsers = parser_remove.add_subparsers(dest='element',
-                                                            required=True,
-                                                            metavar='ELEMENT')
-
-    # Subcommand: remove link
-    parser_remove_link = parser_remove_subparsers.add_parser(
-        'link',
-        help='remove a link from between two Toron files',
-        description='Remove a link from between two Toron files.',
-        prog='toron FILE1 remove link',  # <- Replaces "FILE" with "FILE1".
-        parents=[no_backup_parent],
-    )
-    parser_remove_link.add_argument('filepath2',
-                                    help='name of second (right) file',
-                                    metavar='FILE2')
-    parser_remove_link.add_argument('link',
-                                    help='name of the link to remove',
-                                    metavar='LINK')
-    parser_remove_link_group = parser_remove_link.add_mutually_exclusive_group()
-    parser_remove_link_group.add_argument(
-        '--left',
-        action='store_const',
-        const='left',
-        dest='direction',
-        help='remove single direction: FILE1 <- FILE2',
-    )
-    parser_remove_link_group.add_argument(
-        '--right',
-        action='store_const',
-        const='right',
-        dest='direction',
-        help='remove single direction: FILE1 -> FILE2',
-    )
-    parser_remove_link.set_defaults(
-        func=command_remove.remove_link,
-        direction='both',
-    )
 
     ####################################################################
     # Subcommand: mapping

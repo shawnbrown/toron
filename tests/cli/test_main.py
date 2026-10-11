@@ -10,7 +10,6 @@ from toron.cli.common import ExitCode
 from toron.cli.main import (
     get_parser,
     command_init,
-    command_remove,
     command_label,
     command_weight,
     command_index,
@@ -431,20 +430,20 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
         self.assertNamespaceEqual(
             self.parser.parse_args([
                 'myfile1.toron',
-                'remove',
-                'link',
+                ':',
                 'myfile2.toron',
+                'remove',
                 'my_link_name',
             ]),
             argparse.Namespace(
                 filepath='myfile1.toron',
-                command='remove',
-                element='link',
+                command=':',
                 filepath2='myfile2.toron',
-                link='my_link_name',
+                subcommand='remove',
+                link_name='my_link_name',
                 direction='both',
                 backup=True,
-                func=command_remove.remove_link,
+                func=command_relation.remove_link,
             ),
         )
 
