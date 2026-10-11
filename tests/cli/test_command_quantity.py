@@ -68,18 +68,18 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
         )
 
     def test_import_records_missing_columns(self):
-        self.ds.set_registered_attributes(['category', 'sex', 'code'])  # <- Includes "code" column.
+        self.ds.set_registered_attributes(['category', 'sex', 'code'])
+        self.ds.add_partition_definition({'state'})
 
+        # Define reader data that is missing "county" and "code" columns.
         reader = [
-            ['domain', 'state', 'county', 'category', 'sex', 'quantity'],
-            ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', '180140'],
-            ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', '187990'],
-            ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', '566499'],
-            ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', '596915'],
+            ['domain', 'state', 'category', 'sex', 'quantity'],
+            ['iso_US', 'OH', 'TOTAL', 'MALE', '746639'],
+            ['iso_US', 'OH', 'TOTAL', 'FEMALE', '784905'],
         ]
 
         # Attempt to load data that does not include "code" column.
-        regex = r"invalid column names\s+missing expected columns: 'code'"
+        regex = r"invalid column names\s+missing expected columns: 'county', 'code'"
         with self.assertRaisesRegex(ValueError, regex):
             command_quantity._import_records(  # <- Function under test.
                 ds=self.ds,
@@ -97,7 +97,7 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
                 ds=self.ds,
                 reader=reader,
                 value_column='quantity',
-                ignore_missing_column=['code'],  # <- Ignore missing column 'code'.
+                ignore_missing_column=['county', 'code'],  # <- Ignore missing 'county' and 'code'.
                 allow_invalid_label=False,
                 allow_invalid_partition=False,
                 on_existing='abort',
@@ -105,7 +105,7 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
 
         self.assertEqual(
             logs_cm.output,
-            ['INFO:app-toron.space:loaded 4 quantities'],
+            ['INFO:app-toron.space:loaded 2 quantities'],
         )
 
     def test_no_attributes(self):
