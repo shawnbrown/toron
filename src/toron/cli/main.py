@@ -790,9 +790,9 @@ def get_parser() -> argparse.ArgumentParser:
         'import',
         help='load quantity records from SOURCE file',
         description='Load quantity records from a SOURCE file.',
-        epilog=('The SOURCE file must contain label and attribute columns '
-                'matching those defined in FILE. Specify the quantity column '
-                'name with --column or use the default (quantity).'
+        epilog=('The SOURCE data should contain label and attribute columns '
+                'matching those defined in FILE. Specify the name of the '
+                'values column with --column (or use the default name, quantity).'
         ),
         parents=[no_backup_parent],
     )
