@@ -378,22 +378,23 @@ class TestBuildUsingOldCLI(unittest.TestCase):
             make_default=True,
         ))
 
-        with tempfile.NamedTemporaryFile(prefix='toron-') as f:
+        csv_path = os.path.join(dirpath, 'mapping.csv')
+        with open(csv_path, 'w') as f:
             f.write(
-                b'index_code,population,index_code\n'
-                b'0X27B3B62D,0.0,0X7054347B\n'
-                b'1XA0157D6E,25.0,1XF7F2FF38\n'
-                b'1XA0157D6E,25.0,2XA468A4BC\n'
-                b'2XF38F26EA,50.0,3X23CE6FFF\n'
-                b'3X7429EDA9,50.0,3X23CE6FFF\n'
-                b'4X54BB91E2,55.0,4X035C13B4\n'
-                b'5XD31D5AA1,45.0,5X84FAD8F7\n'
-                b'0X27B3B62D,5.0,5X84FAD8F7\n'
-                b'6X80870125,100.0,6XD7608373\n'
-                b'7X0721CA66,90.0,7X50C64830\n'
-                b'7X0721CA66,10.0,0X7054347B\n'
-                b'8XC1A3F9B3,100.0,8X96447BE5\n'
-                b'9X460532F0,100.0,9X11E2B0A6\n'
+                'index_code,population,index_code\n'
+                '0X27B3B62D,0.0,0X7054347B\n'
+                '1XA0157D6E,25.0,1XF7F2FF38\n'
+                '1XA0157D6E,25.0,2XA468A4BC\n'
+                '2XF38F26EA,50.0,3X23CE6FFF\n'
+                '3X7429EDA9,50.0,3X23CE6FFF\n'
+                '4X54BB91E2,55.0,4X035C13B4\n'
+                '5XD31D5AA1,45.0,5X84FAD8F7\n'
+                '0X27B3B62D,5.0,5X84FAD8F7\n'
+                '6X80870125,100.0,6XD7608373\n'
+                '7X0721CA66,90.0,7X50C64830\n'
+                '7X0721CA66,10.0,0X7054347B\n'
+                '8XC1A3F9B3,100.0,8X96447BE5\n'
+                '9X460532F0,100.0,9X11E2B0A6\n'
             )
             f.seek(0)  # Move pointer to beginning of file.
 
@@ -403,7 +404,7 @@ class TestBuildUsingOldCLI(unittest.TestCase):
                 filepath2=self.filepath2,
                 subcommand='import',
                 link_name=None,
-                source=f.name,
+                source=csv_path,
                 direction='both',
                 match_limit=1,
                 allow_overlapping=False,
