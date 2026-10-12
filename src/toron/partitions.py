@@ -34,16 +34,14 @@ def make_structure(partition_definitions: List[Set[str]]) -> List[Set[str]]:
 
     The result above is not a topology because it is missing the set
     {'B'}--the intersection of {'A', 'B'} and {'B', 'C'}. If a partition
-    definition based on {'B'} is needed, it must be included in the
-    input list.
+    definition based on {'B'} is needed, it must be added explicitly.
 
     .. admonition:: Why Not Use Topological Spaces?
 
-        If a user mistakenly specifies an invalid partition
-        definition--one that does not correspond to a valid partition
-        in the domain--it can produce derived sets that are likewise
-        invalid. If data is loaded using those sets, the resulting data
-        is also invalid.
+        If a user mistakenly defines an invalid partition--one that does
+        not correspond to a actual partition in the domain--derived sets
+        can likewise be invalid. If data is loaded using those sets, the
+        resulting data is also invalid.
 
         When this happens, *unions* that include an invalid partition
         definition contain more context than any of the individual
