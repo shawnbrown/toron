@@ -157,7 +157,7 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_label = subparsers.add_parser(
         'label',
-        help='manage label names used by the index',
+        help='manage label names',
         description='Manage label names used by the index.',
         epilog=('Index labels are text values that identify locations in '
                 'a data space.'),
@@ -217,12 +217,12 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_weight = subparsers.add_parser(
         'weight',
-        help='manage weight groups used by the index',
+        help='manage weight groups',
         description='Manage weight groups used by the index.',
         epilog=(
             'Index weights are numeric values defined for individual index '
-            'records. Aggregate quantities for a location are distributed to '
-            'the more granular index records in proportion to these weights.'
+            'records. Aggregate quantities for a region are distributed to '
+            'index records in proportion to these weights.'
         ),
     )
     parser_weight_subparsers = parser_weight.add_subparsers(dest='subcommand',
@@ -341,7 +341,7 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_partition = subparsers.add_parser(
         'partition',
-        help='manage partition definitions used by quantities',
+        help='manage partition definitions',
         description='Manage partition definitions used by quantities.',
         epilog=('Partition definitions are specified using sets of label '
                 'names to organize index records into regions. Well-specified '
@@ -372,7 +372,7 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_attribute = subparsers.add_parser(
         'attribute',
-        help='manage attribute names used by quantities',
+        help='manage attribute names',
         description='Manage attribute names used by quantities.',
         epilog=(
             'Attributes are text values that describe and categorize '
@@ -427,7 +427,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity = subparsers.add_parser(
         name='quantity',
         help='import or export quantity records',
-        description=('Import or export quantity records.'),
+        description='Import or export quantity records.',
+        epilog=('Quantities are numeric values associated with a location and '
+                'a set of attributes.'),
         parents=[no_backup_parent],
     )
     parser_quantity.add_argument('--column',  # <- TODO: Remove when import/export implemented.
@@ -521,7 +523,7 @@ def get_parser() -> argparse.ArgumentParser:
         ':',  # <- Relation operator.
         prog='toron FILE1 : FILE2',
         description='Manage relations between FILE1 and FILE2.',
-        epilog='Run `toron : COMMAND -h` for command-specific options.',
+        epilog='Run `toron : COMMAND -h` for command-specific help.',
         help='manage relations between files (run `%(prog)s : -h` for details)',
     )
     parser_rel.add_argument('filepath2',
@@ -537,6 +539,7 @@ def get_parser() -> argparse.ArgumentParser:
         'add',
         help='add a new link between files',
         description='Add a new link between files.',
+        epilog='Links establish named relationships between two files.',
         parents=[no_backup_parent],
     )
     parser_rel_add.add_argument('link_name',
@@ -603,7 +606,8 @@ def get_parser() -> argparse.ArgumentParser:
         'import',
         help='load mapping records from SOURCE file',
         description='Load mapping records from a SOURCE file.',
-        #epilog='',
+        epilog=('Mappings define weighted matches between index records '
+                'across two linked files.'),
         parents=[no_backup_parent],
     )
     parser_rel_import.add_argument('source',
