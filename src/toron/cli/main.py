@@ -428,8 +428,9 @@ def get_parser() -> argparse.ArgumentParser:
         name='quantity',
         help='import or export quantity records',
         description='Import or export quantity records.',
-        epilog=('Quantities are numeric values associated with a location and '
-                'a set of attributes.'),
+        epilog=('A quantity is a numeric value representing an observation, '
+                'with labels (defining its location) and attributes (defining '
+                'its categories).'),
         parents=[no_backup_parent],
     )
     parser_quantity.add_argument('--column',  # <- TODO: Remove when import/export implemented.
