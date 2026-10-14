@@ -280,7 +280,7 @@ def get_parser() -> argparse.ArgumentParser:
         epilog=(
             'An index is a collection of labels and weights that defines the '
             'most granular units in a data space. Index records provide the '
-            'basis for disaggregation within domains and translation across '
+            'basis for disaggregation within a domain and translation across '
             'domains.'
         ),
         parents=[no_backup_parent],  # <- TODO: Remove when import/export implemented.
@@ -539,7 +539,7 @@ def get_parser() -> argparse.ArgumentParser:
         'add',
         help='add a new link between files',
         description='Add a new link between files.',
-        epilog='Links establish named relationships between two files.',
+        epilog='A link establishes a named relationship between two files.',
         parents=[no_backup_parent],
     )
     parser_rel_add.add_argument('link_name',
