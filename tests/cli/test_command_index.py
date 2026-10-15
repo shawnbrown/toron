@@ -223,7 +223,7 @@ class TestIndexExportRecords(unittest.TestCase):
         self.assertEqual(records, expected_values)
 
     def test_export_to_file(self):
-        """Test `export_records()` wrapper function."""
+        """Test `export_records()` wrapper writing to file."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             target_path = os.path.join(tmpdir, 'index-file1.csv')
             ds_path = os.path.join(tmpdir, 'file1.ds')
@@ -248,6 +248,32 @@ class TestIndexExportRecords(unittest.TestCase):
                 '3X7429EDA9,Michigan,Cass,200.0,100.0,300.0\n'
             )
             self.assertEqual(target_contents, expected)
+
+    def test_export_to_stdout(self):
+        """Test `export_records()` wrapper writing to stdout."""
+        dummy_stdout = DummyRedirection()
+
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            ds_path = os.path.join(tmpdir, 'file1.ds')
+            self.ds.to_file(ds_path)
+
+            command_index.export_records(argparse.Namespace(  # <- Function under test.
+                filepath=ds_path,
+                command='index',
+                subcommand='export',
+                force=False,
+                target='-',  # <- Using `-` writes to stdout.
+                stdout=dummy_stdout,
+            ))
+
+        expected = (
+            'index_code,state,county,wght2,wght1,wght3\n'
+            '0X27B3B62D,-,-,0.0,0.0,0.0\n'
+            '1XA0157D6E,Illinois,Cook,200.0,100.0,300.0\n'
+            '2XF38F26EA,Indiana,Porter,200.0,100.0,300.0\n'
+            '3X7429EDA9,Michigan,Cass,200.0,100.0,300.0\n'
+        )
+        self.assertEqual(dummy_stdout.getvalue(), expected)
 
 
 class TestIndexReadFromStdin(unittest.TestCase):

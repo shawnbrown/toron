@@ -197,6 +197,27 @@ def open_file_for_writing(
         f_target.close()
 
 
+@contextmanager
+def open_stream_for_writing(
+    stream: TextIO
+) -> Generator[io.TextIOWrapper, None, None]:
+    """Context manager to yield a TextIO stream for writing."""
+    wrapper = io.TextIOWrapper(
+        stream.buffer,
+        encoding='utf-8',
+        newline='', # Disable universal newline translation.
+        line_buffering=True, # Flush stream after every newline character.
+    )
+    try:
+        yield wrapper
+    finally:
+        wrapper.flush()  # Ensure all output is written.
+        try:
+            wrapper.detach()  # Keep `stdout.buffer` open.
+        except Exception:
+            pass
+
+
 def cli_bind_file(
     filepath: str, *, mode: Literal['ro', 'rw', 'rwc']
 ) -> 'DataSpace':

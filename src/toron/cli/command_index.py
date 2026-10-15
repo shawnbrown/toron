@@ -20,6 +20,7 @@ from .common import (
     ExitCode,
     is_streamed,
     open_file_for_writing,
+    open_stream_for_writing,
     csv_stdout_writer,
     cli_bind_file,
     process_backup_option,
@@ -152,17 +153,29 @@ def export_records(args: argparse.Namespace) -> ExitCode:
     # Bind DataSpace (to make sure it exists) before opening output file.
     ds = cli_bind_file(args.filepath, mode='ro')
 
-    with open_file_for_writing(
-        target_path=args.target,
-        autoname_parts=['index', args.filepath],
-        autoname_ext='csv',
-        overwrite=args.force,
-    ) as f:
-        writer = csv.writer(f, lineterminator='\n')
-        for row in _export_records(ds):
-            writer.writerow(row)
+    if args.target == '-':
+        try:
+            # Write to stdout.
+            with open_stream_for_writing(args.stdout) as f:
+                writer = csv.writer(f, lineterminator='\n')
+                for row in _export_records(ds):
+                    writer.writerow(row)
+        except BrokenPipeError:
+            os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
+    else:
+        # Write to file.
+        with open_file_for_writing(
+            target_path=args.target,
+            autoname_parts=['index', args.filepath],
+            autoname_ext='csv',
+            overwrite=args.force,
+        ) as f:
+            writer = csv.writer(f, lineterminator='\n')
+            for row in _export_records(ds):
+                writer.writerow(row)
 
-    applogger.info(f'saved to {f.name!r}')
+        applogger.info(f'saved to {f.name!r}')
+
     return ExitCode.OK
 
 
