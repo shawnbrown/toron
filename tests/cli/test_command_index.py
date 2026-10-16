@@ -4,7 +4,7 @@ import os
 import tempfile
 from .. import _unittest as unittest
 from ..common import DummyRedirection
-from toron import DataSpace
+from toron import DataSpace, read_file
 
 from toron.cli import command_index
 
@@ -178,6 +178,84 @@ class TestIndexImportRecords(unittest.TestCase):
              'INFO:app-toron.space:loaded 3 index weights',
              'INFO:app-toron.space:replaced 1 index weights'],
         )
+
+    def test_import_from_file(self):
+        """Test `import_records()` wrapper reading from a file."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            ds_path = os.path.join(tmpdir, 'file1.ds')
+            ds = DataSpace()
+            ds.add_index_columns('state', 'county')
+            ds.add_weight_group('population', make_default=True)
+            ds.to_file(ds_path)
+
+            src_path = os.path.join(tmpdir, 'source_data.csv')
+            with open(src_path, 'w') as f:
+                f.write(
+                    'state,county,population\n'
+                    'Illinois,Cook,5275541\n'
+                    'Indiana,Porter,175860\n'
+                    'Michigan,Cass,51589\n'
+                )
+
+            args = argparse.Namespace(
+                filepath=ds_path,
+                command='index',
+                subcommand='import',
+                source=src_path,
+                on_label_conflict='abort',
+                on_weight_conflict='abort',
+            )
+            command_index.import_records(args)  # <- Function under test.
+
+            ds = read_file(ds_path)
+            self.assertEqual(
+                list(ds.select_index(header=True)),
+                [
+                    ('index_id', 'state', 'county'),
+                    (0, '-', '-'),
+                    (1, 'Illinois', 'Cook'),
+                    (2, 'Indiana', 'Porter'),
+                    (3, 'Michigan', 'Cass'),
+                ],
+            )
+
+    def test_import_from_stdin(self):
+        """Test `import_records()` wrapper reading from stdin."""
+        ds = DataSpace()
+        ds.add_index_columns('state', 'county')
+        ds.add_weight_group('population', make_default=True)
+
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            ds_path = os.path.join(tmpdir, 'file1.ds')
+            ds.to_file(ds_path)
+
+            args = argparse.Namespace(
+                filepath=ds_path,
+                command='index',
+                subcommand='import',
+                source='-',  # <- Using `-` reads from stdin.
+                on_label_conflict='abort',
+                on_weight_conflict='abort',
+                stdin=DummyRedirection(  # <- Piped data via stdin.
+                    'state,county,population\n'
+                    'Illinois,Cook,5275541\n'
+                    'Indiana,Porter,175860\n'
+                    'Michigan,Cass,51589\n'
+                ),
+            )
+            command_index.import_records(args)  # <- Function under test.
+
+            ds = read_file(ds_path)
+            self.assertEqual(
+                list(ds.select_index(header=True)),
+                [
+                    ('index_id', 'state', 'county'),
+                    (0, '-', '-'),
+                    (1, 'Illinois', 'Cook'),
+                    (2, 'Indiana', 'Porter'),
+                    (3, 'Michigan', 'Cass'),
+                ],
+            )
 
 
 class TestIndexExportRecords(unittest.TestCase):

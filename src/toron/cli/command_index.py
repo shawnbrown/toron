@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import uuid
+from contextlib import nullcontext
 from itertools import chain, islice
 from .._typing import (
     Iterator,
@@ -84,7 +85,12 @@ def _import_records(
 
 def import_records(args: argparse.Namespace) -> ExitCode:
     """Load index records from source CSV file."""
-    with open(args.source) as f_source:
+    if args.source == '-':
+        file_cm = nullcontext(args.stdin)
+    else:
+        file_cm = open(args.source)
+
+    with file_cm as f_source:
         reader = csv.reader(f_source)
 
         ds = cli_bind_file(args.filepath, mode='rw')
