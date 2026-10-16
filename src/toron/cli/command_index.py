@@ -5,9 +5,10 @@ import logging
 import os
 import re
 import uuid
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from itertools import chain, islice
 from .._typing import (
+    IO,
     Iterator,
     List,
     Literal,
@@ -85,6 +86,7 @@ def _import_records(
 
 def import_records(args: argparse.Namespace) -> ExitCode:
     """Load index records from source CSV file."""
+    file_cm: AbstractContextManager[IO[str]]
     if args.source == '-':
         file_cm = nullcontext(args.stdin)
     else:
@@ -159,6 +161,7 @@ def export_records(args: argparse.Namespace) -> ExitCode:
     # Bind DataSpace (to make sure it exists) before opening output file.
     ds = cli_bind_file(args.filepath, mode='ro')
 
+    f: IO[str]
     if args.target == '-':
         try:
             # Write to stdout.
