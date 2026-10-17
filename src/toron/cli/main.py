@@ -447,7 +447,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity_import = parser_quantity_subparsers.add_parser(
         'import',
         help='load quantity records from SOURCE file',
-        description='Load quantity records from a SOURCE file.',
+        description="Load quantity records from a SOURCE file (use '-' for stdin).",
         epilog=('The SOURCE data should contain label and attribute columns '
                 'matching those defined in FILE. Specify the name of the '
                 'values column with --column (or use the default name, quantity).'

@@ -3,7 +3,9 @@ import argparse
 import csv
 import logging
 import os
+from contextlib import AbstractContextManager, nullcontext
 from .._typing import (
+    IO,
     Iterator,
     List,
     Literal,
@@ -67,7 +69,13 @@ def _import_records(
 
 def import_records(args: argparse.Namespace) -> ExitCode:
     """Load quantity records from source CSV file."""
-    with open(args.source) as f_source:
+    file_cm: AbstractContextManager[IO[str]]
+    if args.source == '-':
+        file_cm = nullcontext(args.stdin)
+    else:
+        file_cm = open(args.source)
+
+    with file_cm as f_source:
         reader = csv.reader(f_source)
 
         ds = cli_bind_file(args.filepath, mode='rw')

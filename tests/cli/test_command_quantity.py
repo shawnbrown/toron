@@ -1,8 +1,10 @@
 """Tests for toron/cli/command_quantity.py module."""
 import argparse
+import os
+import tempfile
 from .. import _unittest as unittest
 from ..common import DummyRedirection
-from toron import DataSpace, ToronError
+from toron import DataSpace, ToronError, read_file
 
 from toron.cli import command_quantity
 
@@ -144,6 +146,83 @@ class TestQuantityImportRecords(QuantityMixin, unittest.TestCase):
                 allow_invalid_label=False,
                 allow_invalid_partition=False,
                 on_existing='abort',
+            )
+
+    def test_import_from_file(self):
+        """Test `import_records()` wrapper reading from a file."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            ds_path = os.path.join(tmpdir, 'file1.ds')
+            self.ds.set_registered_attributes(['category', 'sex'])
+            self.ds.to_file(ds_path)
+
+            src_path = os.path.join(tmpdir, 'source_data.csv')
+            with open(src_path, 'w') as f:
+                f.write(
+                    'domain,state,county,category,sex,quantity\n'
+                    'iso_US,OH,BUTLER,TOTAL,MALE,180140\n'
+                    'iso_US,OH,BUTLER,TOTAL,FEMALE,187990\n'
+                    'iso_US,OH,FRANKLIN,TOTAL,MALE,566499\n'
+                    'iso_US,OH,FRANKLIN,TOTAL,FEMALE,596915\n'
+                )
+
+            args = argparse.Namespace(
+                filepath=ds_path,
+                command='quantity',
+                subcommand='import',
+                source=src_path,
+                value_column='quantity',
+                ignore_missing_column=None,
+                allow_invalid_label=False,
+                allow_invalid_partition=False,
+                on_existing='abort',
+            )
+            command_quantity.import_records(args)  # <- Function under test.
+
+            ds = read_file(ds_path)
+            self.assertEqual(
+                list(ds.select_quantities(header=True)),
+                [['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140.0],
+                ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990.0],
+                ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499.0],
+                ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915.0]],
+            )
+
+    def test_import_from_stdin(self):
+        """Test `import_records()` wrapper reading from stdin."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            ds_path = os.path.join(tmpdir, 'file1.ds')
+            self.ds.set_registered_attributes(['category', 'sex'])
+            self.ds.to_file(ds_path)
+
+            args = argparse.Namespace(
+                filepath=ds_path,
+                command='quantity',
+                subcommand='import',
+                source='-',  # <- Using `-` reads from stdin.
+                value_column='quantity',
+                ignore_missing_column=None,
+                allow_invalid_label=False,
+                allow_invalid_partition=False,
+                on_existing='abort',
+                stdin=DummyRedirection(  # <- Piped data via stdin.
+                    'domain,state,county,category,sex,quantity\n'
+                    'iso_US,OH,BUTLER,TOTAL,MALE,180140\n'
+                    'iso_US,OH,BUTLER,TOTAL,FEMALE,187990\n'
+                    'iso_US,OH,FRANKLIN,TOTAL,MALE,566499\n'
+                    'iso_US,OH,FRANKLIN,TOTAL,FEMALE,596915\n'
+                ),
+            )
+            command_quantity.import_records(args)  # <- Function under test.
+
+            ds = read_file(ds_path)
+            self.assertEqual(
+                list(ds.select_quantities(header=True)),
+                [['domain', 'state', 'county', 'category', 'sex', 'quantity'],
+                ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'MALE', 180140.0],
+                ['iso_US', 'OH', 'BUTLER', 'TOTAL', 'FEMALE', 187990.0],
+                ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'MALE', 566499.0],
+                ['iso_US', 'OH', 'FRANKLIN', 'TOTAL', 'FEMALE', 596915.0]],
             )
 
 
