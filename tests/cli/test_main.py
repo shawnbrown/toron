@@ -447,23 +447,8 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             ),
         )
 
-    def test_subcommand_index(self):
-        """Check "index" subparser."""
-        self.assertNamespaceEqual(
-            self.parser.parse_args([
-                'myfile.toron',
-                'index',
-            ]),
-            argparse.Namespace(
-                filepath='myfile.toron',
-                command='index',
-                subcommand=None,
-                on_label_conflict='abort',
-                on_weight_conflict='abort',
-                backup=True,
-                func=command_index.process_index_action,
-            ),
-        )
+    # def test_subcommand_index(self):
+    #     """Check "index" subparser."""
 
     def test_subcommand_quantity(self):
         """Check "quantity" subparser."""
@@ -593,88 +578,3 @@ class TestMainNewCommand(StreamWrapperMixin, unittest.TestCase):
         self.assertIsInstance(args[0], argparse.Namespace)
         self.assertEqual(args[0].command, 'init')
         self.assertEqual(args[0].filepath, filepath)
-
-
-class TestMainIndexCommand(StreamWrapperMixin, unittest.TestCase):
-    def setUp(self):
-        super().setUp()
-
-        # Patch `command_index.read_from_stdin()` function with mock object.
-        self.mock_read_from_stdin = self.enterContext(
-            unittest.mock.patch(target='toron.cli.main.command_index.read_from_stdin')
-        )
-
-        # Patch `command_index.write_to_stdout()` function with mock object.
-        self.mock_write_to_stdout = self.enterContext(
-            unittest.mock.patch(target='toron.cli.main.command_index.write_to_stdout')
-        )
-
-    def test_write_to_stdout(self):
-        """Check call to command_index.write_to_stdout()."""
-        file_path = self.get_tempfile_path()
-        DataSpace().to_file(file_path)
-
-        main([file_path, 'index'], stdin=DummyTTY())  # Function under test.
-
-        self.mock_write_to_stdout.assert_called()
-
-        args, kwds = self.mock_write_to_stdout.call_args
-        self.assertIsInstance(args[0], argparse.Namespace)
-        self.assertEqual(args[0].command, 'index')
-        self.assertIsInstance(args[0].filepath, str)
-
-        self.assertStdout('', msg='should not write to stdout')
-        self.assertStderr('', msg='should not write to stderr')
-
-        dir_name, base_name = os.path.split(file_path)
-        backup_file = os.path.join(dir_name, f'backup-{base_name}')
-        if os.path.isfile(backup_file):
-            self.addCleanup(os.remove, backup_file)
-            self.fail('backup file was created unintentionally')
-
-    def test_read_from_stdin(self):
-        """Check call to command_index.read_from_stdin()."""
-        file_path = self.get_tempfile_path()
-        DataSpace().to_file(file_path)
-
-        with self.patched_stdin('A,B\nfoo,bar\n'):  # Dummy input not ingested,
-            main([file_path, 'index'])              # only used for redirection.
-
-        self.mock_read_from_stdin.assert_called()
-
-        args, kwds = self.mock_read_from_stdin.call_args
-        self.assertIsInstance(args[0], argparse.Namespace)
-        self.assertEqual(args[0].command, 'index')
-        self.assertIsInstance(args[0].filepath, str)
-
-        self.assertStdout('', msg='should not write to stdout')
-        self.assertStderr('', msg='should not write to stderr')
-
-        dir_name, base_name = os.path.split(file_path)
-        backup_file = os.path.join(dir_name, f'backup-{base_name}')
-        self.assertTrue(os.path.isfile(backup_file))
-        self.addCleanup(os.remove, backup_file)
-
-    def test_read_from_stdin_no_backup(self):
-        """Should not write a '.bak' file when passing `--no-backup`."""
-        file_path = self.get_tempfile_path()
-        DataSpace().to_file(file_path)
-
-        with self.patched_stdin('A,B\nfoo,bar\n'):     # Dummy input not ingested,
-            main([file_path, 'index', '--no-backup'])  # only used for redirection.
-
-        self.mock_read_from_stdin.assert_called()
-
-        args, kwds = self.mock_read_from_stdin.call_args
-        self.assertIsInstance(args[0], argparse.Namespace)
-        self.assertEqual(args[0].command, 'index')
-        self.assertIsInstance(args[0].filepath, str)
-
-        self.assertStdout('', msg='should not write to stdout')
-        self.assertStderr('', msg='should not write to stderr')
-
-        dir_name, base_name = os.path.split(file_path)
-        backup_file = os.path.join(dir_name, f'backup-{base_name}')
-        if os.path.isfile(backup_file):
-            self.addCleanup(os.remove, backup_file)
-            self.fail('backup file was created unintentionally')

@@ -283,21 +283,9 @@ def get_parser() -> argparse.ArgumentParser:
             'basis for disaggregation within a domain and translation across '
             'domains.'
         ),
-        parents=[no_backup_parent],  # <- TODO: Remove when import/export implemented.
     )
-    parser_index.add_argument('--on-label-conflict',  # <- TODO: Remove when import/export implemented.
-                              default='abort',
-                              choices=['ignore', 'replace', 'abort'],
-                              dest='on_label_conflict',
-                              help='strategy for label conflicts (default: %(default)s)')
-    parser_index.add_argument('--on-weight-conflict',  # <- TODO: Remove when import/export implemented.
-                              default='abort',
-                              choices=['ignore', 'replace', 'abort'],
-                              dest='on_weight_conflict',
-                              help='strategy for weight conflicts (default: %(default)s)')
-    parser_index.set_defaults(func=command_index.process_index_action)  # <- TODO: Remove when import/export implemented.
     parser_index_subparsers = parser_index.add_subparsers(dest='subcommand',
-                                                          required=False,  # TODO: Change to True after refactoring.
+                                                          required=True,
                                                           metavar='COMMAND')
 
     # Subcommand: import

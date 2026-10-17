@@ -283,9 +283,11 @@ class TestBuildUsingOldCLI(unittest.TestCase):
             selectors=None,
             make_default=True,
         ))
-        cli.command_index.process_index_action(argparse.Namespace(
+        cli.command_index.import_records(argparse.Namespace(
             filepath=self.filepath1,
             command='index',
+            subcommand='import',
+            source='-',
             on_label_conflict='abort',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
@@ -347,9 +349,11 @@ class TestBuildUsingOldCLI(unittest.TestCase):
             selectors=None,
             make_default=True,
         ))
-        cli.command_index.process_index_action(argparse.Namespace(
+        cli.command_index.import_records(argparse.Namespace(
             filepath=self.filepath2,
             command='index',
+            subcommand='import',
+            source='-',
             on_label_conflict='abort',
             on_weight_conflict='abort',
             stdin=DummyRedirection(
