@@ -483,8 +483,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity_export = parser_quantity_subparsers.add_parser(
         'export',
         help='write quantity records to TARGET file or directory',
-        description=('Write quantity records to a TARGET file or directory; '
-                     'uses an auto-generated name if TARGET is a directory.'),
+        description=("Write quantity records to a TARGET file or directory "
+                     "(use '-' for stdout); uses an auto-generated name if "
+                     "TARGET is a directory."),
     )
     parser_quantity_export.add_argument('target',
                                         help='CSV file or directory to save records',

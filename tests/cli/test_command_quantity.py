@@ -255,6 +255,59 @@ class TestQuantityExportRecords(QuantityMixin, unittest.TestCase):
         ]
         self.assertEqual(records, expected_values)
 
+    def test_export_to_file(self):
+        """Test `export_records()` wrapper writing to file."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            target_path = os.path.join(tmpdir, 'quantity-file1.csv')
+            ds_path = os.path.join(tmpdir, 'file1.ds')
+            self.ds.to_file(ds_path)
+
+            command_quantity.export_records(argparse.Namespace(  # <- Function under test.
+                filepath=ds_path,
+                command='quantity',
+                subcommand='export',
+                force=False,
+                target=target_path,
+            ))
+
+            with open(target_path) as f:
+                target_contents = f.read()
+
+            expected = (
+                'domain,state,county,category,sex,quantity\n'
+                'iso_US,OH,BUTLER,TOTAL,MALE,180140.0\n'
+                'iso_US,OH,BUTLER,TOTAL,FEMALE,187990.0\n'
+                'iso_US,OH,FRANKLIN,TOTAL,MALE,566499.0\n'
+                'iso_US,OH,FRANKLIN,TOTAL,FEMALE,596915.0\n'
+            )
+            self.assertEqual(target_contents, expected)
+
+    def test_export_to_stdout(self):
+        """Test `export_records()` wrapper writing to stdout."""
+        dummy_stdout = DummyRedirection()
+
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            ds_path = os.path.join(tmpdir, 'file1.ds')
+            self.ds.to_file(ds_path)
+
+            command_quantity.export_records(argparse.Namespace(  # <- Function under test.
+                filepath=ds_path,
+                command='index',
+                subcommand='export',
+                force=False,
+                target='-',  # <- Using `-` writes to stdout.
+                stdout=dummy_stdout,
+            ))
+
+        expected = (
+            'domain,state,county,category,sex,quantity\n'
+            'iso_US,OH,BUTLER,TOTAL,MALE,180140.0\n'
+            'iso_US,OH,BUTLER,TOTAL,FEMALE,187990.0\n'
+            'iso_US,OH,FRANKLIN,TOTAL,MALE,566499.0\n'
+            'iso_US,OH,FRANKLIN,TOTAL,FEMALE,596915.0\n'
+        )
+        self.assertEqual(dummy_stdout.getvalue(), expected)
+
 
 class TestReadFromStdin(QuantityMixin, unittest.TestCase):
     def test_standard_input_columns(self):
