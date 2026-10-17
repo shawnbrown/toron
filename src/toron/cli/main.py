@@ -71,7 +71,7 @@ def get_parser() -> argparse.ArgumentParser:
 
             1. Allows subcommand help invocation without requiring a
                FILE argument (e.g., "toron label -h" or for relation
-               commands like "toron : create -h").
+               commands like "toron : add -h").
             2. Defaults to the "info" command when FILE is provided
                but COMMAND is omitted (e.g., 'toron myfile.toron').
             """
@@ -101,7 +101,7 @@ def get_parser() -> argparse.ArgumentParser:
             return args
 
         def parse_args(self, args=None, namespace=None):
-            """Parse ``args`` into a ``argparse.Namespace`` object."""
+            """Parse `args` into an `argparse.Namespace` object."""
             if args is None:
                 args = sys.argv[1:]  # Default to system args.
             else:
