@@ -332,11 +332,11 @@ def get_parser() -> argparse.ArgumentParser:
         'partition',
         help='manage partition definitions',
         description='Manage partition definitions used by quantities.',
-        epilog=('Partition definitions are specified using sets of label '
-                'names to organize index records into regions. Well-specified '
-                'definitions use only the labels necessary to distinguish one '
-                'region from another. These definitions are used to build a '
-                'structure for organizing quantities and mappings.'),
+        epilog=('A partition definition is a set of label names used to '
+                'organize index records into regions. Well-specified '
+                'definitions use only the labels necessary to distinguish '
+                'one region from another. Multiple definitions are combined '
+                'to build a structure for organizing quantities and mappings.'),
     )
     parser_partition_subparsers = parser_partition.add_subparsers(dest='subcommand',
                                                                   required=True,
