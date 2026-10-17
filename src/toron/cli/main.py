@@ -292,7 +292,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_index_import = parser_index_subparsers.add_parser(
         'import',
         help='load index records from SOURCE file',
-        description='Load index records from a SOURCE file.',
+        description="Load index records from a SOURCE file (use '-' for stdin).",
         epilog=("The SOURCE file must contain label and weight columns "
                 "matching those defined in the FILE."),
         parents=[no_backup_parent],
@@ -314,8 +314,9 @@ def get_parser() -> argparse.ArgumentParser:
     parser_index_export = parser_index_subparsers.add_parser(
         'export',
         help='write index records to TARGET file or directory',
-        description=('Write index records to a TARGET file or directory; '
-                     'uses an auto-generated name if TARGET is a directory.'),
+        description=("Write index records to a TARGET file or directory (use "
+                     "'-' for stdout); uses an auto-generated name if TARGET "
+                     "is a directory."),
     )
     parser_index_export.add_argument('target',
                                      help='CSV file or directory to save records',
