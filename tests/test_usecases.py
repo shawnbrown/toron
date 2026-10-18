@@ -309,10 +309,13 @@ class TestBuildUsingOldCLI(unittest.TestCase):
             subcommand='add',
             names=['variable'],
         ))
-        cli.command_quantity.process_quantity_action(argparse.Namespace(
+        cli.command_quantity.import_records(argparse.Namespace(
             filepath=self.filepath1,
             command='quantity',
+            subcommand='import',
+            source='-',
             value_column='quantity',
+            ignore_missing_column=None,
             allow_invalid_label='abort',
             allow_invalid_partition='abort',
             on_existing='abort',

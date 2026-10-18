@@ -450,25 +450,8 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
     # def test_subcommand_index(self):
     #     """Check "index" subparser."""
 
-    def test_subcommand_quantity(self):
-        """Check "quantity" subparser."""
-        self.assertNamespaceEqual(
-            self.parser.parse_args([
-                'myfile.toron',
-                'quantity',
-            ]),
-            argparse.Namespace(
-                filepath='myfile.toron',
-                command='quantity',
-                subcommand=None,
-                value_column='quantity',
-                allow_invalid_label=False,
-                allow_invalid_partition=False,
-                on_existing='abort',
-                backup=True,
-                func=command_quantity.process_quantity_action,
-            ),
-        )
+    #def test_subcommand_quantity(self):
+    #    """Check "quantity" subparser."""
 
     def test_subcommand_relation(self):
         """Check "mapping" subparser."""

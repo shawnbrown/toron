@@ -420,27 +420,9 @@ def get_parser() -> argparse.ArgumentParser:
         epilog=('A quantity is a numeric value representing an observation, '
                 'with labels (defining its location) and attributes (defining '
                 'its categories).'),
-        parents=[no_backup_parent],
     )
-    parser_quantity.add_argument('--column',  # <- TODO: Remove when import/export implemented.
-                                 default='quantity',
-                                 dest='value_column',
-                                 help='name of column containing values (default: %(default)s)',
-                                 metavar='NAME')
-    parser_quantity.add_argument('--allow-invalid-label', action='store_true',  # <- TODO: Remove when import/export implemented.
-                                 dest='allow_invalid_label',
-                                 help='allow quantities without matching index labels')
-    parser_quantity.add_argument('--allow-invalid-partition', action='store_true',  # <- TODO: Remove when import/export implemented.
-                                 dest='allow_invalid_partition',
-                                 help='allow quantities without matching partitions')
-    parser_quantity.add_argument('--on-existing',  # <- TODO: Remove when import/export implemented.
-                                 default='abort',
-                                 choices=['abort', 'sum', 'replace', 'ignore'],
-                                 dest='on_existing',
-                                 help='strategy for existing quantities (default: %(default)s)')
-    parser_quantity.set_defaults(func=command_quantity.process_quantity_action)  # <- TODO: Remove when import/export implemented.
     parser_quantity_subparsers = parser_quantity.add_subparsers(dest='subcommand',
-                                                                required=False,  # TODO: Change to True after refactoring.
+                                                                required=True,
                                                                 metavar='COMMAND')
 
     # Subcommand: import
