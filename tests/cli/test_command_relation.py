@@ -1231,6 +1231,116 @@ class TestRelationImportRecords(DataSpaceFixturesMixin, unittest.TestCase):
         )
 
 
+class TestRelationImportRecordsWrapper(DataSpaceFixturesMixin, unittest.TestCase):
+    @staticmethod
+    def get_mappings(source_node, target_node, link_name):
+        with target_node._managed_cursor() as cur:
+            mapping_repo = target_node._dal.MappingRepository(cur)
+            link = target_node._get_link(
+                source_node,
+                link_name,
+                target_node._dal.LinkRepository(cur),
+            )
+            if not link:
+                raise Exception
+            mappings = mapping_repo.find(link_id=link.id)
+            return set(astuple(rel) for rel in mappings)
+
+    def setUp(self):
+        super().setUp()
+
+        self.node_c.add_link(space=self.node_d,
+                                link_name='population',
+                                other_filename_hint='node_d',
+                                is_default=True)
+
+        self.node_d.add_link(space=self.node_c,
+                            link_name='population',
+                            other_filename_hint='node_c',
+                            is_default=True)
+
+        self.tmpdir = self.enterContext(tempfile.TemporaryDirectory(prefix='toron-'))
+
+        self.path_c = os.path.join(self.tmpdir, 'file_c.ds')
+        self.node_c.to_file(self.path_c)
+
+        self.path_d = os.path.join(self.tmpdir, 'file_d.ds')
+        self.node_d.to_file(self.path_d)
+
+        self.mapping_data = (
+            'index_c,population,index_d\n'
+            '0XF4264876,0,0XDF9B30D7\n'
+            '1X73808335,18,1X583DFB94\n'
+            '1X73808335,46,2X0BA7A010\n'
+            '0XF4264876,34,2X0BA7A010\n'
+            '2X201AD8B1,20,3X8C016B53\n'
+            '2X201AD8B1,10,0XDF9B30D7\n'
+            '2X201AD8B1,50,4XAC931718\n'
+            '3XA7BC13F2,30,5X2B35DC5B\n'
+            '3XA7BC13F2,50,6X78AF87DF\n'
+        )
+
+        self.expected_result = {
+            (1, 1, 0, 2, b'\x80', 10.0, 0.000),
+            (2, 1, 1, 1, b'\x80', 18.0, 1.000),
+            (3, 1, 2, 0, b'\x80', 34.0, 0.425),
+            (4, 1, 2, 1, b'\x80', 46.0, 0.575),
+            (5, 1, 3, 2, b'\x80', 20.0, 1.000),
+            (6, 1, 4, 2, b'\x80', 50.0, 1.000),
+            (7, 1, 5, 3, b'\x80', 30.0, 1.000),
+            (8, 1, 6, 3, b'\x80', 50.0, 1.000),
+        }
+
+    def test_import_from_file(self):
+        """Test `import_records()` wrapper reading from a file."""
+        src_path = os.path.join(self.tmpdir, 'source_data.csv')
+        with open(src_path, 'w') as f:
+            f.write(self.mapping_data)
+
+        command_relation.import_records(argparse.Namespace(  # <- Function under test.
+            filepath=self.path_c,
+            command=':',
+            filepath2=self.path_d,
+            subcommand='import',
+            link_name=None,
+            source=src_path,  # <- Reads data from file.
+            direction='both',
+            match_limit=1,
+            allow_overlapping=False,
+            allow_incomplete=False,
+        ))
+
+        ds_c = read_file(self.path_c)
+        ds_d = read_file(self.path_d)
+        self.assertEqual(
+            self.get_mappings(ds_d, ds_c, 'population'),
+            self.expected_result,
+        )
+
+    def test_import_from_stdin(self):
+        """Test `import_records()` wrapper reading from stdin."""
+        command_relation.import_records(argparse.Namespace(  # <- Function under test.
+            filepath=self.path_c,
+            command=':',
+            filepath2=self.path_d,
+            subcommand='import',
+            link_name=None,
+            source='-',  # <- Using `-`, reads data from stdin.
+            direction='both',
+            match_limit=1,
+            allow_overlapping=False,
+            allow_incomplete=False,
+            stdin=DummyRedirection(self.mapping_data),  # <- Piped data via stdin.
+        ))
+
+        ds_c = read_file(self.path_c)
+        ds_d = read_file(self.path_d)
+        self.assertEqual(
+            self.get_mappings(ds_d, ds_c, 'population'),
+            self.expected_result,
+        )
+
+
 class TestRelationExportRecords(DataSpaceFixturesMixin, unittest.TestCase):
     def test_full_mapping(self):
         self.node_d.add_link(space=self.node_c,

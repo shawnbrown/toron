@@ -5,13 +5,14 @@ import logging
 import os
 import uuid
 from collections import Counter
-from contextlib import suppress
+from contextlib import AbstractContextManager, nullcontext, suppress
 from itertools import (
     chain,
     compress,
     islice,
 )
 from .._typing import (
+    IO,
     Callable,
     Dict,
     Generator,
@@ -545,7 +546,13 @@ def _import_records(
 
 def import_records(args: argparse.Namespace) -> ExitCode:
     """Load mapping records from source CSV file."""
-    with open(args.source) as f_source:
+    file_cm: AbstractContextManager[IO[str]]
+    if args.source == '-':
+        file_cm = nullcontext(args.stdin)
+    else:
+        file_cm = open(args.source)
+
+    with file_cm as f_source:
         ds1 = cli_bind_file(args.filepath, mode='rw')
         ds2 = cli_bind_file(args.filepath2, mode='rw')
 

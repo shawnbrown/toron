@@ -578,7 +578,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_rel_import = parser_rel_subparsers.add_parser(
         'import',
         help='load mapping records from SOURCE file',
-        description='Load mapping records from a SOURCE file.',
+        description="Load mapping records from a SOURCE file (use '-' for stdin).",
         epilog=('Mappings define weighted matches between index records '
                 'across two linked files.'),
         parents=[no_backup_parent],
