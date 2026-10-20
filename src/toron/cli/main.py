@@ -118,35 +118,46 @@ def get_parser() -> argparse.ArgumentParser:
         description='View and edit the contents of Toron files.',
         epilog='Run `%(prog)s COMMAND -h` for command-specific options.',
     )
-    parser.add_argument('--version',
-                        action='version',
-                        version=f'%(prog)s {__version__}')
-    parser.add_argument('filepath',
-                        type=str,
-                        help='path to a Toron file (.toron or .ds)',
-                        metavar='FILE')
-    subparsers = parser.add_subparsers(dest='command',
-                                       help='available commands',
-                                       required=True,
-                                       metavar='COMMAND')
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'%(prog)s {__version__}',
+    )
+    parser.add_argument(
+        'filepath',
+        type=str,
+        help='path to a Toron file (.toron or .ds)',
+        metavar='FILE',
+    )
+    subparsers = parser.add_subparsers(
+        dest='command',
+        required=True,
+        help='available commands',
+        metavar='COMMAND',
+    )
 
     # Common parser for "--no-backup" option (to use with `parents` arg).
     no_backup_parent = argparse.ArgumentParser(add_help=False)
-    no_backup_parent.add_argument('--no-backup', action='store_false',
-                                  dest='backup',
-                                  help='do not make a backup file')
+    no_backup_parent.add_argument(
+        '--no-backup',
+        action='store_false',
+        help='do not make a backup file',
+        dest='backup',
+    )
 
     ####################################################################
     # Subcommand: init
     ####################################################################
     parser_init = subparsers.add_parser(
         'init',
-        help='create a new file',
         description='Create a new Toron file.',
+        help='create a new file',
     )
-    parser_init.add_argument('--set-domain',
-                             help='define a domain (defaults to FILE without extension)',
-                             metavar='DOMAIN')
+    parser_init.add_argument(
+        '--set-domain',
+        help='define a domain (defaults to FILE without extension)',
+        metavar='DOMAIN',
+    )
     parser_init.set_defaults(func=command_init.create_file)
 
     ####################################################################
@@ -154,26 +165,33 @@ def get_parser() -> argparse.ArgumentParser:
     ####################################################################
     parser_label = subparsers.add_parser(
         'label',
-        help='manage label names',
         description='Manage label names used by the index.',
-        epilog=('Index labels are text values that identify locations in '
-                'a data space.'),
+        help='manage label names',
+        epilog=(
+            'Index labels are text values that identify locations in '
+            'a data space.'
+        ),
     )
-    parser_label_subparsers = parser_label.add_subparsers(dest='subcommand',
-                                                          required=True,
-                                                          metavar='COMMAND')
+    parser_label_subparsers = parser_label.add_subparsers(
+        dest='subcommand',
+        required=True,
+        metavar='COMMAND',
+    )
 
     # Subcommand: add
     parser_label_add = parser_label_subparsers.add_parser(
         'add',
         help='add label names',
         description='Add index label names.',
-        epilog=('Label names can be separate arguments or a comma-separated '
-                'list.'),
+        epilog='Label names can be separate arguments or a comma-separated list.',
         parents=[no_backup_parent],
     )
-    parser_label_add.add_argument('names', nargs='+',
-                                  help='label name to add', metavar='NAME')
+    parser_label_add.add_argument(
+        'names',
+        nargs='+',
+        help='label name to add',
+        metavar='NAME',
+    )
     parser_label_add.set_defaults(func=command_label.add)
 
     # Subcommand: update
@@ -183,17 +201,30 @@ def get_parser() -> argparse.ArgumentParser:
         description='Update the position of a label.',
         parents=[no_backup_parent],
     )
-    parser_label_update.add_argument('name',
-                                     help='label name to update', metavar='NAME')
+    parser_label_update.add_argument(
+        'name',
+        help='label name to update',
+        metavar='NAME',
+    )
     parser_label_update_group = parser_label_update.add_mutually_exclusive_group(required=True)
-    parser_label_update_group.add_argument('--move-left',
-                                           type=non_negative_int, metavar='N', nargs='?', default=0,
-                                           const=1, # <- Used if flag given without int arg.
-                                           help='move label to the left 1 or N positions')
-    parser_label_update_group.add_argument('--move-right',
-                                           type=non_negative_int, metavar='N', nargs='?', default=0,
-                                           const=1, # <- Used if flag given without int arg.
-                                           help='move label to the right 1 or N positions')
+    parser_label_update_group.add_argument(
+        '--move-left',
+        nargs='?',
+        const=1, # <- Used if flag given without int arg.
+        default=0,
+        type=non_negative_int,
+        help='move label to the left 1 or N positions',
+        metavar='N',
+    )
+    parser_label_update_group.add_argument(
+        '--move-right',
+        nargs='?',
+        const=1, # <- Used if flag given without int arg.
+        default=0,
+        type=non_negative_int,
+        help='move label to the right 1 or N positions',
+        metavar='N',
+    )
     parser_label_update.set_defaults(func=command_label.update)
 
     # Subcommand: rename
@@ -203,10 +234,16 @@ def get_parser() -> argparse.ArgumentParser:
         description='Rename a label from OLD_NAME to NEW_NAME.',
         parents=[no_backup_parent],
     )
-    parser_label_rename.add_argument('old_name',
-                                     help='index label to rename', metavar='OLD_NAME')
-    parser_label_rename.add_argument('new_name',
-                                     help='replacement label name', metavar='NEW_NAME')
+    parser_label_rename.add_argument(
+        'old_name',
+        help='index label to rename',
+        metavar='OLD_NAME'
+    )
+    parser_label_rename.add_argument(
+        'new_name',
+        help='replacement label name',
+        metavar='NEW_NAME'
+    )
     parser_label_rename.set_defaults(func=command_label.rename)
 
     ####################################################################
@@ -222,9 +259,11 @@ def get_parser() -> argparse.ArgumentParser:
             'index records in proportion to these weights.'
         ),
     )
-    parser_weight_subparsers = parser_weight.add_subparsers(dest='subcommand',
-                                                            required=True,
-                                                            metavar='COMMAND')
+    parser_weight_subparsers = parser_weight.add_subparsers(
+        dest='subcommand',
+        required=True,
+        metavar='COMMAND',
+    )
 
     # Subcommand: add
     parser_weight_add = parser_weight_subparsers.add_parser(
@@ -233,15 +272,25 @@ def get_parser() -> argparse.ArgumentParser:
         description='Add an index weight group to a file.',
         parents=[no_backup_parent],
     )
-    parser_weight_add.add_argument('name',
-                                   help='name of index weight to add',
-                                   metavar='NAME')
-    parser_weight_add.add_argument('--description',
-                                   help='description of weight group')
-    parser_weight_add.add_argument('--selectors', nargs='+',
-                                   help='attribute selectors')
-    parser_weight_add.add_argument('--make-default', action='store_true',
-                                   help='set as the default weight group')
+    parser_weight_add.add_argument(
+        'name',
+        help='name of index weight to add',
+        metavar='NAME',
+    )
+    parser_weight_add.add_argument(
+        '--description',
+        help='description of weight group',
+    )
+    parser_weight_add.add_argument(
+        '--selectors',
+        nargs='+',
+        help='attribute selectors',
+    )
+    parser_weight_add.add_argument(
+        '--make-default',
+        action='store_true',
+        help='set as the default weight group',
+    )
     parser_weight_add.set_defaults(func=command_weight.add)
 
     # Subcommand: update
@@ -251,20 +300,33 @@ def get_parser() -> argparse.ArgumentParser:
         description='Update the properties of an index weight group.',
         parents=[no_backup_parent],
     )
-    parser_weight_update.add_argument('name',
-                                      help='name of index weight to update',
-                                      metavar='NAME')
-    parser_weight_update.add_argument('--description',
-                                      help="change the weight's description")
-    parser_weight_update.add_argument('--add-selector', nargs='+',
-                                      metavar='SELECTOR',
-                                      help='add one or more attribute selectors')
-    parser_weight_update.add_argument('--remove-selector', nargs='+',
-                                      metavar='SELECTOR',
-                                      help='remove one or more attribute selectors')
-    parser_weight_update.add_argument('--default', action='store_true',
-                                      dest='make_default',
-                                      help="set as the file's default weight group")
+    parser_weight_update.add_argument(
+        'name',
+        help='name of index weight to update',
+        metavar='NAME',
+    )
+    parser_weight_update.add_argument(
+        '--description',
+        help="change the weight's description",
+    )
+    parser_weight_update.add_argument(
+        '--add-selector',
+        nargs='+',
+        help='add one or more attribute selectors',
+        metavar='SELECTOR',
+    )
+    parser_weight_update.add_argument(
+        '--remove-selector',
+        nargs='+',
+        help='remove one or more attribute selectors',
+        metavar='SELECTOR',
+    )
+    parser_weight_update.add_argument(
+        '--default',
+        action='store_true',
+        help="set as the file's default weight group",
+        dest='make_default',
+    )
     parser_weight_update.set_defaults(func=command_weight.update)
 
     ####################################################################
@@ -281,44 +343,61 @@ def get_parser() -> argparse.ArgumentParser:
             'domains.'
         ),
     )
-    parser_index_subparsers = parser_index.add_subparsers(dest='subcommand',
-                                                          required=True,
-                                                          metavar='COMMAND')
+    parser_index_subparsers = parser_index.add_subparsers(
+        dest='subcommand',
+        required=True,
+        metavar='COMMAND',
+    )
 
     # Subcommand: import
     parser_index_import = parser_index_subparsers.add_parser(
         'import',
         help='load index records from SOURCE file',
         description='Load index records from a SOURCE file.',
-        epilog=("The SOURCE file must contain label and weight columns "
-                "matching those defined in the FILE."),
+        epilog=(
+            'The SOURCE file must contain label and weight columns '
+            'matching those defined in the FILE.'
+        ),
         parents=[no_backup_parent],
     )
-    parser_index_import.add_argument('source',
-                                     help="CSV file of records to load (use '-' for stdin)",
-                                     metavar='SOURCE')
-    parser_index_import.add_argument('--on-label-conflict',
-                                     default='abort',
-                                     choices=['abort', 'ignore', 'replace'],
-                                     help='strategy for label conflicts (default: %(default)s)')
-    parser_index_import.add_argument('--on-weight-conflict',
-                                     default='abort',
-                                     choices=['abort', 'ignore', 'replace'],
-                                     help='strategy for weight conflicts (default: %(default)s)')
+    parser_index_import.add_argument(
+        'source',
+        help="CSV file of records to load (use '-' for stdin)",
+        metavar='SOURCE',
+    )
+    parser_index_import.add_argument(
+        '--on-label-conflict',
+        default='abort',
+        choices=['abort', 'ignore', 'replace'],
+        help='strategy for label conflicts (default: %(default)s)',
+    )
+    parser_index_import.add_argument(
+        '--on-weight-conflict',
+        default='abort',
+        choices=['abort', 'ignore', 'replace'],
+        help='strategy for weight conflicts (default: %(default)s)',
+    )
     parser_index_import.set_defaults(func=command_index.import_records)
 
     # Subcommand: export
     parser_index_export = parser_index_subparsers.add_parser(
         'export',
         help='write index records to TARGET file or directory',
-        description=('Write index records to a TARGET file or directory; '
-                     'uses an auto-generated name if TARGET is a directory.'),
+        description=(
+            'Write index records to a TARGET file or directory; '
+            'uses an auto-generated name if TARGET is a directory.'
+        ),
     )
-    parser_index_export.add_argument('target',
-                                     help="CSV file or directory to save records (use '-' for stdout)",
-                                     metavar='TARGET')
-    parser_index_export.add_argument('-f', '--force', action='store_true',
-                                     help='force overwrite of TARGET if it already exists')
+    parser_index_export.add_argument(
+        'target',
+        help="CSV file or directory to save records (use '-' for stdout)",
+        metavar='TARGET',
+    )
+    parser_index_export.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='force overwrite of TARGET if it already exists',
+    )
     parser_index_export.set_defaults(func=command_index.export_records)
 
     ####################################################################
@@ -328,28 +407,36 @@ def get_parser() -> argparse.ArgumentParser:
         'partition',
         help='manage partition definitions',
         description='Manage partition definitions used by quantities.',
-        epilog=('A partition definition is a set of label names used to '
-                'organize index records into regions. Well-specified '
-                'definitions use only the labels necessary to distinguish '
-                'one region from another. Multiple definitions are combined '
-                'to build a structure for organizing quantities and mappings.'),
+        epilog=(
+            'A partition definition is a set of label names used to organize '
+            'index records into regions. Well-specified definitions use only '
+            'the labels necessary to distinguish one region from another. '
+            'Multiple definitions are combined to build a structure for '
+            'organizing quantities and mappings.'
+        ),
     )
-    parser_partition_subparsers = parser_partition.add_subparsers(dest='subcommand',
-                                                                  required=True,
-                                                                  metavar='COMMAND')
+    parser_partition_subparsers = parser_partition.add_subparsers(
+        dest='subcommand',
+        required=True,
+        metavar='COMMAND',
+    )
 
     # Subcommand: add
     parser_partition_add = parser_partition_subparsers.add_parser(
         'add',
         help='add a partition definition',
-        description=('Add a new partition definition. Label names may be '
-                     'provided as separate arguments or as a comma-separated '
-                     'list.'),
+        description=(
+            'Add a new partition definition. Label names may be provided as '
+            'separate arguments or as a comma-separated list.'
+        ),
         parents=[no_backup_parent],
     )
-    parser_partition_add.add_argument('names', nargs='+',
-                                      help='label names that define the partition',
-                                      metavar='NAME')
+    parser_partition_add.add_argument(
+        'names',
+        nargs='+',
+        help='label names that define the partition',
+        metavar='NAME',
+    )
     parser_partition_add.set_defaults(func=command_partition.add)
 
     ####################################################################
@@ -364,21 +451,29 @@ def get_parser() -> argparse.ArgumentParser:
             'quantities.'
         ),
     )
-    parser_attribute_subparsers = parser_attribute.add_subparsers(dest='subcommand',
-                                                                  required=True,
-                                                                  metavar='COMMAND')
+    parser_attribute_subparsers = parser_attribute.add_subparsers(
+        dest='subcommand',
+        required=True,
+        metavar='COMMAND',
+    )
 
     # Subcommand: add
     parser_attribute_add = parser_attribute_subparsers.add_parser(
         'add',
         help='add attribute names',
         description='Add attribute names to a file.',
-        epilog=('Attribute names can be separate arguments or a '
-                'comma-separated list.'),
+        epilog=(
+            'Attribute names can be separate arguments or a comma-separated '
+            'list.'
+        ),
         parents=[no_backup_parent],
     )
-    parser_attribute_add.add_argument('names', nargs='+',
-                                      help='attribute name to add', metavar='NAME')
+    parser_attribute_add.add_argument(
+        'names',
+        nargs='+',
+        help='attribute name to add',
+        metavar='NAME',
+    )
     parser_attribute_add.set_defaults(func=command_attribute.add)
 
     # Subcommand: update
@@ -388,21 +483,30 @@ def get_parser() -> argparse.ArgumentParser:
         description='Update the position of an attribute.',
         parents=[no_backup_parent],
     )
-    parser_attribute_update.add_argument('name', metavar='NAME',
-                                         help='attribute name to update')
+    parser_attribute_update.add_argument(
+        'name',
+        help='attribute name to update',
+        metavar='NAME',
+    )
     parser_attribute_update_group = \
         parser_attribute_update.add_mutually_exclusive_group(required=True)
     parser_attribute_update_group.add_argument(
         '--move-left',
-        type=non_negative_int, metavar='N', nargs='?', default=0,
+        nargs='?',
         const=1, # <- Used if flag given without int arg.
+        default=0,
+        type=non_negative_int,
         help='move attribute to the left 1 or N positions',
+        metavar='N',
     )
     parser_attribute_update_group.add_argument(
         '--move-right',
-        type=non_negative_int, metavar='N', nargs='?', default=0,
+        nargs='?',
         const=1, # <- Used if flag given without int arg.
+        default=0,
+        type=non_negative_int,
         help='move attribute to the right 1 or N positions',
+        metavar='N',
     )
     parser_attribute_update.set_defaults(func=command_attribute.update)
 
@@ -413,63 +517,87 @@ def get_parser() -> argparse.ArgumentParser:
         name='quantity',
         help='import or export quantity records',
         description='Import or export quantity records.',
-        epilog=('A quantity is a numeric value representing an observation, '
-                'with labels (defining its location) and attributes (defining '
-                'its categories).'),
+        epilog=(
+            'A quantity is a numeric value representing an observation, with '
+            'labels (defining its location) and attributes (defining its '
+            'categories).'
+        ),
     )
-    parser_quantity_subparsers = parser_quantity.add_subparsers(dest='subcommand',
-                                                                required=True,
-                                                                metavar='COMMAND')
+    parser_quantity_subparsers = parser_quantity.add_subparsers(
+        dest='subcommand',
+        required=True,
+        metavar='COMMAND',
+    )
 
     # Subcommand: import
     parser_quantity_import = parser_quantity_subparsers.add_parser(
         'import',
         help='load quantity records from SOURCE file',
         description='Load quantity records from a SOURCE file.',
-        epilog=("The SOURCE data should contain label and attribute columns "
-                "matching those defined in FILE along with a 'quantity' "
-                "column. If the quantity column uses a different name, "
-                "specify it with the --column option."
+        epilog=(
+            "The SOURCE data should contain label and attribute columns "
+            "matching those defined in FILE along with a 'quantity' column. "
+            "If the quantity column uses a different name, specify it with "
+            "the --column option."
         ),
         parents=[no_backup_parent],
     )
-    parser_quantity_import.add_argument('source',
-                                        help="CSV file of records to load (use '-' for stdin)",
-                                        metavar='SOURCE')
-    parser_quantity_import.add_argument('--column',
-                                        default='quantity',
-                                        dest='value_column',
-                                        help='name of the quantity values column (default: %(default)s)',
-                                        metavar='NAME')
-    parser_quantity_import.add_argument('--ignore-missing-column',
-                                        nargs='+',
-                                        help='ignore specified columns if missing from SOURCE data',
-                                        metavar='NAME')
-    parser_quantity_import.add_argument('--allow-invalid-label',
-                                        action='store_true',
-                                        help='allow quantities without matching index labels')
-    parser_quantity_import.add_argument('--allow-invalid-partition',
-                                        action='store_true',
-                                        help='allow quantities without matching partitions')
-    parser_quantity_import.add_argument('--on-existing',
-                                        default='abort',
-                                        choices=['abort', 'sum', 'replace', 'ignore'],
-                                        dest='on_existing',
-                                        help='strategy for existing quantities (default: %(default)s)')
+    parser_quantity_import.add_argument(
+        'source',
+        help="CSV file of records to load (use '-' for stdin)",
+        metavar='SOURCE',
+    )
+    parser_quantity_import.add_argument(
+        '--column',
+        default='quantity',
+        help='name of the quantity values column (default: %(default)s)',
+        metavar='NAME',
+        dest='value_column',
+    )
+    parser_quantity_import.add_argument(
+        '--ignore-missing-column',
+        nargs='+',
+        help='ignore specified columns if missing from SOURCE data',
+        metavar='NAME',
+    )
+    parser_quantity_import.add_argument(
+        '--allow-invalid-label',
+        action='store_true',
+        help='allow quantities without matching index labels',
+    )
+    parser_quantity_import.add_argument(
+        '--allow-invalid-partition',
+        action='store_true',
+        help='allow quantities without matching partitions',
+    )
+    parser_quantity_import.add_argument(
+        '--on-existing',
+        default='abort',
+        choices=['abort', 'sum', 'replace', 'ignore'],
+        help='strategy for existing quantities (default: %(default)s)',
+        dest='on_existing',
+    )
     parser_quantity_import.set_defaults(func=command_quantity.import_records)
 
     # Subcommand: export
     parser_quantity_export = parser_quantity_subparsers.add_parser(
         'export',
         help='write quantity records to TARGET file or directory',
-        description=('Write quantity records to a TARGET file or directory; '
-                     'uses an auto-generated name if TARGET is a directory.'),
+        description=(
+            'Write quantity records to a TARGET file or directory; uses an '
+            'auto-generated name if TARGET is a directory.'
+        ),
     )
-    parser_quantity_export.add_argument('target',
-                                        help="CSV file or directory to save records (use '-' for stdout)",
-                                        metavar='TARGET')
-    parser_quantity_export.add_argument('-f', '--force', action='store_true',
-                                        help='force overwrite of TARGET if it already exists')
+    parser_quantity_export.add_argument(
+        'target',
+        help="CSV file or directory to save records (use '-' for stdout)",
+        metavar='TARGET',
+    )
+    parser_quantity_export.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='force overwrite of TARGET if it already exists',
+    )
     parser_quantity_export.set_defaults(func=command_quantity.export_records)
 
     ####################################################################
@@ -480,9 +608,11 @@ def get_parser() -> argparse.ArgumentParser:
         help='show file information (default if COMMAND omitted)',
         description='Show file information.',
     )
-    parser_info.add_argument('--set-domain',
-                             help='change domain to a new value',
-                             metavar='DOMAIN')
+    parser_info.add_argument(
+        '--set-domain',
+        help='change domain to a new value',
+        metavar='DOMAIN',
+    )
     parser_info.set_defaults(func=command_info.write_to_stdout)
 
     ####################################################################
@@ -495,13 +625,17 @@ def get_parser() -> argparse.ArgumentParser:
         epilog='Run `toron : COMMAND -h` for command-specific help.',
         help='manage relations between files (run `%(prog)s : -h` for details)',
     )
-    parser_rel.add_argument('filepath2',
-                            type=str,
-                            help=argparse.SUPPRESS,
-                            metavar='FILE2')
-    parser_rel_subparsers = parser_rel.add_subparsers(dest='subcommand',
-                                                      required=True,
-                                                      metavar='COMMAND')
+    parser_rel.add_argument(
+        'filepath2',
+        type=str,
+        help=argparse.SUPPRESS,
+        metavar='FILE2',
+    )
+    parser_rel_subparsers = parser_rel.add_subparsers(
+        dest='subcommand',
+        required=True,
+        metavar='COMMAND',
+    )
 
     # Subcommand: add
     parser_rel_add = parser_rel_subparsers.add_parser(
@@ -511,34 +645,46 @@ def get_parser() -> argparse.ArgumentParser:
         epilog='A link establishes a named relationship between two files.',
         parents=[no_backup_parent],
     )
-    parser_rel_add.add_argument('link_name',
-                                help='name for the new link',
-                                metavar='NAME')
+    parser_rel_add.add_argument(
+        'link_name',
+        help='name for the new link',
+        metavar='NAME',
+    )
     parser_rel_add_group = parser_rel_add.add_mutually_exclusive_group()
     parser_rel_add_group.add_argument(
         '--left',
         action='store_const',
         const='left',
-        dest='direction',
         help='add single direction, FILE1 <- FILE2',
+        dest='direction',
     )
     parser_rel_add_group.add_argument(
         '--right',
         action='store_const',
         const='right',
-        dest='direction',
         help='add single direction, FILE1 -> FILE2',
+        dest='direction',
     )
-    parser_rel_add.add_argument('--description',
-                                help='description of the link')
-    parser_rel_add.add_argument('--selectors', nargs='+',
-                                metavar='SELECTOR',
-                                help='attribute selectors')
-    parser_rel_add.add_argument('--default', action='store_true',
-                                dest='make_default',
-                                help='set as the default link')
-    parser_rel_add.set_defaults(direction='both',
-                                func=command_relation.add_link)
+    parser_rel_add.add_argument(
+        '--description',
+        help='description of the link',
+    )
+    parser_rel_add.add_argument(
+        '--selectors',
+        nargs='+',
+        help='attribute selectors',
+        metavar='SELECTOR',
+    )
+    parser_rel_add.add_argument(
+        '--default',
+        action='store_true',
+        help='set as the default link',
+        dest='make_default',
+    )
+    parser_rel_add.set_defaults(
+        direction='both',
+        func=command_relation.add_link,
+    )
 
     # Subcommand: remove
     parser_rel_remove = parser_rel_subparsers.add_parser(
@@ -547,27 +693,29 @@ def get_parser() -> argparse.ArgumentParser:
         description='Remove a link from between files.',
         parents=[no_backup_parent],
     )
-    parser_rel_remove.add_argument('link_name',
-                                   help='name of the link to remove',
-                                   metavar='NAME')
+    parser_rel_remove.add_argument(
+        'link_name',
+        help='name of the link to remove',
+        metavar='NAME',
+    )
     parser_rel_remove_group = parser_rel_remove.add_mutually_exclusive_group()
     parser_rel_remove_group.add_argument(
         '--left',
         action='store_const',
         const='left',
-        dest='direction',
         help='remove single direction, FILE1 <- FILE2',
+        dest='direction',
     )
     parser_rel_remove_group.add_argument(
         '--right',
         action='store_const',
         const='right',
-        dest='direction',
         help='remove single direction, FILE1 -> FILE2',
+        dest='direction',
     )
     parser_rel_remove.set_defaults(
-        func=command_relation.remove_link,
         direction='both',
+        func=command_relation.remove_link,
     )
 
     # Subcommand: import
@@ -575,13 +723,17 @@ def get_parser() -> argparse.ArgumentParser:
         'import',
         help='load mapping records from SOURCE file',
         description='Load mapping records from a SOURCE file.',
-        epilog=('Mappings define weighted matches between index records '
-                'across two linked files.'),
+        epilog=(
+            'Mappings define weighted matches between index records across '
+            'two linked files.'
+        ),
         parents=[no_backup_parent],
     )
-    parser_rel_import.add_argument('source',
-                                   help="CSV file of mapping records to load (use '-' for stdin)",
-                                   metavar='SOURCE')
+    parser_rel_import.add_argument(
+        'source',
+        help="CSV file of mapping records to load (use '-' for stdin)",
+        metavar='SOURCE',
+    )
     parser_rel_import_group = parser_rel_import.add_mutually_exclusive_group()
     parser_rel_import_group.add_argument(
         '--left',
@@ -597,43 +749,64 @@ def get_parser() -> argparse.ArgumentParser:
         dest='direction',
         help='add single direction, FILE1 -> FILE2',
     )
-    parser_rel_import.add_argument('--match-limit',
-                                   default=1,
-                                   type=int,
-                                   help='accept one-to-many (N) matches (default: one-to-one)',
-                                   metavar='N')
-    parser_rel_import.add_argument('--allow-overlapping',
-                                   action='store_true',
-                                   help='fuzzy matches may overlap target records')
-    parser_rel_import.add_argument('--allow-incomplete',
-                                   action='store_true',
-                                   help='load matches even if the mapping is incomplete')
-    parser_rel_import.add_argument('--link',
-                                   help='specify a link name if more than one link exists',
-                                   metavar='NAME',
-                                   dest='link_name')
-    parser_rel_import.set_defaults(direction='both',
-                                   func=command_relation.import_records)
+    parser_rel_import.add_argument(
+        '--match-limit',
+        default=1,
+        type=int,
+        help='accept one-to-many (N) matches (default: one-to-one)',
+        metavar='N',
+    )
+    parser_rel_import.add_argument(
+        '--allow-overlapping',
+        action='store_true',
+        help='fuzzy matches may overlap target records',
+    )
+    parser_rel_import.add_argument(
+        '--allow-incomplete',
+        action='store_true',
+        help='load matches even if the mapping is incomplete',
+    )
+    parser_rel_import.add_argument(
+        '--link',
+        help='specify a link name if more than one link exists',
+        metavar='NAME',
+        dest='link_name',
+    )
+    parser_rel_import.set_defaults(
+        direction='both',
+        func=command_relation.import_records,
+    )
 
     # Subcommand: export
     parser_rel_export = parser_rel_subparsers.add_parser(
         'export',
         help='write mapping records to TARGET file or directory',
-        description=('Write mapping records to a TARGET file or directory; '
-                     'uses an auto-generated name if TARGET is a directory.'),
-        epilog=('NOTE: Currently limited to exporting rightward mappings '
-                '(FILE1 -> FILE2). Support for leftward and bidirectional '
-                'mappings is planned in future updates.'),
+        description=(
+            'Write mapping records to a TARGET file or directory; uses an '
+            'auto-generated name if TARGET is a directory.'
+        ),
+        epilog=(
+            'NOTE: Currently limited to exporting rightward mappings '
+            '(FILE1 -> FILE2). Support for leftward and bidirectional '
+            'mappings is planned in future updates.'
+        ),
     )
-    parser_rel_export.add_argument('target',
-                                   help="CSV file or directory to save records (use '-' for stdout)",
-                                   metavar='TARGET')
-    parser_rel_export.add_argument('-f', '--force', action='store_true',
-                                   help='force overwrite of TARGET if it already exists')
-    parser_rel_export.add_argument('--link',
-                                   help='specify a link name if more than one link exists',
-                                   metavar='NAME',
-                                   dest='link_name')
+    parser_rel_export.add_argument(
+        'target',
+        help="CSV file or directory to save records (use '-' for stdout)",
+        metavar='TARGET',
+    )
+    parser_rel_export.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='force overwrite of TARGET if it already exists',
+    )
+    parser_rel_export.add_argument(
+        '--link',
+        help='specify a link name if more than one link exists',
+        metavar='NAME',
+        dest='link_name',
+    )
     parser_rel_export.set_defaults(func=command_relation.export_records)
 
     return parser
