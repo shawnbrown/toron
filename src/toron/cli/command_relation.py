@@ -43,13 +43,11 @@ from .._utils import (
 )
 from .common import (
     ExitCode,
-    is_streamed,
-    csv_stdout_writer,
     index_code_to_id,
     index_id_to_code,
     get_index_code_position,
     resolve_link_name,
-    open_file_for_writing,
+    export_csv_to_file_or_stdout,
     cli_bind_file,
     process_backup_option,
     make_index_code_header,
@@ -751,15 +749,16 @@ def export_records(args: argparse.Namespace) -> ExitCode:
     else:
         link_name = resolve_link_name(src_ds, dst_ds, 'right')
 
-    with open_file_for_writing(
-        target_path=args.target,
-        autoname_parts=autoname_parts,
-        autoname_ext='csv',
-        overwrite=args.force,
-    ) as f:
-        writer = csv.writer(f, lineterminator='\n')
-        for row in _export_records(src_ds, dst_ds, link_name):
-            writer.writerow(row)
+    try:
+        export_csv_to_file_or_stdout(
+            row_generator_func=lambda: _export_records(src_ds, dst_ds, link_name),
+            target_path=args.target,
+            autoname_parts=autoname_parts,
+            stdout_stream=args.stdout,
+            overwrite=args.force,
+            logger=applogger,
+        )
+    except BrokenPipeError:
+        os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
 
-    applogger.info(f'saved to {f.name!r}')
     return ExitCode.OK
