@@ -249,6 +249,8 @@ def export_csv_to_file_or_stdout(
     immediately without additional buffer handling or cleanup--which
     would raise secondary errors since the pipe is already broken.
     """
+    f: TextIO
+
     if target_path == '-':
         # Write to stdout.
         with open_stream_for_writing(stdout_stream) as f:
