@@ -19,6 +19,7 @@ from toron.cli.common import (
     resolve_link_name,
     make_path_from_parts,
     open_file_for_writing,
+    export_csv_to_file_or_stdout,
     csv_stdout_writer,
     normalize_arg_list,
     ansi_codes,
@@ -182,6 +183,84 @@ class TestOpenFileForWriting(unittest.TestCase):
             f.write('Hello New World')
 
         self.assertEqual(filepath.read_text(), 'Hello New World')
+
+
+class TestExportCsvToFileOrStdout(unittest.TestCase):
+    def test_export_to_file(self):
+        """Write to file and check log message."""
+        logger = logging.getLogger('test_logger')
+        handler = logging.handlers.MemoryHandler(capacity=10)
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            target_path = os.path.join(tmpdir, 'myfile.csv')
+
+            export_csv_to_file_or_stdout(  # <- Function under test.
+                row_generator_func=lambda: iter([['A', 'B'], ['x', 1.0], ['y', 2.0]]),
+                target_path=target_path,
+                autoname_parts=[],
+                stdout_stream=DummyRedirection(),
+                overwrite=False,
+                logger=logger,  # <- Pass in logger, too.
+            )
+
+            with open(target_path) as f:
+                self.assertEqual(f.read(), 'A,B\nx,1.0\ny,2.0\n')
+
+        self.assertRegex(
+            handler.buffer[0].getMessage(),
+            r"saved to '.+myfile.csv'",
+        )
+
+    def test_export_to_directory(self):
+        """When target_path is a directory, should auto-generate filename."""
+        with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+
+            export_csv_to_file_or_stdout(  # <- Function under test.
+                row_generator_func=lambda: iter([['A', 'B'], ['x', 1.0], ['y', 2.0]]),
+                target_path=tmpdir,  # <- Target is a directory.
+                autoname_parts=['foo', 'bar'],
+                stdout_stream=DummyRedirection(),
+                overwrite=False,
+                logger=None,
+            )
+
+            autogen_name = os.path.join(tmpdir, 'foo-bar.csv')
+            with open(autogen_name) as f:
+                self.assertEqual(f.read(), 'A,B\nx,1.0\ny,2.0\n')
+
+    def test_export_to_stream(self):
+        """When target_path is '-', should write to stdout stream."""
+        dummy_stream = DummyRedirection()
+
+        export_csv_to_file_or_stdout(  # <- Function under test.
+            row_generator_func=lambda: iter([['A', 'B'], ['x', 1.0], ['y', 2.0]]),
+            target_path='-',  # <- Using `-` writes to stdout stream.
+            autoname_parts=['foo', 'bar'],
+            stdout_stream=dummy_stream,
+            overwrite=False,
+            logger=None,
+        )
+
+        self.assertEqual(dummy_stream.getvalue(), 'A,B\nx,1.0\ny,2.0\n')
+
+    def test_export_to_file_overwrite(self):
+         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
+            target_path = os.path.join(tmpdir, 'myfile.csv')
+            with open(target_path, 'w') as f:
+                f.write('Hello World\n')
+
+            regex = r"File exists: '.+myfile.csv'; use -f or --force to overwrite existing file"
+            with self.assertRaisesRegex(ToronError, regex):
+                export_csv_to_file_or_stdout(  # <- Function under test.
+                    row_generator_func=lambda: iter([['A', 'B'], ['x', 1.0], ['y', 2.0]]),
+                    target_path=target_path,
+                    autoname_parts=[],
+                    stdout_stream=DummyRedirection(),
+                    overwrite=False,
+                    logger=None,
+                )
 
 
 class TestCsvStdoutWriter(StreamWrapperMixin, unittest.TestCase):

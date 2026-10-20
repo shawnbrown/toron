@@ -17,6 +17,7 @@ from struct import Struct
 from .. import bind_file, ToronError
 from .._typing import (
     Any,
+    Callable,
     Dict,
     Generator,
     Iterable,
@@ -216,6 +217,58 @@ def open_stream_for_writing(
             wrapper.detach()  # Keep `stdout.buffer` open.
         except Exception:
             pass
+
+
+def export_csv_to_file_or_stdout(
+    row_generator_func: Callable[[], Iterable[Sequence]],
+    target_path: str,
+    autoname_parts: List[str],
+    stdout_stream: TextIO,
+    overwrite: bool = False,
+    logger: Optional[logging.Logger] = None,
+) -> None:
+    """Write rows from `row_generator_func` to file or stdout as CSV.
+
+    When target_path is a directory, a file name is automatically
+    generated using autoname_parts.
+
+    When target_path is '-', data is written to stdout. When stdout is
+    piped to another process, it's possible to get a `BrokenPipeError`
+    if the downstream pipe is stopped early. This is usually OK (e.g.,
+    when piping to `head`), so we should handle the error by exiting
+    with `os._exit()`:
+
+    ```
+        try:
+            export_csv_to_file_or_stdout(...)
+        except BrokenPipeError:
+            os._exit(ExitCode.OK)  # Downstream stopped early; exit with OK.
+    ```
+
+    The `_exit()` function is used (instead of `exit()`) to quit
+    immediately without additional buffer handling or cleanup--which
+    would raise secondary errors since the pipe is already broken.
+    """
+    if target_path == '-':
+        # Write to stdout.
+        with open_stream_for_writing(stdout_stream) as f:
+            writer = csv.writer(f, lineterminator='\n')
+            for row in row_generator_func():
+                writer.writerow(row)
+    else:
+        # Write to file.
+        with open_file_for_writing(
+            target_path=target_path,
+            autoname_parts=autoname_parts,
+            autoname_ext='csv',
+            overwrite=overwrite,
+        ) as f:
+            writer = csv.writer(f, lineterminator='\n')
+            for row in row_generator_func():
+                writer.writerow(row)
+
+        if logger:
+            logger.info(f'saved to {target_path!r}')
 
 
 def cli_bind_file(
