@@ -268,6 +268,7 @@ class TestQuantityExportRecords(QuantityMixin, unittest.TestCase):
                 subcommand='export',
                 force=False,
                 target=target_path,
+                stdout=DummyRedirection(),
             ))
 
             with open(target_path) as f:
