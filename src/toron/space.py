@@ -2855,7 +2855,7 @@ class DataSpace(object):
                         zipped = zip(label_names, location.labels)
                         criteria = {k: v for k, v in zipped if v != ''}
 
-                        # Get all index records associated with the location.
+                        # Get all index ids associated with the location.
                         index_ids = array.array(
                             'q', index_repo.filter_index_ids_by_label(criteria)
                         )
