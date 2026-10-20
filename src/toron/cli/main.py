@@ -247,7 +247,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser_weight_update = parser_weight_subparsers.add_parser(
         'update',
         help='update an index weight group',
-        description='Update the properties of an index weight group in a file.',
+        description='Update the properties of an index weight group.',
         parents=[no_backup_parent],
     )
     parser_weight_update.add_argument('name',
@@ -288,13 +288,13 @@ def get_parser() -> argparse.ArgumentParser:
     parser_index_import = parser_index_subparsers.add_parser(
         'import',
         help='load index records from SOURCE file',
-        description="Load index records from a SOURCE file (use '-' for stdin).",
+        description='Load index records from a SOURCE file.',
         epilog=("The SOURCE file must contain label and weight columns "
                 "matching those defined in the FILE."),
         parents=[no_backup_parent],
     )
     parser_index_import.add_argument('source',
-                                     help='CSV file containing records to load',
+                                     help="CSV file of records to load (use '-' for stdin)",
                                      metavar='SOURCE')
     parser_index_import.add_argument('--on-label-conflict',
                                      default='abort',
@@ -310,12 +310,11 @@ def get_parser() -> argparse.ArgumentParser:
     parser_index_export = parser_index_subparsers.add_parser(
         'export',
         help='write index records to TARGET file or directory',
-        description=("Write index records to a TARGET file or directory (use "
-                     "'-' for stdout); uses an auto-generated name if TARGET "
-                     "is a directory."),
+        description=('Write index records to a TARGET file or directory; '
+                     'uses an auto-generated name if TARGET is a directory.'),
     )
     parser_index_export.add_argument('target',
-                                     help='CSV file or directory to save records',
+                                     help="CSV file or directory to save records (use '-' for stdout)",
                                      metavar='TARGET')
     parser_index_export.add_argument('-f', '--force', action='store_true',
                                      help='force overwrite of TARGET if it already exists')
@@ -425,20 +424,21 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity_import = parser_quantity_subparsers.add_parser(
         'import',
         help='load quantity records from SOURCE file',
-        description="Load quantity records from a SOURCE file (use '-' for stdin).",
-        epilog=('The SOURCE data should contain label and attribute columns '
-                'matching those defined in FILE. Specify the name of the '
-                'values column with --column (or use the default name, quantity).'
+        description='Load quantity records from a SOURCE file.',
+        epilog=("The SOURCE data should contain label and attribute columns "
+                "matching those defined in FILE along with a 'quantity' "
+                "column. If the quantity column uses a different name, "
+                "specify it with the --column option."
         ),
         parents=[no_backup_parent],
     )
     parser_quantity_import.add_argument('source',
-                                        help='CSV file containing records to load',
+                                        help="CSV file of records to load (use '-' for stdin)",
                                         metavar='SOURCE')
     parser_quantity_import.add_argument('--column',
                                         default='quantity',
                                         dest='value_column',
-                                        help='name of the values column (default: %(default)s)',
+                                        help='name of the quantity values column (default: %(default)s)',
                                         metavar='NAME')
     parser_quantity_import.add_argument('--ignore-missing-column',
                                         nargs='+',
@@ -461,12 +461,11 @@ def get_parser() -> argparse.ArgumentParser:
     parser_quantity_export = parser_quantity_subparsers.add_parser(
         'export',
         help='write quantity records to TARGET file or directory',
-        description=("Write quantity records to a TARGET file or directory "
-                     "(use '-' for stdout); uses an auto-generated name if "
-                     "TARGET is a directory."),
+        description=('Write quantity records to a TARGET file or directory; '
+                     'uses an auto-generated name if TARGET is a directory.'),
     )
     parser_quantity_export.add_argument('target',
-                                        help='CSV file or directory to save records',
+                                        help="CSV file or directory to save records (use '-' for stdout)",
                                         metavar='TARGET')
     parser_quantity_export.add_argument('-f', '--force', action='store_true',
                                         help='force overwrite of TARGET if it already exists')
@@ -574,13 +573,13 @@ def get_parser() -> argparse.ArgumentParser:
     parser_rel_import = parser_rel_subparsers.add_parser(
         'import',
         help='load mapping records from SOURCE file',
-        description="Load mapping records from a SOURCE file (use '-' for stdin).",
+        description='Load mapping records from a SOURCE file.',
         epilog=('Mappings define weighted matches between index records '
                 'across two linked files.'),
         parents=[no_backup_parent],
     )
     parser_rel_import.add_argument('source',
-                                   help='CSV file of mapping records to load',
+                                   help="CSV file of mapping records to load (use '-' for stdin)",
                                    metavar='SOURCE')
     parser_rel_import_group = parser_rel_import.add_mutually_exclusive_group()
     parser_rel_import_group.add_argument(
@@ -626,7 +625,7 @@ def get_parser() -> argparse.ArgumentParser:
                 'mappings is planned in future updates.'),
     )
     parser_rel_export.add_argument('target',
-                                   help='CSV file or directory to save records',
+                                   help="CSV file or directory to save records (use '-' for stdout)",
                                    metavar='TARGET')
     parser_rel_export.add_argument('-f', '--force', action='store_true',
                                    help='force overwrite of TARGET if it already exists')
