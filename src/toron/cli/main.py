@@ -5,15 +5,11 @@ import sys
 from os.path import isfile
 from .._typing import (
     List,
-    Literal,
     Optional,
-    Set,
     TextIO,
 )
 from .. import (
     __version__,
-    bind_file,
-    DataSpace,
     ToronError,
 )
 from . import (

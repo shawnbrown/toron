@@ -14,7 +14,6 @@ from ._typing import (
 
 from .data_models import (
     TORON_MAGIC_NUMBER,
-    COMMON_RESERVED_IDENTIFIERS,
     BaseDataConnector,
     BaseLabelManager,
     BaseIndexRepository,

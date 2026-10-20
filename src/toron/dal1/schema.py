@@ -55,7 +55,6 @@ from certain tables.
 """
 
 import sqlite3
-import sys
 from contextlib import closing
 from json import (
     dumps as json_dumps,
@@ -65,7 +64,6 @@ from uuid import uuid4
 
 import toron._datetime as datetime
 from toron._typing import (
-    Callable,
     Final,
     Optional,
     Set,

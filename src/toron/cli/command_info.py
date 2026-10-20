@@ -12,7 +12,6 @@ from ..data_service import (
 )
 from .common import (
     ExitCode,
-    StyleCodes,
     cli_bind_file,
 )
 

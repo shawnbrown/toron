@@ -10,7 +10,6 @@ from contextlib import closing
 from tempfile import NamedTemporaryFile
 
 from toron._typing import (
-    List,
     Literal,
     Optional,
     Self,

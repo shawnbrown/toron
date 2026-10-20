@@ -12,11 +12,9 @@ from collections import Counter
 from contextlib import contextmanager
 from dataclasses import astuple, dataclass
 from enum import IntEnum
-from itertools import chain
 from struct import Struct
 from .. import bind_file, ToronError
 from .._typing import (
-    Any,
     Callable,
     Dict,
     Generator,

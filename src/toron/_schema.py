@@ -63,15 +63,11 @@ from contextlib import contextmanager
 from json import loads as _loads
 from json import dumps as _dumps
 from ._typing import (
-    overload,
     Callable,
     Dict,
-    Iterable,
     List,
     Literal,
     Optional,
-    Sequence,
-    Tuple,
     TypeAlias,
     Union,
 )

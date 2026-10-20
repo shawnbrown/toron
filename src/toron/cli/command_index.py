@@ -17,7 +17,6 @@ from .._typing import (
     TYPE_CHECKING,
 )
 
-from .._utils import ToronError
 from .common import (
     ExitCode,
     export_csv_to_file_or_stdout,
