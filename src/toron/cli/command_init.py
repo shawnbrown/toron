@@ -22,8 +22,8 @@ def create_file(args: argparse.Namespace) -> ExitCode:
 
     ds = DataSpace()
 
-    if args.domain:
-        ds.set_domain(args.domain)
+    if args.set_domain:
+        ds.set_domain(args.set_domain)
     else:
         ds.set_domain(os.path.splitext(os.path.basename(args.filepath))[0])
 
@@ -34,6 +34,6 @@ def create_file(args: argparse.Namespace) -> ExitCode:
         return ExitCode.ERR
 
     applogger.info(f'created file {args.filepath!r}')
-    if args.domain is None:
+    if args.set_domain is None:
         applogger.info(f'domain set to {ds.domain!r}')
     return ExitCode.OK

@@ -103,7 +103,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             argparse.Namespace(
                 filepath='myfile.toron',
                 command='init',
-                domain=None,
+                set_domain=None,
                 func=command_init.create_file,
             ),
         )
@@ -112,12 +112,12 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
             self.parser.parse_args([
                 'myfile.toron',
                 'init',
-                '--domain', 'mydomain',
+                '--set-domain', 'mydomain',
             ]),
             argparse.Namespace(
                 filepath='myfile.toron',
                 command='init',
-                domain='mydomain',
+                set_domain='mydomain',
                 func=command_init.create_file,
             ),
         )
@@ -521,7 +521,7 @@ class TestToronArgumentParser(StreamWrapperMixin, unittest.TestCase):
 
         self.assertRegex(
             self.stdout_capture.getvalue(),
-            (r'^usage: toron FILE init \[-h\] \[--domain DOMAIN\]\n'
+            (r'^usage: toron FILE init \[-h\] \[--set-domain DOMAIN\]\n'
              r'\n'
              r'Create a new Toron file.'),
         )

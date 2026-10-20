@@ -13,7 +13,7 @@ class TestInit(unittest.TestCase):
         """Should create new file at given path location."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             filepath = os.path.join(tmpdir, 'blerg.toron')
-            args = argparse.Namespace(command='init', filepath=filepath, domain=None)
+            args = argparse.Namespace(command='init', filepath=filepath, set_domain=None)
 
             self.assertFalse(os.path.exists(filepath))
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
@@ -35,7 +35,7 @@ class TestInit(unittest.TestCase):
         """Create a new file with an explicitly given domain."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             filepath = os.path.join(tmpdir, 'blerg.toron')
-            args = argparse.Namespace(command='new', filepath=filepath, domain='dorp')
+            args = argparse.Namespace(command='new', filepath=filepath, set_domain='dorp')
 
             self.assertFalse(os.path.exists(filepath))
 
@@ -54,7 +54,7 @@ class TestInit(unittest.TestCase):
         """Should give "cancelled" error if target dir doesn't exist."""
         with tempfile.TemporaryDirectory(prefix='toron-') as tmpdir:
             filepath = os.path.join(tmpdir, 'does_not_exist', 'blerg.toron')
-            args = argparse.Namespace(command='new', filepath=filepath, domain=None)
+            args = argparse.Namespace(command='new', filepath=filepath, set_domain=None)
 
             with self.assertLogs('app-toron', level='INFO') as logs_cm:
                 command_init.create_file(args)  # <- Function under test.

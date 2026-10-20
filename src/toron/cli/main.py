@@ -144,8 +144,9 @@ def get_parser() -> argparse.ArgumentParser:
         help='create a new file',
         description='Create a new Toron file.',
     )
-    parser_init.add_argument('--domain',
-                             help='define a domain (defaults to FILE without extension)')
+    parser_init.add_argument('--set-domain',
+                             help='define a domain (defaults to FILE without extension)',
+                             metavar='DOMAIN')
     parser_init.set_defaults(func=command_init.create_file)
 
     ####################################################################
