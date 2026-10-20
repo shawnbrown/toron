@@ -268,7 +268,7 @@ def export_csv_to_file_or_stdout(
                 writer.writerow(row)
 
         if logger:
-            logger.info(f'saved to {target_path!r}')
+            logger.info(f'saved to {f.name!r}')
 
 
 def cli_bind_file(
