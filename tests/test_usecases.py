@@ -280,7 +280,7 @@ class TestBuildUsingOldCLI(unittest.TestCase):
             subcommand='add',
             name='wght',
             description=None,
-            selector=None,
+            selectors=None,
             make_default=True,
         ))
         cli.command_index.import_records(argparse.Namespace(
@@ -349,7 +349,7 @@ class TestBuildUsingOldCLI(unittest.TestCase):
             subcommand='add',
             name='wght',
             description=None,
-            selector=None,
+            selectors=None,
             make_default=True,
         ))
         cli.command_index.import_records(argparse.Namespace(

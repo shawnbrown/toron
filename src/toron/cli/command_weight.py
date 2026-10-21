@@ -23,7 +23,7 @@ def add(args: argparse.Namespace) -> ExitCode:
     ds.add_weight_group(
         name=args.name,
         description=args.description,
-        selectors=args.selector,
+        selectors=args.selectors,
         make_default=args.make_default or None,  # Use `None` instead of `False`.
     )
 

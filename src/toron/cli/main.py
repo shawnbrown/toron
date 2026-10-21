@@ -285,6 +285,8 @@ def get_parser() -> argparse.ArgumentParser:
         '--selector',
         nargs='+',
         help='define one or more attribute selectors',
+        metavar='SELECTOR',
+        dest='selectors',
     )
     parser_weight_add.add_argument(
         '--make-default',
@@ -669,16 +671,16 @@ def get_parser() -> argparse.ArgumentParser:
         help='description of the link',
     )
     parser_rel_add.add_argument(
-        '--selectors',
+        '--selector',
         nargs='+',
-        help='attribute selectors',
+        help='define one or more attribute selectors',
         metavar='SELECTOR',
+        dest='selectors',
     )
     parser_rel_add.add_argument(
-        '--default',
+        '--make-default',
         action='store_true',
-        help='set as the default link',
-        dest='make_default',
+        help='make this the default link',
     )
     parser_rel_add.set_defaults(
         direction='both',

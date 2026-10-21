@@ -18,7 +18,7 @@ class TestAdd(TempDataSpaceMixin, unittest.TestCase):
             subcommand='add',
             name='population',
             description='Census 2020 Population',
-            selector=['[foo]', '[bar="baz"]'],
+            selectors=['[foo]', '[bar="baz"]'],
             make_default=True,
             backup=False,
         ))
@@ -41,7 +41,7 @@ class TestAdd(TempDataSpaceMixin, unittest.TestCase):
             subcommand='add',
             name='population',
             description=None,
-            selector=None,
+            selectors=None,
             make_default=True,
             backup=False,
         ))
@@ -54,7 +54,7 @@ class TestAdd(TempDataSpaceMixin, unittest.TestCase):
                 subcommand='add',
                 name='population',
                 description=None,
-                selector=None,
+                selectors=None,
                 make_default=True,
                 backup=False,
             ))
