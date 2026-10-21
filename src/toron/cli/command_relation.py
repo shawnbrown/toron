@@ -165,13 +165,13 @@ def get_column_positions(
             f"{', '.join(repr(x) for x in columns)}"
         )
 
-    # Scan through data 8 rows (chunk_size) at a time looking for index
-    # code columns but give up after 256 (scan_limit) rows.
+    # Scan data 8 rows (chunk_size) at a time looking for index code
+    # columns but give up after 256 rows (scan_limit).
     chunk_size = 8
     scan_limit = 256
 
-    unscanned_rows = islice(data_iter, scan_limit)
-    scanned_rows = []
+    unscanned_rows = islice(data_iter, scan_limit)  # Lazy slice.
+    scanned_rows = []  # Accumulates rows as they are scanned.
 
     node1_id_bytes = uuid.UUID(node1.unique_id).bytes
     node2_id_bytes = uuid.UUID(node2.unique_id).bytes
@@ -195,16 +195,19 @@ def get_column_positions(
         else:
             sample_rows = list(islice(unscanned_rows, chunk_size))
 
+    # Rebuild iterator to preserve already-scanned rows.
+    data_iter = chain(scanned_rows, data_iter)
+
     # If column order is invalid, raise error.
     if (node1_index_pos is not None
         and node2_index_pos is not None
         and (max(node1_index_pos, node2_index_pos) < value_position
              or min(node1_index_pos, node2_index_pos) > value_position)):
         raise RuntimeError(
-            f'Invalid column order in mapping data. The link column '
-            f'must appear between the two groups of node columns.\n\n'
+            f'Invalid column order in mapping data. The link name '
+            f'must appear between the two groups of file columns.\n\n'
             f'Expected layout:\n'
-            f'  <first node columns> <link name> <second node columns>\n\n'
+            f'  <first file columns> <link name> <second file columns>\n\n'
             f'Found index code columns at positions {node1_index_pos} '
             f'and {node2_index_pos}, but the link column is at position '
             f'{value_position} -- it does not separate them.'
@@ -294,7 +297,6 @@ def get_column_positions(
         'node2_stop': node2_stop,
         'value_position': value_position,
     }
-    data_iter = chain(scanned_rows, data_iter)
 
     return (positions, data_iter)
 
