@@ -279,17 +279,17 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_weight_add.add_argument(
         '--description',
-        help='description of weight group',
+        help='include a description of weight group',
     )
     parser_weight_add.add_argument(
-        '--selectors',
+        '--selector',
         nargs='+',
-        help='attribute selectors',
+        help='define one or more attribute selectors',
     )
     parser_weight_add.add_argument(
         '--make-default',
         action='store_true',
-        help='set as the default weight group',
+        help='make this the default weight group',
     )
     parser_weight_add.set_defaults(func=command_weight.add)
 
@@ -322,10 +322,9 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='SELECTOR',
     )
     parser_weight_update.add_argument(
-        '--default',
+        '--make-default',
         action='store_true',
-        help="set as the file's default weight group",
-        dest='make_default',
+        help='set as the default weight group',
     )
     parser_weight_update.set_defaults(func=command_weight.update)
 
