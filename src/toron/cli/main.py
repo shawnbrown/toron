@@ -110,9 +110,9 @@ def get_parser() -> argparse.ArgumentParser:
             args = self._preprocess_args(args)
             return super().parse_args(args, namespace)
 
-    ####################################################################
+    # ==================================================================
     # Main parser
-    ####################################################################
+    # ==================================================================
     parser = ToronArgumentParser(
         prog='toron',
         description='View and edit the contents of Toron files.',
@@ -136,7 +136,7 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
-    # Common parser for "--no-backup" option (to use with `parents` arg).
+    # Parser for "--no-backup" option (use with `parents` arg).
     no_backup_parent = argparse.ArgumentParser(add_help=False)
     no_backup_parent.add_argument(
         '--no-backup',
@@ -145,9 +145,9 @@ def get_parser() -> argparse.ArgumentParser:
         dest='backup',
     )
 
-    ####################################################################
-    # Subcommand: init
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: init
+    # ------------------------------------------------------------------
     parser_init = subparsers.add_parser(
         'init',
         description='Create a new Toron file.',
@@ -160,9 +160,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_init.set_defaults(func=command_init.create_file)
 
-    ####################################################################
-    # Command: label
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: label
+    # ------------------------------------------------------------------
     parser_label = subparsers.add_parser(
         'label',
         description='Manage label names used by the index.',
@@ -178,7 +178,7 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
-    # Subcommand: add
+    # --- SUBCOMMAND: add ---
     parser_label_add = parser_label_subparsers.add_parser(
         'add',
         help='add label names',
@@ -194,7 +194,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_label_add.set_defaults(func=command_label.add)
 
-    # Subcommand: update
+    # --- SUBCOMMAND: update ---
     parser_label_update = parser_label_subparsers.add_parser(
         'update',
         help='update the position of a label',
@@ -227,7 +227,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_label_update.set_defaults(func=command_label.update)
 
-    # Subcommand: rename
+    # --- SUBCOMMAND: rename ---
     parser_label_rename = parser_label_subparsers.add_parser(
         'rename',
         help='rename a label',
@@ -246,9 +246,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_label_rename.set_defaults(func=command_label.rename)
 
-    ####################################################################
-    # Command: weight
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: weight
+    # ------------------------------------------------------------------
     parser_weight = subparsers.add_parser(
         'weight',
         help='manage weight groups',
@@ -265,7 +265,7 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
-    # Subcommand: add
+    # --- SUBCOMMAND: add ---
     parser_weight_add = parser_weight_subparsers.add_parser(
         'add',
         help='add an index weight group',
@@ -293,7 +293,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_weight_add.set_defaults(func=command_weight.add)
 
-    # Subcommand: update
+    # --- SUBCOMMAND: update ---
     parser_weight_update = parser_weight_subparsers.add_parser(
         'update',
         help='update an index weight group',
@@ -328,9 +328,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_weight_update.set_defaults(func=command_weight.update)
 
-    ####################################################################
-    # Command: index
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: index
+    # ------------------------------------------------------------------
     parser_index = subparsers.add_parser(
         name='index',
         help='import or export index records',
@@ -348,7 +348,7 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
-    # Subcommand: import
+    # --- SUBCOMMAND: import ---
     parser_index_import = parser_index_subparsers.add_parser(
         'import',
         help='load index records from SOURCE file',
@@ -378,7 +378,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_index_import.set_defaults(func=command_index.import_records)
 
-    # Subcommand: export
+    # --- SUBCOMMAND: export ---
     parser_index_export = parser_index_subparsers.add_parser(
         'export',
         help='write index records to TARGET file or directory',
@@ -399,9 +399,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_index_export.set_defaults(func=command_index.export_records)
 
-    ####################################################################
-    # Command: partition
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: partition
+    # ------------------------------------------------------------------
     parser_partition = subparsers.add_parser(
         'partition',
         help='manage partition definitions',
@@ -420,7 +420,7 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
-    # Subcommand: add
+    # --- SUBCOMMAND: add ---
     parser_partition_add = parser_partition_subparsers.add_parser(
         'add',
         help='add a partition definition',
@@ -438,9 +438,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_partition_add.set_defaults(func=command_partition.add)
 
-    ####################################################################
-    # Command: attribute
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: attribute
+    # ------------------------------------------------------------------
     parser_attribute = subparsers.add_parser(
         'attribute',
         help='manage attribute names',
@@ -456,7 +456,7 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
-    # Subcommand: add
+    # --- SUBCOMMAND: add ---
     parser_attribute_add = parser_attribute_subparsers.add_parser(
         'add',
         help='add attribute names',
@@ -475,7 +475,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_attribute_add.set_defaults(func=command_attribute.add)
 
-    # Subcommand: update
+    # --- SUBCOMMAND: update ---
     parser_attribute_update = parser_attribute_subparsers.add_parser(
         'update',
         help='update the position of an attribute',
@@ -509,9 +509,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_attribute_update.set_defaults(func=command_attribute.update)
 
-    ####################################################################
-    # Command: quantity
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: quantity
+    # ------------------------------------------------------------------
     parser_quantity = subparsers.add_parser(
         name='quantity',
         help='import or export quantity records',
@@ -528,7 +528,7 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
-    # Subcommand: import
+    # --- SUBCOMMAND: import ---
     parser_quantity_import = parser_quantity_subparsers.add_parser(
         'import',
         help='load quantity records from SOURCE file',
@@ -578,7 +578,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_quantity_import.set_defaults(func=command_quantity.import_records)
 
-    # Subcommand: export
+    # --- SUBCOMMAND: export ---
     parser_quantity_export = parser_quantity_subparsers.add_parser(
         'export',
         help='write quantity records to TARGET file or directory',
@@ -599,9 +599,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_quantity_export.set_defaults(func=command_quantity.export_records)
 
-    ####################################################################
-    # Command: info
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: info
+    # ------------------------------------------------------------------
     parser_info = subparsers.add_parser(
         'info',
         help='show file information (default if COMMAND omitted)',
@@ -614,9 +614,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
     parser_info.set_defaults(func=command_info.write_to_stdout)
 
-    ####################################################################
-    # Command: relation operator
-    ####################################################################
+    # ------------------------------------------------------------------
+    # COMMAND: relation operator
+    # ------------------------------------------------------------------
     parser_rel = subparsers.add_parser(
         ':',  # <- Relation operator.
         prog='toron FILE1 : FILE2',
@@ -636,7 +636,7 @@ def get_parser() -> argparse.ArgumentParser:
         metavar='COMMAND',
     )
 
-    # Subcommand: add
+    # --- SUBCOMMAND: add ---
     parser_rel_add = parser_rel_subparsers.add_parser(
         'add',
         help='add a new link between files',
@@ -685,7 +685,7 @@ def get_parser() -> argparse.ArgumentParser:
         func=command_relation.add_link,
     )
 
-    # Subcommand: remove
+    # --- SUBCOMMAND: remove ---
     parser_rel_remove = parser_rel_subparsers.add_parser(
         'remove',
         help='remove a link from between files',
@@ -717,7 +717,7 @@ def get_parser() -> argparse.ArgumentParser:
         func=command_relation.remove_link,
     )
 
-    # Subcommand: import
+    # --- SUBCOMMAND: import ---
     parser_rel_import = parser_rel_subparsers.add_parser(
         'import',
         help='load mapping records from SOURCE file',
@@ -776,7 +776,7 @@ def get_parser() -> argparse.ArgumentParser:
         func=command_relation.import_records,
     )
 
-    # Subcommand: export
+    # --- SUBCOMMAND: export ---
     parser_rel_export = parser_rel_subparsers.add_parser(
         'export',
         help='write mapping records to TARGET file or directory',
