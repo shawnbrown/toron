@@ -98,7 +98,7 @@ def resolve_link_name(
     raise ToronError(msg)
 
 
-def make_path_from_parts(
+def _make_path_from_parts(
     parent_dir: str,
     name_parts: List[str],
     name_ext: Optional[str] = None,
@@ -120,7 +120,7 @@ def make_path_from_parts(
 
 
 @contextmanager
-def open_file_for_writing(
+def _open_file_for_writing(
     target_path: str,
     autoname_parts: Optional[List[str]] = None,
     autoname_ext: Optional[str] = None,
@@ -128,7 +128,7 @@ def open_file_for_writing(
 ) -> Generator[TextIO, None, None]:
     """Context manager to open a file for writing in text mode.
 
-        >>> with open_file_for_writing('mydir/myindex.csv') as f:
+        >>> with _open_file_for_writing('mydir/myindex.csv') as f:
         ...     f.name
         ...
         'mydir/myindex.csv'
@@ -137,7 +137,7 @@ def open_file_for_writing(
     made using `autoname_parts` and `autoname_ext`. To open a file
     automatically named 'index-myfile.csv', use:
 
-        >>> with open_file_for_writing('mydir', ['index', 'myfile.ds'], 'csv') as f:
+        >>> with _open_file_for_writing('mydir', ['index', 'myfile.ds'], 'csv') as f:
         ...     f.name
         ...
         'mydir/index-myfile.csv'
@@ -153,7 +153,7 @@ def open_file_for_writing(
                 f'target_path {target_path!r} is a directory, autoname_parts '
                 f'is required'
             )
-        target_path = make_path_from_parts(target_path, autoname_parts, autoname_ext)
+        target_path = _make_path_from_parts(target_path, autoname_parts, autoname_ext)
 
     target_path = os.path.normpath(target_path)
     try:
@@ -168,7 +168,7 @@ def open_file_for_writing(
 
 
 @contextmanager
-def open_stream_for_writing(
+def _open_stream_for_writing(
     stream: TextIO
 ) -> Generator[io.TextIOWrapper, None, None]:
     """Context manager to yield a TextIO stream for writing."""
@@ -222,13 +222,13 @@ def export_csv_to_file_or_stdout(
 
     if target_path == '-':
         # Write to stdout.
-        with open_stream_for_writing(stdout_stream) as f:
+        with _open_stream_for_writing(stdout_stream) as f:
             writer = csv.writer(f, lineterminator='\n')
             for row in row_generator_func():
                 writer.writerow(row)
     else:
         # Write to file.
-        with open_file_for_writing(
+        with _open_file_for_writing(
             target_path=target_path,
             autoname_parts=autoname_parts,
             autoname_ext='csv',

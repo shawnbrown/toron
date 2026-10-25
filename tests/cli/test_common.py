@@ -17,9 +17,9 @@ from toron import DataSpace, ToronError
 
 from toron.cli.common import (
     resolve_link_name,
-    make_path_from_parts,
-    open_file_for_writing,
-    open_stream_for_writing,
+    _make_path_from_parts,
+    _open_file_for_writing,
+    _open_stream_for_writing,
     export_csv_to_file_or_stdout,
     normalize_arg_list,
     ansi_codes,
@@ -102,25 +102,25 @@ class TestResolveLinkName(unittest.TestCase):
 class TestMakePathFromParts(unittest.TestCase):
     def test_dir_parts_and_extension(self):
         self.assertEqual(
-            make_path_from_parts('foo', ['bar', 'baz.ds'], 'txt'),  # <- Function under test.
+            _make_path_from_parts('foo', ['bar', 'baz.ds'], 'txt'),  # <- Function under test.
             os.path.join('foo', 'bar-baz.txt'),
         )
 
     def test_current_directory(self):
         self.assertEqual(
-            make_path_from_parts('.', ['bar', 'baz.ds'], 'txt'),  # <- Function under test.
+            _make_path_from_parts('.', ['bar', 'baz.ds'], 'txt'),  # <- Function under test.
             os.path.join('.', 'bar-baz.txt'),
         )
 
     def test_no_extension(self):
         self.assertEqual(
-            make_path_from_parts('foo', ['bar', 'baz.ds']),  # <- Function under test.
+            _make_path_from_parts('foo', ['bar', 'baz.ds']),  # <- Function under test.
             os.path.join('foo', 'bar-baz'),
         )
 
     def test_additional_name_parts(self):
         self.assertEqual(
-            make_path_from_parts(  # <- Function under test.
+            _make_path_from_parts(  # <- Function under test.
                 parent_dir='foo',
                 name_parts=['bar', 'baz.ds', 'qux.ds'],
                 name_ext='csv'
@@ -143,14 +143,14 @@ class TestOpenFileForWriting(unittest.TestCase):
     def test_explicit_filename(self):
         filepath = Path(self.dirpath, 'file.txt')
 
-        with open_file_for_writing(filepath, ['my', 'file'], 'txt') as f:  # <- Function under test.
+        with _open_file_for_writing(filepath, ['my', 'file'], 'txt') as f:  # <- Function under test.
             f.write('Hello World')
 
         self.assertEqual(filepath.read_text(), 'Hello World')
 
     def test_automatic_filename(self):
         """When given a target directory, function should """
-        with open_file_for_writing(self.dirpath, ['my', 'file'], 'txt') as f:  # <- Function under test.
+        with _open_file_for_writing(self.dirpath, ['my', 'file'], 'txt') as f:  # <- Function under test.
             f.write('Hello World')
 
         filepath = Path(self.dirpath, 'my-file.txt')
@@ -161,11 +161,11 @@ class TestOpenFileForWriting(unittest.TestCase):
         filepath.write_text('Hello World')
 
         with self.assertRaises(ToronError):
-            with open_file_for_writing(filepath, ['my', 'file'], 'txt') as f:  # <- Function under test.
+            with _open_file_for_writing(filepath, ['my', 'file'], 'txt') as f:  # <- Function under test.
                 pass
 
         # Call using overwrite existing file with `overwrite=True`.
-        with open_file_for_writing(filepath, ['my', 'file'], 'txt', overwrite=True) as f:  # <- Function under test.
+        with _open_file_for_writing(filepath, ['my', 'file'], 'txt', overwrite=True) as f:  # <- Function under test.
             f.write('Hello New World')
 
         self.assertEqual(filepath.read_text(), 'Hello New World')
@@ -175,11 +175,11 @@ class TestOpenFileForWriting(unittest.TestCase):
         filepath.write_text('Hello World')
 
         with self.assertRaises(ToronError):
-            with open_file_for_writing(self.dirpath, ['my', 'file'], 'txt') as f:  # <- Function under test.
+            with _open_file_for_writing(self.dirpath, ['my', 'file'], 'txt') as f:  # <- Function under test.
                 pass
 
         # Call using overwrite existing file with `overwrite=True`.
-        with open_file_for_writing(filepath, ['my', 'file'], 'txt', overwrite=True) as f:  # <- Function under test.
+        with _open_file_for_writing(filepath, ['my', 'file'], 'txt', overwrite=True) as f:  # <- Function under test.
             f.write('Hello New World')
 
         self.assertEqual(filepath.read_text(), 'Hello New World')
@@ -190,7 +190,7 @@ class TestOpenStreamForWriting(StreamWrapperMixin, unittest.TestCase):
         """Should write newlines as given (no newline translation)."""
         dummy_stream = TextIOWrapper(BytesIO(), newline='\r\n')
 
-        with open_stream_for_writing(dummy_stream) as f:
+        with _open_stream_for_writing(dummy_stream) as f:
             f.write('foo,bar,baz\r\n')   # <- Windows line ending.
             f.write('qux,quux,corge\n')  # <- POSIX line ending.
 
@@ -200,7 +200,7 @@ class TestOpenStreamForWriting(StreamWrapperMixin, unittest.TestCase):
         """Should encode as UTF-8 regardless of original stream."""
         dummy_stream = TextIOWrapper(BytesIO(), encoding='latin-1')
 
-        with open_stream_for_writing(dummy_stream) as f:
+        with _open_stream_for_writing(dummy_stream) as f:
             f.write('\u0192\u01d2\u014d,\u0253\u00e0\u0155,\u0184\u0251\u017e\n')
             f.write('\u024b\u0173\u1e8d,\u02a0\u0169\u0173\u1e8d,\u0441\u014d\u0159\u011f\u0119\n')
 
