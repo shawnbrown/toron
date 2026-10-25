@@ -45,6 +45,10 @@ class ExitCode(IntEnum):
     USAGE = 2  # Incorrect usage (invalid options or missing args).
 
 
+# ======================================================================
+# Helper Functions for Command Submodules
+# ======================================================================
+
 def resolve_link_name(
     file1_ds: 'DataSpace',
     file2_ds: 'DataSpace',
@@ -311,9 +315,9 @@ def normalize_arg_list(arg_list: List[str]) -> List[str]:
     return normalized
 
 
-# ============================
+# ======================================================================
 # Terminal Color Configuration
-# ============================
+# ======================================================================
 
 @dataclass(frozen=True)
 class StyleCodes:
@@ -384,9 +388,9 @@ def get_stream_styles(
     return (stdout_style, stderr_style)
 
 
-# ====================
+# ======================================================================
 # Logger Configuration
-# ====================
+# ======================================================================
 
 def get_formatter_class(style_codes: StyleCodes) -> Type[logging.Formatter]:
     """Return a logging `Formatter` class that optionally uses styled text."""
@@ -475,9 +479,9 @@ def configure_applogger(
     })
 
 
-# ==================
+# ======================================================================
 # Handle Index Codes
-# ==================
+# ======================================================================
 
 # Serialize `int` as signed 64-bit big-endian ('>q' format).
 pack_i64_be = Struct('>q').pack
