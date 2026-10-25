@@ -47,6 +47,6 @@ xNode.__module__ = 'toron'
 #
 # This logger will receive messages intended for an application
 # enduser. The application should add its own handler to display
-# these messages in a context-appropriate format (CLI message,
+# these messages in a context-appropriate format (CLI stderr output,
 # GUI pop-up notification, etc.).
 __import__('logging').getLogger(f'app-{__name__}').setLevel(level=20)
