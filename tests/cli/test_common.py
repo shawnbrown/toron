@@ -21,7 +21,6 @@ from toron.cli.common import (
     open_file_for_writing,
     open_stream_for_writing,
     export_csv_to_file_or_stdout,
-    csv_stdout_writer,
     normalize_arg_list,
     ansi_codes,
     StyleCodes,
@@ -284,26 +283,6 @@ class TestExportCsvToFileOrStdout(unittest.TestCase):
                     overwrite=False,
                     logger=None,
                 )
-
-
-class TestCsvStdoutWriter(StreamWrapperMixin, unittest.TestCase):
-    def test_line_endings(self):
-        """Should use consistent newlines regardless of system."""
-        dummy_stdout = TextIOWrapper(BytesIO(), newline='\r\n')
-
-        with csv_stdout_writer(dummy_stdout) as writer:
-            writer.writerow(['foo', 'bar', 'baz'])
-            writer.writerow(['qux', 'quux', 'corge'])
-
-        self.assertStream(dummy_stdout, 'foo,bar,baz\nqux,quux,corge\n')
-
-    def test_utf8_encoding(self):
-        """Should encode as UTF-8 regardless of original stream."""
-        dummy_stdout = TextIOWrapper(BytesIO(), encoding='latin-1')
-
-        with csv_stdout_writer(dummy_stdout) as writer:
-            writer.writerow(['\u0192\u00f3\u00f3', '\u0253\u00e0\u0155', '\u0184\u0251\u017e'])
-        self.assertStream(dummy_stdout, 'ƒóó,ɓàŕ,Ƅɑž\n')
 
 
 class TestNormalizeArgList(unittest.TestCase):

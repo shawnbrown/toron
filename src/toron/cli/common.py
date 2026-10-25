@@ -45,35 +45,6 @@ class ExitCode(IntEnum):
     USAGE = 2  # Incorrect usage (invalid options or missing args).
 
 
-def is_streamed(standard_io: TextIO) -> bool:
-    """Returns True if stream is redirected or piped."""
-    return not standard_io.isatty()
-
-
-@contextmanager
-def csv_stdout_writer(
-    stdout: Optional[TextIO] = None
-) -> Generator['_csv.Writer', None, None]:
-    """Context manager to yield a ``csv.writer()`` to stdout."""
-    if stdout is None:
-        stdout = sys.stdout
-
-    stdout_wrapper = io.TextIOWrapper(
-        stdout.buffer,
-        encoding='utf-8',
-        newline='', # Disable universal newline translation.
-        line_buffering=True, # Flush stream after every newline character.
-    )
-    try:
-        yield csv.writer(stdout_wrapper, lineterminator='\n')
-    finally:
-        stdout_wrapper.flush()  # Ensure all output is written.
-        try:
-            stdout_wrapper.detach()  # Keep `stdout.buffer` open.
-        except Exception:
-            pass
-
-
 def resolve_link_name(
     file1_ds: 'DataSpace',
     file2_ds: 'DataSpace',
