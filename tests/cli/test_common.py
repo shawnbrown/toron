@@ -19,6 +19,7 @@ from toron.cli.common import (
     resolve_link_name,
     make_path_from_parts,
     open_file_for_writing,
+    open_stream_for_writing,
     export_csv_to_file_or_stdout,
     csv_stdout_writer,
     normalize_arg_list,
@@ -183,6 +184,28 @@ class TestOpenFileForWriting(unittest.TestCase):
             f.write('Hello New World')
 
         self.assertEqual(filepath.read_text(), 'Hello New World')
+
+
+class TestOpenStreamForWriting(StreamWrapperMixin, unittest.TestCase):
+    def test_line_endings(self):
+        """Should write newlines as given (no newline translation)."""
+        dummy_stream = TextIOWrapper(BytesIO(), newline='\r\n')
+
+        with open_stream_for_writing(dummy_stream) as f:
+            f.write('foo,bar,baz\r\n')   # <- Windows line ending.
+            f.write('qux,quux,corge\n')  # <- POSIX line ending.
+
+        self.assertStream(dummy_stream, 'foo,bar,baz\r\nqux,quux,corge\n')
+
+    def test_utf8_encoding(self):
+        """Should encode as UTF-8 regardless of original stream."""
+        dummy_stream = TextIOWrapper(BytesIO(), encoding='latin-1')
+
+        with open_stream_for_writing(dummy_stream) as f:
+            f.write('\u0192\u01d2\u014d,\u0253\u00e0\u0155,\u0184\u0251\u017e\n')
+            f.write('\u024b\u0173\u1e8d,\u02a0\u0169\u0173\u1e8d,\u0441\u014d\u0159\u011f\u0119\n')
+
+        self.assertStream(dummy_stream, 'ƒǒō,ɓàŕ,Ƅɑž\nɋųẍ,ʠũųẍ,сōřğę\n')
 
 
 class TestExportCsvToFileOrStdout(unittest.TestCase):
