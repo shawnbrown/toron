@@ -197,7 +197,7 @@ class NodeReader(object):
             df[col] = df[col].astype('string')
 
         if index:
-            df.set_index(self.index_columns, inplace=True)
+            df = df.set_index(self.index_columns)
 
         return df
 
@@ -514,6 +514,6 @@ def pivot_reader_to_pandas(
         df[col] = df[col].astype('string')
 
     if index:
-        df.set_index(reader.index_columns, inplace=True)
+        df = df.set_index(reader.index_columns)
 
     return df

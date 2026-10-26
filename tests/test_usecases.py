@@ -193,7 +193,7 @@ class TestBuildUsingAPI(unittest.TestCase):
             'variable': pd.Series(['foo', 'foo', 'foo'], dtype='string'),
             'value': pd.Series([50.0, 50.0, 100.0], dtype='float64'),
         })
-        expected_df.set_index(['idx1', 'idx2'], inplace=True)
+        expected_df = expected_df.set_index(['idx1', 'idx2'])
         pd.testing.assert_frame_equal(df, expected_df)
 
     @unittest.skipUnless(pd, 'requires pandas')

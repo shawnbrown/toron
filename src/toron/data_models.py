@@ -1364,6 +1364,6 @@ class QuantityIterator(object):
             df[col] = df[col].astype('string')
 
         if index:
-            df.set_index(list(self.label_names), inplace=True)
+            df = df.set_index(list(self.label_names))
 
         return df

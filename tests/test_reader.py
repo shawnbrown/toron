@@ -219,7 +219,7 @@ class TestNodeReader(unittest.TestCase):
             'attr2': pd.Series([None, None, 'baz'], dtype='string'),
             'value': pd.Series([25.0, 75.0, 50.0], dtype='float64'),
         })
-        expected_df.set_index(['county', 'town'], inplace=True)
+        expected_df = expected_df.set_index(['county', 'town'])
         pd.testing.assert_frame_equal(df, expected_df)
 
 
