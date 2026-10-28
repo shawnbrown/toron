@@ -19,10 +19,7 @@ from unittest.mock import (
     call,
     sentinel,
 )
-if sys.version_info >= (3, 8):
-    from typing import get_args
-else:
-    from typing_extensions import get_args
+from typing import get_args
 
 
 from .common import normalize_structures
@@ -118,16 +115,6 @@ class TestFileHandling(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
         self.addCleanup(self.temp_dir.cleanup)
 
-        if sys.version_info < (3, 7, 17):
-            # Fix for old bug https://github.com/python/cpython/issues/70847
-            def make_files_readwrite():
-                root_dir = self.temp_dir.name
-                for f in os.listdir(root_dir):
-                    f_path = os.path.join(root_dir, f)
-                    os.chmod(f_path, stat.S_IRUSR | stat.S_IWUSR)
-
-            self.addCleanup(make_files_readwrite)
-
     def test_default_backend(self):
         """Check default backend with standard arguments."""
         file_path = os.path.join(self.temp_dir.name, 'mynode.toron')
@@ -206,16 +193,6 @@ class TestBindNode(unittest.TestCase):
     def setUp(cls):
         cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
         cls.addCleanup(cls.temp_dir.cleanup)
-
-        if sys.version_info < (3, 7, 17):
-            # Fix for old bug https://github.com/python/cpython/issues/70847
-            def make_files_readwrite():
-                root_dir = cls.temp_dir.name
-                for f in os.listdir(root_dir):
-                    f_path = os.path.join(root_dir, f)
-                    os.chmod(f_path, stat.S_IRUSR | stat.S_IWUSR)
-
-            cls.addCleanup(make_files_readwrite)
 
     def test_new_file_read_write_create(self):
         """In 'rwc' mode, nodes can be created directly on drive."""

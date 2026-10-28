@@ -165,8 +165,7 @@ class TestVerifyPermissions(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temp_dir = tempfile.TemporaryDirectory(prefix='toron-')
-        if sys.version_info >= (3, 8, 0):
-            cls.addClassCleanup(cls.temp_dir.cleanup)
+        cls.addClassCleanup(cls.temp_dir.cleanup)
 
         cls.rw_path = os.path.join(cls.temp_dir.name, 'readwrite.toron')
         open(cls.rw_path, 'w').close()
@@ -177,13 +176,6 @@ class TestVerifyPermissions(unittest.TestCase):
 
         # Define path but don't create a file (file should not exist).
         cls.new_path = os.path.join(cls.temp_dir.name, 'new_file.toron')
-
-    if sys.version_info < (3, 8, 0):
-        @classmethod
-        def tearDownClass(cls):
-            # Make file read-write (old bug https://github.com/python/cpython/issues/70847)
-            os.chmod(cls.ro_path, stat.S_IRUSR | stat.S_IWUSR)
-            cls.temp_dir.cleanup()
 
     def test_readonly_required(self):
         try:
