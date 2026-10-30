@@ -112,7 +112,7 @@ def _make_path_from_parts(
     Each element in `name_parts` is normalized to a path stem (basename
     minus extension) and then concatenated together with hyphens:
 
-        >>> make_autoname_path('mydir', ['index', 'myfile.ds'], 'csv')
+        >>> _make_path_from_parts('mydir', ['index', 'myfile.ds'], 'csv')
         'mydir/index-myfile.csv'
     """
     # Normalize name_parts as filename "stems" (basename minus extension).
